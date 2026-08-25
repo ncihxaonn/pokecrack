@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "platform": "reddit",
+  "browser_profile": "social-western",
+  "collector_version": "opencli-fixture-v1",
+  "items": [
+    {
+      "external_id": "fixtureabc",
+      "source_url": "https://www.reddit.com/r/pkmntcg/comments/fixtureabc/synthetic_opening/",
+      "title": "Synthetic Reddit opening",
+      "text": "Synthetic fixture only: opened six packs.",
+      "published_at": "2026-08-24T12:00:00Z",
+      "author": "opencli-fixture-author",
+      "media_urls": [],
+      "metadata": {"synthetic": true, "pack_count": 6},
+      "source_policy_version": "1"
+    },
+    {
+      "external_id": "fixturedef",
+      "source_url": "https://www.reddit.com/r/pkmntcg/comments/fixturedef/synthetic_bundle/",
+      "title": "Synthetic Reddit bundle",
+      "text": "Synthetic fixture only: opened a booster bundle.",
+      "published_at": "2026-08-24T13:00:00Z",
+      "author": "opencli-second-fixture-author",
+      "media_urls": [],
+      "metadata": {"synthetic": true, "pack_count": 6},
+      "source_policy_version": "1"
+    }
+  ]
+}

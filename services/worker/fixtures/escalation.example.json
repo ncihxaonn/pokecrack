@@ -1,0 +1,35 @@
+{
+  "verdict": "reject",
+  "observed": {
+    "set_name": null,
+    "product_name": null,
+    "product_type": "unknown",
+    "pack_count": null,
+    "is_complete": null,
+    "hits": [],
+    "country_code": null,
+    "region": null,
+    "retailer": null,
+    "batch_code": null,
+    "opened_at": null
+  },
+  "overall_confidence": 0.99,
+  "eligible_for_statistics": false,
+  "evidence_tier": "D",
+  "field_checks": [
+    {
+      "field": "overall",
+      "status": "unsupported",
+      "confidence": 0.99,
+      "evidence_reference": null
+    }
+  ],
+  "contradictions": [
+    "unresolved_evidence"
+  ],
+  "missing_required_fields": [],
+  "duplicate_suspected": false,
+  "rejection_reasons": [
+    "unresolved_disagreement"
+  ]
+}

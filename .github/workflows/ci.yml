@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main, "feat/**", "fix/**", "chore/**"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  web-and-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.13.0"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: services/worker
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: "0.11.6"
+          enable-cache: true
+      - run: uv sync --frozen --extra dev --extra scrapling
+      - name: Audit the full locked worker dependency set
+        run: |
+          uv export --quiet --frozen --all-extras --format requirements-txt --no-emit-project -o /tmp/pokecrack-worker-audit.txt
+          uvx --from pip-audit==2.10.1 pip-audit -r /tmp/pokecrack-worker-audit.txt --disable-pip
+      - run: uv run ruff check pokecrack_worker tests
+      - run: uv run ruff format --check pokecrack_worker tests
+      - run: uv run mypy pokecrack_worker
+      - run: uv run pytest -q
+
+  auth-browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: services/auth-browser
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: "0.11.6"
+          enable-cache: true
+      - run: uv sync --frozen --extra dev
+      - name: Audit the full locked auth-browser dependency set
+        run: |
+          uv export --quiet --frozen --all-extras --format requirements-txt --no-emit-project -o /tmp/pokecrack-browser-audit.txt
+          uvx --from pip-audit==2.10.1 pip-audit -r /tmp/pokecrack-browser-audit.txt --disable-pip
+      - run: uv run ruff check src tests
+      - run: uv run ruff format --check src tests
+      - run: uv run mypy src/pokecrack_browser
+      - run: uv run pytest -q
+      - name: Build production auth-browser image with fixtures only
+        working-directory: ${{ github.workspace }}
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+        run: docker build --file deploy/Dockerfile.auth-browser --tag pokecrack-auth-browser:${GITHUB_SHA} .
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22.13.0"
+      - name: Start local Supabase and run migrations
+        run: |
+          npx --yes supabase@2.115.0 start
+          npx --yes supabase@2.115.0 db reset
+      - name: Run pgTAP database tests
+        run: npx --yes supabase@2.115.0 test db
+      - name: Stop local Supabase
+        if: always()
+        run: npx --yes supabase@2.115.0 stop --no-backup
+
+  container-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Build production worker image
+        env:
+          DEPLOY_SHA: ${{ github.sha }}
+        run: docker build --file deploy/Dockerfile.worker --tag pokecrack-worker:${GITHUB_SHA} .
+
+  repository-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+      - name: Install shellcheck
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck
+      - name: Validate shell scripts
+        run: shellcheck deploy/scripts/*.sh deploy/*.sh services/auth-browser/container/*.sh
+      - name: Validate repository policy and secret/profile exclusions
+        run: |
+          python3 scripts/verify_repository.py .
+          python3 -m unittest scripts.tests.test_verify_repository -v
+      - name: Scan Git history for credentials
+        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

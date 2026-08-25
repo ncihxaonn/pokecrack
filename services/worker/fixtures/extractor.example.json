@@ -1,0 +1,44 @@
+{
+  "content_type": "video",
+  "decision": "candidate",
+  "set": {
+    "name": "Paldea Evolved",
+    "confidence": 0.96,
+    "evidence_reference": "title"
+  },
+  "product": {
+    "name": "Synthetic booster bundle",
+    "type": "booster_bundle",
+    "confidence": 0.96,
+    "evidence_reference": "description"
+  },
+  "opening": {
+    "pack_count": 6,
+    "is_complete": true,
+    "opened_at": "2026-08-25T00:00:00Z",
+    "confidence": 0.96,
+    "evidence_reference": "six synthetic packs"
+  },
+  "location": {
+    "country_code": "AU",
+    "region": null,
+    "confidence": 0.9,
+    "evidence_reference": "Australia"
+  },
+  "purchase": {
+    "retailer": null,
+    "batch_code": null,
+    "confidence": 0.0,
+    "evidence_reference": null
+  },
+  "hits": [],
+  "evidence_tier_candidate": "B",
+  "overall_confidence": 0.96,
+  "missing_fields": [
+    "purchase.retailer",
+    "purchase.batch_code"
+  ],
+  "warnings": [
+    "synthetic_fixture"
+  ]
+}

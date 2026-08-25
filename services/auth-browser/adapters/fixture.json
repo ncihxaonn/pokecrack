@@ -1,0 +1,113 @@
+{
+  "name": "fixture",
+  "version": "1.0.0",
+  "argv": [
+    "{python}",
+    "-m",
+    "pokecrack_browser.fixture_cli",
+    "query",
+    "--fixture",
+    "{fixture_output}",
+    "--query",
+    "{query}",
+    "--max-results",
+    "{max_results}"
+  ],
+  "profile": "research-general",
+  "allowed_source_hosts": [
+    "research.example.invalid"
+  ],
+  "query": {
+    "required": false,
+    "default": "fixture",
+    "max_length": 2048
+  },
+  "json_schema": {
+    "type": "object",
+    "required": [
+      "items"
+    ],
+    "additionalProperties": false,
+    "properties": {
+      "items": {
+        "type": "array",
+        "maxItems": 25,
+        "items": {
+          "type": "object",
+          "required": [
+            "source_url"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "source_url": {
+              "type": "string",
+              "maxLength": 2048
+            },
+            "title": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 500
+            },
+            "excerpt": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 4000
+            },
+            "content": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 20000
+            },
+            "author": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 500
+            },
+            "published_at": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100
+            },
+            "metadata": {
+              "type": "object"
+            },
+            "image_urls": {
+              "type": "array",
+              "maxItems": 20,
+              "items": {
+                "type": "string",
+                "maxLength": 2048
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "timeout_seconds": 5,
+  "max_results": 25,
+  "min_interval_seconds": 0,
+  "auth_health_argv": [
+    "{python}",
+    "-m",
+    "pokecrack_browser.fixture_cli",
+    "auth-health"
+  ],
+  "version_argv": [
+    "{python}",
+    "-m",
+    "pokecrack_browser.fixture_cli",
+    "--version"
+  ],
+  "requires_browser": false
+}

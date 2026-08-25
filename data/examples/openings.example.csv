@@ -1,0 +1,3 @@
+platform,external_id,source_url,title,text,published_at,author,media_urls,metadata,source_policy_version
+manual,fixture-001,https://example.com/openings/fixture-001,Synthetic six-pack opening,Synthetic fixture only: six packs and one illustration rare.,2026-08-20T10:00:00Z,fixture-author,,"{""synthetic"":true,""pack_count"":6}",1
+manual,fixture-002,https://example.com/openings/fixture-002,Synthetic bundle opening,Synthetic fixture only: six packs and no chase claim.,2026-08-21T11:00:00Z,second-fixture-author,,"{""synthetic"":true,""pack_count"":6}",1

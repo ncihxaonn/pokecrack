@@ -1,0 +1,131 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+IFS=$'\n\t'
+umask 077
+
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/../.." && pwd -P)
+COMPOSE_FILE="$REPOSITORY_ROOT/deploy/compose.prod.yml"
+ENV_FILE=${POKECRACK_ENV_FILE:-/etc/pokecrack/production.env}
+STATE_DIR=${POKECRACK_DEPLOY_STATE_DIR:-/var/lib/pokecrack/deploy}
+HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-180}
+SERVICES=(collector auth-browser ai-worker aggregator scheduler watchdog)
+
+rollback_marker() {
+  local marker rollback
+  marker="$STATE_DIR/last-successful-sha"
+  if [[ -d $STATE_DIR && ! -L $STATE_DIR && -f $marker && ! -L $marker ]]; then
+    IFS= read -r rollback < "$marker" || true
+    if [[ $rollback =~ ^[0-9a-f]{40}$ ]]; then
+      printf "Rollback commit: %s\n" "$rollback" >&2
+    fi
+  fi
+}
+
+die() {
+  printf "deploy: %s\n" "$*" >&2
+  rollback_marker
+  exit 1
+}
+
+usage() {
+  cat >&2 <<'USAGE'
+Usage: deploy.sh EXACT_40_CHARACTER_GIT_SHA [options]
+
+Options:
+  --env-file ABSOLUTE_PATH    Compose interpolation file (default: /etc/pokecrack/production.env)
+  --state-dir ABSOLUTE_PATH   Success-marker directory (default: /var/lib/pokecrack/deploy)
+  --health-timeout SECONDS    Health deadline (default: 180)
+USAGE
+}
+
+(($# >= 1)) || { usage; exit 2; }
+target_sha=$1
+shift
+while (($#)); do
+  case $1 in
+    --env-file) (($# >= 2)) || die "--env-file requires a value"; ENV_FILE=$2; shift 2 ;;
+    --state-dir) (($# >= 2)) || die "--state-dir requires a value"; STATE_DIR=$2; shift 2 ;;
+    --health-timeout) (($# >= 2)) || die "--health-timeout requires a value"; HEALTH_TIMEOUT=$2; shift 2 ;;
+    -h|--help) usage; exit 0 ;;
+    *) die "unknown argument: $1" ;;
+  esac
+done
+
+[[ $target_sha =~ ^[0-9a-f]{40}$ ]] || die "deployment target must be an exact lowercase 40-character Git SHA"
+[[ $ENV_FILE == /* ]] || die "environment file path must be absolute"
+[[ -f $ENV_FILE && ! -L $ENV_FILE ]] || die "environment file must be a regular, non-symlink file"
+[[ $STATE_DIR == /* ]] || die "state directory path must be absolute"
+[[ $HEALTH_TIMEOUT =~ ^[1-9][0-9]*$ ]] || die "health timeout must be a positive integer"
+[[ -f $COMPOSE_FILE ]] || die "Compose file is missing: $COMPOSE_FILE"
+
+for command in docker git install mktemp mv stat; do
+  command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
+done
+
+env_mode=$(stat -c '%a' -- "$ENV_FILE")
+[[ $env_mode =~ ^[0-7]{3,4}$ ]] || die "could not validate environment file permissions"
+env_permissions=$((8#$env_mode))
+(( (env_permissions & 0077) == 0 )) || die "environment file must not be accessible by group or other users (use mode 0600)"
+
+actual_root=$(git -C "$REPOSITORY_ROOT" rev-parse --show-toplevel 2>/dev/null) || die "repository root is not a Git working tree"
+actual_root=$(CDPATH='' cd -- "$actual_root" && pwd -P)
+[[ $actual_root == "$REPOSITORY_ROOT" ]] || die "script path does not match the Git repository root"
+
+git -C "$REPOSITORY_ROOT" diff --quiet --ignore-submodules -- || die "tracked working tree changes must be resolved before deployment"
+git -C "$REPOSITORY_ROOT" diff --cached --quiet --ignore-submodules -- || die "staged changes must be resolved before deployment"
+[[ -z $(git -C "$REPOSITORY_ROOT" status --porcelain --untracked-files=all) ]] || die "untracked files must be removed before deployment"
+
+if ! git -C "$REPOSITORY_ROOT" cat-file -e "${target_sha}^{commit}" 2>/dev/null; then
+  git -C "$REPOSITORY_ROOT" fetch --no-tags --no-write-fetch-head origin "$target_sha"
+fi
+resolved_sha=$(git -C "$REPOSITORY_ROOT" rev-parse --verify "${target_sha}^{commit}")
+[[ $resolved_sha == "$target_sha" ]] || die "resolved commit does not equal the requested SHA"
+git -C "$REPOSITORY_ROOT" checkout --detach "$target_sha"
+checked_out_sha=$(git -C "$REPOSITORY_ROOT" rev-parse --verify HEAD)
+[[ $checked_out_sha == "$target_sha" ]] || die "checkout did not land on the requested SHA"
+
+export DEPLOY_SHA=$target_sha
+export POKECRACK_ENV_FILE=$ENV_FILE
+compose=(docker compose --project-name pokecrack --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
+
+docker compose version >/dev/null
+"${compose[@]}" config --quiet
+"${compose[@]}" build --pull
+"${compose[@]}" config --quiet
+"${compose[@]}" up --detach --remove-orphans
+
+deadline=$((SECONDS + HEALTH_TIMEOUT))
+while true; do
+  all_healthy=true
+  for service in "${SERVICES[@]}"; do
+    container_id=$("${compose[@]}" ps -q "$service")
+    if [[ -z $container_id ]]; then
+      all_healthy=false
+      break
+    fi
+    state=$(docker inspect --format '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container_id")
+    if [[ $state != 'running healthy' ]]; then
+      all_healthy=false
+      break
+    fi
+  done
+  if [[ $all_healthy == true ]]; then
+    break
+  fi
+  if (( SECONDS >= deadline )); then
+    "${compose[@]}" ps >&2 || true
+    die "services did not become healthy within ${HEALTH_TIMEOUT} seconds; success marker was not advanced"
+  fi
+  sleep 1
+done
+
+[[ ! -L $STATE_DIR ]] || die "state directory must not be a symbolic link"
+install -d -m 0700 -- "$STATE_DIR"
+[[ -d $STATE_DIR && ! -L $STATE_DIR ]] || die "state directory is invalid"
+marker=$(mktemp "$STATE_DIR/.last-successful-sha.XXXXXXXX")
+printf '%s\n' "$target_sha" > "$marker"
+chmod 0600 -- "$marker"
+mv -f -- "$marker" "$STATE_DIR/last-successful-sha"
+
+printf 'Deployment healthy at exact SHA %s.\n' "$target_sha"
