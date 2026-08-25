@@ -1,0 +1,89 @@
+name: Deploy VPS workers
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - deploy/**
+      - services/worker/**
+      - services/auth-browser/**
+      - config/**
+      - .github/workflows/deploy-worker.yml
+  workflow_dispatch:
+    inputs:
+      confirm_sha:
+        description: Exact GITHUB_SHA to deploy
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pokecrack-vps-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: worker-production
+    env:
+      VPS_HOST: ${{ vars.VPS_HOST }}
+      VPS_USER: ${{ vars.VPS_USER }}
+      VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+      VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH }}
+      VPS_ENV_FILE: ${{ vars.VPS_ENV_FILE || '/etc/pokecrack/production.env' }}
+      SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+    steps:
+      - name: Verify exact requested SHA
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
+            [[ "${{ inputs.confirm_sha }}" == "$GITHUB_SHA" ]] || {
+              printf 'confirm_sha must equal GITHUB_SHA (%s)\n' "$GITHUB_SHA" >&2
+              exit 1
+            }
+          fi
+      - name: Configure pinned SSH host identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$VPS_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
+          [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ "$VPS_DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_DEPLOY_PATH" != *'..'* ]]
+          [[ "$VPS_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_ENV_FILE" != *'..'* ]]
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]]
+          install -d -m 0700 "$HOME/.ssh"
+          install -m 0600 /dev/null "$HOME/.ssh/id_ed25519"
+          install -m 0600 /dev/null "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+      - name: Deploy and verify the exact GITHUB_SHA
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          printf -v remote_command 'bash -s -- %q %q %q' "$GITHUB_SHA" "$VPS_DEPLOY_PATH" "$VPS_ENV_FILE"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "$remote_command" <<'REMOTE'
+          set -Eeuo pipefail
+          sha=$1
+          repository=$2
+          env_file=$3
+          [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+          [[ -d "$repository/.git" ]]
+          "$repository/deploy/scripts/deploy.sh" "$sha" --env-file "$env_file"
+          actual=$(git -C "$repository" rev-parse --verify HEAD)
+          [[ "$actual" == "$sha" ]]
+          REMOTE
+      - name: Remove transient SSH key
+        if: always()
+        run: rm -f "$HOME/.ssh/id_ed25519"

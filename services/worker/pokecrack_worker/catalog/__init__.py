@@ -1,0 +1,1 @@
+"""Pokecrack worker catalog package."""

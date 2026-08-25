@@ -1,0 +1,92 @@
+name: Migrate production database
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Protected GitHub environment holding SUPABASE_DB_URL
+        required: true
+        type: environment
+      confirm_sha:
+        description: Exact GITHUB_SHA containing the forward migrations
+        required: true
+        type: string
+      backup_reference:
+        description: Operator-confirmed fresh backup filename or provider snapshot ID
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pokecrack-database-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ inputs.environment }}
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: "22"
+      - name: Verify operator confirmation and exact checkout
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "${{ inputs.confirm_sha }}" == "$GITHUB_SHA" ]]
+          [[ -n "${{ inputs.backup_reference }}" ]]
+          [[ -n "$SUPABASE_DB_URL" ]]
+          [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
+      - name: Reject destructive migration statements
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          pattern = re.compile(r"\b(drop\s+(database|schema|table|column)|truncate\s+|delete\s+from)\b", re.I)
+          bad = []
+          for path in sorted(Path("supabase/migrations").glob("*.sql")):
+              for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+                  if pattern.search(line) and not line.lstrip().startswith("--"):
+                      bad.append(f"{path}:{number}")
+          if bad:
+              raise SystemExit("destructive SQL requires a separately reviewed forward migration: " + ", ".join(bad))
+          PY
+      - name: Preview forward-only migration
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npx --yes supabase@2.115.0 db push --dry-run --db-url "$SUPABASE_DB_URL"
+      - name: Apply forward migrations
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npx --yes supabase@2.115.0 db push --db-url "$SUPABASE_DB_URL"
+      - name: Verify no migrations remain pending
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npx --yes supabase@2.115.0 db push --dry-run --db-url "$SUPABASE_DB_URL"
+      - name: Regenerate TypeScript database types
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          install -d -m 0700 generated-types
+          npx --yes supabase@2.115.0 gen types typescript --db-url "$SUPABASE_DB_URL" > generated-types/database.generated.ts
+          test -s generated-types/database.generated.ts
+      - name: Upload generated database types
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: database-types-${{ github.sha }}
+          path: generated-types/database.generated.ts
+          if-no-files-found: error
+          retention-days: 7

@@ -1,0 +1,42 @@
+version: 1
+baseline_priority:
+  - [set_id, language, product_type]
+  - [set_id, language]
+  - [set_id]
+chase_categories:
+  - special_illustration_rare
+  - hyper_rare
+rarities:
+  - key: common
+    label: Common
+    aliases: [C]
+  - key: uncommon
+    label: Uncommon
+    aliases: [U]
+  - key: rare
+    label: Rare
+    aliases: [R, Holo Rare]
+  - key: double_rare_plus
+    label: Double Rare+
+    aliases: [Double Rare, Double Rare ex, DR]
+  - key: illustration_rare
+    label: Illustration Rare
+    aliases: [IR]
+  - key: ultra_rare
+    label: Ultra Rare
+    aliases: [UR, Full Art]
+  - key: special_illustration_rare
+    label: Special Illustration Rare
+    aliases: [SIR, Special Art Rare]
+  - key: hyper_rare
+    label: Hyper Rare
+    aliases: [HR, Gold Rare]
+  - key: ace_spec_rare
+    label: ACE SPEC Rare
+    aliases: [ACE SPEC]
+  - key: promo
+    label: Promo
+    statistics_eligible: false
+  - key: unknown
+    label: Unknown
+    statistics_eligible: false

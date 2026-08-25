@@ -1,0 +1,28 @@
+{
+  "items": [
+    {
+      "source_url": "https://research.example.invalid/posts/fixture-001",
+      "title": "Fixture authenticated source result",
+      "excerpt": "Synthetic fixture item; no platform session was used.",
+      "author": "fixture-author",
+      "published_at": "2026-08-25T00:00:00Z",
+      "metadata": {
+        "fixture": true,
+        "source": "fixture"
+      },
+      "image_urls": []
+    },
+    {
+      "source_url": "https://research.example.invalid/posts/fixture-002",
+      "title": "Second fixture result",
+      "excerpt": "Synthetic bounded OpenCLI output.",
+      "metadata": {
+        "fixture": true,
+        "source": "fixture"
+      },
+      "image_urls": [
+        "https://research.example.invalid/images/fixture-002.jpg"
+      ]
+    }
+  ]
+}

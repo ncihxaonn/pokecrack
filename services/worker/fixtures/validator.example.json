@@ -1,0 +1,97 @@
+{
+  "verdict": "accept",
+  "observed": {
+    "set_name": "Paldea Evolved",
+    "product_name": "Synthetic booster bundle",
+    "product_type": "booster_bundle",
+    "pack_count": 6,
+    "is_complete": true,
+    "hits": [],
+    "country_code": "AU",
+    "region": null,
+    "retailer": null,
+    "batch_code": null,
+    "opened_at": "2026-08-25T00:00:00Z"
+  },
+  "overall_confidence": 0.95,
+  "eligible_for_statistics": true,
+  "evidence_tier": "B",
+  "field_checks": [
+    {
+      "field": "opening.pack_count",
+      "status": "verified",
+      "confidence": 0.95,
+      "evidence_reference": "six synthetic packs"
+    },
+    {
+      "field": "set.name",
+      "status": "verified",
+      "confidence": 0.95,
+      "evidence_reference": "synthetic source evidence"
+    },
+    {
+      "field": "product.name",
+      "status": "verified",
+      "confidence": 0.95,
+      "evidence_reference": "synthetic source evidence"
+    },
+    {
+      "field": "product.type",
+      "status": "verified",
+      "confidence": 0.95,
+      "evidence_reference": "synthetic source evidence"
+    },
+    {
+      "field": "opening.is_complete",
+      "status": "verified",
+      "confidence": 0.95,
+      "evidence_reference": "synthetic source evidence"
+    },
+    {
+      "field": "opening.opened_at",
+      "status": "verified",
+      "confidence": 0.95,
+      "evidence_reference": "synthetic source evidence"
+    },
+    {
+      "field": "location.country_code",
+      "status": "verified",
+      "confidence": 0.95,
+      "evidence_reference": "synthetic source evidence"
+    },
+    {
+      "field": "hits",
+      "status": "verified",
+      "confidence": 0.95,
+      "evidence_reference": "synthetic source evidence"
+    },
+    {
+      "field": "evidence_tier",
+      "status": "verified",
+      "confidence": 0.95,
+      "evidence_reference": "synthetic source evidence"
+    },
+    {
+      "field": "location.region",
+      "status": "not_applicable",
+      "confidence": 0.95,
+      "evidence_reference": null
+    },
+    {
+      "field": "purchase.retailer",
+      "status": "not_applicable",
+      "confidence": 0.95,
+      "evidence_reference": null
+    },
+    {
+      "field": "purchase.batch_code",
+      "status": "not_applicable",
+      "confidence": 0.95,
+      "evidence_reference": null
+    }
+  ],
+  "contradictions": [],
+  "missing_required_fields": [],
+  "duplicate_suspected": false,
+  "rejection_reasons": []
+}

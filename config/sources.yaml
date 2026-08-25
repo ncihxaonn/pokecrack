@@ -1,0 +1,205 @@
+version: 1
+default: disabled
+sources:
+  example.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 1
+    max_pages_per_run: 1
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 30
+    version: "1"
+    config: {}
+    reason: Public IANA example page used only by the bounded fixture-safe adapter.
+    routes: [static]
+    adapter: example_public
+    metadata_only: true
+    requests_per_minute: 6
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+  disabled.example:
+    enabled: false
+    collector: disabled
+    access_mode: disabled
+    robots_policy: respect
+    min_delay_seconds: 60
+    max_pages_per_run: 1
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 0
+    version: "1"
+    config: {}
+    reason: Explicit disabled-policy fixture proving deny-by-default behavior.
+    routes: [static]
+    adapter: disabled_example
+    metadata_only: true
+    requests_per_minute: 1
+    retain_raw_html: false
+  api.tcgdex.net:
+    enabled: true
+    collector: official_api
+    access_mode: official_api
+    robots_policy: not_applicable
+    min_delay_seconds: 2
+    max_pages_per_run: 50
+    max_concurrency: 2
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 365
+    version: "1"
+    config:
+      collector_version: tcgdex-v2
+    reason: Official public catalog API; cache validators and incremental sync required.
+    routes: [catalog]
+    adapter: tcgdex
+    metadata_only: true
+    requests_per_minute: 30
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://tcgdex.dev/
+  youtube.googleapis.com:
+    enabled: true
+    collector: official_api
+    access_mode: official_api
+    robots_policy: not_applicable
+    min_delay_seconds: 2
+    max_pages_per_run: 5
+    max_concurrency: 2
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 90
+    version: "1"
+    config:
+      collector_version: youtube-data-v3
+      media_download: false
+    reason: YouTube Data API metadata discovery only; video downloads are prohibited.
+    routes: [youtube]
+    adapter: youtube_data_api
+    metadata_only: true
+    requests_per_minute: 30
+    cache_ttl_seconds: 21600
+    credentials_required: true
+    retain_raw_html: false
+    terms_url: https://developers.google.com/youtube/terms/api-services-terms-of-service
+  youtube.com:
+    enabled: true
+    collector: official_api
+    access_mode: official_api
+    robots_policy: not_applicable
+    min_delay_seconds: 2
+    max_pages_per_run: 5
+    max_concurrency: 2
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 90
+    version: "1"
+    config:
+      collector_version: youtube-data-v3
+      media_download: false
+    reason: Canonical metadata identity for Data API results; no page or media fetching.
+    routes: [youtube]
+    adapter: youtube_metadata
+    include_subdomains: true
+    metadata_only: true
+    requests_per_minute: 30
+    cache_ttl_seconds: 21600
+    credentials_required: true
+    retain_raw_html: false
+  dynamic.example:
+    enabled: true
+    collector: scrapling_dynamic
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 15
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: true
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 7
+    version: "1"
+    config:
+      collector_version: dynamic-fixture-v1
+    reason: Fixture-only dynamic adapter contract; no live target or bypass behavior.
+    routes: [dynamic]
+    adapter: dynamic_fixture
+    metadata_only: true
+    requests_per_minute: 4
+    cache_ttl_seconds: 3600
+    retain_raw_html: false
+  reddit.com:
+    enabled: false
+    collector: opencli_authenticated
+    access_mode: authenticated
+    robots_policy: not_applicable
+    min_delay_seconds: 20
+    max_pages_per_run: 3
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: true
+    browser_profile: social-western
+    statistics_eligible_default: false
+    retention_days: 30
+    version: "1"
+    config:
+      collector_version: opencli-reddit-v1
+      max_results_per_run: 100
+    reason: Requires an owner-authenticated OpenCLI profile; disabled until login is verified.
+    routes: [opencli]
+    adapter: opencli_reddit
+    include_subdomains: true
+    metadata_only: true
+    requests_per_minute: 3
+    credentials_required: true
+    retain_raw_html: false
+  manual.pokecrack.local:
+    enabled: true
+    collector: manual_import
+    access_mode: manual
+    robots_policy: not_applicable
+    min_delay_seconds: 0
+    max_pages_per_run: 100
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 90
+    version: "1"
+    config:
+      collector_version: manual-import-v1
+    reason: Local bounded CSV, JSONL, and OpenCLI fixture imports only.
+    routes: [manual]
+    adapter: manual_import
+    metadata_only: true
+    requests_per_minute: 600
+    retain_raw_html: false
+  access-control-bypass.example:
+    enabled: false
+    collector: disabled
+    access_mode: disabled
+    robots_policy: respect
+    min_delay_seconds: 60
+    max_pages_per_run: 1
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 0
+    version: "1"
+    config: {}
+    reason: Collection would require an access-control or CAPTCHA bypass, which is prohibited.
+    routes: [static, dynamic, opencli]
+    adapter: prohibited_bypass
+    metadata_only: true
+    requests_per_minute: 1
+    retain_raw_html: false

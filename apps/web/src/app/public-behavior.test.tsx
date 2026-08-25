@@ -1,0 +1,106 @@
+import React from "react";
+import { readFileSync } from "node:fs";
+import path from "node:path";
+import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { BRAND } from "@/config/brand";
+import {
+  BatchDetailView,
+  BatchesView,
+  MethodologyView,
+  RegionDetailView,
+  RegionsView,
+  RetailerDetailView,
+  RetailersView,
+  SetDetailView,
+  SetsView,
+  SourcesView,
+} from "@/components/dashboard/public-views";
+import { ObservationStats, PublicUnavailable } from "@/components/ui/dashboard-ui";
+import { DEMO_PUBLIC_DATA } from "@/data/demo";
+import { filterAndSortSets } from "./_lib/sets-query";
+
+afterEach(cleanup);
+
+describe("public route behavior", () => {
+  it("filters sets case-insensitively and keeps withheld rates last", () => {
+    expect(filterAndSortSets(DEMO_PUBLIC_DATA.sets, "TWILIGHT", "name").map((set) => set.slug)).toEqual(["twilight-masquerade"]);
+    const byRate = filterAndSortSets(DEMO_PUBLIC_DATA.sets, "", "rate");
+    expect(byRate.at(-1)?.hitRate).toBeNull();
+    expect(byRate[0]?.slug).toBe("surging-sparks");
+  });
+
+  it("renders explicit live-unavailable and empty results without a demo substitution", () => {
+    const { unmount } = render(<PublicUnavailable title="Set data is unavailable" message="Live aggregate data is currently unavailable. Demo fixtures were not substituted." code="upstream-unavailable" />);
+    expect(screen.getByText(/Demo fixtures were not substituted/)).toBeVisible();
+    expect(screen.queryByText(BRAND.demoNotice)).not.toBeInTheDocument();
+    unmount();
+
+    render(<SetsView data={{ ...DEMO_PUBLIC_DATA, sets: [] }} sets={[]} query="missing" sort="packs" synthetic />);
+    expect(screen.getByText("No published sets match this search.")).toBeVisible();
+  });
+
+  it("uses the exact individual disclaimer on every relevant list and detail view", () => {
+    const set = DEMO_PUBLIC_DATA.sets[0]!;
+    const region = DEMO_PUBLIC_DATA.regions[0]!;
+    const retailer = DEMO_PUBLIC_DATA.retailers[0]!;
+    const batch = DEMO_PUBLIC_DATA.batches[0]!;
+    const views = [
+      <SetsView key="sets" data={DEMO_PUBLIC_DATA} sets={DEMO_PUBLIC_DATA.sets} query="" sort="packs" synthetic />,
+      <SetDetailView key="set" data={DEMO_PUBLIC_DATA} set={set} synthetic />,
+      <RegionsView key="regions" data={DEMO_PUBLIC_DATA} synthetic />,
+      <RegionDetailView key="region" data={DEMO_PUBLIC_DATA} region={region} synthetic />,
+      <RetailersView key="retailers" data={DEMO_PUBLIC_DATA} synthetic />,
+      <RetailerDetailView key="retailer" data={DEMO_PUBLIC_DATA} retailer={retailer} synthetic />,
+      <BatchesView key="batches" data={DEMO_PUBLIC_DATA} synthetic />,
+      <BatchDetailView key="batch" data={DEMO_PUBLIC_DATA} batch={batch} synthetic />,
+    ];
+    for (const view of views) {
+      const rendered = render(view);
+      expect(screen.getByText(BRAND.individualPackDisclaimer)).toBeVisible();
+      rendered.unmount();
+    }
+    const batchList = render(<BatchesView data={DEMO_PUBLIC_DATA} synthetic />);
+    expect(screen.getByText(BRAND.batchDisclaimer)).toBeVisible();
+    batchList.unmount();
+    render(<BatchDetailView data={DEMO_PUBLIC_DATA} batch={batch} synthetic />);
+    expect(screen.getByText(BRAND.batchDisclaimer)).toBeVisible();
+  });
+
+  it("shows baseline, posterior, and independent-source context with observed rates", () => {
+    render(<ObservationStats metric={DEMO_PUBLIC_DATA.sets[0]!} />);
+
+    expect(screen.getByText("Independent sources")).toBeVisible();
+    expect(screen.getByText("Baseline rate")).toBeVisible();
+    expect(screen.getByText("Posterior mean")).toBeVisible();
+  });
+
+  it("covers the complete methodology and explicit source boundaries", () => {
+    const { unmount } = render(<MethodologyView data={DEMO_PUBLIC_DATA} synthetic />);
+    for (const phrase of ["AI Extractor", "independent AI Validator", "Dedup and cross-post checks", "Statistics eligibility", "Empirical Bayes interval", "90% credible interval", "Rate display and comparative signals both require minimum source diversity", "Social selection bias", "Regional correlation does not establish causation", "Retailer inventory or attribution is not pull evidence", "Version and update frequency"]) {
+      expect(screen.getByText(new RegExp(phrase, "i"))).toBeVisible();
+    }
+    unmount();
+
+    render(<SourcesView data={DEMO_PUBLIC_DATA} synthetic />);
+    for (const name of ["Official APIs", "RSS", "Sitemaps", "Public JSON", "Policy-approved public pages", "Authenticated OpenCLI adapters", "Admin CSV/JSONL imports", "Authorized media"]) expect(screen.getByRole("heading", { name })).toBeVisible();
+    expect(screen.getByText(/No login or CAPTCHA bypass/)).toBeVisible();
+    expect(screen.getByText(/No proxy pools/)).toBeVisible();
+    expect(screen.getByText(/No long-term full third-party video retention/)).toBeVisible();
+    for (const link of screen.getAllByRole("link", { name: /Source reference/ })) {
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    }
+  });
+
+  it("keeps dynamic detail misses wired to notFound and provides a dynamic ECharts enhancement with table fallback", () => {
+    const detailPages = ["sets/[slug]/page.tsx", "regions/[slug]/page.tsx", "retailers/[slug]/page.tsx", "batches/[code]/page.tsx"];
+    for (const page of detailPages) expect(readFileSync(path.resolve(process.cwd(), "src/app", page), "utf8"), page).toContain("notFound()");
+    const chart = readFileSync(path.resolve(process.cwd(), "src/components/charts/trend-chart.tsx"), "utf8");
+    expect(chart).toContain('"use client"');
+    expect(chart).toContain('import("echarts")');
+    expect(chart).toContain("tooltip");
+    expect(readFileSync(path.resolve(process.cwd(), "src/components/dashboard/home-view.tsx"), "utf8")).toContain("Observed trend values");
+  });
+});

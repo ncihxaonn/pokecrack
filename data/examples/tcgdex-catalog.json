@@ -1,0 +1,19 @@
+{
+  "sets": [
+    {
+      "id": "sv2",
+      "name": "Paldea Evolved",
+      "aliases": ["Paldea"],
+      "cards": [
+        {
+          "id": "sv2-203",
+          "set_id": "sv2",
+          "name": "Magikarp",
+          "localId": "203/193",
+          "rarity": "Special Illustration Rare",
+          "aliases": []
+        }
+      ]
+    }
+  ]
+}

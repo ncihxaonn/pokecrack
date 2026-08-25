@@ -1,0 +1,19 @@
+services:
+  auth-browser:
+    build:
+      context: .
+    network_mode: host
+    environment:
+      POKECRACK_BRIDGE_VERSION: "SET_PINNED_EXTENSION_VERSION"
+      POKECRACK_OPENCLI_VERSION: "SET_PINNED_OPENCLI_VERSION"
+      POKECRACK_OPENCLI_SHA256: "SET_PINNED_OPENCLI_EXECUTABLE_SHA256"
+      POKECRACK_CDP_ENDPOINT: "127.0.0.1:9222"
+      POKECRACK_DAEMON_ENDPOINT: "127.0.0.1:19825"
+      POKECRACK_VNC_ENDPOINT: "127.0.0.1:5900"
+      POKECRACK_NOVNC_ENDPOINT: "127.0.0.1:6080"
+    volumes:
+      - /var/lib/pokecrack-browser/profiles:/var/lib/pokecrack-browser/profiles
+      - /opt/pokecrack/opencli-extension:/opt/pokecrack/opencli-extension:ro
+      - /opt/pokecrack/opencli:/opt/pokecrack/opencli:ro
+      - /run/secrets/pokecrack-vnc-password:/run/secrets/vnc_password:ro
+    restart: unless-stopped

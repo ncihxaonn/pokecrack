@@ -1,0 +1,20 @@
+{
+  "name": "pokecrack",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Free, non-commercial Pokémon TCG observed opening data dashboard",
+  "packageManager": "pnpm@11.23.0",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "./scripts/run-pnpm.sh --filter @pokecrack/web dev",
+    "build": "./scripts/run-pnpm.sh -r --if-present build",
+    "lint": "./scripts/run-pnpm.sh -r --if-present lint",
+    "typecheck": "./scripts/run-pnpm.sh -r --if-present typecheck",
+    "test": "./scripts/run-pnpm.sh -r --if-present test",
+    "test:ci": "./scripts/run-pnpm.sh -r --if-present test:ci",
+    "format:check": "./scripts/run-pnpm.sh -r --if-present format:check",
+    "verify:repo": "python3 scripts/verify_repository.py ."
+  }
+}

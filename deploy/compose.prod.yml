@@ -1,0 +1,257 @@
+name: pokecrack
+
+x-worker-build: &worker-build
+  context: ..
+  dockerfile: deploy/Dockerfile.worker
+  args:
+    PYTHON_IMAGE: "${PYTHON_IMAGE:-python:3.13.5-slim-bookworm}"
+    UV_VERSION: "${UV_VERSION:-0.11.6}"
+
+x-worker-environment: &worker-environment
+  DATA_MODE: "${DATA_MODE:-demo}"
+  LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+  PYTHONUNBUFFERED: "1"
+  SUPABASE_DB_URL: "${SUPABASE_DB_URL:-}"
+  WORKER_POLL_SECONDS: "${WORKER_POLL_SECONDS:-10}"
+  WORKER_MAX_CONCURRENCY: "${WORKER_MAX_CONCURRENCY:-2}"
+
+x-worker-base: &worker-base
+  image: "${POKECRACK_WORKER_IMAGE:-pokecrack-worker}:${DEPLOY_SHA:?DEPLOY_SHA must be an exact 40-character Git commit}"
+  build: *worker-build
+  restart: unless-stopped
+  init: true
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges:true
+  tmpfs:
+    - /tmp:rw,noexec,nosuid,nodev,size=64m,mode=1777
+  networks:
+    - internal
+    - egress
+  environment: *worker-environment
+  healthcheck:
+    test: ["CMD", "pokecrack-worker", "health"]
+    interval: 30s
+    timeout: 10s
+    retries: 3
+    start_period: 30s
+  stop_grace_period: 30s
+
+services:
+  collector:
+    <<: *worker-base
+    command: ["collector"]
+    environment:
+      <<: *worker-environment
+      WORKER_ID: "${COLLECTOR_WORKER_ID:-collector-1}"
+      WORKER_ROLE: collector
+      YOUTUBE_API_KEY: '${YOUTUBE_API_KEY:-}'
+      SCRAPLING_ENABLED: "${SCRAPLING_ENABLED:-true}"
+      SCRAPLING_HTTP_CONCURRENCY: "${SCRAPLING_HTTP_CONCURRENCY:-4}"
+      SCRAPLING_PER_DOMAIN_CONCURRENCY: "${SCRAPLING_PER_DOMAIN_CONCURRENCY:-2}"
+      SCRAPLING_BROWSER_CONCURRENCY: "${SCRAPLING_BROWSER_CONCURRENCY:-1}"
+      SCRAPLING_REQUEST_TIMEOUT_SECONDS: "${SCRAPLING_REQUEST_TIMEOUT_SECONDS:-30}"
+      SCRAPLING_DEFAULT_DELAY_SECONDS: "${SCRAPLING_DEFAULT_DELAY_SECONDS:-8}"
+      SCRAPLING_DYNAMIC_ENABLED: "${SCRAPLING_DYNAMIC_ENABLED:-false}"
+      SCRAPLING_SAVE_RAW_HTML: "${SCRAPLING_SAVE_RAW_HTML:-false}"
+      SCRAPLING_MAX_RAW_TEXT_CHARS: "${SCRAPLING_MAX_RAW_TEXT_CHARS:-20000}"
+    cpus: "${COLLECTOR_CPUS:-0.35}"
+    mem_limit: "${COLLECTOR_MEMORY:-384m}"
+    pids_limit: 256
+
+  auth-browser:
+    image: "${POKECRACK_AUTH_BROWSER_IMAGE:-pokecrack-auth-browser}:${DEPLOY_SHA:?DEPLOY_SHA must be an exact 40-character Git commit}"
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.auth-browser
+      args:
+        PYTHON_IMAGE: "${PYTHON_IMAGE:-python:3.13.5-slim-bookworm}"
+        NODE_IMAGE: "${NODE_IMAGE:-node:22.13.0-bookworm-slim}"
+        OPENCLI_VERSION: "${OPENCLI_VERSION:-1.8.7}"
+    restart: unless-stopped
+    init: true
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    shm_size: "${AUTH_BROWSER_SHM_SIZE:-1g}"
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=512m,mode=1777
+      - /run:rw,nosuid,nodev,size=32m,mode=0700,uid=10001,gid=10001
+      - /home/browser/.cache:rw,noexec,nosuid,nodev,size=256m,mode=0700,uid=10001,gid=10001
+      - /home/browser/.opencli:rw,noexec,nosuid,nodev,size=64m,mode=0700,uid=10001,gid=10001
+    networks:
+      - internal
+      - egress
+    ports:
+      - "127.0.0.1:${NOVNC_HOST_PORT:-6080}:6080"
+    environment:
+      CHROMIUM_PROFILE_ROOT: /profiles
+      CHROMIUM_PROFILE: "${CHROMIUM_PROFILE:-research-general}"
+      CHROMIUM_CDP_HOST: 127.0.0.1
+      CHROMIUM_CDP_PORT: "${CHROMIUM_CDP_PORT:-9222}"
+      CHROMIUM_EXECUTABLE_PATH: /usr/bin/chromium
+      DISPLAY: ":99"
+      NOVNC_BIND_HOST: 0.0.0.0
+      NOVNC_PORT: "6080"
+      NOVNC_PASSWORD_FILE: /run/secrets/novnc_password
+      OPENCLI_ENABLED: "${OPENCLI_ENABLED:-false}"
+      OPENCLI_VERSION: "${OPENCLI_VERSION:-}"
+      OPENCLI_EXTENSION_VERSION: "${OPENCLI_EXTENSION_VERSION:-}"
+      OPENCLI_EXTENSION_DIR: /opt/pokecrack/opencli-extension/current
+      OPENCLI_DAEMON_HOST: 127.0.0.1
+      OPENCLI_DAEMON_PORT: "${OPENCLI_DAEMON_PORT:-19825}"
+      OPENCLI_COMMAND_TIMEOUT_SECONDS: "${OPENCLI_COMMAND_TIMEOUT_SECONDS:-120}"
+      OPENCLI_MAX_OUTPUT_BYTES: "${OPENCLI_MAX_OUTPUT_BYTES:-1048576}"
+      POKECRACK_BROWSER_PROFILE_ROOT: /profiles
+      POKECRACK_BROWSER_RUNTIME_ROOT: /run/pokecrack-browser
+      POKECRACK_BRIDGE_EXTENSION_PATH: /opt/pokecrack/opencli-extension/current
+      POKECRACK_BRIDGE_VERSION: "${OPENCLI_EXTENSION_VERSION:-}"
+      POKECRACK_CDP_HOST: 127.0.0.1
+      POKECRACK_CDP_PORT: "${CHROMIUM_CDP_PORT:-9222}"
+      POKECRACK_DAEMON_HOST: 127.0.0.1
+      POKECRACK_DAEMON_PORT: "${OPENCLI_DAEMON_PORT:-19825}"
+      POKECRACK_ADAPTER_ROOT: /opt/pokecrack/auth-browser/adapters
+      POKECRACK_CHROMIUM_EXECUTABLE: /usr/bin/chromium
+    secrets:
+      - source: novnc_password
+        target: novnc_password
+        uid: "10001"
+        gid: "10001"
+        mode: 0400
+    volumes:
+      - browser_profiles:/profiles
+      - type: bind
+        source: "${OPENCLI_EXTENSION_DIR:-/opt/pokecrack/opencli-extension}"
+        target: /opt/pokecrack/opencli-extension
+        read_only: true
+        bind:
+          create_host_path: false
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/auth-browser-healthcheck"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 45s
+    stop_grace_period: 30s
+    cpus: "${AUTH_BROWSER_CPUS:-0.65}"
+    mem_limit: "${AUTH_BROWSER_MEMORY:-1536m}"
+    pids_limit: 512
+
+  ai-worker:
+    <<: *worker-base
+    command: ["ai-worker"]
+    environment:
+      <<: *worker-environment
+      WORKER_ID: "${AI_WORKER_ID:-ai-worker-1}"
+      WORKER_ROLE: ai-worker
+      AI_PROVIDER: "${AI_PROVIDER:-fixture}"
+      AI_BASE_URL: "${AI_BASE_URL:-https://api.openai.com/v1}"
+      AI_API_KEY: '${AI_API_KEY:-}'
+      AI_EXTRACT_MODEL: "${AI_EXTRACT_MODEL:-}"
+      AI_VALIDATE_MODEL: "${AI_VALIDATE_MODEL:-}"
+      AI_ESCALATE_MODEL: "${AI_ESCALATE_MODEL:-}"
+      AI_DAILY_BUDGET_AUD: "${AI_DAILY_BUDGET_AUD:-5}"
+      AI_MONTHLY_SOFT_BUDGET_AUD: "${AI_MONTHLY_SOFT_BUDGET_AUD:-50}"
+      AI_INPUT_PER_MILLION_AUD: "${AI_INPUT_PER_MILLION_AUD:-0}"
+      AI_OUTPUT_PER_MILLION_AUD: "${AI_OUTPUT_PER_MILLION_AUD:-0}"
+      AI_MAX_OUTPUT_TOKENS: "${AI_MAX_OUTPUT_TOKENS:-4096}"
+      AI_MIN_ACCEPT_CONFIDENCE: "${AI_MIN_ACCEPT_CONFIDENCE:-0.92}"
+      AI_MIN_FIELD_CONFIDENCE: "${AI_MIN_FIELD_CONFIDENCE:-0.85}"
+      AI_MAX_SOURCE_ITEMS_PER_RUN: "${AI_MAX_SOURCE_ITEMS_PER_RUN:-100}"
+      AI_MAX_TEXT_CHARS: "${AI_MAX_TEXT_CHARS:-20000}"
+      AI_MAX_IMAGES: "${AI_MAX_IMAGES:-6}"
+      AI_MAX_KEYFRAMES: "${AI_MAX_KEYFRAMES:-12}"
+      AI_MAX_VIDEO_SECONDS: "${AI_MAX_VIDEO_SECONDS:-900}"
+      AI_CONCURRENCY: "${AI_CONCURRENCY:-2}"
+    cpus: "${AI_WORKER_CPUS:-0.40}"
+    mem_limit: "${AI_WORKER_MEMORY:-768m}"
+    pids_limit: 256
+
+  aggregator:
+    <<: *worker-base
+    command: ["aggregator"]
+    environment:
+      <<: *worker-environment
+      WORKER_ID: "${AGGREGATOR_WORKER_ID:-aggregator-1}"
+      WORKER_ROLE: aggregator
+      BAYES_PRIOR_STRENGTH: "${BAYES_PRIOR_STRENGTH:-50}"
+      MIN_RATE_DISPLAY_PACKS: "${MIN_RATE_DISPLAY_PACKS:-30}"
+      MIN_SIGNAL_PACKS: "${MIN_SIGNAL_PACKS:-200}"
+      MIN_SIGNAL_SOURCES: "${MIN_SIGNAL_SOURCES:-3}"
+      MIN_WATCH_PROBABILITY: "${MIN_WATCH_PROBABILITY:-0.90}"
+      MIN_ANOMALY_PROBABILITY: "${MIN_ANOMALY_PROBABILITY:-0.95}"
+      MIN_PRACTICAL_UPLIFT: "${MIN_PRACTICAL_UPLIFT:-0.20}"
+    cpus: "${AGGREGATOR_CPUS:-0.20}"
+    mem_limit: "${AGGREGATOR_MEMORY:-384m}"
+    pids_limit: 128
+
+  scheduler:
+    <<: *worker-base
+    command: ["scheduler"]
+    environment:
+      <<: *worker-environment
+      WORKER_ID: "${SCHEDULER_WORKER_ID:-scheduler-1}"
+      WORKER_ROLE: scheduler
+      SCHEDULE_OFFICIAL_API: "${SCHEDULE_OFFICIAL_API:-0 */6 * * *}"
+      SCHEDULE_PUBLIC_COLLECTION: "${SCHEDULE_PUBLIC_COLLECTION:-15 */6 * * *}"
+      SCHEDULE_AUTH_COLLECTION: "${SCHEDULE_AUTH_COLLECTION:-30 */12 * * *}"
+      SCHEDULE_CATALOG_SYNC: "${SCHEDULE_CATALOG_SYNC:-0 2 * * *}"
+      SCHEDULE_AGGREGATES: "${SCHEDULE_AGGREGATES:-5 * * * *}"
+      SCHEDULE_CLEANUP: "${SCHEDULE_CLEANUP:-30 3 * * *}"
+      SCHEDULE_BACKUP: "${SCHEDULE_BACKUP:-0 4 * * *}"
+      SCHEDULE_BROWSER_CHECK: "${SCHEDULE_BROWSER_CHECK:-*/30 * * * *}"
+    cpus: "${SCHEDULER_CPUS:-0.10}"
+    mem_limit: "${SCHEDULER_MEMORY:-192m}"
+    pids_limit: 96
+
+  watchdog:
+    <<: *worker-base
+    command: ["watchdog"]
+    environment:
+      <<: *worker-environment
+      WORKER_ID: "${WATCHDOG_WORKER_ID:-watchdog-1}"
+      WORKER_ROLE: watchdog
+      BACKUP_MARKER_PATH: /backups/.last-successful-backup
+      DATABASE_WARNING_MB: "${DATABASE_WARNING_MB:-350}"
+      DATABASE_CRITICAL_MB: "${DATABASE_CRITICAL_MB:-425}"
+      STORAGE_WARNING_MB: "${STORAGE_WARNING_MB:-700}"
+      STORAGE_CRITICAL_MB: "${STORAGE_CRITICAL_MB:-850}"
+      MONTHLY_EGRESS_WARNING_GB: "${MONTHLY_EGRESS_WARNING_GB:-3.5}"
+      WATCHDOG_EMAIL_TO: "${WATCHDOG_EMAIL_TO:-}"
+      SMTP_HOST: "${SMTP_HOST:-}"
+      SMTP_PORT: "${SMTP_PORT:-587}"
+      SMTP_USERNAME: "${SMTP_USERNAME:-}"
+      SMTP_PASSWORD: '${SMTP_PASSWORD:-}'
+      SMTP_FROM: "${SMTP_FROM:-}"
+    volumes:
+      - backups:/backups:ro
+    cpus: "${WATCHDOG_CPUS:-0.10}"
+    mem_limit: "${WATCHDOG_MEMORY:-192m}"
+    pids_limit: 96
+
+networks:
+  internal:
+    internal: true
+  egress:
+    driver: bridge
+
+volumes:
+  browser_profiles:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${CHROMIUM_PROFILE_ROOT_HOST:-/opt/pokecrack/browser-profiles}"
+  backups:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: "${BACKUP_DIR:-/opt/pokecrack/backups}"
+secrets:
+  novnc_password:
+    file: "${NOVNC_PASSWORD_FILE:-/etc/pokecrack/novnc-password}"

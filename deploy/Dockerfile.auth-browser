@@ -1,0 +1,62 @@
+# syntax=docker/dockerfile:1.7
+ARG PYTHON_IMAGE=python:3.13.5-slim-bookworm
+ARG NODE_IMAGE=node:22.13.0-bookworm-slim
+ARG OPENCLI_VERSION=1.8.7
+
+FROM ${NODE_IMAGE} AS opencli-runtime
+ARG OPENCLI_VERSION
+RUN npm install --global --ignore-scripts "@jackwener/opencli@${OPENCLI_VERSION}" \
+    && opencli --version
+
+FROM ${PYTHON_IMAGE}
+ARG OPENCLI_VERSION
+
+LABEL org.opencontainers.image.title="pokecrack-auth-browser" \
+      org.opencontainers.image.description="Headed Chromium and loopback-bridged noVNC runtime" \
+      com.pokecrack.runtime="auth-browser"
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/opt/pokecrack/auth-browser/src
+
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends \
+       ca-certificates \
+       chromium \
+       curl \
+       fonts-liberation \
+       novnc \
+       procps \
+       websockify \
+       x11vnc \
+       xauth \
+       xvfb \
+    && rm -rf /var/lib/apt/lists/* \
+    && groupadd --gid 10001 browser \
+    && useradd --uid 10001 --gid 10001 --create-home --home-dir /home/browser --shell /usr/sbin/nologin browser \
+    && install -d -o 10001 -g 10001 -m 0700 \
+       /home/browser/.cache \
+       /profiles \
+       /run/pokecrack-browser
+
+COPY --from=opencli-runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=opencli-runtime /usr/local/lib/node_modules/@jackwener/opencli /usr/local/lib/node_modules/@jackwener/opencli
+RUN ln -s /usr/local/lib/node_modules/@jackwener/opencli/dist/main.js /usr/local/bin/opencli \
+    && opencli --version | grep -Fx -- "${OPENCLI_VERSION}"
+RUN python3 -m pip install --no-cache-dir "playwright==1.55.0"
+
+COPY services/auth-browser/src/pokecrack_browser /opt/pokecrack/auth-browser/src/pokecrack_browser
+COPY services/auth-browser/adapters /opt/pokecrack/auth-browser/adapters
+COPY deploy/lib/prepare_extension.py /usr/local/lib/pokecrack/prepare_extension.py
+COPY deploy/auth-browser-entrypoint.sh /usr/local/bin/auth-browser-entrypoint
+COPY deploy/auth-browser-healthcheck.sh /usr/local/bin/auth-browser-healthcheck
+RUN chmod 0755 \
+      /usr/local/bin/auth-browser-entrypoint \
+      /usr/local/bin/auth-browser-healthcheck \
+      /usr/local/lib/pokecrack/prepare_extension.py
+
+USER 10001:10001
+EXPOSE 6080
+STOPSIGNAL SIGTERM
+ENTRYPOINT ["/usr/local/bin/auth-browser-entrypoint"]
