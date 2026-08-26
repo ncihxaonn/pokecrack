@@ -8,6 +8,7 @@ from scripts.verify_repository import (
     find_forbidden_artifacts,
     find_forbidden_dependencies,
     find_large_files,
+    find_missing_gitleaks_pr_permissions,
     find_probable_secrets,
     find_unpinned_actions,
 )
@@ -79,6 +80,41 @@ class RepositoryGuardTests(unittest.TestCase):
                 encoding="utf-8",
             )
             self.assertEqual([".github/workflows/ci.yml:2:actions/checkout@v4"], find_unpinned_actions(root))
+
+    def test_gitleaks_pr_workflow_requires_pull_request_read_permission(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            workflow = root / ".github/workflows/ci.yml"
+            workflow.parent.mkdir(parents=True, exist_ok=True)
+            workflow.write_text(
+                "\n".join(
+                    (
+                        "on:",
+                        "  pull_request:",
+                        "permissions:",
+                        "  contents: read",
+                        "jobs:",
+                        "  scan:",
+                        "    steps:",
+                        "      - uses: gitleaks/gitleaks-action@" + "a" * 40,
+                    )
+                ),
+                encoding="utf-8",
+            )
+
+            self.assertEqual(
+                [".github/workflows/ci.yml"],
+                find_missing_gitleaks_pr_permissions(root),
+            )
+
+            workflow.write_text(
+                workflow.read_text(encoding="utf-8").replace(
+                    "  contents: read",
+                    "  contents: read\n  pull-requests: read",
+                ),
+                encoding="utf-8",
+            )
+            self.assertEqual([], find_missing_gitleaks_pr_permissions(root))
 
     def test_large_files_are_rejected_at_configured_limit(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
