@@ -1,6 +1,6 @@
 """PostgreSQL-backed and fixture-safe background job queue."""
 
-from .models import Job, JobStatus
+from .models import CompletionEffect, Job, JobStatus
 from .postgres import CLAIM_SQL, PostgresJobRepository, QueryExecutor
 from .repository import (
     InMemoryJobRepository,
@@ -11,6 +11,7 @@ from .repository import (
 
 __all__ = [
     "CLAIM_SQL",
+    "CompletionEffect",
     "InMemoryJobRepository",
     "Job",
     "JobNotFoundError",

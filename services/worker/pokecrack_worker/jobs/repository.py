@@ -9,7 +9,7 @@ from threading import RLock
 from typing import Any
 from uuid import uuid4
 
-from .models import Job, JobStatus
+from .models import CompletionEffect, Job, JobStatus
 
 
 class JobRepositoryError(RuntimeError):
@@ -83,6 +83,9 @@ class InMemoryJobRepository:
                     self._jobs[job_id] = replace(
                         job,
                         status=JobStatus.DEAD,
+                        lease_generation=(
+                            job.lease_generation + 1 if lease_expired else job.lease_generation
+                        ),
                         leased_by=None,
                         leased_at=None,
                         lease_expires_at=None,
@@ -124,6 +127,7 @@ class InMemoryJobRepository:
                 selected,
                 status=JobStatus.RUNNING,
                 attempts=selected.attempts + 1,
+                lease_generation=selected.lease_generation + 1,
                 leased_by=worker_id,
                 leased_at=now,
                 lease_expires_at=now + lease_for,
@@ -138,11 +142,17 @@ class InMemoryJobRepository:
         job_id: str,
         *,
         worker_id: str,
+        lease_generation: int,
         now: datetime,
         lease_for: timedelta,
     ) -> Job:
         with self._lock:
-            job = self._active_lease(job_id, worker_id, now=now)
+            job = self._active_lease(
+                job_id,
+                worker_id,
+                lease_generation=lease_generation,
+                now=now,
+            )
             heartbeat = replace(
                 job,
                 heartbeat_at=now,
@@ -157,11 +167,17 @@ class InMemoryJobRepository:
         job_id: str,
         *,
         worker_id: str,
+        lease_generation: int,
         now: datetime,
         retry_at: datetime,
     ) -> Job:
         with self._lock:
-            job = self._active_lease(job_id, worker_id, now=now)
+            job = self._active_lease(
+                job_id,
+                worker_id,
+                lease_generation=lease_generation,
+                now=now,
+            )
             paused = replace(
                 job,
                 status=JobStatus.PENDING,
@@ -178,9 +194,26 @@ class InMemoryJobRepository:
             self._jobs[job_id] = paused
             return paused
 
-    def complete(self, job_id: str, *, worker_id: str, now: datetime) -> Job:
+    def complete(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        effect: CompletionEffect | None = None,
+    ) -> Job:
         with self._lock:
-            job = self._active_lease(job_id, worker_id, now=now)
+            if effect is not None:
+                raise JobRepositoryError(
+                    "the in-memory repository cannot commit database completion effects"
+                )
+            job = self._active_lease(
+                job_id,
+                worker_id,
+                lease_generation=lease_generation,
+                now=now,
+            )
             completed = replace(
                 job,
                 status=JobStatus.COMPLETED,
@@ -239,10 +272,16 @@ class InMemoryJobRepository:
         error: str,
         *,
         worker_id: str,
+        lease_generation: int,
         now: datetime,
     ) -> Job:
         with self._lock:
-            job = self._active_lease(job_id, worker_id, now=now)
+            job = self._active_lease(
+                job_id,
+                worker_id,
+                lease_generation=lease_generation,
+                now=now,
+            )
             exhausted = job.attempts >= job.max_attempts
             status = JobStatus.DEAD if exhausted else JobStatus.PENDING
             backoff_seconds = min(3_600, 30 * (2 ** max(0, job.attempts - 1)))
@@ -286,17 +325,28 @@ class InMemoryJobRepository:
                 retried += 1
         return retried
 
-    def _active_lease(self, job_id: str, worker_id: str, *, now: datetime) -> Job:
-        job = self._leased(job_id, worker_id)
+    def _active_lease(
+        self,
+        job_id: str,
+        worker_id: str,
+        *,
+        lease_generation: int,
+        now: datetime,
+    ) -> Job:
+        job = self._leased(job_id, worker_id, lease_generation=lease_generation)
         if job.lease_expires_at is None or job.lease_expires_at <= now:
             raise LeaseLostError(job_id)
         return job
 
-    def _leased(self, job_id: str, worker_id: str) -> Job:
+    def _leased(self, job_id: str, worker_id: str, *, lease_generation: int) -> Job:
         try:
             job = self._jobs[job_id]
         except KeyError as error:
             raise JobNotFoundError(job_id) from error
-        if job.status is not JobStatus.RUNNING or job.leased_by != worker_id:
+        if (
+            job.status is not JobStatus.RUNNING
+            or job.leased_by != worker_id
+            or job.lease_generation != lease_generation
+        ):
             raise LeaseLostError(job_id)
         return job

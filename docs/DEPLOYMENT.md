@@ -1,6 +1,6 @@
 # Deployment
 
-No external deployment was performed while implementing this repository. The steps below are an operator runbook; completion must be evidenced with account-specific IDs/URLs, exact SHA and health output.
+The approved Personal targets currently host a private GitHub repository, an empty Supabase schema through migration `20260825000600`, and a Vercel Demo-mode Web deployment. No VPS/live collection deployment was performed. The steps below remain an operator runbook; completion must be evidenced with account-specific IDs/URLs, exact SHA and health output.
 
 > **Current release blocker:** the single-process live composition currently supports only the scheduler's cleanup schedule and the watchdog cleanup handler. Collector, AI-worker, and aggregator roles deliberately fail closed with exit code 78. Do not perform a live VPS deployment until their persistent PostgreSQL handlers and end-to-end data path are wired and integration-tested. The steps below are an account-owner runbook, not evidence that deployment occurred.
 
@@ -15,7 +15,7 @@ Keep `DATA_MODE=demo`, `AI_PROVIDER=fixture`, `OPENCLI_ENABLED=false`, public si
 1. Create a dedicated Supabase project; record region/project reference privately.
 2. Test all migrations and pgTAP locally in Docker-capable CI.
 3. Take/verify a backup before production changes.
-4. Run `.github/workflows/migrate-database.yml` manually against a protected environment. `confirm_sha` must equal `GITHUB_SHA`; supply the fresh backup reference. Before any remote push, the workflow reads the applied migration versions, audits only pending migrations, requires an exact reasoned fingerprint for every reviewed `DELETE`, rejects `DROP`/`TRUNCATE`, builds the schema locally, and rejects generated TypeScript drift. It previews and applies forward migrations only—no automatic destructive rollback/reset.
+4. Before the lease-fencing migration, stop every legacy worker and verify that no old worker process or in-flight job remains. This protocol upgrade is not compatible with a rolling old/new worker deployment. Run `.github/workflows/migrate-database.yml` manually against a protected environment. `confirm_sha` must equal `GITHUB_SHA`; supply the fresh backup reference. Before any remote push, the workflow reads the applied migration versions, audits only pending migrations, requires an exact reasoned fingerprint for every reviewed `DELETE`, rejects `DROP`/`TRUNCATE`, builds the schema locally, and rejects generated TypeScript drift. It previews and applies forward migrations only—no automatic destructive rollback/reset. Deploy only generation-aware workers after the migration; never roll code back to the legacy claim/naked-cleanup protocol.
 5. Create the first admin account manually; disable public signup; configure redirect/email settings deliberately.
 6. Verify private-schema grants/RLS and query the intended public-safe API as anon. Never expose DB/service-role credentials to browser variables.
 

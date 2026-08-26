@@ -11,6 +11,7 @@ from pokecrack_worker.jobs import (
     LeaseLostError,
     PostgresJobRepository,
 )
+from pokecrack_worker.jobs.models import CompletionEffect
 
 NOW = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
 
@@ -29,6 +30,7 @@ def test_lease_claims_one_due_job_by_priority_without_double_claim() -> None:
     assert claimed.id == high.id
     assert claimed.status is JobStatus.RUNNING
     assert claimed.attempts == 1
+    assert claimed.lease_generation == 1
     assert second is not None
     assert second.id == low.id
     assert second.id != claimed.id
@@ -50,6 +52,63 @@ def test_in_memory_repository_reclaims_an_expired_lease_for_the_next_attempt() -
     assert reclaimed.id == queued.id
     assert reclaimed.leased_by == "worker-b"
     assert reclaimed.attempts == 2
+    assert reclaimed.lease_generation == 2
+
+
+def test_reclaim_rotates_generation_when_worker_id_is_reused() -> None:
+    repository = InMemoryJobRepository()
+    queued = repository.enqueue("extract", {}, now=NOW)
+    first = repository.lease("worker-a", now=NOW, lease_for=timedelta(seconds=1))
+    assert first is not None
+
+    reclaimed = repository.lease(
+        "worker-a",
+        now=NOW + timedelta(seconds=2),
+        lease_for=timedelta(minutes=1),
+    )
+    assert reclaimed is not None
+    assert reclaimed.id == queued.id
+    assert reclaimed.lease_generation == first.lease_generation + 1
+
+    stale_mutations = (
+        lambda: repository.heartbeat(
+            first.id,
+            worker_id="worker-a",
+            lease_generation=first.lease_generation,
+            now=NOW + timedelta(seconds=2),
+            lease_for=timedelta(minutes=1),
+        ),
+        lambda: repository.complete(
+            first.id,
+            worker_id="worker-a",
+            lease_generation=first.lease_generation,
+            now=NOW + timedelta(seconds=2),
+        ),
+        lambda: repository.fail(
+            first.id,
+            "stale failure",
+            worker_id="worker-a",
+            lease_generation=first.lease_generation,
+            now=NOW + timedelta(seconds=2),
+        ),
+        lambda: repository.pause_for_budget(
+            first.id,
+            worker_id="worker-a",
+            lease_generation=first.lease_generation,
+            now=NOW + timedelta(seconds=2),
+            retry_at=NOW + timedelta(hours=1),
+        ),
+    )
+
+    for mutate in stale_mutations:
+        with pytest.raises(LeaseLostError):
+            mutate()
+
+    active = repository.get(queued.id)
+    assert active is not None
+    assert active.status is JobStatus.RUNNING
+    assert active.attempts == 2
+    assert active.lease_generation == reclaimed.lease_generation
 
 
 def test_in_memory_repository_dead_letters_an_expired_final_attempt() -> None:
@@ -68,6 +127,7 @@ def test_in_memory_repository_dead_letters_an_expired_final_attempt() -> None:
     terminal = repository.get(queued.id)
     assert terminal is not None
     assert terminal.status is JobStatus.DEAD
+    assert terminal.lease_generation == 2
     assert terminal.finished_at == NOW + timedelta(seconds=2)
     assert terminal.last_error == "lease_expired_max_attempts"
 
@@ -78,7 +138,13 @@ def test_failed_job_requeues_with_backoff_then_becomes_dead_at_max_attempts() ->
     first = repository.lease("worker-a", now=NOW, lease_for=timedelta(minutes=1))
     assert first is not None
 
-    retrying = repository.fail(first.id, "provider timeout", worker_id="worker-a", now=NOW)
+    retrying = repository.fail(
+        first.id,
+        "provider timeout",
+        worker_id="worker-a",
+        lease_generation=first.lease_generation,
+        now=NOW,
+    )
     assert retrying.status is JobStatus.PENDING
     assert retrying.last_error == "provider timeout"
     assert retrying.available_at == NOW + timedelta(seconds=30)
@@ -94,6 +160,7 @@ def test_failed_job_requeues_with_backoff_then_becomes_dead_at_max_attempts() ->
         second.id,
         "still unavailable",
         worker_id="worker-b",
+        lease_generation=second.lease_generation,
         now=NOW + timedelta(seconds=30),
     )
 
@@ -114,6 +181,7 @@ def test_expired_in_memory_lease_cannot_complete_a_job() -> None:
         repository.complete(
             leased.id,
             worker_id="worker-a",
+            lease_generation=leased.lease_generation,
             now=NOW + timedelta(seconds=2),
         )
 
@@ -128,6 +196,7 @@ def test_expired_in_memory_lease_cannot_fail_a_job() -> None:
         repository.fail(
             leased.id,
             worker_id="worker-a",
+            lease_generation=leased.lease_generation,
             error="late",
             now=NOW + timedelta(seconds=2),
         )
@@ -143,6 +212,7 @@ def test_expired_in_memory_lease_cannot_pause_a_job() -> None:
         repository.pause_for_budget(
             leased.id,
             worker_id="worker-a",
+            lease_generation=leased.lease_generation,
             now=NOW + timedelta(seconds=2),
             retry_at=NOW + timedelta(hours=1),
         )
@@ -158,6 +228,7 @@ def test_heartbeat_requires_lease_owner_and_extends_lease() -> None:
         repository.heartbeat(
             leased.id,
             worker_id="worker-b",
+            lease_generation=leased.lease_generation,
             now=NOW + timedelta(seconds=10),
             lease_for=timedelta(seconds=30),
         )
@@ -165,6 +236,7 @@ def test_heartbeat_requires_lease_owner_and_extends_lease() -> None:
     heartbeat = repository.heartbeat(
         leased.id,
         worker_id="worker-a",
+        lease_generation=leased.lease_generation,
         now=NOW + timedelta(seconds=10),
         lease_for=timedelta(seconds=30),
     )
@@ -181,6 +253,7 @@ def test_budget_pause_requeues_without_counting_failure_or_attempt() -> None:
     paused = repository.pause_for_budget(
         leased.id,
         worker_id="worker-a",
+        lease_generation=leased.lease_generation,
         now=NOW,
         retry_at=NOW + timedelta(hours=1),
     )
@@ -188,6 +261,7 @@ def test_budget_pause_requeues_without_counting_failure_or_attempt() -> None:
     assert paused.id == queued.id
     assert paused.status is JobStatus.PENDING
     assert paused.attempts == 0
+    assert paused.lease_generation == 1
     assert paused.last_error is None
     assert (
         repository.lease(
@@ -200,6 +274,7 @@ def test_budget_pause_requeues_without_counting_failure_or_attempt() -> None:
     )
     assert resumed is not None
     assert resumed.attempts == 1
+    assert resumed.lease_generation == 2
 
 
 def test_postgres_lease_uses_canonical_claim_rpc_that_terminalizes_exhausted_jobs() -> None:
@@ -225,7 +300,7 @@ def test_postgres_lease_uses_canonical_claim_rpc_that_terminalizes_exhausted_job
         )
         is None
     )
-    assert "ingest.claim_jobs" in executor.sql
+    assert "ingest.claim_jobs_v2" in executor.sql
     assert executor.params["lease_seconds"] == 300
     assert executor.params["kinds"] == ["extract"]
 
@@ -247,6 +322,7 @@ def test_postgres_lease_maps_one_row_from_the_canonical_claim_rpc() -> None:
                     "available_at": NOW,
                     "attempts": 1,
                     "max_attempts": 5,
+                    "lease_generation": 1,
                     "locked_by": "worker-a",
                     "locked_at": NOW,
                     "lock_expires_at": NOW + timedelta(minutes=5),
@@ -267,9 +343,10 @@ def test_postgres_lease_maps_one_row_from_the_canonical_claim_rpc() -> None:
     assert job is not None
     assert job.status is JobStatus.RUNNING
     assert job.attempts == 1
+    assert job.lease_generation == 1
     assert len(executor.calls) == 1
     sql, params = executor.calls[0]
-    assert "ingest.claim_jobs" in sql
+    assert "ingest.claim_jobs_v2" in sql
     assert params["worker_id"] == "worker-a"
     assert params["kinds"] == ["extract"]
     assert params["lease_seconds"] == 300
@@ -286,7 +363,12 @@ def test_enqueue_deduplicates_only_active_jobs_and_lifecycle_is_queryable() -> N
 
     leased = repository.lease("worker-a", now=NOW, lease_for=timedelta(minutes=1))
     assert leased is not None
-    completed = repository.complete(leased.id, worker_id="worker-a", now=NOW)
+    completed = repository.complete(
+        leased.id,
+        worker_id="worker-a",
+        lease_generation=leased.lease_generation,
+        now=NOW,
+    )
     assert completed.status is JobStatus.COMPLETED
 
     replacement = repository.enqueue("collect.url", {}, dedupe_key="url:example", now=NOW)
@@ -311,12 +393,20 @@ def test_postgres_lease_mutations_use_one_database_clock_for_ownership() -> None
     repository = PostgresJobRepository(executor)
     operations = (
         lambda: repository.heartbeat(
-            "job-1", worker_id="worker-a", now=NOW, lease_for=timedelta(seconds=30)
+            "job-1",
+            worker_id="worker-a",
+            lease_generation=1,
+            now=NOW,
+            lease_for=timedelta(seconds=30),
         ),
-        lambda: repository.complete("job-1", worker_id="worker-a", now=NOW),
-        lambda: repository.fail("job-1", "late", worker_id="worker-a", now=NOW),
+        lambda: repository.complete("job-1", worker_id="worker-a", lease_generation=1, now=NOW),
+        lambda: repository.fail("job-1", "late", worker_id="worker-a", lease_generation=1, now=NOW),
         lambda: repository.pause_for_budget(
-            "job-1", worker_id="worker-a", now=NOW, retry_at=NOW + timedelta(hours=1)
+            "job-1",
+            worker_id="worker-a",
+            lease_generation=1,
+            now=NOW,
+            retry_at=NOW + timedelta(hours=1),
         ),
     )
 
@@ -328,8 +418,10 @@ def test_postgres_lease_mutations_use_one_database_clock_for_ownership() -> None
     for sql, params in executor.calls:
         assert "clock_timestamp()" in sql
         assert "lock_expires_at > lease_clock.now" in sql
+        assert "lease_generation = %(lease_generation)s" in sql
         assert "%(now)s" not in sql
         assert "now" not in params
+        assert params["lease_generation"] == 1
     assert executor.calls[0][1]["lease_seconds"] == 30
 
 
@@ -346,9 +438,64 @@ def test_postgres_completion_requires_an_unexpired_lease() -> None:
     repository = PostgresJobRepository(executor)
 
     with pytest.raises(LeaseLostError):
-        repository.complete("job-1", worker_id="worker-a", now=NOW)
+        repository.complete("job-1", worker_id="worker-a", lease_generation=1, now=NOW)
 
     assert "lock_expires_at > lease_clock.now" in executor.sql
+    assert "lease_generation = %(lease_generation)s" in executor.sql
+
+
+def test_postgres_cleanup_completion_uses_only_the_controlled_atomic_rpc() -> None:
+    completed_row: dict[str, object] = {
+        "id": "job-1",
+        "job_type": "maintenance.cleanup",
+        "payload": {},
+        "status": "completed",
+        "priority": 0,
+        "available_at": NOW,
+        "attempts": 1,
+        "max_attempts": 5,
+        "lease_generation": 7,
+        "locked_by": None,
+        "locked_at": None,
+        "lock_expires_at": None,
+        "last_error_code": None,
+        "last_error_message": None,
+        "completed_at": NOW,
+        "dedupe_key": None,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+    class Executor:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, dict[str, object]]] = []
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            self.calls.append((sql, params))
+            return [completed_row]
+
+    executor = Executor()
+    completed = PostgresJobRepository(executor).complete(
+        "job-1",
+        worker_id="worker-a",
+        lease_generation=7,
+        now=NOW,
+        effect=CompletionEffect.PRUNE_EXPIRED_EPHEMERA,
+    )
+
+    assert completed.status is JobStatus.COMPLETED
+    assert completed.lease_generation == 7
+    assert len(executor.calls) == 1
+    sql, params = executor.calls[0]
+    assert "SELECT *" in sql
+    assert "ingest.finalize_cleanup_job" in sql
+    assert "ingest.prune_expired_ephemera()" not in sql
+    assert "UPDATE ingest.jobs" not in sql
+    assert params == {
+        "job_id": "job-1",
+        "worker_id": "worker-a",
+        "lease_generation": 7,
+    }
 
 
 def test_postgres_failure_requires_an_unexpired_lease() -> None:
@@ -364,9 +511,10 @@ def test_postgres_failure_requires_an_unexpired_lease() -> None:
     repository = PostgresJobRepository(executor)
 
     with pytest.raises(LeaseLostError):
-        repository.fail("job-1", "late", worker_id="worker-a", now=NOW)
+        repository.fail("job-1", "late", worker_id="worker-a", lease_generation=1, now=NOW)
 
     assert "lock_expires_at > lease_clock.now" in executor.sql
+    assert "lease_generation = %(lease_generation)s" in executor.sql
 
 
 def test_postgres_budget_pause_requires_an_unexpired_lease() -> None:
@@ -385,11 +533,13 @@ def test_postgres_budget_pause_requires_an_unexpired_lease() -> None:
         repository.pause_for_budget(
             "job-1",
             worker_id="worker-a",
+            lease_generation=1,
             now=NOW,
             retry_at=NOW + timedelta(hours=1),
         )
 
     assert "lock_expires_at > lease_clock.now" in executor.sql
+    assert "lease_generation = %(lease_generation)s" in executor.sql
 
 
 def test_postgres_failure_atomically_requeues_with_exponential_backoff() -> None:
@@ -402,6 +552,7 @@ def test_postgres_failure_atomically_requeues_with_exponential_backoff() -> None
         "available_at": NOW + timedelta(seconds=30),
         "attempts": 1,
         "max_attempts": 5,
+        "lease_generation": 1,
         "locked_by": None,
         "locked_at": None,
         "lock_expires_at": None,
@@ -423,7 +574,9 @@ def test_postgres_failure_atomically_requeues_with_exponential_backoff() -> None
 
     executor = Executor()
     repository = PostgresJobRepository(executor)
-    retrying = repository.fail("job-1", "timeout", worker_id="worker-a", now=NOW)
+    retrying = repository.fail(
+        "job-1", "timeout", worker_id="worker-a", lease_generation=1, now=NOW
+    )
 
     assert retrying.status is JobStatus.PENDING
     assert retrying.available_at == NOW + timedelta(seconds=30)
@@ -443,6 +596,7 @@ def test_postgres_heartbeat_and_failure_use_owner_guard_and_dead_mapping() -> No
         "available_at": NOW,
         "attempts": 5,
         "max_attempts": 5,
+        "lease_generation": 1,
         "locked_by": "worker-a",
         "locked_at": NOW,
         "lock_expires_at": NOW + timedelta(minutes=5),
@@ -476,14 +630,16 @@ def test_postgres_heartbeat_and_failure_use_owner_guard_and_dead_mapping() -> No
     heartbeat = repository.heartbeat(
         "job-1",
         worker_id="worker-a",
+        lease_generation=1,
         now=NOW,
         lease_for=timedelta(minutes=5),
     )
-    dead = repository.fail("job-1", "timeout", worker_id="worker-a", now=NOW)
+    dead = repository.fail("job-1", "timeout", worker_id="worker-a", lease_generation=1, now=NOW)
 
     assert heartbeat.status is JobStatus.RUNNING
     assert dead.status is JobStatus.DEAD
     assert all("locked_by = %(worker_id)s" in sql for sql, _ in executor.calls)
+    assert all("lease_generation = %(lease_generation)s" in sql for sql, _ in executor.calls)
 
 
 def test_psycopg_query_executor_commits_and_returns_mapping_rows() -> None:
@@ -535,6 +691,7 @@ def test_postgres_enqueue_is_atomic_and_respects_active_dedupe_constraint() -> N
         "available_at": NOW,
         "attempts": 0,
         "max_attempts": 4,
+        "lease_generation": 0,
         "locked_by": None,
         "locked_at": None,
         "lock_expires_at": None,
@@ -584,6 +741,7 @@ def test_postgres_budget_pause_and_completion_clear_canonical_locks() -> None:
         "available_at": NOW,
         "attempts": 0,
         "max_attempts": 5,
+        "lease_generation": 1,
         "locked_by": None,
         "locked_at": None,
         "lock_expires_at": None,
@@ -609,12 +767,14 @@ def test_postgres_budget_pause_and_completion_clear_canonical_locks() -> None:
     paused = repository.pause_for_budget(
         "job-1",
         worker_id="worker-a",
+        lease_generation=1,
         now=NOW,
         retry_at=NOW + timedelta(hours=1),
     )
-    completed = repository.complete("job-1", worker_id="worker-a", now=NOW)
+    completed = repository.complete("job-1", worker_id="worker-a", lease_generation=1, now=NOW)
 
     assert paused.status is JobStatus.PENDING
     assert completed.status is JobStatus.COMPLETED
     assert all("locked_by = %(worker_id)s" in sql for sql in executor.sql)
+    assert all("lease_generation = %(lease_generation)s" in sql for sql in executor.sql)
     assert all("lock_expires_at = NULL" in sql for sql in executor.sql)
