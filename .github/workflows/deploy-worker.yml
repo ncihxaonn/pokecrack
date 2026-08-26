@@ -1,14 +1,6 @@
 name: Deploy VPS workers
 
 on:
-  push:
-    branches: [main]
-    paths:
-      - deploy/**
-      - services/worker/**
-      - services/auth-browser/**
-      - config/**
-      - .github/workflows/deploy-worker.yml
   workflow_dispatch:
     inputs:
       confirm_sha:

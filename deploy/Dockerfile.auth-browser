@@ -41,7 +41,7 @@ RUN apt-get update \
 
 COPY --from=opencli-runtime /usr/local/bin/node /usr/local/bin/node
 COPY --from=opencli-runtime /usr/local/lib/node_modules/@jackwener/opencli /usr/local/lib/node_modules/@jackwener/opencli
-RUN ln -s /usr/local/lib/node_modules/@jackwener/opencli/dist/main.js /usr/local/bin/opencli \
+RUN ln -s /usr/local/lib/node_modules/@jackwener/opencli/dist/src/main.js /usr/local/bin/opencli \
     && opencli --version | grep -Fx -- "${OPENCLI_VERSION}"
 COPY services/auth-browser/pyproject.toml /opt/pokecrack/auth-browser/pyproject.toml
 COPY services/auth-browser/src/pokecrack_browser /opt/pokecrack/auth-browser/src/pokecrack_browser
