@@ -109,6 +109,35 @@ def find_unpinned_actions(root: Path) -> list[str]:
     return findings
 
 
+def find_missing_gitleaks_pr_permissions(root: Path) -> list[str]:
+    findings: list[str] = []
+    workflows = root / ".github" / "workflows"
+    if not workflows.is_dir():
+        return findings
+    for path in sorted((*workflows.glob("*.yml"), *workflows.glob("*.yaml"))):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        text = "\n".join(lines)
+        has_gitleaks = "gitleaks/gitleaks-action@" in text
+        handles_pull_requests = re.search(r"(?m)^\s{2}pull_request:\s*$", text)
+        if not has_gitleaks or not handles_pull_requests:
+            continue
+
+        has_pull_request_read = False
+        for index, line in enumerate(lines):
+            if line.strip() != "permissions:" or line.startswith((" ", "\t")):
+                continue
+            for permission in lines[index + 1 :]:
+                if permission and not permission.startswith((" ", "\t")):
+                    break
+                if re.fullmatch(r"\s+pull-requests:\s*read\s*(?:#.*)?", permission):
+                    has_pull_request_read = True
+                    break
+            break
+        if not has_pull_request_read:
+            findings.append(str(path.relative_to(root)))
+    return findings
+
+
 def find_large_files(root: Path, max_bytes: int = 10 * 1024 * 1024) -> list[str]:
     findings: list[str] = []
     for path in _files(root):
@@ -160,6 +189,10 @@ def verify(root: Path) -> list[str]:
         *(f"client secret exposure: {item}" for item in find_client_secret_exposure(root)),
         *(f"paid dependency: {item}" for item in find_forbidden_dependencies(root)),
         *(f"unpinned action: {item}" for item in find_unpinned_actions(root)),
+        *(
+            f"missing gitleaks pull-request permission: {item}"
+            for item in find_missing_gitleaks_pr_permissions(root)
+        ),
     ]
 
 
