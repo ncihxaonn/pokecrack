@@ -1,0 +1,85 @@
+{
+  "version": 1,
+  "reviewed_deletes": [
+    {
+      "migration": "20260825000500_public_rpc_security.sql",
+      "statement_sha256": "45402bc4e7ee1fcb0e2bef5c84bc9cd0c9c1943a0caff8b1a4700809754b7162",
+      "reason": "Bounded retention RPC deletes only candidate extraction runs selected by its audited CTE."
+    },
+    {
+      "migration": "20260825000500_public_rpc_security.sql",
+      "statement_sha256": "aaabd564d10cdc59a0f19df9594f627d71ea54225a908dab66a89a887d3cb2d2",
+      "reason": "Bounded retention RPC deletes only expired signals selected by its audited CTE."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "cf95233673d940ec23ced625016b5815c41d2ddea6eb24ee398c8a0e32bb3425",
+      "reason": "Audited record exclusion removes only same-mode sightings derived from the explicitly targeted source item."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "25a1c117ff21410589fad08977548d0f0b1aaa0b0c708af479df4fb612cfa4b6",
+      "reason": "Audited record exclusion invalidates the affected mode dashboard aggregate before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "df75ac6efea03030b264b926aa3be641ae3b2a5e07a90dfa1726e2cb8c2649fe",
+      "reason": "Audited record exclusion invalidates affected mode set aggregates before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "6f926933a0947a7d47022d35da97e4fa1e6c1e2e45be495352dfe14858f2f25c",
+      "reason": "Audited record exclusion invalidates affected mode region aggregates before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "5f467dde10ca16d2df75c4efd63cf3207dd90934c8e196089b20d39aa5e233d3",
+      "reason": "Audited record exclusion invalidates affected mode retailer aggregates before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "52a9b04ae55962e6ccd0a6ed694fcdc420451fcf235ee9d87375c86d6147d206",
+      "reason": "Audited record exclusion invalidates affected mode batch aggregates before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "d6295c014093702ff2f02ffa33a6b20d360dcc4e8dbc5ead1b68cad982479df7",
+      "reason": "Audited record exclusion invalidates affected mode private signals before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "34ff10d38827107931a5e022ba331c466763ab578330a77eead38cdd979f756c",
+      "reason": "Audited record exclusion removes the affected mode public dashboard projection before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "696d58a8fa3e07d2281c422d5b618d984609a162ab4eaf8a55d72150b2316c4c",
+      "reason": "Audited record exclusion removes affected mode public set projections before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "f930d24daced8fe22dc57f49e9b93cd4194357891ada54c2e5165b9a7ba60880",
+      "reason": "Audited record exclusion removes affected mode public region projections before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "51a8ad67c6c1db14b8fb11aa512ddbb73a9e2005e265bbc826e1194cff547c00",
+      "reason": "Audited record exclusion removes affected mode public retailer projections before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "79c77693b1ca2e9245051521858201d3125f27d22a30e53c9beda99328d64a4b",
+      "reason": "Audited record exclusion removes affected mode public batch projections before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "46fcf4d063b1b8a87cbe2d08aa2030eb1d701e818d74015e9b32ce1be2924260",
+      "reason": "Audited record exclusion removes affected mode public recent activity before rebuild."
+    },
+    {
+      "migration": "20260825000600_admin_control.sql",
+      "statement_sha256": "8bcba652b743e4974ee7daab91d74837ad2c53fece88253508c7365480b1356f",
+      "reason": "Audited record exclusion removes affected mode public signals before rebuild."
+    }
+  ]
+}

@@ -2,12 +2,21 @@ import { z } from "zod";
 
 import { BRAND } from "./brand";
 
+const httpUrl = z.url().refine((value) => {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}, "URL must use http or https");
+
 const rawEnvSchema = z
   .object({
     NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
     DATA_MODE: z.enum(["demo", "live"]).default("demo"),
-    NEXT_PUBLIC_SITE_URL: z.url().default(BRAND.defaultSiteUrl),
-    NEXT_PUBLIC_SUPABASE_URL: z.url().optional(),
+    NEXT_PUBLIC_SITE_URL: httpUrl.default(BRAND.defaultSiteUrl),
+    NEXT_PUBLIC_SUPABASE_URL: httpUrl.optional(),
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: z.string().min(1).optional(),
     NEXT_PUBLIC_SUPABASE_ANON_KEY: z.string().min(1).optional(),
     ADMIN_EMAILS: z.string().default(""),

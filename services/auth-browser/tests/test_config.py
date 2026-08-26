@@ -16,6 +16,16 @@ class ServiceSettingsTests(unittest.TestCase):
             settings.extension_dir,
             Path("/opt/pokecrack/opencli-extension/current"),
         )
+        self.assertFalse(settings.opencli_enabled)
+
+    def test_opencli_enabled_requires_an_explicit_boolean(self) -> None:
+        with patch.dict(os.environ, {"OPENCLI_ENABLED": "true"}, clear=True):
+            self.assertTrue(ServiceSettings.from_env().opencli_enabled)
+        with (
+            patch.dict(os.environ, {"OPENCLI_ENABLED": "sometimes"}, clear=True),
+            self.assertRaisesRegex(ValueError, "true or false"),
+        ):
+            ServiceSettings.from_env()
 
     def test_network_services_reject_non_loopback_hosts(self) -> None:
         with self.assertRaisesRegex(ValueError, "loopback"):

@@ -473,6 +473,8 @@ class OpenCliRunner:
     def _assert_browser(self, adapter: AdapterSpec) -> None:
         if not adapter.requires_browser:
             return
+        if not self.settings.opencli_enabled:
+            raise ServiceError("source_unavailable", "OpenCLI is disabled")
         state = read_runtime_state(self.settings.runtime_root)
         if (
             state is None

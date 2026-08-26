@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(64);
+select plan(79);
 
 select has_table('public', 'dashboard_overview', 'public.dashboard_overview exists');
 select has_table('public', 'set_summaries', 'public.set_summaries exists');
@@ -238,6 +238,220 @@ select ok(
       and has_function_privilege('anon', p.oid, 'execute')
   ),
   'anon can execute no other public-schema function'
+);
+
+select has_function(
+  'public',
+  'get_admin_dashboard_snapshot_v1',
+  array[]::text[],
+  'bounded Admin snapshot RPC exists'
+);
+select ok(
+  coalesce((select prosecdef from pg_proc where oid = to_regprocedure('public.get_admin_dashboard_snapshot_v1()')), false),
+  'Admin snapshot RPC is SECURITY DEFINER'
+);
+select ok(
+  (select coalesce(proconfig, '{}'::text[]) @> array['search_path=pg_catalog']
+   from pg_proc where oid = to_regprocedure('public.get_admin_dashboard_snapshot_v1()')),
+  'Admin snapshot RPC fixes its search_path to pg_catalog only'
+);
+select ok(
+  not has_function_privilege('anon', to_regprocedure('public.get_admin_dashboard_snapshot_v1()'), 'execute')
+  and not has_function_privilege('authenticated', to_regprocedure('public.get_admin_dashboard_snapshot_v1()'), 'execute')
+  and has_function_privilege('service_role', to_regprocedure('public.get_admin_dashboard_snapshot_v1()'), 'execute'),
+  'only service_role can invoke the Admin snapshot RPC'
+);
+select set_eq(
+  $$select p.proname || ':' || coalesce(r.rolname, 'PUBLIC')
+    from pg_proc p
+    cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) acl
+    left join pg_roles r on r.oid = acl.grantee
+    where p.oid in (
+      to_regprocedure('public.get_admin_dashboard_snapshot_v1()'),
+      to_regprocedure('public.admin_control_and_audit_v1(text,uuid,text,text,text)')
+    )
+      and acl.privilege_type = 'EXECUTE'
+      and acl.grantee <> p.proowner$$,
+  $$values
+    ('get_admin_dashboard_snapshot_v1:service_role'::text),
+    ('admin_control_and_audit_v1:service_role')$$,
+  'both Admin RPCs grant non-owner EXECUTE only to service_role, never PUBLIC'
+);
+select doesnt_match(
+  coalesce((select pg_get_functiondef(to_regprocedure('public.get_admin_dashboard_snapshot_v1()'))), ''),
+  '(?is)payload|last_error|authenticated_sources|provider|model|prompt|source_excerpt|ip_address|cookie|secret',
+  'Admin snapshot definition does not expose private payload, error, browser-auth, AI-provider, source, address or secret fields'
+);
+
+insert into ingest.jobs (
+  id, job_type, payload, status, attempts, max_attempts, last_error_code,
+  last_error_message, completed_at, is_demo
+) values (
+  'aa000000-0000-4000-8000-000000000001',
+  'security.runtime',
+  '{"private":"PC_JOB_PAYLOAD_MARKER"}'::jsonb,
+  'failed',
+  1,
+  2,
+  'runtime_error',
+  'PC_JOB_ERROR_MARKER',
+  clock_timestamp(),
+  false
+);
+
+insert into ingest.worker_heartbeats (
+  worker_id, worker_type, version, metadata
+) values (
+  'pc-live-worker-default', 'runtime', 'test', '{}'::jsonb
+);
+insert into ingest.worker_heartbeats (
+  worker_id, worker_type, version, metadata, is_demo
+) values (
+  'pc-demo-worker-hidden', 'runtime', 'test', '{"private":"PC_DEMO_WORKER_MARKER"}'::jsonb, true
+);
+
+insert into ingest.browser_sessions (
+  profile_name, status, extension_connected, daemon_connected, authenticated_sources,
+  last_error
+) values (
+  'pc-runtime-browser', 'authenticated', true, true,
+  '{"private":"PC_BROWSER_AUTH_MARKER"}'::jsonb,
+  'PC_BROWSER_ERROR_MARKER'
+);
+insert into ingest.browser_sessions (
+  profile_name, status, authenticated_sources, is_demo
+) values (
+  'pc-demo-browser-hidden', 'authenticated', '{}'::jsonb, true
+);
+
+insert into ingest.ai_usage_daily (
+  date, provider, model, stage, request_count, input_tokens, output_tokens,
+  estimated_cost_aud
+) values (
+  current_date, 'PC_AI_PROVIDER_MARKER', 'PC_AI_MODEL_MARKER', 'extract',
+  7, 11, 13, 0.2500
+);
+insert into ingest.ai_usage_daily (
+  date, provider, model, stage, request_count, input_tokens, output_tokens,
+  estimated_cost_aud, is_demo
+) values (
+  current_date, 'PC_AI_PROVIDER_MARKER', 'PC_AI_MODEL_MARKER', 'extract',
+  9000, 9000, 9000, 9000, true
+);
+
+set local request.jwt.claims = '{"role":"service_role"}';
+set local role service_role;
+do $admin_runtime_calls$
+begin
+  perform pg_catalog.set_config(
+    'pokecrack.admin_snapshot_test_result',
+    public.get_admin_dashboard_snapshot_v1()::text,
+    true
+  );
+  perform pg_catalog.set_config(
+    'pokecrack.admin_denial_test_result',
+    public.admin_control_and_audit_v1(
+      'source.enqueue',
+      'a1111111-1111-4111-8111-111111111111',
+      'admin-runtime-test@example.invalid',
+      'https://pc-admin-denied-marker.invalid/path',
+      null
+    )::text,
+    true
+  );
+end;
+$admin_runtime_calls$;
+reset role;
+
+create temporary table admin_runtime_results (
+  snapshot jsonb not null,
+  denial jsonb not null
+) on commit drop;
+insert into admin_runtime_results (snapshot, denial)
+values (
+  pg_catalog.current_setting('pokecrack.admin_snapshot_test_result')::jsonb,
+  pg_catalog.current_setting('pokecrack.admin_denial_test_result')::jsonb
+);
+
+select set_eq(
+  $$select key::text
+    from admin_runtime_results r
+    cross join lateral jsonb_object_keys(r.snapshot) keys(key)$$,
+  $$values
+    ('fixture'::text), ('label'), ('generatedAt'), ('queue'), ('pipeline'),
+    ('workers'), ('sources'), ('jobs'), ('browserSessions'), ('adapters'),
+    ('ai'), ('capacity'), ('backup'), ('aggregation'), ('services'), ('records')$$,
+  'Admin snapshot exposes the exact bounded top-level contract'
+);
+select set_eq(
+  $$select key::text
+    from admin_runtime_results r
+    cross join lateral jsonb_array_elements(r.snapshot -> 'jobs') rows(item)
+    cross join lateral jsonb_object_keys(rows.item) keys(key)
+    where rows.item ->> 'id' = 'aa000000-0000-4000-8000-000000000001'$$,
+  $$values ('id'::text), ('label'), ('status'), ('attempts'), ('freshness'), ('records')$$,
+  'Admin job rows expose only the exact safe display contract'
+);
+select set_eq(
+  $$select key::text
+    from admin_runtime_results r
+    cross join lateral jsonb_array_elements(r.snapshot -> 'browserSessions') rows(item)
+    cross join lateral jsonb_object_keys(rows.item) keys(key)
+    where rows.item ->> 'id' = 'pc-runtime-browser'$$,
+  $$values ('id'::text), ('label'), ('browser'), ('extension'), ('login'), ('freshness')$$,
+  'Admin browser rows expose only the exact health display contract'
+);
+select set_eq(
+  $$select key::text
+    from admin_runtime_results r
+    cross join lateral jsonb_array_elements(r.snapshot #> '{ai,rows}') rows(item)
+    cross join lateral jsonb_object_keys(rows.item) keys(key)
+    where rows.item ->> 'day' = current_date::text and rows.item ->> 'stage' = 'extract'$$,
+  $$values ('day'::text), ('stage'), ('requests'), ('inputTokens'), ('outputTokens'), ('estimatedCostAud')$$,
+  'Admin AI rows expose only the exact aggregate display contract'
+);
+select doesnt_match(
+  (select snapshot::text from admin_runtime_results),
+  'PC_(JOB_PAYLOAD|JOB_ERROR|BROWSER_AUTH|BROWSER_ERROR|AI_PROVIDER|AI_MODEL)_MARKER',
+  'Admin snapshot omits raw job, browser-auth, error, provider, and model markers at runtime'
+);
+select ok(
+  (select exists (
+      select 1 from jsonb_array_elements(snapshot -> 'workers') rows(item)
+      where rows.item ->> 'id' = 'pc-live-worker-default'
+    ) and not exists (
+      select 1 from jsonb_array_elements(snapshot -> 'workers') rows(item)
+      where rows.item ->> 'id' = 'pc-demo-worker-hidden'
+    ) and not exists (
+      select 1 from jsonb_array_elements(snapshot -> 'browserSessions') rows(item)
+      where rows.item ->> 'id' = 'pc-demo-browser-hidden'
+    ) from admin_runtime_results),
+  'Admin snapshot includes default-live operational rows and excludes demo telemetry'
+);
+select is(
+  (select (snapshot #>> '{ai,requests}')::bigint from admin_runtime_results),
+  7::bigint,
+  'Admin AI totals exclude the colliding demo ledger row'
+);
+select is(
+  (select jsonb_build_object(
+    'ok', denial -> 'ok',
+    'audit_written', denial -> 'audit_written',
+    'reason', denial -> 'reason'
+  ) from admin_runtime_results),
+  '{"ok":false,"audit_written":true,"reason":"source_policy_denied"}'::jsonb,
+  'unknown source domain returns the committed structured denial contract'
+);
+select is(
+  (select count(*)::bigint
+   from ingest.admin_audit_log
+   where actor_id = 'a1111111-1111-4111-8111-111111111111'
+     and action = 'source.enqueue'
+     and detail ->> 'source_domain' = 'pc-admin-denied-marker.invalid'
+     and detail ->> 'reason' = 'source_policy_denied'
+     and detail ->> 'denied' = 'true'),
+  1::bigint,
+  'unknown source denial audit persists in the caller transaction'
 );
 
 select has_function('ingest', 'prune_expired_ephemera', array['timestamp with time zone', 'integer'], 'bounded ephemeral cleanup function exists');

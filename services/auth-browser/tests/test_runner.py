@@ -94,7 +94,7 @@ class ErrorMappingTests(unittest.TestCase):
 
     def test_timeout_kills_descendants_when_the_process_leader_has_already_exited(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            child_pid_path = Path(temporary) / "child.pid"
+            child_pid_path = Path(temporary).resolve() / "child.pid"
             leader = (
                 "import subprocess, sys; from pathlib import Path; "
                 "child = subprocess.Popen([sys.executable, '-c', "
@@ -141,7 +141,7 @@ class FixtureRunnerTests(unittest.TestCase):
     def test_fixture_runner_emits_only_source_item_candidates_with_versions(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             settings = ServiceSettings(
-                runtime_root=Path(temporary) / "runtime",
+                runtime_root=Path(temporary).resolve() / "runtime",
                 extension_version="fixture-not-used",
             )
             result = OpenCliRunner(settings).run(
@@ -175,7 +175,10 @@ class BrowserIdentityTests(unittest.TestCase):
         from pokecrack_browser.adapters import load_adapter
 
         with tempfile.TemporaryDirectory() as temporary:
-            settings = ServiceSettings(runtime_root=Path(temporary) / "runtime")
+            settings = ServiceSettings(
+                runtime_root=Path(temporary).resolve() / "runtime",
+                opencli_enabled=True,
+            )
             write_runtime_state(
                 settings.runtime_root,
                 {

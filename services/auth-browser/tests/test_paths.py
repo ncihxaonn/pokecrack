@@ -32,7 +32,7 @@ class ProfileNameTests(unittest.TestCase):
 class ProfileDirectoryTests(unittest.TestCase):
     def test_new_root_and_profile_are_created_with_mode_0700(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary) / "profiles"
+            root = Path(temporary).resolve() / "profiles"
             profile = prepare_profile_directory(root, "social-western", create=True)
 
             self.assertEqual(stat.S_IMODE(root.stat().st_mode), 0o700)
@@ -41,7 +41,7 @@ class ProfileDirectoryTests(unittest.TestCase):
 
     def test_existing_root_and_profile_must_have_mode_0700(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary) / "profiles"
+            root = Path(temporary).resolve() / "profiles"
             profile = root / "social-western"
             profile.mkdir(parents=True)
             os.chmod(root, 0o700)
@@ -60,7 +60,7 @@ class ProfileDirectoryTests(unittest.TestCase):
             prepare_profile_directory(Path("profiles"), "social-western")
 
         with tempfile.TemporaryDirectory() as temporary:
-            base = Path(temporary)
+            base = Path(temporary).resolve()
             real_root = base / "real"
             real_profile = real_root / "social-western"
             real_profile.mkdir(parents=True)
@@ -83,7 +83,7 @@ class ProfileDirectoryTests(unittest.TestCase):
 class ExtensionPathTests(unittest.TestCase):
     def test_valid_extension_is_an_absolute_pinned_unpacked_directory(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            extension = Path(temporary) / "opencli-extension"
+            extension = Path(temporary).resolve() / "opencli-extension"
             extension.mkdir(mode=0o755)
             manifest = {
                 "manifest_version": 3,
@@ -99,7 +99,7 @@ class ExtensionPathTests(unittest.TestCase):
 
     def test_managed_current_symlink_to_pinned_in_root_release_is_accepted(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            install_root = Path(temporary) / "opencli-extension"
+            install_root = Path(temporary).resolve() / "opencli-extension"
             release = install_root / "releases" / "1.2.3"
             release.mkdir(parents=True)
             (release / "manifest.json").write_text(
@@ -121,7 +121,7 @@ class ExtensionPathTests(unittest.TestCase):
 
     def test_managed_current_symlink_outside_install_root_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            base = Path(temporary)
+            base = Path(temporary).resolve()
             install_root = base / "opencli-extension"
             (install_root / "releases" / "1.2.3").mkdir(parents=True)
             outside = base / "outside" / "1.2.3"

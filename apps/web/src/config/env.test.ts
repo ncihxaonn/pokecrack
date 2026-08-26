@@ -70,6 +70,15 @@ describe("parseEnv", () => {
     ).toThrow(/query or fragment/);
   });
 
+  it("rejects non-HTTP public endpoints in every environment", () => {
+    expect(() => parseEnv({ NEXT_PUBLIC_SITE_URL: "ftp://data.example.org" })).toThrow(/http or https/i);
+    expect(() => parseEnv({
+      DATA_MODE: "live",
+      NEXT_PUBLIC_SUPABASE_URL: "data:text/plain,not-an-endpoint",
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "public-anon-key",
+    })).toThrow(/http or https/i);
+  });
+
   it("accepts a fully configured live deployment", () => {
     const env = parseEnv({
       DATA_MODE: "live",

@@ -27,12 +27,13 @@ Only set `OPENCLI_ENABLED=true` after the extension, a compatible pinned CLI/dae
 
 ## Login, 2FA, doctor and adapter flow
 
-1. Start the specified profile (only one may run):
+1. Select the single container-owned profile in the root-readable production environment before running the exact-SHA deployment:
 
    ```bash
-   docker compose -f deploy/compose.prod.yml exec auth-browser \
-     pokecrack-browser start-profile research-general
+   CHROMIUM_PROFILE=research-general
    ```
+
+   The `auth-browser` container supervisor starts this profile through `BrowserManager` and holds the one-profile lock for the container lifetime. Do not run `start-profile` inside the running Compose service.
 
 2. From the operator computer open exactly:
 
@@ -53,11 +54,7 @@ Only set `OPENCLI_ENABLED=true` after the extension, a compatible pinned CLI/dae
    ```
 
    The adapter smoke test must be read-only, allowlisted and bounded. Fixture adapters validate the runner contract without logging in; real behavior remains account/platform/version dependent.
-6. Validate the output, stop the profile before switching to another profile, and then close the SSH tunnel:
-
-   ```bash
-   pokecrack-browser stop-profile research-general
-   ```
+6. Validate the output and close the SSH tunnel. To switch profiles, change `CHROMIUM_PROFILE` in the root-readable production environment and rerun the exact-SHA deploy/recreate flow; do not run `stop-profile` behind the container supervisor.
 
 The VPS scheduler remains the runtime owner; the operator computer is not a continuous dependency. Profiles are serialized and never share cookies.
 

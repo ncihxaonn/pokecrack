@@ -81,6 +81,8 @@ ssh -L 6080:127.0.0.1:6080 VPS_USER@VPS_HOST
 
 Then open `http://127.0.0.1:6080/vnc.html`, unlock noVNC, log in manually, complete CAPTCHA/2FA yourself, close the browser view, and run the browser `doctor`, `check-auth`, and one read-only adapter smoke command inside the container. Never automate CAPTCHA or 2FA. Close the SSH session when done. See `docs/OPENCLI_VPS.md`.
 
+The container automatically starts the allowlisted profile selected by `CHROMIUM_PROFILE` through `BrowserManager`; it owns the profile state and lock until shutdown. Change the production environment and use the exact-SHA deploy/recreate flow to switch profiles. Do not invoke `start-profile` or `stop-profile` inside the supervised Compose service.
+
 ## Operations scripts
 
 - `deploy/scripts/backup.sh`: `pg_dump` -> gzip, non-empty validation, UTC filename, atomic last-success marker, newest 7 daily plus 4 weekly representatives.

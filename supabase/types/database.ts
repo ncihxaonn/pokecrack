@@ -602,6 +602,7 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      get_admin_dashboard_snapshot_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       admin_control_and_audit_v1: {
         Args: {
           p_action: string;
@@ -1010,6 +1011,7 @@ export type Database = {
           input_tokens: number;
           output_tokens: number;
           estimated_cost_aud: number;
+          is_demo: boolean;
         };
         Insert: {
           date: string;
@@ -1020,6 +1022,7 @@ export type Database = {
           input_tokens?: number;
           output_tokens?: number;
           estimated_cost_aud?: number;
+          is_demo?: boolean;
         };
         Update: {
           date?: string;
@@ -1030,6 +1033,7 @@ export type Database = {
           input_tokens?: number;
           output_tokens?: number;
           estimated_cost_aud?: number;
+          is_demo?: boolean;
         };
         Relationships: [
         ];
@@ -1160,6 +1164,7 @@ export type Database = {
           last_check_at: string;
           last_successful_command_at: string | null;
           last_error: string | null;
+          is_demo: boolean;
         };
         Insert: {
           profile_name: string;
@@ -1170,6 +1175,7 @@ export type Database = {
           last_check_at?: string;
           last_successful_command_at?: string | null;
           last_error?: string | null;
+          is_demo?: boolean;
         };
         Update: {
           profile_name?: string;
@@ -1180,6 +1186,7 @@ export type Database = {
           last_check_at?: string;
           last_successful_command_at?: string | null;
           last_error?: string | null;
+          is_demo?: boolean;
         };
         Relationships: [
         ];
@@ -1784,6 +1791,7 @@ export type Database = {
           last_seen_at: string;
           current_job_id: string | null;
           metadata: Json;
+          is_demo: boolean;
         };
         Insert: {
           worker_id: string;
@@ -1792,6 +1800,7 @@ export type Database = {
           last_seen_at?: string;
           current_job_id?: string | null;
           metadata?: Json;
+          is_demo?: boolean;
         };
         Update: {
           worker_id?: string;
@@ -1800,6 +1809,7 @@ export type Database = {
           last_seen_at?: string;
           current_job_id?: string | null;
           metadata?: Json;
+          is_demo?: boolean;
         };
         Relationships: [
           {

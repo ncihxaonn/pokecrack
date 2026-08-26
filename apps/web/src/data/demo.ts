@@ -539,5 +539,8 @@ export const DEMO_DATA: DashboardData = {
 };
 
 const { admin, ...publicData } = DEMO_DATA;
-export const DEMO_PUBLIC_DATA: PublicDashboardData = publicData;
+export const DEMO_PUBLIC_DATA: PublicDashboardData = {
+  ...publicData,
+  recentActivity: publicData.recentActivity.filter((activity) => activity.published),
+};
 export const DEMO_ADMIN_DATA = admin;

@@ -31,7 +31,7 @@ class ExtensionValidationTests(unittest.TestCase):
 
     def test_extension_path_and_version_fail_closed(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            extension = self._extension(Path(temporary))
+            extension = self._extension(Path(temporary).resolve())
             with self.assertRaisesRegex(PathValidationError, "version"):
                 validate_extension_path(extension, expected_version="9.9.9")
             with self.assertRaisesRegex(PathValidationError, "absolute"):
@@ -39,7 +39,7 @@ class ExtensionValidationTests(unittest.TestCase):
 
     def test_symlinked_extension_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             extension = self._extension(root)
             link = root / "bridge-link"
             link.symlink_to(extension, target_is_directory=True)
@@ -50,7 +50,7 @@ class ExtensionValidationTests(unittest.TestCase):
 class LauncherArgumentTests(unittest.TestCase):
     def test_persistent_context_is_headed_with_pinned_extension_and_loopback_cdp(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             profile = root / "profile"
             extension = root / "bridge-extension"
             profile.mkdir()
@@ -75,7 +75,7 @@ class LauncherArgumentTests(unittest.TestCase):
 
     def test_non_loopback_cdp_and_invalid_port_are_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             for host, port in (
                 ("0.0.0.0", 9222),
                 ("::", 9222),
@@ -84,6 +84,18 @@ class LauncherArgumentTests(unittest.TestCase):
             ):
                 with self.subTest(host=host, port=port), self.assertRaises(ValueError):
                     BrowserLaunchConfig(root / "profile", root / "extension", host, port)
+
+    def test_disabled_bridge_launches_without_extension_arguments(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            config = BrowserLaunchConfig(profile_dir=Path(temporary).resolve() / "profile")
+
+            options = playwright_launch_options(config)
+
+        self.assertFalse(
+            any("extension" in argument for argument in options["args"]),
+            options["args"],
+        )
+        self.assertIn("--remote-debugging-address=127.0.0.1", options["args"])
 
 
 class _FakeContext:
@@ -118,7 +130,7 @@ class _FakePlaywrightManager:
 class PersistentContextTests(unittest.TestCase):
     def test_worker_uses_playwright_context_and_closes_it_on_shutdown(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             config = BrowserLaunchConfig(root / "profile", root / "extension")
             context = _FakeContext()
             chromium = _FakeChromium(context)

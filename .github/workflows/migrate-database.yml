@@ -26,7 +26,7 @@ concurrency:
 jobs:
   migrate:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 35
     environment: ${{ inputs.environment }}
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
@@ -47,20 +47,44 @@ jobs:
           [[ -n "${{ inputs.backup_reference }}" ]]
           [[ -n "$SUPABASE_DB_URL" ]]
           [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
-      - name: Reject destructive migration statements
+      - name: Read applied migration versions without exposing the database URL
+        shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-          pattern = re.compile(r"\b(drop\s+(database|schema|table|column)|truncate\s+|delete\s+from)\b", re.I)
-          bad = []
-          for path in sorted(Path("supabase/migrations").glob("*.sql")):
-              for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
-                  if pattern.search(line) and not line.lstrip().startswith("--"):
-                      bad.append(f"{path}:{number}")
-          if bad:
-              raise SystemExit("destructive SQL requires a separately reviewed forward migration: " + ", ".join(bad))
-          PY
+          set -Eeuo pipefail
+          command -v psql >/dev/null
+          PGCONNECT_TIMEOUT=15 PGDATABASE="$SUPABASE_DB_URL" \
+            psql --no-psqlrc --set=ON_ERROR_STOP=1 --tuples-only --no-align \
+              --command 'select version from supabase_migrations.schema_migrations order by version' \
+            > /tmp/pokecrack-applied-migrations.txt
+      - name: Audit only pending migrations against the reviewed DELETE allowlist
+        run: |
+          python3 scripts/check_migration_safety.py \
+            --applied-versions-file /tmp/pokecrack-applied-migrations.txt \
+            --allowlist config/migration-safety-allowlist.json
+      - name: Build the target schema locally before touching production
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          npx --yes supabase@2.115.0 start
+          npx --yes supabase@2.115.0 db reset
+          install -d -m 0700 generated-types
+          npx --yes supabase@2.115.0 gen types typescript --local \
+            --schema public,catalog,ingest,analytics \
+            > generated-types/database.generated.ts
+          test -s generated-types/database.generated.ts
+      - name: Reject generated TypeScript type drift before migration
+        run: diff --unified supabase/types/database.ts generated-types/database.generated.ts
+      - name: Upload generated database types for review
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: database-types-${{ github.sha }}
+          path: generated-types/database.generated.ts
+          if-no-files-found: ignore
+          retention-days: 7
+      - name: Stop local Supabase validation stack
+        if: always()
+        run: npx --yes supabase@2.115.0 stop --no-backup
       - name: Preview forward-only migration
         shell: bash
         run: |
@@ -76,17 +100,3 @@ jobs:
         run: |
           set -Eeuo pipefail
           npx --yes supabase@2.115.0 db push --dry-run --db-url "$SUPABASE_DB_URL"
-      - name: Regenerate TypeScript database types
-        shell: bash
-        run: |
-          set -Eeuo pipefail
-          install -d -m 0700 generated-types
-          npx --yes supabase@2.115.0 gen types typescript --db-url "$SUPABASE_DB_URL" > generated-types/database.generated.ts
-          test -s generated-types/database.generated.ts
-      - name: Upload generated database types
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: database-types-${{ github.sha }}
-          path: generated-types/database.generated.ts
-          if-no-files-found: error
-          retention-days: 7

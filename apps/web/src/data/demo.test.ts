@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { DEMO_DATA } from "./demo";
+import { DEMO_DATA, DEMO_PUBLIC_DATA } from "./demo";
 import { publicDashboardDataSchema } from "./schema";
 
 describe("DEMO_DATA", () => {
@@ -30,6 +30,36 @@ describe("DEMO_DATA", () => {
         .filter((item) => item.classification === "activity-only")
         .every((item) => item.statisticsEligible === false),
     ).toBe(true);
+  });
+
+  it("keeps unpublished activity internal and filters it at the public schema boundary", () => {
+    expect(DEMO_DATA.recentActivity.some((item) => item.published === false)).toBe(true);
+    expect(DEMO_PUBLIC_DATA.recentActivity.every((item) => item.published)).toBe(true);
+    expect(DEMO_PUBLIC_DATA.recentActivity.map((item) => item.id)).not.toContain(
+      "activity-web-perth-004",
+    );
+
+    const { admin, ...unfilteredPublicShape } = DEMO_DATA;
+    expect(admin).toBeDefined();
+    const parsed = publicDashboardDataSchema.parse(unfilteredPublicShape);
+    expect(parsed.recentActivity.every((item) => item.published)).toBe(true);
+    expect(parsed.recentActivity).toHaveLength(DEMO_PUBLIC_DATA.recentActivity.length);
+  });
+
+  it("accepts only http and https public external links", () => {
+    expect(publicDashboardDataSchema.safeParse(DEMO_PUBLIC_DATA).success).toBe(true);
+    expect(publicDashboardDataSchema.safeParse({
+      ...DEMO_PUBLIC_DATA,
+      sources: DEMO_PUBLIC_DATA.sources.map((source, index) =>
+        index === 0 ? { ...source, url: "javascript:alert(document.domain)" } : source,
+      ),
+    }).success).toBe(false);
+    expect(publicDashboardDataSchema.safeParse({
+      ...DEMO_PUBLIC_DATA,
+      recentActivity: DEMO_PUBLIC_DATA.recentActivity.map((activity, index) =>
+        index === 0 ? { ...activity, sourceUrl: "data:text/html,unsafe" } : activity,
+      ),
+    }).success).toBe(false);
   });
 
   it("keeps demo scope Australia-only and limited to supported physical products", () => {

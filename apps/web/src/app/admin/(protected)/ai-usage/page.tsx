@@ -4,4 +4,4 @@ import { AdminAiUsageView, AdminHeading, AdminModeNotice } from "@/components/ad
 import { getAdminSnapshot } from "../../_lib/admin-data";
 import { requireAdmin } from "../../_lib/auth";
 export const metadata: Metadata = { title: "AI usage" };
-export default async function AdminAiUsagePage() { const access = await requireAdmin(); const snapshot = await getAdminSnapshot(access); return <><AdminHeading title="AI usage ledger" description="Request, token and estimated-cost summaries without prompts or model output." /><AdminModeNotice message={snapshot.message} synthetic={snapshot.synthetic} /><AdminAiUsageView data={snapshot.status === "ready" ? snapshot.data : null} /></>; }
+export default async function AdminAiUsagePage() { const access = await requireAdmin(); const snapshot = await getAdminSnapshot(access); return <><AdminHeading title="AI usage ledger" description="Request, token and estimated-cost summaries without prompts or model output." /><AdminModeNotice message={snapshot.message} status={snapshot.status} synthetic={snapshot.synthetic} /><AdminAiUsageView data={snapshot.status === "ready" ? snapshot.data : null} /></>; }

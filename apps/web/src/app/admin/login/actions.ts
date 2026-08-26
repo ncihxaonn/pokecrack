@@ -39,7 +39,13 @@ export async function loginAction(_previous: LoginState, formData: FormData): Pr
   if (error) return { status: "error", message: "Sign-in failed. Check the credentials and try again." };
 
   const { data, error: userError } = await supabase.auth.getUser();
-  const decision = userError || !data.user ? { kind: "unauthenticated" as const } : evaluateAdminAccess(env, { email: data.user.email });
+  const decision = userError || !data.user
+    ? { kind: "unauthenticated" as const }
+    : evaluateAdminAccess(env, {
+        id: data.user.id,
+        email: data.user.email,
+        hasAdminClaim: data.user.app_metadata.pokecrack_admin === true,
+      });
   if (decision.kind !== "allowed") {
     await supabase.auth.signOut();
     return { status: "error", message: "Sign-in failed. Use an allowlisted administrator account." };

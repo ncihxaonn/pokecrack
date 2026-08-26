@@ -43,7 +43,7 @@ def run_persistent_context(
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Internal persistent Chromium worker")
     parser.add_argument("--profile-dir", type=Path, required=True)
-    parser.add_argument("--extension-dir", type=Path, required=True)
+    parser.add_argument("--extension-dir", type=Path)
     parser.add_argument("--cdp-host", default="127.0.0.1")
     parser.add_argument("--cdp-port", type=int, default=9222)
     parser.add_argument("--lock-fd", type=int, required=True)

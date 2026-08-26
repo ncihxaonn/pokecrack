@@ -26,7 +26,7 @@ test:
 	cd services/worker && $(UV) run pytest -q
 	cd services/auth-browser && $(UV) run pytest -q
 	python3 -m unittest discover -s deploy/tests -v
-	python3 -m unittest scripts.tests.test_verify_repository -v
+	python3 -m unittest discover -s scripts/tests -v
 
 build:
 	$(PNPM) build

@@ -35,11 +35,12 @@ class BrowserManagerTests(unittest.TestCase):
             runtime_root=root / "runtime",
             extension_dir=extension,
             extension_version="4.5.6",
+            opencli_enabled=True,
         )
 
     def test_start_spawns_internal_worker_with_inherited_lock_and_private_profile(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             settings = self._settings(root)
             calls: list[tuple[list[str], dict[str, object]]] = []
 
@@ -75,7 +76,7 @@ class BrowserManagerTests(unittest.TestCase):
 
     def test_active_state_prevents_second_profile_before_spawn(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             settings = self._settings(root)
             spawn_count = 0
 
@@ -98,9 +99,34 @@ class BrowserManagerTests(unittest.TestCase):
             self.assertEqual(caught.exception.category, "profile_busy")
             self.assertEqual(spawn_count, 1)
 
+    def test_disabled_opencli_still_uses_manager_without_extension_arguments(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary).resolve()
+            calls: list[list[str]] = []
+
+            def spawn(argv: list[str], **_kwargs: object) -> _Spawned:
+                calls.append(argv)
+                return _Spawned()
+
+            manager = BrowserManager(
+                ServiceSettings(
+                    profile_root=root / "profiles",
+                    runtime_root=root / "runtime",
+                    opencli_enabled=False,
+                ),
+                popen=spawn,
+                identity_for_pid=lambda pid: f"test-identity:{pid}",
+                matches_identity=lambda _pid, _identity: False,
+            )
+
+            manager.start("research-general")
+
+        self.assertEqual(len(calls), 1)
+        self.assertNotIn("--extension-dir", calls[0])
+
     def test_stop_refuses_to_signal_a_reused_pid_with_the_wrong_process_identity(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             settings = self._settings(root)
             write_runtime_state(
                 settings.runtime_root,
@@ -132,7 +158,7 @@ class BrowserManagerTests(unittest.TestCase):
 
     def test_stop_targets_matching_profile_and_clears_state(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             settings = self._settings(root)
             stopped: list[tuple[int, str, float]] = []
 

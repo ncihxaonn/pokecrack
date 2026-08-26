@@ -3,7 +3,10 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
 
-SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+PORTABILITY_HELPER="$SCRIPT_DIR/../lib/shell_portability.sh"
+# shellcheck disable=SC1090
+source "$PORTABILITY_HELPER"
 REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/../.." && pwd -P)
 COMPOSE_FILE="$REPOSITORY_ROOT/deploy/compose.prod.yml"
 ENV_FILE=${POKECRACK_ENV_FILE:-/etc/pokecrack/production.env}
@@ -63,7 +66,7 @@ for command in docker git install mktemp mv stat; do
   command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
 done
 
-env_mode=$(stat -c '%a' -- "$ENV_FILE")
+env_mode=$(pokecrack_stat_mode "$ENV_FILE") || die "could not validate environment file permissions"
 [[ $env_mode =~ ^[0-7]{3,4}$ ]] || die "could not validate environment file permissions"
 env_permissions=$((8#$env_mode))
 (( (env_permissions & 0077) == 0 )) || die "environment file must not be accessible by group or other users (use mode 0600)"
@@ -121,11 +124,11 @@ while true; do
 done
 
 [[ ! -L $STATE_DIR ]] || die "state directory must not be a symbolic link"
-install -d -m 0700 -- "$STATE_DIR"
+install -d -m 0700 "$STATE_DIR"
 [[ -d $STATE_DIR && ! -L $STATE_DIR ]] || die "state directory is invalid"
 marker=$(mktemp "$STATE_DIR/.last-successful-sha.XXXXXXXX")
 printf '%s\n' "$target_sha" > "$marker"
-chmod 0600 -- "$marker"
-mv -f -- "$marker" "$STATE_DIR/last-successful-sha"
+chmod 0600 "$marker"
+mv -f "$marker" "$STATE_DIR/last-successful-sha"
 
 printf 'Deployment healthy at exact SHA %s.\n' "$target_sha"

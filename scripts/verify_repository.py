@@ -6,8 +6,8 @@ from __future__ import annotations
 import argparse
 import json
 import re
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 SKIP_PARTS = {".git", "node_modules", ".next", ".venv", "dist", "build", "coverage"}
 MEDIA_SUFFIXES = {".mp4", ".mov", ".mkv", ".webm", ".avi"}
@@ -125,10 +125,10 @@ def find_probable_secrets(root: Path) -> list[str]:
         '(?i)(?:api[_-]?key|access[_-]?token|secret|password|private[_-]?key)\\s*[:=]\\s*\\x22([^\\x22\\r\\n]{12,})\\x22'
     )
     high_confidence = (
-        re.compile(r"gh[pousr]_[A-Za-z0-9]{30,}"),
-        re.compile(r"AKIA[0-9A-Z]{16}"),
-        re.compile(r"xox[baprs]-[A-Za-z0-9-]{20,}"),
-        re.compile(r"sk-[A-Za-z0-9_-]{20,}"),
+        re.compile(r"\bgh[pousr]_[A-Za-z0-9]{30,}\b"),
+        re.compile(r"\bAKIA[0-9A-Z]{16}\b"),
+        re.compile(r"\bxox[baprs]-[A-Za-z0-9-]{20,}\b"),
+        re.compile(r"\bsk-[A-Za-z0-9_-]{20,}\b"),
     )
     placeholders = ("example", "placeholder", "changeme", "replace-me", "your-", "process.env")
     findings: list[str] = []

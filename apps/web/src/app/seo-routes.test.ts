@@ -12,7 +12,9 @@ describe("SEO metadata routes", () => {
     if (missing.length > 0) return;
 
     const robots = readFileSync(path.join(appRoot, "robots.ts"), "utf8");
+    expect(robots).toContain('"/admin"');
     expect(robots).toContain("/admin/");
+    expect(robots).toContain('"/api/internal"');
     expect(robots).toContain("/api/internal/");
     const sitemap = readFileSync(path.join(appRoot, "sitemap.ts"), "utf8");
     expect(sitemap).not.toMatch(/["'`]\/admin/);

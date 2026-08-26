@@ -94,13 +94,46 @@ class RepositoryGuardTests(unittest.TestCase):
             root = Path(directory)
             bad = root / "service/config.py"
             bad.parent.mkdir(parents=True, exist_ok=True)
-            bad.write_text('api_key = "sk-live-super-secret-value"', encoding="utf-8")
+            bad.write_text('api_key = "live-super-secret-value"', encoding="utf-8")
             example = root / ".env.example"
             example.write_text("AI_API_KEY=", encoding="utf-8")
 
             findings = find_probable_secrets(root)
 
             self.assertEqual(1, len(findings))
+
+    def test_high_confidence_tokens_use_regex_word_boundaries(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "service/config.py"
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text(
+                "\n".join(
+                    (
+                        "github = 'ghp_" + "a" * 36 + "'",
+                        "aws = 'AKIA" + "B" * 16 + "'",
+                        "slack = 'xoxb-" + "c" * 24 + "'",
+                        "openai = 'sk-" + "d" * 24 + "'",
+                    )
+                ),
+                encoding="utf-8",
+            )
+
+            findings = find_probable_secrets(root)
+
+            self.assertEqual(
+                ["service/config.py:high-confidence-token"],
+                findings,
+            )
+
+    def test_high_confidence_token_prefixes_inside_words_are_not_matched(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "service/config.py"
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text("notaghp_" + "a" * 36, encoding="utf-8")
+
+            self.assertEqual([], find_probable_secrets(root))
 
 
 if __name__ == "__main__":

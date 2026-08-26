@@ -3,6 +3,14 @@ import { z } from "zod";
 const probability = z.number().min(0).max(1);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const isoDateTime = z.string().datetime({ offset: true });
+const publicHttpUrl = z.string().url().refine((value) => {
+  try {
+    const protocol = new URL(value).protocol;
+    return protocol === "http:" || protocol === "https:";
+  } catch {
+    return false;
+  }
+}, "Public URLs must use http or https");
 const evidenceState = z.enum([
   "ready",
   "watch",
@@ -163,7 +171,7 @@ const source = z
     access: z.enum(["public", "api-key", "browser-auth-required"]),
     status: z.enum(["operational", "delayed", "attention", "paused"]),
     lastCollectedAt: isoDateTime.nullable(),
-    url: z.string().url(),
+    url: publicHttpUrl,
     note: z.string().min(1).max(500),
   })
   .strict();
@@ -229,7 +237,7 @@ const recentActivity = z
     classification: z.enum(["rate-eligible", "activity-only"]),
     statisticsEligible: z.boolean(),
     published: z.boolean(),
-    sourceUrl: z.string().url(),
+    sourceUrl: publicHttpUrl,
   })
   .strict();
 
@@ -295,4 +303,9 @@ export const dashboardDataSchema = z
   })
   .strict();
 
-export const publicDashboardDataSchema = dashboardDataSchema.omit({ admin: true });
+export const publicDashboardDataSchema = dashboardDataSchema
+  .omit({ admin: true })
+  .transform((data) => ({
+    ...data,
+    recentActivity: data.recentActivity.filter((activity) => activity.published),
+  }));

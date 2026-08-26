@@ -1,17 +1,18 @@
-"""Typer entry point for the fixture-safe Pokecrack worker runtime."""
+"""Typer entry point for fixture-safe and fail-closed live worker commands."""
 
 from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any
+from typing import Any, NoReturn
 from urllib.parse import urlsplit, urlunsplit
 from uuid import uuid4
 
 import typer
 from pydantic import ValidationError
 
+from pokecrack_worker import composition
 from pokecrack_worker.collectors.manual_import import (
     ImportFormatError,
     import_csv_candidates,
@@ -24,6 +25,9 @@ from pokecrack_worker.config.source_policy import (
     PolicyDeniedError,
     SourcePolicyRegistry,
 )
+from pokecrack_worker.jobs import InMemoryJobRepository
+from pokecrack_worker.runtime import RuntimeStatus
+from pokecrack_worker.scheduler import Scheduler
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_DIR = PROJECT_ROOT / "config"
@@ -70,6 +74,22 @@ def _require_fixture_service_mode() -> None:
         raise typer.Exit(code=78)
 
 
+def _fail_composition(error: composition.LiveCompositionError) -> NoReturn:
+    _json({"error": error.code, "message": error.safe_message}, err=True)
+    raise typer.Exit(code=78)
+
+
+def _fail_database(event: str) -> NoReturn:
+    _json(
+        {
+            "error": "database_unavailable",
+            "message": f"live PostgreSQL {event} failed",
+        },
+        err=True,
+    )
+    raise typer.Exit(code=1)
+
+
 def _policies() -> SourcePolicyRegistry:
     return SourcePolicyRegistry.from_yaml(CONFIG_DIR / "sources.yaml")
 
@@ -112,9 +132,36 @@ def _deny(error: PolicyDeniedError) -> None:
 
 @app.command("health")
 def health() -> None:
-    """Report a no-side-effect runtime health snapshot."""
+    """Report fixture health or probe PostgreSQL and update a live heartbeat."""
 
     settings = _settings()
+    if settings.data_mode is DataMode.LIVE:
+        try:
+            heartbeat = composition.write_health_heartbeat(settings)
+        except composition.LiveCompositionError as error:
+            _fail_composition(error)
+        except Exception:
+            _fail_database("health probe")
+        if not composition.role_is_ready(heartbeat.worker_role):
+            _fail_composition(
+                composition.LiveCompositionError(
+                    "worker_role_not_ready",
+                    "the configured role has no safe live command in this build",
+                )
+            )
+        _json(
+            {
+                "status": "ok",
+                "data_mode": settings.data_mode.value,
+                "ai_provider": settings.ai_provider.value,
+                "database": "postgres_reachable",
+                "worker_id": heartbeat.worker_id,
+                "worker_role": heartbeat.worker_role.value,
+                "heartbeat_at": heartbeat.last_seen_at.isoformat(),
+                "network_calls": True,
+            }
+        )
+        return
     _json(
         {
             "status": "ok",
@@ -137,18 +184,93 @@ def worker(
 ) -> None:
     """Run a worker claim/heartbeat cycle (one cycle by default)."""
 
-    _require_fixture_service_mode()
-    _mutation("worker_cycle", dry_run, once=once, processed=0, fixture=True)
+    settings = _settings()
+    if settings.data_mode is DataMode.DEMO:
+        _mutation("worker_cycle", dry_run, once=once, processed=0, fixture=True)
+        return
+    try:
+        registered_job_types = composition.require_worker_job_types(settings)
+        if dry_run:
+            _json(
+                {
+                    "event": "worker_cycle",
+                    "dry_run": True,
+                    "mutated": False,
+                    "once": once,
+                    "processed": 0,
+                    "registered_job_types": registered_job_types,
+                    "worker_role": settings.worker_role,
+                }
+            )
+            return
+        runtime = composition.build_live_worker_runtime(settings)
+        result = runtime.run(once=once)
+    except composition.LiveCompositionError as error:
+        _fail_composition(error)
+    except Exception:
+        _fail_database("worker cycle")
+    statuses = tuple(cycle.status.value for cycle in result.results)
+    _json(
+        {
+            "event": "worker_cycle",
+            "dry_run": False,
+            "mutated": True,
+            "once": once,
+            "processed": result.processed,
+            "cycles": result.cycles,
+            "statuses": statuses,
+            "registered_job_types": registered_job_types,
+            "worker_role": settings.worker_role,
+        }
+    )
+    if any(cycle.status is RuntimeStatus.FAILED for cycle in result.results):
+        raise typer.Exit(code=1)
 
 
 @app.command("scheduler")
 def scheduler(
     dry_run: bool = typer.Option(False, "--dry-run", help="Do not create scheduled jobs."),
 ) -> None:
-    """Create due scheduler/watchdog/backup jobs."""
+    """Create due jobs only for schedules with a safe live handler."""
 
-    _require_fixture_service_mode()
-    _mutation("scheduler_cycle", dry_run, created=0, fixture=True)
+    settings = _settings()
+    if settings.data_mode is DataMode.DEMO:
+        _mutation("scheduler_cycle", dry_run, created=0, fixture=True)
+        return
+    now = datetime.now(UTC)
+    try:
+        entries = composition.live_schedule_entries(settings)
+        if dry_run:
+            live_scheduler = Scheduler(InMemoryJobRepository(), entries)
+        else:
+            live_scheduler = composition.build_live_scheduler(settings)
+        result = live_scheduler.run_due(now=now, dry_run=dry_run)
+    except composition.LiveCompositionError as error:
+        _fail_composition(error)
+    except ValueError:
+        _json(
+            {
+                "error": "invalid_schedule_configuration",
+                "message": "a configured UTC cron expression is invalid",
+            },
+            err=True,
+        )
+        raise typer.Exit(code=78) from None
+    except Exception:
+        _fail_database("scheduler cycle")
+    _json(
+        {
+            "event": "scheduler_cycle",
+            "dry_run": result.dry_run,
+            "mutated": not result.dry_run and result.created > 0,
+            "planned": result.planned,
+            "enqueue_attempts": result.created,
+            "due_schedules": result.due_names,
+            "registered_job_types": tuple(entry.job_type for entry in entries),
+            "unwired_schedules": composition.UNWIRED_SCHEDULE_NAMES,
+            "worker_role": settings.worker_role,
+        }
+    )
 
 
 @aggregate_app.command("all")

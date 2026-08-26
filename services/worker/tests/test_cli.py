@@ -1,11 +1,15 @@
 from __future__ import annotations
 
 import json
+from datetime import UTC, datetime
 
 import pytest
 from typer.testing import CliRunner
 
+from pokecrack_worker import cli, composition
 from pokecrack_worker.cli import app
+from pokecrack_worker.runtime import CycleResult, RuntimeStatus, WorkerRunResult
+from pokecrack_worker.scheduler import SchedulerResult
 
 runner = CliRunner()
 
@@ -148,8 +152,6 @@ def test_default_import_commands_use_canonical_fixture_names() -> None:
 @pytest.mark.parametrize(
     "args",
     (
-        ["worker", "--forever"],
-        ["scheduler"],
         ["aggregate", "all"],
         ["collect", "youtube"],
         ["collect-source", "sources.pokecrack.invalid"],
@@ -165,7 +167,7 @@ def test_default_import_commands_use_canonical_fixture_names() -> None:
         ["show-storage-usage"],
     ),
 )
-def test_fixture_only_service_commands_refuse_live_mode(args: list[str]) -> None:
+def test_unwired_service_commands_refuse_live_mode(args: list[str]) -> None:
     result = runner.invoke(
         app,
         args,
@@ -178,6 +180,211 @@ def test_fixture_only_service_commands_refuse_live_mode(args: list[str]) -> None
 
     assert result.exit_code != 0
     assert "production database-backed worker role wiring is not implemented" in result.output
+
+
+def test_live_health_uses_database_heartbeat_and_reports_ready_role(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
+
+    def heartbeat(_settings: object) -> composition.HeartbeatResult:
+        return composition.HeartbeatResult(
+            worker_id="watchdog-1",
+            worker_role=composition.WorkerRole.WATCHDOG,
+            last_seen_at=now,
+        )
+
+    monkeypatch.setattr(cli.composition, "write_health_heartbeat", heartbeat)
+    result = runner.invoke(
+        app,
+        ["health"],
+        env={
+            "DATA_MODE": "live",
+            "SUPABASE_DB_URL": "postgresql://db.example.invalid/pokecrack",
+            "WORKER_ID": "watchdog-1",
+            "WORKER_ROLE": "watchdog",
+            "WORKER_MAX_CONCURRENCY": "1",
+            "AI_PROVIDER": "fixture",
+        },
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.stdout)
+    assert payload["status"] == "ok"
+    assert payload["database"] == "postgres_reachable"
+    assert payload["worker_role"] == "watchdog"
+    assert payload["heartbeat_at"] == now.isoformat()
+
+
+def test_live_health_database_failures_are_sanitized(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fail(_settings: object) -> None:
+        raise RuntimeError("postgresql://user:do-not-log@db.example.invalid/pokecrack")
+
+    monkeypatch.setattr(cli.composition, "write_health_heartbeat", fail)
+    result = runner.invoke(
+        app,
+        ["health"],
+        env={
+            "DATA_MODE": "live",
+            "SUPABASE_DB_URL": "postgresql://user:do-not-log@db.example.invalid/pokecrack",
+            "WORKER_ROLE": "watchdog",
+            "WORKER_MAX_CONCURRENCY": "1",
+            "AI_PROVIDER": "fixture",
+        },
+    )
+
+    assert result.exit_code == 1
+    assert "do-not-log" not in result.output
+    assert "Traceback" not in result.output
+    assert json.loads(result.output)["error"] == "database_unavailable"
+
+
+def test_live_worker_dry_run_validates_role_without_building_or_touching_database(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden(_settings: object) -> None:
+        raise AssertionError("dry-run built the database runtime")
+
+    monkeypatch.setattr(cli.composition, "build_live_worker_runtime", forbidden)
+    result = runner.invoke(
+        app,
+        ["worker", "--forever", "--dry-run"],
+        env={
+            "DATA_MODE": "live",
+            "SUPABASE_DB_URL": "postgresql://db.example.invalid/pokecrack",
+            "WORKER_ROLE": "watchdog",
+            "WORKER_MAX_CONCURRENCY": "1",
+            "AI_PROVIDER": "fixture",
+        },
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.stdout)
+    assert payload["dry_run"] is True
+    assert payload["mutated"] is False
+    assert payload["once"] is False
+    assert payload["registered_job_types"] == [composition.CLEANUP_JOB_TYPE]
+
+
+@pytest.mark.parametrize(("option", "expected_once"), (("--once", True), ("--forever", False)))
+def test_live_worker_passes_once_or_forever_to_the_composed_runtime(
+    option: str,
+    expected_once: bool,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    calls: list[bool] = []
+
+    class Runtime:
+        def run(self, *, once: bool) -> WorkerRunResult:
+            calls.append(once)
+            return WorkerRunResult((CycleResult(status=RuntimeStatus.IDLE),))
+
+    monkeypatch.setattr(cli.composition, "build_live_worker_runtime", lambda _settings: Runtime())
+    result = runner.invoke(
+        app,
+        ["worker", option],
+        env={
+            "DATA_MODE": "live",
+            "SUPABASE_DB_URL": "postgresql://db.example.invalid/pokecrack",
+            "WORKER_ROLE": "watchdog",
+            "WORKER_MAX_CONCURRENCY": "1",
+            "AI_PROVIDER": "fixture",
+        },
+    )
+
+    assert result.exit_code == 0, result.output
+    assert calls == [expected_once]
+    assert json.loads(result.stdout)["registered_job_types"] == [composition.CLEANUP_JOB_TYPE]
+
+
+def test_live_worker_rejects_unknown_or_unimplemented_roles_without_database_access(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden(_settings: object) -> None:
+        raise AssertionError("an unsupported role reached the database runtime")
+
+    monkeypatch.setattr(cli.composition, "build_live_worker_runtime", forbidden)
+    for role, expected_error in (
+        ("unknown", "unsupported_worker_role"),
+        ("collector", "worker_role_not_ready"),
+    ):
+        result = runner.invoke(
+            app,
+            ["worker", "--once"],
+            env={
+                "DATA_MODE": "live",
+                "SUPABASE_DB_URL": "postgresql://db.example.invalid/pokecrack",
+                "WORKER_ROLE": role,
+                "WORKER_MAX_CONCURRENCY": "1",
+                "AI_PROVIDER": "fixture",
+            },
+        )
+
+        assert result.exit_code == 78
+        assert json.loads(result.output)["error"] == expected_error
+
+
+def test_live_scheduler_dry_run_does_not_build_a_database_repository(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden(_settings: object) -> None:
+        raise AssertionError("dry-run built the database scheduler")
+
+    monkeypatch.setattr(cli.composition, "build_live_scheduler", forbidden)
+    result = runner.invoke(
+        app,
+        ["scheduler", "--dry-run"],
+        env={
+            "DATA_MODE": "live",
+            "SUPABASE_DB_URL": "postgresql://db.example.invalid/pokecrack",
+            "WORKER_ROLE": "scheduler",
+            "WORKER_MAX_CONCURRENCY": "1",
+            "SCHEDULE_CLEANUP": "* * * * *",
+            "AI_PROVIDER": "fixture",
+        },
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.stdout)
+    assert payload["dry_run"] is True
+    assert payload["mutated"] is False
+    assert payload["planned"] == 1
+    assert payload["registered_job_types"] == [composition.CLEANUP_JOB_TYPE]
+    assert "official_api" in payload["unwired_schedules"]
+
+
+def test_live_scheduler_runs_the_composed_postgres_scheduler(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class LiveScheduler:
+        def run_due(self, *, now: datetime, dry_run: bool) -> SchedulerResult:
+            assert now.tzinfo is not None
+            assert dry_run is False
+            return SchedulerResult(("cleanup",), planned=1, created=1, dry_run=False)
+
+    monkeypatch.setattr(
+        cli.composition,
+        "build_live_scheduler",
+        lambda _settings: LiveScheduler(),
+    )
+    result = runner.invoke(
+        app,
+        ["scheduler"],
+        env={
+            "DATA_MODE": "live",
+            "SUPABASE_DB_URL": "postgresql://db.example.invalid/pokecrack",
+            "WORKER_ROLE": "scheduler",
+            "WORKER_MAX_CONCURRENCY": "1",
+            "AI_PROVIDER": "fixture",
+        },
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.stdout)
+    assert payload["mutated"] is True
+    assert payload["enqueue_attempts"] == 1
 
 
 def test_invalid_live_configuration_returns_redacted_json_without_traceback() -> None:

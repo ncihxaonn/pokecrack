@@ -58,7 +58,7 @@ export interface AdminStatusData {
     readonly inputTokens: number;
     readonly outputTokens: number;
     readonly estimatedCostAud: number;
-    readonly budgetAud: number;
+    readonly budgetAud: number | null;
     readonly paused: boolean;
     readonly rows: readonly {
       readonly day: string;

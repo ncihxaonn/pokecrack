@@ -6,6 +6,7 @@ import subprocess
 import sys
 from collections.abc import Callable
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from .config import ServiceSettings
@@ -56,7 +57,8 @@ class BrowserManager:
         return None
 
     def start(self, profile: str) -> dict[str, Any]:
-        if not self.settings.extension_version:
+        extension_dir: Path | None = None
+        if self.settings.opencli_enabled and not self.settings.extension_version:
             raise ServiceError(
                 "invalid_request",
                 "POKECRACK_BRIDGE_VERSION must pin the mounted extension version",
@@ -67,10 +69,11 @@ class BrowserManager:
                 profile,
                 create=True,
             )
-            extension_dir = validate_extension_path(
-                self.settings.extension_dir,
-                expected_version=self.settings.extension_version,
-            )
+            if self.settings.opencli_enabled:
+                extension_dir = validate_extension_path(
+                    self.settings.extension_dir,
+                    expected_version=self.settings.extension_version,
+                )
             active = self._active_state()
             if active is not None:
                 raise ServiceError(
@@ -96,8 +99,6 @@ class BrowserManager:
             "pokecrack_browser.browser_process",
             "--profile-dir",
             str(config.profile_dir),
-            "--extension-dir",
-            str(config.extension_dir),
             "--cdp-host",
             config.cdp_host,
             "--cdp-port",
@@ -105,6 +106,8 @@ class BrowserManager:
             "--lock-fd",
             str(lock.file_descriptor),
         ]
+        if config.extension_dir is not None:
+            argv.extend(["--extension-dir", str(config.extension_dir)])
         if config.chromium_executable is not None:
             argv.extend(["--chromium-executable", str(config.chromium_executable)])
 
@@ -132,7 +135,7 @@ class BrowserManager:
                 "process_identity": identity,
                 "status": "starting",
                 "started_at": datetime.now(UTC).isoformat(),
-                "extension_version": self.settings.extension_version,
+                "extension_version": self.settings.extension_version or None,
                 "cdp_endpoint": f"http://{config.cdp_host}:{config.cdp_port}",
                 "daemon_endpoint": (
                     f"http://{self.settings.daemon_host}:{self.settings.daemon_port}"

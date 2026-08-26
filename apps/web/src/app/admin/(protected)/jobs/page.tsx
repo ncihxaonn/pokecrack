@@ -4,4 +4,4 @@ import { AdminHeading, AdminJobsView, AdminModeNotice } from "@/components/admin
 import { getAdminSnapshot } from "../../_lib/admin-data";
 import { requireAdmin } from "../../_lib/auth";
 export const metadata: Metadata = { title: "Jobs" };
-export default async function AdminJobsPage() { const access = await requireAdmin(); const snapshot = await getAdminSnapshot(access); return <><AdminHeading title="Collection jobs" description="Bounded scheduler summaries; unsafe run controls stay disabled." /><AdminModeNotice message={snapshot.message} synthetic={snapshot.synthetic} /><AdminJobsView data={snapshot.status === "ready" ? snapshot.data : null} /></>; }
+export default async function AdminJobsPage() { const access = await requireAdmin(); const snapshot = await getAdminSnapshot(access); return <><AdminHeading title="Collection jobs" description="Bounded scheduler summaries; unsafe run controls stay disabled." /><AdminModeNotice message={snapshot.message} status={snapshot.status} synthetic={snapshot.synthetic} /><AdminJobsView data={snapshot.status === "ready" ? snapshot.data : null} /></>; }

@@ -33,6 +33,78 @@ def write_executable(path: Path, content: str) -> None:
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
 
 
+class ShellPortabilityTests(unittest.TestCase):
+    def test_bash_3_compatible_helpers_report_bsd_or_gnu_metadata(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            fixture = Path(temporary) / "fixture"
+            fixture.write_bytes(b"fixture")
+            fixture.chmod(0o600)
+            result = subprocess.run(
+                [
+                    "/bin/bash",
+                    "-c",
+                    'source "$1"; pokecrack_stat_mode "$2"; '
+                    'pokecrack_stat_uid "$2"; pokecrack_stat_size "$2"; '
+                    'pokecrack_lowercase "Bash-BSD-GNU"',
+                    "bash",
+                    str(DEPLOY_ROOT / "lib" / "shell_portability.sh"),
+                    str(fixture),
+                ],
+                check=False,
+                text=True,
+                capture_output=True,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                result.stdout.splitlines(),
+                ["600", str(os.geteuid()), "7", "bash-bsd-gnu"],
+            )
+
+            fake_bin = Path(temporary) / "bin"
+            fake_bin.mkdir()
+            digest = "a" * 64
+            write_executable(
+                fake_bin / "shasum",
+                f"""#!/bin/bash
+[[ $1 == -a && $2 == 256 ]]
+printf '%s  %s\n' '{digest}' "$3"
+""",
+            )
+            result = subprocess.run(
+                [
+                    "/bin/bash",
+                    "-c",
+                    'source "$1"; pokecrack_sha256_file "$2"',
+                    "bash",
+                    str(DEPLOY_ROOT / "lib" / "shell_portability.sh"),
+                    str(fixture),
+                ],
+                check=False,
+                text=True,
+                capture_output=True,
+                env={"PATH": str(fake_bin)},
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(result.stdout.strip(), digest)
+
+    def test_shell_entrypoints_do_not_use_known_gnu_or_bash_4_only_forms(self) -> None:
+        scripts = list(DEPLOY_ROOT.glob("*.sh"))
+        scripts.extend((DEPLOY_ROOT / "scripts").glob("*.sh"))
+        source = "\n".join(path.read_text(encoding="utf-8") for path in scripts)
+        for forbidden in (
+            "${value,,}",
+            "${2,,}",
+            "readlink --",
+            "mv -Tf --",
+            "chmod 0600 --",
+            "chmod 0700 --",
+            "gzip --test --",
+            'wait -n "${pids[@]}"',
+            "timeout 10s opencli doctor",
+        ):
+            self.assertNotIn(forbidden, source)
+
+
 class WorkflowSecurityPolicyTests(unittest.TestCase):
     def test_ci_audits_both_python_lockfiles_with_a_pinned_auditor(self) -> None:
         workflow = (REPOSITORY_ROOT / ".github" / "workflows" / "ci.yml").read_text()
@@ -172,7 +244,7 @@ while (($#)); do
   fi
 done
 [[ -n $output ]]
-cp -- "$FAKE_DOWNLOAD" "$output"
+cp "$FAKE_DOWNLOAD" "$output"
 """,
             )
             install_root = base / "extension"
@@ -302,7 +374,7 @@ output=''
 while (($#)); do
   if [[ $1 == '-o' || $1 == '--output' ]]; then output=$2; shift 2; else shift; fi
 done
-cp -- "$FAKE_DOWNLOAD" "$output"
+cp "$FAKE_DOWNLOAD" "$output"
 """,
             )
             archive = self.make_archive(base, "1.2.3")
@@ -476,8 +548,14 @@ class DeployAndRollbackScriptTests(unittest.TestCase):
         repository = base / "repository"
         deploy = repository / "deploy"
         scripts = deploy / "scripts"
+        library = deploy / "lib"
         scripts.mkdir(parents=True)
+        library.mkdir()
         shutil.copy2(DEPLOY_ROOT / "compose.prod.yml", deploy / "compose.prod.yml")
+        shutil.copy2(
+            DEPLOY_ROOT / "lib" / "shell_portability.sh",
+            library / "shell_portability.sh",
+        )
         for name in ("deploy.sh", "rollback.sh"):
             shutil.copy2(DEPLOY_ROOT / "scripts" / name, scripts / name)
         subprocess.run(["git", "init", "-q", "-b", "main", str(repository)], check=True)
@@ -796,7 +874,7 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("@jackwener/opencli@${OPENCLI_VERSION}", dockerfile)
         self.assertNotIn("@jackwener/opencli@latest", dockerfile)
         self.assertIn("opencli daemon restart", entrypoint)
-        self.assertIn("extension_root=/opt/pokecrack/opencli-extension", entrypoint)
+        self.assertIn("pokecrack_browser.container_browser", entrypoint)
 
     def test_auth_browser_runtime_dependencies_and_startup_order_are_health_compatible(self) -> None:
         dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(encoding="utf-8")
@@ -804,12 +882,21 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         healthcheck = (DEPLOY_ROOT / "auth-browser-healthcheck.sh").read_text(
             encoding="utf-8"
         )
-        self.assertIn('playwright==1.55.0', dockerfile)
-        chromium_start = entrypoint.index('chromium "${chromium_arguments[@]}"')
+        self.assertIn("services/auth-browser/pyproject.toml", dockerfile)
+        self.assertIn("pip install --no-cache-dir /opt/pokecrack/auth-browser", dockerfile)
+        self.assertIn("pokecrack-browser --version", dockerfile)
+        self.assertNotIn("PYTHONPATH=", dockerfile)
+        manager_start = entrypoint.index("pokecrack_browser.container_browser")
         cdp_probe = entrypoint.index('/json/version')
         daemon_start = entrypoint.index('opencli daemon restart')
-        self.assertLess(chromium_start, cdp_probe)
+        self.assertLess(manager_start, cdp_probe)
         self.assertLess(cdp_probe, daemon_start)
+        self.assertNotIn('chromium "${chromium_arguments[@]}"', entrypoint)
+        self.assertIn("browser-supervisor.pid", entrypoint)
+        self.assertIn("browser-supervisor", healthcheck)
+        self.assertIn("process_matches_identity", healthcheck)
+        self.assertIn("opencli doctor", healthcheck)
+        self.assertIn("run_bounded_process", healthcheck)
         self.assertIn('if [[ ${OPENCLI_ENABLED:-false} == true ]]; then', healthcheck)
         self.assertIn('/json/version', healthcheck)
 
@@ -840,11 +927,72 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("/profiles", dockerfile)
         self.assertIn("install -d -o 10001 -g 10001 -m 0700", dockerfile)
 
-    def test_unwired_worker_service_roles_refuse_live_mode_instead_of_reporting_false_health(self) -> None:
+    def test_worker_service_roles_delegate_live_readiness_to_the_worker_composition(self) -> None:
         entrypoint = (DEPLOY_ROOT / "worker-service-entrypoint.sh").read_text()
-        self.assertIn('if [[ "${DATA_MODE:-demo}" != "demo" ]]', entrypoint)
-        self.assertIn("exit 78", entrypoint)
-        self.assertIn("production database-backed worker role wiring is not implemented", entrypoint)
+        self.assertNotIn('if [[ "${DATA_MODE:-demo}" != "demo" ]]', entrypoint)
+        self.assertIn("collector|ai-worker|watchdog)", entrypoint)
+        self.assertIn("command=(pokecrack-worker worker --forever)", entrypoint)
+        self.assertIn("command=(pokecrack-worker scheduler)", entrypoint)
+        self.assertIn("command=(pokecrack-worker aggregate all)", entrypoint)
+
+        expected_commands = {
+            "collector": "worker --forever",
+            "ai-worker": "worker --forever",
+            "watchdog": "worker --forever",
+            "aggregator": "aggregate all",
+            "scheduler": "scheduler",
+        }
+        for role, expected in expected_commands.items():
+            with self.subTest(role=role), tempfile.TemporaryDirectory() as temporary:
+                root = Path(temporary)
+                executable = root / "pokecrack-worker"
+                invocation = root / "invocation.txt"
+                executable.write_text(
+                    '#!/usr/bin/env bash\nprintf "%s\\n" "$*" > "$POKECRACK_TEST_INVOCATION"\nexit 78\n',
+                    encoding="utf-8",
+                )
+                executable.chmod(0o755)
+                environment = os.environ.copy()
+                environment.update(
+                    {
+                        "DATA_MODE": "live",
+                        "PATH": f"{root}:{environment['PATH']}",
+                        "POKECRACK_TEST_INVOCATION": str(invocation),
+                    }
+                )
+                result = subprocess.run(
+                    [str(DEPLOY_ROOT / "worker-service-entrypoint.sh"), role],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                    env=environment,
+                )
+                self.assertEqual(result.returncode, 1, result.stderr)
+                self.assertEqual(invocation.read_text(encoding="utf-8").strip(), expected)
+                self.assertNotIn("production database-backed", result.stderr)
+
+    def test_live_worker_concurrency_defaults_to_supported_single_process_mode(self) -> None:
+        source = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
+        self.assertIn('WORKER_MAX_CONCURRENCY: "${WORKER_MAX_CONCURRENCY:-1}"', source)
+        root_example = (REPOSITORY_ROOT / ".env.example").read_text(encoding="utf-8")
+        production_example = (DEPLOY_ROOT / "env" / "production.env.example").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("WORKER_MAX_CONCURRENCY=1", root_example)
+        self.assertIn("WORKER_MAX_CONCURRENCY=1", production_example)
+        self.assertIn("CHROMIUM_PROFILE_ROOT_HOST=/opt/pokecrack/browser-profiles", root_example)
+        self.assertIn(
+            "CHROMIUM_PROFILE_ROOT_HOST=/opt/pokecrack/browser-profiles",
+            production_example,
+        )
+        for stale_name in (
+            "POKECRACK_PROFILE_ROOT=",
+            "POKECRACK_EXTENSION_ROOT=",
+            "POKECRACK_BACKUP_ROOT=",
+        ):
+            self.assertNotIn(stale_name, root_example)
+            self.assertNotIn(stale_name, production_example)
 
     def test_required_operator_entrypoints_are_executable(self) -> None:
         required = {

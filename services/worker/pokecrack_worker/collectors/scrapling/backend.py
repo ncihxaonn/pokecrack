@@ -244,10 +244,13 @@ class ScraplingBindings:
     def load(
         cls,
         *,
-        import_module: Callable[[str], Any] = import_module,
+        import_module: Callable[[str], Any] | None = None,
     ) -> ScraplingBindings:
+        # Resolve the module-level loader at call time so tests and embedders can
+        # replace the optional-dependency boundary without installing Scrapling.
+        loader = import_module or globals()["import_module"]
         try:
-            module = import_module("scrapling.fetchers")
+            module = loader("scrapling.fetchers")
             fetcher = module.Fetcher
             async_fetcher = module.AsyncFetcher
             dynamic_fetcher = module.DynamicFetcher

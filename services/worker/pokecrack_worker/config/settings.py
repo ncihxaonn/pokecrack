@@ -74,9 +74,12 @@ class Settings(BaseSettings):
     scrapling_save_raw_html: Literal[False] = False
     scrapling_max_raw_text_chars: int = Field(default=20_000, ge=1, le=20_000)
 
-    worker_id: str = "demo-worker"
+    worker_id: str = Field(default="demo-worker", min_length=1, max_length=160)
+    worker_role: str | None = None
     worker_poll_seconds: float = Field(default=10, gt=0)
-    worker_max_concurrency: int = Field(default=2, ge=1)
+    # The first live composition root is deliberately single-threaded. Raising
+    # this cap requires a separate concurrency/connection-pool implementation.
+    worker_max_concurrency: int = Field(default=1, ge=1, le=1)
     worker_lease_seconds: int = Field(default=300, ge=10)
     worker_max_attempts: int = Field(default=5, ge=1)
 
@@ -122,6 +125,11 @@ class Settings(BaseSettings):
     @field_validator("ai_extract_model", "ai_validate_model", "ai_escalate_model", mode="before")
     @classmethod
     def empty_model_is_missing(cls, value: object) -> object:
+        return None if value == "" else value
+
+    @field_validator("worker_role", mode="before")
+    @classmethod
+    def empty_worker_role_is_missing(cls, value: object) -> object:
         return None if value == "" else value
 
     @model_validator(mode="after")
