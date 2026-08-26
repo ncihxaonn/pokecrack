@@ -60,6 +60,7 @@ def _job_row(
         "available_at": NOW,
         "attempts": 1,
         "max_attempts": 5,
+        "lease_generation": 1,
         "locked_by": "worker-1" if locked else None,
         "locked_at": NOW if locked else None,
         "lock_expires_at": NOW + timedelta(minutes=5) if locked else None,
@@ -130,7 +131,7 @@ def test_watchdog_runtime_claims_only_the_cleanup_job_type() -> None:
     assert result.status is RuntimeStatus.IDLE
     assert len(executor.calls) == 1
     sql, params = executor.calls[0]
-    assert "ingest.claim_jobs" in sql
+    assert "ingest.claim_jobs_v2" in sql
     assert params["kinds"] == [CLEANUP_JOB_TYPE]
 
 
@@ -144,11 +145,10 @@ def test_live_worker_dry_run_never_touches_the_database() -> None:
     assert executor.calls == []
 
 
-def test_watchdog_cleanup_handler_calls_only_the_bounded_database_function() -> None:
+def test_watchdog_cleanup_handler_uses_one_fenced_atomic_finalizer() -> None:
     executor = RecordingExecutor(
         [
             [_job_row(status="running")],
-            [{"cleanup_result": {"openings_deleted": 0}}],
             [_job_row(status="completed", locked=False)],
         ]
     )
@@ -158,10 +158,34 @@ def test_watchdog_cleanup_handler_calls_only_the_bounded_database_function() -> 
 
     assert result.status is RuntimeStatus.COMPLETED
     assert result.job_type == CLEANUP_JOB_TYPE
-    assert len(executor.calls) == 3
-    assert "ingest.claim_jobs" in executor.calls[0][0]
-    assert "ingest.prune_expired_ephemera()" in executor.calls[1][0]
-    assert "SET status = 'completed'" in executor.calls[2][0]
+    assert len(executor.calls) == 2
+    assert "ingest.claim_jobs_v2" in executor.calls[0][0]
+    finalizer_sql, finalizer_params = executor.calls[1]
+    assert "ingest.finalize_cleanup_job" in finalizer_sql
+    assert "ingest.prune_expired_ephemera()" not in finalizer_sql
+    assert "SET status = 'completed'" not in finalizer_sql
+    assert finalizer_params == {
+        "job_id": "00000000-0000-0000-0000-000000000001",
+        "worker_id": "worker-1",
+        "lease_generation": 1,
+    }
+
+
+def test_stale_cleanup_finalizer_returns_lease_lost_without_an_unfenced_effect() -> None:
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running")],
+            [],
+        ]
+    )
+    runtime = build_live_worker_runtime(_settings("watchdog"), executor=executor, clock=lambda: NOW)
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.LEASE_LOST
+    assert len(executor.calls) == 2
+    assert "ingest.finalize_cleanup_job" in executor.calls[1][0]
+    assert all("ingest.prune_expired_ephemera()" not in sql for sql, _ in executor.calls)
 
 
 def test_cleanup_handler_rejects_payloads_instead_of_expanding_its_authority() -> None:
@@ -179,6 +203,7 @@ def test_cleanup_handler_rejects_payloads_instead_of_expanding_its_authority() -
     assert result.error_code == "ValueError"
     assert len(executor.calls) == 2
     assert "ingest.prune_expired_ephemera" not in executor.calls[1][0]
+    assert "ingest.finalize_cleanup_job" not in executor.calls[1][0]
     assert "last_error_code" in executor.calls[1][0]
 
 

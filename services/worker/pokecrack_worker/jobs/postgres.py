@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
-from .models import Job, JobStatus
+from .models import CompletionEffect, Job, JobStatus
 from .repository import LeaseLostError
 
 
@@ -34,7 +34,7 @@ RETURNING jobs.*
 
 CLAIM_SQL = """
 SELECT *
-FROM ingest.claim_jobs(
+FROM ingest.claim_jobs_v2(
     worker_id => %(worker_id)s,
     job_types => %(kinds)s::text[],
     batch_size => 1,
@@ -52,6 +52,7 @@ FROM lease_clock
 WHERE id = %(job_id)s
   AND status = 'running'
   AND locked_by = %(worker_id)s
+  AND lease_generation = %(lease_generation)s
   AND lock_expires_at > lease_clock.now
 RETURNING *
 """.strip()
@@ -80,6 +81,7 @@ FROM lease_clock
 WHERE id = %(job_id)s
   AND status = 'running'
   AND locked_by = %(worker_id)s
+  AND lease_generation = %(lease_generation)s
   AND lock_expires_at > lease_clock.now
 RETURNING *
 """.strip()
@@ -99,8 +101,18 @@ FROM lease_clock
 WHERE id = %(job_id)s
   AND status = 'running'
   AND locked_by = %(worker_id)s
+  AND lease_generation = %(lease_generation)s
   AND lock_expires_at > lease_clock.now
 RETURNING *
+""".strip()
+
+FINALIZE_CLEANUP_SQL = """
+SELECT *
+FROM ingest.finalize_cleanup_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint
+)
 """.strip()
 
 PAUSE_BUDGET_SQL = """
@@ -120,9 +132,14 @@ FROM lease_clock
 WHERE id = %(job_id)s
   AND status = 'running'
   AND locked_by = %(worker_id)s
+  AND lease_generation = %(lease_generation)s
   AND lock_expires_at > lease_clock.now
 RETURNING *
 """.strip()
+
+_COMPLETION_EFFECT_SQL: Mapping[CompletionEffect, str] = {
+    CompletionEffect.PRUNE_EXPIRED_EPHEMERA: FINALIZE_CLEANUP_SQL,
+}
 
 
 _STORAGE_TO_RUNTIME = {
@@ -148,6 +165,7 @@ def job_from_row(row: Mapping[str, Any]) -> Job:
         available_at=row["available_at"],
         attempts=int(row.get("attempts", 0)),
         max_attempts=int(row.get("max_attempts", 5)),
+        lease_generation=int(row["lease_generation"]),
         leased_by=row.get("locked_by"),
         leased_at=row.get("locked_at"),
         lease_expires_at=row.get("lock_expires_at"),
@@ -226,6 +244,7 @@ class PostgresJobRepository:
         job_id: str,
         *,
         worker_id: str,
+        lease_generation: int,
         now: datetime,
         lease_for: timedelta,
     ) -> Job:
@@ -238,6 +257,7 @@ class PostgresJobRepository:
             {
                 "job_id": job_id,
                 "worker_id": worker_id,
+                "lease_generation": lease_generation,
                 "lease_seconds": lease_seconds,
             },
         )
@@ -245,11 +265,26 @@ class PostgresJobRepository:
             raise LeaseLostError(job_id)
         return job_from_row(rows[0])
 
-    def complete(self, job_id: str, *, worker_id: str, now: datetime) -> Job:
+    def complete(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        effect: CompletionEffect | None = None,
+    ) -> Job:
         del now
+        sql = COMPLETE_SQL if effect is None else _COMPLETION_EFFECT_SQL.get(effect)
+        if sql is None:
+            raise ValueError("unsupported completion effect")
         rows = self._executor.query(
-            COMPLETE_SQL,
-            {"job_id": job_id, "worker_id": worker_id},
+            sql,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+            },
         )
         if not rows:
             raise LeaseLostError(job_id)
@@ -260,6 +295,7 @@ class PostgresJobRepository:
         job_id: str,
         *,
         worker_id: str,
+        lease_generation: int,
         now: datetime,
         retry_at: datetime,
     ) -> Job:
@@ -269,6 +305,7 @@ class PostgresJobRepository:
             {
                 "job_id": job_id,
                 "worker_id": worker_id,
+                "lease_generation": lease_generation,
                 "retry_at": retry_at,
             },
         )
@@ -282,6 +319,7 @@ class PostgresJobRepository:
         error: str,
         *,
         worker_id: str,
+        lease_generation: int,
         now: datetime,
         error_code: str = "job_failed",
     ) -> Job:
@@ -291,6 +329,7 @@ class PostgresJobRepository:
             {
                 "job_id": job_id,
                 "worker_id": worker_id,
+                "lease_generation": lease_generation,
                 "error_code": error_code[:160],
                 "error_message": error[:8_000],
             },
