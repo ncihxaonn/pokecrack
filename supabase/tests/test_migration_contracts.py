@@ -9,6 +9,7 @@ INGEST = (ROOT / "migrations/20260825000200_ingest.sql").read_text()
 ANALYTICS = (ROOT / "migrations/20260825000300_analytics.sql").read_text()
 PUBLIC = (ROOT / "migrations/20260825000400_public_tables.sql").read_text()
 RPC = (ROOT / "migrations/20260825000500_public_rpc_security.sql").read_text()
+FENCING = (ROOT / "migrations/20260827000000_job_lease_fencing.sql").read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -136,6 +137,15 @@ class IngestMigrationContractTests(unittest.TestCase):
             migrations,
             flags=re.DOTALL,
         )
+        added_columns: dict[tuple[str, str], set[str]] = {}
+        for match in re.finditer(
+            r"alter\s+table\s+([a-z_]+)\.([a-z_]+)\s+add\s+column(?:\s+if\s+not\s+exists)?\s+([a-z_][a-z0-9_]*)\s+",
+            migrations,
+            flags=re.IGNORECASE,
+        ):
+            added_columns.setdefault((match.group(1), match.group(2)), set()).add(
+                match.group(3)
+            )
         self.assertGreaterEqual(len(tables), 20)
         ignored = {"constraint", "primary", "unique", "check", "foreign", "exclude"}
         for schema, table, body in tables:
@@ -144,6 +154,7 @@ class IngestMigrationContractTests(unittest.TestCase):
                 for match in re.finditer(r"^  ([a-z_][a-z0-9_]*)\s+", body, flags=re.MULTILINE)
                 if match.group(1) not in ignored
             }
+            columns.update(added_columns.get((schema, table), set()))
             table_match = re.search(
                 rf"^      {table}: \{{\n(.*?)^      \}};$",
                 DATABASE_TYPES,
@@ -169,15 +180,33 @@ class IngestMigrationContractTests(unittest.TestCase):
                 )
 
     def test_claim_jobs_dead_letters_due_max_attempt_rows_before_claiming(self) -> None:
-        lowered = INGEST.casefold()
+        lowered = FENCING.casefold()
+        self.assertIn("create or replace function ingest.claim_jobs_v2", lowered)
         self.assertIn("update ingest.jobs as exhausted", lowered)
         self.assertIn("exhausted.attempts >= exhausted.max_attempts", lowered)
         self.assertIn("exhausted.status = 'running'", lowered)
-        self.assertIn("exhausted.lock_expires_at <= claim_time", lowered)
+        self.assertIn("exhausted.lock_expires_at <= sweep_time", lowered)
+        self.assertIn("claim_time := clock_timestamp()", lowered)
         self.assertIn("'lease_expired_max_attempts'", lowered)
         self.assertIn("status = 'dead'", lowered)
         self.assertIn("and not exhausted.is_demo", lowered)
         self.assertIn("and not j.is_demo", lowered)
+
+    def test_job_lease_fencing_uses_a_forward_only_generation_protocol(self) -> None:
+        lowered = FENCING.casefold()
+        self.assertIn("add column lease_generation bigint not null default 0", lowered)
+        self.assertIn("check (lease_generation >= 0)", lowered)
+        self.assertIn("create or replace function ingest.claim_jobs_v2", lowered)
+        self.assertGreaterEqual(lowered.count("lease_generation + 1"), 3)
+        self.assertIn("claim_jobs is disabled", lowered)
+        self.assertIn("from public, anon, authenticated, service_role", lowered)
+        self.assertIn("create or replace function ingest.finalize_cleanup_job", lowered)
+        self.assertIn("for update of j", lowered)
+        self.assertIn("perform ingest.prune_expired_ephemera_v2", lowered)
+        self.assertIn("prune_expired_ephemera is disabled", lowered)
+        self.assertIn("ingest.prune_expired_ephemera_v2(timestamptz, integer)", lowered)
+        self.assertIn("finalize_cleanup_job:", DATABASE_TYPES)
+        self.assertIn("lease_generation: number;", DATABASE_TYPES)
 
     def test_admin_control_rpc_is_callable_only_by_service_role_with_explicit_actor(self) -> None:
         admin = (ROOT / "migrations/20260825000600_admin_control.sql").read_text().casefold()

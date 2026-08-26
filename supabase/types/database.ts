@@ -1295,6 +1295,7 @@ export type Database = {
           dedupe_key: string | null;
           retention_until: string;
           is_demo: boolean;
+          lease_generation: number;
         };
         Insert: {
           id?: string;
@@ -1316,6 +1317,7 @@ export type Database = {
           dedupe_key?: string | null;
           retention_until?: string;
           is_demo?: boolean;
+          lease_generation?: number;
         };
         Update: {
           id?: string;
@@ -1337,6 +1339,7 @@ export type Database = {
           dedupe_key?: string | null;
           retention_until?: string;
           is_demo?: boolean;
+          lease_generation?: number;
         };
         Relationships: [
         ];
@@ -1825,7 +1828,10 @@ export type Database = {
     Views: { [_ in never]: never };
     Functions: {
       claim_jobs: { Args: { worker_id: string; job_types?: string[] | null; batch_size?: number; lease_seconds?: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
+      claim_jobs_v2: { Args: { worker_id: string; job_types?: string[] | null; batch_size?: number; lease_seconds?: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
+      finalize_cleanup_job: { Args: { job_id: string; worker_id: string; lease_generation: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
       prune_expired_ephemera: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
+      prune_expired_ephemera_v2: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

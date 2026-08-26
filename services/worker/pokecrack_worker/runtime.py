@@ -9,9 +9,9 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from time import sleep
-from typing import Any, Protocol
+from typing import Protocol
 
-from pokecrack_worker.jobs import Job
+from pokecrack_worker.jobs import CompletionEffect, Job, LeaseLostError
 
 
 class RuntimeRepository(Protocol):
@@ -29,11 +29,20 @@ class RuntimeRepository(Protocol):
         job_id: str,
         *,
         worker_id: str,
+        lease_generation: int,
         now: datetime,
         lease_for: timedelta,
     ) -> Job: ...
 
-    def complete(self, job_id: str, *, worker_id: str, now: datetime) -> Job: ...
+    def complete(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        effect: CompletionEffect | None = None,
+    ) -> Job: ...
 
     def fail(
         self,
@@ -41,6 +50,7 @@ class RuntimeRepository(Protocol):
         error: str,
         *,
         worker_id: str,
+        lease_generation: int,
         now: datetime,
     ) -> Job: ...
 
@@ -49,12 +59,13 @@ class RuntimeRepository(Protocol):
         job_id: str,
         *,
         worker_id: str,
+        lease_generation: int,
         now: datetime,
         retry_at: datetime,
     ) -> Job: ...
 
 
-JobHandler = Callable[[Job], Any]
+JobHandler = Callable[[Job], CompletionEffect | None]
 
 
 class BudgetPaused(RuntimeError):
@@ -64,12 +75,17 @@ class BudgetPaused(RuntimeError):
         super().__init__("AI budget paused")
 
 
+class CompletionEffectRequiredError(RuntimeError):
+    """A live handler returned without an atomic database completion effect."""
+
+
 class RuntimeStatus(StrEnum):
     DRY_RUN = "dry_run"
     IDLE = "idle"
     COMPLETED = "completed"
     FAILED = "failed"
     BUDGET_PAUSED = "budget_paused"
+    LEASE_LOST = "lease_lost"
 
 
 @dataclass(frozen=True, slots=True)
@@ -104,6 +120,7 @@ class WorkerRuntime:
         poll_seconds: float = 10.0,
         clock: Callable[[], datetime] | None = None,
         sleeper: Callable[[float], None] = sleep,
+        require_completion_effect: bool = False,
     ) -> None:
         self.repository = repository
         self.handlers = dict(handlers)
@@ -112,24 +129,41 @@ class WorkerRuntime:
         self.poll_seconds = poll_seconds
         self.clock = clock or (lambda: datetime.now(UTC))
         self.sleeper = sleeper
+        self.require_completion_effect = require_completion_effect
 
-    def _run_handler_with_heartbeats(self, handler: JobHandler, job: Job) -> None:
+    def _run_handler_with_heartbeats(
+        self,
+        handler: JobHandler,
+        job: Job,
+    ) -> CompletionEffect | None:
         interval_seconds = max(0.01, min(30.0, self.lease_for.total_seconds() / 3))
         with ThreadPoolExecutor(max_workers=1, thread_name_prefix="pokecrack-job") as executor:
             future = executor.submit(handler, job)
             while True:
                 try:
-                    future.result(timeout=interval_seconds)
-                    return
+                    effect = future.result(timeout=interval_seconds)
+                    if effect is not None and not isinstance(effect, CompletionEffect):
+                        raise TypeError("job handlers must return a CompletionEffect or None")
+                    return effect
                 except FutureTimeoutError:
                     if future.done():
                         future.result()
                     self.repository.heartbeat(
                         job.id,
                         worker_id=self.worker_id,
+                        lease_generation=job.lease_generation,
                         now=self.clock(),
                         lease_for=self.lease_for,
                     )
+
+    @staticmethod
+    def _lease_lost(job: Job) -> CycleResult:
+        return CycleResult(
+            status=RuntimeStatus.LEASE_LOST,
+            job_id=job.id,
+            job_type=job.kind,
+            error_code="lease_lost",
+        )
 
     def run_once(self, *, dry_run: bool = False) -> CycleResult:
         if dry_run:
@@ -144,12 +178,16 @@ class WorkerRuntime:
             return CycleResult(status=RuntimeStatus.IDLE)
         handler = self.handlers.get(job.kind)
         if handler is None:
-            self.repository.fail(
-                job.id,
-                "handler_unavailable",
-                worker_id=self.worker_id,
-                now=self.clock(),
-            )
+            try:
+                self.repository.fail(
+                    job.id,
+                    "handler_unavailable",
+                    worker_id=self.worker_id,
+                    lease_generation=job.lease_generation,
+                    now=self.clock(),
+                )
+            except LeaseLostError:
+                return self._lease_lost(job)
             return CycleResult(
                 status=RuntimeStatus.FAILED,
                 job_id=job.id,
@@ -157,14 +195,24 @@ class WorkerRuntime:
                 error_code="handler_unavailable",
             )
         try:
-            self._run_handler_with_heartbeats(handler, job)
+            effect = self._run_handler_with_heartbeats(handler, job)
+            if self.require_completion_effect and effect is None:
+                raise CompletionEffectRequiredError(
+                    "live job handlers must return an atomic completion effect"
+                )
+        except LeaseLostError:
+            return self._lease_lost(job)
         except BudgetPaused as paused:
-            self.repository.pause_for_budget(
-                job.id,
-                worker_id=self.worker_id,
-                now=self.clock(),
-                retry_at=paused.retry_at,
-            )
+            try:
+                self.repository.pause_for_budget(
+                    job.id,
+                    worker_id=self.worker_id,
+                    lease_generation=job.lease_generation,
+                    now=self.clock(),
+                    retry_at=paused.retry_at,
+                )
+            except LeaseLostError:
+                return self._lease_lost(job)
             return CycleResult(
                 status=RuntimeStatus.BUDGET_PAUSED,
                 job_id=job.id,
@@ -173,19 +221,32 @@ class WorkerRuntime:
             )
         except Exception as error:  # queue boundary must retain failure state
             error_code = type(error).__name__[:160]
-            self.repository.fail(
-                job.id,
-                error_code,
-                worker_id=self.worker_id,
-                now=self.clock(),
-            )
+            try:
+                self.repository.fail(
+                    job.id,
+                    error_code,
+                    worker_id=self.worker_id,
+                    lease_generation=job.lease_generation,
+                    now=self.clock(),
+                )
+            except LeaseLostError:
+                return self._lease_lost(job)
             return CycleResult(
                 status=RuntimeStatus.FAILED,
                 job_id=job.id,
                 job_type=job.kind,
                 error_code=error_code,
             )
-        self.repository.complete(job.id, worker_id=self.worker_id, now=self.clock())
+        try:
+            self.repository.complete(
+                job.id,
+                worker_id=self.worker_id,
+                lease_generation=job.lease_generation,
+                now=self.clock(),
+                effect=effect,
+            )
+        except LeaseLostError:
+            return self._lease_lost(job)
         return CycleResult(
             status=RuntimeStatus.COMPLETED,
             job_id=job.id,

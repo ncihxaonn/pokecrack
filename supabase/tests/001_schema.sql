@@ -90,7 +90,7 @@ select set_has(
 );
 select set_eq(
   $$select column_name::text from information_schema.columns where table_schema = 'ingest' and table_name = 'jobs'$$,
-  $$values ('id'::text), ('job_type'), ('payload'), ('status'), ('priority'), ('attempts'), ('max_attempts'), ('available_at'), ('locked_at'), ('lock_expires_at'), ('locked_by'), ('last_error_code'), ('last_error_message'), ('created_at'), ('updated_at'), ('completed_at'), ('dedupe_key'), ('retention_until'), ('is_demo')$$,
+  $$values ('id'::text), ('job_type'), ('payload'), ('status'), ('priority'), ('attempts'), ('max_attempts'), ('available_at'), ('locked_at'), ('lock_expires_at'), ('locked_by'), ('last_error_code'), ('last_error_message'), ('created_at'), ('updated_at'), ('completed_at'), ('dedupe_key'), ('retention_until'), ('is_demo'), ('lease_generation')$$,
   'jobs exposes the exact canonical queue interface plus approved operational extras'
 );
 select is(
@@ -312,34 +312,34 @@ select ok(
   'service_role has the explicit core worker data path'
 );
 
-select has_function('ingest', 'claim_jobs', array['text', 'text[]', 'integer', 'integer'], 'claim_jobs has the required signature');
-select ok((select prosecdef from pg_proc where oid = 'ingest.claim_jobs(text,text[],integer,integer)'::regprocedure), 'claim_jobs is SECURITY DEFINER');
+select has_function('ingest', 'claim_jobs_v2', array['text', 'text[]', 'integer', 'integer'], 'claim_jobs_v2 has the required signature');
+select ok((select prosecdef from pg_proc where oid = 'ingest.claim_jobs_v2(text,text[],integer,integer)'::regprocedure), 'claim_jobs_v2 is SECURITY DEFINER');
 select ok(
-  (select proretset and prorettype = 'ingest.jobs'::regtype from pg_proc where oid = 'ingest.claim_jobs(text,text[],integer,integer)'::regprocedure),
-  'claim_jobs returns SETOF ingest.jobs'
+  (select proretset and prorettype = 'ingest.jobs'::regtype from pg_proc where oid = 'ingest.claim_jobs_v2(text,text[],integer,integer)'::regprocedure),
+  'claim_jobs_v2 returns SETOF ingest.jobs'
 );
 select ok(
-  (select coalesce(proconfig, '{}'::text[]) @> array['search_path=pg_catalog, ingest'] from pg_proc where oid = 'ingest.claim_jobs(text,text[],integer,integer)'::regprocedure),
-  'claim_jobs fixes its search_path'
+  (select coalesce(proconfig, '{}'::text[]) @> array['search_path=pg_catalog, ingest'] from pg_proc where oid = 'ingest.claim_jobs_v2(text,text[],integer,integer)'::regprocedure),
+  'claim_jobs_v2 fixes its search_path'
 );
 select matches(
-  (select pg_get_functiondef('ingest.claim_jobs(text,text[],integer,integer)'::regprocedure)),
+  (select pg_get_functiondef('ingest.claim_jobs_v2(text,text[],integer,integer)'::regprocedure)),
   '(?is)for\s+update\s+of\s+j\s+skip\s+locked',
-  'claim_jobs uses FOR UPDATE SKIP LOCKED'
+  'claim_jobs_v2 uses FOR UPDATE SKIP LOCKED'
 );
 select is(
   (select count(*)::integer from regexp_matches(
-    pg_get_functiondef('ingest.claim_jobs(text,text[],integer,integer)'::regprocedure),
+    pg_get_functiondef('ingest.claim_jobs_v2(text,text[],integer,integer)'::regprocedure),
     'update\s+ingest\.jobs',
     'gi'
   )),
   2,
-  'claim_jobs dead-letters exhausted rows and performs one candidate UPDATE'
+  'claim_jobs_v2 dead-letters exhausted rows and performs one candidate UPDATE'
 );
 select ok(
-  (select pg_get_functiondef('ingest.claim_jobs(text,text[],integer,integer)'::regprocedure)
+  (select pg_get_functiondef('ingest.claim_jobs_v2(text,text[],integer,integer)'::regprocedure)
       ilike '%not exhausted.is_demo%'
-    and pg_get_functiondef('ingest.claim_jobs(text,text[],integer,integer)'::regprocedure)
+    and pg_get_functiondef('ingest.claim_jobs_v2(text,text[],integer,integer)'::regprocedure)
       ilike '%not j.is_demo%'),
   'production job claiming never mutates or leases demo jobs'
 );
@@ -348,15 +348,15 @@ select ok(
     select 1
     from pg_proc p
     cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) as acl
-    where p.oid = 'ingest.claim_jobs(text,text[],integer,integer)'::regprocedure
+    where p.oid = 'ingest.claim_jobs_v2(text,text[],integer,integer)'::regprocedure
       and acl.grantee = 0
       and acl.privilege_type = 'EXECUTE'
   ),
   'PUBLIC cannot claim jobs'
 );
-select ok(not has_function_privilege('anon', 'ingest.claim_jobs(text,text[],integer,integer)', 'execute'), 'anon cannot claim jobs');
-select ok(not has_function_privilege('authenticated', 'ingest.claim_jobs(text,text[],integer,integer)', 'execute'), 'authenticated cannot claim jobs');
-select ok(has_function_privilege('service_role', 'ingest.claim_jobs(text,text[],integer,integer)', 'execute'), 'service_role can claim jobs');
+select ok(not has_function_privilege('anon', 'ingest.claim_jobs_v2(text,text[],integer,integer)', 'execute'), 'anon cannot claim jobs');
+select ok(not has_function_privilege('authenticated', 'ingest.claim_jobs_v2(text,text[],integer,integer)', 'execute'), 'authenticated cannot claim jobs');
+select ok(has_function_privilege('service_role', 'ingest.claim_jobs_v2(text,text[],integer,integer)', 'execute'), 'service_role can claim jobs');
 select ok(
   exists (
     select 1
@@ -387,7 +387,7 @@ select ok(
 );
 
 truncate table ingest.jobs cascade;
-select is((select count(*)::integer from ingest.claim_jobs('empty-worker', null, 10, 60)), 0, 'claiming an empty queue returns no rows');
+select is((select count(*)::integer from ingest.claim_jobs_v2('empty-worker', null, 10, 60)), 0, 'claiming an empty queue returns no rows');
 insert into ingest.jobs (
   id, job_type, status, priority, available_at, attempts, max_attempts,
   locked_by, locked_at, lock_expires_at, completed_at, payload
@@ -407,7 +407,7 @@ insert into ingest.jobs (
 );
 
 create temporary table claimed_first on commit drop as
-select * from ingest.claim_jobs('worker-alpha', array['extract'], 10, 60);
+select * from ingest.claim_jobs_v2('worker-alpha', array['extract'], 10, 60);
 select is((select count(*)::integer from claimed_first), 2, 'due pending and expired running jobs are claimed');
 select set_eq(
   $$select id from claimed_first$$,
@@ -433,11 +433,11 @@ select is(
   'pending',
   'live claim and dead-letter paths leave demo jobs untouched'
 );
-select is((select count(*)::integer from ingest.claim_jobs('worker-beta', array['extract'], 10, 60)), 0, 'a second claimant cannot receive active running locks');
-select throws_ok($$select * from ingest.claim_jobs(' ', array['extract'], 1, 60)$$, '22023', 'worker_id must contain 1 to 160 characters', 'blank worker ids are rejected');
-select throws_ok($$select * from ingest.claim_jobs('worker', array[]::text[], 1, 60)$$, '22023', 'job_types must be null or a non-empty array without nulls', 'empty job type arrays are rejected');
-select throws_ok($$select * from ingest.claim_jobs('worker', array['extract'], 0, 60)$$, '22023', 'batch_size must be between 1 and 100', 'invalid batch sizes are rejected');
-select throws_ok($$select * from ingest.claim_jobs('worker', array['extract'], 1, 0)$$, '22023', 'lease_seconds must be between 1 and 86400', 'invalid lease durations are rejected');
+select is((select count(*)::integer from ingest.claim_jobs_v2('worker-beta', array['extract'], 10, 60)), 0, 'a second claimant cannot receive active running locks');
+select throws_ok($$select * from ingest.claim_jobs_v2(' ', array['extract'], 1, 60)$$, '22023', 'worker_id must contain 1 to 160 characters', 'blank worker ids are rejected');
+select throws_ok($$select * from ingest.claim_jobs_v2('worker', array[]::text[], 1, 60)$$, '22023', 'job_types must be null or a non-empty array without nulls', 'empty job type arrays are rejected');
+select throws_ok($$select * from ingest.claim_jobs_v2('worker', array['extract'], 0, 60)$$, '22023', 'batch_size must be between 1 and 100', 'invalid batch sizes are rejected');
+select throws_ok($$select * from ingest.claim_jobs_v2('worker', array['extract'], 1, 0)$$, '22023', 'lease_seconds must be between 1 and 86400', 'invalid lease durations are rejected');
 
 select * from finish();
 rollback;

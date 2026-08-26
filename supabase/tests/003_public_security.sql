@@ -169,8 +169,8 @@ select ok(
   ),
   'authenticated cannot select any private relation'
 );
-select ok(not has_function_privilege('anon', to_regprocedure('ingest.claim_jobs(text,text[],integer,integer)'), 'execute'), 'anon cannot execute claim_jobs');
-select ok(not has_function_privilege('authenticated', to_regprocedure('ingest.claim_jobs(text,text[],integer,integer)'), 'execute'), 'authenticated cannot execute claim_jobs');
+select ok(not has_function_privilege('anon', to_regprocedure('ingest.claim_jobs_v2(text,text[],integer,integer)'), 'execute'), 'anon cannot execute claim_jobs_v2');
+select ok(not has_function_privilege('authenticated', to_regprocedure('ingest.claim_jobs_v2(text,text[],integer,integer)'), 'execute'), 'authenticated cannot execute claim_jobs_v2');
 
 select has_function('public', 'get_public_dashboard_snapshot_v1', array[]::text[], 'versioned public dashboard snapshot RPC exists');
 select ok(not coalesce((select prosecdef from pg_proc where oid = to_regprocedure('public.get_public_dashboard_snapshot_v1()')), true), 'public snapshot RPC is SECURITY INVOKER');
@@ -454,25 +454,25 @@ select is(
   'unknown source denial audit persists in the caller transaction'
 );
 
-select has_function('ingest', 'prune_expired_ephemera', array['timestamp with time zone', 'integer'], 'bounded ephemeral cleanup function exists');
-select ok(coalesce((select prosecdef from pg_proc where oid = to_regprocedure('ingest.prune_expired_ephemera(timestamp with time zone,integer)')), false), 'cleanup is SECURITY DEFINER');
+select has_function('ingest', 'prune_expired_ephemera_v2', array['timestamp with time zone', 'integer'], 'internal bounded ephemeral cleanup function exists');
+select ok(coalesce((select prosecdef from pg_proc where oid = to_regprocedure('ingest.prune_expired_ephemera_v2(timestamp with time zone,integer)')), false), 'internal cleanup is SECURITY DEFINER');
 select ok(
   (select coalesce(proconfig, '{}'::text[]) @> array['search_path=pg_catalog']
-   from pg_proc where oid = to_regprocedure('ingest.prune_expired_ephemera(timestamp with time zone,integer)')),
-  'cleanup fixes its search_path to pg_catalog only'
+   from pg_proc where oid = to_regprocedure('ingest.prune_expired_ephemera_v2(timestamp with time zone,integer)')),
+  'internal cleanup fixes its search_path to pg_catalog only'
 );
-select ok(has_function_privilege('service_role', to_regprocedure('ingest.prune_expired_ephemera(timestamp with time zone,integer)'), 'execute'), 'service_role can run cleanup');
-select ok(not has_function_privilege('anon', to_regprocedure('ingest.prune_expired_ephemera(timestamp with time zone,integer)'), 'execute'), 'anon cannot run cleanup');
-select ok(not has_function_privilege('authenticated', to_regprocedure('ingest.prune_expired_ephemera(timestamp with time zone,integer)'), 'execute'), 'authenticated cannot run cleanup');
+select ok(not has_function_privilege('service_role', to_regprocedure('ingest.prune_expired_ephemera_v2(timestamp with time zone,integer)'), 'execute'), 'service_role cannot call the internal cleanup implementation');
+select ok(not has_function_privilege('anon', to_regprocedure('ingest.prune_expired_ephemera_v2(timestamp with time zone,integer)'), 'execute'), 'anon cannot run internal cleanup');
+select ok(not has_function_privilege('authenticated', to_regprocedure('ingest.prune_expired_ephemera_v2(timestamp with time zone,integer)'), 'execute'), 'authenticated cannot run internal cleanup');
 select doesnt_match(
-  coalesce((select pg_get_functiondef(to_regprocedure('ingest.prune_expired_ephemera(timestamp with time zone,integer)'))), ''),
+  coalesce((select pg_get_functiondef(to_regprocedure('ingest.prune_expired_ephemera_v2(timestamp with time zone,integer)'))), ''),
   '(?is)delete\s+from\s+ingest\.openings',
   'cleanup never deletes core openings'
 );
 select ok(
-  (select coalesce(pg_get_functiondef(to_regprocedure('ingest.prune_expired_ephemera(timestamp with time zone,integer)')), '') ~* 'source_items'
-      and coalesce(pg_get_functiondef(to_regprocedure('ingest.prune_expired_ephemera(timestamp with time zone,integer)')), '') ~* 'extraction_runs'
-      and coalesce(pg_get_functiondef(to_regprocedure('ingest.prune_expired_ephemera(timestamp with time zone,integer)')), '') ~* 'analytics\.signals'),
+  (select coalesce(pg_get_functiondef(to_regprocedure('ingest.prune_expired_ephemera_v2(timestamp with time zone,integer)')), '') ~* 'source_items'
+      and coalesce(pg_get_functiondef(to_regprocedure('ingest.prune_expired_ephemera_v2(timestamp with time zone,integer)')), '') ~* 'extraction_runs'
+      and coalesce(pg_get_functiondef(to_regprocedure('ingest.prune_expired_ephemera_v2(timestamp with time zone,integer)')), '') ~* 'analytics\.signals'),
   'cleanup prunes only bounded excerpts, unreferenced extraction runs, and expired signals'
 );
 
