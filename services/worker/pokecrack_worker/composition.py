@@ -16,7 +16,7 @@ from enum import StrEnum
 from pokecrack_worker import __version__
 from pokecrack_worker.config.settings import DataMode, Settings
 from pokecrack_worker.db import PsycopgQueryExecutor
-from pokecrack_worker.jobs import Job, PostgresJobRepository, QueryExecutor
+from pokecrack_worker.jobs import CompletionEffect, Job, PostgresJobRepository, QueryExecutor
 from pokecrack_worker.runtime import JobHandler, WorkerRuntime
 from pokecrack_worker.scheduler import CronExpression, ScheduleEntry, Scheduler
 
@@ -64,10 +64,6 @@ SET worker_type = EXCLUDED.worker_type,
     metadata = heartbeats.metadata || EXCLUDED.metadata
 WHERE not heartbeats.is_demo
 RETURNING last_seen_at
-""".strip()
-
-CLEANUP_SQL = """
-SELECT ingest.prune_expired_ephemera() AS cleanup_result
 """.strip()
 
 _WORKER_JOB_TYPES: Mapping[WorkerRole, tuple[str, ...]] = {
@@ -204,20 +200,18 @@ def write_health_heartbeat(
     )
 
 
-def _cleanup_handler(executor: QueryExecutor) -> JobHandler:
-    def cleanup(job: Job) -> None:
+def _cleanup_handler() -> JobHandler:
+    def cleanup(job: Job) -> CompletionEffect:
         if job.kind != CLEANUP_JOB_TYPE or job.payload:
             raise ValueError("maintenance cleanup jobs require an empty payload")
-        rows = executor.query(CLEANUP_SQL, {})
-        if not rows:
-            raise RuntimeError("maintenance cleanup returned no result")
+        return CompletionEffect.PRUNE_EXPIRED_EPHEMERA
 
     return cleanup
 
 
-def _handlers_for_role(role: WorkerRole, executor: QueryExecutor) -> Mapping[str, JobHandler]:
+def _handlers_for_role(role: WorkerRole) -> Mapping[str, JobHandler]:
     if role is WorkerRole.WATCHDOG:
-        return {CLEANUP_JOB_TYPE: _cleanup_handler(executor)}
+        return {CLEANUP_JOB_TYPE: _cleanup_handler()}
     return {}
 
 
@@ -232,7 +226,7 @@ def build_live_worker_runtime(
     expected_job_types = require_worker_job_types(settings)
     role = require_supported_role(settings)
     database = executor or executor_from_settings(settings)
-    handlers = _handlers_for_role(role, database)
+    handlers = _handlers_for_role(role)
     if tuple(handlers) != expected_job_types:
         raise RuntimeError("live worker handler registry is inconsistent")
     return WorkerRuntime(
@@ -242,6 +236,7 @@ def build_live_worker_runtime(
         lease_for=timedelta(seconds=settings.worker_lease_seconds),
         poll_seconds=settings.worker_poll_seconds,
         clock=clock,
+        require_completion_effect=True,
     )
 
 

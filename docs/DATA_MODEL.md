@@ -20,7 +20,7 @@ Catalog rows carry `is_demo`; synthetic and live rows must not be conflated.
 - `ingest.openings`: normalized observed opening and the statistical eligibility decision.
 - `ingest.opening_hits`: card/rarity quantities within an opening.
 - `ingest.batch_sightings`: bounded batch-code activity, optionally tied to an opening/product/region.
-- `ingest.jobs`: idempotent queued work, leases, retries and terminal states.
+- `ingest.jobs`: idempotent queued work, monotonic per-claim lease generations, retries and terminal states.
 - `ingest.worker_heartbeats`: worker version/status/current job and bounded metrics.
 - `ingest.browser_sessions`: session metadata/opaque secret-manager reference only; never cookies or tokens.
 - `ingest.ai_usage_daily`: request/token/estimated-cost budget ledger.
@@ -40,18 +40,18 @@ An opening can be `statistics_eligible=true` only when it has a set and positive
 | `extraction_runs.decision` | `accepted`, `activity_only`, `rejected`, `failed` (or null while incomplete) |
 | `openings.validation_status` | `accepted`, `activity_only`, `rejected`, `excluded` |
 | `openings.public_status` | `provisional`, `verified`, `rejected` |
-| `jobs.status` | `pending`, `leased`, `completed`, `failed`, `cancelled` |
+| `jobs.status` | `pending`, `running`, `completed`, `failed`, `dead`, `cancelled` |
 | Public signal | `insufficient_sample`, `no_significant_signal`, `watch`, `possible_anomaly` |
 
 The SQL eligibility constraint permits `eligible_for_statistics=true` only with non-null set and positive pack count, complete opening, tier A/B, accepted validation, no `duplicate_of`, and no duplicate suspicion. Application policy must additionally require an approved source, catalog/methodology version, and matching live/demo mode. Tier C is activity-only auxiliary evidence; tier D is discovery/activity-only and never a denominator. Rejected records are not public observations.
 
-A leased job must carry worker/start/expiry fields and an expiry after lease start; only terminal jobs carry `finished_at`. Canonical URL and platform/external identity are unique, active queue dedupe keys are unique, and self-duplicate links are forbidden.
+A running job must carry worker/start/expiry fields and an expiry after lease start; only terminal jobs carry `completed_at`. Lease authority is the exact `(locked_by, lease_generation)` pair while `lock_expires_at` is still in the future according to the database clock. Every claim increments the generation, so reusing a stable worker ID cannot revive an older attempt. Canonical URL and platform/external identity are unique, active queue dedupe keys are unique, and self-duplicate links are forbidden.
 
 ## Public contract
 
 Public DTOs contain aggregate labels, rates/intervals, sample sizes, freshness and demo provenance. They must exclude source URLs when unsafe, raw payloads, author identifiers/hashes, exact account/profile/session data, job payloads, AI prompts/output, service health internals and credentials. Public relations require explicit grants and tests; adding a table does not make it public.
 
-At this scaffold snapshot, migrations establish private catalog/ingest tables and the `analytics` schema. Analytics tables and versioned public aggregate views/RPCs must be present in migrations and pass a clean reset/pgTAP run before live dashboard access is claimed.
+The migrations define the private catalog/ingest/analytics relations, nine public aggregate tables, and versioned public/Admin RPCs. Their existence is not evidence of live observations. Every schema change—including the lease-fencing migration—must pass a clean reset and pgTAP run, then be verified against the exact approved hosted project before its behavior is claimed as deployed.
 
 ## Lifecycle
 

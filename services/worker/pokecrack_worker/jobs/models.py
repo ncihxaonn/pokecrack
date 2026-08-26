@@ -18,6 +18,12 @@ class JobStatus(StrEnum):
     CANCELLED = "cancelled"
 
 
+class CompletionEffect(StrEnum):
+    """Database effects that a repository may finalize atomically with a job."""
+
+    PRUNE_EXPIRED_EPHEMERA = "prune_expired_ephemera"
+
+
 @dataclass(frozen=True, slots=True)
 class Job:
     id: str
@@ -28,6 +34,7 @@ class Job:
     available_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     attempts: int = 0
     max_attempts: int = 5
+    lease_generation: int = 0
     leased_by: str | None = None
     leased_at: datetime | None = None
     lease_expires_at: datetime | None = None

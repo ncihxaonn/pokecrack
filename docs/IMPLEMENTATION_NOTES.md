@@ -1,6 +1,6 @@
 # Implementation notes
 
-Last audited: **2026-08-26 UTC**
+Last audited: **2026-08-27 UTC**
 
 This file is the canonical record of what was actually exercised in the implementation environment. A repository artifact, rendered configuration, fixture run, or generated workflow is not evidence of a live deployment.
 
@@ -14,12 +14,12 @@ This file is the canonical record of what was actually exercised in the implemen
 
 ## Repository and environment state
 
-- The existing working tree was preserved. Git is on `feat/free-mvp`, has the preservation commit `0c1e0dd`, and has **no remotes**.
-- No GitHub, Vercel, hosted Supabase, VPS, DNS, browser-login, or OpenCLI release target was selected or authorized. Repository policy prohibits linking, pushing, or deploying until the owner selects the exact Personal account and destination.
-- The project-scoped credential helper verified the Personal Maton credential as available with system-level execution. No third-party request or mutation was made, and no credential value was exposed or copied into the repository.
+- The existing working tree was preserved. Git is on `feat/free-mvp`; `origin` is the owner-approved private Personal repository `ncihxaonn/pokecrack`, and commit `2da3ece` is on `origin/main` with a successful seven-job GitHub CI run.
+- The owner approved the exact Personal targets now linked to this project: GitHub `ncihxaonn/pokecrack`, Supabase `Pokecrack` (`wohnphsxlquhhknuthrj`), and the Vercel `pokecrack` project. No VPS target has been approved or contacted.
+- The project-scoped credential helper verified the Personal Maton and Supabase credentials as available with system-level execution. Maton reports one Active Supabase connection for the same project ref. Credential values remain outside the repository.
 - Observed toolchain: Node.js 22.18.0, pnpm 11.23.0, system Python 3.14.6, uv 0.8.15, and worker uv Python 3.13.7.
-- No Docker CLI or Docker Compose CLI is installed in the current environment. Standalone Supabase CLI is also unavailable.
-- The local `next start` process used for browser QA was stopped after verification. No test server or deployment remains running.
+- No Docker CLI or Docker Compose CLI is installed locally. The fixed Supabase CLI can run through `npx`, but the current Personal access token receives HTTP 403 for management endpoints that require additional organization privileges.
+- The local `next start` process used for browser QA was stopped after verification. An owner-approved Vercel **Demo-mode** deployment is online at `https://pokecrack.vercel.app`; it is not evidence of a live collection pipeline.
 
 ## Verified quality gates
 
@@ -63,7 +63,7 @@ uv run mypy pokecrack_worker
 uv run pytest -q
 ```
 
-Observed result: **265 tests and 2 subtests passed; 1 optional Scrapling runtime test was skipped**. This includes deny-by-default and HTTPS-only source-policy authorization, URL redaction, collector/import fixtures, exact AI schemas, async provider surface, bounded AI and YouTube responses, atomic concurrent budget reservations with trusted start-period accounting across UTC day/month rollover, a mandatory shared settings-matched ledger and finite output-token cap for live AI providers, one paid-capable dispatch per reservation, conservative reservation commitment when a transport or response fails, strict rejection of missing/zero network usage, independently observed validator facts including rarity plus deterministic extractor/catalog rarity agreement, strict rejection of legacy/coercible payloads and non-finite schema numbers, complete statistics-field checks, disagreement rejection, deduplication, signal boundaries and complete public inference withholding below 30 packs or three independent sources, automatic queue retry backoff, live-only PostgreSQL claim semantics, expired-lease mutation rejection using one database clock for ownership and transition timestamps, aggregation eligibility/withholding logic, static Scrapling transport-level DNS pinning and bounded responses, disabled static redirects, dynamic-browser same-origin/private-address route blocking, service-worker blocking, pre-navigation WebSocket closure, fail-closed direct guard installation, one-attempt dynamic fetching, a default AI transport regression proving HTTP redirects are not followed with the authorization-bearing request, unready live roles being rejected before any health heartbeat is written, and regressions preventing fixture-only CLI commands from claiming real mutations.
+Observed result on the current fencing tree: **271 tests and 2 subtests passed; 1 optional Scrapling runtime test was skipped**. In addition to the prior coverage, this includes same-worker-ID ABA reclamation, monotonic lease generations, rejection of stale generation heartbeat/fail/pause/complete operations, typed completion effects, and fail-closed lease-loss handling that never records a failure through a stale lease.
 
 The optional Scrapling dependency is locked as `scrapling[fetchers]`; the installed fetcher surface was imported successfully. Static transport uses the pinned curl wrappers, while dynamic collection uses the extra's Playwright dependency through a project-owned one-attempt wrapper because Scrapling 0.4.15 swallows `page_setup` exceptions before navigation.
 
@@ -84,14 +84,13 @@ Current local macOS result: **71 tests and 40 subtests passed; 1 Linux `/proc` l
 
 Current evidence:
 
-- 32 static migration/type contract tests passed on the final current tree;
-- the final `pglast` 8.4 pass parsed 8 migration/seed files, 374 top-level SQL statements, and 2 Admin PL/pgSQL functions; this is syntax evidence, not database execution;
-- 8 migration-safety unit tests passed, and the actual migration-safety gate reviewed 7 pending migrations and 16 approved `DELETE` fingerprints with 0 errors;
-- the current pgTAP files plan **303 assertions**: 128 schema/queue, 54 analytics, 79 public/security/Admin, and 42 seed assertions;
-- those 303 current assertions have **not** run. The host exhausted its global System V shared-memory slots (`could not create shared memory segment: No space left on device`), and there is no Docker or Supabase CLI fallback in this environment;
-- an earlier 281-assertion standalone PostgreSQL run belongs to an older migration/assertion state and is historical troubleshooting evidence only. It must not be cited as proof for the current 303-assertion tree.
+- 33 static migration/type contract tests passed on the current tree;
+- 17 repository/migration-safety tests passed, and the actual safety gate found 0 errors with the new forward migration while preserving the 16 reviewed historical `DELETE` fingerprints;
+- the current pgTAP files plan **353 assertions**: 128 schema/queue, 54 analytics, 79 public/security/Admin, 42 seed, and 50 lease-fencing assertions;
+- GitHub CI at `2da3ece` successfully ran a clean local Supabase reset and the preceding 303-assertion pgTAP tree. The 50 new fencing assertions and migration still require the next CI database job before this evidence can be advanced;
+- local standalone PostgreSQL remains unavailable because the host has exhausted its global System V shared-memory slots (`could not create shared memory segment: No space left on device`).
 
-No current fresh PostgreSQL/Supabase migration run was completed. Supabase Auth, PostgREST, Realtime, hosted role behavior, RLS behavior through the hosted API, and provider configuration remain unverified.
+The first seven migrations (`20260825000000` through `20260825000600`) are applied to the approved hosted Supabase project. Hosted PostgREST smoke checks verified empty public reads, private-schema rejection, anonymous write rejection, and Admin-RPC denial. The new `20260827000000_job_lease_fencing.sql` migration is not yet applied. Hosted Auth still reports public signup enabled and the Admin allowlist/app-metadata setup remains incomplete.
 
 ### Deployment artifacts
 
@@ -144,7 +143,7 @@ The worker contains tested queue, PostgreSQL claim, heartbeat, collector, valida
 
 The following are P0 release blockers, not optional polish:
 
-1. **Lease fencing and atomic effects:** a claimed job has no per-lease fencing token, and handler side effects are committed separately from job completion. A stale or duplicated worker could therefore write effects even when completion is rejected.
+1. **Lease fencing and atomic effects:** the current tree now assigns a monotonic `lease_generation` on every claim, requires it on every lease mutation, disables the legacy claim and naked-cleanup protocols, and routes the only live handler (`maintenance.cleanup`) through a typed `finalize_cleanup_job` transaction that performs cleanup and completion together. This sub-blocker remains open until the new migration and 50 pgTAP assertions pass in clean CI and the approved hosted project is migrated. Every future persistent handler still requires its own typed transactional finalizer; external AI/API effects additionally require durable idempotency or an outbox.
 2. **End-to-end mode isolation:** live claiming and Admin controls now exclude demo jobs, and active-job deduplication includes `is_demo`; however, the full source → extraction → opening → hit/batch relationship is not protected by mode-scoped composite foreign keys and indexes. Some URL/platform uniqueness constraints still cross modes.
 3. **Collector persistence contract:** source-policy route values and Python DTO values are not fully aligned, candidate `content_hash` may be absent while the database requires it, and rate limits are process-local rather than shared and durable.
 4. **AI idempotency and accounting:** reservations, run state, and budget coordination are still in memory. There is no persistent request-idempotency key and no single transaction that finalizes model usage, result persistence, and job state.
@@ -166,7 +165,7 @@ The missing-RPC blocker was closed locally by migration `20260825000600_admin_co
 - import actions remain deliberately unavailable;
 - the current Admin views remain read-only and keep mutation buttons disabled; the authenticated server-action/RPC boundary is implemented for later activation, but is not presented as an operational control surface on this tree;
 - queue-producing controls such as browser refresh and service restart are not end-to-end operational until the live-handler and fencing blockers above are closed;
-- the static contract suite covers these restrictions, but the current 303-assertion pgTAP plan has not executed and no hosted Supabase RPC was invoked.
+- the prior 303-assertion database tree passed in GitHub CI, and hosted read/denial RPC behavior was smoke-tested; the new 50 fencing assertions and finalizer remain pending clean CI and hosted migration evidence.
 
 This is static/local implementation evidence, not hosted Supabase/Auth/PostgREST evidence. The account owner must configure the Supabase app-metadata claim, `ADMIN_EMAILS`, and the Vercel server-only service-role key before enabling `ADMIN_CONTROL_RPC_ENABLED`; the service-role key must never be placed in a `NEXT_PUBLIC_` variable or the VPS worker environment.
 
@@ -174,9 +173,9 @@ This is static/local implementation evidence, not hosted Supabase/Auth/PostgREST
 
 1. **Docker runtime:** no Docker/Compose CLI is installed, so Compose rendering through the CLI, worker/auth-browser images, startup, container healthchecks, resource limits, and network behavior were not exercised.
 2. **Authenticated browser:** the in-app browser exercised the local public/Admin-login Web UI, but no containerized Chromium, noVNC, Browser Bridge, OpenCLI daemon, external-platform login, CAPTCHA/2FA, or persistent-profile smoke was performed.
-3. **Hosted Supabase:** no authenticated project or Supabase CLI; current migrations, the 303 pgTAP assertions, Auth, PostgREST, hosted RLS, and Admin login were not deployed or integrated against a real project.
-4. **Vercel Hobby:** no account/project authorization; no deployment URL exists.
-5. **GitHub private repository:** one local preservation commit exists, but there is no remote, authenticated push, or approved Personal destination; CI workflows have not run on GitHub.
+3. **Hosted Supabase:** the approved project has the first seven migrations and bounded API smoke evidence, but the fencing migration is pending; Auth signup/redirect policy, Admin identity claims, Realtime, and the full authenticated Admin flow remain unverified or incomplete.
+4. **Vercel Hobby:** the approved project serves the public Demo-mode Web app at `https://pokecrack.vercel.app`; no live data path or Admin mutation surface is enabled.
+5. **GitHub private repository:** `ncihxaonn/pokecrack` is private and CI is green at `2da3ece`; the current uncommitted fencing patch has not yet been pushed or reviewed by GitHub CI.
 6. **VPS:** no host access; production deploy, firewall inspection, backup, restore, rollback, and monitoring were not exercised.
 7. **External collectors and AI:** no real source/API credentials or paid model calls; terms/robots compatibility and model accuracy remain account/source-specific validation work.
 8. **OpenCLI artifact:** no owner-approved, checksum-pinned compatible release artifact was available; the installer contract was tested only with synthetic archives.
@@ -188,6 +187,6 @@ No Stripe, subscription, advertising, affiliate, sponsorship, paid public API, p
 
 ## Deployment claim
 
-**No real deployment was performed.** No GitHub remote was added, no Vercel or Supabase project was linked, no VPS was contacted, and no production URL exists. The correct current description is:
+An owner-approved **Demo Web deployment** was performed, and the first seven database migrations were applied to an otherwise empty approved Supabase project. No VPS or unattended live collection deployment was performed. The correct current description is:
 
-> The monorepo contains a locally tested Web/demo, statically checked database migrations with a current but unexecuted 303-assertion pgTAP plan, fixture-validated collector/AI/browser boundaries, and non-Docker deployment tests. The persistent live worker pipeline is intentionally fail closed, and full hosted Supabase behavior, account-bound integrations, container runtime, and real platform deployments remain unverified or incomplete.
+> The private monorepo and online Vercel site contain a tested Demo-mode Web application. The approved Supabase project has the first seven migrations and no seed/live observations. The current tree adds generation-fenced queue mutations and an atomic cleanup finalizer, pending clean CI and hosted migration. Collector, AI-worker, aggregator, Admin mutation, authenticated browser, and VPS live paths remain fail closed or unverified, so this is not an unattended production collection deployment.
