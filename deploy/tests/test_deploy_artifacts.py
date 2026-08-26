@@ -873,6 +873,14 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("OPENCLI_VERSION", build_args)
         self.assertIn("@jackwener/opencli@${OPENCLI_VERSION}", dockerfile)
         self.assertNotIn("@jackwener/opencli@latest", dockerfile)
+        self.assertIn(
+            "/usr/local/lib/node_modules/@jackwener/opencli/dist/src/main.js",
+            dockerfile,
+        )
+        self.assertNotIn(
+            "/usr/local/lib/node_modules/@jackwener/opencli/dist/main.js",
+            dockerfile,
+        )
         self.assertIn("opencli daemon restart", entrypoint)
         self.assertIn("pokecrack_browser.container_browser", entrypoint)
 
