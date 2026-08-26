@@ -921,7 +921,10 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertTrue(extension_mount["read_only"])
         compose_source = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
         self.assertIn("${OPENCLI_EXTENSION_DIR:-/opt/pokecrack/opencli-extension}", compose_source)
-        self.assertFalse(extension_mount["bind"]["create_host_path"])
+        self.assertIn("create_host_path: false", compose_source)
+        self.assertFalse(
+            extension_mount.get("bind", {}).get("create_host_path", False)
+        )
         self.assertTrue(any("uid=10001" in item and "gid=10001" in item for item in service["tmpfs"]))
         dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(encoding="utf-8")
         self.assertIn("/profiles", dockerfile)
