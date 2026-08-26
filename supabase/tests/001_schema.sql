@@ -357,7 +357,15 @@ select ok(
 select ok(not has_function_privilege('anon', 'ingest.claim_jobs(text,text[],integer,integer)', 'execute'), 'anon cannot claim jobs');
 select ok(not has_function_privilege('authenticated', 'ingest.claim_jobs(text,text[],integer,integer)', 'execute'), 'authenticated cannot claim jobs');
 select ok(has_function_privilege('service_role', 'ingest.claim_jobs(text,text[],integer,integer)', 'execute'), 'service_role can claim jobs');
-select index_is_partial('ingest', 'jobs', 'jobs_active_dedupe_uidx', 'active job dedupe uses a partial index');
+select ok(
+  exists (
+    select 1
+    from pg_index i
+    where i.indexrelid = 'ingest.jobs_active_dedupe_uidx'::regclass
+      and i.indpred is not null
+  ),
+  'active job dedupe uses a partial index'
+);
 select index_is_unique('ingest', 'jobs', 'jobs_active_dedupe_uidx', 'active job dedupe index is unique');
 select ok(
   (select pg_get_indexdef(indexrelid) ilike '%job_type, dedupe_key, is_demo%'
