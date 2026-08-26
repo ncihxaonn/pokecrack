@@ -569,7 +569,9 @@ def test_postgres_enqueue_is_atomic_and_respects_active_dedupe_constraint() -> N
 
     assert job.status is JobStatus.PENDING
     assert "INSERT INTO ingest.jobs" in executor.sql
-    assert "ON CONFLICT" in executor.sql
+    assert "ON CONFLICT (job_type, dedupe_key, is_demo)" in executor.sql
+    assert "updated_at, is_demo" in executor.sql
+    assert "%(now)s, false" in executor.sql
     assert executor.params["dedupe_key"] == "url:example"
 
 

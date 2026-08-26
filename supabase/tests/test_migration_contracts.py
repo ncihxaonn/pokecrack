@@ -176,6 +176,8 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("exhausted.lock_expires_at <= claim_time", lowered)
         self.assertIn("'lease_expired_max_attempts'", lowered)
         self.assertIn("status = 'dead'", lowered)
+        self.assertIn("and not exhausted.is_demo", lowered)
+        self.assertIn("and not j.is_demo", lowered)
 
     def test_admin_control_rpc_is_callable_only_by_service_role_with_explicit_actor(self) -> None:
         admin = (ROOT / "migrations/20260825000600_admin_control.sql").read_text().casefold()
@@ -199,19 +201,103 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("grant execute on function public.admin_control_and_audit_v1", migrations)
         self.assertIn("revoke all on function public.admin_control_and_audit_v1", migrations)
         self.assertIn("admin_control_and_audit_v1:", DATABASE_TYPES)
+        self.assertIn("get_admin_dashboard_snapshot_v1:", DATABASE_TYPES)
         self.assertIn("p_actor_id: string;", DATABASE_TYPES)
         self.assertIn("p_actor_email: string;", DATABASE_TYPES)
+
+    def test_admin_snapshot_is_service_only_bounded_telemetry(self) -> None:
+        admin = (ROOT / "migrations/20260825000600_admin_control.sql").read_text().casefold()
+        snapshot = admin.split(
+            "create or replace function public.get_admin_dashboard_snapshot_v1()", 1
+        )[1].split("$$;", 1)[0]
+        self.assertIn("security definer", snapshot)
+        self.assertIn("service_role", snapshot)
+        self.assertIn("limit 100", snapshot)
+        self.assertIn("limit 50", snapshot)
+        for private_field in (
+            "j.payload",
+            "last_error",
+            "authenticated_sources",
+            "provider",
+            "model",
+            "prompt",
+            "source_excerpt",
+            "ip_address",
+            "cookie",
+            "secret",
+        ):
+            self.assertNotIn(private_field, snapshot)
+
+    def test_operational_telemetry_separates_live_and_demo_modes(self) -> None:
+        compact_ingest = " ".join(INGEST.split()).casefold()
+        for table in ("worker_heartbeats", "browser_sessions", "ai_usage_daily"):
+            body = compact_ingest.split(f"create table ingest.{table} (", 1)[1].split(
+                ");", 1
+            )[0]
+            self.assertIn("is_demo boolean not null default false", body)
+        self.assertIn(
+            "primary key (date, provider, model, stage, is_demo)",
+            compact_ingest,
+        )
+
+        admin = " ".join(
+            (ROOT / "migrations/20260825000600_admin_control.sql").read_text().split()
+        ).casefold()
+        snapshot = admin.split(
+            "create or replace function public.get_admin_dashboard_snapshot_v1()", 1
+        )[1].split("$$;", 1)[0]
+        for predicate in (
+            "where not h.is_demo",
+            "where not s.is_demo",
+            "where not u.is_demo",
+        ):
+            self.assertIn(predicate, snapshot)
+
+        browser_seed = _seed_rows("ingest.browser_sessions")
+        self.assertEqual(browser_seed[0]["is_demo"].casefold(), "true")
+
+    def test_admin_controls_reject_demo_targets_and_create_only_live_jobs(self) -> None:
+        admin = " ".join(
+            (ROOT / "migrations/20260825000600_admin_control.sql").read_text().split()
+        ).casefold()
+        control = admin.split(
+            "create or replace function public.admin_control_and_audit_v1", 1
+        )[1]
+        self.assertIn("where policy.enabled and not policy.is_demo", control)
+        self.assertGreaterEqual(control.count("and not is_demo"), 3)
+        self.assertIn("where not is_demo and (source_key = p_target_id", control)
+        self.assertIn("from ingest.browser_sessions s where s.profile_name = p_target_id and not s.is_demo", control)
+        self.assertIn("from ingest.worker_heartbeats h where h.worker_id = p_target_id and not h.is_demo", control)
+        self.assertGreaterEqual(control.count("max_attempts, is_demo"), 3)
+        self.assertGreaterEqual(control.count("on conflict (job_type, dedupe_key, is_demo)"), 3)
+
+    def test_source_policy_denial_is_audited_without_transaction_rollback(self) -> None:
+        admin = (ROOT / "migrations/20260825000600_admin_control.sql").read_text().casefold()
+        enqueue = admin.split("when 'source.enqueue' then", 1)[1].split(
+            "when 'job.retry' then", 1
+        )[0]
+        denial = enqueue.split("if v_policy_id is null then", 1)[1].split("end if;", 1)[0]
+        self.assertIn("insert into ingest.admin_audit_log", denial)
+        self.assertIn("'reason', 'source_policy_denied'", denial)
+        self.assertIn("'audit_written', true", denial)
+        self.assertIn("'ok', false", denial)
+        self.assertNotIn("raise exception", denial)
 
     def test_record_exclusion_revokes_eligibility_and_invalidates_derived_data(self) -> None:
         admin = (ROOT / "migrations/20260825000600_admin_control.sql").read_text().casefold()
         exclusion = admin.split("when 'record.exclude' then", 1)[1].split(
-            "when 'browser.refresh', 'service.restart' then", 1
+            "when 'browser.refresh' then", 1
         )[0]
         self.assertIn("returning is_demo into v_record_is_demo", exclusion)
+        self.assertIn("and not is_demo", exclusion)
         self.assertIn("update ingest.openings", exclusion)
         self.assertIn("eligible_for_statistics = false", exclusion)
         self.assertIn("validation_status = 'excluded'", exclusion)
         self.assertIn("public_status = 'rejected'", exclusion)
+        self.assertIn(
+            "where source_item_id = p_target_id::uuid and is_demo = v_record_is_demo",
+            " ".join(exclusion.split()),
+        )
         for table in (
             "analytics.dashboard_daily",
             "analytics.set_metrics_daily",
@@ -228,8 +314,10 @@ class IngestMigrationContractTests(unittest.TestCase):
             "public.public_signals",
         ):
             self.assertIn(f"delete from {table}", exclusion)
-        self.assertIn("'admin-record-exclusion'", exclusion)
         self.assertIn("'unavailable'", exclusion)
+        self.assertIn("'admin-record-exclusion-demo'", exclusion)
+        self.assertIn("'admin-record-exclusion-live'", exclusion)
+        self.assertIn("is_demo = v_record_is_demo", exclusion)
 
     def test_generated_source_item_contract_includes_reserved_fingerprints(self) -> None:
         source_items = DATABASE_TYPES.split("source_items:", 1)[1].split("worker_heartbeats:", 1)[0]
@@ -245,6 +333,22 @@ class IngestMigrationContractTests(unittest.TestCase):
     def test_live_rpc_does_not_fabricate_an_empty_snapshot(self) -> None:
         self.assertIn("join dashboard_row d on true", RPC)
         self.assertNotIn("left join dashboard_row d on true", RPC)
+
+    def test_public_rpc_selects_only_the_latest_non_demo_live_snapshot(self) -> None:
+        compact = " ".join(RPC.split())
+        dashboard_row = compact.split("with dashboard_row as (", 1)[1].split(
+            "), relation_guard as (", 1
+        )[0]
+        self.assertIn("from public.dashboard_overview d where not d.is_demo", dashboard_row)
+        self.assertLess(dashboard_row.index("where not d.is_demo"), dashboard_row.index("order by"))
+        self.assertIn("and d.mode = 'live'", compact)
+        self.assertNotIn("d.mode in ('demo', 'live')", compact)
+
+    def test_unavailable_dashboard_sentinel_preserves_its_data_mode(self) -> None:
+        compact = " ".join(PUBLIC.split())
+        self.assertIn("(mode = 'demo' and is_demo)", compact)
+        self.assertIn("(mode = 'live' and not is_demo)", compact)
+        self.assertIn("or mode = 'unavailable'", compact)
 
     def test_public_inference_requires_three_independent_sources(self) -> None:
         compact = " ".join(PUBLIC.split())
@@ -300,7 +404,7 @@ class IngestMigrationContractTests(unittest.TestCase):
     def test_public_rpc_filters_every_collection_to_the_selected_available_mode(self) -> None:
         self.assertEqual(RPC.count("cross join dashboard_row mode_guard"), 6)
         self.assertEqual(RPC.count("is_demo = mode_guard.is_demo"), 6)
-        self.assertIn("d.mode in ('demo', 'live')", RPC)
+        self.assertIn("d.mode = 'live'", RPC)
         self.assertIn("'mode', d.mode", RPC)
 
     def test_public_data_tables_bound_independent_sources_to_openings(self) -> None:

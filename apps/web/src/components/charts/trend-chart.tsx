@@ -4,6 +4,13 @@ import React, { useEffect, useRef } from "react";
 
 import type { TrendPoint } from "@/data/types";
 
+export function getTrendAnimationOptions(reducedMotion: boolean) {
+  return {
+    animation: !reducedMotion,
+    animationDuration: reducedMotion ? 0 : 450,
+  } as const;
+}
+
 export function TrendChart({ points }: { points: readonly TrendPoint[] }) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -15,9 +22,10 @@ export function TrendChart({ points }: { points: readonly TrendPoint[] }) {
 
     void import("echarts").then((echarts) => {
       if (disposed || !containerRef.current) return;
+      const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
       chart = echarts.init(containerRef.current, undefined, { renderer: "canvas" });
       chart.setOption({
-        animationDuration: 450,
+        ...getTrendAnimationOptions(reducedMotion),
         backgroundColor: "transparent",
         grid: { left: 42, right: 18, top: 22, bottom: 32 },
         tooltip: {

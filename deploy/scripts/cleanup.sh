@@ -3,7 +3,10 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 umask 077
 
-SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
+PORTABILITY_HELPER="$SCRIPT_DIR/../lib/shell_portability.sh"
+# shellcheck disable=SC1090
+source "$PORTABILITY_HELPER"
 REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/../.." && pwd -P)
 COMPOSE_FILE="$REPOSITORY_ROOT/deploy/compose.prod.yml"
 ENV_FILE=${POKECRACK_ENV_FILE:-/etc/pokecrack/production.env}
@@ -41,7 +44,7 @@ done
 for command in docker stat; do
   command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
 done
-mode=$(stat -c '%a' -- "$ENV_FILE")
+mode=$(pokecrack_stat_mode "$ENV_FILE") || die "could not validate environment file permissions"
 [[ $mode =~ ^[0-7]{3,4}$ ]] || die "could not validate environment file permissions"
 permissions=$((8#$mode))
 (( (permissions & 0077) == 0 )) || die "environment file must have mode 0600"

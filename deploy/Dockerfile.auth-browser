@@ -17,8 +17,7 @@ LABEL org.opencontainers.image.title="pokecrack-auth-browser" \
 
 ENV DEBIAN_FRONTEND=noninteractive \
     PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/opt/pokecrack/auth-browser/src
+    PYTHONUNBUFFERED=1
 
 RUN apt-get update \
     && apt-get install --yes --no-install-recommends \
@@ -44,17 +43,18 @@ COPY --from=opencli-runtime /usr/local/bin/node /usr/local/bin/node
 COPY --from=opencli-runtime /usr/local/lib/node_modules/@jackwener/opencli /usr/local/lib/node_modules/@jackwener/opencli
 RUN ln -s /usr/local/lib/node_modules/@jackwener/opencli/dist/main.js /usr/local/bin/opencli \
     && opencli --version | grep -Fx -- "${OPENCLI_VERSION}"
-RUN python3 -m pip install --no-cache-dir "playwright==1.55.0"
-
+COPY services/auth-browser/pyproject.toml /opt/pokecrack/auth-browser/pyproject.toml
 COPY services/auth-browser/src/pokecrack_browser /opt/pokecrack/auth-browser/src/pokecrack_browser
 COPY services/auth-browser/adapters /opt/pokecrack/auth-browser/adapters
-COPY deploy/lib/prepare_extension.py /usr/local/lib/pokecrack/prepare_extension.py
+RUN python3 -m pip install --no-cache-dir /opt/pokecrack/auth-browser \
+    && pokecrack-browser --version
+COPY deploy/lib/shell_portability.sh /usr/local/lib/pokecrack/shell-portability.sh
 COPY deploy/auth-browser-entrypoint.sh /usr/local/bin/auth-browser-entrypoint
 COPY deploy/auth-browser-healthcheck.sh /usr/local/bin/auth-browser-healthcheck
-RUN chmod 0755 \
+RUN chmod 0444 /usr/local/lib/pokecrack/shell-portability.sh \
+    && chmod 0755 \
       /usr/local/bin/auth-browser-entrypoint \
-      /usr/local/bin/auth-browser-healthcheck \
-      /usr/local/lib/pokecrack/prepare_extension.py
+      /usr/local/bin/auth-browser-healthcheck
 
 USER 10001:10001
 EXPOSE 6080

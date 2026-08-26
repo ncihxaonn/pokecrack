@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(38);
+select plan(42);
 
 select is((select count(*)::integer from public.dashboard_overview), 1, 'seed publishes one bounded dashboard snapshot row');
 select ok((select mode = 'demo' and is_demo and accepted_count > 0 and activity_only_count > 0 and rejected_count > 0 from public.dashboard_overview limit 1), 'overview is visibly demo and covers every aggregate source outcome');
@@ -71,9 +71,43 @@ select ok((select count(*) > 0 and bool_and(source_link like 'https://%.invalid/
 select ok((select bool_and(statistics_eligible = (status = 'accepted' and evidence_tier in ('A', 'B') and activity_kind = 'opening')) from public.recent_activity), 'activity statistics eligibility is explicit and conservative');
 select ok((select count(*) > 0 and bool_and(status in ('fresh', 'delayed', 'stale', 'unavailable')) and bool_or(component_id = 'overall') from public.data_freshness), 'freshness route uses the safe vocabulary and has an overall row');
 select ok((select bool_or(auth_required and component_id = 'authenticated-social' and public_message = 'Authentication required to resume this synthetic collector.') from public.system_status), 'system status safely demonstrates an auth-required collector');
-select ok((select status = 'auth_required' and not extension_connected and not daemon_connected and last_error is null and authenticated_sources = '{}'::jsonb from ingest.browser_sessions where profile_name = 'demo-auth-required'), 'private browser health demonstrates auth required without a session, secret, or error');
+select ok((select status = 'auth_required' and not extension_connected and not daemon_connected and last_error is null and authenticated_sources = '{}'::jsonb and is_demo from ingest.browser_sessions where profile_name = 'demo-auth-required'), 'private demo browser health demonstrates auth required without a session, secret, or error');
 select ok((select accepted_count = 2 and activity_only_count = 1 and rejected_count = 1 from public.dashboard_overview), 'dashboard outcome aggregate counts are deterministic');
 select ok((select observed_packs > 0 and complete_openings > 0 and verified_sources > 0 and coverage_days > 0 from public.dashboard_overview), 'dashboard KPI cards have non-zero demo coverage');
+select is(
+  public.get_public_dashboard_snapshot_v1(),
+  null::jsonb,
+  'live-only snapshot RPC never publishes the demo-only seed'
+);
+
+-- Reclassify only the public projections inside this rolled-back test transaction
+-- so the live-only RPC shape can be exercised without publishing demo mode.
+update public.set_summaries set is_demo = false;
+update public.region_summaries set is_demo = false;
+update public.retailer_summaries set is_demo = false;
+update public.batch_summaries set is_demo = false;
+update public.recent_activity set is_demo = false;
+update public.public_signals set is_demo = false;
+update public.data_freshness set is_demo = false;
+update public.system_status set is_demo = false;
+update public.dashboard_overview
+set snapshot_key = 'test-live-current',
+    mode = 'live',
+    generated_at = '2026-08-26 00:00:00+00',
+    is_demo = false;
+
+insert into public.dashboard_overview (
+  snapshot_key, mode, generated_at, australia_coverage, methodology_version, is_demo
+) values (
+  'test-demo-newer', 'demo', '2026-08-27 00:00:00+00',
+  'Synthetic demo row that must never influence the live RPC.', 'test-demo', true
+);
+select is(
+  public.get_public_dashboard_snapshot_v1()->>'mode',
+  'live',
+  'a newer demo dashboard row cannot replace or suppress the selected live row'
+);
+
 select ok((select jsonb_typeof(snapshot) = 'object' and jsonb_array_length(snapshot->'sets') > 0 and jsonb_array_length(snapshot->'regions') > 0 and jsonb_array_length(snapshot->'retailers') > 0 and jsonb_array_length(snapshot->'batches') > 0 and jsonb_array_length(snapshot->'recentActivity') > 0 and jsonb_array_length(snapshot->'services') > 0 and jsonb_typeof(snapshot->'trend') = 'array' and jsonb_typeof(snapshot->'sources') = 'array' from (select public.get_public_dashboard_snapshot_v1() snapshot) q), 'snapshot RPC assembles every compact Web list');
 select doesnt_match((select public.get_public_dashboard_snapshot_v1()::text), '(?i)(author_hash|output_json|job_payload|last_error|browser_session|secret|token)', 'snapshot contains no private field names');
 select ok((select count(*) = 0 from (select is_demo from catalog.sets union all select is_demo from catalog.products union all select is_demo from catalog.cards union all select is_demo from catalog.regions union all select is_demo from catalog.retailers union all select is_demo from catalog.stores union all select is_demo from ingest.source_items union all select is_demo from ingest.openings) demo where not is_demo), 'all seeded catalog and observation records are explicitly demo');
@@ -125,6 +159,27 @@ select set_eq(
   $$select jsonb_object_keys(public.get_public_dashboard_snapshot_v1()->'recentActivity'->0)$$,
   $$values ('id'::text), ('observedAt'), ('platform'), ('setName'), ('productType'), ('packCount'), ('region'), ('retailer'), ('evidenceTier'), ('classification'), ('statisticsEligible'), ('published'), ('sourceUrl')$$,
   'snapshot activity rows match the strict Web public shape'
+);
+
+insert into public.dashboard_overview (
+  snapshot_key, mode, generated_at, australia_coverage, methodology_version, is_demo
+) values (
+  'test-live-unavailable', 'unavailable', '2026-08-28 00:00:00+00',
+  'Live statistics are unavailable pending a complete rebuild.', 'test-unavailable', false
+);
+select is(
+  public.get_public_dashboard_snapshot_v1(),
+  null::jsonb,
+  'the newest non-demo unavailable sentinel fails closed without falling back to older live data'
+);
+
+update public.dashboard_overview
+set generated_at = '2026-08-29 00:00:00+00'
+where snapshot_key = 'test-live-current';
+select is(
+  public.get_public_dashboard_snapshot_v1()->>'mode',
+  'live',
+  'a newer live snapshot restores the live-only RPC after an unavailable sentinel'
 );
 
 select * from finish();

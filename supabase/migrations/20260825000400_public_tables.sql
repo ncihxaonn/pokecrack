@@ -24,7 +24,11 @@ create table public.dashboard_overview (
   is_demo boolean not null default false,
   constraint dashboard_overview_key_check check (snapshot_key ~ '^[a-z0-9][a-z0-9._-]{0,79}$'),
   constraint dashboard_overview_schema_check check (schema_version ~ '^[0-9]+\.[0-9]+\.[0-9]+$'),
-  constraint dashboard_overview_mode_check check (mode in ('demo', 'live', 'unavailable') and (mode = 'demo') = is_demo),
+  constraint dashboard_overview_mode_check check (
+    (mode = 'demo' and is_demo)
+    or (mode = 'live' and not is_demo)
+    or mode = 'unavailable'
+  ),
   constraint dashboard_overview_counts_check check (
     observed_packs >= 0 and complete_openings >= 0 and complete_openings <= observed_packs
     and verified_sources >= 0 and verified_sources <= complete_openings

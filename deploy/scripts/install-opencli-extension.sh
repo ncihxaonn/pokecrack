@@ -3,8 +3,11 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 umask 022
 
-SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 PREPARE_HELPER="$SCRIPT_DIR/../lib/prepare_extension.py"
+PORTABILITY_HELPER="$SCRIPT_DIR/../lib/shell_portability.sh"
+# shellcheck disable=SC1090
+source "$PORTABILITY_HELPER"
 DEFAULT_INSTALL_ROOT=${OPENCLI_EXTENSION_DIR:-/opt/pokecrack/opencli-extension}
 
 die() {
@@ -35,16 +38,18 @@ validate_install_root() {
 }
 
 validate_version() {
-  local value=$1
+  local value=$1 normalized
+  normalized=$(pokecrack_lowercase "$value")
   [[ $value =~ ^[0-9]+([.][0-9]+){0,3}$ ]] || die "version must match Chromium's numeric extension version format"
-  [[ ${value,,} != *latest* ]] || die "floating latest versions are forbidden"
+  [[ $normalized != *latest* ]] || die "floating latest versions are forbidden"
 }
 
 validate_url() {
-  local value=$1 authority
+  local value=$1 authority normalized
+  normalized=$(pokecrack_lowercase "$value")
   [[ $value == https://* ]] || die "artifact URL must use HTTPS"
   [[ $value != *[$'\r\n\t ']* ]] || die "artifact URL must not contain whitespace"
-  [[ ${value,,} != *latest* ]] || die "floating latest URLs are forbidden"
+  [[ $normalized != *latest* ]] || die "floating latest URLs are forbidden"
   [[ $value != *'?'* && $value != *'#'* ]] || die "artifact URL must not contain a query or fragment"
   authority=${value#https://}
   authority=${authority%%/*}
@@ -55,7 +60,7 @@ validate_url() {
 validate_managed_link() {
   local root=$1 link_name=$2 target version
   [[ -L $root/$link_name ]] || return 1
-  target=$(readlink -- "$root/$link_name")
+  target=$(readlink "$root/$link_name")
   [[ $target =~ ^releases/([0-9]+([.][0-9]+){0,3})$ ]] || die "$link_name points outside the managed releases directory"
   version=${BASH_REMATCH[1]}
   [[ -d $root/$target && ! -L $root/$target ]] || die "$link_name points to a missing or invalid release"
@@ -67,8 +72,11 @@ atomic_link() {
   local root=$1 name=$2 target=$3 temporary
   temporary="$root/.${name}.$$.${RANDOM}"
   [[ ! -e $temporary && ! -L $temporary ]] || die "temporary link collision"
-  ln -s -- "$target" "$temporary"
-  mv -Tf -- "$temporary" "$root/$name"
+  ln -s "$target" "$temporary"
+  if ! pokecrack_atomic_replace "$temporary" "$root/$name"; then
+    rm -f "$temporary"
+    die "could not atomically activate $name"
+  fi
 }
 
 install_release() {
@@ -76,7 +84,7 @@ install_release() {
   while (($#)); do
     case $1 in
       --version) (($# >= 2)) || die "--version requires a value"; version=$2; shift 2 ;;
-      --sha256) (($# >= 2)) || die "--sha256 requires a value"; checksum=${2,,}; shift 2 ;;
+      --sha256) (($# >= 2)) || die "--sha256 requires a value"; checksum=$(pokecrack_lowercase "$2"); shift 2 ;;
       --url) (($# >= 2)) || die "--url requires a value"; url=$2; shift 2 ;;
       --url-template) (($# >= 2)) || die "--url-template requires a value"; template=$2; shift 2 ;;
       --install-root) (($# >= 2)) || die "--install-root requires a value"; install_root=$2; shift 2 ;;
@@ -98,20 +106,19 @@ install_release() {
   validate_url "$url"
   validate_install_root "$install_root"
   require_command curl
-  require_command sha256sum
   require_command python3
   require_command mktemp
 
-  local artifact prepared release_root target current_target=''
+  local artifact prepared release_root target actual_checksum current_target=''
   temporary=''
   staging=''
   temporary=$(mktemp -d "${TMPDIR:-/tmp}/opencli-extension.XXXXXXXX")
   cleanup_install() {
     local status=$?
     if [[ -n ${staging:-} && -d $staging && ! -L $staging ]]; then
-      rm -rf -- "$staging"
+      rm -rf "$staging"
     fi
-    rm -rf -- "$temporary" || true
+    rm -rf "$temporary" || true
     return "$status"
   }
   trap cleanup_install EXIT
@@ -127,16 +134,17 @@ install_release() {
     --speed-limit 1024 --speed-time 30 \
     --output "$artifact" "$url"
   [[ -s $artifact ]] || die "downloaded artifact is empty"
-  printf '%s  %s\n' "$checksum" "$artifact" | sha256sum --check --status - || die "artifact checksum mismatch"
+  actual_checksum=$(pokecrack_sha256_file "$artifact") || die "required SHA-256 command not found or failed"
+  [[ $actual_checksum == "$checksum" ]] || die "artifact checksum mismatch"
   python3 "$PREPARE_HELPER" prepare "$artifact" "$prepared" "$version" >/dev/null
 
-  install -d -m 0755 -- "$install_root"
+  install -d -m 0755 "$install_root"
   [[ ! -L $install_root ]] || die "install root became a symbolic link"
   release_root="$install_root/releases"
   if [[ -e $release_root || -L $release_root ]]; then
     [[ -d $release_root && ! -L $release_root ]] || die "releases path must be a real directory"
   else
-    install -d -m 0755 -- "$release_root"
+    install -d -m 0755 "$release_root"
   fi
   target="$release_root/$version"
   if [[ -e $target || -L $target ]]; then
@@ -147,11 +155,11 @@ install_release() {
     [[ $installed_checksum == "$checksum" ]] || die "existing release checksum receipt does not match the requested artifact"
   else
     staging=$(mktemp -d "$release_root/.staging-${version}.XXXXXXXX")
-    cp -a -- "$prepared/." "$staging/"
+    cp -a "$prepared/." "$staging/"
     printf '%s\n' "$checksum" > "$staging/.artifact-sha256"
     python3 "$PREPARE_HELPER" validate "$staging" "$version" >/dev/null
-    chmod -R u=rwX,go=rX -- "$staging"
-    mv -- "$staging" "$target"
+    chmod -R u=rwX,go=rX "$staging"
+    mv "$staging" "$target"
     staging=''
   fi
 
@@ -183,6 +191,7 @@ rollback_release() {
       *) die "unknown rollback argument: $1" ;;
     esac
   done
+  require_command python3
   validate_install_root "$install_root"
   [[ -d $install_root && ! -L $install_root ]] || die "install root does not exist"
   current_target=$(validate_managed_link "$install_root" current) || die "current release is unavailable"

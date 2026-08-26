@@ -18,6 +18,7 @@ describe("resolveDashboardData", () => {
     expect(result).toMatchObject({ status: "ready", mode: "demo", synthetic: true });
     expect(result.status === "ready" && result.data.mode).toBe("demo");
     expect(result.status === "ready" && result.data).not.toHaveProperty("admin");
+    expect(result.status === "ready" && result.data.recentActivity.every((item) => item.published)).toBe(true);
     expect(loadLive).not.toHaveBeenCalled();
   });
 
@@ -65,5 +66,9 @@ describe("resolveDashboardData", () => {
 
     expect(result).toMatchObject({ status: "ready", mode: "live", synthetic: false });
     expect(result.status === "ready" && result.data.mode).toBe("live");
+    expect(result.status === "ready" && result.data.recentActivity.every((item) => item.published)).toBe(true);
+    expect(result.status === "ready" && result.data.recentActivity.length).toBe(
+      DEMO_DATA.recentActivity.filter((item) => item.published).length,
+    );
   });
 });

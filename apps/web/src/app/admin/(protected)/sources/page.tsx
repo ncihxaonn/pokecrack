@@ -4,4 +4,4 @@ import { AdminHeading, AdminModeNotice, AdminSourcesView } from "@/components/ad
 import { getAdminSnapshot } from "../../_lib/admin-data";
 import { requireAdmin } from "../../_lib/auth";
 export const metadata: Metadata = { title: "Sources" };
-export default async function AdminSourcesPage() { const access = await requireAdmin(); const snapshot = await getAdminSnapshot(access); return <><AdminHeading title="Source policies" description="Allowlist posture and intentionally disabled mutation controls." /><AdminModeNotice message={snapshot.message} synthetic={snapshot.synthetic} /><AdminSourcesView available={snapshot.status === "ready"} /></>; }
+export default async function AdminSourcesPage() { const access = await requireAdmin(); const snapshot = await getAdminSnapshot(access); return <><AdminHeading title="Source policies" description="Allowlist posture and intentionally disabled mutation controls." /><AdminModeNotice message={snapshot.message} status={snapshot.status} synthetic={snapshot.synthetic} /><AdminSourcesView data={snapshot.status === "ready" ? snapshot.data : null} /></>; }

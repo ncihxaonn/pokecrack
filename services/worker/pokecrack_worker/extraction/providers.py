@@ -218,7 +218,15 @@ class UrllibHTTPTransport:
             with self._opener.open(request, timeout=timeout) as response:  # nosec B310
                 return HTTPResponse(status=response.status, body=self._read_bounded(response))
         except urllib.error.HTTPError as error:
-            return HTTPResponse(status=error.code, body=self._read_bounded(error))
+            try:
+                error_body = self._read_bounded(error)
+            except OSError:
+                # Some servers close an empty redirect/error response without a
+                # Content-Length, which can surface as a reset while urllib
+                # reads the HTTPError body. The status is still authoritative;
+                # callers will reject it without needing untrusted body bytes.
+                error_body = b""
+            return HTTPResponse(status=error.code, body=error_body)
 
 
 def _matches_json_type(value: Any, expected: str) -> bool:

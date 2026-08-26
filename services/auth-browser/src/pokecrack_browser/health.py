@@ -133,6 +133,9 @@ def check_auth(settings: ServiceSettings, source: str) -> dict[str, Any]:
     except AdapterConfigError as exc:
         raise ServiceError("source_unavailable", str(exc)) from exc
     if adapter.requires_browser:
+        if not settings.opencli_enabled:
+            write_auth_state(settings.runtime_root, source, state="unavailable")
+            raise ServiceError("source_unavailable", "OpenCLI is disabled")
         state = read_runtime_state(settings.runtime_root)
         if state is None or state.get("profile") != adapter.profile:
             write_auth_state(settings.runtime_root, source, state="auth_required")
@@ -230,7 +233,7 @@ class HealthChecker:
             and isinstance(identity, str)
             and self._matches_identity(pid, identity)
         )
-        daemon_ok = self._tcp_check(
+        daemon_ok = not self.settings.opencli_enabled or self._tcp_check(
             self.settings.daemon_host,
             self.settings.daemon_port,
             0.5,
@@ -245,7 +248,7 @@ class HealthChecker:
             extension_checked
             and 0 <= (self._now() - extension_checked).total_seconds() <= HEALTH_STALE_SECONDS
         )
-        extension_ok = bool(
+        extension_ok = not self.settings.opencli_enabled or bool(
             extension
             and extension.get("connected") is True
             and extension.get("version") == self.settings.extension_version
@@ -266,11 +269,13 @@ class HealthChecker:
             },
             "daemon": {
                 "ok": daemon_ok,
+                "enabled": self.settings.opencli_enabled,
                 "endpoint": f"{self.settings.daemon_host}:{self.settings.daemon_port}",
                 "loopback_only": True,
             },
             "extension": {
                 "ok": extension_ok,
+                "enabled": self.settings.opencli_enabled,
                 "connected": bool(extension and extension.get("connected") is True),
                 "version": extension.get("version") if extension else None,
                 "fresh": extension_fresh,
@@ -308,16 +313,19 @@ def run_doctor(settings: ServiceSettings) -> dict[str, Any]:
         add("fixture-adapter", True, f"{adapter.name} {adapter.version}")
     except AdapterConfigError as exc:
         add("fixture-adapter", False, str(exc))
-    try:
-        if not settings.extension_version:
-            raise PathValidationError("POKECRACK_BRIDGE_VERSION is not pinned")
-        extension = validate_extension_path(
-            settings.extension_dir,
-            expected_version=settings.extension_version,
-        )
-        add("browser-bridge-extension", True, str(extension))
-    except (PathValidationError, OSError) as exc:
-        add("browser-bridge-extension", False, str(exc))
+    if settings.opencli_enabled:
+        try:
+            if not settings.extension_version:
+                raise PathValidationError("POKECRACK_BRIDGE_VERSION is not pinned")
+            extension = validate_extension_path(
+                settings.extension_dir,
+                expected_version=settings.extension_version,
+            )
+            add("browser-bridge-extension", True, str(extension))
+        except (PathValidationError, OSError) as exc:
+            add("browser-bridge-extension", False, str(exc))
+    else:
+        add("browser-bridge-extension", True, "disabled by OPENCLI_ENABLED=false")
     add(
         "playwright-python",
         importlib.util.find_spec("playwright") is not None,

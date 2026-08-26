@@ -42,7 +42,7 @@ def test_settings_default_to_network_free_demo_fixture_mode(
     assert settings.youtube_api_key is None
     assert settings.scrapling_save_raw_html is False
     assert settings.scrapling_dynamic_enabled is False
-    assert settings.worker_max_concurrency == 2
+    assert settings.worker_max_concurrency == 1
     assert settings.ai_max_text_chars == 20_000
     assert settings.scrapling_max_raw_text_chars == 20_000
 
@@ -53,6 +53,11 @@ def test_live_and_http_ai_modes_fail_closed_without_required_configuration() -> 
 
     with pytest.raises(ValidationError, match="AI_API_KEY.*AI_EXTRACT_MODEL"):
         Settings(_env_file=None, ai_provider="http")
+
+
+def test_worker_concurrency_above_one_is_rejected_until_pooling_is_implemented() -> None:
+    with pytest.raises(ValidationError, match="worker_max_concurrency"):
+        Settings(_env_file=None, worker_max_concurrency=2)
 
 
 def test_network_ai_mode_requires_nonzero_cost_rates_for_budget_accounting() -> None:

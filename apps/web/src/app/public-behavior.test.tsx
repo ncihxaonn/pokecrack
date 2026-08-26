@@ -68,6 +68,14 @@ describe("public route behavior", () => {
     expect(screen.getByText(BRAND.batchDisclaimer)).toBeVisible();
   });
 
+  it("places the batch-detail disclaimer before the primary page heading", () => {
+    render(<BatchDetailView data={DEMO_PUBLIC_DATA} batch={DEMO_PUBLIC_DATA.batches[0]!} synthetic />);
+
+    const disclaimer = screen.getByLabelText("Observation disclaimer");
+    const heading = screen.getByRole("heading", { level: 1 });
+    expect(disclaimer.compareDocumentPosition(heading) & Node.DOCUMENT_POSITION_FOLLOWING).not.toBe(0);
+  });
+
   it("shows baseline, posterior, and independent-source context with observed rates", () => {
     render(<ObservationStats metric={DEMO_PUBLIC_DATA.sets[0]!} />);
 
@@ -101,6 +109,7 @@ describe("public route behavior", () => {
     expect(chart).toContain('"use client"');
     expect(chart).toContain('import("echarts")');
     expect(chart).toContain("tooltip");
+    expect(chart).toContain("prefers-reduced-motion: reduce");
     expect(readFileSync(path.resolve(process.cwd(), "src/components/dashboard/home-view.tsx"), "utf8")).toContain("Observed trend values");
   });
 });

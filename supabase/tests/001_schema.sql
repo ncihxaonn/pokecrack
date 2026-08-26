@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(125);
+select plan(128);
 
 select has_schema('catalog', 'catalog schema exists');
 select has_schema('ingest', 'ingest schema exists');
@@ -102,7 +102,7 @@ select is(
 );
 select set_eq(
   $$select column_name::text || ':' || data_type from information_schema.columns where table_schema = 'ingest' and table_name = 'worker_heartbeats'$$,
-  $$values ('worker_id:text'::text), ('worker_type:text'), ('version:text'), ('last_seen_at:timestamp with time zone'), ('current_job_id:uuid'), ('metadata:jsonb')$$,
+  $$values ('worker_id:text'::text), ('worker_type:text'), ('version:text'), ('last_seen_at:timestamp with time zone'), ('current_job_id:uuid'), ('metadata:jsonb'), ('is_demo:boolean')$$,
   'worker_heartbeats exposes exactly the canonical typed columns'
 );
 select col_is_pk('ingest', 'worker_heartbeats', 'worker_id', 'worker_id is the heartbeat primary key');
@@ -116,7 +116,7 @@ select is(
 );
 select set_eq(
   $$select column_name::text || ':' || data_type from information_schema.columns where table_schema = 'ingest' and table_name = 'browser_sessions'$$,
-  $$values ('profile_name:text'::text), ('status:text'), ('extension_connected:boolean'), ('daemon_connected:boolean'), ('authenticated_sources:jsonb'), ('last_check_at:timestamp with time zone'), ('last_successful_command_at:timestamp with time zone'), ('last_error:text')$$,
+  $$values ('profile_name:text'::text), ('status:text'), ('extension_connected:boolean'), ('daemon_connected:boolean'), ('authenticated_sources:jsonb'), ('last_check_at:timestamp with time zone'), ('last_successful_command_at:timestamp with time zone'), ('last_error:text'), ('is_demo:boolean')$$,
   'browser_sessions exposes exactly the canonical health-only columns'
 );
 select col_is_pk('ingest', 'browser_sessions', 'profile_name', 'profile_name is the browser session primary key');
@@ -131,13 +131,13 @@ select is(
 );
 select set_eq(
   $$select column_name::text || ':' || data_type from information_schema.columns where table_schema = 'ingest' and table_name = 'ai_usage_daily'$$,
-  $$values ('date:date'::text), ('provider:text'), ('model:text'), ('stage:text'), ('request_count:integer'), ('input_tokens:bigint'), ('output_tokens:bigint'), ('estimated_cost_aud:numeric')$$,
+  $$values ('date:date'::text), ('provider:text'), ('model:text'), ('stage:text'), ('request_count:integer'), ('input_tokens:bigint'), ('output_tokens:bigint'), ('estimated_cost_aud:numeric'), ('is_demo:boolean')$$,
   'ai_usage_daily exposes exactly the canonical typed ledger columns'
 );
 select matches(
   (select pg_get_constraintdef(oid) from pg_constraint where conrelid = 'ingest.ai_usage_daily'::regclass and contype = 'p'),
-  '(?is)^primary key \(date, provider, model, stage\)$',
-  'AI usage primary key is date, provider, model, and stage'
+  '(?is)^primary key \(date, provider, model, stage, is_demo\)$',
+  'AI usage primary key keeps live and demo ledgers independent'
 );
 select is(
   (select count(*)::integer from information_schema.columns
@@ -337,6 +337,13 @@ select is(
   'claim_jobs dead-letters exhausted rows and performs one candidate UPDATE'
 );
 select ok(
+  (select pg_get_functiondef('ingest.claim_jobs(text,text[],integer,integer)'::regprocedure)
+      ilike '%not exhausted.is_demo%'
+    and pg_get_functiondef('ingest.claim_jobs(text,text[],integer,integer)'::regprocedure)
+      ilike '%not j.is_demo%'),
+  'production job claiming never mutates or leases demo jobs'
+);
+select ok(
   not exists (
     select 1
     from pg_proc p
@@ -352,6 +359,11 @@ select ok(not has_function_privilege('authenticated', 'ingest.claim_jobs(text,te
 select ok(has_function_privilege('service_role', 'ingest.claim_jobs(text,text[],integer,integer)', 'execute'), 'service_role can claim jobs');
 select index_is_partial('ingest', 'jobs', 'jobs_active_dedupe_uidx', 'active job dedupe uses a partial index');
 select index_is_unique('ingest', 'jobs', 'jobs_active_dedupe_uidx', 'active job dedupe index is unique');
+select ok(
+  (select pg_get_indexdef(indexrelid) ilike '%job_type, dedupe_key, is_demo%'
+   from pg_index where indexrelid = 'ingest.jobs_active_dedupe_uidx'::regclass),
+  'active job dedupe keeps live and demo modes independent'
+);
 select ok(
   (select pg_get_expr(i.indpred, i.indrelid) ilike '%pending%'
           and pg_get_expr(i.indpred, i.indrelid) ilike '%running%'
@@ -379,6 +391,12 @@ insert into ingest.jobs (
   ('fa000000-0000-4000-8000-000000000005', 'extract', 'pending', 200, now() - interval '1 hour', 3, 3, null, null, null, null, '{"case":"max-attempts"}'),
   ('fa000000-0000-4000-8000-000000000006', 'extract', 'dead', 300, now() - interval '1 hour', 3, 3, null, null, null, now() - interval '1 minute', '{"case":"dead"}'),
   ('fa000000-0000-4000-8000-000000000007', 'extract', 'running', 250, now() - interval '1 hour', 3, 3, 'crashed-worker', now() - interval '10 minutes', now() - interval '5 minutes', null, '{"case":"expired-final-attempt"}');
+insert into ingest.jobs (
+  id, job_type, status, priority, available_at, attempts, max_attempts, payload, is_demo
+) values (
+  'fa000000-0000-4000-8000-000000000008', 'extract', 'pending', 500,
+  now() - interval '1 hour', 3, 3, '{"case":"demo-max-attempts"}', true
+);
 
 create temporary table claimed_first on commit drop as
 select * from ingest.claim_jobs('worker-alpha', array['extract'], 10, 60);
@@ -402,6 +420,11 @@ select set_eq(
   'due pending and expired running jobs at max attempts are dead-lettered'
 );
 select is((select status from ingest.jobs where id = 'fa000000-0000-4000-8000-000000000006'), 'dead', 'dead jobs are supported and never reclaimed');
+select is(
+  (select status from ingest.jobs where id = 'fa000000-0000-4000-8000-000000000008'),
+  'pending',
+  'live claim and dead-letter paths leave demo jobs untouched'
+);
 select is((select count(*)::integer from ingest.claim_jobs('worker-beta', array['extract'], 10, 60)), 0, 'a second claimant cannot receive active running locks');
 select throws_ok($$select * from ingest.claim_jobs(' ', array['extract'], 1, 60)$$, '22023', 'worker_id must contain 1 to 160 characters', 'blank worker ids are rejected');
 select throws_ok($$select * from ingest.claim_jobs('worker', array[]::text[], 1, 60)$$, '22023', 'job_types must be null or a non-empty array without nulls', 'empty job type arrays are rejected');

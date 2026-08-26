@@ -13,7 +13,7 @@ x-worker-environment: &worker-environment
   PYTHONUNBUFFERED: "1"
   SUPABASE_DB_URL: "${SUPABASE_DB_URL:-}"
   WORKER_POLL_SECONDS: "${WORKER_POLL_SECONDS:-10}"
-  WORKER_MAX_CONCURRENCY: "${WORKER_MAX_CONCURRENCY:-2}"
+  WORKER_MAX_CONCURRENCY: "${WORKER_MAX_CONCURRENCY:-1}"
 
 x-worker-base: &worker-base
   image: "${POKECRACK_WORKER_IMAGE:-pokecrack-worker}:${DEPLOY_SHA:?DEPLOY_SHA must be an exact 40-character Git commit}"

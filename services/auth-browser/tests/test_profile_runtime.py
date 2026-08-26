@@ -20,7 +20,7 @@ from pokecrack_browser.runtime import (
 class ProfileLockTests(unittest.TestCase):
     def test_global_lock_allows_only_one_profile(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            runtime_root = Path(temporary) / "runtime"
+            runtime_root = Path(temporary).resolve() / "runtime"
             with (
                 ProfileLock.acquire(runtime_root, "social-western"),
                 self.assertRaises(ProfileBusyError),
@@ -29,7 +29,7 @@ class ProfileLockTests(unittest.TestCase):
 
     def test_runtime_state_is_private_and_contains_no_credentials(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            runtime_root = Path(temporary) / "runtime"
+            runtime_root = Path(temporary).resolve() / "runtime"
             state = {
                 "profile": "research-general",
                 "pid": 123,
@@ -76,7 +76,8 @@ class GracefulShutdownTests(unittest.TestCase):
             assert process.stdout is not None
             self.assertEqual(process.stdout.readline().strip(), "ready")
             identity = process_identity(process.pid)
-            assert identity is not None
+            if identity is None:
+                self.skipTest("boot-scoped /proc process identity is Linux-only")
             outcome = stop_process_gracefully(
                 process.pid,
                 expected_identity=identity,

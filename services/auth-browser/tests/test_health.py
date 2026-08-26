@@ -3,8 +3,10 @@ from __future__ import annotations
 import json
 import tempfile
 import unittest
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest.mock import patch
 
 from pokecrack_browser.config import ServiceSettings
 from pokecrack_browser.errors import ServiceError
@@ -33,7 +35,7 @@ class DoctorParserTests(unittest.TestCase):
 class AuthHealthTests(unittest.TestCase):
     def test_fixture_auth_check_is_structured_and_never_returns_credentials(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            settings = ServiceSettings(runtime_root=Path(temporary) / "runtime")
+            settings = ServiceSettings(runtime_root=Path(temporary).resolve() / "runtime")
             result = check_auth(settings, "fixture")
 
         self.assertTrue(result["ok"])
@@ -42,6 +44,27 @@ class AuthHealthTests(unittest.TestCase):
         serialized = json.dumps(result).lower()
         for forbidden in ("cookie", "authorization", "token", "password"):
             self.assertNotIn(forbidden, serialized)
+
+    def test_browser_auth_check_fails_before_adapter_execution_when_opencli_is_disabled(
+        self,
+    ) -> None:
+        from pokecrack_browser.adapters import load_adapter
+
+        with tempfile.TemporaryDirectory() as temporary:
+            settings = ServiceSettings(runtime_root=Path(temporary).resolve() / "runtime")
+            adapter = replace(
+                load_adapter("fixture", settings.adapter_root),
+                requires_browser=True,
+            )
+            with (
+                patch("pokecrack_browser.health.load_adapter", return_value=adapter),
+                patch("pokecrack_browser.health.run_bounded_process") as run,
+                self.assertRaises(ServiceError) as caught,
+            ):
+                check_auth(settings, "fixture")
+
+        self.assertEqual(caught.exception.category, "source_unavailable")
+        run.assert_not_called()
 
     def test_auth_health_false_values_map_to_exact_categories(self) -> None:
         cases = (
@@ -67,10 +90,11 @@ class AuthHealthTests(unittest.TestCase):
 class StatusHealthTests(unittest.TestCase):
     def test_status_checks_process_daemon_extension_cdp_and_auth_state(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            root = Path(temporary)
+            root = Path(temporary).resolve()
             settings = ServiceSettings(
                 runtime_root=root / "runtime",
                 extension_version="1.2.3",
+                opencli_enabled=True,
             )
             now = datetime.now(UTC)
             write_runtime_state(

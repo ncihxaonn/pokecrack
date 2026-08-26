@@ -10,6 +10,7 @@ as $$
 with dashboard_row as (
   select d.*
   from public.dashboard_overview d
+  where not d.is_demo
   order by d.generated_at desc, d.snapshot_key
   limit 1
 ),
@@ -261,7 +262,7 @@ cross join batch_rows br
 cross join activity_rows ar
 cross join service_rows svr
 where guard.safe_row_count >= 0
-  and d.mode in ('demo', 'live');
+  and d.mode = 'live';
 $$;
 
 revoke all on function public.get_public_dashboard_snapshot_v1() from public, anon, authenticated;

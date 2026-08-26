@@ -10,11 +10,6 @@ fail() {
 (($# == 1)) || fail "exactly one role is required"
 role=$1
 
-if [[ "${DATA_MODE:-demo}" != "demo" ]]; then
-  printf '%s\n' \
-    "worker-service: production database-backed worker role wiring is not implemented" >&2
-  exit 78
-fi
 case $role in
   collector|ai-worker|watchdog)
     command=(pokecrack-worker worker --forever)

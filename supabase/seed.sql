@@ -118,8 +118,8 @@ on conflict do nothing;
 
 insert into ingest.browser_sessions (
   profile_name, status, extension_connected, daemon_connected, authenticated_sources,
-  last_check_at, last_successful_command_at, last_error
-) values ('demo-auth-required', 'auth_required', false, false, '{}'::jsonb, '2026-08-24 12:00:00+00', null, null)
+  last_check_at, last_successful_command_at, last_error, is_demo
+) values ('demo-auth-required', 'auth_required', false, false, '{}'::jsonb, '2026-08-24 12:00:00+00', null, null, true)
 on conflict do nothing;
 
 insert into analytics.dashboard_daily (

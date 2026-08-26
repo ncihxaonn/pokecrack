@@ -11,12 +11,25 @@ from .launcher import LOOPBACK_HOSTS
 SERVICE_ROOT = Path(__file__).resolve().parents[2]
 
 
+def _boolean(name: str, default: bool) -> bool:
+    raw = os.environ.get(name)
+    if raw is None:
+        return default
+    normalized = raw.strip().casefold()
+    if normalized == "true":
+        return True
+    if normalized == "false":
+        return False
+    raise ValueError(f"{name} must be true or false")
+
+
 @dataclass(frozen=True, slots=True)
 class ServiceSettings:
     profile_root: Path = Path("/var/lib/pokecrack-browser/profiles")
     runtime_root: Path = Path("/run/pokecrack-browser")
     extension_dir: Path = Path("/opt/pokecrack/opencli-extension/current")
     extension_version: str = ""
+    opencli_enabled: bool = False
     cdp_host: str = "127.0.0.1"
     cdp_port: int = 9222
     daemon_host: str = "127.0.0.1"
@@ -58,6 +71,7 @@ class ServiceSettings:
                 )
             ),
             extension_version=os.environ.get("POKECRACK_BRIDGE_VERSION", ""),
+            opencli_enabled=_boolean("OPENCLI_ENABLED", False),
             cdp_host=os.environ.get("POKECRACK_CDP_HOST", "127.0.0.1"),
             cdp_port=int(os.environ.get("POKECRACK_CDP_PORT", "9222")),
             daemon_host=os.environ.get("POKECRACK_DAEMON_HOST", "127.0.0.1"),

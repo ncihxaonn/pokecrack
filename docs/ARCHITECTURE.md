@@ -34,7 +34,7 @@ VPS Docker Compose
   watchdog -> heartbeats, budget/free-tier/backup freshness alerts
 ```
 
-The deployment artifacts define `collector`, `ai-worker`, `aggregator`, `scheduler`, and `watchdog` as roles of one worker image with role-specific commands and least-privilege environment variables. The current commands are verified fixture/reporting surfaces only: every role exits 78 in `DATA_MODE=live` until the persistent PostgreSQL handlers are wired. This intended architecture must not be described as an operational live worker. `auth-browser` has its own Chromium/noVNC image and sensitive persistent profile volume.
+The deployment artifacts define `collector`, `ai-worker`, `aggregator`, `scheduler`, and `watchdog` as roles of one worker image with role-specific commands and least-privilege environment variables. The first live composition is deliberately single-process (`WORKER_MAX_CONCURRENCY=1`): `scheduler` can enqueue only the implemented cleanup job and `watchdog` can claim only that cleanup job. `collector`, `ai-worker`, and `aggregator` still fail closed with exit code 78 because they have no registered live handlers. This partial composition must not be described as an operational live collection pipeline. `auth-browser` has its own Chromium/noVNC image and sensitive persistent profile volume.
 
 ## PostgreSQL queue; no Redis in the free MVP
 

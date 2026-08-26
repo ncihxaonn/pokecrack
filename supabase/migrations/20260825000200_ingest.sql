@@ -333,7 +333,7 @@ create table ingest.jobs (
   constraint jobs_last_error_message_check check (last_error_message is null or char_length(last_error_message) <= 8000),
   constraint jobs_retention_check check (retention_until > created_at)
 );
-create unique index jobs_active_dedupe_uidx on ingest.jobs (job_type, dedupe_key) where dedupe_key is not null and status in ('pending', 'running');
+create unique index jobs_active_dedupe_uidx on ingest.jobs (job_type, dedupe_key, is_demo) where dedupe_key is not null and status in ('pending', 'running');
 create index jobs_claim_idx on ingest.jobs (job_type, status, priority desc, available_at, lock_expires_at);
 create index jobs_retention_idx on ingest.jobs (retention_until) where status in ('completed', 'failed', 'dead', 'cancelled');
 
@@ -344,6 +344,7 @@ create table ingest.worker_heartbeats (
   last_seen_at timestamptz not null default now(),
   current_job_id uuid references ingest.jobs(id) on update cascade on delete set null,
   metadata jsonb not null default '{}'::jsonb,
+  is_demo boolean not null default false,
   constraint worker_heartbeats_worker_id_check check (btrim(worker_id) <> '' and char_length(worker_id) <= 160),
   constraint worker_heartbeats_type_check check (worker_type ~ '^[a-z][a-z0-9_.-]{0,79}$'),
   constraint worker_heartbeats_version_check check (btrim(version) <> '' and char_length(version) <= 80),
@@ -361,6 +362,7 @@ create table ingest.browser_sessions (
   last_check_at timestamptz not null default now(),
   last_successful_command_at timestamptz,
   last_error text,
+  is_demo boolean not null default false,
   constraint browser_sessions_profile_name_check check (btrim(profile_name) <> '' and char_length(profile_name) <= 160),
   constraint browser_sessions_status_check check (btrim(status) <> '' and char_length(status) <= 80),
   constraint browser_sessions_authenticated_sources_check check (jsonb_typeof(authenticated_sources) = 'object'),
@@ -377,7 +379,8 @@ create table ingest.ai_usage_daily (
   input_tokens bigint not null default 0,
   output_tokens bigint not null default 0,
   estimated_cost_aud numeric(12,4) not null default 0,
-  primary key (date, provider, model, stage),
+  is_demo boolean not null default false,
+  primary key (date, provider, model, stage, is_demo),
   constraint ai_usage_daily_provider_check check (btrim(provider) <> '' and char_length(provider) <= 120),
   constraint ai_usage_daily_model_check check (btrim(model) <> '' and char_length(model) <= 160),
   constraint ai_usage_daily_stage_check check (stage ~ '^[a-z][a-z0-9_.-]{0,79}$'),
@@ -500,6 +503,7 @@ begin
       completed_at = claim_time,
       updated_at = claim_time
   where exhausted.attempts >= exhausted.max_attempts
+    and not exhausted.is_demo
     and (
       (exhausted.status = 'pending' and exhausted.available_at <= claim_time)
       or (exhausted.status = 'running' and exhausted.lock_expires_at <= claim_time)
@@ -510,6 +514,7 @@ begin
     select j.id
     from ingest.jobs as j
     where j.attempts < j.max_attempts
+      and not j.is_demo
       and (job_types is null or j.job_type = any(job_types))
       and (
         (j.status = 'pending' and j.available_at <= claim_time)
@@ -539,7 +544,7 @@ alter function ingest.claim_jobs(text, text[], integer, integer) owner to postgr
 revoke all on function ingest.claim_jobs(text, text[], integer, integer) from public, anon, authenticated;
 grant execute on function ingest.claim_jobs(text, text[], integer, integer) to service_role;
 comment on function ingest.claim_jobs(text, text[], integer, integer) is
-  'Atomically locks due pending or expired running jobs via FOR UPDATE SKIP LOCKED. Service-role/dedicated DB workers only.';
+  'Atomically locks live due pending or expired running jobs via FOR UPDATE SKIP LOCKED. Demo jobs remain isolated in fixture mode. Service-role/dedicated DB workers only.';
 
 comment on column ingest.source_items.text_excerpt is 'Private bounded excerpt; maximum 20,000 characters. Full content/HTML is never retained here.';
 comment on column ingest.source_items.author_hash is 'Private pseudonymous author hash; never exposed publicly.';

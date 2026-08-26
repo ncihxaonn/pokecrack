@@ -20,13 +20,13 @@ class QueryExecutor(Protocol):
 ENQUEUE_SQL = """
 INSERT INTO ingest.jobs AS jobs (
     job_type, payload, status, priority, dedupe_key, available_at,
-    attempts, max_attempts, created_at, updated_at
+    attempts, max_attempts, created_at, updated_at, is_demo
 )
 VALUES (
     %(kind)s, %(payload)s::jsonb, 'pending', %(priority)s, %(dedupe_key)s,
-    %(available_at)s, 0, %(max_attempts)s, %(now)s, %(now)s
+    %(available_at)s, 0, %(max_attempts)s, %(now)s, %(now)s, false
 )
-ON CONFLICT (job_type, dedupe_key)
+ON CONFLICT (job_type, dedupe_key, is_demo)
     WHERE dedupe_key IS NOT NULL AND status IN ('pending', 'running')
 DO UPDATE SET updated_at = jobs.updated_at
 RETURNING jobs.*

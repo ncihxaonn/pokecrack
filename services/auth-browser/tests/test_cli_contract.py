@@ -41,8 +41,8 @@ class CliContractTests(unittest.TestCase):
 
     def test_start_profile_dry_run_is_json_and_has_no_filesystem_side_effect(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
-            profile_root = Path(temporary) / "profiles"
-            runtime_root = Path(temporary) / "runtime"
+            profile_root = Path(temporary).resolve() / "profiles"
+            runtime_root = Path(temporary).resolve() / "runtime"
             completed = run_cli(
                 "start-profile",
                 "social-western",
