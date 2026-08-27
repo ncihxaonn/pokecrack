@@ -81,6 +81,13 @@ class _SearchItem:
     published_at: datetime
 
 
+@dataclass(frozen=True, slots=True)
+class _ReapOutcome:
+    reaped: bool
+    completed_within_deadline: bool
+    control_flow: BaseException | None = None
+
+
 class YouTubeTransport(Protocol):
     def get(
         self,
@@ -191,18 +198,14 @@ class HTTPXYouTubeTransport:
                 timeout=_remaining_seconds(transfer_deadline),
             )
         except subprocess.TimeoutExpired:
-            reaped = _terminate_and_reap(process, deadline=process_deadline)
-            if not reaped or monotonic() > process_deadline:
-                raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
+            _terminate_and_reap(process, deadline=process_deadline)
             raise YouTubeError("request_timeout", retryable=True) from None
         except BaseException as error:
             # start_new_session isolates curl and any resolver descendants. Always
             # tear that group down before an interrupt, shutdown, or unexpected
             # communicate failure can escape this synchronous boundary.
-            reaped = _terminate_and_reap(process, deadline=process_deadline)
+            _terminate_and_reap(process, deadline=process_deadline)
             if isinstance(error, Exception):
-                if not reaped or monotonic() > process_deadline:
-                    raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
                 raise YouTubeError("network_error", retryable=True) from None
             raise
 
@@ -256,7 +259,36 @@ def _remaining_seconds(deadline: float) -> float:
     return remaining
 
 
-def _terminate_and_reap(process: subprocess.Popen[bytes], *, deadline: float) -> bool:
+def _terminate_and_reap(process: subprocess.Popen[bytes], *, deadline: float) -> None:
+    outcome: _ReapOutcome | None = None
+    try:
+        outcome = _reap_process_group(process, deadline=deadline)
+        if not outcome.reaped or not outcome.completed_within_deadline:
+            raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
+        if outcome.control_flow is not None:
+            raise outcome.control_flow
+    except YouTubeError:
+        raise
+    except BaseException:
+        # This outer fence also covers asynchronous control flow delivered at a
+        # loop/clock boundary rather than by one of the subprocess calls. Such
+        # control flow may escape only after a timely reap was confirmed.
+        if outcome is None or not outcome.reaped or not outcome.completed_within_deadline:
+            raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
+        raise
+
+
+def _reap_process_group(process: subprocess.Popen[bytes], *, deadline: float) -> _ReapOutcome:
+    try:
+        return _reap_process_group_guarded(process, deadline=deadline)
+    except BaseException as error:
+        control_flow = error if not isinstance(error, Exception) else None
+        return _ReapOutcome(False, False, control_flow)
+
+
+def _reap_process_group_guarded(
+    process: subprocess.Popen[bytes], *, deadline: float
+) -> _ReapOutcome:
     cleanup_control_flow: BaseException | None = None
     reaped = False
 
@@ -275,9 +307,13 @@ def _terminate_and_reap(process: subprocess.Popen[bytes], *, deadline: float) ->
         except BaseException as error:
             remember_control_flow(error)
 
-        remaining = deadline - monotonic()
+        try:
+            remaining = deadline - monotonic()
+        except BaseException as error:
+            remember_control_flow(error)
+            continue
         if remaining <= 0:
-            break
+            return _ReapOutcome(False, False, cleanup_control_flow)
         try:
             process.wait(timeout=min(_YOUTUBE_REAP_SLICE_SECONDS, remaining))
         except BaseException as error:
@@ -293,9 +329,14 @@ def _terminate_and_reap(process: subprocess.Popen[bytes], *, deadline: float) ->
         except BaseException as error:
             remember_control_flow(error)
 
-    if cleanup_control_flow is not None:
-        raise cleanup_control_flow
-    return reaped
+    if not reaped:
+        return _ReapOutcome(False, False, cleanup_control_flow)
+    try:
+        completed_within_deadline = monotonic() <= deadline
+    except BaseException as error:
+        remember_control_flow(error)
+        completed_within_deadline = False
+    return _ReapOutcome(reaped, completed_within_deadline, cleanup_control_flow)
 
 
 def _curl_response_metadata(stderr: bytes) -> dict[str, str]:

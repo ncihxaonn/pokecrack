@@ -475,6 +475,146 @@ def test_youtube_curl_transport_propagates_cleanup_system_exit_after_ordinary_fa
     assert len(process.wait_timeouts) == 3
 
 
+def test_youtube_curl_transport_fails_closed_when_cleanup_control_flow_is_not_reaped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = FixtureCurlProcess(
+        returncode=None,
+        communicate_effects=[subprocess.TimeoutExpired("curl", 27)],
+        wait_effects=[
+            KeyboardInterrupt("shutdown requested"),
+            subprocess.TimeoutExpired("curl", 0.4),
+            RuntimeError("cleanup wait failed"),
+            subprocess.TimeoutExpired("curl", 0.4),
+        ],
+        poll_effects=[None, None, None, None],
+    )
+    group_kills: list[tuple[int, signal.Signals]] = []
+    moments = iter((0.0, 0.0, 27.1, 27.2, 27.3, 27.4))
+    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    monkeypatch.setattr(os, "killpg", lambda pid, sig: group_kills.append((pid, sig)))
+    monkeypatch.setattr(
+        "pokecrack_worker.collectors.official_api.youtube.monotonic",
+        lambda: next(moments),
+    )
+
+    with pytest.raises(YouTubeError) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value.code == "deadline_cleanup_failed"
+    assert raised.value.retryable is False
+    assert group_kills == [(process.pid, signal.SIGKILL)] * 4
+    assert process.kill_calls == 4
+    assert process.reaped is False
+    assert "fixture-key" not in repr(raised.value)
+
+
+def test_youtube_curl_transport_fails_closed_when_initial_control_flow_is_not_reaped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = FixtureCurlProcess(
+        returncode=None,
+        communicate_effects=[KeyboardInterrupt("shutdown requested")],
+        wait_effects=[subprocess.TimeoutExpired("curl", 0.4)] * 4,
+        poll_effects=[None, None, None, None],
+    )
+    moments = iter((0.0, 0.0, 27.1, 27.2, 27.3, 27.4))
+    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    monkeypatch.setattr(os, "killpg", lambda _pid, _sig: None)
+    monkeypatch.setattr(
+        "pokecrack_worker.collectors.official_api.youtube.monotonic",
+        lambda: next(moments),
+    )
+
+    with pytest.raises(YouTubeError) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value.code == "deadline_cleanup_failed"
+    assert raised.value.retryable is False
+    assert process.kill_calls == 4
+    assert process.reaped is False
+    assert "fixture-key" not in repr(raised.value)
+
+
+def test_youtube_curl_transport_retries_when_cleanup_clock_is_interrupted(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    clock_interrupt = KeyboardInterrupt("shutdown requested")
+    process = FixtureCurlProcess(
+        returncode=None,
+        communicate_effects=[subprocess.TimeoutExpired("curl", 27)],
+    )
+    clock_effects = iter((0.0, 0.0, clock_interrupt, 27.2, 27.3))
+
+    def interrupted_clock() -> float:
+        effect = next(clock_effects)
+        if isinstance(effect, BaseException):
+            raise effect
+        assert isinstance(effect, float)
+        return effect
+
+    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    monkeypatch.setattr(
+        "pokecrack_worker.collectors.official_api.youtube.monotonic",
+        interrupted_clock,
+    )
+
+    with pytest.raises(KeyboardInterrupt) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value is clock_interrupt
+    assert process.kill_calls == 2
+    assert process.reaped is True
+    assert "fixture-key" not in repr(raised.value)
+
+
+def test_youtube_curl_transport_fails_closed_when_reap_finishes_after_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    cleanup_interrupt = KeyboardInterrupt("shutdown requested")
+    process = FixtureCurlProcess(
+        returncode=None,
+        communicate_effects=[subprocess.TimeoutExpired("curl", 27)],
+        wait_effects=[cleanup_interrupt, -9],
+        poll_effects=[None],
+    )
+    moments = iter((0.0, 0.0, 27.1, 27.2, 29.1))
+    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    monkeypatch.setattr(
+        "pokecrack_worker.collectors.official_api.youtube.monotonic",
+        lambda: next(moments),
+    )
+
+    with pytest.raises(YouTubeError) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value.code == "deadline_cleanup_failed"
+    assert raised.value.retryable is False
+    assert process.kill_calls == 2
+    assert process.reaped is True
+    assert "fixture-key" not in repr(raised.value)
+
+
 def test_youtube_curl_transport_sanitizes_unexpected_failure_after_successful_reap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
