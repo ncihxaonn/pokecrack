@@ -144,11 +144,18 @@ select ok(
   'the PostgreSQL PUBLIC pseudo-role has no relation grants'
 );
 select ok(
-  (select count(*) = 9 and bool_and(has_table_privilege('service_role', c.oid, 'select,insert,update,delete'))
+  (select count(*) = 9 and bool_and(
+     has_table_privilege('service_role', c.oid, 'select')
+     and not has_table_privilege('service_role', c.oid, 'insert')
+     and not has_table_privilege('service_role', c.oid, 'update')
+     and not has_table_privilege('service_role', c.oid, 'delete')
+     and not has_table_privilege('service_role', c.oid, 'truncate')
+     and not has_table_privilege('service_role', c.oid, 'references')
+     and not has_table_privilege('service_role', c.oid, 'trigger'))
    from pg_class c join pg_namespace n on n.oid = c.relnamespace
    where n.nspname = 'public' and c.relkind in ('r', 'p')
      and c.relname in ('dashboard_overview', 'set_summaries', 'region_summaries', 'retailer_summaries', 'batch_summaries', 'recent_activity', 'public_signals', 'data_freshness', 'system_status')),
-  'service_role can maintain every named public relation'
+  'service_role can read public projections but cannot mutate them directly'
 );
 
 select ok(not exists (select 1 from (values ('catalog'), ('ingest'), ('analytics')) s(name) where has_schema_privilege('anon', s.name, 'usage')), 'anon cannot use any private schema');

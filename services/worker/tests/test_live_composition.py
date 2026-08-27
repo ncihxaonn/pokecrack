@@ -115,13 +115,14 @@ def test_live_health_probes_postgres_and_upserts_a_role_heartbeat() -> None:
     assert "ingest.heartbeat_job_v2" in dependency_sql
     assert "ingest.fail_job_v2" in dependency_sql
     assert "ingest.finalize_cleanup_job" in dependency_sql
+    assert "ingest.upsert_worker_heartbeat_v1" in dependency_sql
+    assert "ingest.pause_job_for_budget_v2" in dependency_sql
+    assert "NOT has_table_privilege" in dependency_sql
     assert dependency_params == {"worker_type": "watchdog", "youtube_enabled": False}
     sql, params = executor.calls[1]
-    assert "SELECT 1 AS reachable" in sql
-    assert "INSERT INTO ingest.worker_heartbeats" in sql
-    assert "ON CONFLICT (worker_id) DO UPDATE" in sql
-    assert "metadata, is_demo" in sql
-    assert "WHERE not heartbeats.is_demo" in sql
+    assert "ingest.upsert_worker_heartbeat_v1" in sql
+    assert "INSERT INTO ingest.worker_heartbeats" not in sql
+    assert "UPDATE ingest.worker_heartbeats" not in sql
     assert params["worker_id"] == "worker-1"
     assert params["worker_type"] == "watchdog"
     assert json.loads(str(params["metadata"])) == {
@@ -526,7 +527,8 @@ def test_busy_youtube_request_gate_defers_before_network_access() -> None:
     assert result.status is RuntimeStatus.DEFERRED
     assert result.error_code == "youtube_request_deferred"
     assert transport.calls == []
-    assert "attempts = GREATEST(0, attempts - 1)" in executor.calls[2][0]
+    assert "ingest.pause_job_for_budget_v2" in executor.calls[2][0]
+    assert "UPDATE ingest.jobs" not in executor.calls[2][0]
 
 
 @pytest.mark.parametrize(
@@ -710,7 +712,8 @@ def test_busy_tcgdex_request_gate_defers_without_network_or_consuming_an_attempt
     assert result.error_code == "tcgdex_request_deferred"
     assert transport.calls == []
     pause_sql, pause_params = executor.calls[2]
-    assert "attempts = GREATEST(0, attempts - 1)" in pause_sql
+    assert "ingest.pause_job_for_budget_v2" in pause_sql
+    assert "UPDATE ingest.jobs" not in pause_sql
     assert pause_params["retry_at"] == retry_at
 
 

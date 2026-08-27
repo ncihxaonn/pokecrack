@@ -77,11 +77,12 @@ lifecycle below 30 days with operational margin; collection must remain off
 without watchdog, stale-cleanup, and queue-delay alerts.
 
 Managed logical backups apply the same boundary. A fail-closed two-pass filter
-verifies the exact policy and exactly one `CREATE UNLOGGED TABLE` definition from
-one internally consistent plain dump, then removes every
+accepts either a coherent pre-YouTube schema with both policy and table absent,
+or the exact policy plus one `CREATE UNLOGGED TABLE` definition from one
+internally consistent plain dump. In the latter state it removes every
 `ingest.youtube_discoveries` data row before compression. It does not remove
-generic source rows. Malformed or ambiguous dump structure aborts the backup
-without advancing its success marker.
+generic source rows. Partial, malformed, or ambiguous structure aborts the
+backup without advancing its success marker.
 
 ## Global validation versus publication
 

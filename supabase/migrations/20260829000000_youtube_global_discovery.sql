@@ -1135,4 +1135,439 @@ grant execute on function ingest.finalize_youtube_discovery_job(uuid, text, bigi
 comment on function ingest.finalize_youtube_discovery_job(uuid, text, bigint, jsonb) is
   'Fenced atomic refresh of the private unlogged YouTube activity cache, followed by job completion and exact gate release. No query or evidence association is persisted.';
 
+-- Every live application login is a caller of narrow SECURITY DEFINER RPCs,
+-- never a table writer. The existing service_role grants pre-date the fenced
+-- queue/finalizer protocol and would otherwise let an inheriting worker bypass
+-- every lease, policy, retention and audit check below.
+create or replace function ingest.enqueue_job_v1(
+  p_job_type text,
+  p_payload jsonb default '{}'::jsonb,
+  p_priority integer default 0,
+  p_dedupe_key text default null,
+  p_available_at timestamptz default null,
+  p_max_attempts integer default 5
+)
+returns setof ingest.jobs
+language plpgsql
+security definer
+volatile
+parallel unsafe
+set search_path = pg_catalog
+as $$
+declare
+  enqueue_time timestamptz := clock_timestamp();
+begin
+  if p_job_type not in (
+    'catalog.tcgdex.sets.sync',
+    'maintenance.cleanup',
+    'source.youtube.discovery'
+  ) then
+    raise exception using
+      errcode = '22023',
+      message = 'job_type is not approved for direct enqueue';
+  end if;
+  if p_payload is null
+    or jsonb_typeof(p_payload) is distinct from 'object'
+    or octet_length(p_payload::text) > 4096
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'payload must be a bounded JSON object';
+  end if;
+  if p_job_type in ('catalog.tcgdex.sets.sync', 'maintenance.cleanup')
+    and p_payload <> '{}'::jsonb
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'catalog and cleanup jobs require an empty payload';
+  end if;
+  if p_job_type = 'source.youtube.discovery' and (
+    not (p_payload ?& array['query_name'])
+    or p_payload - array['query_name'] <> '{}'::jsonb
+    or jsonb_typeof(p_payload -> 'query_name') is distinct from 'string'
+    or p_payload ->> 'query_name' not in (
+      'pokemon-tcg-booster-box-opening',
+      'pokemon-tcg-etb-opening',
+      'pokemon-tcg-booster-bundle-opening',
+      'pokemon-tcg-pack-opening',
+      'pokemon-tcg-opening-batch-code'
+    )
+  ) then
+    raise exception using
+      errcode = '22023',
+      message = 'YouTube jobs require one exact approved query_name';
+  end if;
+  if p_priority is null or p_priority < -1000 or p_priority > 1000 then
+    raise exception using
+      errcode = '22023',
+      message = 'priority must be between -1000 and 1000';
+  end if;
+  if p_max_attempts is null or p_max_attempts < 1 or p_max_attempts > 100 then
+    raise exception using
+      errcode = '22023',
+      message = 'max_attempts must be between 1 and 100';
+  end if;
+  if p_dedupe_key is not null and (
+    btrim(p_dedupe_key) = '' or char_length(p_dedupe_key) > 256
+  ) then
+    raise exception using
+      errcode = '22023',
+      message = 'dedupe_key must contain 1 to 256 characters when present';
+  end if;
+
+  return query
+  insert into ingest.jobs as jobs (
+    job_type,
+    payload,
+    status,
+    priority,
+    dedupe_key,
+    available_at,
+    attempts,
+    max_attempts,
+    created_at,
+    updated_at,
+    is_demo
+  ) values (
+    p_job_type,
+    p_payload,
+    'pending',
+    p_priority,
+    p_dedupe_key,
+    coalesce(p_available_at, enqueue_time),
+    0,
+    p_max_attempts,
+    enqueue_time,
+    enqueue_time,
+    false
+  )
+  on conflict (job_type, dedupe_key, is_demo)
+    where dedupe_key is not null and status in ('pending', 'running')
+  do update set updated_at = jobs.updated_at
+  returning jobs.*;
+end;
+$$;
+
+alter function ingest.enqueue_job_v1(text, jsonb, integer, text, timestamptz, integer)
+  owner to postgres;
+revoke all on function ingest.enqueue_job_v1(text, jsonb, integer, text, timestamptz, integer)
+  from public, anon, authenticated, service_role;
+grant execute on function ingest.enqueue_job_v1(text, jsonb, integer, text, timestamptz, integer)
+  to service_role;
+comment on function ingest.enqueue_job_v1(text, jsonb, integer, text, timestamptz, integer) is
+  'Bounded enqueue for the three exact live job families; arbitrary job types and payloads are rejected.';
+
+create or replace function ingest.complete_job_v2(
+  p_job_id uuid,
+  p_worker_id text,
+  p_lease_generation bigint
+)
+returns setof ingest.jobs
+language plpgsql
+security definer
+volatile
+parallel unsafe
+set search_path = pg_catalog
+as $$
+declare
+  leased_job ingest.jobs%rowtype;
+  completion_time timestamptz;
+begin
+  if p_job_id is null then
+    raise exception using errcode = '22023', message = 'job_id must not be null';
+  end if;
+  if p_worker_id is null or btrim(p_worker_id) = '' or char_length(p_worker_id) > 160 then
+    raise exception using
+      errcode = '22023',
+      message = 'worker_id must contain 1 to 160 characters';
+  end if;
+  if p_lease_generation is null or p_lease_generation < 1 then
+    raise exception using
+      errcode = '22023',
+      message = 'lease_generation must be positive';
+  end if;
+
+  select jobs.*
+  into leased_job
+  from ingest.jobs as jobs
+  where jobs.id = p_job_id
+  for update of jobs;
+
+  if not found then
+    return;
+  end if;
+
+  completion_time := clock_timestamp();
+  if leased_job.status <> 'running'
+    or leased_job.locked_by is distinct from p_worker_id
+    or leased_job.lease_generation <> p_lease_generation
+    or leased_job.lock_expires_at is null
+    or leased_job.lock_expires_at <= completion_time
+  then
+    return;
+  end if;
+  if leased_job.is_demo or leased_job.job_type in (
+    'catalog.tcgdex.sets.sync',
+    'maintenance.cleanup',
+    'source.youtube.discovery'
+  ) then
+    raise exception using
+      errcode = '22023',
+      message = 'typed live jobs require their dedicated fenced finalizer';
+  end if;
+
+  return query
+  update ingest.jobs as jobs
+  set status = 'completed',
+      locked_by = null,
+      locked_at = null,
+      lock_expires_at = null,
+      completed_at = completion_time,
+      last_error_code = null,
+      last_error_message = null,
+      updated_at = completion_time
+  where jobs.id = p_job_id
+    and jobs.status = 'running'
+    and jobs.locked_by = p_worker_id
+    and jobs.lease_generation = p_lease_generation
+    and jobs.lock_expires_at > completion_time
+    and not jobs.is_demo
+  returning jobs.*;
+end;
+$$;
+
+alter function ingest.complete_job_v2(uuid, text, bigint) owner to postgres;
+revoke all on function ingest.complete_job_v2(uuid, text, bigint)
+  from public, anon, authenticated, service_role;
+grant execute on function ingest.complete_job_v2(uuid, text, bigint)
+  to service_role;
+comment on function ingest.complete_job_v2(uuid, text, bigint) is
+  'Generation-fenced no-effect completion. Typed collector and cleanup jobs must use their dedicated atomic finalizers.';
+
+create or replace function ingest.pause_job_for_budget_v2(
+  p_job_id uuid,
+  p_worker_id text,
+  p_lease_generation bigint,
+  p_retry_at timestamptz
+)
+returns setof ingest.jobs
+language plpgsql
+security definer
+volatile
+parallel unsafe
+set search_path = pg_catalog
+as $$
+declare
+  pause_time timestamptz;
+begin
+  if p_job_id is null then
+    raise exception using errcode = '22023', message = 'job_id must not be null';
+  end if;
+  if p_worker_id is null or btrim(p_worker_id) = '' or char_length(p_worker_id) > 160 then
+    raise exception using
+      errcode = '22023',
+      message = 'worker_id must contain 1 to 160 characters';
+  end if;
+  if p_lease_generation is null or p_lease_generation < 1 then
+    raise exception using
+      errcode = '22023',
+      message = 'lease_generation must be positive';
+  end if;
+  pause_time := clock_timestamp();
+  if p_retry_at is null or p_retry_at <= pause_time or p_retry_at > pause_time + interval '31 days' then
+    raise exception using
+      errcode = '22023',
+      message = 'retry_at must be within the next 31 days';
+  end if;
+
+  return query
+  update ingest.jobs as jobs
+  set status = 'pending',
+      attempts = greatest(0, jobs.attempts - 1),
+      available_at = p_retry_at,
+      locked_by = null,
+      locked_at = null,
+      lock_expires_at = null,
+      completed_at = null,
+      last_error_code = null,
+      last_error_message = null,
+      updated_at = pause_time
+  where jobs.id = p_job_id
+    and jobs.status = 'running'
+    and jobs.locked_by = p_worker_id
+    and jobs.lease_generation = p_lease_generation
+    and jobs.lock_expires_at > pause_time
+    and not jobs.is_demo
+  returning jobs.*;
+end;
+$$;
+
+alter function ingest.pause_job_for_budget_v2(uuid, text, bigint, timestamptz)
+  owner to postgres;
+revoke all on function ingest.pause_job_for_budget_v2(uuid, text, bigint, timestamptz)
+  from public, anon, authenticated, service_role;
+grant execute on function ingest.pause_job_for_budget_v2(uuid, text, bigint, timestamptz)
+  to service_role;
+comment on function ingest.pause_job_for_budget_v2(uuid, text, bigint, timestamptz) is
+  'Generation-fenced budget pause with a bounded future retry timestamp.';
+
+create or replace function ingest.upsert_worker_heartbeat_v1(
+  p_worker_id text,
+  p_worker_type text,
+  p_version text,
+  p_metadata jsonb
+)
+returns table(last_seen_at timestamptz)
+language plpgsql
+security definer
+volatile
+parallel unsafe
+set search_path = pg_catalog
+as $$
+declare
+  heartbeat_time timestamptz := clock_timestamp();
+begin
+  if p_worker_id is null or btrim(p_worker_id) = '' or char_length(p_worker_id) > 160 then
+    raise exception using
+      errcode = '22023',
+      message = 'worker_id must contain 1 to 160 characters';
+  end if;
+  if p_worker_type not in ('collector', 'scheduler', 'watchdog') then
+    raise exception using
+      errcode = '22023',
+      message = 'worker_type is not a supported live role';
+  end if;
+  if p_version is null or btrim(p_version) = '' or char_length(p_version) > 80 then
+    raise exception using
+      errcode = '22023',
+      message = 'version must contain 1 to 80 characters';
+  end if;
+  if p_metadata is null
+    or jsonb_typeof(p_metadata) is distinct from 'object'
+    or p_metadata - array['command', 'data_mode', 'max_concurrency', 'role_ready'] <> '{}'::jsonb
+    or not (p_metadata ?& array['command', 'data_mode', 'max_concurrency', 'role_ready'])
+    or p_metadata ->> 'command' <> 'health'
+    or p_metadata ->> 'data_mode' <> 'live'
+    or p_metadata -> 'max_concurrency' is distinct from '1'::jsonb
+    or p_metadata -> 'role_ready' is distinct from 'true'::jsonb
+    or octet_length(p_metadata::text) > 1024
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'metadata must match the exact live health contract';
+  end if;
+
+  return query
+  insert into ingest.worker_heartbeats as heartbeats (
+    worker_id,
+    worker_type,
+    version,
+    last_seen_at,
+    metadata,
+    is_demo
+  ) values (
+    p_worker_id,
+    p_worker_type,
+    p_version,
+    heartbeat_time,
+    p_metadata,
+    false
+  )
+  on conflict (worker_id)
+  do update set
+    worker_type = excluded.worker_type,
+    version = excluded.version,
+    last_seen_at = excluded.last_seen_at,
+    metadata = heartbeats.metadata || excluded.metadata
+  where not heartbeats.is_demo
+  returning heartbeats.last_seen_at;
+end;
+$$;
+
+alter function ingest.upsert_worker_heartbeat_v1(text, text, text, jsonb)
+  owner to postgres;
+revoke all on function ingest.upsert_worker_heartbeat_v1(text, text, text, jsonb)
+  from public, anon, authenticated, service_role;
+grant execute on function ingest.upsert_worker_heartbeat_v1(text, text, text, jsonb)
+  to service_role;
+comment on function ingest.upsert_worker_heartbeat_v1(text, text, text, jsonb) is
+  'Bounded live-role health heartbeat; arbitrary metadata and unsupported roles are rejected.';
+
+drop policy sets_service_role_all on catalog.sets;
+drop policy products_service_role_all on catalog.products;
+drop policy cards_service_role_all on catalog.cards;
+drop policy regions_service_role_all on catalog.regions;
+drop policy retailers_service_role_all on catalog.retailers;
+drop policy stores_service_role_all on catalog.stores;
+create policy sets_service_role_select on catalog.sets for select to service_role using (true);
+create policy products_service_role_select on catalog.products for select to service_role using (true);
+create policy cards_service_role_select on catalog.cards for select to service_role using (true);
+create policy regions_service_role_select on catalog.regions for select to service_role using (true);
+create policy retailers_service_role_select on catalog.retailers for select to service_role using (true);
+create policy stores_service_role_select on catalog.stores for select to service_role using (true);
+
+drop policy source_policies_service_role_all on ingest.source_policies;
+drop policy source_items_service_role_all on ingest.source_items;
+drop policy extraction_runs_service_role_all on ingest.extraction_runs;
+drop policy openings_service_role_all on ingest.openings;
+drop policy opening_hits_service_role_all on ingest.opening_hits;
+drop policy batch_sightings_service_role_all on ingest.batch_sightings;
+drop policy jobs_service_role_all on ingest.jobs;
+drop policy worker_heartbeats_service_role_all on ingest.worker_heartbeats;
+drop policy browser_sessions_service_role_all on ingest.browser_sessions;
+drop policy ai_usage_daily_service_role_all on ingest.ai_usage_daily;
+drop policy admin_audit_log_service_role_all on ingest.admin_audit_log;
+create policy source_policies_service_role_select on ingest.source_policies for select to service_role using (true);
+create policy source_items_service_role_select on ingest.source_items for select to service_role using (true);
+create policy extraction_runs_service_role_select on ingest.extraction_runs for select to service_role using (true);
+create policy openings_service_role_select on ingest.openings for select to service_role using (true);
+create policy opening_hits_service_role_select on ingest.opening_hits for select to service_role using (true);
+create policy batch_sightings_service_role_select on ingest.batch_sightings for select to service_role using (true);
+create policy jobs_service_role_select on ingest.jobs for select to service_role using (true);
+create policy worker_heartbeats_service_role_select on ingest.worker_heartbeats for select to service_role using (true);
+create policy browser_sessions_service_role_select on ingest.browser_sessions for select to service_role using (true);
+create policy ai_usage_daily_service_role_select on ingest.ai_usage_daily for select to service_role using (true);
+create policy admin_audit_log_service_role_select on ingest.admin_audit_log for select to service_role using (true);
+
+drop policy dashboard_daily_service_role_all on analytics.dashboard_daily;
+drop policy set_metrics_daily_service_role_all on analytics.set_metrics_daily;
+drop policy region_metrics_daily_service_role_all on analytics.region_metrics_daily;
+drop policy retailer_metrics_daily_service_role_all on analytics.retailer_metrics_daily;
+drop policy batch_metrics_daily_service_role_all on analytics.batch_metrics_daily;
+drop policy signals_service_role_all on analytics.signals;
+create policy dashboard_daily_service_role_select on analytics.dashboard_daily for select to service_role using (true);
+create policy set_metrics_daily_service_role_select on analytics.set_metrics_daily for select to service_role using (true);
+create policy region_metrics_daily_service_role_select on analytics.region_metrics_daily for select to service_role using (true);
+create policy retailer_metrics_daily_service_role_select on analytics.retailer_metrics_daily for select to service_role using (true);
+create policy batch_metrics_daily_service_role_select on analytics.batch_metrics_daily for select to service_role using (true);
+create policy signals_service_role_select on analytics.signals for select to service_role using (true);
+
+drop policy dashboard_overview_service_all on public.dashboard_overview;
+drop policy set_summaries_service_all on public.set_summaries;
+drop policy region_summaries_service_all on public.region_summaries;
+drop policy retailer_summaries_service_all on public.retailer_summaries;
+drop policy batch_summaries_service_all on public.batch_summaries;
+drop policy recent_activity_service_all on public.recent_activity;
+drop policy public_signals_service_all on public.public_signals;
+drop policy data_freshness_service_all on public.data_freshness;
+drop policy system_status_service_all on public.system_status;
+create policy dashboard_overview_service_select on public.dashboard_overview for select to service_role using (true);
+create policy set_summaries_service_select on public.set_summaries for select to service_role using (true);
+create policy region_summaries_service_select on public.region_summaries for select to service_role using (true);
+create policy retailer_summaries_service_select on public.retailer_summaries for select to service_role using (true);
+create policy batch_summaries_service_select on public.batch_summaries for select to service_role using (true);
+create policy recent_activity_service_select on public.recent_activity for select to service_role using (true);
+create policy public_signals_service_select on public.public_signals for select to service_role using (true);
+create policy data_freshness_service_select on public.data_freshness for select to service_role using (true);
+create policy system_status_service_select on public.system_status for select to service_role using (true);
+
+revoke all privileges
+  on all tables in schema catalog, ingest, analytics, public
+  from service_role;
+grant select on all tables in schema catalog, ingest, analytics, public
+  to service_role;
+-- Request-gate ownership remains fully opaque outside its SECURITY DEFINER
+-- lifecycle functions; this exception predates and survives the read-only sweep.
+revoke all on table ingest.source_request_gates from service_role;
+
 commit;

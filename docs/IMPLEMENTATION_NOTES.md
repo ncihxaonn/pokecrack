@@ -140,28 +140,32 @@ uv run mypy pokecrack_worker
 uv run pytest -q
 ```
 
-Result: **400 passed, 1 optional Scrapling runtime skipped, and 2 subtests
+Result: **402 passed, 1 optional Scrapling runtime skipped, and 2 subtests
 passed**. Ruff and format checks passed; mypy reported no issues in 64 source
 files. Coverage includes flag-off behavior, five scheduler jobs, scheduler
 operation without the key, exact six-hour cadence, query-drift rejection before
 network I/O, preflight deferral, one fixed API call, 429 retry classification,
 malformed-response rejection, raw-byte/content-encoding bounds, stale leases,
-typed finalization, and global-country/AU-publication boundaries.
+typed finalization, worker enqueue/pause/complete/heartbeat through bounded RPCs
+rather than direct DML, and global-country/AU-publication boundaries.
 
 ### Database
 
-- Static migration/type contracts: **42/42 passed**; the combined static and
-  migration-safety unit suite passed **50/50**.
+- Static migration/type contracts: **43/43 passed**; the combined static and
+  migration-safety unit suite passed **51/51**.
 - An isolated PostgreSQL 17 container on the previously approved VPS compiled
-  all 10 migrations and loaded the synthetic seed without production data or
-  credentials.
-- pgTAP plans passed **538/538**: 132 schema/queue, 54 analytics, 79
-  public/security/Admin, 42 seed, 50 lease fencing, 121 TCGdex, and 60 YouTube
-  discovery assertions.
+  all 10 migrations, loaded the synthetic seed, and passed all eight pgTAP files
+  without production data or credentials.
+- pgTAP plans passed **558/558**: 132 schema/queue, 54 analytics, 79
+  public/security/Admin, 42 seed, 50 lease fencing, 121 TCGdex, 60 YouTube
+  discovery, and 20 service-role least-privilege assertions.
 - The dedicated YouTube file passed **60/60**, including exact six-field item
   shape, 25-item/one-page/four-key-policy bounds, direct-DML denial, fenced
   finalization, per-row database-clock expiry, independent bounded deletion, and
   absence of generic source/evidence/public relationships.
+- The least-privilege file passed **20/20**: all 36 application tables have no
+  direct service-role mutation privilege, 35 remain readable, the request gate
+  remains opaque, and the replacement worker/finalizer RPC paths still succeed.
 - The temporary database container had no published port or persistent volume
   and was deleted after testing. No hosted schema was changed.
 
@@ -174,18 +178,19 @@ provides the clean replay/pgTAP evidence for this revision.
 - `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` passed. Test
   counts were shared config 9, shared types 114, and unchanged base Web 105
   (**228/228 total**); Next.js generated 13 static pages.
-- All **33/33** deployment tests that do not invoke Docker passed. Full discovery
-  reported 39 passing tests and six errors solely where Compose rendering tried
+- All **35/35** deployment tests that do not invoke Docker passed. Full discovery
+  reported 41 passing tests and six errors solely where Compose rendering tried
   to execute a missing local Docker CLI; no new Compose runtime claim is made
   until CI.
-- The backup sanitizer and backup-script boundary passed **19/19** targeted
+- The backup sanitizer and backup-script boundary passed **21/21** targeted
   tests. It uses an unlinked mode-`0600` spool and two passes over one dump to
-  verify the exact policy and exactly one supported `CREATE UNLOGGED TABLE`
-  header in the same dump, then remove every data row from the dedicated YouTube
-  cache while preserving unrelated generic source rows. Logged/TEMP/missing/
-  duplicate table definitions, preflight/dump mismatch, malformed COPY/INSERT
-  data, and sanitizer/`psql` failures all abort before output without exposing
-  the database URL or advancing the success marker.
+  accept either a coherent pre-YouTube state with policy/table both absent, or
+  the exact policy plus exactly one supported `CREATE UNLOGGED TABLE` header in
+  the same dump. In the latter state it removes every dedicated-cache data row
+  while preserving unrelated generic source rows. Partial states, logged/TEMP/
+  duplicate definitions, preflight/dump mismatch, malformed COPY/INSERT data,
+  and sanitizer/`psql` failures all abort before output without exposing the
+  database URL or advancing the success marker.
 - A read-only live-role probe confirmed `pokecrack_worker` is an inheriting
   `service_role` member but does not itself have `BYPASSRLS`: bare `pg_dump` was
   rejected by forced RLS, while `pg_dump --role=service_role` completed against

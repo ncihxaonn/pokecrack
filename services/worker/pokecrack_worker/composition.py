@@ -86,22 +86,13 @@ SOURCES_CONFIG = PROJECT_ROOT / "config" / "sources.yaml"
 YOUTUBE_QUERIES_CONFIG = PROJECT_ROOT / "config" / "youtube-queries.yaml"
 
 WORKER_HEARTBEAT_SQL = """
-WITH database_probe AS (
-    SELECT 1 AS reachable
+SELECT last_seen_at
+FROM ingest.upsert_worker_heartbeat_v1(
+    %(worker_id)s,
+    %(worker_type)s,
+    %(version)s,
+    %(metadata)s::jsonb
 )
-INSERT INTO ingest.worker_heartbeats AS heartbeats (
-    worker_id, worker_type, version, last_seen_at, metadata, is_demo
-)
-SELECT
-    %(worker_id)s, %(worker_type)s, %(version)s, clock_timestamp(), %(metadata)s::jsonb, false
-FROM database_probe
-ON CONFLICT (worker_id) DO UPDATE
-SET worker_type = EXCLUDED.worker_type,
-    version = EXCLUDED.version,
-    last_seen_at = EXCLUDED.last_seen_at,
-    metadata = heartbeats.metadata || EXCLUDED.metadata
-WHERE not heartbeats.is_demo
-RETURNING last_seen_at
 """.strip()
 
 LIVE_ROLE_DEPENDENCIES_SQL = """
@@ -161,7 +152,30 @@ WITH youtube_dependencies AS (
     false
   ) AS ready
 )
-SELECT CASE %(worker_type)s
+SELECT
+  to_regprocedure('ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)') IS NOT NULL
+  AND has_function_privilege(
+    current_user,
+    to_regprocedure('ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)'),
+    'EXECUTE'
+  )
+  AND to_regprocedure(
+    'ingest.pause_job_for_budget_v2(uuid,text,bigint,timestamptz)'
+  ) IS NOT NULL
+  AND has_function_privilege(
+    current_user,
+    to_regprocedure(
+      'ingest.pause_job_for_budget_v2(uuid,text,bigint,timestamptz)'
+    ),
+    'EXECUTE'
+  )
+  AND NOT has_table_privilege(current_user, 'ingest.jobs', 'INSERT')
+  AND NOT has_table_privilege(current_user, 'ingest.jobs', 'UPDATE')
+  AND NOT has_table_privilege(current_user, 'ingest.jobs', 'DELETE')
+  AND NOT has_table_privilege(current_user, 'ingest.worker_heartbeats', 'INSERT')
+  AND NOT has_table_privilege(current_user, 'ingest.worker_heartbeats', 'UPDATE')
+  AND NOT has_table_privilege(current_user, 'ingest.worker_heartbeats', 'DELETE')
+  AND CASE %(worker_type)s
   WHEN 'collector' THEN
     to_regclass('ingest.source_request_gates') IS NOT NULL
     AND to_regprocedure('ingest.claim_jobs_v2(text,text[],integer,integer)') IS NOT NULL
@@ -266,7 +280,7 @@ SELECT CASE %(worker_type)s
       'EXECUTE'
     )
   ELSE false
-END AS ready
+  END AS ready
 """.strip()
 
 _WORKER_JOB_TYPES: Mapping[WorkerRole, tuple[str, ...]] = {

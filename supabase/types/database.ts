@@ -1990,6 +1990,21 @@ export type Database = {
       };
       claim_jobs: { Args: { worker_id: string; job_types?: string[] | null; batch_size?: number; lease_seconds?: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
       claim_jobs_v2: { Args: { worker_id: string; job_types?: string[] | null; batch_size?: number; lease_seconds?: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
+      complete_job_v2: {
+        Args: { p_job_id: string; p_worker_id: string; p_lease_generation: number };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      enqueue_job_v1: {
+        Args: {
+          p_job_type: string;
+          p_payload?: Json;
+          p_priority?: number;
+          p_dedupe_key?: string | null;
+          p_available_at?: string | null;
+          p_max_attempts?: number;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       enqueue_scheduled_job_v1: {
         Args: {
           schedule_name: string;
@@ -2025,8 +2040,16 @@ export type Database = {
         Args: { job_id: string; worker_id: string; lease_generation: number; lease_seconds: number };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
+      pause_job_for_budget_v2: {
+        Args: { p_job_id: string; p_worker_id: string; p_lease_generation: number; p_retry_at: string };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       prune_expired_ephemera: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
       prune_expired_ephemera_v2: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
+      upsert_worker_heartbeat_v1: {
+        Args: { p_worker_id: string; p_worker_type: string; p_version: string; p_metadata: Json };
+        Returns: { last_seen_at: string }[];
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

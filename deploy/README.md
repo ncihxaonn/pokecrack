@@ -90,7 +90,7 @@ The container automatically starts the allowlisted profile selected by `CHROMIUM
 
 ## Operations scripts
 
-- `deploy/scripts/backup.sh`: two independently role-switched `psql` policy/`UNLOGGED`-table preflights -> one-snapshot plain `pg_dump` with explicit `SET ROLE service_role` -> two-pass fail-closed sanitizer that uniquely verifies the cache's `CREATE UNLOGGED TABLE` in that same dump and strips all of its data -> gzip, non-empty validation, UTC filename, atomic last-success marker, newest 7 daily plus 4 weekly representatives.
+- `deploy/scripts/backup.sh`: two independently role-switched `psql` policy/table preflights -> one-snapshot plain `pg_dump` with explicit `SET ROLE service_role` -> fail-closed sanitizer that accepts coherent pre-YouTube absence or uniquely verifies the post-migration cache's `CREATE UNLOGGED TABLE` in that same dump and strips all of its data -> gzip, non-empty validation, UTC filename, atomic last-success marker, newest 7 daily plus 4 weekly representatives.
 - `deploy/scripts/cleanup.sh`: removes only stopped project containers and unused labeled images; never stops services or prunes volumes/profiles/backups/extensions.
 - `deploy/scripts/deploy.sh`: exact-SHA build/start/health gate.
 - `deploy/scripts/rollback.sh`: explicit-SHA deployment.

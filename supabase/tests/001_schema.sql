@@ -315,20 +315,17 @@ select ok(
 select ok(
   (select bool_and(
     has_table_privilege('service_role', c.oid, 'select')
-    and has_table_privilege('service_role', c.oid, 'insert')
-    and has_table_privilege('service_role', c.oid, 'update')
-    and has_table_privilege('service_role', c.oid, 'delete'))
+    and not has_table_privilege('service_role', c.oid, 'insert')
+    and not has_table_privilege('service_role', c.oid, 'update')
+    and not has_table_privilege('service_role', c.oid, 'delete')
+    and not has_table_privilege('service_role', c.oid, 'truncate')
+    and not has_table_privilege('service_role', c.oid, 'references')
+    and not has_table_privilege('service_role', c.oid, 'trigger'))
    from pg_class c join pg_namespace n on n.oid = c.relnamespace
    where n.nspname in ('catalog', 'ingest')
      and c.relkind in ('r', 'p')
-     and not (n.nspname = 'catalog' and c.relname = 'sync_state')
-     and not (
-       n.nspname = 'ingest'
-       and c.relname in (
-         'schedule_slots', 'source_request_gates', 'youtube_discoveries'
-       )
-     )),
-  'service_role has the explicit core worker data path outside RPC-owned state'
+     and not (n.nspname = 'ingest' and c.relname = 'source_request_gates')),
+  'service_role can read core state but has no direct table mutation privileges'
 );
 
 select has_function('ingest', 'claim_jobs_v2', array['text', 'text[]', 'integer', 'integer'], 'claim_jobs_v2 has the required signature');

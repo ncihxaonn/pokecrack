@@ -499,6 +499,44 @@ class IngestMigrationContractTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, youtube_types)
 
+    def test_service_role_is_read_only_and_worker_writes_use_fenced_rpcs(self) -> None:
+        lowered = YOUTUBE_PIPELINE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertIn(
+            "revoke all privileges "
+            "on all tables in schema catalog, ingest, analytics, public "
+            "from service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant select on all tables in schema catalog, ingest, analytics, public "
+            "to service_role",
+            compact,
+        )
+        self.assertIn(
+            "revoke all on table ingest.source_request_gates from service_role",
+            compact,
+        )
+        self.assertEqual(lowered.count("_service_role_all on "), 23)
+        self.assertEqual(lowered.count("_service_all on "), 9)
+        self.assertEqual(lowered.count("_service_role_select on "), 23)
+        self.assertEqual(lowered.count("_service_select on "), 9)
+        for function_name in (
+            "enqueue_job_v1",
+            "complete_job_v2",
+            "pause_job_for_budget_v2",
+            "upsert_worker_heartbeat_v1",
+        ):
+            function = lowered.split(
+                f"create or replace function ingest.{function_name}", 1
+            )[1].split(f"alter function ingest.{function_name}", 1)[0]
+            self.assertIn("security definer", function)
+            self.assertIn("set search_path = pg_catalog", function)
+            self.assertIn(f"{function_name}:", DATABASE_TYPES)
+        self.assertIn("typed live jobs require their dedicated fenced finalizer", lowered)
+        self.assertIn("p_lease_generation", lowered)
+        self.assertIn("lock_expires_at >", lowered)
+
     def test_youtube_begin_and_finalize_are_exact_fenced_kill_switches(self) -> None:
         lowered = YOUTUBE_PIPELINE.casefold()
         begin = lowered.split(

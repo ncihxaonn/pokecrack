@@ -150,10 +150,17 @@ select ok(
   'authenticated has no analytics table privileges'
 );
 select ok(
-  (select bool_and(has_table_privilege('service_role', c.oid, 'select,insert,update,delete'))
+  (select bool_and(
+     has_table_privilege('service_role', c.oid, 'select')
+     and not has_table_privilege('service_role', c.oid, 'insert')
+     and not has_table_privilege('service_role', c.oid, 'update')
+     and not has_table_privilege('service_role', c.oid, 'delete')
+     and not has_table_privilege('service_role', c.oid, 'truncate')
+     and not has_table_privilege('service_role', c.oid, 'references')
+     and not has_table_privilege('service_role', c.oid, 'trigger'))
    from pg_class c join pg_namespace n on n.oid = c.relnamespace
    where n.nspname = 'analytics' and c.relkind in ('r', 'p')),
-  'service_role has the explicit analytics maintenance path'
+  'service_role can inspect analytics but can mutate only through reviewed RPCs'
 );
 select ok(
   (select count(*) = 12 and bool_and(is_nullable = 'NO')
