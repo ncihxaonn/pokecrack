@@ -28,12 +28,14 @@ itself evidence of a live collection run.
 - The approved Git origin is the private repository `ncihxaonn/pokecrack`.
   Repository-local Git identity is `ncihxaonn` with the approved GitHub
   noreply address.
-- A prior owner-approved rollout applied migrations through
-  `20260828000000_tcgdex_sets_pipeline` to Personal Supabase project
-  `wohnphsxlquhhknuthrj` and deployed exact main commit `9428e1d` to the MAM
-  VPS. The catalog contains 218 live TCGdex set rows. Collector, scheduler, and
-  watchdog were observed healthy after the isolated database tests in this
-  audit. TCGdex is catalog-only and is not pull-rate evidence.
+- A prior owner-approved rollout deployed main commit `9428e1d` and its
+  catalog-only TCGdex path to Personal Supabase project `wohnphsxlquhhknuthrj`
+  and the MAM VPS. This backend-only audit did not independently revalidate the
+  exact hosted migration list, so future-dated repository filenames are not used
+  as deployment chronology. The catalog contains 218 live TCGdex set rows.
+  Collector, scheduler, and watchdog were observed healthy after the isolated
+  database tests in this audit. TCGdex is catalog-only and is not pull-rate
+  evidence.
 - The hosted public live observation/rate data remains empty. The Vercel site is
   a Demo-mode Web deployment and is not evidence of a live statistical path.
 - The project credential helper found the Personal Maton credential with
@@ -85,8 +87,9 @@ The adapter:
   channel identity/country, or raw channel IDs;
 - stores no query/rank association, content hash, inferred language,
   product/batch hint, category, engagement metric, or geography;
-- persists only video ID, canonical URL, title, publication time, exact policy
-  versions and lifecycle timestamps in a private 28-day cache.
+- persists only video ID, canonical URL, title, publication time, a source-policy
+  reference and lifecycle timestamps in a private 28-day cache. The finalizer
+  validates both exact version strings but does not retain them as cache columns.
 
 The scheduler receives only `YOUTUBE_COLLECTION_ENABLED`; it never receives the
 API key. The collector requires both the flag and a dedicated key. Enabling the
@@ -113,8 +116,9 @@ Migration `20260829000000_youtube_global_discovery.sql` adds:
   upserting only the dedicated cache and completing the job;
 - per-row database-clock `expires_at = now + 28 days` refresh semantics and
   bounded daily deletion ordered by each independent expiry;
-- service-role read-only table access, with mutation available only through the
-  fenced security-definer finalizer;
+- service-role read-only table access, with upserts available only through the
+  fenced YouTube security-definer finalizer and expiry deletion only through the
+  existing fenced cleanup finalizer;
 - post-network success/failure timestamps that preserve cross-job request
   spacing before releasing the persistent gate.
 
@@ -136,7 +140,7 @@ uv run mypy pokecrack_worker
 uv run pytest -q
 ```
 
-Result: **398 passed, 1 optional Scrapling runtime skipped, and 2 subtests
+Result: **400 passed, 1 optional Scrapling runtime skipped, and 2 subtests
 passed**. Ruff and format checks passed; mypy reported no issues in 64 source
 files. Coverage includes flag-off behavior, five scheduler jobs, scheduler
 operation without the key, exact six-hour cadence, query-drift rejection before
@@ -170,11 +174,11 @@ provides the clean replay/pgTAP evidence for this revision.
 - `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` passed. Test
   counts were shared config 9, shared types 114, and unchanged base Web 105
   (**228/228 total**); Next.js generated 13 static pages.
-- All **32/32** deployment tests that do not invoke Docker passed. Full discovery
-  reported 37 passing tests and six errors solely where Compose rendering tried
+- All **33/33** deployment tests that do not invoke Docker passed. Full discovery
+  reported 39 passing tests and six errors solely where Compose rendering tried
   to execute a missing local Docker CLI; no new Compose runtime claim is made
   until CI.
-- The backup sanitizer and backup-script boundary passed **18/18** targeted
+- The backup sanitizer and backup-script boundary passed **19/19** targeted
   tests. It uses an unlinked mode-`0600` spool and two passes over one dump to
   verify the exact policy and exactly one supported `CREATE UNLOGGED TABLE`
   header in the same dump, then remove every data row from the dedicated YouTube
@@ -186,8 +190,10 @@ provides the clean replay/pgTAP evidence for this revision.
   `service_role` member but does not itself have `BYPASSRLS`: bare `pg_dump` was
   rejected by forced RLS, while `pg_dump --role=service_role` completed against
   `ingest.source_items` without emitting or retaining table data. The backup
-  entrypoint now uses that explicit role and every script-path fixture requires
-  the exact argument. This is a permission-path check, not a restore drill.
+  entrypoint now gives `pg_dump` that explicit role, starts each independent
+  `psql` preflight session with `SET ROLE service_role`, and has fixtures that
+  require both permission paths. This is a permission-path check, not a restore
+  drill.
 - Repository/migration-safety guard tests passed **18/18**. The repository guard
   returned `{"ok": true, "findings": []}`.
 - Pending-migration safety passed with exactly three reviewed DELETE

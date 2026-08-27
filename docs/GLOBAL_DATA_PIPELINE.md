@@ -33,8 +33,9 @@ window, metadata-only flag, and absence of `regionCode` before network I/O. The
 single request has a fixed 30-second deadline and a 2 MiB raw-response cap.
 
 Persistence is intentionally minimal: video ID, canonical watch URL, title,
-publication timestamp, exact policy/version identifiers, first/last-seen
-timestamps, and expiry. It stores no query association, result rank,
+publication timestamp, source-policy reference, first/last-seen timestamps, and
+expiry. The finalizer validates the exact collector and source-policy version
+strings but does not retain them as cache columns. It stores no query association, result rank,
 description, channel identity/country, content hash, inferred language,
 product/batch hint, category, engagement metric, or geography. Every row is
 private tier-D / `activity_only` metadata and expires after 28 days unless an

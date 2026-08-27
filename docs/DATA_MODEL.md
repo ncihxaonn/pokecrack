@@ -16,7 +16,7 @@ Catalog rows carry `is_demo`; synthetic and live rows must not be conflated.
 
 - `ingest.source_policies`: exact domain, source kind, enabled routes, limits and freshness.
 - `ingest.source_items`: canonical discovery identity, bounded private excerpt/payload, hashes and retention.
-- `ingest.youtube_discoveries`: dedicated `UNLOGGED`, forced-RLS cache containing only exact YouTube video identity, canonical URL, title, publication time, policy/version, first/last seen and per-row expiry. It has no query/rank, channel, description, hash, inferred classification, product/batch hint, geography, evidence, or generic-source relationship.
+- `ingest.youtube_discoveries`: dedicated `UNLOGGED`, forced-RLS cache containing only exact YouTube video identity, canonical URL, title, publication time, source-policy reference, first/last seen and per-row expiry. The fenced finalizer validates exact collector/policy versions but does not retain those version strings. The cache has no query/rank, channel, description, hash, inferred classification, product/batch hint, geography, evidence, or generic-source relationship.
 - `ingest.extraction_runs`: model/prompt versions, structured outputs, confidence, status and errors.
 - `ingest.openings`: normalized observed opening and the statistical eligibility decision.
 - `ingest.opening_hits`: card/rarity quantities within an opening.
