@@ -401,122 +401,103 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("'youtube global discovery api'", compact)
         self.assertIn("'youtube.googleapis.com'", compact)
         self.assertIn("'https://youtube.googleapis.com/youtube/v3'", compact)
-        self.assertIn("2, 2, 50, 1, false, 30", compact)
+        self.assertIn("2, 1, 25, 1, false, 28", compact)
         self.assertIn("'youtube-global-discovery-v1'", compact)
-        self.assertIn('"youtube-metadata-v1"', compact)
-        self.assertIn('"discovery_scope":"global"', compact)
-        self.assertIn("'activity_only'", compact)
-        self.assertIn("'evidence_tier'", compact)
-        self.assertIn("'statistics_eligible'", compact)
+        self.assertIn(
+            "'{\"metadata_only\":true,\"media_download\":false,"
+            "\"max_response_bytes\":2097152,\"query_allowlist\":["
+            "\"pokemon-tcg-booster-box-opening\",\"pokemon-tcg-etb-opening\","
+            "\"pokemon-tcg-booster-bundle-opening\",\"pokemon-tcg-pack-opening\","
+            "\"pokemon-tcg-opening-batch-code\"]}'::jsonb",
+            compact,
+        )
+        for forbidden_contract_field in (
+            "product_type_hints",
+            "batch_code_hints",
+            "youtube-metadata-v1",
+            "discovery_scope",
+            "geography_status",
+            "evidence_tier",
+            "channel_country_code",
+        ):
+            self.assertNotIn(forbidden_contract_field, lowered)
         self.assertNotIn("youtube_api_key", lowered)
         self.assertNotIn("service_role_key", lowered)
         self.assertNotIn("insert into ingest.openings", lowered)
         self.assertNotIn("insert into ingest.opening_hits", lowered)
         self.assertNotIn("insert into public.", lowered)
 
-    def test_youtube_source_identity_and_provenance_are_private_and_mode_safe(self) -> None:
+    def test_youtube_cache_is_unlogged_private_unlinked_and_mode_safe(self) -> None:
         lowered = YOUTUBE_PIPELINE.casefold()
         compact = " ".join(lowered.split())
-        self.assertIn("alter column content_hash drop not null", compact)
+        duplicate_cluster_fk = lowered.split(
+            "add constraint source_items_duplicate_cluster_mode_fkey", 1
+        )[1].split("create unique index source_items_normalized_url_uidx", 1)[0]
+        self.assertIn("create unlogged table ingest.youtube_discoveries", lowered)
+        self.assertIn(
+            "alter table ingest.youtube_discoveries force row level security",
+            lowered,
+        )
+        self.assertIn(
+            "grant select on table ingest.youtube_discoveries to service_role",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant insert on table ingest.youtube_discoveries to service_role",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant update on table ingest.youtube_discoveries to service_role",
+            lowered,
+        )
+        self.assertIn("youtube_discoveries_live_only_check check (not is_demo)", compact)
+        self.assertIn("expires_at = last_seen_at + interval '28 days'", compact)
+        self.assertNotIn("ingest.source_discoveries", lowered)
+        self.assertNotIn("is_youtube_discovery_metadata_source", lowered)
+        self.assertNotIn("reject_youtube_discovery", lowered)
+        self.assertNotIn("enforce_youtube_discovery", lowered)
+        self.assertNotIn("create constraint trigger", lowered)
+        self.assertNotIn("jobs_id_mode_unique", lowered)
+        self.assertNotIn("alter column content_hash drop not null", compact)
+        self.assertNotIn("alter column language drop not null", compact)
         self.assertIn(
             "on ingest.source_items (normalized_url, is_demo)", compact
         )
         self.assertIn(
             "on ingest.source_items (platform, external_id, is_demo)", compact
         )
-        self.assertIn("create table ingest.source_discoveries", lowered)
-        self.assertIn(
-            "unique (source_item_id, query_name, is_demo)", compact
-        )
         self.assertIn("source_items_id_mode_unique unique (id, is_demo)", compact)
-        self.assertIn("jobs_id_mode_unique unique (id, is_demo)", compact)
-        self.assertIn("source_discoveries_source_item_mode_fkey", compact)
-        self.assertIn("foreign key (source_item_id, is_demo)", compact)
+        self.assertIn("drop constraint source_items_duplicate_cluster_id_fkey", compact)
+        self.assertIn("foreign key (duplicate_cluster_id, is_demo)", compact)
         self.assertIn("references ingest.source_items (id, is_demo)", compact)
-        self.assertIn("source_discoveries_job_mode_fkey", compact)
-        self.assertIn("foreign key (job_id, is_demo)", compact)
-        self.assertIn("references ingest.jobs (id, is_demo)", compact)
-        self.assertGreaterEqual(compact.count("on update restrict"), 2)
-        self.assertIn("channel_country_proxy", lowered)
-        self.assertIn("youtube_channel_country", lowered)
-        self.assertIn("alter table ingest.source_discoveries force row level security", lowered)
-        self.assertIn("grant select on table ingest.source_discoveries to service_role", lowered)
-        self.assertNotIn(
-            "grant insert on table ingest.source_discoveries to service_role", lowered
-        )
-        self.assertNotIn(
-            "grant update on table ingest.source_discoveries to service_role", lowered
-        )
-        self.assertIn("source_discoveries_source_item_mode_fkey", DATABASE_TYPES)
-        self.assertIn("source_discoveries_job_mode_fkey", DATABASE_TYPES)
-
-    def test_youtube_metadata_cannot_be_promoted_or_clustered_after_policy_rebind(self) -> None:
-        lowered = YOUTUBE_PIPELINE.casefold()
-        classifier = lowered.split(
-            "create or replace function ingest.is_youtube_discovery_metadata_source", 1
-        )[1].split(
-            "alter function ingest.is_youtube_discovery_metadata_source", 1
-        )[0]
-        evidence_guard = lowered.split(
-            "create or replace function ingest.reject_youtube_discovery_evidence_reference", 1
-        )[1].split(
-            "alter function ingest.reject_youtube_discovery_evidence_reference", 1
-        )[0]
-        duplicate_guard = lowered.split(
-            "create or replace function ingest.reject_youtube_discovery_duplicate_cluster", 1
-        )[1].split(
-            "alter function ingest.reject_youtube_discovery_duplicate_cluster", 1
-        )[0]
-        policy_rebind_guard = lowered.split(
-            "create or replace function ingest.reject_youtube_discovery_policy_rebind", 1
-        )[1].split(
-            "alter function ingest.reject_youtube_discovery_policy_rebind", 1
-        )[0]
-        end_state_guard = lowered.split(
-            "create or replace function ingest.enforce_youtube_discovery_metadata_end_state", 1
-        )[1].split(
-            "alter function ingest.enforce_youtube_discovery_metadata_end_state", 1
-        )[0]
-        self.assertIn("security definer", classifier)
-        self.assertIn("ingest.source_discoveries", classifier)
-        self.assertIn("policies.source_key = 'youtube_discovery'", classifier)
-        self.assertIn("is_youtube_discovery_metadata_source(new.source_item_id)", evidence_guard)
-        self.assertIn("new.duplicate_cluster_id is not null", duplicate_guard)
-        self.assertIn("new.id, new.source_policy_id", duplicate_guard)
-        self.assertIn("new.duplicate_cluster_id", duplicate_guard)
-        self.assertEqual(lowered.count("reject_youtube_discovery_evidence_reference();"), 3)
-        self.assertIn("before insert or update of duplicate_cluster_id", lowered)
-        self.assertIn("errcode = '23514'", evidence_guard)
-        self.assertIn("errcode = '23514'", duplicate_guard)
-        self.assertIn("new.id, new.source_policy_id", policy_rebind_guard)
-        self.assertIn("tg_op = 'update'", policy_rebind_guard)
-        self.assertIn("old.id", policy_rebind_guard)
-        self.assertIn("old.source_policy_id", policy_rebind_guard)
+        self.assertIn("on update restrict", duplicate_cluster_fk)
+        self.assertIn("on delete set null (duplicate_cluster_id)", duplicate_cluster_fk)
+        self.assertIn("source_items_duplicate_cluster_mode_fkey", DATABASE_TYPES)
+        self.assertIn("columns: ['duplicate_cluster_id', 'is_demo']", DATABASE_TYPES)
+        self.assertIn("referencedcolumns: ['id', 'is_demo']", DATABASE_TYPES.casefold())
+        self.assertIn("youtube_discoveries:", DATABASE_TYPES)
         self.assertIn(
-            "and not ingest.is_youtube_discovery_metadata_source",
-            policy_rebind_guard,
+            "youtube_discoveries_source_policy_id_fkey",
+            DATABASE_TYPES,
         )
-        self.assertIn("source_items.duplicate_cluster_id = new.id", policy_rebind_guard)
-        self.assertIn("ingest.extraction_runs", policy_rebind_guard)
-        self.assertIn("ingest.openings", policy_rebind_guard)
-        self.assertIn("ingest.batch_sightings", policy_rebind_guard)
-        self.assertIn("before insert or update of source_policy_id", lowered)
-        self.assertIn("errcode = '23514'", policy_rebind_guard)
-        self.assertIn("ingest.source_discoveries", end_state_guard)
-        self.assertIn("ingest.extraction_runs", end_state_guard)
-        self.assertIn("ingest.openings", end_state_guard)
-        self.assertIn("ingest.batch_sightings", end_state_guard)
-        self.assertIn("current_source.duplicate_cluster_id", end_state_guard)
-        self.assertEqual(
-            lowered.count("enforce_youtube_discovery_metadata_end_state();"),
-            5,
-        )
-        self.assertEqual(lowered.count("create constraint trigger"), 5)
-        self.assertEqual(lowered.count("deferrable initially deferred"), 5)
-        self.assertIn(
-            "revoke all on function ingest.enforce_youtube_discovery_metadata_end_state()",
-            lowered,
-        )
+        youtube_types = DATABASE_TYPES.split("youtube_discoveries:", 1)[1].split(
+            "source_request_gates:", 1
+        )[0]
+        for forbidden in (
+            "source_item_id",
+            "query_name",
+            "job_id",
+            "result_rank",
+            "channel_country_code",
+            "geography_status",
+            "geography_basis",
+            "metadata:",
+            "text_excerpt",
+            "author_hash",
+            "content_hash",
+            "language:",
+        ):
+            self.assertNotIn(forbidden, youtube_types)
 
     def test_youtube_begin_and_finalize_are_exact_fenced_kill_switches(self) -> None:
         lowered = YOUTUBE_PIPELINE.casefold()
@@ -536,25 +517,54 @@ class IngestMigrationContractTests(unittest.TestCase):
             self.assertIn("'youtube_discovery'", function)
             self.assertIn("policies.enabled", function)
             self.assertIn("not policies.statistics_eligible_default", function)
-            self.assertIn("policies.retention_days = 30", function)
-            self.assertIn("policies.max_items_per_run = 50", function)
-            self.assertIn("policies.max_pages_per_run = 2", function)
+            self.assertIn("policies.retention_days = 28", function)
+            self.assertIn("policies.max_items_per_run = 25", function)
+            self.assertIn("policies.max_pages_per_run = 1", function)
             self.assertIn("for update of policies", function)
             self.assertLess(
                 function.index("for update of policies"),
                 function.rindex("lease_checked_at := clock_timestamp()"),
             )
-        self.assertIn("returns table( acquired boolean, retry_at timestamptz )", " ".join(begin.split()))
+        self.assertIn(
+            "returns table( acquired boolean, retry_at timestamptz )",
+            " ".join(begin.split()),
+        )
         self.assertIn("lease_checked_at + interval '75 seconds'", begin)
         self.assertIn("owner_lease_generation = $3", begin)
         self.assertIn("octet_length(result::text) > 2097152", finalizer)
-        self.assertIn("jsonb_array_length(result -> 'items') > 50", finalizer)
+        self.assertIn("jsonb_array_length(result -> 'items') > 25", finalizer)
+        self.assertIn(
+            "not (item_value ?& array[ 'external_id', 'source_url', 'title', "
+            "'published_at', 'collector_version', 'source_policy_version' ])",
+            " ".join(finalizer.split()),
+        )
+        for forbidden_item_field in (
+            "'normalized_url'",
+            "'text_excerpt'",
+            "'author_hash'",
+            "'content_hash'",
+            "'language'",
+            "'metadata'",
+        ):
+            self.assertNotIn(forbidden_item_field, finalizer)
+        self.assertNotIn("with ordinality", finalizer)
         self.assertIn("youtube result identities must be unique", finalizer)
-        self.assertIn("youtube discovery identity conflicts", finalizer)
-        self.assertIn("'activity_only'", finalizer)
-        self.assertNotIn("usage_classification = 'activity_only'", finalizer)
-        self.assertNotIn("status = 'activity_only'", finalizer)
-        self.assertIn("insert into ingest.source_discoveries", finalizer)
+        self.assertIn("insert into ingest.youtube_discoveries", finalizer)
+        persistence_loop = finalizer[finalizer.rindex("for item_record in") :]
+        self.assertIn("discovery_seen_at := clock_timestamp()", persistence_loop)
+        self.assertIn("discovery_seen_at + interval '28 days'", persistence_loop)
+        self.assertNotIn(
+            "lease_checked_at + interval '28 days'",
+            persistence_loop,
+        )
+        self.assertIn("on conflict (video_id)", finalizer)
+        self.assertIn("expires_at = excluded.expires_at", finalizer)
+        self.assertNotIn("insert into ingest.source_items", finalizer)
+        self.assertNotIn("update ingest.source_items", finalizer)
+        self.assertNotIn("insert into ingest.source_discoveries", finalizer)
+        self.assertNotIn("insert into ingest.extraction_runs", finalizer)
+        self.assertNotIn("insert into ingest.openings", finalizer)
+        self.assertNotIn("insert into ingest.batch_sightings", finalizer)
         self.assertIn("last_attempt_at = greatest", finalizer)
         self.assertIn("last_success_at = policy_attempt_time", finalizer)
         self.assertIn("owner_job_id = null", finalizer)
@@ -586,26 +596,21 @@ class IngestMigrationContractTests(unittest.TestCase):
         cleanup = lowered.split(
             "create or replace function ingest.prune_expired_ephemera_v2", 1
         )[1].split("alter function ingest.prune_expired_ephemera_v2", 1)[0]
-        youtube_candidates = cleanup.split("delete from ingest.source_items", 1)[0]
-        self.assertIn("policies.source_key = 'youtube_discovery'", cleanup)
-        self.assertIn("source_items.expires_at <= cutoff", cleanup)
-        self.assertIn("ingest.source_discoveries", youtube_candidates)
+        youtube_candidates = cleanup.split(
+            "delete from ingest.youtube_discoveries", 1
+        )[0]
+        self.assertIn("from ingest.youtube_discoveries", youtube_candidates)
+        self.assertIn("discoveries.expires_at <= cutoff", youtube_candidates)
         self.assertIn(
-            "max(discoveries.last_seen_at) + interval '30 days' as effective_expiry",
+            "order by discoveries.expires_at, discoveries.video_id",
             youtube_candidates,
         )
-        self.assertIn("marker_expiry.effective_expiry <= cutoff", youtube_candidates)
-        self.assertIn("marker_expiry.effective_expiry is null", youtube_candidates)
-        self.assertIn(
-            "order by coalesce( marker_expiry.effective_expiry, source_items.expires_at )",
-            " ".join(youtube_candidates.split()),
-        )
-        self.assertNotIn("ingest.extraction_runs", youtube_candidates)
-        self.assertNotIn("ingest.openings", youtube_candidates)
-        self.assertNotIn("ingest.batch_sightings", youtube_candidates)
-        self.assertIn("limit max_rows", cleanup)
-        self.assertIn("delete from ingest.source_items", cleanup)
-        self.assertIn("youtube_source_items_deleted", cleanup)
+        self.assertIn("for update of discoveries skip locked", youtube_candidates)
+        self.assertIn("limit max_rows", youtube_candidates)
+        self.assertIn("delete from ingest.youtube_discoveries", cleanup)
+        self.assertIn("youtube_discoveries_deleted", cleanup)
+        self.assertNotIn("source_discoveries", cleanup)
+        self.assertNotIn("source_policy_id", youtube_candidates)
 
     def test_admin_control_rpc_is_callable_only_by_service_role_with_explicit_actor(self) -> None:
         admin = (ROOT / "migrations/20260825000600_admin_control.sql").read_text().casefold()

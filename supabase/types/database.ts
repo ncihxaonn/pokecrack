@@ -1642,66 +1642,53 @@ export type Database = {
           },
         ];
       };
-      source_discoveries: {
+      youtube_discoveries: {
         Row: {
-          id: string;
-          source_item_id: string;
-          query_name: string;
-          job_id: string;
+          video_id: string;
+          source_policy_id: string;
+          source_url: string;
+          title: string | null;
+          published_at: string | null;
           first_seen_at: string;
           last_seen_at: string;
-          result_rank: number;
-          channel_country_code: string | null;
-          geography_status: string;
-          geography_basis: string;
+          expires_at: string;
           is_demo: boolean;
           created_at: string;
           updated_at: string;
         };
         Insert: {
-          id?: string;
-          source_item_id: string;
-          query_name: string;
-          job_id: string;
+          video_id: string;
+          source_policy_id: string;
+          source_url: string;
+          title?: string | null;
+          published_at?: string | null;
           first_seen_at: string;
           last_seen_at: string;
-          result_rank: number;
-          channel_country_code?: string | null;
-          geography_status: string;
-          geography_basis: string;
+          expires_at: string;
           is_demo?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Update: {
-          id?: string;
-          source_item_id?: string;
-          query_name?: string;
-          job_id?: string;
+          video_id?: string;
+          source_policy_id?: string;
+          source_url?: string;
+          title?: string | null;
+          published_at?: string | null;
           first_seen_at?: string;
           last_seen_at?: string;
-          result_rank?: number;
-          channel_country_code?: string | null;
-          geography_status?: string;
-          geography_basis?: string;
+          expires_at?: string;
           is_demo?: boolean;
           created_at?: string;
           updated_at?: string;
         };
         Relationships: [
           {
-            foreignKeyName: 'source_discoveries_job_mode_fkey';
-            columns: ['job_id', 'is_demo'];
+            foreignKeyName: 'youtube_discoveries_source_policy_id_fkey';
+            columns: ['source_policy_id'];
             isOneToOne: false;
-            referencedRelation: 'jobs';
-            referencedColumns: ['id', 'is_demo'];
-          },
-          {
-            foreignKeyName: 'source_discoveries_source_item_mode_fkey';
-            columns: ['source_item_id', 'is_demo'];
-            isOneToOne: false;
-            referencedRelation: 'source_items';
-            referencedColumns: ['id', 'is_demo'];
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
           },
         ];
       };
@@ -1743,7 +1730,7 @@ export type Database = {
           published_at: string | null;
           discovered_at: string;
           author_hash: string | null;
-          content_hash: string | null;
+          content_hash: string;
           media_hash: string | null;
           video_fingerprint: string | null;
           audio_fingerprint: string | null;
@@ -1780,7 +1767,7 @@ export type Database = {
           published_at?: string | null;
           discovered_at?: string;
           author_hash?: string | null;
-          content_hash?: string | null;
+          content_hash: string;
           media_hash?: string | null;
           video_fingerprint?: string | null;
           audio_fingerprint?: string | null;
@@ -1817,7 +1804,7 @@ export type Database = {
           published_at?: string | null;
           discovered_at?: string;
           author_hash?: string | null;
-          content_hash?: string | null;
+          content_hash?: string;
           media_hash?: string | null;
           video_fingerprint?: string | null;
           audio_fingerprint?: string | null;
@@ -1843,11 +1830,11 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: 'source_items_duplicate_cluster_id_fkey';
-            columns: ['duplicate_cluster_id'];
+            foreignKeyName: 'source_items_duplicate_cluster_mode_fkey';
+            columns: ['duplicate_cluster_id', 'is_demo'];
             isOneToOne: false;
             referencedRelation: 'source_items';
-            referencedColumns: ['id'];
+            referencedColumns: ['id', 'is_demo'];
           },
           {
             foreignKeyName: 'source_items_source_policy_id_fkey';

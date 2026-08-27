@@ -153,7 +153,7 @@ select is(
 
 select col_type_is('ingest', 'source_policies', 'version', 'text', 'policy versions are text');
 select col_type_is('ingest', 'source_items', 'source_policy_version', 'text', 'source policy snapshots use text versions');
-select col_is_null('ingest', 'source_items', 'content_hash', 'metadata-only source items may omit a content hash');
+select col_not_null('ingest', 'source_items', 'content_hash', 'source item content hashes remain required evidence identities');
 select matches(
   (select pg_get_constraintdef(oid) from pg_constraint where conrelid = 'ingest.source_items'::regclass and conname = 'source_items_content_hash_check'),
   '\{64\}',
@@ -325,7 +325,7 @@ select ok(
      and not (
        n.nspname = 'ingest'
        and c.relname in (
-         'schedule_slots', 'source_request_gates', 'source_discoveries'
+         'schedule_slots', 'source_request_gates', 'youtube_discoveries'
        )
      )),
   'service_role has the explicit core worker data path outside RPC-owned state'
