@@ -31,24 +31,25 @@ export function TrendChart({ points }: { points: readonly TrendPoint[] }) {
         tooltip: {
           trigger: "axis",
           valueFormatter: (value: unknown) => typeof value === "number" ? `${(value * 100).toFixed(1)}%` : String(value),
-          backgroundColor: "#11151a",
-          borderColor: "#303944",
-          textStyle: { color: "#f0f3f6", fontFamily: "monospace" },
+          backgroundColor: "#ffffff",
+          borderColor: "#d9dde5",
+          textStyle: { color: "#171a21", fontFamily: "monospace" },
+          extraCssText: "box-shadow: 0 10px 30px rgba(23,26,33,.12); border-radius: 10px;",
         },
         xAxis: {
           type: "category",
           data: points.map((point) => point.date),
-          axisLabel: { color: "#8d98a5", fontFamily: "monospace", hideOverlap: true },
-          axisLine: { lineStyle: { color: "#303944" } },
+          axisLabel: { color: "#667085", fontFamily: "monospace", hideOverlap: true },
+          axisLine: { lineStyle: { color: "#d9dde5" } },
         },
         yAxis: {
           type: "value",
-          axisLabel: { color: "#8d98a5", formatter: (value: number) => `${Math.round(value * 100)}%` },
-          splitLine: { lineStyle: { color: "#20262e" } },
+          axisLabel: { color: "#667085", formatter: (value: number) => `${Math.round(value * 100)}%` },
+          splitLine: { lineStyle: { color: "#eceef2" } },
         },
         series: [
-          { name: "Observed rate", type: "line", data: points.map((point) => point.observedRate), smooth: true, symbolSize: 6, lineStyle: { color: "#a6ff4d", width: 2 }, itemStyle: { color: "#a6ff4d" }, areaStyle: { color: "rgba(166,255,77,.08)" } },
-          { name: "Baseline", type: "line", data: points.map((point) => point.baselineRate), symbol: "none", lineStyle: { color: "#63d8ff", width: 1, type: "dashed" } },
+          { name: "Observed rate", type: "line", data: points.map((point) => point.observedRate), smooth: true, symbolSize: 7, lineStyle: { color: "#315efb", width: 3 }, itemStyle: { color: "#315efb", borderColor: "#ffffff", borderWidth: 2 }, areaStyle: { color: "rgba(49,94,251,.09)" } },
+          { name: "Baseline", type: "line", data: points.map((point) => point.baselineRate), symbol: "none", lineStyle: { color: "#f34f91", width: 2, type: "dashed" } },
         ],
       });
       observer = new ResizeObserver(() => chart?.resize());
