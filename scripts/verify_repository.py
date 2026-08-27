@@ -10,7 +10,38 @@ from collections.abc import Iterable
 from pathlib import Path
 
 SKIP_PARTS = {".git", "node_modules", ".next", ".venv", "dist", "build", "coverage"}
-MEDIA_SUFFIXES = {".mp4", ".mov", ".mkv", ".webm", ".avi"}
+MEDIA_SUFFIXES = {
+    ".3gp",
+    ".aac",
+    ".aif",
+    ".aiff",
+    ".ass",
+    ".avi",
+    ".dfxp",
+    ".flac",
+    ".flv",
+    ".m4a",
+    ".m4v",
+    ".mka",
+    ".mkv",
+    ".mov",
+    ".mp3",
+    ".mp4",
+    ".mpeg",
+    ".mpg",
+    ".ogg",
+    ".ogv",
+    ".opus",
+    ".sbv",
+    ".srt",
+    ".ssa",
+    ".ttml",
+    ".vtt",
+    ".wav",
+    ".webm",
+    ".wma",
+    ".wmv",
+}
 BACKUP_SUFFIXES = {".dump", ".bak"}
 PAID_DEPENDENCIES = {
     "stripe",
