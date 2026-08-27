@@ -25,6 +25,7 @@ from pokecrack_worker.collectors.official_api.youtube import (
     HTTPXYouTubeTransport,
     YouTubeDataClient,
     YouTubeError,
+    YouTubeRequestStateUnknown,
 )
 from pokecrack_worker.config.registries import YouTubeQueryRegistry
 from pokecrack_worker.config.source_policy import SourcePolicyRegistry
@@ -388,7 +389,7 @@ def test_youtube_curl_transport_fails_closed_if_reaping_stalls_at_hard_deadline(
         lambda: next(moments),
     )
 
-    with pytest.raises(YouTubeError) as raised:
+    with pytest.raises(YouTubeRequestStateUnknown) as raised:
         HTTPXYouTubeTransport().get(
             YOUTUBE_SEARCH_URL,
             params={},
@@ -396,8 +397,7 @@ def test_youtube_curl_transport_fails_closed_if_reaping_stalls_at_hard_deadline(
             timeout_seconds=30,
         )
 
-    assert raised.value.code == "deadline_cleanup_failed"
-    assert raised.value.retryable is False
+    assert str(raised.value) == "youtube_request_state_unknown"
     assert process.kill_calls == 3
     assert process.active is False
     assert process.reaped is False
@@ -478,11 +478,12 @@ def test_youtube_curl_transport_propagates_cleanup_system_exit_after_ordinary_fa
 def test_youtube_curl_transport_fails_closed_when_cleanup_control_flow_is_not_reaped(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    interrupt = KeyboardInterrupt("shutdown requested")
     process = FixtureCurlProcess(
         returncode=None,
         communicate_effects=[subprocess.TimeoutExpired("curl", 27)],
         wait_effects=[
-            KeyboardInterrupt("shutdown requested"),
+            interrupt,
             subprocess.TimeoutExpired("curl", 0.4),
             RuntimeError("cleanup wait failed"),
             subprocess.TimeoutExpired("curl", 0.4),
@@ -498,7 +499,7 @@ def test_youtube_curl_transport_fails_closed_when_cleanup_control_flow_is_not_re
         lambda: next(moments),
     )
 
-    with pytest.raises(YouTubeError) as raised:
+    with pytest.raises(KeyboardInterrupt) as raised:
         HTTPXYouTubeTransport().get(
             YOUTUBE_SEARCH_URL,
             params={},
@@ -506,8 +507,7 @@ def test_youtube_curl_transport_fails_closed_when_cleanup_control_flow_is_not_re
             timeout_seconds=30,
         )
 
-    assert raised.value.code == "deadline_cleanup_failed"
-    assert raised.value.retryable is False
+    assert raised.value is interrupt
     assert group_kills == [(process.pid, signal.SIGKILL)] * 4
     assert process.kill_calls == 4
     assert process.reaped is False
@@ -517,9 +517,10 @@ def test_youtube_curl_transport_fails_closed_when_cleanup_control_flow_is_not_re
 def test_youtube_curl_transport_fails_closed_when_initial_control_flow_is_not_reaped(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    interrupt = KeyboardInterrupt("shutdown requested")
     process = FixtureCurlProcess(
         returncode=None,
-        communicate_effects=[KeyboardInterrupt("shutdown requested")],
+        communicate_effects=[interrupt],
         wait_effects=[subprocess.TimeoutExpired("curl", 0.4)] * 4,
         poll_effects=[None, None, None, None],
     )
@@ -531,7 +532,7 @@ def test_youtube_curl_transport_fails_closed_when_initial_control_flow_is_not_re
         lambda: next(moments),
     )
 
-    with pytest.raises(YouTubeError) as raised:
+    with pytest.raises(KeyboardInterrupt) as raised:
         HTTPXYouTubeTransport().get(
             YOUTUBE_SEARCH_URL,
             params={},
@@ -539,8 +540,7 @@ def test_youtube_curl_transport_fails_closed_when_initial_control_flow_is_not_re
             timeout_seconds=30,
         )
 
-    assert raised.value.code == "deadline_cleanup_failed"
-    assert raised.value.retryable is False
+    assert raised.value is interrupt
     assert process.kill_calls == 4
     assert process.reaped is False
     assert "fixture-key" not in repr(raised.value)
@@ -600,6 +600,35 @@ def test_youtube_curl_transport_fails_closed_when_reap_finishes_after_deadline(
         lambda: next(moments),
     )
 
+    with pytest.raises(KeyboardInterrupt) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value is cleanup_interrupt
+    assert process.kill_calls == 2
+    assert process.reaped is True
+    assert "fixture-key" not in repr(raised.value)
+
+
+def test_youtube_curl_transport_classifies_confirmed_late_reap_as_normal_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = FixtureCurlProcess(
+        returncode=None,
+        communicate_effects=[subprocess.TimeoutExpired("curl", 27)],
+        wait_effects=[-9],
+    )
+    moments = iter((0.0, 0.0, 27.1, 29.1))
+    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    monkeypatch.setattr(
+        "pokecrack_worker.collectors.official_api.youtube.monotonic",
+        lambda: next(moments),
+    )
+
     with pytest.raises(YouTubeError) as raised:
         HTTPXYouTubeTransport().get(
             YOUTUBE_SEARCH_URL,
@@ -610,8 +639,37 @@ def test_youtube_curl_transport_fails_closed_when_reap_finishes_after_deadline(
 
     assert raised.value.code == "deadline_cleanup_failed"
     assert raised.value.retryable is False
-    assert process.kill_calls == 2
     assert process.reaped is True
+    assert "fixture-key" not in repr(raised.value)
+
+
+def test_youtube_curl_transport_uses_fatal_boundary_for_unreaped_ordinary_failure(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = FixtureCurlProcess(
+        returncode=None,
+        communicate_effects=[RuntimeError("fixture-key must not cross the boundary")],
+        wait_effects=[subprocess.TimeoutExpired("curl", 0.4)] * 4,
+        poll_effects=[None, None, None, None],
+    )
+    moments = iter((0.0, 0.0, 27.1, 27.2, 27.3, 27.4))
+    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    monkeypatch.setattr(os, "killpg", lambda _pid, _sig: None)
+    monkeypatch.setattr(
+        "pokecrack_worker.collectors.official_api.youtube.monotonic",
+        lambda: next(moments),
+    )
+
+    with pytest.raises(YouTubeRequestStateUnknown) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert str(raised.value) == "youtube_request_state_unknown"
+    assert process.reaped is False
     assert "fixture-key" not in repr(raised.value)
 
 

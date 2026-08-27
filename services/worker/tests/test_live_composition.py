@@ -9,6 +9,7 @@ import pytest
 from pydantic import SecretStr
 
 from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
+from pokecrack_worker.collectors.official_api.youtube import YouTubeRequestStateUnknown
 from pokecrack_worker.composition import (
     CLEANUP_JOB_TYPE,
     TCGDEX_SETS_JOB_TYPE,
@@ -579,6 +580,42 @@ def test_youtube_response_failures_keep_typed_retry_disposition(
     assert "ingest.fail_job_v2" in fail_sql
     assert fail_params["error_code"] == error_code
     assert fail_params["retryable"] is retryable
+
+
+def test_unreaped_youtube_request_is_fatal_and_leaves_request_gate_fenced() -> None:
+    class UnknownStateTransport:
+        def get(self, *_args: object, **_kwargs: object) -> APIResponse:
+            raise YouTubeRequestStateUnknown()
+
+    payload = {"query_name": "pokemon-tcg-pack-opening"}
+    executor = RecordingExecutor(
+        [
+            [
+                _job_row(
+                    status="running",
+                    payload=payload,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+            [{"acquired": True, "retry_at": None}],
+        ]
+    )
+    runtime = build_live_worker_runtime(
+        _youtube_settings(),
+        executor=executor,
+        clock=lambda: NOW,
+        youtube_transport=UnknownStateTransport(),
+    )
+
+    with pytest.raises(YouTubeRequestStateUnknown):
+        runtime.run_once()
+
+    assert len(executor.calls) == 2
+    assert "ingest.begin_youtube_discovery_job" in executor.calls[1][0]
+    assert all("ingest.fail_job_v2" not in sql for sql, _params in executor.calls)
+    assert all(
+        "ingest.finalize_youtube_discovery_job" not in sql for sql, _params in executor.calls
+    )
 
 
 def test_stale_youtube_finalizer_cannot_persist_discovered_metadata() -> None:

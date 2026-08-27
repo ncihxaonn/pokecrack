@@ -140,14 +140,15 @@ uv run mypy pokecrack_worker
 uv run pytest -q
 ```
 
-Result: **409 passed, 1 optional Scrapling runtime skipped, and 2 subtests
+Result: **412 passed, 1 optional Scrapling runtime skipped, and 2 subtests
 passed**. Ruff and format checks passed; mypy reported no issues in 64 source
 files. Coverage includes flag-off behavior, five scheduler jobs, scheduler
 operation without the key, exact six-hour cadence, query-drift rejection before
 network I/O, preflight deferral, one fixed API call, 429 retry classification,
 malformed-response rejection, raw-byte/content-encoding bounds, process-group
 termination/reaping on every exceptional transport exit, stale leases, typed
-finalization, worker enqueue/pause/complete/heartbeat through bounded RPCs rather
+finalization, fatal non-finalization while a curl process remains unreaped,
+worker enqueue/pause/complete/heartbeat through bounded RPCs rather
 than direct DML, and global-country/AU-publication boundaries.
 
 ### Database

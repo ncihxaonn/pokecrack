@@ -55,6 +55,17 @@ class YouTubeError(RuntimeError):
         super().__init__(code)
 
 
+class YouTubeRequestStateUnknown(BaseException):
+    """Fatal boundary: an upstream request may still be running.
+
+    This intentionally bypasses normal job-failure handling so the persistent
+    request gate remains fenced until its database lease expires.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("youtube_request_state_unknown")
+
+
 class YouTubeCredentialsUnavailable(YouTubeError):
     def __init__(self) -> None:
         super().__init__("credentials_unavailable", retryable=False)
@@ -204,7 +215,11 @@ class HTTPXYouTubeTransport:
             # start_new_session isolates curl and any resolver descendants. Always
             # tear that group down before an interrupt, shutdown, or unexpected
             # communicate failure can escape this synchronous boundary.
-            _terminate_and_reap(process, deadline=process_deadline)
+            _terminate_and_reap(
+                process,
+                deadline=process_deadline,
+                pending_control_flow=(error if not isinstance(error, Exception) else None),
+            )
             if isinstance(error, Exception):
                 raise YouTubeError("network_error", retryable=True) from None
             raise
@@ -259,23 +274,25 @@ def _remaining_seconds(deadline: float) -> float:
     return remaining
 
 
-def _terminate_and_reap(process: subprocess.Popen[bytes], *, deadline: float) -> None:
-    outcome: _ReapOutcome | None = None
-    try:
-        outcome = _reap_process_group(process, deadline=deadline)
-        if not outcome.reaped or not outcome.completed_within_deadline:
-            raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
-        if outcome.control_flow is not None:
-            raise outcome.control_flow
-    except YouTubeError:
-        raise
-    except BaseException:
-        # This outer fence also covers asynchronous control flow delivered at a
-        # loop/clock boundary rather than by one of the subprocess calls. Such
-        # control flow may escape only after a timely reap was confirmed.
-        if outcome is None or not outcome.reaped or not outcome.completed_within_deadline:
-            raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
-        raise
+def _terminate_and_reap(
+    process: subprocess.Popen[bytes],
+    *,
+    deadline: float,
+    pending_control_flow: BaseException | None = None,
+) -> None:
+    outcome = _reap_process_group(process, deadline=deadline)
+    control_flow = (
+        pending_control_flow if pending_control_flow is not None else outcome.control_flow
+    )
+    if control_flow is not None:
+        # Shutdown always remains fatal/non-finalizing. If the process was
+        # reaped, releasing the interpreter is safe; if it was not, leaving the
+        # database request gate leased prevents a second concurrent request.
+        raise control_flow
+    if not outcome.reaped:
+        raise YouTubeRequestStateUnknown() from None
+    if not outcome.completed_within_deadline:
+        raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
 
 
 def _reap_process_group(process: subprocess.Popen[bytes], *, deadline: float) -> _ReapOutcome:
