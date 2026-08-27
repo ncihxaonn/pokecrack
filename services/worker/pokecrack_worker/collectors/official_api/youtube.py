@@ -29,6 +29,8 @@ YOUTUBE_MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 YOUTUBE_TIMEOUT_SECONDS = 30.0
 _YOUTUBE_CURL_TRANSFER_SECONDS = 27.0
 _YOUTUBE_PROCESS_DEADLINE_SECONDS = 29.0
+_YOUTUBE_REAP_ATTEMPTS = 4
+_YOUTUBE_REAP_SLICE_SECONDS = 0.4
 _YOUTUBE_CURL_PATH = "/usr/bin/curl"
 _PROCESS_DEADLINE_SUPPORTED = os.name == "posix"
 YOUTUBE_COLLECTOR_VERSION = "youtube-global-discovery-v1"
@@ -189,17 +191,17 @@ class HTTPXYouTubeTransport:
                 timeout=_remaining_seconds(transfer_deadline),
             )
         except subprocess.TimeoutExpired:
-            _cleanup_without_masking(process, deadline=process_deadline)
-            if monotonic() > process_deadline:
+            reaped = _terminate_and_reap(process, deadline=process_deadline)
+            if not reaped or monotonic() > process_deadline:
                 raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
             raise YouTubeError("request_timeout", retryable=True) from None
         except BaseException as error:
             # start_new_session isolates curl and any resolver descendants. Always
             # tear that group down before an interrupt, shutdown, or unexpected
             # communicate failure can escape this synchronous boundary.
-            _cleanup_without_masking(process, deadline=process_deadline)
+            reaped = _terminate_and_reap(process, deadline=process_deadline)
             if isinstance(error, Exception):
-                if monotonic() > process_deadline:
+                if not reaped or monotonic() > process_deadline:
                     raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
                 raise YouTubeError("network_error", retryable=True) from None
             raise
@@ -254,43 +256,46 @@ def _remaining_seconds(deadline: float) -> float:
     return remaining
 
 
-def _terminate_and_reap(process: subprocess.Popen[bytes], *, deadline: float) -> None:
-    _terminate_process_group(process)
-    remaining = deadline - monotonic()
-    if remaining <= 0:
-        return
-    try:
-        process.communicate(timeout=remaining)
-    except BaseException:
-        _terminate_process_group(process)
+def _terminate_and_reap(process: subprocess.Popen[bytes], *, deadline: float) -> bool:
+    cleanup_control_flow: BaseException | None = None
+    reaped = False
+
+    def remember_control_flow(error: BaseException) -> None:
+        nonlocal cleanup_control_flow
+        if not isinstance(error, Exception) and cleanup_control_flow is None:
+            cleanup_control_flow = error
+
+    for _attempt in range(_YOUTUBE_REAP_ATTEMPTS):
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except BaseException as error:
+            remember_control_flow(error)
+        try:
+            process.kill()
+        except BaseException as error:
+            remember_control_flow(error)
+
         remaining = deadline - monotonic()
         if remaining <= 0:
-            return
+            break
         try:
-            process.wait(timeout=remaining)
-        except BaseException:
-            return
+            process.wait(timeout=min(_YOUTUBE_REAP_SLICE_SECONDS, remaining))
+        except BaseException as error:
+            remember_control_flow(error)
+        else:
+            reaped = True
+            break
 
+        try:
+            if process.poll() is not None:
+                reaped = True
+                break
+        except BaseException as error:
+            remember_control_flow(error)
 
-def _cleanup_without_masking(process: subprocess.Popen[bytes], *, deadline: float) -> None:
-    try:
-        _terminate_and_reap(process, deadline=deadline)
-    except BaseException:
-        # The process-group kill happens before any bounded wait. If cleanup itself
-        # is interrupted, retry the non-throwing kill path and let the caller retain
-        # the exception that originally initiated shutdown.
-        _terminate_process_group(process)
-
-
-def _terminate_process_group(process: subprocess.Popen[bytes]) -> None:
-    try:
-        os.killpg(process.pid, signal.SIGKILL)
-    except BaseException:
-        pass
-    try:
-        process.kill()
-    except BaseException:
-        pass
+    if cleanup_control_flow is not None:
+        raise cleanup_control_flow
+    return reaped
 
 
 def _curl_response_metadata(stderr: bytes) -> dict[str, str]:

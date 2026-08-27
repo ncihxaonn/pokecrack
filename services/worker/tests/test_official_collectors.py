@@ -231,11 +231,13 @@ class FixtureCurlProcess:
     stderr: bytes = field(default_factory=_curl_metadata)
     returncode: int | None = 0
     communicate_effects: list[BaseException | tuple[bytes, bytes]] = field(default_factory=list)
-    wait_effect: BaseException | int | None = None
+    wait_effects: list[BaseException | int] = field(default_factory=list)
+    poll_effects: list[BaseException | int | None] = field(default_factory=list)
     communicate_inputs: list[bytes | None] = field(default_factory=list)
     communicate_timeouts: list[float | None] = field(default_factory=list)
     wait_timeouts: list[float | None] = field(default_factory=list)
     active: bool = True
+    reaped: bool = False
     kill_calls: int = 0
 
     def communicate(
@@ -257,14 +259,30 @@ class FixtureCurlProcess:
     def kill(self) -> None:
         self.kill_calls += 1
         self.active = False
-        self.returncode = -9
 
     def wait(self, timeout: float | None = None) -> int:
         self.wait_timeouts.append(timeout)
-        if isinstance(self.wait_effect, BaseException):
-            raise self.wait_effect
+        if self.wait_effects:
+            effect = self.wait_effects.pop(0)
+            if isinstance(effect, BaseException):
+                raise effect
+            self.returncode = effect
+        elif self.returncode is None:
+            self.returncode = -9
         self.active = False
-        return self.wait_effect or self.returncode or 0
+        self.reaped = True
+        return self.returncode
+
+    def poll(self) -> int | None:
+        if self.poll_effects:
+            effect = self.poll_effects.pop(0)
+            if isinstance(effect, BaseException):
+                raise effect
+            if effect is not None:
+                self.returncode = effect
+                self.reaped = True
+            return effect
+        return self.returncode if self.reaped else None
 
 
 @dataclass
@@ -343,11 +361,11 @@ def test_youtube_curl_transport_kills_and_reaps_a_stalled_dns_process(
     assert raised.value.retryable is True
     assert process.kill_calls == 1
     assert process.active is False
-    assert len(process.communicate_timeouts) == 2
+    assert process.reaped is True
+    assert len(process.communicate_timeouts) == 1
     assert process.communicate_timeouts[0] is not None
     assert 26.0 < process.communicate_timeouts[0] <= 27.0
-    assert process.communicate_timeouts[1] is not None
-    assert process.communicate_timeouts[1] <= 30.0
+    assert process.wait_timeouts == [pytest.approx(0.4)]
     assert "fixture-key" not in repr(raised.value)
 
 
@@ -356,11 +374,11 @@ def test_youtube_curl_transport_fails_closed_if_reaping_stalls_at_hard_deadline(
 ) -> None:
     process = FixtureCurlProcess(
         returncode=None,
-        communicate_effects=[
-            subprocess.TimeoutExpired("curl", 27),
+        communicate_effects=[subprocess.TimeoutExpired("curl", 27)],
+        wait_effects=[
             subprocess.TimeoutExpired("curl", 1.5),
+            subprocess.TimeoutExpired("curl", 0.2),
         ],
-        wait_effect=subprocess.TimeoutExpired("curl", 0.2),
     )
     factory = FixturePopenFactory(process)
     moments = iter((0.0, 0.0, 27.5, 28.8, 29.1))
@@ -380,18 +398,21 @@ def test_youtube_curl_transport_fails_closed_if_reaping_stalls_at_hard_deadline(
 
     assert raised.value.code == "deadline_cleanup_failed"
     assert raised.value.retryable is False
-    assert process.kill_calls == 2
+    assert process.kill_calls == 3
     assert process.active is False
-    assert process.wait_timeouts == [pytest.approx(0.2)]
+    assert process.reaped is False
+    assert process.wait_timeouts == [pytest.approx(0.4), pytest.approx(0.2)]
     assert "fixture-key" not in repr(raised.value)
 
 
-def test_youtube_curl_transport_reaps_process_group_before_propagating_keyboard_interrupt(
+def test_youtube_curl_transport_propagates_cleanup_keyboard_interrupt_after_timeout_and_reap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     interrupt = KeyboardInterrupt("shutdown requested")
     process = FixtureCurlProcess(
-        communicate_effects=[interrupt, RuntimeError("cleanup pipe failed")]
+        returncode=None,
+        communicate_effects=[subprocess.TimeoutExpired("curl", 27)],
+        wait_effects=[interrupt, RuntimeError("cleanup wait failed"), -9],
     )
     factory = FixturePopenFactory(process)
     group_kills: list[tuple[int, signal.Signals]] = []
@@ -410,22 +431,58 @@ def test_youtube_curl_transport_reaps_process_group_before_propagating_keyboard_
     assert group_kills == [
         (process.pid, signal.SIGKILL),
         (process.pid, signal.SIGKILL),
+        (process.pid, signal.SIGKILL),
     ]
-    assert process.kill_calls == 2
+    assert process.kill_calls == 3
     assert process.active is False
-    assert len(process.communicate_timeouts) == 2
+    assert process.reaped is True
+    assert len(process.communicate_timeouts) == 1
+    assert len(process.wait_timeouts) == 3
 
 
-def test_youtube_curl_transport_reaps_unexpected_communicate_failure_and_sanitizes_it(
+def test_youtube_curl_transport_propagates_cleanup_system_exit_after_ordinary_failure_and_reap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    shutdown = SystemExit(17)
     process = FixtureCurlProcess(
-        communicate_effects=[RuntimeError("fixture-key must not cross the job boundary")]
+        returncode=None,
+        communicate_effects=[RuntimeError("fixture-key must not cross the job boundary")],
+        wait_effects=[shutdown, RuntimeError("cleanup wait failed"), -9],
     )
     factory = FixturePopenFactory(process)
     group_kills: list[tuple[int, signal.Signals]] = []
     monkeypatch.setattr(subprocess, "Popen", factory)
     monkeypatch.setattr(os, "killpg", lambda pid, sig: group_kills.append((pid, sig)))
+
+    with pytest.raises(SystemExit) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value is shutdown
+    assert group_kills == [
+        (process.pid, signal.SIGKILL),
+        (process.pid, signal.SIGKILL),
+        (process.pid, signal.SIGKILL),
+    ]
+    assert process.kill_calls == 3
+    assert process.active is False
+    assert process.reaped is True
+    assert len(process.communicate_timeouts) == 1
+    assert len(process.wait_timeouts) == 3
+
+
+def test_youtube_curl_transport_sanitizes_unexpected_failure_after_successful_reap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = FixtureCurlProcess(
+        returncode=None,
+        communicate_effects=[RuntimeError("fixture-key must not cross the job boundary")],
+    )
+    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
 
     with pytest.raises(YouTubeError) as raised:
         HTTPXYouTubeTransport().get(
@@ -437,10 +494,8 @@ def test_youtube_curl_transport_reaps_unexpected_communicate_failure_and_sanitiz
 
     assert raised.value.code == "network_error"
     assert raised.value.retryable is True
-    assert group_kills == [(process.pid, signal.SIGKILL)]
-    assert process.kill_calls == 1
     assert process.active is False
-    assert len(process.communicate_timeouts) == 2
+    assert process.reaped is True
     assert "fixture-key" not in repr(raised.value)
 
 
