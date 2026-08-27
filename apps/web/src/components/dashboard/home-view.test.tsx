@@ -14,13 +14,17 @@ describe("HomeView", () => {
     expect(screen.getByRole("heading", { level: 1, name: BRAND.tagline })).toBeVisible();
     expect(screen.getByText(BRAND.demoNotice)).toBeVisible();
     expect(screen.getByText(BRAND.individualPackDisclaimer)).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Australian activity coverage" })).toBeVisible();
-    expect(screen.getByText(/activity volume is not a measure of luck/i)).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Observed regional pull map" })).toBeVisible();
+    expect(screen.getByText(/current published coverage is Australia-only/i)).toBeVisible();
     expect(screen.getByRole("heading", { name: "Trending sets" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Signal watch" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Recent observed activity" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Methodology at a glance" })).toBeVisible();
     expect(screen.getAllByText(getSignalPresentation("anomaly").label).length).toBeGreaterThan(0);
     expect(screen.getByText("4,872")).toBeVisible();
+
+    const mapHeading = screen.getByRole("heading", { name: "Observed regional pull map" });
+    const trendHeading = screen.getByRole("heading", { name: "Observed trend" });
+    expect(mapHeading.compareDocumentPosition(trendHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

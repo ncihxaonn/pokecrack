@@ -30,9 +30,8 @@ export function AppHeader() {
     <header className="app-header">
       <div className="app-header__inner">
         <Link className="wordmark" href="/" aria-label={`${BRAND.name} home`}>
-          <span className="wordmark__prompt" aria-hidden="true">›</span>
+          <span className="wordmark__mark" aria-hidden="true"><span /></span>
           <span>{BRAND.shortName}</span>
-          <span className="wordmark__cursor" aria-hidden="true" />
         </Link>
         <nav className="desktop-nav" aria-label="Primary navigation">
           <NavigationLinks />

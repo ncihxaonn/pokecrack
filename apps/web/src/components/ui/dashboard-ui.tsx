@@ -16,10 +16,10 @@ export function PageIntro({ eyebrow, title, description, children }: { eyebrow: 
   );
 }
 
-export function SectionHeading({ title, detail, action }: { title: string; detail?: string; action?: ReactNode }) {
+export function SectionHeading({ id, title, detail, action }: { id?: string; title: string; detail?: string; action?: ReactNode }) {
   return (
     <div className="section-heading">
-      <div><h2>{title}</h2>{detail ? <p>{detail}</p> : null}</div>
+      <div><h2 id={id}>{title}</h2>{detail ? <p>{detail}</p> : null}</div>
       {action}
     </div>
   );
