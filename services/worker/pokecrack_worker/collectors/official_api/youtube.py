@@ -11,13 +11,14 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from time import monotonic, sleep
+from types import MappingProxyType
 from typing import Any, Protocol
 
 import httpx
 from pydantic import SecretStr
 
 from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
-from pokecrack_worker.config.registries import YouTubeQuery
+from pokecrack_worker.config.registries import REQUIRED_YOUTUBE_QUERIES, YouTubeQuery
 from pokecrack_worker.config.source_policy import CollectorRoute, SourcePolicyRegistry
 from pokecrack_worker.models import CollectorType, SourceItemCandidate
 
@@ -28,13 +29,8 @@ YOUTUBE_MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 YOUTUBE_TIMEOUT_SECONDS = 30.0
 YOUTUBE_COLLECTOR_VERSION = "youtube-global-discovery-v1"
 YOUTUBE_PARSER_VERSION = "youtube-metadata-v1"
-YOUTUBE_QUERY_ALLOWLIST = (
-    "pokemon-tcg-booster-box-opening",
-    "pokemon-tcg-etb-opening",
-    "pokemon-tcg-booster-bundle-opening",
-    "pokemon-tcg-pack-opening",
-    "pokemon-tcg-opening-batch-code",
-)
+YOUTUBE_APPROVED_QUERY_TEXT: Mapping[str, str] = MappingProxyType(dict(REQUIRED_YOUTUBE_QUERIES))
+YOUTUBE_QUERY_ALLOWLIST = tuple(YOUTUBE_APPROVED_QUERY_TEXT)
 _EXPECTED_POLICY_CONFIG: dict[str, Any] = {
     "metadata_only": True,
     "media_download": False,
@@ -423,7 +419,13 @@ class YouTubeDataClient:
             or not policy.metadata_only
             or policy.statistics_eligible_default
             or policy.config != _EXPECTED_POLICY_CONFIG
-            or query.name not in YOUTUBE_QUERY_ALLOWLIST
+            or YOUTUBE_APPROVED_QUERY_TEXT.get(query.name) != query.query
+            or query.enabled is not False
+            or query.metadata_only is not True
+            or query.max_results != 25
+            or query.region_code is not None
+            or query.published_within_days != 30
+            or query.order != "date"
         ):
             raise YouTubeInvalidResponse("source_policy_version_mismatch")
         published_after = self._clock().astimezone(UTC) - timedelta(

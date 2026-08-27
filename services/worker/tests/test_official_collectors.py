@@ -159,6 +159,40 @@ def test_youtube_discovery_maps_metadata_without_downloading_video_or_raw_author
     assert transport.calls[1][0].endswith("/youtube/v3/channels")
 
 
+@pytest.mark.parametrize(
+    ("field", "drifted_value"),
+    (
+        ("name", "pokemon-tcg-etb-opening"),
+        ("query", "Pokemon TCG booster box opening altered"),
+        ("enabled", True),
+        ("metadata_only", False),
+        ("max_results", 50),
+        ("region_code", "AU"),
+        ("published_within_days", 31),
+        ("order", "relevance"),
+    ),
+)
+def test_youtube_programmatic_query_drift_is_rejected_before_network(
+    field: str,
+    drifted_value: object,
+) -> None:
+    transport = FixtureYouTubeTransport([])
+    client = YouTubeDataClient(
+        api_key="fixture-key",
+        transport=transport,
+        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+    )
+    approved = YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[0]
+    drifted = approved.model_copy(update={field: drifted_value})
+
+    with pytest.raises(YouTubeError) as raised:
+        client.discover(drifted)
+
+    assert raised.value.code == "source_policy_version_mismatch"
+    assert raised.value.retryable is False
+    assert transport.calls == []
+
+
 def test_youtube_discovery_does_not_send_channels_after_spacing_exhausts_budget() -> None:
     state = [0.0]
     transport = AdvancingYouTubeTransport(
