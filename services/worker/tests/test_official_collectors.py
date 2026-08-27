@@ -8,16 +8,19 @@ from threading import Thread
 import pytest
 
 from pokecrack_worker.collectors.official_api.tcgdex import (
+    TCGDEX_SETS_URL,
+    TCGDEX_TIMEOUT_SECONDS,
     APIResponse,
-    InMemoryTCGdexCache,
-    TCGdexClient,
+    InMemoryTCGdexSetsCache,
+    TCGdexSetsClient,
+    TCGdexSetsSyncOutcome,
 )
 from pokecrack_worker.collectors.official_api.youtube import (
     HTTPXYouTubeTransport,
     YouTubeDataClient,
     YouTubeError,
 )
-from pokecrack_worker.config.registries import RarityTaxonomy, YouTubeQueryRegistry
+from pokecrack_worker.config.registries import YouTubeQueryRegistry
 from pokecrack_worker.config.source_policy import SourcePolicyRegistry
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -26,14 +29,14 @@ ROOT = Path(__file__).resolve().parents[3]
 @dataclass
 class FixtureTCGDexTransport:
     responses: list[APIResponse]
-    headers: list[dict[str, str]] = field(default_factory=list)
+    calls: list[tuple[str, dict[str, str], float]] = field(default_factory=list)
 
     def get(self, url: str, *, headers: dict[str, str], timeout_seconds: float) -> APIResponse:
-        self.headers.append(headers)
+        self.calls.append((url, headers, timeout_seconds))
         return self.responses.pop(0)
 
 
-def test_tcgdex_sync_maps_catalog_and_reuses_http_cache_validators() -> None:
+def test_tcgdex_sync_maps_only_set_metadata_and_reuses_etag() -> None:
     body = (ROOT / "data" / "examples" / "tcgdex-catalog.json").read_bytes()
     transport = FixtureTCGDexTransport(
         [
@@ -41,24 +44,32 @@ def test_tcgdex_sync_maps_catalog_and_reuses_http_cache_validators() -> None:
             APIResponse(304, {"etag": '"fixture-v1"'}, b""),
         ]
     )
-    cache = InMemoryTCGdexCache()
-    client = TCGdexClient(
+    cache = InMemoryTCGdexSetsCache()
+    client = TCGdexSetsClient(
         transport=transport,
         cache=cache,
         policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
-        taxonomy=RarityTaxonomy.from_yaml(ROOT / "config" / "rarity-taxonomy.yaml"),
     )
 
-    first = client.sync(language="en")
-    second = client.sync(language="en")
+    first = client.sync()
+    second = client.sync()
 
-    assert first.changed is True
+    assert first.outcome is TCGdexSetsSyncOutcome.CHANGED
     assert first.snapshot.sets[0].set_id == "sv2"
-    assert first.snapshot.cards[0].card_id == "sv2-203"
-    assert first.snapshot.cards[0].rarity_key == "special_illustration_rare"
-    assert second.changed is False
+    assert first.snapshot.sets[0].card_count_total == 279
+    assert first.snapshot.sets[0].card_count_official == 193
+    assert not hasattr(first.snapshot, "cards")
+    assert not hasattr(first.snapshot.sets[0], "rarity")
+    assert second.outcome is TCGdexSetsSyncOutcome.NOT_MODIFIED
     assert second.snapshot == first.snapshot
-    assert transport.headers == [{}, {"If-None-Match": '"fixture-v1"'}]
+    assert transport.calls == [
+        (TCGDEX_SETS_URL, {"Accept": "application/json"}, TCGDEX_TIMEOUT_SECONDS),
+        (
+            TCGDEX_SETS_URL,
+            {"Accept": "application/json", "If-None-Match": '"fixture-v1"'},
+            TCGDEX_TIMEOUT_SECONDS,
+        ),
+    ]
 
 
 @dataclass

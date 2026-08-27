@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(128);
+select plan(132);
 
 select has_schema('catalog', 'catalog schema exists');
 select has_schema('ingest', 'ingest schema exists');
@@ -16,6 +16,8 @@ select has_table('catalog', 'cards', 'catalog.cards exists');
 select has_table('catalog', 'regions', 'catalog.regions exists');
 select has_table('catalog', 'retailers', 'catalog.retailers exists');
 select has_table('catalog', 'stores', 'catalog.stores exists');
+select has_table('catalog', 'sync_state', 'catalog.sync_state exists');
+select has_column('catalog', 'sync_state', 'revision', 'catalog sync checkpoints expose a monotonic revision');
 select has_table('ingest', 'source_policies', 'ingest.source_policies exists');
 select has_table('ingest', 'source_items', 'ingest.source_items exists');
 select has_table('ingest', 'extraction_runs', 'ingest.extraction_runs exists');
@@ -27,6 +29,8 @@ select has_table('ingest', 'worker_heartbeats', 'ingest.worker_heartbeats exists
 select has_table('ingest', 'browser_sessions', 'ingest.browser_sessions exists');
 select has_table('ingest', 'ai_usage_daily', 'ingest.ai_usage_daily exists');
 select has_table('ingest', 'admin_audit_log', 'ingest.admin_audit_log exists');
+select has_table('ingest', 'schedule_slots', 'ingest.schedule_slots exists');
+select has_table('ingest', 'source_request_gates', 'ingest.source_request_gates exists');
 
 select set_has(
   $$select column_name::text from information_schema.columns where table_schema = 'catalog' and table_name = 'sets'$$,
@@ -187,7 +191,14 @@ select col_has_check('ingest', 'openings', 'overall_confidence', 'opening confid
 select col_has_check('ingest', 'opening_hits', 'quantity', 'hit quantities have a check constraint');
 select col_has_check('ingest', 'batch_sightings', 'pack_quantity', 'batch quantities have a check constraint');
 
-select col_is_unique('catalog', 'sets', 'slug', 'set slugs are unique');
+select ok(
+  (select condeferrable = false
+      and pg_get_constraintdef(oid) ilike '%unique (slug, is_demo)%'
+   from pg_constraint
+   where conrelid = 'catalog.sets'::regclass
+     and conname = 'sets_slug_mode_unique'),
+  'set slugs are unique inside each data mode'
+);
 select col_is_unique('catalog', 'products', 'slug', 'product slugs are unique');
 select col_is_unique('catalog', 'regions', 'slug', 'region slugs are unique');
 select col_is_unique('catalog', 'retailers', 'slug', 'retailer slugs are unique');
@@ -308,8 +319,14 @@ select ok(
     and has_table_privilege('service_role', c.oid, 'update')
     and has_table_privilege('service_role', c.oid, 'delete'))
    from pg_class c join pg_namespace n on n.oid = c.relnamespace
-   where n.nspname in ('catalog', 'ingest') and c.relkind in ('r', 'p')),
-  'service_role has the explicit core worker data path'
+   where n.nspname in ('catalog', 'ingest')
+     and c.relkind in ('r', 'p')
+     and not (n.nspname = 'catalog' and c.relname = 'sync_state')
+     and not (
+       n.nspname = 'ingest'
+       and c.relname in ('schedule_slots', 'source_request_gates')
+     )),
+  'service_role has the explicit core worker data path outside RPC-owned state'
 );
 
 select has_function('ingest', 'claim_jobs_v2', array['text', 'text[]', 'integer', 'integer'], 'claim_jobs_v2 has the required signature');

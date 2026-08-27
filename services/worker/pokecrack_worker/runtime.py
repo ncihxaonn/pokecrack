@@ -11,7 +11,7 @@ from enum import StrEnum
 from time import sleep
 from typing import Protocol
 
-from pokecrack_worker.jobs import CompletionEffect, Job, LeaseLostError
+from pokecrack_worker.jobs import CompletionEffect, Job, LeaseLostError, TCGdexSetsSyncCompletion
 
 
 class RuntimeRepository(Protocol):
@@ -41,7 +41,7 @@ class RuntimeRepository(Protocol):
         worker_id: str,
         lease_generation: int,
         now: datetime,
-        effect: CompletionEffect | None = None,
+        effect: CompletionEffect | TCGdexSetsSyncCompletion | None = None,
     ) -> Job: ...
 
     def fail(
@@ -52,6 +52,8 @@ class RuntimeRepository(Protocol):
         worker_id: str,
         lease_generation: int,
         now: datetime,
+        error_code: str = "job_failed",
+        retryable: bool = True,
     ) -> Job: ...
 
     def pause_for_budget(
@@ -65,7 +67,8 @@ class RuntimeRepository(Protocol):
     ) -> Job: ...
 
 
-JobHandler = Callable[[Job], CompletionEffect | None]
+Completion = CompletionEffect | TCGdexSetsSyncCompletion
+JobHandler = Callable[[Job], Completion | None]
 
 
 class BudgetPaused(RuntimeError):
@@ -75,8 +78,32 @@ class BudgetPaused(RuntimeError):
         super().__init__("AI budget paused")
 
 
+class JobDeferred(RuntimeError):
+    """Retry a contended job later without consuming its claimed attempt."""
+
+    def __init__(self, *, retry_at: datetime, code: str) -> None:
+        if retry_at.tzinfo is None or retry_at.utcoffset() is None:
+            raise ValueError("deferred job retry timestamp must be timezone-aware")
+        if not code or len(code) > 160:
+            raise ValueError("deferred job code must contain 1 to 160 characters")
+        self.retry_at = retry_at
+        self.code = code
+        super().__init__(code)
+
+
 class CompletionEffectRequiredError(RuntimeError):
     """A live handler returned without an atomic database completion effect."""
+
+
+class JobExecutionError(RuntimeError):
+    """Safe, typed handler failure with an explicit retry disposition."""
+
+    def __init__(self, *, code: str, retryable: bool) -> None:
+        if not code or len(code) > 160:
+            raise ValueError("job execution error code must contain 1 to 160 characters")
+        self.code = code
+        self.retryable = retryable
+        super().__init__(code)
 
 
 class RuntimeStatus(StrEnum):
@@ -85,6 +112,7 @@ class RuntimeStatus(StrEnum):
     COMPLETED = "completed"
     FAILED = "failed"
     BUDGET_PAUSED = "budget_paused"
+    DEFERRED = "deferred"
     LEASE_LOST = "lease_lost"
 
 
@@ -135,15 +163,19 @@ class WorkerRuntime:
         self,
         handler: JobHandler,
         job: Job,
-    ) -> CompletionEffect | None:
+    ) -> Completion | None:
         interval_seconds = max(0.01, min(30.0, self.lease_for.total_seconds() / 3))
         with ThreadPoolExecutor(max_workers=1, thread_name_prefix="pokecrack-job") as executor:
             future = executor.submit(handler, job)
             while True:
                 try:
                     effect = future.result(timeout=interval_seconds)
-                    if effect is not None and not isinstance(effect, CompletionEffect):
-                        raise TypeError("job handlers must return a CompletionEffect or None")
+                    if effect is not None and not isinstance(
+                        effect, (CompletionEffect, TCGdexSetsSyncCompletion)
+                    ):
+                        raise TypeError(
+                            "job handlers must return a typed completion effect or None"
+                        )
                     return effect
                 except FutureTimeoutError:
                     if future.done():
@@ -219,6 +251,42 @@ class WorkerRuntime:
                 job_type=job.kind,
                 error_code="budget_paused",
             )
+        except JobDeferred as deferred:
+            try:
+                self.repository.pause_for_budget(
+                    job.id,
+                    worker_id=self.worker_id,
+                    lease_generation=job.lease_generation,
+                    now=self.clock(),
+                    retry_at=deferred.retry_at,
+                )
+            except LeaseLostError:
+                return self._lease_lost(job)
+            return CycleResult(
+                status=RuntimeStatus.DEFERRED,
+                job_id=job.id,
+                job_type=job.kind,
+                error_code=deferred.code,
+            )
+        except JobExecutionError as error:
+            try:
+                self.repository.fail(
+                    job.id,
+                    error.code,
+                    worker_id=self.worker_id,
+                    lease_generation=job.lease_generation,
+                    now=self.clock(),
+                    error_code=error.code,
+                    retryable=error.retryable,
+                )
+            except LeaseLostError:
+                return self._lease_lost(job)
+            return CycleResult(
+                status=RuntimeStatus.FAILED,
+                job_id=job.id,
+                job_type=job.kind,
+                error_code=error.code,
+            )
         except Exception as error:  # queue boundary must retain failure state
             error_code = type(error).__name__[:160]
             try:
@@ -247,6 +315,29 @@ class WorkerRuntime:
             )
         except LeaseLostError:
             return self._lease_lost(job)
+        except Exception as error:
+            # A transactional finalizer error leaves no partial effect. If the
+            # commit actually succeeded but its response was lost, this fenced
+            # failure update returns no row and is reported as an ambiguous
+            # lease loss instead of mutating the completed job.
+            error_code = type(error).__name__[:160]
+            try:
+                self.repository.fail(
+                    job.id,
+                    error_code,
+                    worker_id=self.worker_id,
+                    lease_generation=job.lease_generation,
+                    now=self.clock(),
+                    error_code=error_code,
+                )
+            except LeaseLostError:
+                return self._lease_lost(job)
+            return CycleResult(
+                status=RuntimeStatus.FAILED,
+                job_id=job.id,
+                job_type=job.kind,
+                error_code=error_code,
+            )
         return CycleResult(
             status=RuntimeStatus.COMPLETED,
             job_id=job.id,

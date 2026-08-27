@@ -80,8 +80,8 @@ class Settings(BaseSettings):
     # The first live composition root is deliberately single-threaded. Raising
     # this cap requires a separate concurrency/connection-pool implementation.
     worker_max_concurrency: int = Field(default=1, ge=1, le=1)
-    worker_lease_seconds: int = Field(default=300, ge=10)
-    worker_max_attempts: int = Field(default=5, ge=1)
+    worker_lease_seconds: int = Field(default=300, ge=60, le=86_400)
+    worker_max_attempts: int = Field(default=5, ge=1, le=100)
 
     bayes_prior_strength: float = Field(default=50, gt=0)
     min_rate_display_packs: int = Field(default=30, ge=1)

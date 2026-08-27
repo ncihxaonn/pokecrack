@@ -1,6 +1,13 @@
 """PostgreSQL-backed and fixture-safe background job queue."""
 
-from .models import CompletionEffect, Job, JobStatus
+from .models import (
+    CompletionEffect,
+    Job,
+    JobStatus,
+    TCGdexSetsSyncCompletion,
+    TCGdexSetWrite,
+    TCGdexSyncOutcome,
+)
 from .postgres import CLAIM_SQL, PostgresJobRepository, QueryExecutor
 from .repository import (
     InMemoryJobRepository,
@@ -20,4 +27,7 @@ __all__ = [
     "LeaseLostError",
     "PostgresJobRepository",
     "QueryExecutor",
+    "TCGdexSetsSyncCompletion",
+    "TCGdexSetWrite",
+    "TCGdexSyncOutcome",
 ]
