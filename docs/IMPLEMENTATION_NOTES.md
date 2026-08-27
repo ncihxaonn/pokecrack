@@ -78,13 +78,14 @@ The adapter:
 
 - uses a fixed `youtube.googleapis.com` search endpoint, disables environment
   proxies and redirects, requests identity encoding, rejects compressed
-  responses, applies a fixed 30-second deadline, and counts raw bytes against a
-  2 MiB cap;
+  responses, applies a fixed 30-second deadline, and streams stdout/stderr
+  through independent hard caps before buffering more than one sentinel byte;
 - independently rejects any drift from the five exact query texts,
   `order=date`, 25-result cap, 30-day publication window, metadata-only flag, or
   absent `regionCode` before network I/O;
 - validates duplicate JSON keys, exact 11-character video IDs, response shape,
-  timestamps, and bounded normalized title text;
+  timestamps, and bounded normalized title text, while excluding legitimate
+  upcoming premieres locally after an upstream `publishedBefore` bound;
 - never downloads or retains video, audio, captions, thumbnails, descriptions,
   channel identity/country, or raw channel IDs;
 - stores no query/rank association, content hash, inferred language,
@@ -149,12 +150,13 @@ uv run mypy pokecrack_worker
 uv run pytest -q
 ```
 
-Result: **412 passed, 1 optional Scrapling runtime skipped, and 2 subtests
+Result: **421 passed, 1 optional Scrapling runtime skipped, and 2 subtests
 passed**. Ruff and format checks passed; mypy reported no issues in 64 source
 files. Coverage includes flag-off behavior, five scheduler jobs, scheduler
 operation without the key, exact six-hour cadence, query-drift rejection before
 network I/O, preflight deferral, one fixed API call, 429 retry classification,
-malformed-response rejection, raw-byte/content-encoding bounds, process-group
+malformed-response rejection, streaming raw-byte/content-encoding bounds,
+upcoming-result filtering without whole-job failure, process-group
 termination/reaping on every exceptional transport exit, stale leases, typed
 finalization, fatal non-finalization while a curl process remains unreaped,
 worker enqueue/pause/complete/heartbeat through bounded RPCs rather

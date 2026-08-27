@@ -4,6 +4,7 @@ import json
 import os
 import signal
 import subprocess
+import sys
 import time
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -12,6 +13,7 @@ from pathlib import Path
 import pytest
 from pydantic import SecretStr
 
+from pokecrack_worker.collectors.official_api import youtube as youtube_module
 from pokecrack_worker.collectors.official_api.tcgdex import (
     TCGDEX_SETS_URL,
     TCGDEX_TIMEOUT_SECONDS,
@@ -112,6 +114,7 @@ def test_youtube_discovery_maps_only_bounded_activity_metadata() -> None:
         api_key="fixture-key",
         transport=transport,
         policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+        clock=lambda: datetime(2026, 8, 28, 0, 0, tzinfo=UTC),
     )
 
     items = client.discover(queries.queries[0])
@@ -138,6 +141,8 @@ def test_youtube_discovery_maps_only_bounded_activity_metadata() -> None:
     assert transport.calls[0][1]["type"] == "video"
     assert transport.calls[0][1]["q"] == queries.queries[0].query
     assert transport.calls[0][1]["relevanceLanguage"] == "en"
+    assert transport.calls[0][1]["publishedAfter"] == "2026-07-29T00:00:00Z"
+    assert transport.calls[0][1]["publishedBefore"] == "2026-08-28T00:00:00Z"
     assert transport.calls[0][1]["fields"] == ("items(id(kind,videoId),snippet(publishedAt,title))")
     assert "regionCode" not in transport.calls[0][1]
     assert "key" not in transport.calls[0][1]
@@ -176,6 +181,76 @@ def test_youtube_discovery_ignores_unrequested_channel_and_description_fields() 
     assert "description" not in serialized
     assert items[0].metadata == {}
     assert len(transport.calls) == 1
+
+
+def test_youtube_discovery_skips_upcoming_items_without_rejecting_the_batch() -> None:
+    cutoff = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
+    body = json.dumps(
+        {
+            "items": [
+                {
+                    "id": {"kind": "youtube#video", "videoId": "pastvideo01"},
+                    "snippet": {
+                        "publishedAt": "2026-08-25T11:59:59Z",
+                        "title": "Already published",
+                    },
+                },
+                {
+                    "id": {"kind": "youtube#video", "videoId": "exactvideo1"},
+                    "snippet": {
+                        "publishedAt": "2026-08-25T12:00:00Z",
+                        "title": "Published at cutoff",
+                    },
+                },
+                {
+                    "id": {"kind": "youtube#video", "videoId": "futurevid01"},
+                    "snippet": {
+                        "publishedAt": "2026-08-25T12:00:01Z",
+                        "title": "Upcoming premiere",
+                    },
+                },
+            ]
+        }
+    ).encode()
+    transport = FixtureYouTubeTransport([APIResponse(200, {}, body)])
+    client = YouTubeDataClient(
+        api_key="fixture-key",
+        transport=transport,
+        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+        clock=lambda: cutoff,
+    )
+    query = YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[0]
+
+    items = client.discover(query)
+
+    assert [item.external_id for item in items] == ["pastvideo01", "exactvideo1"]
+    assert transport.calls[0][1]["publishedBefore"] == "2026-08-25T12:00:00Z"
+
+
+def test_youtube_discovery_treats_a_future_only_page_as_an_empty_success() -> None:
+    body = json.dumps(
+        {
+            "items": [
+                {
+                    "id": {"kind": "youtube#video", "videoId": "futurevid01"},
+                    "snippet": {
+                        "publishedAt": "2026-08-25T12:00:01Z",
+                        "title": "Upcoming premiere",
+                    },
+                }
+            ]
+        }
+    ).encode()
+    transport = FixtureYouTubeTransport([APIResponse(200, {}, body)])
+    client = YouTubeDataClient(
+        api_key="fixture-key",
+        transport=transport,
+        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+        clock=lambda: datetime(2026, 8, 25, 12, 0, tzinfo=UTC),
+    )
+    query = YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[0]
+
+    assert client.discover(query) == ()
 
 
 @pytest.mark.parametrize(
@@ -296,12 +371,174 @@ class FixturePopenFactory:
         return self.process
 
 
+def _install_fixture_curl(
+    monkeypatch: pytest.MonkeyPatch,
+    process: FixtureCurlProcess,
+) -> FixturePopenFactory:
+    factory = FixturePopenFactory(process)
+    monkeypatch.setattr(subprocess, "Popen", factory)
+
+    def fixture_exchange(
+        actual_process: subprocess.Popen[bytes],
+        *,
+        stdin_bytes: bytes,
+        stdout_limit: int,
+        stderr_limit: int,
+        deadline: float,
+    ) -> tuple[bytes, bytes]:
+        assert actual_process is process
+        assert stdout_limit > 0
+        assert stderr_limit > 0
+        return process.communicate(
+            input=stdin_bytes,
+            timeout=youtube_module._remaining_seconds(deadline),
+        )
+
+    monkeypatch.setattr(youtube_module, "_bounded_exchange", fixture_exchange)
+    return factory
+
+
+def _install_real_curl_child(
+    monkeypatch: pytest.MonkeyPatch,
+    child_code: str,
+) -> list[subprocess.Popen[bytes]]:
+    real_popen = subprocess.Popen
+    children: list[subprocess.Popen[bytes]] = []
+
+    def spawn_child(
+        _command: tuple[str, ...],
+        **kwargs: object,
+    ) -> subprocess.Popen[bytes]:
+        child = real_popen((sys.executable, "-c", child_code), **kwargs)
+        children.append(child)
+        return child
+
+    monkeypatch.setattr(subprocess, "Popen", spawn_child)
+    return children
+
+
+def _cleanup_test_children(children: list[subprocess.Popen[bytes]]) -> None:
+    for child in children:
+        if child.poll() is None:
+            child.kill()
+            child.wait(timeout=2)
+
+
+def test_youtube_curl_streams_unknown_length_body_through_a_hard_memory_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    children = _install_real_curl_child(
+        monkeypatch,
+        "import sys,time; "
+        "sys.stdin.buffer.read(); "
+        "sys.stdout.buffer.write(b'x' * 65); "
+        "sys.stdout.buffer.flush(); "
+        "time.sleep(10)",
+    )
+    try:
+        with pytest.raises(YouTubeError) as raised:
+            HTTPXYouTubeTransport(max_response_bytes=64).get(
+                YOUTUBE_SEARCH_URL,
+                params={},
+                api_key=SecretStr("fixture-key"),
+                timeout_seconds=30,
+            )
+    finally:
+        _cleanup_test_children(children)
+
+    assert raised.value.code == "response_too_large"
+    assert len(children) == 1
+    assert children[0].poll() is not None
+    assert "fixture-key" not in repr(children[0].args)
+
+
+def test_youtube_curl_stream_accepts_exactly_the_body_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    metadata = _curl_metadata(content_length="2")
+    children = _install_real_curl_child(
+        monkeypatch,
+        "import sys; "
+        "sys.stdin.buffer.read(); "
+        "sys.stdout.buffer.write(b'{}'); "
+        f"sys.stderr.buffer.write({metadata!r})",
+    )
+    try:
+        response = HTTPXYouTubeTransport(max_response_bytes=2).get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+    finally:
+        _cleanup_test_children(children)
+
+    assert response.status_code == 200
+    assert response.body == b"{}"
+
+
+def test_youtube_curl_stream_caps_stderr_before_metadata_parsing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    children = _install_real_curl_child(
+        monkeypatch,
+        "import sys,time; "
+        "sys.stdin.buffer.read(); "
+        "sys.stderr.buffer.write(b'x' * 65537); "
+        "sys.stderr.buffer.flush(); "
+        "time.sleep(10)",
+    )
+    try:
+        with pytest.raises(YouTubeError) as raised:
+            HTTPXYouTubeTransport().get(
+                YOUTUBE_SEARCH_URL,
+                params={},
+                api_key=SecretStr("fixture-key"),
+                timeout_seconds=30,
+            )
+    finally:
+        _cleanup_test_children(children)
+
+    assert raised.value.code == "response_headers_too_large"
+    assert len(children) == 1
+    assert children[0].poll() is not None
+
+
+def test_youtube_curl_stream_limit_keeps_the_gate_fenced_if_reaping_fails(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = FixtureCurlProcess(
+        returncode=None,
+        wait_effects=[subprocess.TimeoutExpired("curl", 0.4)] * 4,
+        poll_effects=[None] * 4,
+    )
+    _install_fixture_curl(monkeypatch, process)
+
+    def over_limit(*_args: object, **_kwargs: object) -> tuple[bytes, bytes]:
+        raise youtube_module._StreamLimitExceeded("response_too_large")
+
+    moments = iter((0.0, 27.1, 27.2, 27.3, 27.4))
+    monkeypatch.setattr(youtube_module, "_bounded_exchange", over_limit)
+    monkeypatch.setattr(os, "killpg", lambda _pid, _sig: None)
+    monkeypatch.setattr(youtube_module, "monotonic", lambda: next(moments))
+
+    with pytest.raises(YouTubeRequestStateUnknown):
+        HTTPXYouTubeTransport(max_response_bytes=64).get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert process.kill_calls == 4
+    assert process.reaped is False
+
+
 def test_youtube_curl_transport_rejects_response_over_byte_cap(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     process = FixtureCurlProcess(stdout=b"x" * 64, returncode=63)
-    factory = FixturePopenFactory(process)
-    monkeypatch.setattr(subprocess, "Popen", factory)
+    factory = _install_fixture_curl(monkeypatch, process)
 
     transport = HTTPXYouTubeTransport(max_response_bytes=64)
     with pytest.raises(YouTubeError, match="response_too_large"):
@@ -319,8 +556,7 @@ def test_youtube_curl_transport_rejects_encoded_content_and_unapproved_endpoints
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     process = FixtureCurlProcess(stderr=_curl_metadata(content_encoding="gzip"))
-    factory = FixturePopenFactory(process)
-    monkeypatch.setattr(subprocess, "Popen", factory)
+    factory = _install_fixture_curl(monkeypatch, process)
     transport = HTTPXYouTubeTransport()
 
     with pytest.raises(YouTubeError, match="unsupported_content_encoding"):
@@ -347,7 +583,7 @@ def test_youtube_curl_transport_kills_and_reaps_a_stalled_dns_process(
         returncode=None,
         communicate_effects=[subprocess.TimeoutExpired("curl", 27)],
     )
-    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    _install_fixture_curl(monkeypatch, process)
     transport = HTTPXYouTubeTransport()
 
     with pytest.raises(YouTubeError) as raised:
@@ -381,9 +617,8 @@ def test_youtube_curl_transport_fails_closed_if_reaping_stalls_at_hard_deadline(
             subprocess.TimeoutExpired("curl", 0.2),
         ],
     )
-    factory = FixturePopenFactory(process)
+    _install_fixture_curl(monkeypatch, process)
     moments = iter((0.0, 0.0, 27.5, 28.8, 29.1))
-    monkeypatch.setattr(subprocess, "Popen", factory)
     monkeypatch.setattr(
         "pokecrack_worker.collectors.official_api.youtube.monotonic",
         lambda: next(moments),
@@ -414,9 +649,8 @@ def test_youtube_curl_transport_propagates_cleanup_keyboard_interrupt_after_time
         communicate_effects=[subprocess.TimeoutExpired("curl", 27)],
         wait_effects=[interrupt, RuntimeError("cleanup wait failed"), -9],
     )
-    factory = FixturePopenFactory(process)
+    _install_fixture_curl(monkeypatch, process)
     group_kills: list[tuple[int, signal.Signals]] = []
-    monkeypatch.setattr(subprocess, "Popen", factory)
     monkeypatch.setattr(os, "killpg", lambda pid, sig: group_kills.append((pid, sig)))
 
     with pytest.raises(KeyboardInterrupt) as raised:
@@ -449,9 +683,8 @@ def test_youtube_curl_transport_propagates_cleanup_system_exit_after_ordinary_fa
         communicate_effects=[RuntimeError("fixture-key must not cross the job boundary")],
         wait_effects=[shutdown, RuntimeError("cleanup wait failed"), -9],
     )
-    factory = FixturePopenFactory(process)
+    _install_fixture_curl(monkeypatch, process)
     group_kills: list[tuple[int, signal.Signals]] = []
-    monkeypatch.setattr(subprocess, "Popen", factory)
     monkeypatch.setattr(os, "killpg", lambda pid, sig: group_kills.append((pid, sig)))
 
     with pytest.raises(SystemExit) as raised:
@@ -492,7 +725,7 @@ def test_youtube_curl_transport_fails_closed_when_cleanup_control_flow_is_not_re
     )
     group_kills: list[tuple[int, signal.Signals]] = []
     moments = iter((0.0, 0.0, 27.1, 27.2, 27.3, 27.4))
-    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    _install_fixture_curl(monkeypatch, process)
     monkeypatch.setattr(os, "killpg", lambda pid, sig: group_kills.append((pid, sig)))
     monkeypatch.setattr(
         "pokecrack_worker.collectors.official_api.youtube.monotonic",
@@ -525,7 +758,7 @@ def test_youtube_curl_transport_fails_closed_when_initial_control_flow_is_not_re
         poll_effects=[None, None, None, None],
     )
     moments = iter((0.0, 0.0, 27.1, 27.2, 27.3, 27.4))
-    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    _install_fixture_curl(monkeypatch, process)
     monkeypatch.setattr(os, "killpg", lambda _pid, _sig: None)
     monkeypatch.setattr(
         "pokecrack_worker.collectors.official_api.youtube.monotonic",
@@ -563,7 +796,7 @@ def test_youtube_curl_transport_retries_when_cleanup_clock_is_interrupted(
         assert isinstance(effect, float)
         return effect
 
-    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    _install_fixture_curl(monkeypatch, process)
     monkeypatch.setattr(
         "pokecrack_worker.collectors.official_api.youtube.monotonic",
         interrupted_clock,
@@ -594,7 +827,7 @@ def test_youtube_curl_transport_fails_closed_when_reap_finishes_after_deadline(
         poll_effects=[None],
     )
     moments = iter((0.0, 0.0, 27.1, 27.2, 29.1))
-    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    _install_fixture_curl(monkeypatch, process)
     monkeypatch.setattr(
         "pokecrack_worker.collectors.official_api.youtube.monotonic",
         lambda: next(moments),
@@ -623,7 +856,7 @@ def test_youtube_curl_transport_classifies_confirmed_late_reap_as_normal_failure
         wait_effects=[-9],
     )
     moments = iter((0.0, 0.0, 27.1, 29.1))
-    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    _install_fixture_curl(monkeypatch, process)
     monkeypatch.setattr(
         "pokecrack_worker.collectors.official_api.youtube.monotonic",
         lambda: next(moments),
@@ -653,7 +886,7 @@ def test_youtube_curl_transport_uses_fatal_boundary_for_unreaped_ordinary_failur
         poll_effects=[None, None, None, None],
     )
     moments = iter((0.0, 0.0, 27.1, 27.2, 27.3, 27.4))
-    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    _install_fixture_curl(monkeypatch, process)
     monkeypatch.setattr(os, "killpg", lambda _pid, _sig: None)
     monkeypatch.setattr(
         "pokecrack_worker.collectors.official_api.youtube.monotonic",
@@ -680,7 +913,7 @@ def test_youtube_curl_transport_sanitizes_unexpected_failure_after_successful_re
         returncode=None,
         communicate_effects=[RuntimeError("fixture-key must not cross the job boundary")],
     )
-    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(process))
+    _install_fixture_curl(monkeypatch, process)
 
     with pytest.raises(YouTubeError) as raised:
         HTTPXYouTubeTransport().get(
@@ -695,6 +928,115 @@ def test_youtube_curl_transport_sanitizes_unexpected_failure_after_successful_re
     assert process.active is False
     assert process.reaped is True
     assert "fixture-key" not in repr(raised.value)
+
+
+def test_youtube_curl_transport_never_resignals_a_reaped_pid_after_control_flow(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    interrupt = KeyboardInterrupt("shutdown after pipe cleanup")
+    process = FixtureCurlProcess(returncode=0)
+    _install_fixture_curl(monkeypatch, process)
+    group_kills: list[tuple[int, signal.Signals]] = []
+
+    def fail_after_reap(*_args: object, **_kwargs: object) -> tuple[bytes, bytes]:
+        process.wait()
+        raise interrupt
+
+    monkeypatch.setattr(youtube_module, "_bounded_exchange", fail_after_reap)
+    monkeypatch.setattr(os, "killpg", lambda pid, sig: group_kills.append((pid, sig)))
+
+    with pytest.raises(KeyboardInterrupt) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value is interrupt
+    assert group_kills == []
+    assert process.kill_calls == 0
+    assert process.reaped is True
+
+
+def test_youtube_curl_transport_sanitizes_post_reap_failure_without_resignaling(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = FixtureCurlProcess(returncode=0)
+    _install_fixture_curl(monkeypatch, process)
+    group_kills: list[tuple[int, signal.Signals]] = []
+
+    def fail_after_reap(*_args: object, **_kwargs: object) -> tuple[bytes, bytes]:
+        process.wait()
+        raise RuntimeError("fixture-key must not cross the boundary")
+
+    monkeypatch.setattr(youtube_module, "_bounded_exchange", fail_after_reap)
+    monkeypatch.setattr(os, "killpg", lambda pid, sig: group_kills.append((pid, sig)))
+
+    with pytest.raises(YouTubeError) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value.code == "network_error"
+    assert raised.value.retryable is True
+    assert group_kills == []
+    assert process.kill_calls == 0
+    assert process.reaped is True
+    assert "fixture-key" not in repr(raised.value)
+
+
+def test_youtube_curl_cleanup_rechecks_reap_state_before_each_signal(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first_shutdown = SystemExit(23)
+    second_interrupt = KeyboardInterrupt("poll interrupted during shutdown")
+    process = FixtureCurlProcess(
+        returncode=None,
+        communicate_effects=[subprocess.TimeoutExpired("curl", 27)],
+    )
+    _install_fixture_curl(monkeypatch, process)
+    group_kills: list[tuple[int, signal.Signals]] = []
+
+    def wait_after_reap(timeout: float | None = None) -> int:
+        process.wait_timeouts.append(timeout)
+        # Model waitpid() having collected the child before CPython publishes
+        # Popen.returncode. A control-flow exception can land in that window.
+        process.reaped = True
+        raise first_shutdown
+
+    poll_calls = 0
+
+    def interrupted_poll() -> int | None:
+        nonlocal poll_calls
+        poll_calls += 1
+        if poll_calls == 1:
+            return None
+        if poll_calls == 2:
+            raise second_interrupt
+        process.returncode = 0
+        return process.returncode
+
+    process.wait = wait_after_reap  # type: ignore[method-assign]
+    process.poll = interrupted_poll  # type: ignore[method-assign]
+    monkeypatch.setattr(os, "killpg", lambda pid, sig: group_kills.append((pid, sig)))
+
+    with pytest.raises(SystemExit) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value is first_shutdown
+    assert group_kills == [(process.pid, signal.SIGKILL)]
+    assert process.kill_calls == 1
+    assert poll_calls == 3
+    assert process.reaped is True
 
 
 @pytest.mark.skipif(
@@ -714,7 +1056,7 @@ def test_youtube_curl_transport_preserves_existing_process_timer_and_handler(
     def existing_handler(signum: int, _frame: object) -> None:
         observed_signals.append(signum)
 
-    monkeypatch.setattr(subprocess, "Popen", FixturePopenFactory(FixtureCurlProcess()))
+    _install_fixture_curl(monkeypatch, FixtureCurlProcess())
     try:
         signal.signal(alarm, existing_handler)
         signal.setitimer(timer, 60.0, 10.0)
@@ -787,8 +1129,7 @@ def test_youtube_curl_transport_fixes_network_boundaries_and_hides_key_from_proc
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     process = FixtureCurlProcess(stderr=_curl_metadata(status=302, content_length="0"))
-    factory = FixturePopenFactory(process)
-    monkeypatch.setattr(subprocess, "Popen", factory)
+    factory = _install_fixture_curl(monkeypatch, process)
 
     response = HTTPXYouTubeTransport().get(
         YOUTUBE_SEARCH_URL,

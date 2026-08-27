@@ -32,7 +32,15 @@ The five exact global-English queries run on one fixed six-hour schedule when
 the feature is enabled. Both the registry and network adapter independently
 verify the frozen query text, `order=date`, 25-result cap, 30-day publication
 window, metadata-only flag, and absence of `regionCode` before network I/O. The
-single request has a fixed 30-second deadline and a 2 MiB raw-response cap.
+single request has a fixed 30-second deadline. The curl pipes are drained
+incrementally with a 2 MiB stdout hard cap and a separate 64 KiB stderr cap;
+`--max-filesize` and declared length remain defense-in-depth checks.
+
+The request also sends `publishedBefore` from the same UTC cutoff used for its
+30-day window. A scheduled premiere or upcoming live result that still arrives
+with a later publication timestamp is validated structurally and skipped as an
+item; it does not fail the otherwise valid discovery job or get rewritten as an
+observed activity with a null timestamp.
 
 Persistence is intentionally minimal: video ID, canonical watch URL, title,
 publication timestamp, source-policy reference, first/last-seen timestamps, and

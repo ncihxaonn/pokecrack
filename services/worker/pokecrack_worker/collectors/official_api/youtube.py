@@ -6,6 +6,7 @@ import html
 import json
 import os
 import re
+import selectors
 import signal
 import subprocess
 import unicodedata
@@ -31,6 +32,8 @@ _YOUTUBE_CURL_TRANSFER_SECONDS = 27.0
 _YOUTUBE_PROCESS_DEADLINE_SECONDS = 29.0
 _YOUTUBE_REAP_ATTEMPTS = 4
 _YOUTUBE_REAP_SLICE_SECONDS = 0.4
+_YOUTUBE_PIPE_CHUNK_BYTES = 64 * 1024
+_YOUTUBE_STDERR_LIMIT_BYTES = 64 * 1024
 _YOUTUBE_CURL_PATH = "/usr/bin/curl"
 _PROCESS_DEADLINE_SUPPORTED = os.name == "posix"
 YOUTUBE_COLLECTOR_VERSION = "youtube-global-discovery-v1"
@@ -83,6 +86,12 @@ class YouTubeHTTPError(YouTubeError):
 class YouTubeInvalidResponse(YouTubeError):
     def __init__(self, code: str = "invalid_response") -> None:
         super().__init__(code, retryable=False)
+
+
+class _StreamLimitExceeded(Exception):
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
 
 
 @dataclass(frozen=True, slots=True)
@@ -204,17 +213,23 @@ class HTTPXYouTubeTransport:
             raise YouTubeError("transport_unavailable", retryable=False) from None
 
         try:
-            stdout, stderr = process.communicate(
-                input=f"X-Goog-Api-Key: {secret}\n".encode("ascii"),
-                timeout=_remaining_seconds(transfer_deadline),
+            stdout, stderr = _bounded_exchange(
+                process,
+                stdin_bytes=f"X-Goog-Api-Key: {secret}\n".encode("ascii"),
+                stdout_limit=self.max_response_bytes,
+                stderr_limit=_YOUTUBE_STDERR_LIMIT_BYTES,
+                deadline=transfer_deadline,
             )
+        except _StreamLimitExceeded as error:
+            _terminate_and_reap(process, deadline=process_deadline)
+            raise YouTubeInvalidResponse(error.code) from None
         except subprocess.TimeoutExpired:
             _terminate_and_reap(process, deadline=process_deadline)
             raise YouTubeError("request_timeout", retryable=True) from None
         except BaseException as error:
             # start_new_session isolates curl and any resolver descendants. Always
             # tear that group down before an interrupt, shutdown, or unexpected
-            # communicate failure can escape this synchronous boundary.
+            # stream-exchange failure can escape this synchronous boundary.
             _terminate_and_reap(
                 process,
                 deadline=process_deadline,
@@ -274,6 +289,87 @@ def _remaining_seconds(deadline: float) -> float:
     return remaining
 
 
+def _bounded_exchange(
+    process: subprocess.Popen[bytes],
+    *,
+    stdin_bytes: bytes,
+    stdout_limit: int,
+    stderr_limit: int,
+    deadline: float,
+) -> tuple[bytes, bytes]:
+    """Drain curl pipes while retaining at most each limit plus one sentinel byte."""
+
+    stdin = process.stdin
+    stdout = process.stdout
+    stderr = process.stderr
+    if stdin is None or stdout is None or stderr is None:
+        raise OSError("curl pipes are unavailable")
+
+    selector = selectors.DefaultSelector()
+    buffers = {"stdout": bytearray(), "stderr": bytearray()}
+    output_pipes = {"stdout": stdout, "stderr": stderr}
+    limits = {"stdout": stdout_limit, "stderr": stderr_limit}
+    limit_codes = {
+        "stdout": "response_too_large",
+        "stderr": "response_headers_too_large",
+    }
+    stdin_offset = 0
+    stdin_view = memoryview(stdin_bytes)
+    pipes = (stdin, stdout, stderr)
+    try:
+        for pipe in pipes:
+            os.set_blocking(pipe.fileno(), False)
+        selector.register(stdin, selectors.EVENT_WRITE, "stdin")
+        selector.register(stdout, selectors.EVENT_READ, "stdout")
+        selector.register(stderr, selectors.EVENT_READ, "stderr")
+
+        while selector.get_map():
+            ready = selector.select(timeout=_remaining_seconds(deadline))
+            if not ready:
+                raise subprocess.TimeoutExpired(_YOUTUBE_CURL_PATH, 0)
+            for key, _events in ready:
+                stream_name = key.data
+                if stream_name == "stdin":
+                    try:
+                        written = os.write(key.fd, stdin_view[stdin_offset:])
+                    except BlockingIOError:
+                        continue
+                    except BrokenPipeError:
+                        selector.unregister(key.fileobj)
+                        stdin.close()
+                        continue
+                    stdin_offset += written
+                    if stdin_offset == len(stdin_view):
+                        selector.unregister(key.fileobj)
+                        stdin.close()
+                    continue
+
+                buffer = buffers[stream_name]
+                limit = limits[stream_name]
+                read_size = min(_YOUTUBE_PIPE_CHUNK_BYTES, limit + 1 - len(buffer))
+                try:
+                    chunk = os.read(key.fd, max(1, read_size))
+                except BlockingIOError:
+                    continue
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    output_pipes[stream_name].close()
+                    continue
+                buffer.extend(chunk)
+                if len(buffer) > limit:
+                    raise _StreamLimitExceeded(limit_codes[stream_name])
+
+        process.wait(timeout=_remaining_seconds(deadline))
+        return bytes(buffers["stdout"]), bytes(buffers["stderr"])
+    finally:
+        selector.close()
+        for pipe in pipes:
+            try:
+                pipe.close()
+            except OSError:
+                pass
+
+
 def _terminate_and_reap(
     process: subprocess.Popen[bytes],
     *,
@@ -314,7 +410,27 @@ def _reap_process_group_guarded(
         if not isinstance(error, Exception) and cleanup_control_flow is None:
             cleanup_control_flow = error
 
+    def poll_confirms_reap() -> bool | None:
+        try:
+            return process.poll() is not None
+        except BaseException as error:
+            remember_control_flow(error)
+            return None
+
     for _attempt in range(_YOUTUBE_REAP_ATTEMPTS):
+        # Popen only publishes a non-None return code after wait()/poll() has
+        # collected the child. Poll before every signal because waitpid() may
+        # reap and then be interrupted before publishing that return code. If
+        # poll is interrupted too, retry it without risking a reused PID.
+        if process.returncode is not None:
+            reaped = True
+            break
+        poll_result = poll_confirms_reap()
+        if poll_result is None:
+            continue
+        if poll_result:
+            reaped = True
+            break
         try:
             os.killpg(process.pid, signal.SIGKILL)
         except BaseException as error:
@@ -339,13 +455,14 @@ def _reap_process_group_guarded(
             reaped = True
             break
 
-        try:
-            if process.poll() is not None:
-                reaped = True
-                break
-        except BaseException as error:
-            remember_control_flow(error)
+        if poll_confirms_reap():
+            reaped = True
+            break
 
+    if not reaped and process.returncode is not None:
+        reaped = True
+    if not reaped and poll_confirms_reap():
+        reaped = True
     if not reaped:
         return _ReapOutcome(False, False, cleanup_control_flow)
     try:
@@ -357,7 +474,7 @@ def _reap_process_group_guarded(
 
 
 def _curl_response_metadata(stderr: bytes) -> dict[str, str]:
-    if len(stderr) > 64 * 1024:
+    if len(stderr) > _YOUTUBE_STDERR_LIMIT_BYTES:
         raise YouTubeInvalidResponse("response_headers_too_large")
     try:
         lines = stderr.decode("utf-8", errors="strict").splitlines()
@@ -492,9 +609,11 @@ class YouTubeDataClient:
             or query.order != "date"
         ):
             raise YouTubeInvalidResponse("source_policy_version_mismatch")
-        published_after = self._clock().astimezone(UTC) - timedelta(
-            days=query.published_within_days
-        )
+        collection_cutoff = self._clock()
+        if collection_cutoff.tzinfo is None or collection_cutoff.utcoffset() is None:
+            raise YouTubeInvalidResponse("clock_invalid")
+        collection_cutoff = collection_cutoff.astimezone(UTC).replace(microsecond=0)
+        published_after = collection_cutoff - timedelta(days=query.published_within_days)
         # This is an English text-relevance hint, never a region or observed geography.
         search_response = self.transport.get(
             YOUTUBE_SEARCH_URL,
@@ -505,6 +624,7 @@ class YouTubeDataClient:
                 "maxResults": str(query.max_results),
                 "order": query.order,
                 "publishedAfter": published_after.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "publishedBefore": collection_cutoff.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "relevanceLanguage": "en",
                 "fields": "items(id(kind,videoId),snippet(publishedAt,title))",
             },
@@ -517,6 +637,8 @@ class YouTubeDataClient:
 
         candidates: list[SourceItemCandidate] = []
         for item in search_items:
+            if item.published_at > collection_cutoff:
+                continue
             try:
                 candidate = SourceItemCandidate(
                     platform="youtube",

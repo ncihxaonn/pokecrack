@@ -1412,6 +1412,14 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("YOUTUBE_API_KEY:", collector)
         self.assertNotIn("YOUTUBE_API_KEY:", scheduler)
 
+    def test_worker_image_installs_the_bounded_youtube_transport(self) -> None:
+        dockerfile = (DEPLOY_ROOT / "Dockerfile.worker").read_text(encoding="utf-8")
+        self.assertIn(
+            "apt-get install --yes --no-install-recommends ca-certificates curl",
+            dockerfile,
+        )
+        self.assertIn("rm -rf /var/lib/apt/lists/*", dockerfile)
+
     def test_auth_browser_pins_opencli_and_starts_its_loopback_daemon(self) -> None:
         dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(encoding="utf-8")
         entrypoint = (DEPLOY_ROOT / "auth-browser-entrypoint.sh").read_text(encoding="utf-8")

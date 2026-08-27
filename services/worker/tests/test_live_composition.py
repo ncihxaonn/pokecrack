@@ -317,7 +317,14 @@ YOUTUBE_SEARCH_BODY = json.dumps(
                     "title": "Pokemon ETB opening",
                     "description": "Elite Trainer Box, batch code: AB-123",
                 },
-            }
+            },
+            {
+                "id": {"kind": "youtube#video", "videoId": "futurevid01"},
+                "snippet": {
+                    "publishedAt": "2026-08-25T12:00:01Z",
+                    "title": "Upcoming ETB premiere",
+                },
+            },
         ]
     }
 ).encode()
@@ -417,6 +424,7 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
     assert all("key" not in params for _url, params, _timeout in transport.calls)
     assert transport.calls[0][1]["q"] == "Pokemon TCG ETB opening"
     assert transport.calls[0][1]["relevanceLanguage"] == "en"
+    assert transport.calls[0][1]["publishedBefore"] == "2026-08-25T12:00:00Z"
     assert transport.calls[0][1]["fields"] == ("items(id(kind,videoId),snippet(publishedAt,title))")
     assert "regionCode" not in transport.calls[0][1]
     assert transport.calls[0][2] == 30.0
@@ -442,6 +450,7 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
     assert "UC-private-fixture" not in serialized
     assert "must-not-persist" not in serialized
     assert "Elite Trainer Box, batch code: AB-123" not in serialized
+    assert "futurevid01" not in serialized
     assert "fixture-youtube-secret" not in repr(executor.calls + transport.calls)
 
 
