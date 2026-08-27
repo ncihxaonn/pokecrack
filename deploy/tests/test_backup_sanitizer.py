@@ -59,6 +59,10 @@ class BackupSanitizerTests(unittest.TestCase):
         cache_first: bool = False,
     ) -> bytes:
         if quoted:
+            cache_ddl = (
+                b'CREATE UNLOGGED TABLE "ingest"."youtube_discoveries" (\r\n'
+                b');\r\n'
+            )
             policies = copy_block(
                 '"ingest"."source_policies"',
                 '"source_key", "id", "note"',
@@ -87,6 +91,10 @@ class BackupSanitizerTests(unittest.TestCase):
                 crlf=True,
             )
         else:
+            cache_ddl = (
+                b"CREATE UNLOGGED TABLE ingest.youtube_discoveries (\n"
+                b");\n"
+            )
             policies = copy_block(
                 "ingest.source_policies",
                 "id, source_key, note",
@@ -117,9 +125,9 @@ class BackupSanitizerTests(unittest.TestCase):
             crlf=quoted,
         )
         sections = (
-            (cache, legacy, unrelated, policies, items)
+            (cache_ddl, cache, legacy, unrelated, policies, items)
             if cache_first
-            else (unrelated, policies, items, legacy, cache)
+            else (unrelated, cache_ddl, policies, items, legacy, cache)
         )
         newline = b"\r\n" if quoted else b"\n"
         return newline.join((b"-- fixture start", b"".join(sections), b"-- fixture end", b""))
@@ -200,6 +208,31 @@ class BackupSanitizerTests(unittest.TestCase):
                 f"{WRONG_POLICY}\tyoutube_discovery\tpolicy\n".encode(),
             ),
             "duplicate": base.replace(policy_row, policy_row + policy_row),
+        }
+        for name, dump in cases.items():
+            with self.subTest(name=name):
+                result = self.run_sanitizer(dump)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+
+    def test_cache_create_must_be_one_unlogged_header_in_same_dump(self) -> None:
+        base = self.complete_dump()
+        unlogged = b"CREATE UNLOGGED TABLE ingest.youtube_discoveries (\n"
+        cases = {
+            "logged-race": base.replace(
+                unlogged,
+                b"CREATE TABLE ingest.youtube_discoveries (\n",
+            ),
+            "temporary-race": base.replace(
+                unlogged,
+                b"CREATE TEMP TABLE ingest.youtube_discoveries (\n",
+            ),
+            "missing": base.replace(unlogged + b");\n", b""),
+            "duplicate": base.replace(unlogged, unlogged + unlogged),
+            "unsupported-multiline": base.replace(
+                unlogged,
+                b"CREATE UNLOGGED TABLE\n ingest.youtube_discoveries (\n",
+            ),
         }
         for name, dump in cases.items():
             with self.subTest(name=name):

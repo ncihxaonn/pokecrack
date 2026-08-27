@@ -437,6 +437,8 @@ fi
 printf '%s\n' \
   '-- PostgreSQL database dump fixture' \
   'CREATE TABLE fixture (id integer);' \
+  'CREATE UNLOGGED TABLE ingest.youtube_discoveries (' \
+  ');' \
   'COPY ingest.source_policies (id, source_key) FROM stdin;' \
   $'11111111-1111-4111-8111-111111111111\tyoutube_discovery' \
   '\\.' \
@@ -602,6 +604,8 @@ fi
         first_video = "AbCdEfGhI_1"
         second_video = "ZyXwVuTsR-2"
         dump = f"""-- PostgreSQL database dump fixture
+CREATE UNLOGGED TABLE ingest.youtube_discoveries (
+);
 COPY ingest.source_policies (source_key, id) FROM stdin;
 youtube_discovery\t{youtube_policy}
 other\t{other_policy}
@@ -723,11 +727,12 @@ cache-second\t{youtube_policy}\t{second_video}
         policy = "11111111-1111-4111-8111-111111111111"
         wrong_policy = "33333333-3333-4333-8333-333333333333"
         policy_row = f"{policy}\tyoutube_discovery\n".encode()
+        cache_ddl = b"CREATE UNLOGGED TABLE ingest.youtube_discoveries (\n);\n"
         cache_block = f"""COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
 AbCdEfGhI_1\t{policy}
 \\.
 """.encode()
-        valid_dump = (
+        valid_dump = cache_ddl + (
             f"""COPY ingest.source_policies (id, source_key) FROM stdin;
 {policy}\tyoutube_discovery
 \\.
@@ -747,6 +752,15 @@ AbCdEfGhI_1\t{policy}
             "cache-policy-mismatch": valid_dump.replace(
                 f"AbCdEfGhI_1\t{policy}".encode(),
                 f"AbCdEfGhI_1\t{wrong_policy}".encode(),
+            ),
+            "logged-cache-create-race": valid_dump.replace(
+                cache_ddl,
+                b"CREATE TABLE ingest.youtube_discoveries (\n);\n",
+            ),
+            "missing-cache-create": valid_dump.replace(cache_ddl, b""),
+            "duplicate-cache-create": valid_dump.replace(
+                cache_ddl,
+                cache_ddl + cache_ddl,
             ),
         }
         for name, dump in cases.items():

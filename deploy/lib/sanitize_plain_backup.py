@@ -32,6 +32,19 @@ TARGET_INSERT = re.compile(
     r'youtube_discoveries|"youtube_discoveries")(?:\s|\()',
     re.IGNORECASE,
 )
+YOUTUBE_CREATE_REFERENCE = re.compile(
+    r'^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+'
+    r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
+    r'(?:youtube_discoveries(?![A-Za-z0-9_$])|"youtube_discoveries")'
+    r'(?:\s|\()',
+    re.IGNORECASE,
+)
+YOUTUBE_CREATE = re.compile(
+    r'^\s*CREATE\s+(?P<unlogged>UNLOGGED\s+)?TABLE\s+'
+    r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
+    r'(?:youtube_discoveries(?![A-Za-z0-9_$])|"youtube_discoveries")\s*\(',
+    re.IGNORECASE,
+)
 
 
 class SanitizationError(ValueError):
@@ -146,6 +159,35 @@ def parse_copy_header(line: bytes) -> CopyHeader | None:
     return CopyHeader(table=table, columns=columns)
 
 
+def parse_youtube_create(line: bytes) -> bool | None:
+    """Identify and validate the target CREATE TABLE header.
+
+    The fixed plain ``pg_dump`` format emits this header on one line. A CREATE
+    statement that references the target but is not that supported form is an
+    error, since silently accepting it could retain a logged cache after a
+    preflight-to-snapshot schema race.
+    """
+
+    try:
+        text = line.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if not re.match(r"^\s*CREATE(?:\s|\Z)", text, re.IGNORECASE):
+        return None
+    if not YOUTUBE_CREATE_REFERENCE.match(text):
+        return None
+    match = YOUTUBE_CREATE.match(text)
+    if match is None:
+        raise SanitizationError(
+            "unsupported youtube_discoveries CREATE TABLE header"
+        )
+    if match.group("unlogged") is None:
+        raise SanitizationError(
+            "youtube_discoveries CREATE TABLE is not UNLOGGED"
+        )
+    return True
+
+
 def _without_line_ending(line: bytes) -> bytes:
     if line.endswith(b"\r\n"):
         return line[:-2]
@@ -201,6 +243,7 @@ class PlainBackupSanitizer:
         self.preflight_youtube_policy_id = youtube_policy_id
         self.seen = {table: 0 for table in RETENTION_CONTROL_TABLES}
         self.youtube_policy_rows: list[str] = []
+        self.youtube_create_count = 0
 
     def _start_block(self, header: CopyHeader) -> CopyBlock:
         indexes = _column_indexes(header)
@@ -269,6 +312,17 @@ class PlainBackupSanitizer:
                     f"{'.'.join(table)}"
                 )
 
+        expected_create_count = int(self.expected[YOUTUBE_DISCOVERIES])
+        if self.youtube_create_count != expected_create_count:
+            if expected_create_count:
+                raise SanitizationError(
+                    "expected one UNLOGGED youtube_discoveries CREATE TABLE "
+                    "header"
+                )
+            raise SanitizationError(
+                "unexpected youtube_discoveries CREATE TABLE header"
+            )
+
         if self.preflight_youtube_policy_id is None:
             if self.youtube_policy_rows:
                 raise SanitizationError(
@@ -294,6 +348,14 @@ class PlainBackupSanitizer:
             header = parse_copy_header(line)
             if header is not None:
                 block = self._start_block(header)
+                continue
+
+            if parse_youtube_create(line):
+                self.youtube_create_count += 1
+                if self.youtube_create_count != 1:
+                    raise SanitizationError(
+                        "duplicate youtube_discoveries CREATE TABLE header"
+                    )
                 continue
 
             try:
