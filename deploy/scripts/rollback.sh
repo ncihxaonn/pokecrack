@@ -17,4 +17,5 @@ shift
 }
 
 "$SCRIPT_DIR/deploy.sh" "$rollback_sha" "$@"
-printf 'Rollback target %s is healthy.\n' "$rollback_sha"
+printf 'Rollback target %s is healthy for the selected deterministic service set.\n' \
+  "$rollback_sha"

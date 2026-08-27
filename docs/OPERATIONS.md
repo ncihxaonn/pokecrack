@@ -2,7 +2,7 @@
 
 ## Routine checks
 
-Daily: six Compose services healthy; job backlog/lease expiry; collector freshness/error rates; rejected/duplicate ratios; AI spend vs hard/soft limits; database/storage/egress thresholds; backup marker age/size; and source/API terms or quota alerts. Weekly: sample provenance/eligibility audit, failed jobs, account auth expiry, unused images, and restore-drill schedule. Monthly: source/terms review, dependency/image updates, access review, key rotation plan and free-tier capacity trend.
+Daily for the released TCGdex core: collector, scheduler, and watchdog healthy; no non-core containers; catalog job backlog/lease expiry; `catalog.sync_state` freshness/item count; database/storage/egress thresholds; backup marker age/size; and TCGdex terms/API errors. Weekly: failed jobs, unused images, provenance checks, and restore-drill schedule. Monthly: source/terms review, dependency/image updates, access review, key rotation plan and free-tier capacity trend. AI/browser checks are not part of this release.
 
 Use the secret environment file without printing expanded config:
 
@@ -18,7 +18,7 @@ Review logs narrowly and redact before sharing. Never run `docker compose config
 
 ## Release and rollback
 
-Deploy only a reviewed exact 40-character SHA with `deploy/scripts/deploy.sh`. The marker advances only after all services are healthy. If a release fails, preserve status/health evidence, choose a known-good commit and run `deploy/scripts/rollback.sh EXPLICIT_SHA`; database rollback is never automatic. A code rollback must remain compatible with already-applied forward migrations.
+Deploy only a reviewed exact 40-character SHA with `deploy/scripts/deploy.sh --service-set tcgdex`. The atomic manifest advances only after the exact three-service set is healthy and records that set; it never claims a full deployment. If a release fails, preserve status/health evidence, choose a known-good post-migration-compatible commit and run `deploy/scripts/rollback.sh EXPLICIT_SHA --service-set tcgdex`; database rollback is never automatic. The script does not stop pre-existing non-core containers—retire those only through a separately approved operation.
 
 Run `deploy/scripts/cleanup.sh --env-file /etc/pokecrack/production.env` periodically. It removes stopped project containers and unused labeled images only; profiles, extensions, backups and volumes are preserved.
 

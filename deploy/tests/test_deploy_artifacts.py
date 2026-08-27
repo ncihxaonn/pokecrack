@@ -121,6 +121,27 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("pokecrack-worker-audit.txt", workflow)
         self.assertIn("pokecrack-browser-audit.txt", workflow)
 
+    def test_worker_deploy_workflow_forwards_only_the_explicit_tcgdex_service_set(
+        self,
+    ) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "deploy-worker.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("service_set:", workflow)
+        self.assertIn("- tcgdex", workflow)
+        self.assertIn("REQUESTED_SHA: ${{ inputs.confirm_sha }}", workflow)
+        self.assertIn("REQUESTED_SERVICE_SET: ${{ inputs.service_set }}", workflow)
+        self.assertIn('[[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]]', workflow)
+        self.assertIn('[[ "$REQUESTED_SERVICE_SET" == tcgdex ]]', workflow)
+        self.assertIn('[[ "$service_set" == tcgdex ]]', workflow)
+        self.assertIn('--service-set "$service_set"', workflow)
+        self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
+        self.assertNotIn('[[ "${{ inputs.service_set }}"', workflow)
+        checkout = workflow.index('git -C "$repository" checkout --detach "$sha"')
+        deploy = workflow.index('"$repository/deploy/scripts/deploy.sh" "$sha"')
+        self.assertLess(checkout, deploy)
+        self.assertNotIn("- full", workflow)
+
 
 class BackupRetentionTests(unittest.TestCase):
     def test_keeps_seven_daily_and_four_weekly_representatives(self) -> None:
@@ -148,11 +169,15 @@ class BackupRetentionTests(unittest.TestCase):
             unrelated = root / "do-not-touch.sql.gz"
             unrelated.write_bytes(b"unrelated")
 
-            selected = retention.select_backups_to_delete(paths + [unrelated], daily=7, weekly=4)
+            selected = retention.select_backups_to_delete(
+                paths + [unrelated], daily=7, weekly=4
+            )
             selected_names = {path.name for path in selected}
 
             parsed = [(path, retention.parse_backup_timestamp(path)) for path in paths]
-            daily_dates = sorted({timestamp.date() for _, timestamp in parsed}, reverse=True)[:7]
+            daily_dates = sorted(
+                {timestamp.date() for _, timestamp in parsed}, reverse=True
+            )[:7]
             expected_keep = {
                 max(
                     (item for item in parsed if item[1].date() == day),
@@ -173,7 +198,8 @@ class BackupRetentionTests(unittest.TestCase):
                     (
                         item
                         for item in parsed
-                        if (item[1].isocalendar().year, item[1].isocalendar().week) == key
+                        if (item[1].isocalendar().year, item[1].isocalendar().week)
+                        == key
                     ),
                     key=lambda item: item[1],
                 )[0].name
@@ -260,18 +286,33 @@ cp "$FAKE_DOWNLOAD" "$output"
             first = self.make_archive(base, "1.2.3")
             second = self.make_archive(base, "1.2.4")
 
-            result = self.install(version="1.2.3", archive=first, install_root=install_root, fake_bin=fake_bin)
+            result = self.install(
+                version="1.2.3",
+                archive=first,
+                install_root=install_root,
+                fake_bin=fake_bin,
+            )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((install_root / "current").resolve().name, "1.2.3")
             self.assertFalse((install_root / "previous").exists())
 
-            result = self.install(version="1.2.4", archive=second, install_root=install_root, fake_bin=fake_bin)
+            result = self.install(
+                version="1.2.4",
+                archive=second,
+                install_root=install_root,
+                fake_bin=fake_bin,
+            )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertEqual((install_root / "current").resolve().name, "1.2.4")
             self.assertEqual((install_root / "previous").resolve().name, "1.2.3")
 
             result = subprocess.run(
-                [str(DEPLOY_ROOT / "scripts" / "install-opencli-extension.sh"), "rollback", "--install-root", str(install_root)],
+                [
+                    str(DEPLOY_ROOT / "scripts" / "install-opencli-extension.sh"),
+                    "rollback",
+                    "--install-root",
+                    str(install_root),
+                ],
                 check=False,
                 text=True,
                 capture_output=True,
@@ -288,7 +329,9 @@ cp "$FAKE_DOWNLOAD" "$output"
             fake_bin = base / "bin"
             fake_bin.mkdir()
             marker = base / "curl-invoked"
-            write_executable(fake_bin / "curl", f"#!/usr/bin/env bash\ntouch {marker!s}\nexit 99\n")
+            write_executable(
+                fake_bin / "curl", f"#!/usr/bin/env bash\ntouch {marker!s}\nexit 99\n"
+            )
             environment = os.environ.copy()
             environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
             for suffix in ("?token=must-not-log", "#fragment"):
@@ -296,10 +339,14 @@ cp "$FAKE_DOWNLOAD" "$output"
                     [
                         str(DEPLOY_ROOT / "scripts" / "install-opencli-extension.sh"),
                         "install",
-                        "--version", "1.2.3",
-                        "--sha256", "0" * 64,
-                        "--url", f"https://downloads.example.invalid/bridge.zip{suffix}",
-                        "--install-root", str(base / "extension"),
+                        "--version",
+                        "1.2.3",
+                        "--sha256",
+                        "0" * 64,
+                        "--url",
+                        f"https://downloads.example.invalid/bridge.zip{suffix}",
+                        "--install-root",
+                        str(base / "extension"),
                     ],
                     check=False,
                     text=True,
@@ -323,7 +370,9 @@ cp "$FAKE_DOWNLOAD" "$output"
         ):
             self.assertIn(flag, script)
 
-    def test_download_failure_cleans_up_without_masking_the_original_status(self) -> None:
+    def test_download_failure_cleans_up_without_masking_the_original_status(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
             base = Path(temporary)
             fake_bin = base / "bin"
@@ -335,10 +384,14 @@ cp "$FAKE_DOWNLOAD" "$output"
                 [
                     str(DEPLOY_ROOT / "scripts" / "install-opencli-extension.sh"),
                     "install",
-                    "--version", "1.2.3",
-                    "--sha256", "0" * 64,
-                    "--url", "https://downloads.example.invalid/bridge.zip",
-                    "--install-root", str(base / "extension"),
+                    "--version",
+                    "1.2.3",
+                    "--sha256",
+                    "0" * 64,
+                    "--url",
+                    "https://downloads.example.invalid/bridge.zip",
+                    "--install-root",
+                    str(base / "extension"),
                 ],
                 check=False,
                 text=True,
@@ -438,7 +491,9 @@ class DatabaseURLRunnerTests(unittest.TestCase):
         )
         self.assertNotIn(database_url, environment.values())
 
-    def test_url_rejects_ambiguous_or_unsupported_shapes_without_echoing_secret(self) -> None:
+    def test_url_rejects_ambiguous_or_unsupported_shapes_without_echoing_secret(
+        self,
+    ) -> None:
         runner = load_database_url_module()
         invalid = (
             "postgresql://user:fixture-secret@example.invalid/db",
@@ -454,7 +509,9 @@ class DatabaseURLRunnerTests(unittest.TestCase):
 
         for database_url in invalid:
             with self.subTest(database_url=database_url):
-                with self.assertRaises((runner.DatabaseURLConfigurationError, ValueError)):
+                with self.assertRaises(
+                    (runner.DatabaseURLConfigurationError, ValueError)
+                ):
                     runner.libpq_environment(database_url)
 
     def test_child_environment_removes_every_inherited_pg_variable(self) -> None:
@@ -478,8 +535,7 @@ class DatabaseURLRunnerTests(unittest.TestCase):
         self.assertEqual(environment["PGPASSWORD"], "fixture-secret")
         self.assertEqual(environment["PGSSLMODE"], "verify-full")
         self.assertFalse(
-            {"PGSSLCERTMODE", "PGLOADBALANCEHOSTS", "PGTCPUSERTO"}
-            & environment.keys()
+            {"PGSSLCERTMODE", "PGLOADBALANCEHOSTS", "PGTCPUSERTO"} & environment.keys()
         )
 
 
@@ -493,20 +549,24 @@ class BackupScriptTests(unittest.TestCase):
             else b"CONSTRAINT source_request_gates_source_check CHECK "
             b"((source_key = 'tcgdex_catalog'::text))"
         )
-        return b"""CREATE TABLE ingest.source_request_gates (
+        return (
+            b"""CREATE TABLE ingest.source_request_gates (
     source_key text NOT NULL,
     owner_job_id uuid,
     owner_lease_generation bigint,
     acquired_at timestamp with time zone,
     active_until timestamp with time zone,
     CONSTRAINT source_request_gates_owner_check CHECK ((((owner_job_id IS NULL) AND (owner_lease_generation IS NULL) AND (acquired_at IS NULL) AND (active_until IS NULL)) OR ((owner_job_id IS NOT NULL) AND (owner_lease_generation >= 1) AND (acquired_at IS NOT NULL) AND (active_until > acquired_at)))),
-    """ + source_constraint + b"""
+    """
+            + source_constraint
+            + b"""
 );
 ALTER TABLE ONLY ingest.source_request_gates FORCE ROW LEVEL SECURITY;
 ALTER TABLE ONLY ingest.source_request_gates
     ADD CONSTRAINT source_request_gates_pkey PRIMARY KEY (source_key);
 ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
 """
+        )
 
     @staticmethod
     def canonical_gate_seed(*, youtube: bool) -> bytes:
@@ -514,9 +574,7 @@ ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
         return (
             b"\n-- Canonical idle request gates; live lease ownership is not retained.\n"
             b"COPY ingest.source_request_gates (source_key) FROM stdin;\n"
-            b"tcgdex_catalog\n"
-            + youtube_row
-            + b"\\.\n\n"
+            b"tcgdex_catalog\n" + youtube_row + b"\\.\n\n"
         )
 
     @classmethod
@@ -526,18 +584,24 @@ ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
 
     @classmethod
     def pre_youtube_dump(cls) -> bytes:
-        return b"""-- PostgreSQL database dump fixture
+        return (
+            b"""-- PostgreSQL database dump fixture
 CREATE TABLE ingest.source_policies (
 );
-""" + cls.gate_schema_dump(youtube=False) + b"""COPY ingest.source_policies (source_key, id) FROM stdin;
+"""
+            + cls.gate_schema_dump(youtube=False)
+            + b"""COPY ingest.source_policies (source_key, id) FROM stdin;
 tcgdex_catalog\t33333333-3333-4333-8333-333333333333
 other\t22222222-2222-4222-8222-222222222222
 \\.
 """
+        )
 
     @classmethod
     def post_youtube_dump(cls) -> bytes:
-        return cls.gate_schema_dump(youtube=True) + b"""CREATE UNLOGGED TABLE ingest.youtube_discoveries (
+        return (
+            cls.gate_schema_dump(youtube=True)
+            + b"""CREATE UNLOGGED TABLE ingest.youtube_discoveries (
 );
 COPY ingest.source_policies (id, source_key) FROM stdin;
 11111111-1111-4111-8111-111111111111\tyoutube_discovery
@@ -546,6 +610,7 @@ COPY ingest.source_policies (id, source_key) FROM stdin;
 COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
 \\.
 """
+        )
 
     def make_fake_commands(self, base: Path) -> Path:
         fake_bin = base / "bin"
@@ -662,7 +727,9 @@ fi
         environment["FAKE_PSQL_LOG"] = str(fake_bin.parent / "psql-preflight.log")
         if empty:
             environment["FAKE_EMPTY_DUMP"] = "1"
-        effective_dump = self.post_youtube_dump() if dump is None and not empty else dump
+        effective_dump = (
+            self.post_youtube_dump() if dump is None and not empty else dump
+        )
         if effective_dump is not None:
             dump_file = fake_bin.parent / "fixture-dump.sql"
             dump_file.write_bytes(effective_dump)
@@ -744,9 +811,10 @@ fi
             },
         }
         for name, values in cases.items():
-            with self.subTest(name=name), tempfile.TemporaryDirectory(
-                dir=DEPLOY_ROOT / "tests"
-            ) as temporary:
+            with (
+                self.subTest(name=name),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
                 base = Path(temporary)
                 fake_bin = self.make_fake_commands(base)
                 backup_dir = base / "backups"
@@ -767,7 +835,10 @@ fi
             base = Path(temporary)
             fake_bin = self.make_fake_commands(base)
             credential_file = base / "database-url"
-            credential_file.write_text("postgresql://backup-user:fixture@example.invalid/pokecrack\n", encoding="utf-8")
+            credential_file.write_text(
+                "postgresql://backup-user:fixture@example.invalid/pokecrack\n",
+                encoding="utf-8",
+            )
             credential_file.chmod(0o644)
             environment = os.environ.copy()
             environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
@@ -813,22 +884,28 @@ fi
                 self.assertNotIn("very-secret", result.stdout + result.stderr)
 
             retention = load_retention_module()
-            all_paths = [backup_dir / f"pokecrack-{timestamp}.sql.gz" for timestamp in timestamps]
+            all_paths = [
+                backup_dir / f"pokecrack-{timestamp}.sql.gz" for timestamp in timestamps
+            ]
             expected_deleted = {
                 path.name
-                for path in retention.select_backups_to_delete(all_paths, daily=7, weekly=4)
+                for path in retention.select_backups_to_delete(
+                    all_paths, daily=7, weekly=4
+                )
             }
             actual_names = {path.name for path in backup_dir.glob("pokecrack-*.sql.gz")}
-            self.assertEqual(actual_names, {path.name for path in all_paths} - expected_deleted)
+            self.assertEqual(
+                actual_names, {path.name for path in all_paths} - expected_deleted
+            )
             latest = backup_dir / "pokecrack-20260729T020000Z.sql.gz"
             self.assertTrue(latest.is_file())
             with gzip.open(latest, "rt", encoding="utf-8") as stream:
-                self.assertIn(
-                    "CREATE TABLE ingest.source_request_gates", stream.read()
-                )
-            marker_lines = (backup_dir / ".last-successful-backup").read_text(
-                encoding="utf-8"
-            ).splitlines()
+                self.assertIn("CREATE TABLE ingest.source_request_gates", stream.read())
+            marker_lines = (
+                (backup_dir / ".last-successful-backup")
+                .read_text(encoding="utf-8")
+                .splitlines()
+            )
             self.assertEqual(marker_lines[0], latest.name)
             self.assertEqual(marker_lines[1], "completed_at=20260729T020000Z")
 
@@ -856,7 +933,9 @@ fi
         other_item = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
         first_video = "AbCdEfGhI_1"
         second_video = "ZyXwVuTsR-2"
-        dump = self.gate_schema_dump(youtube=True) + f"""-- PostgreSQL database dump fixture
+        dump = (
+            self.gate_schema_dump(youtube=True)
+            + f"""-- PostgreSQL database dump fixture
 CREATE UNLOGGED TABLE ingest.youtube_discoveries (
 );
 COPY ingest.source_policies (source_key, id) FROM stdin;
@@ -878,6 +957,7 @@ cache-first\t{youtube_policy}\t{first_video}
 cache-second\t{youtube_policy}\t{second_video}
 \\.
 """.encode()
+        )
 
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
             base = Path(temporary)
@@ -939,9 +1019,10 @@ cache-second\t{youtube_policy}\t{second_video}
             "malformed": "not-a-uuid",
         }
         for name, policy_output in cases.items():
-            with self.subTest(name=name), tempfile.TemporaryDirectory(
-                dir=DEPLOY_ROOT / "tests"
-            ) as temporary:
+            with (
+                self.subTest(name=name),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
                 base = Path(temporary)
                 fake_bin = self.make_fake_commands(base)
                 backup_dir = base / "backups"
@@ -969,9 +1050,10 @@ cache-second\t{youtube_policy}\t{second_video}
             "request-gate-without-maintain": "rp\tru\trp\tfalse",
         }
         for name, table_state in cases.items():
-            with self.subTest(name=name), tempfile.TemporaryDirectory(
-                dir=DEPLOY_ROOT / "tests"
-            ) as temporary:
+            with (
+                self.subTest(name=name),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
                 base = Path(temporary)
                 fake_bin = self.make_fake_commands(base)
                 backup_dir = base / "backups"
@@ -997,13 +1079,17 @@ cache-second\t{youtube_policy}\t{second_video}
 AbCdEfGhI_1\t{policy}
 \\.
 """.encode()
-        valid_dump = gate_ddl + cache_ddl + (
-            f"""COPY ingest.source_policies (id, source_key) FROM stdin;
+        valid_dump = (
+            gate_ddl
+            + cache_ddl
+            + (
+                f"""COPY ingest.source_policies (id, source_key) FROM stdin;
 {policy}\tyoutube_discovery
 33333333-3333-4333-8333-333333333333\ttcgdex_catalog
 \\.
 """.encode()
-            + cache_block
+                + cache_block
+            )
         )
         cases = {
             "missing-policy-row": valid_dump.replace(policy_row, b""),
@@ -1063,9 +1149,10 @@ AbCdEfGhI_1\t{policy}
             + b"INSERT INTO ingest.source_request_gates (source_key) VALUES ('tcgdex_catalog');\n",
         }
         for name, dump in cases.items():
-            with self.subTest(name=name), tempfile.TemporaryDirectory(
-                dir=DEPLOY_ROOT / "tests"
-            ) as temporary:
+            with (
+                self.subTest(name=name),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
                 base = Path(temporary)
                 fake_bin = self.make_fake_commands(base)
                 backup_dir = base / "backups"
@@ -1081,6 +1168,15 @@ AbCdEfGhI_1\t{policy}
 
 
 class DeployAndRollbackScriptTests(unittest.TestCase):
+    @staticmethod
+    def deployment_manifest(sha: str) -> str:
+        return (
+            "version=1\n"
+            f"sha={sha}\n"
+            "service_set=tcgdex\n"
+            "services=collector,scheduler,watchdog\n"
+        )
+
     def setUpRepository(self, base: Path) -> tuple[Path, str]:
         repository = base / "repository"
         deploy = repository / "deploy"
@@ -1096,11 +1192,19 @@ class DeployAndRollbackScriptTests(unittest.TestCase):
         for name in ("deploy.sh", "rollback.sh"):
             shutil.copy2(DEPLOY_ROOT / "scripts" / name, scripts / name)
         subprocess.run(["git", "init", "-q", "-b", "main", str(repository)], check=True)
-        subprocess.run(["git", "config", "user.email", "test@example.invalid"], cwd=repository, check=True)
-        subprocess.run(["git", "config", "user.name", "Deploy test"], cwd=repository, check=True)
+        subprocess.run(
+            ["git", "config", "user.email", "test@example.invalid"],
+            cwd=repository,
+            check=True,
+        )
+        subprocess.run(
+            ["git", "config", "user.name", "Deploy test"], cwd=repository, check=True
+        )
         (repository / "tracked.txt").write_text("fixture\n", encoding="utf-8")
         subprocess.run(["git", "add", "."], cwd=repository, check=True)
-        subprocess.run(["git", "commit", "-q", "-m", "fixture"], cwd=repository, check=True)
+        subprocess.run(
+            ["git", "commit", "-q", "-m", "fixture"], cwd=repository, check=True
+        )
         sha = subprocess.run(
             ["git", "rev-parse", "HEAD"],
             cwd=repository,
@@ -1124,6 +1228,12 @@ if [[ ${1:-} == 'compose' ]]; then
   fi
   exit 0
 fi
+if [[ ${1:-} == 'ps' ]]; then
+  if [[ -n ${FAKE_PROJECT_ROWS:-} ]]; then
+    printf '%s\n' "$FAKE_PROJECT_ROWS"
+  fi
+  exit 0
+fi
 if [[ ${1:-} == 'inspect' ]]; then
   if [[ ${FAKE_UNHEALTHY:-0} == 1 ]]; then
     printf '%s\n' 'running unhealthy'
@@ -1138,7 +1248,9 @@ exit 97
         )
         return fake_bin
 
-    def environment(self, base: Path, fake_bin: Path) -> tuple[dict[str, str], Path, Path]:
+    def environment(
+        self, base: Path, fake_bin: Path
+    ) -> tuple[dict[str, str], Path, Path]:
         docker_log = base / "docker.log"
         env_file = base / "production.env"
         env_file.write_text("DATA_MODE=demo\nAI_PROVIDER=fixture\n", encoding="utf-8")
@@ -1181,16 +1293,44 @@ exit 97
                 capture_output=True,
             ).stdout.strip()
             self.assertEqual(deployed, sha)
-            self.assertEqual((state_dir / "last-successful-sha").read_text().strip(), sha)
+            self.assertEqual(
+                (state_dir / "last-successful-deployment").read_text(),
+                self.deployment_manifest(sha),
+            )
+            self.assertEqual(
+                stat.S_IMODE((state_dir / "last-successful-deployment").stat().st_mode),
+                0o600,
+            )
             invocations = docker_log.read_text(encoding="utf-8").splitlines()
-            config_index = next(i for i, line in enumerate(invocations) if " config --quiet" in f" {line}")
-            build_index = next(i for i, line in enumerate(invocations) if " build " in f" {line} ")
-            up_index = next(i for i, line in enumerate(invocations) if " up " in f" {line} ")
-            inspect_index = next(i for i, line in enumerate(invocations) if line.startswith("inspect "))
+            config_index = next(
+                i
+                for i, line in enumerate(invocations)
+                if " config --quiet" in f" {line}"
+            )
+            build_index = next(
+                i for i, line in enumerate(invocations) if " build " in f" {line} "
+            )
+            up_index = next(
+                i for i, line in enumerate(invocations) if " up " in f" {line} "
+            )
+            inspect_index = next(
+                i for i, line in enumerate(invocations) if line.startswith("inspect ")
+            )
             self.assertLess(config_index, build_index)
             self.assertLess(build_index, up_index)
             self.assertLess(up_index, inspect_index)
-            self.assertIn(f"Deployment healthy at exact SHA {sha}", result.stdout)
+            build = invocations[build_index]
+            up = invocations[up_index]
+            self.assertIn("build --pull collector scheduler watchdog", build)
+            self.assertIn("up --detach collector scheduler watchdog", up)
+            self.assertNotIn("--remove-orphans", up)
+            self.assertNotIn("auth-browser", build + up)
+            self.assertNotIn("ai-worker", build + up)
+            self.assertNotIn("aggregator", build + up)
+            self.assertIn(
+                f"Deployment healthy at exact SHA {sha} for service set tcgdex ",
+                result.stdout,
+            )
 
     def test_failed_health_does_not_write_success_marker(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
@@ -1202,7 +1342,9 @@ exit 97
             state_dir = base / "state"
             state_dir.mkdir()
             previous = "1" * 40
-            (state_dir / "last-successful-sha").write_text(previous + "\n")
+            previous_marker = state_dir / "last-successful-deployment"
+            previous_marker.write_text(self.deployment_manifest(previous))
+            previous_marker.chmod(0o600)
             result = subprocess.run(
                 [
                     str(repository / "deploy" / "scripts" / "deploy.sh"),
@@ -1221,8 +1363,218 @@ exit 97
                 env=environment,
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertEqual((state_dir / "last-successful-sha").read_text().strip(), previous)
+            self.assertEqual(
+                (state_dir / "last-successful-deployment").read_text(),
+                self.deployment_manifest(previous),
+            )
             self.assertIn(f"Rollback commit: {previous}", result.stderr)
+
+    def test_legacy_sha_only_marker_is_not_treated_as_a_service_set_success(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, _ = self.environment(base, fake_bin)
+            environment["FAKE_UNHEALTHY"] = "1"
+            state_dir = base / "state"
+            state_dir.mkdir()
+            (state_dir / "last-successful-sha").write_text("1" * 40 + "\n")
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--state-dir",
+                    str(state_dir),
+                    "--health-timeout",
+                    "1",
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn("Rollback commit:", result.stderr)
+
+    def test_deploy_rejects_full_and_unknown_service_sets_before_docker(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            for service_set in ("full", "collector"):
+                with self.subTest(service_set=service_set):
+                    result = subprocess.run(
+                        [
+                            str(repository / "deploy" / "scripts" / "deploy.sh"),
+                            sha,
+                            "--env-file",
+                            str(env_file),
+                            "--state-dir",
+                            str(base / f"state-{service_set}"),
+                            "--service-set",
+                            service_set,
+                        ],
+                        cwd=repository,
+                        check=False,
+                        text=True,
+                        capture_output=True,
+                        env=environment,
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(docker_log.exists())
+
+    def test_existing_non_tcgdex_container_blocks_without_removing_it(self) -> None:
+        cases = {
+            "auth-browser": (
+                "container-auth|auth-browser",
+                "non-TCGdex service container exists: auth-browser",
+            ),
+            "retired-worker": (
+                "container-retired|retired-worker",
+                "non-TCGdex service container exists: retired-worker",
+            ),
+            "missing-label": (
+                "container-unknown|",
+                "Pokecrack project container is missing a valid Compose service label",
+            ),
+        }
+        for name, (project_row, expected_error) in cases.items():
+            with (
+                self.subTest(name=name),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
+                base = Path(temporary)
+                repository, sha = self.setUpRepository(base)
+                fake_bin = self.make_fake_docker(base)
+                environment, env_file, docker_log = self.environment(base, fake_bin)
+                environment["FAKE_PROJECT_ROWS"] = project_row
+                state_dir = base / "state"
+                result = subprocess.run(
+                    [
+                        str(repository / "deploy" / "scripts" / "deploy.sh"),
+                        sha,
+                        "--env-file",
+                        str(env_file),
+                        "--state-dir",
+                        str(state_dir),
+                    ],
+                    cwd=repository,
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                    env=environment,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(expected_error, result.stderr)
+                self.assertFalse((state_dir / "last-successful-deployment").exists())
+                invocations = docker_log.read_text(encoding="utf-8")
+                self.assertNotIn(" stop ", f" {invocations} ")
+                self.assertNotIn(" rm ", f" {invocations} ")
+                self.assertNotIn(" up ", f" {invocations} ")
+
+    def test_invalid_success_manifest_destination_fails_closed(self) -> None:
+        for destination_kind in ("directory", "symlink"):
+            with (
+                self.subTest(destination_kind=destination_kind),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
+                base = Path(temporary)
+                repository, sha = self.setUpRepository(base)
+                fake_bin = self.make_fake_docker(base)
+                environment, env_file, docker_log = self.environment(base, fake_bin)
+                state_dir = base / "state"
+                state_dir.mkdir()
+                manifest = state_dir / "last-successful-deployment"
+                if destination_kind == "directory":
+                    manifest.mkdir()
+                else:
+                    target = base / "outside-manifest"
+                    target.write_text("must remain unchanged\n", encoding="utf-8")
+                    manifest.symlink_to(target)
+
+                result = subprocess.run(
+                    [
+                        str(repository / "deploy" / "scripts" / "deploy.sh"),
+                        sha,
+                        "--env-file",
+                        str(env_file),
+                        "--state-dir",
+                        str(state_dir),
+                        "--health-timeout",
+                        "2",
+                    ],
+                    cwd=repository,
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                    env=environment,
+                )
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn(
+                    "success manifest path must be a regular, non-symlink file",
+                    result.stderr,
+                )
+                if destination_kind == "directory":
+                    self.assertTrue(manifest.is_dir())
+                    self.assertEqual(list(manifest.iterdir()), [])
+                else:
+                    self.assertTrue(manifest.is_symlink())
+                    self.assertEqual(target.read_text(), "must remain unchanged\n")
+                self.assertEqual(
+                    list(state_dir.glob(".last-successful-deployment.*")), []
+                )
+                self.assertFalse(docker_log.exists())
+
+    def test_corrupt_success_manifests_are_not_reported_as_rollback(self) -> None:
+        previous = "1" * 40
+        canonical = self.deployment_manifest(previous)
+        cases = {
+            "missing-final-newline": canonical.rstrip("\n"),
+            "extra-blank-line": canonical + "\n",
+            "unterminated-trailing-bytes": canonical + "trailing",
+        }
+        for name, contents in cases.items():
+            with (
+                self.subTest(name=name),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
+                base = Path(temporary)
+                repository, sha = self.setUpRepository(base)
+                fake_bin = self.make_fake_docker(base)
+                environment, env_file, _ = self.environment(base, fake_bin)
+                environment["FAKE_UNHEALTHY"] = "1"
+                state_dir = base / "state"
+                state_dir.mkdir()
+                marker = state_dir / "last-successful-deployment"
+                marker.write_text(contents, encoding="utf-8")
+                marker.chmod(0o600)
+
+                result = subprocess.run(
+                    [
+                        str(repository / "deploy" / "scripts" / "deploy.sh"),
+                        sha,
+                        "--env-file",
+                        str(env_file),
+                        "--state-dir",
+                        str(state_dir),
+                        "--health-timeout",
+                        "1",
+                    ],
+                    cwd=repository,
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                    env=environment,
+                )
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("Rollback commit:", result.stderr)
+                self.assertEqual(marker.read_text(encoding="utf-8"), contents)
 
     def test_rollback_requires_and_forwards_an_explicit_commit(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
@@ -1258,11 +1610,16 @@ exit 97
                 env=environment,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn(f"Rollback target {sha} is healthy", result.stdout)
+            self.assertIn(
+                f"Rollback target {sha} is healthy for the selected deterministic service set",
+                result.stdout,
+            )
 
 
 class CleanupScriptTests(unittest.TestCase):
-    def test_cleanup_only_removes_stopped_project_containers_and_unused_labeled_images(self) -> None:
+    def test_cleanup_only_removes_stopped_project_containers_and_unused_labeled_images(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
             base = Path(temporary)
             fake_bin = base / "bin"
@@ -1277,7 +1634,9 @@ exit 0
 """,
             )
             env_file = base / "production.env"
-            env_file.write_text("DATA_MODE=demo\nAI_PROVIDER=fixture\n", encoding="utf-8")
+            env_file.write_text(
+                "DATA_MODE=demo\nAI_PROVIDER=fixture\n", encoding="utf-8"
+            )
             env_file.chmod(0o600)
             environment = os.environ.copy()
             environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
@@ -1299,10 +1658,17 @@ exit 0
             invocations = log.read_text(encoding="utf-8").splitlines()
             self.assertTrue(any(" rm --force" in f" {line}" for line in invocations))
             self.assertTrue(
-                any("label=com.pokecrack.runtime=worker" in line and "until=48h" in line for line in invocations)
+                any(
+                    "label=com.pokecrack.runtime=worker" in line and "until=48h" in line
+                    for line in invocations
+                )
             )
             self.assertTrue(
-                any("label=com.pokecrack.runtime=auth-browser" in line and "until=48h" in line for line in invocations)
+                any(
+                    "label=com.pokecrack.runtime=auth-browser" in line
+                    and "until=48h" in line
+                    for line in invocations
+                )
             )
             combined = "\n".join(invocations)
             self.assertNotIn(" down", combined)
@@ -1310,7 +1676,11 @@ exit 0
 
 
 class ComposeSecurityPolicyTests(unittest.TestCase):
-    def render(self) -> dict[str, object]:
+    def render(self, *, include_unready: bool = True) -> dict[str, object]:
+        if shutil.which("docker") is None:
+            self.skipTest(
+                "Docker CLI is unavailable; CI performs the Compose render contract"
+            )
         environment = os.environ.copy()
         environment.update(
             {
@@ -1321,6 +1691,10 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
                 "NOVNC_PASSWORD_FILE": "/tmp/pokecrack-test-novnc-password",
             }
         )
+        if include_unready:
+            environment["COMPOSE_PROFILES"] = "unready-full"
+        else:
+            environment.pop("COMPOSE_PROFILES", None)
         result = subprocess.run(
             [
                 "docker",
@@ -1345,7 +1719,14 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
     def test_services_have_health_hardening_limits_and_private_egress(self) -> None:
         document = self.render()
         services = document["services"]
-        expected = {"collector", "auth-browser", "ai-worker", "aggregator", "scheduler", "watchdog"}
+        expected = {
+            "collector",
+            "auth-browser",
+            "ai-worker",
+            "aggregator",
+            "scheduler",
+            "watchdog",
+        }
         self.assertEqual(set(services), expected)
         self.assertTrue(document["networks"]["internal"]["internal"])
         self.assertFalse(document["networks"]["egress"].get("internal", False))
@@ -1357,29 +1738,43 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
             self.assertEqual(set(service["networks"]), {"internal", "egress"}, name)
             self.assertGreater(float(service["cpus"]), 0, name)
             self.assertGreater(int(service["mem_limit"]), 0, name)
+            self.assertEqual(service["logging"]["driver"], "local", name)
+            self.assertEqual(service["logging"]["options"]["max-size"], "10m", name)
+            self.assertEqual(service["logging"]["options"]["max-file"], "5", name)
         worker_images = {
-            services[name]["image"]
-            for name in expected - {"auth-browser"}
+            services[name]["image"] for name in expected - {"auth-browser"}
         }
         self.assertEqual(len(worker_images), 1)
 
-    def test_worker_services_do_not_receive_unused_supabase_service_role_secret(self) -> None:
+    def test_default_compose_profile_contains_only_tcgdex_core_services(self) -> None:
+        services = self.render(include_unready=False)["services"]
+        self.assertEqual(set(services), {"collector", "scheduler", "watchdog"})
+
+    def test_worker_services_do_not_receive_unused_supabase_service_role_secret(
+        self,
+    ) -> None:
         services = self.render()["services"]
         for name, service in services.items():
-            self.assertNotIn("SUPABASE_SECRET_KEY", service.get("environment", {}), name)
+            self.assertNotIn(
+                "SUPABASE_SECRET_KEY", service.get("environment", {}), name
+            )
         production_env = (DEPLOY_ROOT / "env" / "production.env.example").read_text()
         self.assertNotIn("SUPABASE_SECRET_KEY", production_env)
         root_env = (REPOSITORY_ROOT / ".env.example").read_text()
         self.assertNotIn("SUPABASE_SECRET_KEY", root_env)
 
-    def test_root_example_environment_defaults_to_network_free_fixture_mode(self) -> None:
+    def test_root_example_environment_defaults_to_network_free_fixture_mode(
+        self,
+    ) -> None:
         root_env = (REPOSITORY_ROOT / ".env.example").read_text()
         self.assertIn("DATA_MODE=demo", root_env)
         self.assertIn("AI_PROVIDER=fixture", root_env)
         self.assertIn("SCRAPLING_DYNAMIC_ENABLED=false", root_env)
         self.assertIn("OPENCLI_ENABLED=false", root_env)
 
-    def test_only_loopback_novnc_is_published_and_sensitive_volumes_are_declared(self) -> None:
+    def test_only_loopback_novnc_is_published_and_sensitive_volumes_are_declared(
+        self,
+    ) -> None:
         document = self.render()
         services = document["services"]
         for name, service in services.items():
@@ -1396,17 +1791,27 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertNotIn("/var/run/docker.sock", rendered)
         self.assertNotRegex(rendered, r'"published"\s*:\s*"?(9222|5900|19825)')
 
-    def test_ai_worker_receives_explicit_cost_rates_for_fail_closed_budgeting(self) -> None:
+    def test_ai_worker_receives_explicit_cost_rates_for_fail_closed_budgeting(
+        self,
+    ) -> None:
         environment = self.render()["services"]["ai-worker"]["environment"]
         self.assertIn("AI_INPUT_PER_MILLION_AUD", environment)
         self.assertIn("AI_OUTPUT_PER_MILLION_AUD", environment)
         self.assertEqual(environment["AI_MAX_OUTPUT_TOKENS"], "4096")
 
-    def test_youtube_collection_flag_reaches_scheduler_without_sharing_the_api_key(self) -> None:
+    def test_youtube_collection_flag_reaches_scheduler_without_sharing_the_api_key(
+        self,
+    ) -> None:
         compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
-        collector = compose[compose.index("  collector:") : compose.index("  auth-browser:")]
-        scheduler = compose[compose.index("  scheduler:") : compose.index("  watchdog:")]
-        expected_flag = 'YOUTUBE_COLLECTION_ENABLED: "${YOUTUBE_COLLECTION_ENABLED:-false}"'
+        collector = compose[
+            compose.index("  collector:") : compose.index("  auth-browser:")
+        ]
+        scheduler = compose[
+            compose.index("  scheduler:") : compose.index("  watchdog:")
+        ]
+        expected_flag = (
+            'YOUTUBE_COLLECTION_ENABLED: "${YOUTUBE_COLLECTION_ENABLED:-false}"'
+        )
         self.assertIn(expected_flag, collector)
         self.assertIn(expected_flag, scheduler)
         self.assertIn("YOUTUBE_API_KEY:", collector)
@@ -1421,8 +1826,12 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("rm -rf /var/lib/apt/lists/*", dockerfile)
 
     def test_auth_browser_pins_opencli_and_starts_its_loopback_daemon(self) -> None:
-        dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(encoding="utf-8")
-        entrypoint = (DEPLOY_ROOT / "auth-browser-entrypoint.sh").read_text(encoding="utf-8")
+        dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(
+            encoding="utf-8"
+        )
+        entrypoint = (DEPLOY_ROOT / "auth-browser-entrypoint.sh").read_text(
+            encoding="utf-8"
+        )
         document = self.render()
         build_args = document["services"]["auth-browser"]["build"]["args"]
         self.assertIn("OPENCLI_VERSION", build_args)
@@ -1439,19 +1848,27 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("opencli daemon restart", entrypoint)
         self.assertIn("pokecrack_browser.container_browser", entrypoint)
 
-    def test_auth_browser_runtime_dependencies_and_startup_order_are_health_compatible(self) -> None:
-        dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(encoding="utf-8")
-        entrypoint = (DEPLOY_ROOT / "auth-browser-entrypoint.sh").read_text(encoding="utf-8")
+    def test_auth_browser_runtime_dependencies_and_startup_order_are_health_compatible(
+        self,
+    ) -> None:
+        dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(
+            encoding="utf-8"
+        )
+        entrypoint = (DEPLOY_ROOT / "auth-browser-entrypoint.sh").read_text(
+            encoding="utf-8"
+        )
         healthcheck = (DEPLOY_ROOT / "auth-browser-healthcheck.sh").read_text(
             encoding="utf-8"
         )
         self.assertIn("services/auth-browser/pyproject.toml", dockerfile)
-        self.assertIn("pip install --no-cache-dir /opt/pokecrack/auth-browser", dockerfile)
+        self.assertIn(
+            "pip install --no-cache-dir /opt/pokecrack/auth-browser", dockerfile
+        )
         self.assertIn("pokecrack-browser --version", dockerfile)
         self.assertNotIn("PYTHONPATH=", dockerfile)
         manager_start = entrypoint.index("pokecrack_browser.container_browser")
-        cdp_probe = entrypoint.index('/json/version')
-        daemon_start = entrypoint.index('opencli daemon restart')
+        cdp_probe = entrypoint.index("/json/version")
+        daemon_start = entrypoint.index("opencli daemon restart")
         self.assertLess(manager_start, cdp_probe)
         self.assertLess(cdp_probe, daemon_start)
         self.assertNotIn('chromium "${chromium_arguments[@]}"', entrypoint)
@@ -1460,8 +1877,8 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("process_matches_identity", healthcheck)
         self.assertIn("opencli doctor", healthcheck)
         self.assertIn("run_bounded_process", healthcheck)
-        self.assertIn('if [[ ${OPENCLI_ENABLED:-false} == true ]]; then', healthcheck)
-        self.assertIn('/json/version', healthcheck)
+        self.assertIn("if [[ ${OPENCLI_ENABLED:-false} == true ]]; then", healthcheck)
+        self.assertIn("/json/version", healthcheck)
 
     def test_auth_browser_uses_canonical_extension_path(self) -> None:
         document = self.render()
@@ -1476,24 +1893,33 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertEqual(secret["gid"], "10001")
         self.assertEqual(secret["mode"], "0400")
         extension_mount = next(
-            mount for mount in service["volumes"]
+            mount
+            for mount in service["volumes"]
             if mount["target"] == "/opt/pokecrack/opencli-extension"
         )
         self.assertEqual(extension_mount["type"], "bind")
         self.assertEqual(extension_mount["source"], "/tmp/pokecrack-test-extension")
         self.assertTrue(extension_mount["read_only"])
         compose_source = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
-        self.assertIn("${OPENCLI_EXTENSION_DIR:-/opt/pokecrack/opencli-extension}", compose_source)
-        self.assertIn("create_host_path: false", compose_source)
-        self.assertFalse(
-            extension_mount.get("bind", {}).get("create_host_path", False)
+        self.assertIn(
+            "${OPENCLI_EXTENSION_DIR:-/opt/pokecrack/opencli-extension}", compose_source
         )
-        self.assertTrue(any("uid=10001" in item and "gid=10001" in item for item in service["tmpfs"]))
-        dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(encoding="utf-8")
+        self.assertIn("create_host_path: false", compose_source)
+        self.assertFalse(extension_mount.get("bind", {}).get("create_host_path", False))
+        self.assertTrue(
+            any(
+                "uid=10001" in item and "gid=10001" in item for item in service["tmpfs"]
+            )
+        )
+        dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(
+            encoding="utf-8"
+        )
         self.assertIn("/profiles", dockerfile)
         self.assertIn("install -d -o 10001 -g 10001 -m 0700", dockerfile)
 
-    def test_worker_service_roles_delegate_live_readiness_to_the_worker_composition(self) -> None:
+    def test_worker_service_roles_delegate_live_readiness_to_the_worker_composition(
+        self,
+    ) -> None:
         entrypoint = (DEPLOY_ROOT / "worker-service-entrypoint.sh").read_text()
         self.assertNotIn('if [[ "${DATA_MODE:-demo}" != "demo" ]]', entrypoint)
         self.assertIn("collector|ai-worker|watchdog)", entrypoint)
@@ -1535,10 +1961,14 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
                     env=environment,
                 )
                 self.assertEqual(result.returncode, 1, result.stderr)
-                self.assertEqual(invocation.read_text(encoding="utf-8").strip(), expected)
+                self.assertEqual(
+                    invocation.read_text(encoding="utf-8").strip(), expected
+                )
                 self.assertNotIn("production database-backed", result.stderr)
 
-    def test_live_worker_concurrency_defaults_to_supported_single_process_mode(self) -> None:
+    def test_live_worker_concurrency_defaults_to_supported_single_process_mode(
+        self,
+    ) -> None:
         source = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
         self.assertIn('WORKER_MAX_CONCURRENCY: "${WORKER_MAX_CONCURRENCY:-1}"', source)
         root_example = (REPOSITORY_ROOT / ".env.example").read_text(encoding="utf-8")
@@ -1547,7 +1977,9 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         )
         self.assertIn("WORKER_MAX_CONCURRENCY=1", root_example)
         self.assertIn("WORKER_MAX_CONCURRENCY=1", production_example)
-        self.assertIn("CHROMIUM_PROFILE_ROOT_HOST=/opt/pokecrack/browser-profiles", root_example)
+        self.assertIn(
+            "CHROMIUM_PROFILE_ROOT_HOST=/opt/pokecrack/browser-profiles", root_example
+        )
         self.assertIn(
             "CHROMIUM_PROFILE_ROOT_HOST=/opt/pokecrack/browser-profiles",
             production_example,
