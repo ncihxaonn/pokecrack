@@ -40,13 +40,13 @@ The deployment artifacts define `collector`, `ai-worker`, `aggregator`, `schedul
 
 `ingest.jobs` is the durable queue contract: bounded attempts, finite leases, lease-expiry recovery, and terminal states. Durable `schedule_slots` reserve a UTC slot even after its job becomes terminal; schedulers use interval buckets rather than depending on an exact loop phase. The forward fencing protocol increments `lease_generation` on every claim; heartbeat, pause, fail, and completion must match the exact owner and generation while the database-clock lease is live. Claiming uses `FOR UPDATE SKIP LOCKED`.
 
-Every persistent collector has its own transactional database boundary. Cleanup uses `finalize_cleanup_job`. TCGdex uses a fenced policy/request-gate preflight and `finalize_tcgdex_sets_job`. YouTube discovery uses `begin_youtube_discovery_job` before any network call and `finalize_youtube_discovery_job` after bounded `search.list` and optional `channels.list` calls. The finalizer rechecks the exact lease, generation, policy, request gate, result version, identities, and size bounds before atomically upserting private activity-only rows and completing the job. A stale lease, disabled kill switch, malformed response, or identity collision produces no partial persistence. Future persistent handlers still require their own typed finalizer and external idempotency. PostgreSQL is already required and is adequate for expected low concurrency. Omitting Redis removes another credentialed, patched, monitored, backed-up stateful service. Add a broker only after measured latency/throughput or lock pressure proves this design insufficient. Repository contracts are not evidence that a migration or worker revision has been deployed.
+Every persistent collector has its own transactional database boundary. Cleanup uses `finalize_cleanup_job`. TCGdex uses a fenced policy/request-gate preflight and `finalize_tcgdex_sets_job`. YouTube discovery uses `begin_youtube_discovery_job` before one bounded `search.list` call and `finalize_youtube_discovery_job` afterward. The finalizer rechecks the exact lease, generation, policy, request gate, result version, identities, and size bounds before atomically upserting the dedicated `UNLOGGED`, forced-RLS `ingest.youtube_discoveries` cache and completing the job. That cache has no path into generic source items, extraction, openings, analytics, Admin, or public relations. A stale lease, disabled kill switch, malformed response, or identity collision produces no partial persistence. Future persistent handlers still require their own typed finalizer and external idempotency. PostgreSQL is already required and is adequate for expected low concurrency. Omitting Redis removes another credentialed, patched, monitored, backed-up stateful service. Add a broker only after measured latency/throughput or lock pressure proves this design insufficient. Repository contracts are not evidence that a migration or worker revision has been deployed.
 
 ## Data flow
 
 1. The scheduler creates idempotent jobs; workers lease with bounded attempts.
 2. A collector resolves an exact source policy. Unknown or disabled domains fail closed.
-3. Metadata/excerpts are normalized and deduplicated; third-party video, audio, captions, thumbnails, channel names, and raw channel identifiers are not retained.
+3. Metadata/excerpts are normalized and deduplicated according to each source's exact contract. YouTube retains only the video identity, canonical URL, title, publication timestamp, and lifecycle fields; video, audio, captions, thumbnails, descriptions, query/rank associations, channel data, and derived classifications are not retained.
 4. Deterministic bounds and catalog checks precede any AI call.
 5. Independent extraction and validation must agree; one escalation can break a tie. Remaining conflict or low confidence is rejected.
 6. Only accepted, complete, nonduplicate tier A/B openings with a verified positive pack denominator and an eligible geography contribute to statistics.
@@ -60,9 +60,12 @@ Every persistent collector has its own transactional database boundary. Cleanup 
 - Compose has an internal-only network plus a non-published bridge needed for outbound Internet/Supabase. No service binds a public host interface.
 - Host loopback `6080` is the sole published browser-support port. CDP, raw VNC, OpenCLI daemon, PostgreSQL, and Docker socket are not published/mounted.
 - Browser profiles/cookies live only in a mode-`0700` VPS volume and are account credentials, not project data.
-- The database backup stream strips retention-bounded YouTube discovery rows and
-  their source parents before compression; a malformed or ambiguous dump fails
-  without advancing the success marker.
+- The logical database backup stream strips all data rows from the dedicated
+  retention-bounded YouTube cache before compression; a malformed or ambiguous
+  dump fails without advancing the success marker. The sanitizer also uniquely
+  verifies the cache's `CREATE UNLOGGED TABLE` header inside that same dump.
+  Provider-managed snapshot retention must be revalidated separately before the
+  feature is enabled.
 
 ## Failure behavior
 

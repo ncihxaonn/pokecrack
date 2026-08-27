@@ -27,11 +27,14 @@ frozen to every six hours and enqueues exactly five versioned global-English
 queries. The scheduler receives the flag but no credential; only the collector
 receives a dedicated YouTube Data API key. Every request is fenced by
 `begin_youtube_discovery_job` and every result by
-`finalize_youtube_discovery_job`. The adapter can call only the fixed official
-`search.list` and bounded `channels.list` endpoints. Neither live path accepts an
-arbitrary URL or fetches video, audio, captions, thumbnails, cards, rarity,
-openings, or probability evidence. The disabled fixture proves fail-closed
-behavior. Real retailer domains are not enabled by default.
+`finalize_youtube_discovery_job`. The adapter can make only one fixed official
+`search.list` request per job; it never calls `channels.list`. It persists only
+the exact minimal video identity, URL, title, publication timestamp and policy
+lifecycle fields in a dedicated transient table. Neither live path accepts an
+arbitrary URL or fetches video, audio, captions, thumbnails, descriptions,
+channel metadata, cards, rarity, openings, or probability evidence. The
+disabled fixture proves fail-closed behavior. Real retailer domains are not
+enabled by default.
 
 ## Required review before enabling a source
 
@@ -43,4 +46,4 @@ No CAPTCHA bypass, stealth/proxy rotation, credential sharing, purchased dataset
 
 ## Provenance
 
-Store source policy/version, canonical identity, collection timestamp, adapter version and hashes privately. Public output should expose source class/diversity and methodology, not sensitive account identity or raw payload. Takedown/terms incidents disable the policy first, preserve minimal audit evidence, and remove retained content as required.
+Store source policy/version, canonical identity, collection timestamp, adapter version and only the source-specific fields approved by its exact contract. YouTube discovery is an explicit minimal-field exception: no hashes, query/rank provenance, channel data, inferred classifications, or derived hints are retained. Public output should expose source class/diversity and methodology, not sensitive account identity or raw payload. Takedown/terms incidents disable the policy first, preserve only permitted audit evidence, and remove retained content as required.

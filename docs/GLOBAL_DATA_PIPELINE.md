@@ -9,7 +9,7 @@ social, marketplace, or catalog metadata.
 | Class | Examples | Allowed use |
 | --- | --- | --- |
 | `catalog` | TCGdex set metadata | Set/language identity and catalog matching only |
-| `activity_only` | YouTube search metadata, channel-country proxy, unverified product or batch hints | Private discovery coverage and review queues only |
+| `activity_only` | Minimal YouTube search-result metadata | Private discovery coverage only |
 | `statistics` | Complete, nonduplicate opening with a verified pack denominator and tier A/B evidence | Observed-rate calculations after deterministic and independent validation |
 
 The tier-D YouTube discovery records defined here never create an opening, hit,
@@ -22,29 +22,27 @@ a listing, or a channel country is not evidence that a region has better packs.
 
 The live adapter uses only the official YouTube Data API. Each job selects one
 exact, versioned query by name; job payloads cannot supply arbitrary queries,
-URLs, regions, or endpoints. The adapter may call `search.list` and one bounded
-`channels.list` enrichment request. It must not download video, audio, captions,
-thumbnails, channel names, or raw channel identifiers.
+URLs, regions, or endpoints. The adapter may make exactly one bounded
+`search.list` request. It must not call `channels.list` or download video, audio,
+captions, thumbnails, descriptions, channel metadata, or raw channel identifiers.
 
 The five exact global-English queries run on one fixed six-hour schedule when
 the feature is enabled. Both the registry and network adapter independently
 verify the frozen query text, `order=date`, 25-result cap, 30-day publication
-window, metadata-only flag, and absence of `regionCode` before network I/O. One
-30-second monotonic budget covers request spacing, `search.list`, and the
-optional `channels.list` enrichment. Persisted channel identity is a
-domain-separated, case-sensitive SHA-256 digest of the opaque API identifier.
+window, metadata-only flag, and absence of `regionCode` before network I/O. The
+single request has a fixed 30-second deadline and a 2 MiB raw-response cap.
 
-Persisted metadata is retention-bounded and always classified as evidence tier
-D / `activity_only`. It must be refreshed or deleted within 30 days. Deterministic
-parsing may add unverified hints for the three supported sealed product types and
-explicitly labelled batch or lot codes. Those hints route later review; they do
-not promote evidence.
+Persistence is intentionally minimal: video ID, canonical watch URL, title,
+publication timestamp, exact policy/version identifiers, first/last-seen
+timestamps, and expiry. It stores no query association, result rank,
+description, channel identity/country, content hash, inferred language,
+product/batch hint, category, engagement metric, or geography. Every row is
+private tier-D / `activity_only` metadata and expires after 28 days unless an
+official API refresh updates that same exact record.
 
 YouTube `regionCode` describes availability in a viewer market, not the physical
-location of an opening, so it is not used for geography. A creator-configured
-channel country may be retained as a coarse `youtube_channel_country` proxy. It
-must be labelled as a channel activity proxy, never as an observed opening,
-purchase, store, batch, or pull-rate location.
+location of an opening, so it is neither requested nor used. Search metadata has
+no route to a country, store, purchase, batch, opening, denominator, or rate.
 
 ## Persistence and failure semantics
 
@@ -52,30 +50,35 @@ The live path is:
 
 1. The UTC scheduler sees only the explicit collection flag and, when enabled,
    enqueues one job per exact query every six hours. Any schedule drift is a
-   startup error. Operators must not enable the flag until the collector has its
-   dedicated YouTube API key; the scheduler never receives or verifies that key.
+   startup error. The same flag freezes cleanup to its exact daily schedule.
+   Operators must not enable the flag until the collector has its dedicated
+   YouTube API key; the scheduler never receives or verifies that key.
 2. PostgreSQL verifies the exact job payload, current lease generation, enabled
    source policy, request spacing, and persistent request-gate ownership before
    any network request.
-3. The worker performs bounded official API calls and normalizes the response
+3. The worker performs one bounded official API call and normalizes the response
    into an exact versioned result contract.
 4. A typed database finalizer rechecks the lease, source kill switch, result
-   shape, identity consistency, and request gate. It then upserts private source
-   items and query provenance, completes the job, and releases the gate in one
-   transaction.
+   shape, identity consistency, and request gate. It then upserts only the
+   dedicated private `ingest.youtube_discoveries` cache, completes the job, and
+   releases the gate in one transaction.
 
 Stale leases, disabled policies, malformed or oversized responses, identity
-collisions, and failed finalization perform no partial persistence. Live and demo
-source identities are isolated. Database triggers prohibit these tier-D rows from
-entering extraction, opening, batch-sighting, or duplicate-cluster relationships,
-so bounded cleanup can delete the complete API record and its query provenance at
-the 30-day boundary unless a later official API call refreshed it.
+collisions, and failed finalization perform no partial persistence. The cache is
+an `UNLOGGED`, forced-RLS table with no foreign key or promotion path into generic
+source, extraction, opening, batch-sighting, duplicate, analytics, Admin, or
+public relations. Crash loss is acceptable; the API is the refresh source. Daily
+bounded cleanup deletes each row independently once its database-clock expiry is
+reached. A 12-hour scheduler restart catch-up keeps the supported 28-day
+lifecycle below 30 days with operational margin; collection must remain off
+without watchdog, stale-cleanup, and queue-delay alerts.
 
-Managed database backups apply the same boundary. A fail-closed two-pass filter
-derives the exact policy and discovery parents from one internally consistent
-plain dump, then removes all discovery rows and matching source parents before
-compression. It also catches parents rebound away from the policy; malformed or
-ambiguous dump structure aborts the backup without advancing its success marker.
+Managed logical backups apply the same boundary. A fail-closed two-pass filter
+verifies the exact policy and exactly one `CREATE UNLOGGED TABLE` definition from
+one internally consistent plain dump, then removes every
+`ingest.youtube_discoveries` data row before compression. It does not remove
+generic source rows. Malformed or ambiguous dump structure aborts the backup
+without advancing its success marker.
 
 ## Global validation versus publication
 
@@ -107,10 +110,19 @@ rate”, “guaranteed”, or imply a causal regional/store advantage.
   rotated.
 - Store production credentials outside Git in a mode `0600` environment file.
 - Keep the database source policy as the independent runtime kill switch.
+- Keep the exact six-hour discovery cron and daily cleanup cron. Require healthy
+  scheduler/watchdog heartbeats plus stale-cleanup and queue-delay alerts; the
+  12-hour catch-up is a bounded recovery path, not an unlimited outage guarantee.
+- Before enabling collection, create and verify a dedicated `NOINHERIT` worker
+  database role with only the queue and fenced-RPC permissions it needs. The
+  existing broad `service_role` membership is not an acceptable steady-state
+  collector credential.
+- Revalidate the hosted provider's automatic-backup and point-in-time retention
+  behavior before enabling the feature; logical backup filtering alone cannot
+  sanitize provider-managed snapshots.
 - Review YouTube API retention and developer-policy changes before increasing
   retained fields, duration, query volume, or endpoint scope.
 
 Primary references: [YouTube search.list](https://developers.google.com/youtube/v3/docs/search/list),
-[channels.list](https://developers.google.com/youtube/v3/docs/channels/list),
 [quota costs](https://developers.google.com/youtube/v3/determine_quota_cost), and
 [YouTube API developer policies](https://developers.google.com/youtube/terms/developer-policies).

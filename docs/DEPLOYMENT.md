@@ -12,7 +12,10 @@ account-specific IDs/URLs, exact SHA and health output.
 > **Current release blocker:** this branch adds a fenced, metadata-only global
 > YouTube discovery path and migration `20260829000000`, but neither is deployed.
 > `YOUTUBE_COLLECTION_ENABLED` remains false and the dedicated API-restricted key
-> is absent. Current project rules require fresh explicit approval after CI
+> is absent. The current database worker login also inherits `service_role`; a
+> dedicated `NOINHERIT`, least-privilege collector role and provider-managed
+> backup-retention revalidation are required before enablement. Current project
+> rules require fresh explicit approval after CI
 > before changing the hosted schema or VPS. General URL/browser collection,
 > AI-worker, and aggregator roles remain fail closed. Do not describe or deploy
 > this as a complete live research pipeline. The steps below are an
@@ -27,11 +30,13 @@ Keep `DATA_MODE=demo`, `AI_PROVIDER=fixture`, `OPENCLI_ENABLED=false`, public si
 ## 2. Database
 
 1. Create a dedicated Supabase project; record region/project reference privately.
-2. Test all migrations and pgTAP locally in Docker-capable CI.
+2. Test all migrations and pgTAP locally in Docker-capable CI. For YouTube,
+   verify the dedicated cache is `UNLOGGED`, forced-RLS, service-role read-only,
+   and absent from public/Admin/analytics relations.
 3. Take/verify a backup before production changes.
 4. Before the lease-fencing migration, stop every legacy worker and verify that no old worker process or in-flight job remains. This protocol upgrade is not compatible with a rolling old/new worker deployment. Run `.github/workflows/migrate-database.yml` manually against a protected environment. `confirm_sha` must equal `GITHUB_SHA`; supply the fresh backup reference. Before any remote push, the workflow reads the applied migration versions, audits only pending migrations, requires an exact reasoned fingerprint for every reviewed `DELETE`, rejects `DROP`/`TRUNCATE`, builds the schema locally, and rejects generated TypeScript drift. It previews and applies forward migrations only—no automatic destructive rollback/reset. Deploy only generation-aware workers after the migration; never roll code back to the legacy claim/naked-cleanup protocol.
 5. Create the first admin account manually; disable public signup; configure redirect/email settings deliberately.
-6. Verify private-schema grants/RLS and query the intended public-safe API as anon. Never expose DB/service-role credentials to browser variables.
+6. Verify private-schema grants/RLS and query the intended public-safe API as anon. Create a dedicated `NOINHERIT` collector login with only queue access and execute permission on the fenced collector RPCs; do not reuse broad `service_role` membership as the steady-state worker permission model. Never expose DB/service-role credentials to browser variables.
 
 ## 3. Web (Vercel)
 

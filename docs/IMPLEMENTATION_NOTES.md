@@ -67,64 +67,61 @@ documented in `docs/GLOBAL_DATA_PIPELINE.md`.
 
 The worker implements one job per exact query for five fixed, versioned global
 English searches: booster box, ETB, booster bundle, pack opening, and opening
-batch-code discovery. It uses only the official `search.list` endpoint and at
-most one bounded `channels.list` enrichment request.
+batch-code discovery. Each job makes exactly one official `search.list` request;
+there is no channel enrichment request.
 
 The adapter:
 
-- uses fixed `youtube.googleapis.com` endpoint constants, disables environment
+- uses a fixed `youtube.googleapis.com` search endpoint, disables environment
   proxies and redirects, requests identity encoding, rejects compressed
-  responses, shares one 30-second monotonic deadline across spacing and both API
-  calls, and counts raw bytes against a 2 MiB cap;
+  responses, applies a fixed 30-second deadline, and counts raw bytes against a
+  2 MiB cap;
 - independently rejects any drift from the five exact query texts,
   `order=date`, 25-result cap, 30-day publication window, metadata-only flag, or
   absent `regionCode` before network I/O;
 - validates duplicate JSON keys, exact 11-character video IDs, response shape,
-  timestamps, and bounded normalized text;
-- never downloads or retains video, audio, captions, thumbnails, channel names,
-  or raw channel IDs;
-- stores a domain-separated, case-sensitive SHA-256 channel-ID hash and, when
-  supplied by YouTube, an explicitly labelled channel-country proxy. It does
-  not use `regionCode` as opening geography;
-- extracts only deterministic, unverified hints for the three supported sealed
-  product types and up to five explicitly labelled batch/lot codes;
-- persists every result as tier D / `activity_only`, with 30-day expiry.
+  timestamps, and bounded normalized title text;
+- never downloads or retains video, audio, captions, thumbnails, descriptions,
+  channel identity/country, or raw channel IDs;
+- stores no query/rank association, content hash, inferred language,
+  product/batch hint, category, engagement metric, or geography;
+- persists only video ID, canonical URL, title, publication time, exact policy
+  versions and lifecycle timestamps in a private 28-day cache.
 
 The scheduler receives only `YOUTUBE_COLLECTION_ENABLED`; it never receives the
 API key. The collector requires both the flag and a dedicated key. Enabling the
-feature also freezes `SCHEDULE_OFFICIAL_API` to exactly every six hours, so an
-operator cannot accidentally enqueue expensive searches every minute. The
-checked-in flag default is false, and the database source policy remains an
-independent kill switch.
+feature freezes `SCHEDULE_OFFICIAL_API` to exactly every six hours and
+`SCHEDULE_CLEANUP` to exactly daily, so an operator cannot accidentally enqueue
+expensive searches every minute or weaken retention by moving cleanup weekly.
+The daily cleanup has a bounded 12-hour restart catch-up, leaving operational
+margin below 30 days for the supported recovery window. The checked-in flag
+default is false, and the database source policy remains an independent kill
+switch.
 
 ### Fenced persistence
 
 Migration `20260829000000_youtube_global_discovery.sql` adds:
 
-- mode-scoped canonical URL and platform/external identity constraints;
-- private, forced-RLS `ingest.source_discoveries` query/job provenance;
+- a dedicated `UNLOGGED`, forced-RLS `ingest.youtube_discoveries` table that is
+  isolated from generic sources, extraction, openings, analytics, Admin, and
+  public relations;
 - an exact live `youtube_discovery` source policy and persistent request gate;
 - `begin_youtube_discovery_job`, which validates the job payload, current lease
   generation, policy, request spacing, and gate ownership before network I/O;
 - `finalize_youtube_discovery_job`, which rechecks the lease, policy, gate,
-  versioned result shape, identities, bounds, and metadata before atomically
-  upserting private rows and completing the job;
-- composite `(id, is_demo)` foreign keys that prevent cross-mode source/job
-  provenance even if a parent mode is edited;
-- immediate and deferred end-state triggers that prohibit YouTube discovery
-  rows from extraction, openings, batch sightings, or duplicate clusters,
-  including sibling writable-CTE attempts and policy rebinds;
-- hard cleanup ordered by the immutable
-  `MAX(source_discoveries.last_seen_at) + 30 days` marker, with exact-policy
-  `expires_at` only as a no-marker fallback. The complete source row and query
-  provenance are deleted; the mutable cache expiry cannot starve an expired row
-  behind the bounded cleanup limit;
+  versioned result shape, exact identities and bounds before atomically
+  upserting only the dedicated cache and completing the job;
+- per-row database-clock `expires_at = now + 28 days` refresh semantics and
+  bounded daily deletion ordered by each independent expiry;
+- service-role read-only table access, with mutation available only through the
+  fenced security-definer finalizer;
 - post-network success/failure timestamps that preserve cross-job request
   spacing before releasing the persistent gate.
 
 The RPCs are service-role-only. `anon`, `authenticated`, and `public` receive
 no execute or direct DML access. A stale lease, disabled policy, malformed result,
-identity rebind, or second-item conflict produces no partial persistence.
+identity rebind, or second-item conflict produces no partial persistence. The
+table is disposable across crashes and has no WAL/standby-replication guarantee.
 
 ## Verified quality gates
 
@@ -139,27 +136,28 @@ uv run mypy pokecrack_worker
 uv run pytest -q
 ```
 
-Result: **391 passed, 1 optional Scrapling runtime skipped, and 2 subtests
+Result: **398 passed, 1 optional Scrapling runtime skipped, and 2 subtests
 passed**. Ruff and format checks passed; mypy reported no issues in 64 source
 files. Coverage includes flag-off behavior, five scheduler jobs, scheduler
 operation without the key, exact six-hour cadence, query-drift rejection before
-network I/O, preflight deferral, two fixed API calls, 429 retry classification,
+network I/O, preflight deferral, one fixed API call, 429 retry classification,
 malformed-response rejection, raw-byte/content-encoding bounds, stale leases,
 typed finalization, and global-country/AU-publication boundaries.
 
 ### Database
 
-- Static migration/type contracts: **43/43 passed**.
+- Static migration/type contracts: **42/42 passed**; the combined static and
+  migration-safety unit suite passed **50/50**.
 - An isolated PostgreSQL 17 container on the previously approved VPS compiled
   all 10 migrations and loaded the synthetic seed without production data or
   credentials.
-- pgTAP plans passed **560/560**: 132 schema/queue, 54 analytics, 79
-  public/security/Admin, 42 seed, 50 lease fencing, 121 TCGdex, and 82 YouTube
+- pgTAP plans passed **538/538**: 132 schema/queue, 54 analytics, 79
+  public/security/Admin, 42 seed, 50 lease fencing, 121 TCGdex, and 60 YouTube
   discovery assertions.
-- The strengthened YouTube file passed **82/82**, including identity-conflict
-  statement rollback, both policy-rebind and fresh-parent writable-CTE attacks,
-  deferred-constraint flushing, immutable-expiry ordering, and hard deletion
-  after an attempted ten-year cache-expiry extension.
+- The dedicated YouTube file passed **60/60**, including exact six-field item
+  shape, 25-item/one-page/four-key-policy bounds, direct-DML denial, fenced
+  finalization, per-row database-clock expiry, independent bounded deletion, and
+  absence of generic source/evidence/public relationships.
 - The temporary database container had no published port or persistent volume
   and was deleted after testing. No hosted schema was changed.
 
@@ -173,15 +171,17 @@ provides the clean replay/pgTAP evidence for this revision.
   counts were shared config 9, shared types 114, and unchanged base Web 105
   (**228/228 total**); Next.js generated 13 static pages.
 - All **32/32** deployment tests that do not invoke Docker passed. Full discovery
-  reported 38 passing tests and six errors solely where Compose rendering tried
+  reported 37 passing tests and six errors solely where Compose rendering tried
   to execute a missing local Docker CLI; no new Compose runtime claim is made
   until CI.
 - The backup sanitizer and backup-script boundary passed **18/18** targeted
   tests. It uses an unlinked mode-`0600` spool and two passes over one dump to
-  remove all YouTube discovery rows plus policy-bound or marker-bound source
-  parents. Preflight/dump mismatch, orphan provenance, malformed COPY data, and
-  sanitizer/`psql` failures all abort atomically without exposing the database
-  URL or advancing the success marker.
+  verify the exact policy and exactly one supported `CREATE UNLOGGED TABLE`
+  header in the same dump, then remove every data row from the dedicated YouTube
+  cache while preserving unrelated generic source rows. Logged/TEMP/missing/
+  duplicate table definitions, preflight/dump mismatch, malformed COPY/INSERT
+  data, and sanitizer/`psql` failures all abort before output without exposing
+  the database URL or advancing the success marker.
 - A read-only live-role probe confirmed `pokecrack_worker` is an inheriting
   `service_role` member but does not itself have `BYPASSRLS`: bare `pg_dump` was
   rejected by forced RLS, while `pg_dump --role=service_role` completed against
@@ -200,29 +200,35 @@ provides the clean replay/pgTAP evidence for this revision.
 
 All YouTube payload tests used fixtures. No credentialed YouTube request was
 made, so this audit proves the adapter, queue, policy, and persistence contract,
-not real global coverage. Channel country remains a creator-configured activity
-proxy, not the physical location of an opening or purchase.
+not real global coverage. The cache contains no geography and cannot identify
+the physical location of an opening or purchase.
 
 Global observed-rate data still needs a verified pack denominator. The preferred
 next data path is a first-party structured opening submission or an authorized
 creator submission that accounts for every opened pack, followed by catalog
 mapping, duplicate controls, independent validation, and the existing minimum
-pack/source thresholds. Search popularity, catalog rows, posts, and batch hints
-must never be used as rate denominators.
+pack/source thresholds. Search popularity, catalog rows, and posts must never be
+used as rate denominators.
 
 ## Remaining release blockers
 
 1. The dedicated, API-restricted YouTube key is absent; automated discovery is
    correctly disabled.
-2. The new migration and worker revision are not deployed or exercised against
+2. The current `pokecrack_worker` login inherits broad `service_role`
+   membership. Collection must remain disabled until an explicitly approved,
+   dedicated `NOINHERIT` worker role is created and verified with only its queue
+   and fenced-RPC permissions, and the exact hosted backup/PITR retention is
+   revalidated. Scheduler/watchdog health plus stale-cleanup and queue-delay
+   alerts must also be verified because the retention catch-up window is finite.
+3. The new migration and worker revision are not deployed or exercised against
    the approved hosted project/VPS. CI must pass before a separate deployment
    approval is requested.
-3. Global denominator-backed ingestion, multilingual discovery, and a reviewed
+4. Global denominator-backed ingestion, multilingual discovery, and a reviewed
    global public metric dimension/v2 DTO do not yet exist. Public v1 stays AU.
-4. AI reservation/accounting and aggregate publication still need durable
+5. AI reservation/accounting and aggregate publication still need durable
    idempotency, staging, revision locking, and atomic publication before they can
    be enabled as unattended production roles.
-5. Auth/Admin identity configuration, browser automation, dead-letter recovery,
+6. Auth/Admin identity configuration, browser automation, dead-letter recovery,
    backup restore, and complete production monitoring remain incomplete or
    unverified.
 
