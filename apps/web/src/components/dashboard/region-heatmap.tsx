@@ -6,42 +6,33 @@ import Link from "next/link";
 
 import type { RegionMetric } from "@/data/types";
 import { formatCompactNumber, formatProbability } from "@/lib/format";
+import { RegionalMap } from "./regional-map";
 import styles from "./region-heatmap.module.css";
 
 export type RegionHeatMetric = "rate" | "packs";
 
-type MapCoordinate = Readonly<{ x: number; y: number }>;
 type GeoCoordinate = Readonly<{ lat: number; lng: number }>;
 
 export interface RegionHeatRow {
-  readonly coordinate: MapCoordinate | null;
+  readonly coordinate: GeoCoordinate | null;
   readonly metricValue: number | null;
   readonly normalized: number | null;
   readonly region: RegionMetric;
+  readonly stateAbbreviation: string | null;
+  readonly stateCode: string | null;
   readonly tone: "cool" | "mid" | "hot" | "withheld";
 }
 
-const regionAnchors: Readonly<Record<string, GeoCoordinate>> = {
-  "au-wa-perth": { lat: -31.9523, lng: 115.8613 },
-  "au-vic-melbourne": { lat: -37.8136, lng: 144.9631 },
-  "au-nsw-sydney": { lat: -33.8688, lng: 151.2093 },
-  "au-qld-brisbane": { lat: -27.4698, lng: 153.0251 },
+const regionMapMetadata: Readonly<Record<string, Readonly<{
+  abbreviation: string;
+  coordinate: GeoCoordinate;
+  stateCode: string;
+}>>> = {
+  "au-wa-perth": { abbreviation: "WA", coordinate: { lat: -25, lng: 121 }, stateCode: "5" },
+  "au-vic-melbourne": { abbreviation: "VIC", coordinate: { lat: -37.25, lng: 143.4 }, stateCode: "2" },
+  "au-nsw-sydney": { abbreviation: "NSW", coordinate: { lat: -31.5, lng: 146.2 }, stateCode: "1" },
+  "au-qld-brisbane": { abbreviation: "QLD", coordinate: { lat: -22, lng: 143 }, stateCode: "3" },
 };
-
-// These dimensions and bounds match scripts/generate-world-map.mjs output.
-const worldMap = {
-  width: 190,
-  height: 72,
-  lat: { min: -56, max: 71 },
-  lng: { min: -168, max: 168 },
-} as const;
-
-function projectMapCoordinate(coordinate: GeoCoordinate): MapCoordinate {
-  return {
-    x: worldMap.width * (coordinate.lng - worldMap.lng.min) / (worldMap.lng.max - worldMap.lng.min),
-    y: worldMap.height * (worldMap.lat.max - coordinate.lat) / (worldMap.lat.max - worldMap.lat.min),
-  };
-}
 
 const metricOptions: readonly { value: RegionHeatMetric; label: string }[] = [
   { value: "rate", label: "Observed rate" },
@@ -73,17 +64,19 @@ export function buildRegionHeatRows(
   return regions
     .map((region) => {
       const value = metricValue(region, metric);
-      const anchor = regionAnchors[region.slug];
+      const mapMetadata = regionMapMetadata[region.slug];
       const normalized = value === null || minimum === null || maximum === null
         ? null
         : maximum === minimum
           ? 0.5
           : Math.min(1, Math.max(0, (value - minimum) / (maximum - minimum)));
       return {
-        coordinate: anchor ? projectMapCoordinate(anchor) : null,
+        coordinate: mapMetadata?.coordinate ?? null,
         metricValue: value,
         normalized,
         region,
+        stateAbbreviation: mapMetadata?.abbreviation ?? null,
+        stateCode: mapMetadata?.stateCode ?? null,
         tone: heatTone(normalized),
       } satisfies RegionHeatRow;
     })
@@ -123,7 +116,6 @@ export function RegionHeatmap({ regions }: { regions: readonly RegionMetric[] })
   const rows = useMemo(() => buildRegionHeatRows(regions, metric), [metric, regions]);
   const ticks = legendValues(rows, metric);
   const plotted = rows.filter((row) => row.coordinate !== null);
-  const plottedByHeat = [...plotted].sort((left, right) => (left.normalized ?? -1) - (right.normalized ?? -1));
   const unmappedCount = rows.length - plotted.length;
   const selectedMetricLabel = metric === "rate" ? "Observed rate" : "Sample volume";
 
@@ -131,9 +123,9 @@ export function RegionHeatmap({ regions }: { regions: readonly RegionMetric[] })
     <section className={styles.atlas} aria-labelledby="coverage-title">
       <header className={styles.header}>
         <div>
-          <span className={styles.kicker}>World context · current coverage AU</span>
+          <span className={styles.kicker}>Australia · state-level published coverage</span>
           <h2 id="coverage-title">Observed regional pull map</h2>
-          <p>Compare published regions in this snapshot. Colour shows the relative selected metric; marker size shows sample volume.</p>
+          <p>Compare published regions in this snapshot. State fill shows the relative selected metric; labels show exact aggregate values.</p>
         </div>
         <div className={styles.toggle} role="group" aria-label="Heat map metric">
           {metricOptions.map((option) => (
@@ -151,38 +143,7 @@ export function RegionHeatmap({ regions }: { regions: readonly RegionMetric[] })
 
       <div className={styles.body}>
         <figure className={styles.mapFigure}>
-          <span className={styles.coverageBadge}>AU-only published sample</span>
-          <svg className={styles.map} viewBox={`0 0 ${worldMap.width} ${worldMap.height}`} role="img" aria-labelledby="region-map-title region-map-description" aria-describedby="coverage-caveat">
-            <title id="region-map-title">World map with published Australian regional observations</title>
-            <desc id="region-map-description">An accurate dotted world map provides geographic context. Only Australia has published observations. Coloured heat blooms are regional aggregation anchors, not precise observation locations. Exact values and coverage descriptions are listed beside the map. There are no routes or connections between regions.</desc>
-            <defs>
-              <filter id="regional-heat-blur" x="-80%" y="-80%" width="260%" height="260%">
-                <feGaussianBlur stdDeviation="1.15" />
-              </filter>
-            </defs>
-            <image
-              data-testid="dotted-world-map"
-              href="/world-map-dots.svg"
-              width={worldMap.width}
-              height={worldMap.height}
-              preserveAspectRatio="xMidYMid meet"
-              aria-hidden="true"
-            />
-            <g aria-hidden="true">
-              {plottedByHeat.map((row) => {
-                const coordinate = row.coordinate as MapCoordinate;
-                const radius = 1.15 + Math.min(0.65, Math.sqrt(row.region.packsObserved) / 60);
-                return (
-                  <g className={`${styles.marker} ${styles[row.tone]}`} key={row.region.slug} transform={`translate(${coordinate.x} ${coordinate.y})`}>
-                    <circle className={styles.markerBloom} r={radius * 3.5} filter="url(#regional-heat-blur)" />
-                    <circle className={styles.markerHalo} r={radius * 1.9} />
-                    <circle className={styles.markerRing} r={radius} />
-                    <circle className={styles.markerCore} r="0.48" />
-                  </g>
-                );
-              })}
-            </g>
-          </svg>
+          <RegionalMap rows={rows} metric={metric} metricLabel={selectedMetricLabel} />
 
           <figcaption className={styles.caption}>
             {ticks ? (
@@ -191,7 +152,7 @@ export function RegionHeatmap({ regions }: { regions: readonly RegionMetric[] })
                 <span className={styles.legendTicks} aria-hidden="true"><span>{ticks[0]}</span><span>{ticks[1]}</span><span>{ticks[2]}</span></span>
               </div>
             ) : <span className={styles.noValues}>No published values</span>}
-            <p id="coverage-caveat">Current published coverage is Australia-only. Colours are relative within this snapshot and do not indicate statistical significance. Higher observed results do not predict future packs, stores, products or individual outcomes.{unmappedCount > 0 ? ` ${unmappedCount} region ${unmappedCount === 1 ? "is" : "are"} listed without a map anchor.` : ""}</p>
+            <p id="coverage-caveat">Current published coverage is Australia-only. Uncoloured states have no published value. Colours are relative within this snapshot and do not indicate statistical significance. Boundaries are simplified from <a href="https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs/edition-3-july-2021-june-2026/access-and-downloads/digital-boundary-files" target="_blank" rel="noreferrer">ABS ASGS 2021</a> principal landmasses for cartographic display, not legal definition. Higher observed results do not predict future outcomes.{unmappedCount > 0 ? ` ${unmappedCount} region ${unmappedCount === 1 ? "is" : "are"} listed without a map anchor.` : ""}</p>
           </figcaption>
         </figure>
 

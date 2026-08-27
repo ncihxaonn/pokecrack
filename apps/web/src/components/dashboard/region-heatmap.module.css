@@ -71,44 +71,24 @@
   background: #fff;
 }
 
-.coverageBadge {
-  position: absolute;
-  z-index: 1;
-  top: 1.15rem;
-  left: 1.25rem;
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: .38rem .58rem;
-  background: rgba(255, 255, 255, .9);
-  color: var(--muted);
-  font: 700 10px/1 var(--mono);
-  letter-spacing: .06em;
-  text-transform: uppercase;
-  backdrop-filter: blur(8px);
-}
-
-.map { display: block; width: 100%; height: auto; min-height: 0; }
-
-.marker { color: var(--blue); }
-.markerBloom { fill: currentColor; opacity: .18; }
-.markerHalo { fill: currentColor; opacity: .14; }
-.markerRing { fill: rgba(255, 255, 255, .88); stroke: currentColor; stroke-width: .52; }
-.markerCore { fill: currentColor; stroke: #fff; stroke-width: .26; }
-.marker.cool, .swatch.cool { color: var(--blue); }
-.marker.mid, .swatch.mid { color: var(--violet); }
-.marker.hot, .swatch.hot { color: var(--pink); }
-.marker.withheld, .swatch.withheld { color: #98a1af; }
+.swatch.cool { color: var(--blue); }
+.swatch.mid { color: var(--violet); }
+.swatch.hot { color: var(--pink); }
+.swatch.withheld { color: #98a1af; }
 
 .caption {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 1.25rem;
+  margin-top: .85rem;
   border-top: 1px solid var(--line);
   padding: .85rem .2rem 0;
 }
 
 .caption p { max-width: 600px; color: var(--muted); font-size: .8rem; }
+.caption a { color: var(--ink); text-decoration: underline; text-decoration-color: #c1c7d0; text-underline-offset: 2px; }
+.caption a:hover { color: var(--blue); text-decoration-color: currentColor; }
 .legend { display: grid; width: 190px; flex: 0 0 auto; gap: .35rem; color: var(--muted); font: 650 12px var(--mono); }
 .legendScale { height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--violet), var(--pink)); }
 .legendTicks { display: flex; justify-content: space-between; gap: .35rem; }
@@ -184,7 +164,6 @@
   .caption { flex-direction: column; gap: .65rem; padding-inline: .25rem; }
   .regionList { grid-template-columns: 1fr; }
   .regionList a { min-height: 64px; }
-  .coverageBadge { top: .7rem; left: .85rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {

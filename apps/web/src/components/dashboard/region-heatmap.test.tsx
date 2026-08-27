@@ -1,18 +1,23 @@
 import React from "react";
 import { fireEvent, render, screen, within } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import { DEMO_PUBLIC_DATA } from "@/data/demo";
 import type { RegionMetric } from "@/data/types";
 import { buildRegionHeatRows, RegionHeatmap } from "./region-heatmap";
 
+vi.mock("./regional-map", () => ({
+  RegionalMap: () => <div role="img" aria-label="Australia state and territory choropleth" data-testid="australia-region-map" />,
+}));
+
 describe("RegionHeatmap", () => {
-  it("renders an Australia-only world context with exact accessible regional values", () => {
+  it("renders an Australia state choropleth with exact accessible regional values", () => {
     render(<RegionHeatmap regions={DEMO_PUBLIC_DATA.regions} />);
 
     expect(screen.getByRole("heading", { name: "Observed regional pull map" })).toBeVisible();
-    expect(screen.getByRole("img", { name: /world map with published australian regional observations/i })).toBeVisible();
-    expect(screen.getByTestId("dotted-world-map")).toHaveAttribute("href", "/world-map-dots.svg");
+    expect(screen.getByRole("img", { name: /australia state and territory choropleth/i })).toBeVisible();
+    expect(screen.getByTestId("australia-region-map")).toBeVisible();
+    expect(screen.queryByTestId("dotted-world-map")).not.toBeInTheDocument();
     expect(screen.getByText(/current published coverage is Australia-only/i)).toBeVisible();
     expect(screen.getByRole("button", { name: "Observed rate" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("link", { name: /VIC \/ Melbourne: 16\.1%/i })).toHaveAttribute("href", "/regions/au-vic-melbourne");
