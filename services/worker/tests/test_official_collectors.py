@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import signal
 import subprocess
 import time
@@ -225,6 +226,7 @@ def _curl_metadata(
 
 @dataclass
 class FixtureCurlProcess:
+    pid: int = 424242
     stdout: bytes = b"{}"
     stderr: bytes = field(default_factory=_curl_metadata)
     returncode: int | None = 0
@@ -381,6 +383,64 @@ def test_youtube_curl_transport_fails_closed_if_reaping_stalls_at_hard_deadline(
     assert process.kill_calls == 2
     assert process.active is False
     assert process.wait_timeouts == [pytest.approx(0.2)]
+    assert "fixture-key" not in repr(raised.value)
+
+
+def test_youtube_curl_transport_reaps_process_group_before_propagating_keyboard_interrupt(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    interrupt = KeyboardInterrupt("shutdown requested")
+    process = FixtureCurlProcess(
+        communicate_effects=[interrupt, RuntimeError("cleanup pipe failed")]
+    )
+    factory = FixturePopenFactory(process)
+    group_kills: list[tuple[int, signal.Signals]] = []
+    monkeypatch.setattr(subprocess, "Popen", factory)
+    monkeypatch.setattr(os, "killpg", lambda pid, sig: group_kills.append((pid, sig)))
+
+    with pytest.raises(KeyboardInterrupt) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value is interrupt
+    assert group_kills == [
+        (process.pid, signal.SIGKILL),
+        (process.pid, signal.SIGKILL),
+    ]
+    assert process.kill_calls == 2
+    assert process.active is False
+    assert len(process.communicate_timeouts) == 2
+
+
+def test_youtube_curl_transport_reaps_unexpected_communicate_failure_and_sanitizes_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    process = FixtureCurlProcess(
+        communicate_effects=[RuntimeError("fixture-key must not cross the job boundary")]
+    )
+    factory = FixturePopenFactory(process)
+    group_kills: list[tuple[int, signal.Signals]] = []
+    monkeypatch.setattr(subprocess, "Popen", factory)
+    monkeypatch.setattr(os, "killpg", lambda pid, sig: group_kills.append((pid, sig)))
+
+    with pytest.raises(YouTubeError) as raised:
+        HTTPXYouTubeTransport().get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+    assert raised.value.code == "network_error"
+    assert raised.value.retryable is True
+    assert group_kills == [(process.pid, signal.SIGKILL)]
+    assert process.kill_calls == 1
+    assert process.active is False
+    assert len(process.communicate_timeouts) == 2
     assert "fixture-key" not in repr(raised.value)
 
 

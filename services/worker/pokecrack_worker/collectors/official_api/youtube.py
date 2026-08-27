@@ -6,6 +6,7 @@ import html
 import json
 import os
 import re
+import signal
 import subprocess
 import unicodedata
 from collections.abc import Callable, Mapping
@@ -188,10 +189,20 @@ class HTTPXYouTubeTransport:
                 timeout=_remaining_seconds(transfer_deadline),
             )
         except subprocess.TimeoutExpired:
-            _terminate_and_reap(process, deadline=process_deadline)
+            _cleanup_without_masking(process, deadline=process_deadline)
             if monotonic() > process_deadline:
                 raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
             raise YouTubeError("request_timeout", retryable=True) from None
+        except BaseException as error:
+            # start_new_session isolates curl and any resolver descendants. Always
+            # tear that group down before an interrupt, shutdown, or unexpected
+            # communicate failure can escape this synchronous boundary.
+            _cleanup_without_masking(process, deadline=process_deadline)
+            if isinstance(error, Exception):
+                if monotonic() > process_deadline:
+                    raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
+                raise YouTubeError("network_error", retryable=True) from None
+            raise
 
         if monotonic() > hard_deadline:
             raise YouTubeError("request_timeout", retryable=True)
@@ -244,27 +255,42 @@ def _remaining_seconds(deadline: float) -> float:
 
 
 def _terminate_and_reap(process: subprocess.Popen[bytes], *, deadline: float) -> None:
-    try:
-        process.kill()
-    except OSError:
-        pass
+    _terminate_process_group(process)
     remaining = deadline - monotonic()
     if remaining <= 0:
         return
     try:
         process.communicate(timeout=remaining)
-    except subprocess.TimeoutExpired:
-        try:
-            process.kill()
-        except OSError:
-            pass
+    except BaseException:
+        _terminate_process_group(process)
         remaining = deadline - monotonic()
         if remaining <= 0:
             return
         try:
             process.wait(timeout=remaining)
-        except subprocess.TimeoutExpired:
+        except BaseException:
             return
+
+
+def _cleanup_without_masking(process: subprocess.Popen[bytes], *, deadline: float) -> None:
+    try:
+        _terminate_and_reap(process, deadline=deadline)
+    except BaseException:
+        # The process-group kill happens before any bounded wait. If cleanup itself
+        # is interrupted, retry the non-throwing kill path and let the caller retain
+        # the exception that originally initiated shutdown.
+        _terminate_process_group(process)
+
+
+def _terminate_process_group(process: subprocess.Popen[bytes]) -> None:
+    try:
+        os.killpg(process.pid, signal.SIGKILL)
+    except BaseException:
+        pass
+    try:
+        process.kill()
+    except BaseException:
+        pass
 
 
 def _curl_response_metadata(stderr: bytes) -> dict[str, str]:
