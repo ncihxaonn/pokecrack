@@ -1124,10 +1124,12 @@ begin
       message = 'changed TCGdex results require 1 to 1000 sets and other outcomes require none';
   end if;
 
-  if result_expected_revision <> case
-    when state_exists then prior_state.revision
-    else 0
-  end then
+  if result_expected_revision <> (
+    case
+      when state_exists then prior_state.revision
+      else 0
+    end
+  ) then
     raise exception using
       errcode = '40001',
       message = 'TCGdex result was computed from a stale checkpoint revision';
