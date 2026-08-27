@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -13,6 +14,7 @@ _TCGDEX_ETAG_PATTERN = re.compile(r'(?:W/)?"[\x21\x23-\x7e]*"')
 _LOWER_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _YOUTUBE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _BATCH_HINT_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9_-]{1,31}$")
+_YOUTUBE_PUBLISHED_AT_MIN = datetime(2005, 1, 1, tzinfo=UTC)
 _YOUTUBE_QUERY_NAMES = frozenset(
     {
         "pokemon-tcg-booster-box-opening",
@@ -189,22 +191,31 @@ class YouTubeSourceItemWrite:
         expected_url = f"https://www.youtube.com/watch?v={self.external_id}"
         if self.source_url != expected_url or self.normalized_url != expected_url:
             raise ValueError("YouTube source URLs must use the exact canonical watch form")
-        for name, value, maximum in (
-            ("title", self.title, 500),
-            ("text_excerpt", self.text_excerpt, 20_000),
+        if self.title is not None and (
+            not isinstance(self.title, str)
+            or len(self.title) > 500
+            or any(unicodedata.category(character).startswith("C") for character in self.title)
         ):
-            if value is not None and (
-                not isinstance(value, str)
-                or len(value) > maximum
-                or any(ord(character) < 32 and character not in "\t\n\r" for character in value)
+            raise ValueError("YouTube title is invalid")
+        if self.text_excerpt is not None and (
+            not isinstance(self.text_excerpt, str)
+            or len(self.text_excerpt) > 20_000
+            or any(
+                unicodedata.category(character).startswith("C") and character not in "\t\n\r"
+                for character in self.text_excerpt
+            )
+        ):
+            raise ValueError("YouTube text_excerpt is invalid")
+        if self.published_at is not None:
+            if (
+                not isinstance(self.published_at, datetime)
+                or self.published_at.tzinfo is None
+                or self.published_at.utcoffset() is None
             ):
-                raise ValueError(f"YouTube {name} is invalid")
-        if self.published_at is not None and (
-            not isinstance(self.published_at, datetime)
-            or self.published_at.tzinfo is None
-            or self.published_at.utcoffset() is None
-        ):
-            raise ValueError("YouTube published_at must be timezone-aware or null")
+                raise ValueError("YouTube published_at must be timezone-aware or null")
+            published_at = self.published_at.astimezone(UTC)
+            if not _YOUTUBE_PUBLISHED_AT_MIN <= published_at <= datetime.now(UTC):
+                raise ValueError("YouTube published_at is outside the approved range")
         for name, value in (
             ("author_hash", self.author_hash),
             ("content_hash", self.content_hash),
@@ -225,15 +236,22 @@ class YouTubeSourceItemWrite:
         if not isinstance(self.metadata, Mapping) or set(self.metadata) != _YOUTUBE_METADATA_KEYS:
             raise ValueError("YouTube activity metadata keys are invalid")
         metadata = self.metadata
-        constants = {
+        boolean_constants = {
             "metadata_only": True,
             "media_download": False,
+            "statistics_eligible": False,
+        }
+        if any(metadata.get(key) is not value for key, value in boolean_constants.items()):
+            raise ValueError("YouTube activity metadata booleans are invalid")
+        string_constants = {
             "discovery_scope": "global",
             "evidence_tier": "D",
-            "statistics_eligible": False,
             "parser_version": "youtube-metadata-v1",
         }
-        if any(metadata.get(key) != value for key, value in constants.items()):
+        if any(
+            type(metadata.get(key)) is not str or metadata.get(key) != value
+            for key, value in string_constants.items()
+        ):
             raise ValueError("YouTube activity metadata constants are invalid")
         query_name = metadata.get("query_name")
         if not isinstance(query_name, str) or query_name not in _YOUTUBE_QUERY_NAMES:
@@ -275,7 +293,7 @@ class YouTubeSourceItemWrite:
             raise ValueError("YouTube channel-country proxy metadata is invalid")
 
     def as_payload(self) -> dict[str, Any]:
-        self._validate_metadata()
+        self.__post_init__()
         published_at = (
             self.published_at.astimezone(UTC).isoformat().replace("+00:00", "Z")
             if self.published_at is not None

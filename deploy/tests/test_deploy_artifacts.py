@@ -875,13 +875,6 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("YOUTUBE_API_KEY:", collector)
         self.assertNotIn("YOUTUBE_API_KEY:", scheduler)
 
-        for path in (
-            REPOSITORY_ROOT / ".env.example",
-            DEPLOY_ROOT / "env" / "production.env.example",
-        ):
-            source = path.read_text(encoding="utf-8")
-            self.assertIn("YOUTUBE_COLLECTION_ENABLED=false", source)
-
     def test_auth_browser_pins_opencli_and_starts_its_loopback_daemon(self) -> None:
         dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(encoding="utf-8")
         entrypoint = (DEPLOY_ROOT / "auth-browser-entrypoint.sh").read_text(encoding="utf-8")

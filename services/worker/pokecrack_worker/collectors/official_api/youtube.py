@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import html
 import json
 import re
@@ -18,7 +19,7 @@ from pydantic import SecretStr
 from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
 from pokecrack_worker.config.registries import YouTubeQuery
 from pokecrack_worker.config.source_policy import CollectorRoute, SourcePolicyRegistry
-from pokecrack_worker.models import CollectorType, SourceItemCandidate, hash_author
+from pokecrack_worker.models import CollectorType, SourceItemCandidate
 
 YOUTUBE_SEARCH_URL = "https://youtube.googleapis.com/youtube/v3/search"
 YOUTUBE_CHANNELS_URL = "https://youtube.googleapis.com/youtube/v3/channels"
@@ -48,6 +49,7 @@ _EXPECTED_POLICY_CONFIG: dict[str, Any] = {
 
 _VIDEO_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _CHANNEL_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,128}$")
+_CHANNEL_HASH_NAMESPACE = b"youtube-channel-v1\0"
 _BATCH_CODE_PATTERN = re.compile(
     r"\b(?:batch|lot)\s+code\s*(?P<separator>[:#=\-])?\s*"
     r"(?P<code>[A-Z0-9][A-Z0-9_-]{1,31})\b",
@@ -244,6 +246,14 @@ def _activity_hints(
     return products, tuple(batch_codes)
 
 
+def _hash_channel_id(channel_id: str) -> str:
+    """Hash the validated case-sensitive opaque ID without person-name normalization."""
+
+    if _CHANNEL_ID_PATTERN.fullmatch(channel_id) is None:
+        raise YouTubeInvalidResponse("invalid_channel_id")
+    return hashlib.sha256(_CHANNEL_HASH_NAMESPACE + channel_id.encode("ascii")).hexdigest()
+
+
 def _json_mapping(body: bytes) -> Mapping[str, Any]:
     def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
         result: dict[str, Any] = {}
@@ -376,18 +386,33 @@ class YouTubeDataClient:
         self._monotonic = monotonic_clock
         self._sleeper = sleeper
 
-    def _request(self, endpoint: str, params: dict[str, str]) -> APIResponse:
+    def _remaining_timeout(self, deadline: float) -> float:
+        remaining = deadline - self._monotonic()
+        if remaining <= 0:
+            raise YouTubeError("request_timeout", retryable=True)
+        return remaining
+
+    def _request(
+        self,
+        endpoint: str,
+        params: dict[str, str],
+        *,
+        deadline: float,
+    ) -> APIResponse:
         response = self.transport.get(
             endpoint,
             params=params,
             api_key=self._api_key,
-            timeout_seconds=self.timeout_seconds,
+            timeout_seconds=self._remaining_timeout(deadline),
         )
+        self._remaining_timeout(deadline)
         if response.status_code != 200:
             raise YouTubeHTTPError(response.status_code)
         return response
 
     def discover(self, query: YouTubeQuery) -> tuple[SourceItemCandidate, ...]:
+        request_started = self._monotonic()
+        deadline = request_started + self.timeout_seconds
         policy = self.policies.require(YOUTUBE_SEARCH_URL, CollectorRoute.YOUTUBE)
         if (
             policy.version != YOUTUBE_COLLECTOR_VERSION
@@ -404,7 +429,6 @@ class YouTubeDataClient:
         published_after = self._clock().astimezone(UTC) - timedelta(
             days=query.published_within_days
         )
-        request_started = self._monotonic()
         # This is an English text-relevance hint, never a region or observed geography.
         search_response = self._request(
             YOUTUBE_SEARCH_URL,
@@ -417,14 +441,20 @@ class YouTubeDataClient:
                 "publishedAfter": published_after.strftime("%Y-%m-%dT%H:%M:%SZ"),
                 "relevanceLanguage": "en",
             },
+            deadline=deadline,
         )
         search_items = _parse_search_response(search_response.body, max_results=query.max_results)
+        self._remaining_timeout(deadline)
         channel_ids = frozenset(item.channel_id for item in search_items)
         countries: Mapping[str, str] = {}
         if channel_ids:
-            remaining_delay = policy.min_delay_seconds - (self._monotonic() - request_started)
+            now = self._monotonic()
+            remaining_delay = policy.min_delay_seconds - (now - request_started)
             if remaining_delay > 0:
+                if deadline - now <= remaining_delay:
+                    raise YouTubeError("request_timeout", retryable=True)
                 self._sleeper(remaining_delay)
+                self._remaining_timeout(deadline)
             channels_response = self._request(
                 YOUTUBE_CHANNELS_URL,
                 {
@@ -432,11 +462,13 @@ class YouTubeDataClient:
                     "id": ",".join(sorted(channel_ids)),
                     "maxResults": str(len(channel_ids)),
                 },
+                deadline=deadline,
             )
             countries = _parse_channel_countries(
                 channels_response.body,
                 requested_ids=channel_ids,
             )
+            self._remaining_timeout(deadline)
 
         candidates: list[SourceItemCandidate] = []
         for item in search_items:
@@ -468,7 +500,7 @@ class YouTubeDataClient:
                     title=item.title,
                     text=item.description,
                     published_at=item.published_at,
-                    author_hash=hash_author(item.channel_id),
+                    author_hash=_hash_channel_id(item.channel_id),
                     media_urls=(),
                     metadata=metadata,
                     collector=CollectorType.OFFICIAL_API,
@@ -478,6 +510,7 @@ class YouTubeDataClient:
             except (TypeError, ValueError) as error:
                 raise YouTubeInvalidResponse() from error
             candidates.append(candidate)
+        self._remaining_timeout(deadline)
         return tuple(candidates)
 
     def discover_many(self, queries: Sequence[YouTubeQuery]) -> YouTubeDiscoveryResult:

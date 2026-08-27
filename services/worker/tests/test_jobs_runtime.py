@@ -1064,11 +1064,78 @@ def test_postgres_youtube_completion_uses_one_exact_activity_only_finalizer() ->
 def test_youtube_completion_rejects_rate_claims_and_noncanonical_watch_urls() -> None:
     write = _youtube_write()
     unsafe_metadata = {**write.metadata, "statistics_eligible": True}
-    with pytest.raises(ValueError, match="constants"):
+    with pytest.raises(ValueError, match="metadata booleans"):
         replace(write, metadata=unsafe_metadata)
 
     with pytest.raises(ValueError, match="canonical watch form"):
         replace(write, normalized_url="https://youtube.com/watch?v=dQw4w9WgXcQ")
+
+
+@pytest.mark.parametrize(
+    ("key", "integer_impostor"),
+    (
+        ("metadata_only", 1),
+        ("media_download", 0),
+        ("statistics_eligible", 0),
+    ),
+)
+def test_youtube_metadata_booleans_reject_integer_impostors(
+    key: str,
+    integer_impostor: int,
+) -> None:
+    write = _youtube_write()
+    metadata = {**write.metadata, key: integer_impostor}
+
+    with pytest.raises(ValueError, match="metadata booleans"):
+        replace(write, metadata=metadata)
+
+
+@pytest.mark.parametrize("control", ("\x00", "\t", "\n", "\r", "\x7f", "\u0085"))
+def test_youtube_title_rejects_every_control_character(control: str) -> None:
+    with pytest.raises(ValueError, match="title is invalid"):
+        replace(_youtube_write(), title=f"Pokemon{control}opening")
+
+
+@pytest.mark.parametrize("control", ("\x00", "\x08", "\x0b", "\x0c", "\x7f", "\u0085"))
+def test_youtube_excerpt_rejects_controls_other_than_tab_lf_cr(control: str) -> None:
+    with pytest.raises(ValueError, match="text_excerpt is invalid"):
+        replace(_youtube_write(), text_excerpt=f"Batch{control}code")
+
+
+def test_youtube_payload_matches_sql_primitive_and_range_boundaries() -> None:
+    minimum = datetime(2005, 1, 1, tzinfo=UTC)
+    write = replace(
+        _youtube_write(),
+        title="Pokemon opening",
+        text_excerpt="Batch\tcode: AB-123\nLot\rcode: CD-456",
+        published_at=minimum,
+    )
+
+    payload = write.as_payload()
+
+    metadata = payload["metadata"]
+    assert type(metadata["metadata_only"]) is bool
+    assert type(metadata["media_download"]) is bool
+    assert type(metadata["statistics_eligible"]) is bool
+    assert payload["published_at"] == "2005-01-01T00:00:00Z"
+    assert "\t" not in str(payload["title"])
+    assert "\t" in str(payload["text_excerpt"])
+    assert "\n" in str(payload["text_excerpt"])
+    assert "\r" in str(payload["text_excerpt"])
+
+    with pytest.raises(ValueError, match="approved range"):
+        replace(write, published_at=minimum - timedelta(microseconds=1))
+    with pytest.raises(ValueError, match="approved range"):
+        replace(write, published_at=datetime.now(UTC) + timedelta(minutes=1))
+
+
+def test_youtube_payload_revalidates_mutable_metadata_before_sql_serialization() -> None:
+    write = _youtube_write()
+    assert isinstance(write.metadata, dict)
+    write.metadata["statistics_eligible"] = 0
+
+    with pytest.raises(ValueError, match="metadata booleans"):
+        write.as_payload()
 
 
 def test_postgres_budget_pause_and_completion_clear_canonical_locks() -> None:

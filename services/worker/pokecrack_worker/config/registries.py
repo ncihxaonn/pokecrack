@@ -60,6 +60,14 @@ class YouTubeQueryDocument(BaseModel):
             raise ValueError("YouTube queries must remain disabled in the static registry")
         if any(query.region_code is not None for query in self.queries):
             raise ValueError("global YouTube queries must not carry a country region code")
+        if any(
+            query.metadata_only is not True
+            or query.max_results != 25
+            or query.published_within_days != 30
+            or query.order != "date"
+            for query in self.queries
+        ):
+            raise ValueError("YouTube version 1 query parameters must remain exact")
         return self
 
 

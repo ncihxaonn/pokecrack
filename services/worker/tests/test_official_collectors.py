@@ -93,6 +93,27 @@ class FixtureYouTubeTransport:
         return self.responses.pop(0)
 
 
+@dataclass
+class AdvancingYouTubeTransport:
+    responses: list[APIResponse]
+    advances: list[float]
+    clock: list[float]
+    calls: list[tuple[str, float]] = field(default_factory=list)
+
+    def get(
+        self,
+        url: str,
+        *,
+        params: dict[str, str],
+        api_key: SecretStr,
+        timeout_seconds: float,
+    ) -> APIResponse:
+        del params, api_key
+        self.calls.append((url, timeout_seconds))
+        self.clock[0] += self.advances.pop(0)
+        return self.responses.pop(0)
+
+
 def test_youtube_discovery_maps_metadata_without_downloading_video_or_raw_author() -> None:
     transport = FixtureYouTubeTransport(
         [
@@ -136,6 +157,93 @@ def test_youtube_discovery_maps_metadata_without_downloading_video_or_raw_author
     assert "regionCode" not in transport.calls[0][1]
     assert "key" not in transport.calls[0][1]
     assert transport.calls[1][0].endswith("/youtube/v3/channels")
+
+
+def test_youtube_discovery_does_not_send_channels_after_spacing_exhausts_budget() -> None:
+    state = [0.0]
+    transport = AdvancingYouTubeTransport(
+        responses=[
+            APIResponse(
+                200,
+                {},
+                (ROOT / "data" / "examples" / "youtube-search.json").read_bytes(),
+            )
+        ],
+        advances=[1.5],
+        clock=state,
+    )
+    sleeps: list[float] = []
+
+    def oversleep(seconds: float) -> None:
+        sleeps.append(seconds)
+        state[0] += 1.5
+
+    client = YouTubeDataClient(
+        api_key="fixture-key",
+        transport=transport,
+        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+        timeout_seconds=3,
+        monotonic_clock=lambda: state[0],
+        sleeper=oversleep,
+    )
+
+    with pytest.raises(YouTubeError) as raised:
+        client.discover(
+            YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[0]
+        )
+
+    assert raised.value.code == "request_timeout"
+    assert raised.value.retryable is True
+    assert sleeps == [pytest.approx(0.5)]
+    assert transport.calls == [(YOUTUBE_SEARCH_URL, pytest.approx(3.0))]
+
+
+def test_youtube_discovery_shares_one_absolute_budget_across_both_api_calls() -> None:
+    state = [0.0]
+    transport = AdvancingYouTubeTransport(
+        responses=[
+            APIResponse(
+                200,
+                {},
+                (ROOT / "data" / "examples" / "youtube-search.json").read_bytes(),
+            ),
+            APIResponse(
+                200,
+                {},
+                b'{"items":[{"id":"fixture-channel-id","snippet":{}}]}',
+            ),
+        ],
+        advances=[5.0, 24.0],
+        clock=state,
+    )
+    client = YouTubeDataClient(
+        api_key="fixture-key",
+        transport=transport,
+        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+        timeout_seconds=30,
+        monotonic_clock=lambda: state[0],
+        sleeper=lambda _seconds: pytest.fail("search time already satisfies source spacing"),
+    )
+
+    items = client.discover(
+        YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[0]
+    )
+
+    assert len(items) == 1
+    assert state[0] == 29.0
+    assert transport.calls == [
+        (YOUTUBE_SEARCH_URL, pytest.approx(30.0)),
+        (youtube_module.YOUTUBE_CHANNELS_URL, pytest.approx(25.0)),
+    ]
+
+
+def test_youtube_author_hash_is_case_sensitive_and_has_a_fixed_namespaced_vector() -> None:
+    lower_author_hash = youtube_module._hash_channel_id("UCabcDEF123")
+    upper_author_hash = youtube_module._hash_channel_id("UCAbcDEF123")
+
+    assert lower_author_hash == "5198073a1d03da30fe16abf97e926a02b7cc2516810954ef864e6a9019cff779"
+    assert upper_author_hash == "8b729a14e558235b805b57df386dea6471a0ab51bda87dbb1102cd3078407928"
+    assert lower_author_hash != upper_author_hash
 
 
 def test_youtube_http_transport_rejects_response_over_byte_cap() -> None:

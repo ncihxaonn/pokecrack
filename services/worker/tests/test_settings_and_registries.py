@@ -5,7 +5,11 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from pokecrack_worker.config.registries import RarityTaxonomy, YouTubeQueryRegistry
+from pokecrack_worker.config.registries import (
+    REQUIRED_YOUTUBE_QUERIES,
+    RarityTaxonomy,
+    YouTubeQueryRegistry,
+)
 from pokecrack_worker.config.settings import AIProviderName, DataMode, Settings
 from pokecrack_worker.config.source_policy import (
     CollectorRoute,
@@ -78,6 +82,43 @@ def test_youtube_enablement_requires_key_only_in_the_network_collector() -> None
 def test_worker_concurrency_above_one_is_rejected_until_pooling_is_implemented() -> None:
     with pytest.raises(ValidationError, match="worker_max_concurrency"):
         Settings(_env_file=None, worker_max_concurrency=2)
+
+
+@pytest.mark.parametrize(
+    ("field", "drifted_value"),
+    (
+        ("metadata_only", False),
+        ("max_results", 50),
+        ("published_within_days", 3650),
+        ("order", "relevance"),
+    ),
+)
+def test_youtube_version_one_registry_rejects_query_parameter_drift(
+    field: str,
+    drifted_value: object,
+) -> None:
+    queries = [
+        {
+            "name": name,
+            "query": query,
+            "enabled": False,
+            "metadata_only": True,
+            "max_results": 25,
+            "published_within_days": 30,
+            "order": "date",
+        }
+        for name, query in REQUIRED_YOUTUBE_QUERIES
+    ]
+    queries[0][field] = drifted_value
+
+    with pytest.raises(ValidationError):
+        YouTubeQueryRegistry.from_mapping(
+            {
+                "version": 1,
+                "default_enabled": False,
+                "queries": queries,
+            }
+        )
 
 
 @pytest.mark.parametrize(
