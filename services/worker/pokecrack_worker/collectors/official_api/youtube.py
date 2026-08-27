@@ -46,19 +46,6 @@ _EXPECTED_POLICY_CONFIG: dict[str, Any] = {
 _VIDEO_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _CHANNEL_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,128}$")
 _CHANNEL_HASH_NAMESPACE = b"youtube-channel-v1\0"
-_BATCH_CODE_PATTERN = re.compile(
-    r"\b(?:batch|lot)\s+code\s*(?P<separator>[:#=\-])?\s*"
-    r"(?P<code>[A-Z0-9][A-Z0-9_-]{1,31})\b",
-    re.IGNORECASE,
-)
-_PRODUCT_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
-    ("booster_box", re.compile(r"\bbooster[\s-]+box\b", re.IGNORECASE)),
-    (
-        "etb",
-        re.compile(r"\b(?:etb|elite[\s-]+trainer[\s-]+box)\b", re.IGNORECASE),
-    ),
-    ("booster_bundle", re.compile(r"\bbooster[\s-]+bundle\b", re.IGNORECASE)),
-)
 
 
 class YouTubeError(RuntimeError):
@@ -222,26 +209,6 @@ def _normalize_text(value: str, *, max_chars: int) -> str | None:
     return normalized[:max_chars] or None
 
 
-def _activity_hints(
-    title: str | None,
-    description: str | None,
-) -> tuple[tuple[str, ...], tuple[str, ...]]:
-    text = " ".join(value for value in (title, description) if value)
-    products = tuple(name for name, pattern in _PRODUCT_PATTERNS if pattern.search(text))
-    batch_codes: list[str] = []
-    for match in _BATCH_CODE_PATTERN.finditer(text):
-        code = match.group("code").upper()
-        # Without punctuation, require a digit so prose like "batch code shown"
-        # cannot become an identifier. These remain unverified activity hints.
-        if match.group("separator") is None and not any(character.isdigit() for character in code):
-            continue
-        if code not in batch_codes:
-            batch_codes.append(code)
-        if len(batch_codes) == 5:
-            break
-    return products, tuple(batch_codes)
-
-
 def _hash_channel_id(channel_id: str) -> str:
     """Hash the validated case-sensitive opaque ID without person-name normalization."""
 
@@ -357,8 +324,6 @@ def _parse_channel_countries(
 
 
 class YouTubeDataClient:
-    media_download = False
-
     def __init__(
         self,
         *,
@@ -474,7 +439,6 @@ class YouTubeDataClient:
 
         candidates: list[SourceItemCandidate] = []
         for item in search_items:
-            product_hints, batch_hints = _activity_hints(item.title, item.description)
             country = countries.get(item.channel_id)
             metadata: dict[str, Any] = {
                 "query_name": query.name,
@@ -487,8 +451,6 @@ class YouTubeDataClient:
                 "evidence_tier": "D",
                 "statistics_eligible": False,
                 "parser_version": YOUTUBE_PARSER_VERSION,
-                "product_type_hints": list(product_hints),
-                "batch_code_hints": list(batch_hints),
                 "channel_country_code": country,
                 "geography_basis": (
                     "youtube_channel_country" if country is not None else "unresolved"

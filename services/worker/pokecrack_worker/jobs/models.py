@@ -13,7 +13,6 @@ from typing import Any
 _TCGDEX_ETAG_PATTERN = re.compile(r'(?:W/)?"[\x21\x23-\x7e]*"')
 _LOWER_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _YOUTUBE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
-_BATCH_HINT_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9_-]{1,31}$")
 _YOUTUBE_PUBLISHED_AT_MIN = datetime(2005, 1, 1, tzinfo=UTC)
 _YOUTUBE_QUERY_NAMES = frozenset(
     {
@@ -34,8 +33,6 @@ _YOUTUBE_METADATA_KEYS = frozenset(
         "evidence_tier",
         "statistics_eligible",
         "parser_version",
-        "product_type_hints",
-        "batch_code_hints",
         "channel_country_code",
         "geography_basis",
     }
@@ -256,28 +253,6 @@ class YouTubeSourceItemWrite:
         query_name = metadata.get("query_name")
         if not isinstance(query_name, str) or query_name not in _YOUTUBE_QUERY_NAMES:
             raise ValueError("YouTube metadata query name is not approved")
-        products = metadata.get("product_type_hints")
-        if (
-            not isinstance(products, list)
-            or len(products) > 3
-            or any(
-                not isinstance(item, str) or item not in {"booster_box", "etb", "booster_bundle"}
-                for item in products
-            )
-            or len(products) != len(set(products))
-        ):
-            raise ValueError("YouTube product hints are invalid")
-        batches = metadata.get("batch_code_hints")
-        if (
-            not isinstance(batches, list)
-            or len(batches) > 5
-            or any(
-                not isinstance(item, str) or _BATCH_HINT_PATTERN.fullmatch(item) is None
-                for item in batches
-            )
-            or len(batches) != len(set(batches))
-        ):
-            raise ValueError("YouTube batch hints are invalid")
         country = metadata.get("channel_country_code")
         geography_status = metadata.get("geography_status")
         geography_basis = metadata.get("geography_basis")

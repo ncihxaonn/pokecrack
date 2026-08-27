@@ -440,7 +440,6 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
     assert item["collector_version"] == "youtube-global-discovery-v1"
     assert item["source_policy_version"] == "youtube-global-discovery-v1"
     assert item["metadata"] == {
-        "batch_code_hints": ["AB-123"],
         "channel_country_code": "US",
         "discovery_scope": "global",
         "evidence_tier": "D",
@@ -449,7 +448,6 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
         "media_download": False,
         "metadata_only": True,
         "parser_version": "youtube-metadata-v1",
-        "product_type_hints": ["etb"],
         "query_name": "pokemon-tcg-etb-opening",
         "statistics_eligible": False,
     }

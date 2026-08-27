@@ -150,7 +150,18 @@ def test_youtube_discovery_maps_metadata_without_downloading_video_or_raw_author
     assert item.metadata["geography_status"] == "channel_country_proxy"
     assert item.metadata["channel_country_code"] == "AU"
     assert item.metadata["statistics_eligible"] is False
-    assert client.media_download is False
+    assert set(item.metadata) == {
+        "query_name",
+        "metadata_only",
+        "media_download",
+        "discovery_scope",
+        "geography_status",
+        "evidence_tier",
+        "statistics_eligible",
+        "parser_version",
+        "channel_country_code",
+        "geography_basis",
+    }
     assert len(transport.calls) == 2
     assert transport.calls[0][0].endswith("/youtube/v3/search")
     assert transport.calls[0][1]["type"] == "video"

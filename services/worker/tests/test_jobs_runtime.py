@@ -978,8 +978,6 @@ def _youtube_write() -> YouTubeSourceItemWrite:
             "evidence_tier": "D",
             "statistics_eligible": False,
             "parser_version": "youtube-metadata-v1",
-            "product_type_hints": ["booster_box"],
-            "batch_code_hints": ["AB-123"],
             "channel_country_code": "AU",
             "geography_basis": "youtube_channel_country",
         },
@@ -1069,6 +1067,15 @@ def test_youtube_completion_rejects_rate_claims_and_noncanonical_watch_urls() ->
 
     with pytest.raises(ValueError, match="canonical watch form"):
         replace(write, normalized_url="https://youtube.com/watch?v=dQw4w9WgXcQ")
+
+
+@pytest.mark.parametrize("derived_key", ("product_type_hints", "batch_code_hints"))
+def test_youtube_completion_rejects_derived_content_hints(derived_key: str) -> None:
+    write = _youtube_write()
+    metadata = {**write.metadata, derived_key: []}
+
+    with pytest.raises(ValueError, match="metadata keys"):
+        replace(write, metadata=metadata)
 
 
 @pytest.mark.parametrize(
