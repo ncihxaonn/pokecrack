@@ -428,6 +428,15 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn(
             "unique (source_item_id, query_name, is_demo)", compact
         )
+        self.assertIn("source_items_id_mode_unique unique (id, is_demo)", compact)
+        self.assertIn("jobs_id_mode_unique unique (id, is_demo)", compact)
+        self.assertIn("source_discoveries_source_item_mode_fkey", compact)
+        self.assertIn("foreign key (source_item_id, is_demo)", compact)
+        self.assertIn("references ingest.source_items (id, is_demo)", compact)
+        self.assertIn("source_discoveries_job_mode_fkey", compact)
+        self.assertIn("foreign key (job_id, is_demo)", compact)
+        self.assertIn("references ingest.jobs (id, is_demo)", compact)
+        self.assertGreaterEqual(compact.count("on update restrict"), 2)
         self.assertIn("channel_country_proxy", lowered)
         self.assertIn("youtube_channel_country", lowered)
         self.assertIn("alter table ingest.source_discoveries force row level security", lowered)
@@ -437,6 +446,76 @@ class IngestMigrationContractTests(unittest.TestCase):
         )
         self.assertNotIn(
             "grant update on table ingest.source_discoveries to service_role", lowered
+        )
+        self.assertIn("source_discoveries_source_item_mode_fkey", DATABASE_TYPES)
+        self.assertIn("source_discoveries_job_mode_fkey", DATABASE_TYPES)
+
+    def test_youtube_metadata_cannot_be_promoted_or_clustered_after_policy_rebind(self) -> None:
+        lowered = YOUTUBE_PIPELINE.casefold()
+        classifier = lowered.split(
+            "create or replace function ingest.is_youtube_discovery_metadata_source", 1
+        )[1].split(
+            "alter function ingest.is_youtube_discovery_metadata_source", 1
+        )[0]
+        evidence_guard = lowered.split(
+            "create or replace function ingest.reject_youtube_discovery_evidence_reference", 1
+        )[1].split(
+            "alter function ingest.reject_youtube_discovery_evidence_reference", 1
+        )[0]
+        duplicate_guard = lowered.split(
+            "create or replace function ingest.reject_youtube_discovery_duplicate_cluster", 1
+        )[1].split(
+            "alter function ingest.reject_youtube_discovery_duplicate_cluster", 1
+        )[0]
+        policy_rebind_guard = lowered.split(
+            "create or replace function ingest.reject_youtube_discovery_policy_rebind", 1
+        )[1].split(
+            "alter function ingest.reject_youtube_discovery_policy_rebind", 1
+        )[0]
+        end_state_guard = lowered.split(
+            "create or replace function ingest.enforce_youtube_discovery_metadata_end_state", 1
+        )[1].split(
+            "alter function ingest.enforce_youtube_discovery_metadata_end_state", 1
+        )[0]
+        self.assertIn("security definer", classifier)
+        self.assertIn("ingest.source_discoveries", classifier)
+        self.assertIn("policies.source_key = 'youtube_discovery'", classifier)
+        self.assertIn("is_youtube_discovery_metadata_source(new.source_item_id)", evidence_guard)
+        self.assertIn("new.duplicate_cluster_id is not null", duplicate_guard)
+        self.assertIn("new.id, new.source_policy_id", duplicate_guard)
+        self.assertIn("new.duplicate_cluster_id", duplicate_guard)
+        self.assertEqual(lowered.count("reject_youtube_discovery_evidence_reference();"), 3)
+        self.assertIn("before insert or update of duplicate_cluster_id", lowered)
+        self.assertIn("errcode = '23514'", evidence_guard)
+        self.assertIn("errcode = '23514'", duplicate_guard)
+        self.assertIn("new.id, new.source_policy_id", policy_rebind_guard)
+        self.assertIn("tg_op = 'update'", policy_rebind_guard)
+        self.assertIn("old.id", policy_rebind_guard)
+        self.assertIn("old.source_policy_id", policy_rebind_guard)
+        self.assertIn(
+            "and not ingest.is_youtube_discovery_metadata_source",
+            policy_rebind_guard,
+        )
+        self.assertIn("source_items.duplicate_cluster_id = new.id", policy_rebind_guard)
+        self.assertIn("ingest.extraction_runs", policy_rebind_guard)
+        self.assertIn("ingest.openings", policy_rebind_guard)
+        self.assertIn("ingest.batch_sightings", policy_rebind_guard)
+        self.assertIn("before insert or update of source_policy_id", lowered)
+        self.assertIn("errcode = '23514'", policy_rebind_guard)
+        self.assertIn("ingest.source_discoveries", end_state_guard)
+        self.assertIn("ingest.extraction_runs", end_state_guard)
+        self.assertIn("ingest.openings", end_state_guard)
+        self.assertIn("ingest.batch_sightings", end_state_guard)
+        self.assertIn("current_source.duplicate_cluster_id", end_state_guard)
+        self.assertEqual(
+            lowered.count("enforce_youtube_discovery_metadata_end_state();"),
+            5,
+        )
+        self.assertEqual(lowered.count("create constraint trigger"), 5)
+        self.assertEqual(lowered.count("deferrable initially deferred"), 5)
+        self.assertIn(
+            "revoke all on function ingest.enforce_youtube_discovery_metadata_end_state()",
+            lowered,
         )
 
     def test_youtube_begin_and_finalize_are_exact_fenced_kill_switches(self) -> None:
@@ -476,6 +555,8 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertNotIn("usage_classification = 'activity_only'", finalizer)
         self.assertNotIn("status = 'activity_only'", finalizer)
         self.assertIn("insert into ingest.source_discoveries", finalizer)
+        self.assertIn("last_attempt_at = greatest", finalizer)
+        self.assertIn("last_success_at = policy_attempt_time", finalizer)
         self.assertIn("owner_job_id = null", finalizer)
         self.assertIn("owner_lease_generation = null", finalizer)
         self.assertIn("begin_youtube_discovery_job:", DATABASE_TYPES)
@@ -495,15 +576,33 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("gates.owner_lease_generation = $3", heartbeat)
         self.assertIn("gates.owner_job_id = $1", failure)
         self.assertIn("gates.owner_lease_generation = $3", failure)
+        self.assertIn("policies.source_key = gates.source_key", failure)
+        self.assertIn("last_attempt_at = greatest", failure)
+        self.assertIn("last_failure_at = cooldown_recorded_at", failure)
+        self.assertLess(
+            failure.index("last_failure_at = cooldown_recorded_at"),
+            failure.index("set owner_job_id = null"),
+        )
         cleanup = lowered.split(
             "create or replace function ingest.prune_expired_ephemera_v2", 1
         )[1].split("alter function ingest.prune_expired_ephemera_v2", 1)[0]
+        youtube_candidates = cleanup.split("delete from ingest.source_items", 1)[0]
         self.assertIn("policies.source_key = 'youtube_discovery'", cleanup)
         self.assertIn("source_items.expires_at <= cutoff", cleanup)
-        self.assertIn("not exists", cleanup)
-        self.assertIn("ingest.extraction_runs", cleanup)
-        self.assertIn("ingest.openings", cleanup)
-        self.assertIn("ingest.batch_sightings", cleanup)
+        self.assertIn("ingest.source_discoveries", youtube_candidates)
+        self.assertIn(
+            "max(discoveries.last_seen_at) + interval '30 days' as effective_expiry",
+            youtube_candidates,
+        )
+        self.assertIn("marker_expiry.effective_expiry <= cutoff", youtube_candidates)
+        self.assertIn("marker_expiry.effective_expiry is null", youtube_candidates)
+        self.assertIn(
+            "order by coalesce( marker_expiry.effective_expiry, source_items.expires_at )",
+            " ".join(youtube_candidates.split()),
+        )
+        self.assertNotIn("ingest.extraction_runs", youtube_candidates)
+        self.assertNotIn("ingest.openings", youtube_candidates)
+        self.assertNotIn("ingest.batch_sightings", youtube_candidates)
         self.assertIn("limit max_rows", cleanup)
         self.assertIn("delete from ingest.source_items", cleanup)
         self.assertIn("youtube_source_items_deleted", cleanup)

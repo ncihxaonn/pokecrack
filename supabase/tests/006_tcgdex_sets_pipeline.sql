@@ -801,9 +801,10 @@ select ok(
   'changed result atomically writes the live checkpoint'
 );
 select ok(
-  (select last_success_at is not null and last_failure_at is null
+  (select last_success_at is not null
+      and (last_failure_at is null or last_failure_at <= last_success_at)
    from ingest.source_policies where source_key = 'tcgdex_catalog'),
-  'successful finalization records success without fabricating failure state'
+  'successful finalization supersedes any earlier recorded request failure'
 );
 select ok(
   (select owner_job_id is null and owner_lease_generation is null

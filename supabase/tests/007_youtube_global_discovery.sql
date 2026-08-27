@@ -3,7 +3,40 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(58);
+select plan(82);
+
+create function pg_temp.sqlstate_of(statement text)
+returns text
+language plpgsql
+volatile
+as $$
+begin
+  execute statement;
+  return null;
+exception
+  when others then
+    return sqlstate;
+end;
+$$;
+
+create function pg_temp.sqlstate_of_deferred(statement text)
+returns text
+language plpgsql
+volatile
+as $$
+declare
+  caught_sqlstate text;
+begin
+  execute statement;
+  set constraints all immediate;
+  return null;
+exception
+  when others then
+    caught_sqlstate := sqlstate;
+    set constraints all deferred;
+    return caught_sqlstate;
+end;
+$$;
 
 create function pg_temp.youtube_item(
   video_id text,
@@ -147,6 +180,73 @@ select ok(
     and not has_table_privilege('authenticated', 'ingest.source_discoveries', 'select'),
   'public roles cannot inspect private discovery provenance'
 );
+select is(
+  (select count(*)::integer
+   from pg_trigger
+   where not tgisinternal
+     and tgrelid in (
+       'ingest.source_items'::regclass,
+       'ingest.extraction_runs'::regclass,
+       'ingest.openings'::regclass,
+       'ingest.batch_sightings'::regclass
+     )
+     and tgname in (
+       'source_items_reject_youtube_discovery_duplicate_cluster',
+       'source_items_reject_youtube_discovery_policy_rebind',
+       'extraction_runs_reject_youtube_discovery',
+       'openings_reject_youtube_discovery',
+       'batch_sightings_reject_youtube_discovery'
+     )
+     and tgenabled = 'O'),
+  5,
+  'metadata-only promotion and duplicate-cluster invariants are enabled on every boundary'
+);
+select is(
+  (select count(*)::integer
+   from pg_trigger
+   where not tgisinternal
+     and tgname in (
+       'source_items_enforce_youtube_discovery_end_state',
+       'source_discoveries_enforce_youtube_discovery_end_state',
+       'extraction_runs_enforce_youtube_discovery_end_state',
+       'openings_enforce_youtube_discovery_end_state',
+       'batch_sightings_enforce_youtube_discovery_end_state'
+     )
+     and tgconstraint <> 0
+     and tgdeferrable
+     and tginitdeferred
+     and tgenabled = 'O'),
+  5,
+  'deferred end-state invariants close sibling writable-CTE snapshot gaps'
+);
+select ok(
+  not has_function_privilege(
+    'service_role',
+    'ingest.is_youtube_discovery_metadata_source(uuid,uuid)',
+    'execute'
+  )
+  and not has_function_privilege(
+    'service_role',
+    'ingest.reject_youtube_discovery_evidence_reference()',
+    'execute'
+  )
+  and not has_function_privilege(
+    'service_role',
+    'ingest.reject_youtube_discovery_duplicate_cluster()',
+    'execute'
+  )
+  and not has_function_privilege(
+    'service_role',
+    'ingest.reject_youtube_discovery_policy_rebind()',
+    'execute'
+  )
+  and not has_function_privilege(
+    'service_role',
+    'ingest.enforce_youtube_discovery_metadata_end_state()',
+    'execute'
+  ),
+  'service_role cannot invoke or replace trigger-only metadata classifiers'
+);
 select has_function(
   'ingest', 'begin_youtube_discovery_job', array['uuid', 'text', 'bigint'],
   'typed YouTube pre-network gate exists'
@@ -203,6 +303,32 @@ select ok(
   ),
   'discovery provenance has no observed-opening geography columns'
 );
+select is(
+  (select count(*)::integer
+   from pg_constraint
+   where conrelid in (
+       'ingest.source_items'::regclass,
+       'ingest.jobs'::regclass
+     )
+     and conname in ('source_items_id_mode_unique', 'jobs_id_mode_unique')
+     and contype = 'u'),
+  2,
+  'source item and job identities expose immutable composite mode keys'
+);
+select ok(
+  (select pg_get_constraintdef(oid) =
+      'FOREIGN KEY (source_item_id, is_demo) REFERENCES ingest.source_items(id, is_demo) ON UPDATE RESTRICT ON DELETE CASCADE'
+   from pg_constraint
+   where conrelid = 'ingest.source_discoveries'::regclass
+     and conname = 'source_discoveries_source_item_mode_fkey')
+  and
+  (select pg_get_constraintdef(oid) =
+      'FOREIGN KEY (job_id, is_demo) REFERENCES ingest.jobs(id, is_demo) ON UPDATE RESTRICT ON DELETE RESTRICT'
+   from pg_constraint
+   where conrelid = 'ingest.source_discoveries'::regclass
+     and conname = 'source_discoveries_job_mode_fkey'),
+  'source discovery provenance binds source and job mode without update cascades'
+);
 
 -- Prove live identities can coexist with visibly synthetic fixtures.
 insert into ingest.source_policies (
@@ -245,6 +371,14 @@ insert into ingest.jobs (
   '{"query_name":"pokemon-tcg-booster-box-opening"}', 'pending', 100,
   0, 5, clock_timestamp() - interval '1 minute',
   clock_timestamp() + interval '90 days', false
+);
+insert into ingest.jobs (
+  id, job_type, payload, status, priority, attempts, max_attempts,
+  available_at, retention_until, is_demo
+) values (
+  'fd200000-0000-4000-8000-000000000010',
+  'source.youtube.discovery.mode-test', '{}', 'pending', 0, 0, 5,
+  clock_timestamp() + interval '1 day', clock_timestamp() + interval '90 days', true
 );
 create temporary table youtube_claim_one on commit drop as
 select * from ingest.claim_jobs_v2(
@@ -316,11 +450,24 @@ select ok(
 create temporary table youtube_completed_one on commit drop as
 select * from ingest.finalize_youtube_discovery_job(
   'fd200000-0000-4000-8000-000000000001', 'youtube-worker', 1,
-  pg_temp.youtube_result(
-    'pokemon-tcg-booster-box-opening', 'abcdefghijk', 'US'
+  jsonb_build_object(
+    'version', 1,
+    'query_name', 'pokemon-tcg-booster-box-opening',
+    'items', jsonb_build_array(
+      pg_temp.youtube_item(
+        'abcdefghijk', 'pokemon-tcg-booster-box-opening', 'US'
+      ),
+      pg_temp.youtube_item(
+        'modeguard01', 'pokemon-tcg-booster-box-opening', null
+      )
+    )
   )
 );
-select is((select count(*)::integer from youtube_completed_one), 1, 'valid metadata finalizes exactly once');
+select is(
+  (select count(*)::integer from youtube_completed_one),
+  1,
+  'fresh metadata finalizes through the null-only duplicate-cluster guard'
+);
 select ok(
   (select status = 'completed' and completed_at is not null
       and locked_by is null and lock_expires_at is null
@@ -371,6 +518,57 @@ select is(
   'the same upstream identity can coexist once per live/demo mode'
 );
 select is(
+  pg_temp.sqlstate_of($sql$
+    update ingest.source_items
+    set is_demo = true
+    where platform = 'youtube' and external_id = 'modeguard01' and not is_demo
+  $sql$),
+  '23503',
+  'composite provenance prevents rebinding a live source item into demo mode'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    update ingest.jobs
+    set is_demo = true
+    where id = 'fd200000-0000-4000-8000-000000000001'
+  $sql$),
+  '23503',
+  'composite provenance prevents rebinding its live job into demo mode'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    insert into ingest.source_discoveries (
+      source_item_id, query_name, job_id, first_seen_at, last_seen_at,
+      result_rank, geography_status, geography_basis, is_demo
+    ) values (
+      'fd100000-0000-4000-8000-000000000001',
+      'pokemon-tcg-etb-opening',
+      'fd200000-0000-4000-8000-000000000001',
+      clock_timestamp(), clock_timestamp(), 40,
+      'unresolved', 'unresolved', false
+    )
+  $sql$),
+  '23503',
+  'a live provenance row cannot reference a demo source item'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    insert into ingest.source_discoveries (
+      source_item_id, query_name, job_id, first_seen_at, last_seen_at,
+      result_rank, geography_status, geography_basis, is_demo
+    ) values (
+      (select id from ingest.source_items
+       where platform = 'youtube' and external_id = 'modeguard01' and not is_demo),
+      'pokemon-tcg-etb-opening',
+      'fd200000-0000-4000-8000-000000000010',
+      clock_timestamp(), clock_timestamp(), 41,
+      'unresolved', 'unresolved', false
+    )
+  $sql$),
+  '23503',
+  'a live provenance row cannot reference a demo job'
+);
+select is(
   (select count(*)::integer from ingest.openings
    where source_item_id = (
      select id from ingest.source_items
@@ -401,6 +599,18 @@ insert into ingest.jobs (
 create temporary table youtube_claim_two on commit drop as
 select * from ingest.claim_jobs_v2(
   'youtube-worker', array['source.youtube.discovery'], 1, 600
+);
+create temporary table youtube_success_cooldown on commit drop as
+select * from ingest.begin_youtube_discovery_job(
+  'fd200000-0000-4000-8000-000000000002', 'youtube-worker', 1
+);
+select ok(
+  (select not cooldown.acquired
+      and cooldown.retry_at >= policies.last_attempt_at + interval '2 seconds'
+   from youtube_success_cooldown as cooldown
+   cross join ingest.source_policies as policies
+   where policies.source_key = 'youtube_discovery'),
+  'a successful post-network finalizer cools down the next job for two seconds'
 );
 update ingest.source_policies
 set last_attempt_at = clock_timestamp() - interval '3 seconds'
@@ -651,6 +861,19 @@ insert into ingest.jobs (
 select * from ingest.claim_jobs_v2(
   'youtube-conflict', array['source.youtube.discovery'], 1, 600
 );
+create temporary table youtube_failure_cooldown on commit drop as
+select * from ingest.begin_youtube_discovery_job(
+  'fd200000-0000-4000-8000-000000000005', 'youtube-conflict', 1
+);
+select ok(
+  (select not cooldown.acquired
+      and cooldown.retry_at >= policies.last_attempt_at + interval '2 seconds'
+      and policies.last_failure_at = policies.last_attempt_at
+   from youtube_failure_cooldown as cooldown
+   cross join ingest.source_policies as policies
+   where policies.source_key = 'youtube_discovery'),
+  'a fenced post-network failure records attention and cools down the next job'
+);
 update ingest.source_policies
 set last_attempt_at = clock_timestamp() - interval '3 seconds'
 where source_key = 'youtube_discovery';
@@ -737,69 +960,292 @@ select * from ingest.fail_job_v2(
   'bounded_contract', 'bounded test failure', false
 );
 
--- Retention deletes expired, unreferenced discovery metadata and cascades its
--- query provenance, but preserves an item that has entered extraction.
+-- The immutable provenance clock is authoritative for hard 30-day deletion.
+-- Even a broad service role may rebind the policy and extend the cached expiry,
+-- but it cannot promote the discovery row into evidence or a dedupe cluster.
+create temporary table youtube_expired_identity on commit drop as
+select id
+from ingest.source_items
+where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo;
+update ingest.source_discoveries
+set first_seen_at = clock_timestamp() - interval '40 days',
+    last_seen_at = clock_timestamp() - interval '40 days'
+where source_item_id = (
+  select id from ingest.source_items
+  where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo
+);
+
 insert into ingest.source_items (
   id, source_policy_id, platform, external_id, source_url, normalized_url,
-  domain, title, discovered_at, content_hash, collector_type, collector_version,
+  domain, title, content_hash, collector_type, collector_version,
   source_policy_version, access_mode, usage_classification, source_kind,
   language, status, metadata, expires_at, is_demo
 ) values
   (
     'fd100000-0000-4000-8000-000000000003',
-    (select id from ingest.source_policies where source_key = 'youtube_discovery'),
-    'youtube', 'expire00001',
-    'https://www.youtube.com/watch?v=expire00001',
-    'https://www.youtube.com/watch?v=expire00001', 'youtube.com',
-    'Expired unreferenced metadata', clock_timestamp() - interval '40 days',
-    null, 'official_api', 'youtube-global-discovery-v1', 'youtube-global-discovery-v1',
-    'official_api', 'activity_only', 'official_api', 'en', 'activity_only',
-    pg_temp.youtube_item(
-      'expire00001', 'pokemon-tcg-booster-box-opening', null
-    ) -> 'metadata',
-    clock_timestamp() - interval '1 day', false
+    'fd000000-0000-4000-8000-000000000002',
+    'manual-test', 'cluster-member',
+    'https://youtube-conflict.invalid/cluster-member',
+    'https://youtube-conflict.invalid/cluster-member',
+    'youtube-conflict.invalid', 'Ordinary cluster member', null,
+    'manual_import', 'test-v1', 'test-v1', 'manual', 'activity_only',
+    'manual_import', 'en', 'activity_only', '{}',
+    clock_timestamp() + interval '30 days', false
   ),
   (
     'fd100000-0000-4000-8000-000000000004',
-    (select id from ingest.source_policies where source_key = 'youtube_discovery'),
-    'youtube', 'retain00001',
-    'https://www.youtube.com/watch?v=retain00001',
-    'https://www.youtube.com/watch?v=retain00001', 'youtube.com',
-    'Expired referenced metadata', clock_timestamp() - interval '40 days',
-    null, 'official_api', 'youtube-global-discovery-v1', 'youtube-global-discovery-v1',
-    'official_api', 'activity_only', 'official_api', 'en', 'activity_only',
-    pg_temp.youtube_item(
-      'retain00001', 'pokemon-tcg-booster-box-opening', null
-    ) -> 'metadata',
-    clock_timestamp() - interval '1 day', false
-  );
-insert into ingest.source_discoveries (
-  source_item_id, query_name, job_id, first_seen_at, last_seen_at, result_rank,
-  channel_country_code, geography_status, geography_basis, is_demo
-) values
-  (
-    'fd100000-0000-4000-8000-000000000003',
-    'pokemon-tcg-booster-box-opening',
-    'fd200000-0000-4000-8000-000000000001',
-    clock_timestamp() - interval '40 days', clock_timestamp() - interval '40 days',
-    2, null, 'unresolved', 'unresolved', false
+    'fd000000-0000-4000-8000-000000000002',
+    'manual-test', 'cluster-target',
+    'https://youtube-conflict.invalid/cluster-target',
+    'https://youtube-conflict.invalid/cluster-target',
+    'youtube-conflict.invalid', 'Ordinary cluster target', null,
+    'manual_import', 'test-v1', 'test-v1', 'manual', 'activity_only',
+    'manual_import', 'en', 'activity_only', '{}',
+    clock_timestamp() + interval '30 days', false
   ),
   (
-    'fd100000-0000-4000-8000-000000000004',
-    'pokemon-tcg-booster-box-opening',
-    'fd200000-0000-4000-8000-000000000001',
-    clock_timestamp() - interval '40 days', clock_timestamp() - interval '40 days',
-    3, null, 'unresolved', 'unresolved', false
+    'fd100000-0000-4000-8000-000000000005',
+    'fd000000-0000-4000-8000-000000000002',
+    'manual-test', 'writable-cte-source',
+    'https://youtube-conflict.invalid/writable-cte-source',
+    'https://youtube-conflict.invalid/writable-cte-source',
+    'youtube-conflict.invalid', 'Ordinary unreferenced source', null,
+    'manual_import', 'test-v1', 'test-v1', 'manual', 'activity_only',
+    'manual_import', 'en', 'activity_only', '{}',
+    clock_timestamp() + interval '30 days', false
   );
-insert into ingest.extraction_runs (
-  id, source_item_id, stage, provider, model, prompt_version, input_hash,
-  started_at, expires_at, is_demo
-) values (
-  'fd300000-0000-4000-8000-000000000001',
-  'fd100000-0000-4000-8000-000000000004',
-  'extract', 'bounded-test', 'deterministic-v1', 'test-v1', repeat('e', 64),
-  clock_timestamp() - interval '1 day', clock_timestamp() + interval '30 days', false
+update ingest.source_items
+set duplicate_cluster_id = 'fd100000-0000-4000-8000-000000000004'
+where id = 'fd100000-0000-4000-8000-000000000003';
+
+grant usage on schema extensions to service_role;
+set local role service_role;
+select is(
+  pg_temp.sqlstate_of($sql$
+    with rebound as (
+      update ingest.source_items
+      set source_policy_id = (
+        select id from ingest.source_policies where source_key = 'youtube_discovery'
+      )
+      where id = 'fd100000-0000-4000-8000-000000000005'
+      returning id
+    )
+    insert into ingest.extraction_runs (
+      id, source_item_id, stage, provider, model, prompt_version, input_hash,
+      started_at, expires_at, is_demo
+    )
+    select
+      'fd300000-0000-4000-8000-000000000002', rebound.id,
+      'extract', 'bounded-test', 'deterministic-v1', 'test-v1', repeat('f', 64),
+      clock_timestamp(), clock_timestamp() + interval '30 days', false
+    from rebound
+  $sql$),
+  '23514',
+  'a writable CTE cannot atomically rebind an ordinary source and add evidence'
 );
+select is(
+  pg_temp.sqlstate_of_deferred($sql$
+    with inserted_source as (
+      insert into ingest.source_items (
+        id, source_policy_id, platform, external_id, source_url, normalized_url,
+        domain, title, content_hash, collector_type, collector_version,
+        source_policy_version, access_mode, usage_classification, source_kind,
+        language, status, metadata, expires_at, is_demo
+      ) values (
+        'fd100000-0000-4000-8000-000000000006',
+        (select id from ingest.source_policies where source_key = 'youtube_discovery'),
+        'youtube', 'ctebypass01',
+        'https://www.youtube.com/watch?v=ctebypass01',
+        'https://www.youtube.com/watch?v=ctebypass01',
+        'youtube.com', 'Sibling CTE metadata', null,
+        'official_api', 'youtube-global-discovery-v1',
+        'youtube-global-discovery-v1', 'official_api', 'activity_only',
+        'official_api', 'en', 'activity_only',
+        pg_temp.youtube_item(
+          'ctebypass01', 'pokemon-tcg-booster-box-opening', null
+        ) -> 'metadata',
+        clock_timestamp() + interval '30 days', false
+      )
+      returning id
+    )
+    insert into ingest.extraction_runs (
+      id, source_item_id, stage, provider, model, prompt_version, input_hash,
+      started_at, expires_at, is_demo
+    )
+    select
+      'fd300000-0000-4000-8000-000000000003', inserted_source.id,
+      'extract', 'bounded-test', 'deterministic-v1', 'test-v1', repeat('a', 64),
+      clock_timestamp(), clock_timestamp() + interval '30 days', false
+    from inserted_source
+  $sql$),
+  '23514',
+  'deferred invariants reject sibling CTE insertion of discovery metadata and evidence'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    update ingest.source_items
+    set source_policy_id = (
+      select id from ingest.source_policies where source_key = 'youtube_discovery'
+    )
+    where id = '71000000-0000-4000-8000-000000000001'
+  $sql$),
+  '23514',
+  'a source with existing extraction, opening, and batch evidence cannot be rebound into discovery'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    update ingest.source_items
+    set source_policy_id = (
+      select id from ingest.source_policies where source_key = 'youtube_discovery'
+    )
+    where id = 'fd100000-0000-4000-8000-000000000003'
+  $sql$),
+  '23514',
+  'an ordinary duplicate-cluster member cannot be rebound into discovery'
+);
+update ingest.source_items
+set duplicate_cluster_id = null
+where id = 'fd100000-0000-4000-8000-000000000003';
+update ingest.source_items
+set duplicate_cluster_id = 'fd100000-0000-4000-8000-000000000003'
+where id = 'fd100000-0000-4000-8000-000000000004';
+select is(
+  pg_temp.sqlstate_of($sql$
+    update ingest.source_items
+    set source_policy_id = (
+      select id from ingest.source_policies where source_key = 'youtube_discovery'
+    )
+    where id = 'fd100000-0000-4000-8000-000000000003'
+  $sql$),
+  '23514',
+  'an ordinary duplicate-cluster target cannot be rebound into discovery'
+);
+select lives_ok(
+  $$update ingest.source_items
+    set source_policy_id = 'fd000000-0000-4000-8000-000000000002',
+        expires_at = clock_timestamp() + interval '10 years'
+    where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo$$,
+  'service_role may rebind policy/cache fields but cannot erase immutable provenance'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    insert into ingest.extraction_runs (
+      id, source_item_id, stage, provider, model, prompt_version, input_hash,
+      started_at, expires_at, is_demo
+    ) values (
+      'fd300000-0000-4000-8000-000000000001',
+      (select id from ingest.source_items
+       where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo),
+      'extract', 'bounded-test', 'deterministic-v1', 'test-v1', repeat('e', 64),
+      clock_timestamp(), clock_timestamp() + interval '30 days', false
+    )
+  $sql$),
+  '23514',
+  'a rebound discovery cannot be inserted into extraction runs'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    update ingest.extraction_runs
+    set source_item_id = (
+      select id from ingest.source_items
+      where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo
+    )
+    where id = '72000000-0000-4000-8000-000000000001'
+  $sql$),
+  '23514',
+  'an extraction run cannot be updated onto rebound discovery metadata'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    insert into ingest.openings (
+      id, source_item_id, extraction_run_id, set_id, product_id, language,
+      pack_count, complete_opening, country_code, region_id, retailer_id,
+      store_id, batch_code, purchase_date, opened_at, observed_at, evidence_tier,
+      overall_confidence, eligible_for_statistics, methodology_version,
+      validation_status, public_status, source_kind, expires_at, is_demo
+    )
+    select
+      'fd400000-0000-4000-8000-000000000001',
+      (select id from ingest.source_items
+       where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo),
+      extraction_run_id, set_id, product_id, language, pack_count,
+      complete_opening, country_code, region_id, retailer_id, store_id,
+      batch_code, purchase_date, opened_at, observed_at, evidence_tier,
+      overall_confidence, eligible_for_statistics, methodology_version,
+      validation_status, public_status, source_kind, expires_at, false
+    from ingest.openings
+    where id = '73000000-0000-4000-8000-000000000001'
+  $sql$),
+  '23514',
+  'a rebound discovery cannot be inserted into openings'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    update ingest.openings
+    set source_item_id = (
+      select id from ingest.source_items
+      where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo
+    )
+    where id = '73000000-0000-4000-8000-000000000001'
+  $sql$),
+  '23514',
+  'an opening cannot be updated onto rebound discovery metadata'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    insert into ingest.batch_sightings (
+      id, source_item_id, opening_id, set_id, product_id, region_id, retailer_id,
+      store_id, batch_code, normalized_batch_code, pack_quantity, activity_only,
+      confidence, observed_at, expires_at, is_demo
+    )
+    select
+      'fd500000-0000-4000-8000-000000000001',
+      (select id from ingest.source_items
+       where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo),
+      opening_id, set_id, product_id, region_id, retailer_id, store_id,
+      batch_code, normalized_batch_code, pack_quantity, activity_only,
+      confidence, observed_at, expires_at, false
+    from ingest.batch_sightings
+    where id = '75000000-0000-4000-8000-000000000001'
+  $sql$),
+  '23514',
+  'a rebound discovery cannot be inserted into batch sightings'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    update ingest.batch_sightings
+    set source_item_id = (
+      select id from ingest.source_items
+      where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo
+    )
+    where id = '75000000-0000-4000-8000-000000000001'
+  $sql$),
+  '23514',
+  'a batch sighting cannot be updated onto rebound discovery metadata'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    update ingest.source_items
+    set duplicate_cluster_id = '71000000-0000-4000-8000-000000000001'
+    where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo
+  $sql$),
+  '23514',
+  'rebound discovery metadata cannot join a downstream duplicate cluster'
+);
+select is(
+  pg_temp.sqlstate_of($sql$
+    update ingest.source_items
+    set duplicate_cluster_id = (
+      select id from ingest.source_items
+      where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo
+    )
+    where id = '71000000-0000-4000-8000-000000000002'
+  $sql$),
+  '23514',
+  'rebound discovery metadata cannot become another source cluster target'
+);
+reset role;
+
 insert into ingest.jobs (
   id, job_type, payload, status, priority, attempts, max_attempts,
   available_at, retention_until, is_demo
@@ -820,27 +1266,15 @@ select is(
 );
 select is(
   (select count(*)::integer from ingest.source_items
-   where id = 'fd100000-0000-4000-8000-000000000003'),
+   where platform = 'youtube' and external_id = 'abcdefghijk' and not is_demo),
   0,
-  'expired unreferenced YouTube metadata is deleted'
+  'expired rebound YouTube metadata is deleted despite its extended cache expiry'
 );
 select is(
   (select count(*)::integer from ingest.source_discoveries
-   where source_item_id = 'fd100000-0000-4000-8000-000000000003'),
+   where source_item_id = (select id from youtube_expired_identity)),
   0,
   'expired source discovery provenance cascades with its source item'
-);
-select is(
-  (select count(*)::integer from ingest.source_items
-   where id = 'fd100000-0000-4000-8000-000000000004'),
-  1,
-  'an expired YouTube item with an extraction reference is retained'
-);
-select is(
-  (select count(*)::integer from ingest.source_discoveries
-   where source_item_id = 'fd100000-0000-4000-8000-000000000004'),
-  1,
-  'retained referenced metadata keeps its query provenance'
 );
 select ok(
   not has_function_privilege(
@@ -849,6 +1283,10 @@ select ok(
     'execute'
   ),
   'service_role cannot bypass fenced cleanup to call retention directly'
+);
+select lives_ok(
+  'set constraints all immediate',
+  'all legitimate discovery writes satisfy deferred end-state invariants'
 );
 
 select * from finish();

@@ -19,6 +19,13 @@ drop index ingest.source_items_platform_external_uidx;
 alter table ingest.source_items
   alter column content_hash drop not null;
 
+-- Composite provenance foreign keys bind the immutable live/demo mode to the
+-- parent identity. The redundant unique constraints are required FK targets.
+alter table ingest.source_items
+  add constraint source_items_id_mode_unique unique (id, is_demo);
+alter table ingest.jobs
+  add constraint jobs_id_mode_unique unique (id, is_demo);
+
 create unique index source_items_normalized_url_uidx
   on ingest.source_items (normalized_url, is_demo);
 create unique index source_items_platform_external_uidx
@@ -85,11 +92,9 @@ values ('youtube_discovery');
 -- table represents an observed opening location.
 create table ingest.source_discoveries (
   id uuid primary key default gen_random_uuid(),
-  source_item_id uuid not null references ingest.source_items(id)
-    on update cascade on delete cascade,
+  source_item_id uuid not null,
   query_name text not null,
-  job_id uuid not null references ingest.jobs(id)
-    on update cascade on delete restrict deferrable initially deferred,
+  job_id uuid not null,
   first_seen_at timestamptz not null,
   last_seen_at timestamptz not null,
   result_rank integer not null,
@@ -125,7 +130,15 @@ create table ingest.source_discoveries (
   constraint source_discoveries_identity_unique
     unique (source_item_id, query_name, is_demo),
   constraint source_discoveries_job_rank_unique
-    unique (job_id, query_name, result_rank, is_demo)
+    unique (job_id, query_name, result_rank, is_demo),
+  constraint source_discoveries_source_item_mode_fkey
+    foreign key (source_item_id, is_demo)
+    references ingest.source_items (id, is_demo)
+    on update restrict on delete cascade,
+  constraint source_discoveries_job_mode_fkey
+    foreign key (job_id, is_demo)
+    references ingest.jobs (id, is_demo)
+    on update restrict on delete restrict
 );
 
 create index source_discoveries_query_seen_idx
@@ -144,6 +157,330 @@ grant select on table ingest.source_discoveries to service_role;
 
 comment on table ingest.source_discoveries is
   'Private query provenance for metadata-only YouTube activity discovery. Channel country is an official-channel proxy, never an observed opening location.';
+
+-- YouTube discovery rows are transient metadata, not evidence submissions.
+-- The private live provenance row is an immutable marker even if a broad
+-- service role later rebinds source_policy_id, so that rebind cannot bypass
+-- either this promotion guard or the 30-day cleanup boundary.
+create or replace function ingest.is_youtube_discovery_metadata_source(
+  source_item_id uuid,
+  source_policy_id uuid default null
+)
+returns boolean
+language sql
+security definer
+stable
+parallel safe
+set search_path = pg_catalog
+as $$
+  select
+    exists (
+      select 1
+      from ingest.source_policies as policies
+      where policies.id = $2
+        and policies.source_key = 'youtube_discovery'
+    )
+    or exists (
+      select 1
+      from ingest.source_items as source_items
+      join ingest.source_policies as policies
+        on policies.id = source_items.source_policy_id
+      where source_items.id = $1
+        and policies.source_key = 'youtube_discovery'
+    )
+    or exists (
+      select 1
+      from ingest.source_discoveries as discoveries
+      where discoveries.source_item_id = $1
+        and not discoveries.is_demo
+    );
+$$;
+
+alter function ingest.is_youtube_discovery_metadata_source(uuid, uuid)
+  owner to postgres;
+revoke all on function ingest.is_youtube_discovery_metadata_source(uuid, uuid)
+  from public, anon, authenticated, service_role;
+comment on function ingest.is_youtube_discovery_metadata_source(uuid, uuid) is
+  'Internal policy-or-provenance classifier for transient YouTube discovery source identities.';
+
+create or replace function ingest.reject_youtube_discovery_evidence_reference()
+returns trigger
+language plpgsql
+security definer
+volatile
+parallel unsafe
+set search_path = pg_catalog
+as $$
+begin
+  if ingest.is_youtube_discovery_metadata_source(new.source_item_id) then
+    raise exception using
+      errcode = '23514',
+      message = 'YouTube discovery metadata cannot be referenced as evidence';
+  end if;
+
+  return new;
+end;
+$$;
+
+alter function ingest.reject_youtube_discovery_evidence_reference()
+  owner to postgres;
+revoke all on function ingest.reject_youtube_discovery_evidence_reference()
+  from public, anon, authenticated, service_role;
+comment on function ingest.reject_youtube_discovery_evidence_reference() is
+  'Trigger-only invariant preventing transient YouTube discovery metadata from entering evidence tables, including after source-policy rebinding.';
+
+create or replace function ingest.reject_youtube_discovery_duplicate_cluster()
+returns trigger
+language plpgsql
+security definer
+volatile
+parallel unsafe
+set search_path = pg_catalog
+as $$
+begin
+  if new.duplicate_cluster_id is not null
+    and (
+      ingest.is_youtube_discovery_metadata_source(new.id, new.source_policy_id)
+      or ingest.is_youtube_discovery_metadata_source(new.duplicate_cluster_id)
+    )
+  then
+    raise exception using
+      errcode = '23514',
+      message = 'YouTube discovery metadata cannot participate in duplicate clusters';
+  end if;
+
+  return new;
+end;
+$$;
+
+alter function ingest.reject_youtube_discovery_duplicate_cluster()
+  owner to postgres;
+revoke all on function ingest.reject_youtube_discovery_duplicate_cluster()
+  from public, anon, authenticated, service_role;
+comment on function ingest.reject_youtube_discovery_duplicate_cluster() is
+  'Trigger-only invariant keeping transient YouTube discovery rows out of both sides of downstream duplicate clusters.';
+
+create or replace function ingest.reject_youtube_discovery_policy_rebind()
+returns trigger
+language plpgsql
+security definer
+volatile
+parallel unsafe
+set search_path = pg_catalog
+as $$
+begin
+  -- PostgreSQL data-modifying CTEs share one statement snapshot. Allowing an
+  -- ordinary identity to adopt this policy would therefore let a sibling CTE
+  -- create an evidence reference before either cross-table lookup can observe
+  -- the other's write. Discovery identities are created only by the fenced
+  -- finalizer, so reject ordinary-to-discovery adoption outright.
+  if tg_op = 'UPDATE'
+    and not ingest.is_youtube_discovery_metadata_source(
+      old.id,
+      old.source_policy_id
+    )
+    and ingest.is_youtube_discovery_metadata_source(
+      new.id,
+      new.source_policy_id
+    )
+  then
+    raise exception using
+      errcode = '23514',
+      message = 'Ordinary source identities cannot be rebound into YouTube discovery metadata';
+  end if;
+
+  if ingest.is_youtube_discovery_metadata_source(new.id, new.source_policy_id)
+    and (
+      new.duplicate_cluster_id is not null
+      or exists (
+        select 1
+        from ingest.source_items as source_items
+        where source_items.id <> new.id
+          and source_items.duplicate_cluster_id = new.id
+      )
+      or exists (
+        select 1
+        from ingest.extraction_runs as runs
+        where runs.source_item_id = new.id
+      )
+      or exists (
+        select 1
+        from ingest.openings as openings
+        where openings.source_item_id = new.id
+      )
+      or exists (
+        select 1
+        from ingest.batch_sightings as sightings
+        where sightings.source_item_id = new.id
+      )
+    )
+  then
+    raise exception using
+      errcode = '23514',
+      message = 'YouTube discovery metadata cannot inherit existing evidence or duplicate references';
+  end if;
+
+  return new;
+end;
+$$;
+
+alter function ingest.reject_youtube_discovery_policy_rebind()
+  owner to postgres;
+revoke all on function ingest.reject_youtube_discovery_policy_rebind()
+  from public, anon, authenticated, service_role;
+comment on function ingest.reject_youtube_discovery_policy_rebind() is
+  'Trigger-only invariant forbidding ordinary-to-discovery policy adoption and preventing discovery identities from inheriting references.';
+
+-- Row-level BEFORE guards fail fast, while these deferred checks validate the
+-- complete transaction state. The latter closes data-modifying CTE snapshot
+-- gaps where sibling writes are intentionally invisible until statement end.
+create or replace function ingest.enforce_youtube_discovery_metadata_end_state()
+returns trigger
+language plpgsql
+security definer
+volatile
+parallel unsafe
+set search_path = pg_catalog
+as $$
+declare
+  current_source ingest.source_items%rowtype;
+  referenced_source_id uuid;
+begin
+  if tg_relid = 'ingest.extraction_runs'::regclass then
+    select runs.source_item_id
+    into referenced_source_id
+    from ingest.extraction_runs as runs
+    where runs.id = new.id;
+  elsif tg_relid = 'ingest.openings'::regclass then
+    select openings.source_item_id
+    into referenced_source_id
+    from ingest.openings as openings
+    where openings.id = new.id;
+  elsif tg_relid = 'ingest.batch_sightings'::regclass then
+    select sightings.source_item_id
+    into referenced_source_id
+    from ingest.batch_sightings as sightings
+    where sightings.id = new.id;
+  end if;
+
+  if tg_relid in (
+    'ingest.extraction_runs'::regclass,
+    'ingest.openings'::regclass,
+    'ingest.batch_sightings'::regclass
+  ) then
+    if not found then
+      return null;
+    end if;
+
+    if ingest.is_youtube_discovery_metadata_source(referenced_source_id) then
+      raise exception using
+        errcode = '23514',
+        message = 'YouTube discovery metadata cannot be referenced as evidence';
+    end if;
+
+    return null;
+  end if;
+
+  if tg_relid = 'ingest.source_discoveries'::regclass then
+    select source_items.*
+    into current_source
+    from ingest.source_discoveries as discoveries
+    join ingest.source_items as source_items
+      on source_items.id = discoveries.source_item_id
+     and source_items.is_demo = discoveries.is_demo
+    where discoveries.id = new.id;
+  else
+    select source_items.*
+    into current_source
+    from ingest.source_items as source_items
+    where source_items.id = new.id;
+  end if;
+
+  if not found then
+    return null;
+  end if;
+
+  if ingest.is_youtube_discovery_metadata_source(
+      current_source.id,
+      current_source.source_policy_id
+    )
+    and (
+      current_source.duplicate_cluster_id is not null
+      or exists (
+        select 1
+        from ingest.source_items as source_items
+        where source_items.id <> current_source.id
+          and source_items.duplicate_cluster_id = current_source.id
+      )
+      or exists (
+        select 1
+        from ingest.extraction_runs as runs
+        where runs.source_item_id = current_source.id
+      )
+      or exists (
+        select 1
+        from ingest.openings as openings
+        where openings.source_item_id = current_source.id
+      )
+      or exists (
+        select 1
+        from ingest.batch_sightings as sightings
+        where sightings.source_item_id = current_source.id
+      )
+    )
+  then
+    raise exception using
+      errcode = '23514',
+      message = 'YouTube discovery metadata has an invalid downstream reference';
+  end if;
+
+  return null;
+end;
+$$;
+
+alter function ingest.enforce_youtube_discovery_metadata_end_state()
+  owner to postgres;
+revoke all on function ingest.enforce_youtube_discovery_metadata_end_state()
+  from public, anon, authenticated, service_role;
+comment on function ingest.enforce_youtube_discovery_metadata_end_state() is
+  'Deferred trigger invariant validating the final transaction graph for transient YouTube metadata.';
+
+create trigger extraction_runs_reject_youtube_discovery
+before insert or update of source_item_id on ingest.extraction_runs
+for each row execute function ingest.reject_youtube_discovery_evidence_reference();
+create trigger openings_reject_youtube_discovery
+before insert or update of source_item_id on ingest.openings
+for each row execute function ingest.reject_youtube_discovery_evidence_reference();
+create trigger batch_sightings_reject_youtube_discovery
+before insert or update of source_item_id on ingest.batch_sightings
+for each row execute function ingest.reject_youtube_discovery_evidence_reference();
+create trigger source_items_reject_youtube_discovery_duplicate_cluster
+before insert or update of duplicate_cluster_id on ingest.source_items
+for each row execute function ingest.reject_youtube_discovery_duplicate_cluster();
+create trigger source_items_reject_youtube_discovery_policy_rebind
+before insert or update of source_policy_id on ingest.source_items
+for each row execute function ingest.reject_youtube_discovery_policy_rebind();
+
+create constraint trigger source_items_enforce_youtube_discovery_end_state
+after insert or update on ingest.source_items
+deferrable initially deferred
+for each row execute function ingest.enforce_youtube_discovery_metadata_end_state();
+create constraint trigger source_discoveries_enforce_youtube_discovery_end_state
+after insert or update on ingest.source_discoveries
+deferrable initially deferred
+for each row execute function ingest.enforce_youtube_discovery_metadata_end_state();
+create constraint trigger extraction_runs_enforce_youtube_discovery_end_state
+after insert or update on ingest.extraction_runs
+deferrable initially deferred
+for each row execute function ingest.enforce_youtube_discovery_metadata_end_state();
+create constraint trigger openings_enforce_youtube_discovery_end_state
+after insert or update on ingest.openings
+deferrable initially deferred
+for each row execute function ingest.enforce_youtube_discovery_metadata_end_state();
+create constraint trigger batch_sightings_enforce_youtube_discovery_end_state
+after insert or update on ingest.batch_sightings
+deferrable initially deferred
+for each row execute function ingest.enforce_youtube_discovery_metadata_end_state();
 
 -- Renew every request gate owned by this exact fenced job generation. This
 -- retains TCGdex behavior while allowing additional gated official sources.
@@ -259,6 +596,7 @@ declare
   leased_job ingest.jobs%rowtype;
   failed_job ingest.jobs%rowtype;
   lease_checked_at timestamptz;
+  cooldown_recorded_at timestamptz;
 begin
   if $1 is null then
     raise exception using errcode = '22023', message = 'job_id must not be null';
@@ -343,6 +681,20 @@ begin
   if not found then
     return;
   end if;
+
+  cooldown_recorded_at := clock_timestamp();
+  update ingest.source_policies as policies
+  set last_attempt_at = greatest(
+        coalesce(policies.last_attempt_at, '-infinity'::timestamptz),
+        cooldown_recorded_at
+      ),
+      last_failure_at = cooldown_recorded_at,
+      updated_at = cooldown_recorded_at
+  from ingest.source_request_gates as gates
+  where gates.owner_job_id = $1
+    and gates.owner_lease_generation = $3
+    and policies.source_key = gates.source_key
+    and not policies.is_demo;
 
   update ingest.source_request_gates as gates
   set owner_job_id = null,
@@ -617,28 +969,32 @@ begin
   with candidates as materialized (
     select source_items.id
     from ingest.source_items as source_items
-    join ingest.source_policies as policies
+    left join ingest.source_policies as policies
       on policies.id = source_items.source_policy_id
-    where policies.source_key = 'youtube_discovery'
-      and not policies.is_demo
-      and not source_items.is_demo
-      and source_items.expires_at <= cutoff
-      and not exists (
-        select 1
-        from ingest.extraction_runs as runs
-        where runs.source_item_id = source_items.id
+    -- Use the immutable provenance clock for both eligibility and ordering so
+    -- a mutable cache expiry cannot starve an expired marker behind max_rows.
+    left join lateral (
+      select
+        max(discoveries.last_seen_at) + interval '30 days' as effective_expiry
+      from ingest.source_discoveries as discoveries
+      where discoveries.source_item_id = source_items.id
+        and discoveries.is_demo = source_items.is_demo
+        and not discoveries.is_demo
+    ) as marker_expiry on true
+    where not source_items.is_demo
+      and (
+        marker_expiry.effective_expiry <= cutoff
+        or (
+          marker_expiry.effective_expiry is null
+          and policies.source_key = 'youtube_discovery'
+          and not policies.is_demo
+          and source_items.expires_at <= cutoff
+        )
       )
-      and not exists (
-        select 1
-        from ingest.openings as openings
-        where openings.source_item_id = source_items.id
-      )
-      and not exists (
-        select 1
-        from ingest.batch_sightings as sightings
-        where sightings.source_item_id = source_items.id
-      )
-    order by source_items.expires_at, source_items.id
+    order by coalesce(
+      marker_expiry.effective_expiry,
+      source_items.expires_at
+    ), source_items.id
     for update of source_items skip locked
     limit max_rows
   )
@@ -708,7 +1064,7 @@ alter function ingest.prune_expired_ephemera_v2(timestamptz, integer)
 revoke all on function ingest.prune_expired_ephemera_v2(timestamptz, integer)
   from public, anon, authenticated, service_role;
 comment on function ingest.prune_expired_ephemera_v2(timestamptz, integer) is
-  'Internal bounded cleanup including expired unreferenced YouTube metadata and cascading private discovery provenance. Callable only by a typed fenced finalizer.';
+  'Internal bounded hard cleanup of expired YouTube discovery identities using immutable provenance time, with cascading private provenance. Callable only by a typed fenced finalizer.';
 
 create or replace function ingest.finalize_youtube_discovery_job(
   job_id uuid,
@@ -729,6 +1085,7 @@ declare
   policy_id uuid;
   request_gate ingest.source_request_gates%rowtype;
   lease_checked_at timestamptz;
+  policy_attempt_time timestamptz;
   completion_time timestamptz;
   query_name text;
   result_items jsonb;
@@ -1308,9 +1665,14 @@ begin
     where not discoveries.is_demo;
   end loop;
 
+  policy_attempt_time := clock_timestamp();
   update ingest.source_policies as policies
-  set last_success_at = lease_checked_at,
-      updated_at = lease_checked_at
+  set last_attempt_at = greatest(
+        coalesce(policies.last_attempt_at, '-infinity'::timestamptz),
+        policy_attempt_time
+      ),
+      last_success_at = policy_attempt_time,
+      updated_at = policy_attempt_time
   where policies.id = policy_id;
 
   if not found then

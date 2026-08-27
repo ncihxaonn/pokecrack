@@ -1690,18 +1690,18 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: 'source_discoveries_job_id_fkey';
-            columns: ['job_id'];
+            foreignKeyName: 'source_discoveries_job_mode_fkey';
+            columns: ['job_id', 'is_demo'];
             isOneToOne: false;
             referencedRelation: 'jobs';
-            referencedColumns: ['id'];
+            referencedColumns: ['id', 'is_demo'];
           },
           {
-            foreignKeyName: 'source_discoveries_source_item_id_fkey';
-            columns: ['source_item_id'];
+            foreignKeyName: 'source_discoveries_source_item_mode_fkey';
+            columns: ['source_item_id', 'is_demo'];
             isOneToOne: false;
             referencedRelation: 'source_items';
-            referencedColumns: ['id'];
+            referencedColumns: ['id', 'is_demo'];
           },
         ];
       };
