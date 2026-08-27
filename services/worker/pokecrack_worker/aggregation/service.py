@@ -29,7 +29,7 @@ _SCOPE_ATTRIBUTE = {
 def _is_public_observation(opening: OpeningObservation) -> bool:
     in_scope = (
         opening.language.strip().casefold() == "en"
-        and opening.country_code.strip().upper() == "AU"
+        and opening.country_code == "AU"
         and opening.product_type in SUPPORTED_MVP_PRODUCT_TYPES
     )
     if not in_scope:

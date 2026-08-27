@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import unicodedata
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -10,6 +11,17 @@ from enum import StrEnum
 from typing import Any
 
 _TCGDEX_ETAG_PATTERN = re.compile(r'(?:W/)?"[\x21\x23-\x7e]*"')
+_YOUTUBE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
+_YOUTUBE_PUBLISHED_AT_MIN = datetime(2005, 1, 1, tzinfo=UTC)
+_YOUTUBE_QUERY_NAMES = frozenset(
+    {
+        "pokemon-tcg-booster-box-opening",
+        "pokemon-tcg-etb-opening",
+        "pokemon-tcg-booster-bundle-opening",
+        "pokemon-tcg-pack-opening",
+        "pokemon-tcg-opening-batch-code",
+    }
+)
 
 
 class JobStatus(StrEnum):
@@ -132,6 +144,93 @@ class TCGdexSetsSyncCompletion:
                 }
                 for item in self.sets
             ],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class YouTubeSourceItemWrite:
+    """Minimal API fields accepted by the isolated YouTube discovery finalizer."""
+
+    external_id: str
+    source_url: str
+    title: str | None
+    published_at: datetime | None
+    collector_version: str
+    source_policy_version: str
+
+    def __post_init__(self) -> None:
+        if (
+            not isinstance(self.external_id, str)
+            or _YOUTUBE_ID_PATTERN.fullmatch(self.external_id) is None
+        ):
+            raise ValueError("YouTube external ID is invalid")
+        expected_url = f"https://www.youtube.com/watch?v={self.external_id}"
+        if self.source_url != expected_url:
+            raise ValueError("YouTube source URL must use the exact canonical watch form")
+        if self.title is not None and (
+            not isinstance(self.title, str)
+            or len(self.title) > 500
+            or any(unicodedata.category(character).startswith("C") for character in self.title)
+        ):
+            raise ValueError("YouTube title is invalid")
+        if self.published_at is not None:
+            if (
+                not isinstance(self.published_at, datetime)
+                or self.published_at.tzinfo is None
+                or self.published_at.utcoffset() is None
+            ):
+                raise ValueError("YouTube published_at must be timezone-aware or null")
+            published_at = self.published_at.astimezone(UTC)
+            if not _YOUTUBE_PUBLISHED_AT_MIN <= published_at <= datetime.now(UTC):
+                raise ValueError("YouTube published_at is outside the approved range")
+        if self.collector_version != "youtube-global-discovery-v1":
+            raise ValueError("YouTube collector version is not approved")
+        if self.source_policy_version != "youtube-global-discovery-v1":
+            raise ValueError("YouTube source policy version is not approved")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        published_at = (
+            self.published_at.astimezone(UTC).isoformat().replace("+00:00", "Z")
+            if self.published_at is not None
+            else None
+        )
+        return {
+            "external_id": self.external_id,
+            "source_url": self.source_url,
+            "title": self.title,
+            "published_at": published_at,
+            "collector_version": self.collector_version,
+            "source_policy_version": self.source_policy_version,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class YouTubeDiscoveryCompletion:
+    """One exact allowlisted query and its bounded atomic persistence input."""
+
+    query_name: str
+    items: tuple[YouTubeSourceItemWrite, ...]
+
+    def __post_init__(self) -> None:
+        if self.query_name not in _YOUTUBE_QUERY_NAMES:
+            raise ValueError("YouTube completion query name is not approved")
+        if (
+            not isinstance(self.items, tuple)
+            or len(self.items) > 25
+            or any(not isinstance(item, YouTubeSourceItemWrite) for item in self.items)
+        ):
+            raise ValueError("YouTube completion requires 0 to 25 typed items")
+        external_ids = [item.external_id for item in self.items]
+        if len(external_ids) != len(set(external_ids)):
+            raise ValueError("YouTube completion external IDs must be unique")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        return {
+            "version": 1,
+            "query_name": self.query_name,
+            "items": [item.as_payload() for item in self.items],
         }
 
 

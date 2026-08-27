@@ -22,6 +22,6 @@ def is_statistics_eligible(opening: OpeningObservation) -> bool:
         and opening.set_id is not None
         and opening.catalog_mapped
         and opening.language.strip().casefold() == "en"
-        and opening.country_code.strip().upper() == "AU"
+        and opening.country_code == "AU"
         and opening.product_type in SUPPORTED_MVP_PRODUCT_TYPES
     )

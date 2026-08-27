@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import replace
 from datetime import UTC, datetime
 
+import pytest
+
 from pokecrack_worker.aggregation import (
     AggregateScope,
     AggregationService,
@@ -22,6 +24,7 @@ def _opening(**changes: object) -> OpeningObservation:
         "source_id": "source-1",
         "set_id": "set-a",
         "pack_count": 10,
+        "country_code": "AU",
         "hit_count": 2,
         "source_status": "accepted",
         "validation_status": "accepted",
@@ -53,15 +56,33 @@ def test_eligibility_requires_every_primary_rate_gate() -> None:
         replace(valid, pack_count=None),
         replace(valid, catalog_mapped=False),
         replace(valid, language="fr"),
+        replace(valid, country_code=None),
         replace(valid, product_type="other"),
     ):
         assert not is_statistics_eligible(excluded)
 
 
-def test_non_australian_openings_are_not_statistics_eligible() -> None:
-    opening = _opening(country_code="US")
+@pytest.mark.parametrize("country_code", ["US", "JP", "GB"])
+def test_non_australian_openings_remain_private(country_code: str) -> None:
+    opening = _opening(country_code=country_code)
+    service = AggregationService(InMemoryAggregateRepository(), baseline_rate=0.1)
 
     assert not is_statistics_eligible(opening)
+    assert service.aggregate_sets([opening], now=NOW, version="method-v1").records == ()
+
+
+def test_unresolved_country_is_neither_rate_eligible_nor_public() -> None:
+    opening = _opening(country_code=None)
+    service = AggregationService(InMemoryAggregateRepository(), baseline_rate=0.1)
+
+    assert not is_statistics_eligible(opening)
+    assert service.aggregate_sets([opening], now=NOW, version="method-v1").records == ()
+
+
+@pytest.mark.parametrize("country_code", ["USA", "au"])
+def test_opening_observation_rejects_malformed_country_codes(country_code: str) -> None:
+    with pytest.raises(ValueError, match="country_code"):
+        _opening(country_code=country_code)
 
 
 def test_aggregate_all_is_idempotent_for_every_scope_and_excludes_activity_rates() -> None:

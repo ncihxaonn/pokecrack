@@ -47,11 +47,16 @@ jobs:
           [[ -n "${{ inputs.backup_reference }}" ]]
           [[ -n "$SUPABASE_DB_URL" ]]
           [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
-      - name: Read applied migration versions without exposing the database URL
+      - name: Verify PostgreSQL 17 and read applied migrations without exposing the URL
         shell: bash
         run: |
           set -Eeuo pipefail
           command -v psql >/dev/null
+          server_version_num=$(PGCONNECT_TIMEOUT=15 PGDATABASE="$SUPABASE_DB_URL" \
+            psql --no-psqlrc --set=ON_ERROR_STOP=1 --tuples-only --no-align \
+              --command "select current_setting('server_version_num')")
+          [[ "$server_version_num" =~ ^[0-9]+$ ]]
+          (( server_version_num >= 170000 ))
           PGCONNECT_TIMEOUT=15 PGDATABASE="$SUPABASE_DB_URL" \
             psql --no-psqlrc --set=ON_ERROR_STOP=1 --tuples-only --no-align \
               --command 'select version from supabase_migrations.schema_migrations order by version' \

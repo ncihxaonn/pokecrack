@@ -7,6 +7,8 @@ from .models import (
     TCGdexSetsSyncCompletion,
     TCGdexSetWrite,
     TCGdexSyncOutcome,
+    YouTubeDiscoveryCompletion,
+    YouTubeSourceItemWrite,
 )
 from .postgres import CLAIM_SQL, PostgresJobRepository, QueryExecutor
 from .repository import (
@@ -30,4 +32,6 @@ __all__ = [
     "TCGdexSetsSyncCompletion",
     "TCGdexSetWrite",
     "TCGdexSyncOutcome",
+    "YouTubeDiscoveryCompletion",
+    "YouTubeSourceItemWrite",
 ]

@@ -21,6 +21,12 @@ class PrecheckResult:
         return not self.issues
 
 
+def is_valid_country_code(value: str) -> bool:
+    """Return whether value is an exact two-letter uppercase ASCII country code."""
+
+    return len(value) == 2 and all("A" <= character <= "Z" for character in value)
+
+
 def run_prechecks(output: ExtractorOutput, *, max_pack_count: int = 10_000) -> PrecheckResult:
     """Run cheap, deterministic checks before spending on validation AI."""
 
@@ -53,19 +59,12 @@ def run_prechecks(output: ExtractorOutput, *, max_pack_count: int = 10_000) -> P
             )
         )
     if output.country_code is not None:
-        country_code = output.country_code.strip().upper()
-        if len(country_code) != 2 or not country_code.isalpha():
+        if not is_valid_country_code(output.country_code):
             issues.append(
                 PrecheckIssue(
-                    "invalid_country_code", "country_code", "country code must contain two letters"
-                )
-            )
-        elif country_code != "AU":
-            issues.append(
-                PrecheckIssue(
-                    "outside_scope_country",
+                    "invalid_country_code",
                     "country_code",
-                    "Pokecrack MVP accepts Australian observations only",
+                    "country code must be exactly two uppercase ASCII letters",
                 )
             )
     if output.product_type not in (

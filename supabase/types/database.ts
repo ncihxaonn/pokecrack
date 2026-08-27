@@ -1642,6 +1642,56 @@ export type Database = {
           },
         ];
       };
+      youtube_discoveries: {
+        Row: {
+          video_id: string;
+          source_policy_id: string;
+          source_url: string;
+          title: string | null;
+          published_at: string | null;
+          first_seen_at: string;
+          last_seen_at: string;
+          expires_at: string;
+          is_demo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          video_id: string;
+          source_policy_id: string;
+          source_url: string;
+          title?: string | null;
+          published_at?: string | null;
+          first_seen_at: string;
+          last_seen_at: string;
+          expires_at: string;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          video_id?: string;
+          source_policy_id?: string;
+          source_url?: string;
+          title?: string | null;
+          published_at?: string | null;
+          first_seen_at?: string;
+          last_seen_at?: string;
+          expires_at?: string;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'youtube_discoveries_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: false;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       source_request_gates: {
         Row: {
           source_key: string;
@@ -1780,11 +1830,11 @@ export type Database = {
         };
         Relationships: [
           {
-            foreignKeyName: 'source_items_duplicate_cluster_id_fkey';
-            columns: ['duplicate_cluster_id'];
+            foreignKeyName: 'source_items_duplicate_cluster_mode_fkey';
+            columns: ['duplicate_cluster_id', 'is_demo'];
             isOneToOne: false;
             referencedRelation: 'source_items';
-            referencedColumns: ['id'];
+            referencedColumns: ['id', 'is_demo'];
           },
           {
             foreignKeyName: 'source_items_source_policy_id_fkey';
@@ -1930,12 +1980,42 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      get_admin_dashboard_snapshot_v1: { Args: Record<PropertyKey, never>; Returns: Json };
+      admin_control_and_audit_v1: {
+        Args: {
+          p_action: string;
+          p_actor_id: string;
+          p_actor_email: string;
+          p_source_url?: string | null;
+          p_target_id?: string | null;
+        };
+        Returns: Json;
+      };
+      begin_youtube_discovery_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number };
+        Returns: { acquired: boolean; retry_at: string | null }[];
+      };
       begin_tcgdex_sets_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null; etag: string | null; content_sha256: string | null; item_count: number; revision: number }[];
       };
       claim_jobs: { Args: { worker_id: string; job_types?: string[] | null; batch_size?: number; lease_seconds?: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
       claim_jobs_v2: { Args: { worker_id: string; job_types?: string[] | null; batch_size?: number; lease_seconds?: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
+      complete_job_v2: {
+        Args: { p_job_id: string; p_worker_id: string; p_lease_generation: number };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      enqueue_job_v1: {
+        Args: {
+          p_job_type: string;
+          p_payload?: Json;
+          p_priority?: number;
+          p_dedupe_key?: string | null;
+          p_available_at?: string | null;
+          p_max_attempts?: number;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       enqueue_scheduled_job_v1: {
         Args: {
           schedule_name: string;
@@ -1949,6 +2029,10 @@ export type Database = {
       };
       finalize_cleanup_job: { Args: { job_id: string; worker_id: string; lease_generation: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
       finalize_tcgdex_sets_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      finalize_youtube_discovery_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
@@ -1967,8 +2051,16 @@ export type Database = {
         Args: { job_id: string; worker_id: string; lease_generation: number; lease_seconds: number };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
+      pause_job_for_budget_v2: {
+        Args: { p_job_id: string; p_worker_id: string; p_lease_generation: number; p_retry_at: string };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       prune_expired_ephemera: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
       prune_expired_ephemera_v2: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
+      upsert_worker_heartbeat_v1: {
+        Args: { p_worker_id: string; p_worker_type: string; p_version: string; p_metadata: Json };
+        Returns: { last_seen_at: string }[];
+      };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

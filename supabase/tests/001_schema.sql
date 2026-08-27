@@ -153,7 +153,7 @@ select is(
 
 select col_type_is('ingest', 'source_policies', 'version', 'text', 'policy versions are text');
 select col_type_is('ingest', 'source_items', 'source_policy_version', 'text', 'source policy snapshots use text versions');
-select col_not_null('ingest', 'source_items', 'content_hash', 'source item content hashes are required');
+select col_not_null('ingest', 'source_items', 'content_hash', 'source item content hashes remain required evidence identities');
 select matches(
   (select pg_get_constraintdef(oid) from pg_constraint where conrelid = 'ingest.source_items'::regclass and conname = 'source_items_content_hash_check'),
   '\{64\}',
@@ -204,8 +204,8 @@ select col_is_unique('catalog', 'regions', 'slug', 'region slugs are unique');
 select col_is_unique('catalog', 'retailers', 'slug', 'retailer slugs are unique');
 select col_is_unique('catalog', 'stores', 'slug', 'store slugs are unique');
 select col_is_unique('ingest', 'source_policies', 'domain', 'source policy domains are unique');
-select index_is_unique('ingest', 'source_items', 'source_items_normalized_url_uidx', 'normalized source URLs are unique');
-select index_is_unique('ingest', 'source_items', 'source_items_platform_external_uidx', 'platform external identities are unique');
+select index_is_unique('ingest', 'source_items', 'source_items_normalized_url_uidx', 'normalized source URLs are unique within a data mode');
+select index_is_unique('ingest', 'source_items', 'source_items_platform_external_uidx', 'platform external identities are unique within a data mode');
 
 select is(
   (select array_agg(matched.value[1] order by matched.value[1])
@@ -315,18 +315,17 @@ select ok(
 select ok(
   (select bool_and(
     has_table_privilege('service_role', c.oid, 'select')
-    and has_table_privilege('service_role', c.oid, 'insert')
-    and has_table_privilege('service_role', c.oid, 'update')
-    and has_table_privilege('service_role', c.oid, 'delete'))
+    and not has_table_privilege('service_role', c.oid, 'insert')
+    and not has_table_privilege('service_role', c.oid, 'update')
+    and not has_table_privilege('service_role', c.oid, 'delete')
+    and not has_table_privilege('service_role', c.oid, 'truncate')
+    and not has_table_privilege('service_role', c.oid, 'references')
+    and not has_table_privilege('service_role', c.oid, 'trigger'))
    from pg_class c join pg_namespace n on n.oid = c.relnamespace
    where n.nspname in ('catalog', 'ingest')
      and c.relkind in ('r', 'p')
-     and not (n.nspname = 'catalog' and c.relname = 'sync_state')
-     and not (
-       n.nspname = 'ingest'
-       and c.relname in ('schedule_slots', 'source_request_gates')
-     )),
-  'service_role has the explicit core worker data path outside RPC-owned state'
+     and not (n.nspname = 'ingest' and c.relname = 'source_request_gates')),
+  'service_role can read core state but has no direct table mutation privileges'
 );
 
 select has_function('ingest', 'claim_jobs_v2', array['text', 'text[]', 'integer', 'integer'], 'claim_jobs_v2 has the required signature');

@@ -7,7 +7,13 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
-from .models import CompletionEffect, Job, JobStatus, TCGdexSetsSyncCompletion
+from .models import (
+    CompletionEffect,
+    Job,
+    JobStatus,
+    TCGdexSetsSyncCompletion,
+    YouTubeDiscoveryCompletion,
+)
 from .repository import LeaseLostError
 
 
@@ -18,18 +24,15 @@ class QueryExecutor(Protocol):
 
 
 ENQUEUE_SQL = """
-INSERT INTO ingest.jobs AS jobs (
-    job_type, payload, status, priority, dedupe_key, available_at,
-    attempts, max_attempts, created_at, updated_at, is_demo
+SELECT *
+FROM ingest.enqueue_job_v1(
+    %(kind)s,
+    %(payload)s::jsonb,
+    %(priority)s,
+    %(dedupe_key)s,
+    %(available_at)s,
+    %(max_attempts)s
 )
-VALUES (
-    %(kind)s, %(payload)s::jsonb, 'pending', %(priority)s, %(dedupe_key)s,
-    %(available_at)s, 0, %(max_attempts)s, %(now)s, %(now)s, false
-)
-ON CONFLICT (job_type, dedupe_key, is_demo)
-    WHERE dedupe_key IS NOT NULL AND status IN ('pending', 'running')
-DO UPDATE SET updated_at = jobs.updated_at
-RETURNING jobs.*
 """.strip()
 
 CLAIM_SQL = """
@@ -78,23 +81,12 @@ FROM ingest.fail_job_v2(
 """.strip()
 
 COMPLETE_SQL = """
-WITH lease_clock AS (SELECT clock_timestamp() AS now)
-UPDATE ingest.jobs
-SET status = 'completed',
-    locked_by = NULL,
-    locked_at = NULL,
-    lock_expires_at = NULL,
-    completed_at = lease_clock.now,
-    last_error_code = NULL,
-    last_error_message = NULL,
-    updated_at = lease_clock.now
-FROM lease_clock
-WHERE id = %(job_id)s
-  AND status = 'running'
-  AND locked_by = %(worker_id)s
-  AND lease_generation = %(lease_generation)s
-  AND lock_expires_at > lease_clock.now
-RETURNING *
+SELECT *
+FROM ingest.complete_job_v2(
+    %(job_id)s::uuid,
+    %(worker_id)s,
+    %(lease_generation)s::bigint
+)
 """.strip()
 
 FINALIZE_CLEANUP_SQL = """
@@ -116,26 +108,24 @@ FROM ingest.finalize_tcgdex_sets_job(
 )
 """.strip()
 
+FINALIZE_YOUTUBE_DISCOVERY_SQL = """
+SELECT *
+FROM ingest.finalize_youtube_discovery_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    result => %(result)s::jsonb
+)
+""".strip()
+
 PAUSE_BUDGET_SQL = """
-WITH lease_clock AS (SELECT clock_timestamp() AS now)
-UPDATE ingest.jobs
-SET status = 'pending',
-    attempts = GREATEST(0, attempts - 1),
-    available_at = %(retry_at)s,
-    locked_by = NULL,
-    locked_at = NULL,
-    lock_expires_at = NULL,
-    completed_at = NULL,
-    last_error_code = NULL,
-    last_error_message = NULL,
-    updated_at = lease_clock.now
-FROM lease_clock
-WHERE id = %(job_id)s
-  AND status = 'running'
-  AND locked_by = %(worker_id)s
-  AND lease_generation = %(lease_generation)s
-  AND lock_expires_at > lease_clock.now
-RETURNING *
+SELECT *
+FROM ingest.pause_job_for_budget_v2(
+    %(job_id)s::uuid,
+    %(worker_id)s,
+    %(lease_generation)s::bigint,
+    %(retry_at)s
+)
 """.strip()
 
 _COMPLETION_EFFECT_SQL: Mapping[CompletionEffect, str] = {
@@ -211,7 +201,6 @@ class PostgresJobRepository:
                 "dedupe_key": dedupe_key,
                 "available_at": available_at or now,
                 "max_attempts": max_attempts,
-                "now": now,
             },
         )
         if not rows:
@@ -300,7 +289,10 @@ class PostgresJobRepository:
         worker_id: str,
         lease_generation: int,
         now: datetime,
-        effect: CompletionEffect | TCGdexSetsSyncCompletion | None = None,
+        effect: CompletionEffect
+        | TCGdexSetsSyncCompletion
+        | YouTubeDiscoveryCompletion
+        | None = None,
     ) -> Job:
         del now
         params: dict[str, object] = {
@@ -313,6 +305,11 @@ class PostgresJobRepository:
             sql = COMPLETE_SQL
         elif isinstance(effect, TCGdexSetsSyncCompletion):
             sql = FINALIZE_TCGDEX_SETS_SQL
+            params["result"] = json.dumps(
+                effect.as_payload(), separators=(",", ":"), sort_keys=True
+            )
+        elif isinstance(effect, YouTubeDiscoveryCompletion):
+            sql = FINALIZE_YOUTUBE_DISCOVERY_SQL
             params["result"] = json.dumps(
                 effect.as_payload(), separators=(",", ":"), sort_keys=True
             )

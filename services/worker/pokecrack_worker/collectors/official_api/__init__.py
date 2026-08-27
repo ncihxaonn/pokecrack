@@ -2,8 +2,10 @@
 
 from .postgres import (
     PostgresTCGdexCheckpointRepository,
+    PostgresYouTubeDiscoveryGate,
     TCGdexRequestDeferred,
     TCGdexSetsCheckpoint,
+    YouTubeRequestDeferred,
 )
 from .tcgdex import (
     HTTPXTCGdexTransport,
@@ -14,12 +16,18 @@ from .tcgdex import (
     TCGdexSetsSyncOutcome,
     TCGdexSetsSyncResult,
 )
-from .youtube import YouTubeDataClient, YouTubeDiscoveryResult
+from .youtube import (
+    HTTPXYouTubeTransport,
+    YouTubeDataClient,
+    YouTubeTransport,
+)
 
 __all__ = [
     "HTTPXTCGdexTransport",
+    "HTTPXYouTubeTransport",
     "InMemoryTCGdexSetsCache",
     "PostgresTCGdexCheckpointRepository",
+    "PostgresYouTubeDiscoveryGate",
     "TCGdexRequestDeferred",
     "TCGdexSetBrief",
     "TCGdexSetsClient",
@@ -28,5 +36,6 @@ __all__ = [
     "TCGdexSetsSyncOutcome",
     "TCGdexSetsSyncResult",
     "YouTubeDataClient",
-    "YouTubeDiscoveryResult",
+    "YouTubeRequestDeferred",
+    "YouTubeTransport",
 ]

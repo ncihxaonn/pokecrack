@@ -5,14 +5,13 @@ import hashlib
 import importlib.util
 import json
 import os
-from pathlib import Path
-import stat
 import shutil
+import stat
 import subprocess
 import tempfile
 import unittest
 import zipfile
-
+from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEPLOY_ROOT = REPOSITORY_ROOT / "deploy"
@@ -21,6 +20,16 @@ DEPLOY_ROOT = REPOSITORY_ROOT / "deploy"
 def load_retention_module():
     module_path = DEPLOY_ROOT / "lib" / "prune_backups.py"
     spec = importlib.util.spec_from_file_location("prune_backups", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_database_url_module():
+    module_path = DEPLOY_ROOT / "lib" / "run_with_database_url.py"
+    spec = importlib.util.spec_from_file_location("run_with_database_url", module_path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {module_path}")
     module = importlib.util.module_from_spec(spec)
@@ -403,7 +412,141 @@ cp "$FAKE_DOWNLOAD" "$output"
             self.assertFalse((install_root / "current").exists())
 
 
+class DatabaseURLRunnerTests(unittest.TestCase):
+    def test_url_maps_to_libpq_environment_without_retaining_the_url(self) -> None:
+        runner = load_database_url_module()
+        database_url = (
+            "postgresql://backup%2Duser:p%40ssword@db.example.invalid:6543/"
+            "pokecrack?sslmode=require&connect_timeout=7&"
+            "application_name=backup%2520literal"
+        )
+
+        environment = runner.libpq_environment(database_url)
+
+        self.assertEqual(
+            environment,
+            {
+                "PGAPPNAME": "backup%20literal",
+                "PGCONNECT_TIMEOUT": "7",
+                "PGDATABASE": "pokecrack",
+                "PGHOST": "db.example.invalid",
+                "PGPASSWORD": "p@ssword",
+                "PGPORT": "6543",
+                "PGSSLMODE": "require",
+                "PGUSER": "backup-user",
+            },
+        )
+        self.assertNotIn(database_url, environment.values())
+
+    def test_url_rejects_ambiguous_or_unsupported_shapes_without_echoing_secret(self) -> None:
+        runner = load_database_url_module()
+        invalid = (
+            "postgresql://user:fixture-secret@example.invalid/db",
+            "postgresql://user:fixture-secret@example.invalid/db?sslmode=disable",
+            "postgresql://user:fixture-secret@example.invalid/db?sslmode=allow",
+            "postgresql://user:fixture-secret@example.invalid/db?sslmode=prefer",
+            "postgresql://user:fixture-secret@example.invalid/db?sslmode=require&sslmode=disable",
+            "postgresql://user:fixture-secret@example.invalid/db?unknown=value",
+            "postgresql://user:fixture-secret@example.invalid/too/many",
+            "postgresql://user:fixture-secret@example.invalid/db#fragment",
+            "postgresql://user:fixture-secret@example.invalid/db\n",
+        )
+
+        for database_url in invalid:
+            with self.subTest(database_url=database_url):
+                with self.assertRaises((runner.DatabaseURLConfigurationError, ValueError)):
+                    runner.libpq_environment(database_url)
+
+    def test_child_environment_removes_every_inherited_pg_variable(self) -> None:
+        runner = load_database_url_module()
+        parsed = runner.libpq_environment(
+            "postgresql://backup:fixture-secret@example.invalid/db?sslmode=verify-full"
+        )
+
+        environment = runner.child_environment(
+            parsed,
+            parent_environment={
+                "PATH": "/fixture/bin",
+                "PGSSLCERTMODE": "disable",
+                "PGLOADBALANCEHOSTS": "random",
+                "PGTCPUSERTO": "1",
+                "PGPASSWORD": "hostile-parent-secret",
+            },
+        )
+
+        self.assertEqual(environment["PATH"], "/fixture/bin")
+        self.assertEqual(environment["PGPASSWORD"], "fixture-secret")
+        self.assertEqual(environment["PGSSLMODE"], "verify-full")
+        self.assertFalse(
+            {"PGSSLCERTMODE", "PGLOADBALANCEHOSTS", "PGTCPUSERTO"}
+            & environment.keys()
+        )
+
+
 class BackupScriptTests(unittest.TestCase):
+    @staticmethod
+    def gate_schema_dump(*, youtube: bool = True) -> bytes:
+        source_constraint = (
+            b"CONSTRAINT source_request_gates_source_check CHECK "
+            b"((source_key ~ '^[a-z0-9][a-z0-9_-]{0,62}$'::text))"
+            if youtube
+            else b"CONSTRAINT source_request_gates_source_check CHECK "
+            b"((source_key = 'tcgdex_catalog'::text))"
+        )
+        return b"""CREATE TABLE ingest.source_request_gates (
+    source_key text NOT NULL,
+    owner_job_id uuid,
+    owner_lease_generation bigint,
+    acquired_at timestamp with time zone,
+    active_until timestamp with time zone,
+    CONSTRAINT source_request_gates_owner_check CHECK ((((owner_job_id IS NULL) AND (owner_lease_generation IS NULL) AND (acquired_at IS NULL) AND (active_until IS NULL)) OR ((owner_job_id IS NOT NULL) AND (owner_lease_generation >= 1) AND (acquired_at IS NOT NULL) AND (active_until > acquired_at)))),
+    """ + source_constraint + b"""
+);
+ALTER TABLE ONLY ingest.source_request_gates FORCE ROW LEVEL SECURITY;
+ALTER TABLE ONLY ingest.source_request_gates
+    ADD CONSTRAINT source_request_gates_pkey PRIMARY KEY (source_key);
+ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
+"""
+
+    @staticmethod
+    def canonical_gate_seed(*, youtube: bool) -> bytes:
+        youtube_row = b"youtube_discovery\n" if youtube else b""
+        return (
+            b"\n-- Canonical idle request gates; live lease ownership is not retained.\n"
+            b"COPY ingest.source_request_gates (source_key) FROM stdin;\n"
+            b"tcgdex_catalog\n"
+            + youtube_row
+            + b"\\.\n\n"
+        )
+
+    @classmethod
+    def with_canonical_gate_seed(cls, dump: bytes, *, youtube: bool) -> bytes:
+        enable = b"ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;\n"
+        return dump.replace(enable, cls.canonical_gate_seed(youtube=youtube) + enable)
+
+    @classmethod
+    def pre_youtube_dump(cls) -> bytes:
+        return b"""-- PostgreSQL database dump fixture
+CREATE TABLE ingest.source_policies (
+);
+""" + cls.gate_schema_dump(youtube=False) + b"""COPY ingest.source_policies (source_key, id) FROM stdin;
+tcgdex_catalog\t33333333-3333-4333-8333-333333333333
+other\t22222222-2222-4222-8222-222222222222
+\\.
+"""
+
+    @classmethod
+    def post_youtube_dump(cls) -> bytes:
+        return cls.gate_schema_dump(youtube=True) + b"""CREATE UNLOGGED TABLE ingest.youtube_discoveries (
+);
+COPY ingest.source_policies (id, source_key) FROM stdin;
+11111111-1111-4111-8111-111111111111\tyoutube_discovery
+33333333-3333-4333-8333-333333333333\ttcgdex_catalog
+\\.
+COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
+\\.
+"""
+
     def make_fake_commands(self, base: Path) -> Path:
         fake_bin = base / "bin"
         fake_bin.mkdir()
@@ -419,14 +562,75 @@ printf '%s\n' "$FAKE_UTC"
             fake_bin / "pg_dump",
             """#!/usr/bin/env bash
 set -Eeuo pipefail
-[[ ${PGDATABASE:-} == 'postgresql://backup-user:very-secret@example.invalid/pokecrack' ]]
+[[ ${PGDATABASE:-} == 'pokecrack' ]]
+[[ ${PGHOST:-} == 'example.invalid' ]]
+[[ ${PGPASSWORD:-} == 'very-secret' ]]
+[[ ${PGPORT:-} == '6543' ]]
+[[ ${PGUSER:-} == 'backup-user' ]]
+[[ ${PGSSLMODE:-} == 'require' ]]
+[[ ${PGCONNECT_TIMEOUT:-} == '7' ]]
+[[ ${PGAPPNAME:-} == 'pokecrack-backup' ]]
+role_argument_count=0
+gate_exclusion_count=0
 for argument in "$@"; do
   [[ $argument != *'very-secret'* ]]
+  if [[ $argument == '--role=service_role' ]]; then
+    role_argument_count=$((role_argument_count + 1))
+  fi
+  if [[ $argument == '--exclude-table-data=ingest.source_request_gates' ]]; then
+    gate_exclusion_count=$((gate_exclusion_count + 1))
+  fi
 done
+[[ $role_argument_count == 1 ]]
+[[ $gate_exclusion_count == 1 ]]
 if [[ ${FAKE_EMPTY_DUMP:-0} == 1 ]]; then
   exit 0
 fi
-printf '%s\n' '-- PostgreSQL database dump fixture' 'CREATE TABLE fixture (id integer);'
+if [[ -n ${FAKE_DUMP_FILE:-} ]]; then
+  /bin/cat "$FAKE_DUMP_FILE"
+  exit 0
+fi
+exit 18
+""",
+        )
+        write_executable(
+            fake_bin / "psql",
+            """#!/usr/bin/env bash
+set -Eeuo pipefail
+[[ ${PGDATABASE:-} == 'pokecrack' ]]
+[[ ${PGHOST:-} == 'example.invalid' ]]
+[[ ${PGPASSWORD:-} == 'very-secret' ]]
+[[ ${PGPORT:-} == '6543' ]]
+[[ ${PGUSER:-} == 'backup-user' ]]
+[[ ${PGSSLMODE:-} == 'require' ]]
+[[ ${PGCONNECT_TIMEOUT:-} == '7' ]]
+[[ ${PGAPPNAME:-} == 'pokecrack-backup' ]]
+for argument in "$@"; do
+  [[ $argument != *'very-secret'* ]]
+done
+set_role_count=0
+for argument in "$@"; do
+  if [[ $argument == 'set role service_role;'$'\n''select '* ]]; then
+    set_role_count=$((set_role_count + 1))
+  fi
+done
+[[ $set_role_count == 1 ]]
+if [[ ${FAKE_PSQL_FAIL:-0} == 1 ]]; then
+  printf '%s\n' 'fixture connection failure' >&2
+  exit 17
+fi
+arguments="$*"
+if [[ $arguments == *to_regclass* ]]; then
+  [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'table-state:set-role' >> "$FAKE_PSQL_LOG"
+  printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru\\trp\\ttrue}"
+elif [[ $arguments == *youtube_discovery* ]]; then
+  [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'policy-lookup:set-role' >> "$FAKE_PSQL_LOG"
+  if [[ -n ${FAKE_POLICY_OUTPUT:-} ]]; then
+    printf '%s\n' "$FAKE_POLICY_OUTPUT"
+  fi
+else
+  exit 19
+fi
 """,
         )
         return fake_bin
@@ -438,18 +642,33 @@ printf '%s\n' '-- PostgreSQL database dump fixture' 'CREATE TABLE fixture (id in
         backup_dir: Path,
         timestamp: str,
         empty: bool = False,
+        dump: bytes | None = None,
+        table_state: str = "rp\tru\trp\ttrue",
+        policy_output: str = "11111111-1111-4111-8111-111111111111",
+        psql_fail: bool = False,
     ) -> subprocess.CompletedProcess[str]:
         environment = os.environ.copy()
         environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
         environment["FAKE_UTC"] = timestamp
         environment["SUPABASE_DB_URL"] = (
-            "postgresql://backup-user:very-secret@example.invalid/pokecrack"
+            "postgresql://backup-user:very-secret@example.invalid:6543/"
+            "pokecrack?sslmode=require&connect_timeout=7&application_name=pokecrack-backup"
         )
         environment["BACKUP_DIR"] = str(backup_dir)
         environment["BACKUP_RETENTION_DAILY"] = "7"
         environment["BACKUP_RETENTION_WEEKLY"] = "4"
+        environment["FAKE_TABLE_STATE"] = table_state
+        environment["FAKE_POLICY_OUTPUT"] = policy_output
+        environment["FAKE_PSQL_LOG"] = str(fake_bin.parent / "psql-preflight.log")
         if empty:
             environment["FAKE_EMPTY_DUMP"] = "1"
+        effective_dump = self.post_youtube_dump() if dump is None and not empty else dump
+        if effective_dump is not None:
+            dump_file = fake_bin.parent / "fixture-dump.sql"
+            dump_file.write_bytes(effective_dump)
+            environment["FAKE_DUMP_FILE"] = str(dump_file)
+        if psql_fail:
+            environment["FAKE_PSQL_FAIL"] = "1"
         return subprocess.run(
             [str(DEPLOY_ROOT / "scripts" / "backup.sh")],
             check=False,
@@ -457,6 +676,91 @@ printf '%s\n' '-- PostgreSQL database dump fixture' 'CREATE TABLE fixture (id in
             capture_output=True,
             env=environment,
         )
+
+    def test_both_preflights_set_service_role_in_their_psql_session(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=base / "backups",
+                timestamp="20260729T020000Z",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("very-secret", result.stdout + result.stderr)
+            self.assertEqual(
+                (base / "psql-preflight.log").read_text(encoding="utf-8").splitlines(),
+                ["table-state:set-role", "policy-lookup:set-role"],
+            )
+
+    def test_coherent_pre_youtube_schema_is_backed_up_without_policy_id(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            dump = self.pre_youtube_dump()
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20260729T020000Z",
+                dump=dump,
+                table_state="rp\t0\trp\ttrue",
+                policy_output="",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("very-secret", result.stdout + result.stderr)
+            backup = backup_dir / "pokecrack-20260729T020000Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                self.assertEqual(
+                    stream.read(),
+                    self.with_canonical_gate_seed(dump, youtube=False),
+                )
+            self.assertEqual(
+                (backup_dir / ".last-successful-backup")
+                .read_text(encoding="utf-8")
+                .splitlines(),
+                [backup.name, "completed_at=20260729T020000Z"],
+            )
+
+    def test_partial_youtube_migration_states_fail_atomically(self) -> None:
+        policy = "11111111-1111-4111-8111-111111111111"
+        cases = {
+            "table-without-policy": {
+                "table_state": "rp\tru\trp\ttrue",
+                "policy_output": "",
+            },
+            "policy-without-table": {
+                "table_state": "rp\t0\trp\ttrue",
+                "policy_output": policy,
+            },
+            "old-preflight-with-new-dump": {
+                "table_state": "rp\t0\trp\ttrue",
+                "policy_output": "",
+            },
+            "new-preflight-with-old-dump": {
+                "table_state": "rp\tru\trp\ttrue",
+                "policy_output": policy,
+                "dump": self.pre_youtube_dump(),
+            },
+        }
+        for name, values in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                dir=DEPLOY_ROOT / "tests"
+            ) as temporary:
+                base = Path(temporary)
+                fake_bin = self.make_fake_commands(base)
+                backup_dir = base / "backups"
+                result = self.run_backup(
+                    fake_bin=fake_bin,
+                    backup_dir=backup_dir,
+                    timestamp="20260729T020000Z",
+                    table_state=values["table_state"],
+                    policy_output=values["policy_output"],
+                    dump=values.get("dump"),
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("very-secret", result.stdout + result.stderr)
+                self.assertEqual(list(backup_dir.iterdir()), [])
 
     def test_database_url_file_must_be_owner_only(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
@@ -519,7 +823,9 @@ printf '%s\n' '-- PostgreSQL database dump fixture' 'CREATE TABLE fixture (id in
             latest = backup_dir / "pokecrack-20260729T020000Z.sql.gz"
             self.assertTrue(latest.is_file())
             with gzip.open(latest, "rt", encoding="utf-8") as stream:
-                self.assertIn("CREATE TABLE fixture", stream.read())
+                self.assertIn(
+                    "CREATE TABLE ingest.source_request_gates", stream.read()
+                )
             marker_lines = (backup_dir / ".last-successful-backup").read_text(
                 encoding="utf-8"
             ).splitlines()
@@ -541,6 +847,237 @@ printf '%s\n' '-- PostgreSQL database dump fixture' 'CREATE TABLE fixture (id in
             self.assertNotIn("very-secret", result.stdout + result.stderr)
             self.assertFalse((backup_dir / ".last-successful-backup").exists())
             self.assertEqual(list(backup_dir.glob("pokecrack-*.sql.gz")), [])
+
+    def test_backup_removes_only_dedicated_youtube_discovery_rows(self) -> None:
+        youtube_policy = "11111111-1111-4111-8111-111111111111"
+        other_policy = "22222222-2222-4222-8222-222222222222"
+        youtube_item = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
+        rebound_item = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
+        other_item = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+        first_video = "AbCdEfGhI_1"
+        second_video = "ZyXwVuTsR-2"
+        dump = self.gate_schema_dump(youtube=True) + f"""-- PostgreSQL database dump fixture
+CREATE UNLOGGED TABLE ingest.youtube_discoveries (
+);
+COPY ingest.source_policies (source_key, id) FROM stdin;
+youtube_discovery\t{youtube_policy}
+tcgdex_catalog\t33333333-3333-4333-8333-333333333333
+other\t{other_policy}
+\\.
+COPY ingest.source_items (note, id, source_policy_id) FROM stdin;
+youtube\\trow\t{youtube_item}\t{youtube_policy}
+rebound\\nrow\t{rebound_item}\t{other_policy}
+keep\t{other_item}\t{other_policy}
+\\.
+COPY ingest.source_discoveries (note, source_item_id) FROM stdin;
+query-a\t{youtube_item}
+query-b\t{rebound_item}
+\\.
+COPY ingest.youtube_discoveries (title, source_policy_id, video_id) FROM stdin;
+cache-first\t{youtube_policy}\t{first_video}
+cache-second\t{youtube_policy}\t{second_video}
+\\.
+""".encode()
+
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20260729T020000Z",
+                dump=dump,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("very-secret", result.stdout + result.stderr)
+            backup = backup_dir / "pokecrack-20260729T020000Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            self.assertNotIn(first_video.encode(), sanitized)
+            self.assertNotIn(second_video.encode(), sanitized)
+            self.assertIn(youtube_item.encode(), sanitized)
+            self.assertIn(rebound_item.encode(), sanitized)
+            self.assertIn(other_item.encode(), sanitized)
+            self.assertIn(
+                b"COPY ingest.source_discoveries (note, source_item_id) FROM stdin;\nquery-a\t",
+                sanitized,
+            )
+            self.assertIn(
+                b"COPY ingest.youtube_discoveries (title, source_policy_id, video_id) FROM stdin;\n\\.\n",
+                sanitized,
+            )
+            self.assertIn(self.canonical_gate_seed(youtube=True), sanitized)
+            self.assertLess(
+                sanitized.index(self.canonical_gate_seed(youtube=True)),
+                sanitized.index(
+                    b"ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;"
+                ),
+            )
+
+    def test_psql_failure_is_atomic_and_does_not_expose_database_url(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20260729T020000Z",
+                psql_fail=True,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertNotIn("very-secret", result.stdout + result.stderr)
+            self.assertTrue(backup_dir.is_dir())
+            self.assertEqual(list(backup_dir.iterdir()), [])
+
+    def test_missing_ambiguous_and_malformed_policy_preflight_is_atomic(self) -> None:
+        valid = "11111111-1111-4111-8111-111111111111"
+        cases = {
+            "missing": "",
+            "ambiguous": valid + "\n22222222-2222-4222-8222-222222222222",
+            "malformed": "not-a-uuid",
+        }
+        for name, policy_output in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                dir=DEPLOY_ROOT / "tests"
+            ) as temporary:
+                base = Path(temporary)
+                fake_bin = self.make_fake_commands(base)
+                backup_dir = base / "backups"
+                result = self.run_backup(
+                    fake_bin=fake_bin,
+                    backup_dir=backup_dir,
+                    timestamp="20260729T020000Z",
+                    policy_output=policy_output,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("very-secret", result.stdout + result.stderr)
+                self.assertEqual(list(backup_dir.iterdir()), [])
+
+    def test_malformed_or_inconsistent_table_preflight_is_atomic(self) -> None:
+        cases = {
+            "malformed": "unexpected",
+            "missing-policies": "0\tru\trp\ttrue",
+            "unlogged-policies": "ru\tru\trp\ttrue",
+            "missing-youtube-table": "rp\t0\trp\ttrue",
+            "logged-youtube-table": "rp\trp\trp\ttrue",
+            "temporary-youtube-table": "rp\trt\trp\ttrue",
+            "youtube-view": "rp\tvp\trp\ttrue",
+            "missing-request-gate": "rp\tru\t0\tfalse",
+            "unlogged-request-gate": "rp\tru\tru\ttrue",
+            "request-gate-without-maintain": "rp\tru\trp\tfalse",
+        }
+        for name, table_state in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                dir=DEPLOY_ROOT / "tests"
+            ) as temporary:
+                base = Path(temporary)
+                fake_bin = self.make_fake_commands(base)
+                backup_dir = base / "backups"
+                result = self.run_backup(
+                    fake_bin=fake_bin,
+                    backup_dir=backup_dir,
+                    timestamp="20260729T020000Z",
+                    table_state=table_state,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("very-secret", result.stdout + result.stderr)
+                self.assertEqual(list(backup_dir.iterdir()), [])
+
+    def test_dump_snapshot_mismatches_are_atomic_and_do_not_advance_marker(
+        self,
+    ) -> None:
+        policy = "11111111-1111-4111-8111-111111111111"
+        wrong_policy = "33333333-3333-4333-8333-333333333333"
+        policy_row = f"{policy}\tyoutube_discovery\n".encode()
+        gate_ddl = self.gate_schema_dump(youtube=True)
+        cache_ddl = b"CREATE UNLOGGED TABLE ingest.youtube_discoveries (\n);\n"
+        cache_block = f"""COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
+AbCdEfGhI_1\t{policy}
+\\.
+""".encode()
+        valid_dump = gate_ddl + cache_ddl + (
+            f"""COPY ingest.source_policies (id, source_key) FROM stdin;
+{policy}\tyoutube_discovery
+33333333-3333-4333-8333-333333333333\ttcgdex_catalog
+\\.
+""".encode()
+            + cache_block
+        )
+        cases = {
+            "missing-policy-row": valid_dump.replace(policy_row, b""),
+            "duplicate-policy-row": valid_dump.replace(
+                policy_row, policy_row + policy_row
+            ),
+            "missing-cache-copy": valid_dump.replace(cache_block, b""),
+            "malformed-cache-copy": valid_dump.replace(
+                b"video_id, source_policy_id",
+                b"video_id, wrong_policy_column",
+            ),
+            "cache-policy-mismatch": valid_dump.replace(
+                f"AbCdEfGhI_1\t{policy}".encode(),
+                f"AbCdEfGhI_1\t{wrong_policy}".encode(),
+            ),
+            "logged-cache-create-race": valid_dump.replace(
+                cache_ddl,
+                b"CREATE TABLE ingest.youtube_discoveries (\n);\n",
+            ),
+            "missing-cache-create": valid_dump.replace(cache_ddl, b""),
+            "duplicate-cache-create": valid_dump.replace(
+                cache_ddl,
+                cache_ddl + cache_ddl,
+            ),
+            "missing-request-gate-create": valid_dump.replace(gate_ddl, b""),
+            "duplicate-request-gate-create": valid_dump.replace(
+                gate_ddl,
+                gate_ddl + gate_ddl,
+            ),
+            "unlogged-request-gate-create": valid_dump.replace(
+                b"CREATE TABLE ingest.source_request_gates",
+                b"CREATE UNLOGGED TABLE ingest.source_request_gates",
+            ),
+            "request-gate-schema-drift": valid_dump.replace(
+                b"owner_job_id uuid", b"owner_job_id text"
+            ),
+            "request-gate-missing-force-rls": valid_dump.replace(
+                b"ALTER TABLE ONLY ingest.source_request_gates FORCE ROW LEVEL SECURITY;\n",
+                b"",
+            ),
+            "request-gate-missing-primary-key": valid_dump.replace(
+                b"ALTER TABLE ONLY ingest.source_request_gates\n"
+                b"    ADD CONSTRAINT source_request_gates_pkey PRIMARY KEY (source_key);\n",
+                b"",
+            ),
+            "request-gate-missing-enable-rls": valid_dump.replace(
+                b"ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;\n",
+                b"",
+            ),
+            "request-gate-copy-data": valid_dump
+            + b"COPY ingest.source_request_gates (source_key, owner_job_id) FROM stdin;\n"
+            + b"tcgdex_catalog\taaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\n\\.\n",
+            "quoted-request-gate-copy-data": valid_dump
+            + b'COPY "ingest"."source_request_gates" ("source_key") FROM stdin;\n'
+            + b"tcgdex_catalog\n\\.\n",
+            "request-gate-insert-data": valid_dump
+            + b"INSERT INTO ingest.source_request_gates (source_key) VALUES ('tcgdex_catalog');\n",
+        }
+        for name, dump in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                dir=DEPLOY_ROOT / "tests"
+            ) as temporary:
+                base = Path(temporary)
+                fake_bin = self.make_fake_commands(base)
+                backup_dir = base / "backups"
+                result = self.run_backup(
+                    fake_bin=fake_bin,
+                    backup_dir=backup_dir,
+                    timestamp="20260729T020000Z",
+                    dump=dump,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("very-secret", result.stdout + result.stderr)
+                self.assertEqual(list(backup_dir.iterdir()), [])
 
 
 class DeployAndRollbackScriptTests(unittest.TestCase):
@@ -864,6 +1401,24 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("AI_INPUT_PER_MILLION_AUD", environment)
         self.assertIn("AI_OUTPUT_PER_MILLION_AUD", environment)
         self.assertEqual(environment["AI_MAX_OUTPUT_TOKENS"], "4096")
+
+    def test_youtube_collection_flag_reaches_scheduler_without_sharing_the_api_key(self) -> None:
+        compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
+        collector = compose[compose.index("  collector:") : compose.index("  auth-browser:")]
+        scheduler = compose[compose.index("  scheduler:") : compose.index("  watchdog:")]
+        expected_flag = 'YOUTUBE_COLLECTION_ENABLED: "${YOUTUBE_COLLECTION_ENABLED:-false}"'
+        self.assertIn(expected_flag, collector)
+        self.assertIn(expected_flag, scheduler)
+        self.assertIn("YOUTUBE_API_KEY:", collector)
+        self.assertNotIn("YOUTUBE_API_KEY:", scheduler)
+
+    def test_worker_image_installs_the_bounded_youtube_transport(self) -> None:
+        dockerfile = (DEPLOY_ROOT / "Dockerfile.worker").read_text(encoding="utf-8")
+        self.assertIn(
+            "apt-get install --yes --no-install-recommends ca-certificates curl",
+            dockerfile,
+        )
+        self.assertIn("rm -rf /var/lib/apt/lists/*", dockerfile)
 
     def test_auth_browser_pins_opencli_and_starts_its_loopback_daemon(self) -> None:
         dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(encoding="utf-8")

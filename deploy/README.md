@@ -1,6 +1,11 @@
 # VPS deployment artifacts
 
-These files are **implemented deployment artifacts, not evidence of a deployment**. No VPS, GitHub remote, Supabase project, browser account, DNS record, or production release was available while they were authored. Local Docker builds were not run because `/var/run/docker.sock` is absent.
+These files are **implemented deployment artifacts, not evidence that the
+current branch was deployed**. The exact previously verified hosted baseline is
+recorded in `docs/IMPLEMENTATION_NOTES.md`; do not infer a later migration,
+worker, browser account, DNS change, or release from repository files alone.
+Local Docker builds were not run on this Mac because the Docker CLI/socket is
+absent.
 
 ## Runtime layout
 
@@ -85,7 +90,7 @@ The container automatically starts the allowlisted profile selected by `CHROMIUM
 
 ## Operations scripts
 
-- `deploy/scripts/backup.sh`: `pg_dump` -> gzip, non-empty validation, UTC filename, atomic last-success marker, newest 7 daily plus 4 weekly representatives.
+- `deploy/scripts/backup.sh`: a stdin-only URL runner requires `sslmode=require` or stronger, clears inherited `PG*`, and maps only allowlisted fields to libpq -> two independently role-switched `psql` policy/table/privilege preflights -> one-snapshot plain `pg_dump` with explicit `SET ROLE service_role`, PostgreSQL 17 `MAINTAIN` schema locking, and exact request-gate data exclusion -> fail-closed sanitizer that verifies the policy-free regular gate schema, rejects live gate rows, inserts canonical idle gates before RLS enablement, accepts coherent post-backup-lock/pre-YouTube absence or uniquely verifies the post-migration cache's `CREATE UNLOGGED TABLE`, and strips all cache data -> gzip, non-empty validation, UTC filename, atomic last-success marker, newest 7 daily plus 4 weekly representatives.
 - `deploy/scripts/cleanup.sh`: removes only stopped project containers and unused labeled images; never stops services or prunes volumes/profiles/backups/extensions.
 - `deploy/scripts/deploy.sh`: exact-SHA build/start/health gate.
 - `deploy/scripts/rollback.sh`: explicit-SHA deployment.

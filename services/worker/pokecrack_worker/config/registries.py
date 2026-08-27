@@ -12,11 +12,11 @@ import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 REQUIRED_YOUTUBE_QUERIES: tuple[tuple[str, str], ...] = (
-    ("pokemon-tcg-opening-australia", "Pokemon TCG opening Australia"),
-    ("pokemon-booster-box-opening-melbourne", "Pokemon booster box opening Melbourne"),
-    ("pokemon-etb-opening-australia", "Pokemon ETB opening Australia"),
-    ("pokemon-booster-bundle-opening-sydney", "Pokemon booster bundle opening Sydney"),
-    ("pokemon-card-opening-batch-code", "Pokemon card opening batch code"),
+    ("pokemon-tcg-booster-box-opening", "Pokemon TCG booster box opening"),
+    ("pokemon-tcg-etb-opening", "Pokemon TCG ETB opening"),
+    ("pokemon-tcg-booster-bundle-opening", "Pokemon TCG booster bundle opening"),
+    ("pokemon-tcg-pack-opening", "Pokemon TCG pack opening"),
+    ("pokemon-tcg-opening-batch-code", "Pokemon TCG opening batch code"),
 )
 
 
@@ -56,6 +56,18 @@ class YouTubeQueryDocument(BaseModel):
         configured = tuple((query.name, query.query) for query in self.queries)
         if configured != REQUIRED_YOUTUBE_QUERIES:
             raise ValueError("YouTube registry must contain the exact five approved queries")
+        if any(query.enabled for query in self.queries):
+            raise ValueError("YouTube queries must remain disabled in the static registry")
+        if any(query.region_code is not None for query in self.queries):
+            raise ValueError("global YouTube queries must not carry a country region code")
+        if any(
+            query.metadata_only is not True
+            or query.max_results != 25
+            or query.published_within_days != 30
+            or query.order != "date"
+            for query in self.queries
+        ):
+            raise ValueError("YouTube version 1 query parameters must remain exact")
         return self
 
 
@@ -75,6 +87,14 @@ class YouTubeQueryRegistry:
     @property
     def enabled_queries(self) -> tuple[YouTubeQuery, ...]:
         return tuple(query for query in self.queries if query.enabled)
+
+    def require(self, name: str) -> YouTubeQuery:
+        """Resolve one exact approved job payload without enabling the YAML entry."""
+
+        for query in self.queries:
+            if query.name == name:
+                return query
+        raise ValueError("query_name is not in the approved YouTube registry")
 
 
 class RarityClass(BaseModel):
