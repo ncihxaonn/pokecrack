@@ -319,8 +319,14 @@ select ok(
     and has_table_privilege('service_role', c.oid, 'update')
     and has_table_privilege('service_role', c.oid, 'delete'))
    from pg_class c join pg_namespace n on n.oid = c.relnamespace
-   where n.nspname in ('catalog', 'ingest') and c.relkind in ('r', 'p')),
-  'service_role has the explicit core worker data path'
+   where n.nspname in ('catalog', 'ingest')
+     and c.relkind in ('r', 'p')
+     and not (n.nspname = 'catalog' and c.relname = 'sync_state')
+     and not (
+       n.nspname = 'ingest'
+       and c.relname in ('schedule_slots', 'source_request_gates')
+     )),
+  'service_role has the explicit core worker data path outside RPC-owned state'
 );
 
 select has_function('ingest', 'claim_jobs_v2', array['text', 'text[]', 'integer', 'integer'], 'claim_jobs_v2 has the required signature');
