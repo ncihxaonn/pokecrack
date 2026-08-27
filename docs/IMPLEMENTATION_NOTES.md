@@ -1,6 +1,6 @@
 # Implementation notes
 
-Last audited: **2026-08-28 UTC**
+Last audited: **2026-08-27 UTC**
 
 This file records what was actually exercised. Repository code, a rendered
 configuration, a fixture response, or a successful migration compile is not by
