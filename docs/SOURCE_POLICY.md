@@ -14,7 +14,7 @@ Every source route uses one of the following exact values and no aliases: `offic
 4. Authenticated OpenCLI/Browser Bridge only for an owner-authorized account and permitted metadata.
 5. Manual synthetic fixture import for tests.
 
-The current registry enables TCGdex catalog metadata, YouTube Data API metadata (credential required; no video download), and `example.com` only as a fixture-safe adapter. The disabled fixture proves fail-closed behavior. Real retailer domains are not enabled by default.
+The current registry enables TCGdex catalog metadata, YouTube Data API metadata (credential required; no video download), and `example.com` only as a fixture-safe adapter. The first live handler is narrower than that registry: it accepts only one daily scheduled job for `https://api.tcgdex.net/v2/en/sets`; each bounded attempt performs at most one fixed conditional GET, capped at 2 MiB and 1,000 sets, after both a local allowlist check and a fenced live database-policy check. It stores only English set names, upstream IDs, counts, ETag and a content hash. It cannot fetch cards, rarity, arbitrary URLs, images, openings or probability evidence. The disabled fixture proves fail-closed behavior. Real retailer domains are not enabled by default.
 
 ## Required review before enabling a source
 

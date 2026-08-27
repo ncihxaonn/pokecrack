@@ -60,6 +60,19 @@ def test_worker_concurrency_above_one_is_rejected_until_pooling_is_implemented()
         Settings(_env_file=None, worker_max_concurrency=2)
 
 
+@pytest.mark.parametrize(
+    "values",
+    (
+        {"worker_lease_seconds": 59},
+        {"worker_lease_seconds": 86_401},
+        {"worker_max_attempts": 101},
+    ),
+)
+def test_worker_queue_settings_match_the_database_rpc_bounds(values: dict[str, int]) -> None:
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, **values)
+
+
 def test_network_ai_mode_requires_nonzero_cost_rates_for_budget_accounting() -> None:
     with pytest.raises(ValidationError, match="AI_INPUT_PER_MILLION_AUD"):
         Settings(
@@ -120,7 +133,13 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
     bypass = sources.resolve("https://access-control-bypass.example/item")
     assert bypass.collector is CollectorType.DISABLED
     assert "bypass" in bypass.reason.casefold()
-    assert sources.require("https://api.tcgdex.net/v2/en/sets", "catalog").metadata_only
+    tcgdex = sources.require("https://api.tcgdex.net/v2/en/sets", "catalog")
+    assert tcgdex.metadata_only
+    assert tcgdex.min_delay_seconds == 10
+    assert tcgdex.max_pages_per_run == 1
+    assert tcgdex.max_concurrency == 1
+    assert tcgdex.requests_per_minute == 6
+    assert tcgdex.config == {"collector_version": "tcgdex-sets-v1"}
     assert sources.require(
         "https://youtube.googleapis.com/youtube/v3/search", "youtube"
     ).metadata_only
