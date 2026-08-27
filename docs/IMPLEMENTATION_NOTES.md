@@ -14,7 +14,7 @@ This file is the canonical record of what was actually exercised in the implemen
 
 ## Repository and environment state
 
-- The existing working tree was preserved. Git is on `codex/tcgdex-live-sync`, based on merged Personal-repository commit `138cb77`; `origin` is the owner-approved private repository `ncihxaonn/pokecrack`. Historical GitHub CI run `33023105390` passed all seven jobs for the earlier `86ddb66` tree. That run is not claimed as evidence for the current TCGdex changes; current-branch CI evidence must come from this branch's pull request.
+- The existing working tree was preserved. Git is on `codex/tcgdex-live-sync`, based on merged Personal-repository commit `138cb77`; `origin` is the owner-approved private repository `ncihxaonn/pokecrack`. GitHub Actions run `33032513290` on PR #2 passed all seven jobs for commit `004d523` on the current TCGdex tree.
 - The owner approved the exact Personal targets now linked to this project: GitHub `ncihxaonn/pokecrack`, Supabase `Pokecrack` (`wohnphsxlquhhknuthrj`), and the Vercel `pokecrack` project. No VPS target has been approved or contacted.
 - The project-scoped credential helper verified the Personal Maton and Supabase credentials as available with system-level execution. Maton reports one Active Supabase connection for the same project ref. Credential values remain outside the repository.
 - Observed toolchain: Node.js 22.18.0, pnpm 11.23.0, system Python 3.14.6, uv 0.8.15, and worker uv Python 3.13.7.
@@ -78,7 +78,7 @@ uv run mypy src/pokecrack_browser
 uv run pytest -q
 ```
 
-Current local macOS result: **71 tests and 40 subtests passed; 1 Linux `/proc` lifecycle test was skipped**. Fixture/dry-run paths verified bounded OpenCLI output handling, process-group cleanup when a timed-out adapter leader exits before a pipe-owning descendant, credential-safe dry-run argv rendering, structured and free-text redaction of common session identifiers (including quoted JSON `session_id`, `sid`, and `auth`, plus nested and captured-text camelCase keys such as `sessionData`/`sessionID`), exact per-adapter HTTPS output-host allowlists, stable canonical fingerprints, URL redaction, boot-scoped process identity checks that prevent PID-reuse signaling, profile/runtime path checks, container-supervisor/manager ownership, and extension/path contracts. Linux CI remains responsible for exercising the skipped boot-scoped lifecycle path. No real Chromium session, noVNC login, or authenticated platform command was run.
+Current local macOS result: **71 tests and 40 subtests passed; 1 Linux `/proc` lifecycle test was skipped**. Fixture/dry-run paths verified bounded OpenCLI output handling, process-group cleanup when a timed-out adapter leader exits before a pipe-owning descendant, credential-safe dry-run argv rendering, structured and free-text redaction of common session identifiers (including quoted JSON `session_id`, `sid`, and `auth`, plus nested and captured-text camelCase keys such as `sessionData`/`sessionID`), exact per-adapter HTTPS output-host allowlists, stable canonical fingerprints, URL redaction, boot-scoped process identity checks that prevent PID-reuse signaling, profile/runtime path checks, container-supervisor/manager ownership, and extension/path contracts. GitHub Actions run `33032513290` exercised the Linux suite, including the boot-scoped `/proc` lifecycle path. No real Chromium session, noVNC login, or authenticated platform command was run.
 
 ### Database contracts
 
@@ -87,7 +87,7 @@ Current evidence:
 - 38 static migration/type contract tests passed on the current tree;
 - 18 repository/migration-safety script tests passed, and the actual safety gate found 0 errors with the new forward migration while preserving the reviewed historical `DELETE` fingerprints;
 - the current pgTAP files plan **478 assertions**: 132 schema/queue, 54 analytics, 79 public/security/Admin, 42 seed, 50 lease-fencing, and 121 TCGdex-pipeline assertions;
-- historical GitHub CI run `33023105390` at `86ddb66` successfully started a clean local Supabase stack and passed the then-current **353 pgTAP assertions**. The new 478-assertion migration tree has not yet run against PostgreSQL locally or in GitHub CI;
+- GitHub Actions run `33032513290` on PR #2 started a clean local Supabase stack, replayed the full current migration tree, and passed all **478 pgTAP assertions** on commit `004d523`;
 - local standalone PostgreSQL remains unavailable because the host has exhausted its global System V shared-memory slots (`could not create shared memory segment: No space left on device`).
 
 The first seven migrations (`20260825000000` through `20260825000600`) are applied to the approved hosted Supabase project. Hosted PostgREST smoke checks verified empty public reads, private-schema rejection, anonymous write rejection, and Admin-RPC denial. Both `20260827000000_job_lease_fencing.sql` and `20260828000000_tcgdex_sets_pipeline.sql` remain unapplied. Hosted Auth still reports public signup enabled and the Admin allowlist/app-metadata setup remains incomplete.
@@ -102,7 +102,7 @@ Verified:
 - the deployment shell now uses portable BSD/GNU stat/hash handling, Bash 3.2-compatible lowercase conversion, and atomic `os.replace` replacement rather than GNU-only move flags;
 - static contracts still require OpenCLI at `/opt/pokecrack/opencli-extension/current`, a read-only host bind, no automatic host-path creation, noVNC secret uid/gid 10001 with mode 0400, loopback-only noVNC publication, and full commit SHA GitHub Action pins.
 
-Exactly 6 Docker Compose render tests could not run because no Docker CLI is installed. ShellCheck is also unavailable in the current environment. Therefore no current `docker compose config`, image build, Compose startup, or ShellCheck pass is claimed.
+Local execution still skipped exactly 6 Docker Compose render tests because Docker is unavailable on this Mac, and ShellCheck is unavailable locally. In GitHub Actions run `33032513290`, the deployment-contracts job passed the full deployment test suite and `docker compose config`, the worker and auth-browser images built successfully, and ShellCheck passed. No Compose startup or container-runtime smoke is claimed.
 
 ### Repository and security checks
 
@@ -152,7 +152,7 @@ The following are P0 release blockers, not optional polish:
 6. **Scheduler durability:** the new service-only `schedule_slots` reservation prevents a completed wired slot from being recreated, reconciles canonical schedule dedupe keys written by the previous scheduler, and TCGdex performs only the latest missed slot within a 36-hour window using interval buckets that do not depend on the worker loop landing on an exact wall-clock minute. This is locally implemented, not hosted operational evidence; additional schedules need the same bounded policy before they are wired.
 7. **Operational state:** watchdogs do not maintain `current_job_id`; browser, host, and storage checkpoints lack a safe persistence channel; browser-refresh and service-restart control jobs have no live handler; and the current Admin retry branch accepts `failed` rows while the canonical runtime ends exhausted work as `dead`, so dead-letter recovery is not yet a closed operational path.
 
-Accordingly, the repository is **not production-ready for unattended research collection**. The TCGdex sets path is a catalog-only exception and still requires clean database CI, hosted migrations and an approved always-on worker before it is operational. General collector, AI, aggregator and control paths remain blocked.
+Accordingly, the repository is **not production-ready for unattended research collection**. The TCGdex sets path is a catalog-only exception and still requires the hosted migrations and an approved always-on worker before it is operational. General collector, AI, aggregator and control paths remain blocked.
 
 ## Restricted Admin mutation status
 
@@ -166,17 +166,17 @@ The missing-RPC blocker was closed locally by migration `20260825000600_admin_co
 - import actions remain deliberately unavailable;
 - the current Admin views remain read-only and keep mutation buttons disabled; the authenticated server-action/RPC boundary is implemented for later activation, but is not presented as an operational control surface on this tree;
 - queue-producing controls such as browser refresh and service restart are not end-to-end operational until the live-handler and fencing blockers above are closed;
-- the historical 353-assertion database tree, including the 50 fencing/finalizer assertions, passed in GitHub CI run `33023105390`; the current 478-assertion tree adds 121 TCGdex-pipeline assertions and still requires clean PR CI. Hosted read/denial RPC behavior was smoke-tested, while the fencing and TCGdex migrations remain pending on the hosted project.
+- GitHub Actions run `33032513290` on PR #2 replayed the current migration tree on a clean local Supabase stack and passed all 478 pgTAP assertions, including the 50 fencing/finalizer and 121 TCGdex-pipeline assertions. Hosted read/denial RPC behavior was smoke-tested, while the fencing and TCGdex migrations remain pending on the hosted project.
 
-This is static/local implementation evidence, not hosted Supabase/Auth/PostgREST evidence. The account owner must configure the Supabase app-metadata claim, `ADMIN_EMAILS`, and the Vercel server-only service-role key before enabling `ADMIN_CONTROL_RPC_ENABLED`; the service-role key must never be placed in a `NEXT_PUBLIC_` variable or the VPS worker environment.
+This is local and GitHub CI implementation evidence, not hosted Supabase/Auth/PostgREST evidence. The account owner must configure the Supabase app-metadata claim, `ADMIN_EMAILS`, and the Vercel server-only service-role key before enabling `ADMIN_CONTROL_RPC_ENABLED`; the service-role key must never be placed in a `NEXT_PUBLIC_` variable or the VPS worker environment.
 
 ## Blocked or unverified real paths
 
-1. **Docker runtime:** no Docker/Compose CLI is installed, so Compose rendering through the CLI, worker/auth-browser images, startup, container healthchecks, resource limits, and network behavior were not exercised.
+1. **Docker runtime:** Docker/Compose is unavailable locally. GitHub CI rendered the production Compose contract and built both production images, but no Compose startup, container healthcheck, resource-limit, or network-behavior runtime was exercised.
 2. **Authenticated browser:** the in-app browser exercised the local public/Admin-login Web UI, but no containerized Chromium, noVNC, Browser Bridge, OpenCLI daemon, external-platform login, CAPTCHA/2FA, or persistent-profile smoke was performed.
 3. **Hosted Supabase:** the approved project has the first seven migrations and bounded API smoke evidence, but both the fencing migration and the new TCGdex sets-pipeline migration are pending; Auth signup/redirect policy, Admin identity claims, Realtime, and the full authenticated Admin flow remain unverified or incomplete.
 4. **Vercel Hobby:** the approved project serves the public Demo-mode Web app at `https://pokecrack.vercel.app`; no live data path or Admin mutation surface is enabled.
-5. **GitHub private repository:** `ncihxaonn/pokecrack` is private. Commit `138cb77` is the merged base of the current branch; the old seven-job run `33023105390` is green for `86ddb66`, but does not verify the current TCGdex changes.
+5. **GitHub private repository:** `ncihxaonn/pokecrack` is private. Commit `138cb77` is the merged base of the current branch; GitHub Actions run `33032513290` passed all seven PR #2 jobs for commit `004d523` on the current TCGdex tree.
 6. **VPS:** no host access; production deploy, firewall inspection, backup, restore, rollback, and monitoring were not exercised.
 7. **External collectors and AI:** one bounded, read-only direct transport smoke against the free, no-key English TCGdex sets endpoint returned HTTP 200 with 218 sets, an ETag and a 64-character SHA-256 digest. It made no database write and is not an always-on worker run. No credentialed source or paid model call was made; terms/robots compatibility and model accuracy remain source-specific work.
 8. **OpenCLI artifact:** no owner-approved, checksum-pinned compatible release artifact was available; the installer contract was tested only with synthetic archives.
