@@ -224,9 +224,7 @@ def test_youtube_query_batch_continues_after_nonfatal_api_failure() -> None:
         policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
         sleeper=lambda _seconds: None,
     )
-    queries = YouTubeQueryRegistry.from_yaml(
-        ROOT / "config" / "youtube-queries.yaml"
-    ).queries[:2]
+    queries = YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[:2]
 
     result = client.discover_many(queries)
 

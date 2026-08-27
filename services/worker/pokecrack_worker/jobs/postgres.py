@@ -316,7 +316,10 @@ class PostgresJobRepository:
         worker_id: str,
         lease_generation: int,
         now: datetime,
-        effect: CompletionEffect | TCGdexSetsSyncCompletion | YouTubeDiscoveryCompletion | None = None,
+        effect: CompletionEffect
+        | TCGdexSetsSyncCompletion
+        | YouTubeDiscoveryCompletion
+        | None = None,
     ) -> Job:
         del now
         params: dict[str, object] = {

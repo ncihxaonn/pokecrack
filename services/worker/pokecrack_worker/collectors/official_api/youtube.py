@@ -135,7 +135,9 @@ class HTTPXYouTubeTransport:
         http_transport: httpx.BaseTransport | None = None,
     ) -> None:
         if not 1 <= max_response_bytes <= YOUTUBE_MAX_RESPONSE_BYTES:
-            raise ValueError(f"max_response_bytes must be between 1 and {YOUTUBE_MAX_RESPONSE_BYTES}")
+            raise ValueError(
+                f"max_response_bytes must be between 1 and {YOUTUBE_MAX_RESPONSE_BYTES}"
+            )
         self.max_response_bytes = max_response_bytes
         self._monotonic = monotonic_clock
         self._http_transport = http_transport
@@ -180,10 +182,10 @@ class HTTPXYouTubeTransport:
                         raise YouTubeError("request_timeout", retryable=True)
                     declared_length = response.headers.get("content-length")
                     content_encoding = response.headers.get("content-encoding")
-                    if (
-                        content_encoding is not None
-                        and content_encoding.strip().casefold() not in {"", "identity"}
-                    ):
+                    if content_encoding is not None and content_encoding.strip().casefold() not in {
+                        "",
+                        "identity",
+                    }:
                         raise YouTubeInvalidResponse("unsupported_content_encoding")
                     if declared_length is not None:
                         try:

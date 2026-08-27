@@ -7,9 +7,9 @@
 - **Account-bound:** Supabase, Vercel, VPS, OpenCLI artifact, social login, API keys, DNS, email, and provider billing that require the owner.
 - **Deployed/live:** only true after an operator completes and records the account-bound verification. This repository alone is not deployed.
 
-## Fixed research scope
+## Research and publication scope
 
-The MVP is limited to Australia, English-language evidence, physical Pokémon TCG openings, and exactly these sealed product types: `booster_box`, `etb`, and `booster_bundle`. Other countries, languages, games, digital products, singles, loose-pack predictions, and commercial features are out of scope.
+The private discovery layer may collect bounded global catalog and activity metadata. That is coverage evidence, not pull-rate evidence. The public v1 statistical contract remains limited to Australia, English-language evidence, physical Pokémon TCG openings, and exactly these sealed product types: `booster_box`, `etb`, and `booster_bundle`. Other countries may be preserved as explicit private facts, but cannot enter public v1 aggregates. Other games, digital products, singles, loose-pack predictions, and commercial features remain out of scope.
 
 ## Fixed responsibilities
 
@@ -34,21 +34,24 @@ VPS Docker Compose
   watchdog -> heartbeats, budget/free-tier/backup freshness alerts
 ```
 
-The deployment artifacts define `collector`, `ai-worker`, `aggregator`, `scheduler`, and `watchdog` as roles of one worker image with role-specific commands and least-privilege environment variables. The live composition is deliberately single-process (`WORKER_MAX_CONCURRENCY=1`): `scheduler` can enqueue fenced cleanup and a daily TCGdex English sets-catalog job; `watchdog` can claim only cleanup; and `collector` can claim only that fixed TCGdex job. General URL/YouTube/browser collection, `ai-worker`, and `aggregator` still fail closed. The TCGdex path stores catalog metadata only—never cards, openings, hits, or pull-rate evidence—and is not an operational research pipeline until its migrations and worker are deployed and verified. `auth-browser` has its own Chromium/noVNC image and sensitive persistent profile volume.
+The deployment artifacts define `collector`, `ai-worker`, `aggregator`, `scheduler`, and `watchdog` as roles of one worker image with role-specific commands and least-privilege environment variables. The live composition is deliberately single-process (`WORKER_MAX_CONCURRENCY=1`). Cleanup and the daily TCGdex English sets-catalog sync are fixed jobs. When the explicit YouTube collection flag is enabled, the scheduler may also enqueue one fenced job for each of five versioned global discovery queries; it does not receive the API key. Only the collector receives the dedicated key and may claim those jobs. General URL and browser collection, `ai-worker`, and `aggregator` still fail closed. TCGdex rows are catalog-only. YouTube rows are tier-D/activity-only metadata. Neither path creates cards, openings, hits, denominators, aggregates, or pull-rate evidence. `auth-browser` has its own Chromium/noVNC image and sensitive persistent profile volume.
 
 ## PostgreSQL queue; no Redis in the free MVP
 
-`ingest.jobs` is the durable queue contract: bounded attempts, finite leases, lease-expiry recovery, and terminal states. Durable `schedule_slots` reserve a UTC slot even after its job becomes terminal; the TCGdex scheduler uses interval buckets to enqueue only the latest missed daily slot within 36 hours, independent of exact loop phase. The forward fencing protocol increments `lease_generation` on every claim; heartbeat, pause, fail, and completion must match the exact owner and generation while the database-clock lease is live. Claiming uses `FOR UPDATE SKIP LOCKED`. Cleanup uses `finalize_cleanup_job`; each TCGdex attempt uses a fenced, database-policy preflight before at most one GET, then `finalize_tcgdex_sets_job` atomically validates the current lease and kill switch, upserts bounded live catalog rows/checkpoint state, and completes the job. Future persistent handlers still require their own typed transactional finalizer and external idempotency. PostgreSQL is already required and is adequate for expected low concurrency. Omitting Redis removes another credentialed, patched, monitored, backed-up stateful service. Add a broker only after measured latency/throughput or lock pressure proves this design insufficient. These migration/code contracts do not prove that either new migration or a live worker has run in a hosted environment.
+`ingest.jobs` is the durable queue contract: bounded attempts, finite leases, lease-expiry recovery, and terminal states. Durable `schedule_slots` reserve a UTC slot even after its job becomes terminal; schedulers use interval buckets rather than depending on an exact loop phase. The forward fencing protocol increments `lease_generation` on every claim; heartbeat, pause, fail, and completion must match the exact owner and generation while the database-clock lease is live. Claiming uses `FOR UPDATE SKIP LOCKED`.
+
+Every persistent collector has its own transactional database boundary. Cleanup uses `finalize_cleanup_job`. TCGdex uses a fenced policy/request-gate preflight and `finalize_tcgdex_sets_job`. YouTube discovery uses `begin_youtube_discovery_job` before any network call and `finalize_youtube_discovery_job` after bounded `search.list` and optional `channels.list` calls. The finalizer rechecks the exact lease, generation, policy, request gate, result version, identities, and size bounds before atomically upserting private activity-only rows and completing the job. A stale lease, disabled kill switch, malformed response, or identity collision produces no partial persistence. Future persistent handlers still require their own typed finalizer and external idempotency. PostgreSQL is already required and is adequate for expected low concurrency. Omitting Redis removes another credentialed, patched, monitored, backed-up stateful service. Add a broker only after measured latency/throughput or lock pressure proves this design insufficient. Repository contracts are not evidence that a migration or worker revision has been deployed.
 
 ## Data flow
 
 1. The scheduler creates idempotent jobs; workers lease with bounded attempts.
 2. A collector resolves an exact source policy. Unknown or disabled domains fail closed.
-3. Metadata/excerpts are normalized and deduplicated; third-party video is not retained.
+3. Metadata/excerpts are normalized and deduplicated; third-party video, audio, captions, thumbnails, channel names, and raw channel identifiers are not retained.
 4. Deterministic bounds and catalog checks precede any AI call.
 5. Independent extraction and validation must agree; one escalation can break a tie. Remaining conflict or low confidence is rejected.
-6. Only accepted, complete, nonduplicate tier A/B openings explicitly marked statistics-eligible contribute denominators.
-7. Aggregation produces public-safe summaries; private URLs, payloads, prompts, author hashes, sessions, and worker state stay outside the browser surface.
+6. Only accepted, complete, nonduplicate tier A/B openings with a verified positive pack denominator and an eligible geography contribute to statistics.
+7. Public v1 aggregation publishes only the reviewed Australia/English statistical slice. Global activity metadata stays private.
+8. Aggregation produces public-safe summaries; private URLs, payloads, prompts, author hashes, sessions, and worker state stay outside the browser surface.
 
 ## Trust and network boundaries
 

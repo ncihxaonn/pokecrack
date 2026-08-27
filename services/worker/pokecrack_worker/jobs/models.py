@@ -181,9 +181,10 @@ class YouTubeSourceItemWrite:
     source_policy_version: str
 
     def __post_init__(self) -> None:
-        if not isinstance(self.external_id, str) or _YOUTUBE_ID_PATTERN.fullmatch(
-            self.external_id
-        ) is None:
+        if (
+            not isinstance(self.external_id, str)
+            or _YOUTUBE_ID_PATTERN.fullmatch(self.external_id) is None
+        ):
             raise ValueError("YouTube external ID is invalid")
         expected_url = f"https://www.youtube.com/watch?v={self.external_id}"
         if self.source_url != expected_url or self.normalized_url != expected_url:
@@ -242,8 +243,7 @@ class YouTubeSourceItemWrite:
             not isinstance(products, list)
             or len(products) > 3
             or any(
-                not isinstance(item, str)
-                or item not in {"booster_box", "etb", "booster_bundle"}
+                not isinstance(item, str) or item not in {"booster_box", "etb", "booster_bundle"}
                 for item in products
             )
             or len(products) != len(set(products))

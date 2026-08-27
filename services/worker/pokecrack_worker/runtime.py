@@ -47,7 +47,10 @@ class RuntimeRepository(Protocol):
         worker_id: str,
         lease_generation: int,
         now: datetime,
-        effect: CompletionEffect | TCGdexSetsSyncCompletion | YouTubeDiscoveryCompletion | None = None,
+        effect: CompletionEffect
+        | TCGdexSetsSyncCompletion
+        | YouTubeDiscoveryCompletion
+        | None = None,
     ) -> Job: ...
 
     def fail(

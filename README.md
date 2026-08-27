@@ -17,7 +17,7 @@ Private GitHub monorepo
 ├── Vercel Hobby: Next.js public dashboard + protected admin status UI
 ├── Supabase Free: PostgreSQL/Auth/RLS/public aggregate layer
 └── Existing VPS (Docker Compose)
-    ├── collector       public API/RSS/JSON/Scrapling allowlisted sources
+    ├── collector       allowlisted official APIs and bounded source adapters
     ├── auth-browser    headed persistent Chromium + Browser Bridge + OpenCLI
     ├── ai-worker       deterministic checks + extract + validate + escalation
     ├── aggregator      eligibility, baselines, empirical Bayes, public summaries
@@ -26,6 +26,8 @@ Private GitHub monorepo
 ```
 
 The everyday pipeline runs on the VPS. A personal computer is used only to open an SSH tunnel to the VPS-local noVNC listener for first login, CAPTCHA, or two-factor authentication; it does not run scheduled collection or AI processing.
+
+The [global data pipeline contract](docs/GLOBAL_DATA_PIPELINE.md) separates catalog coverage, activity-only discovery, and denominator-backed statistical evidence. Global search metadata is never presented as a regional pull-rate claim.
 
 ## Safe defaults
 

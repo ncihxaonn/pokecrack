@@ -156,8 +156,7 @@ class Settings(BaseSettings):
         if (
             self.youtube_collection_enabled
             and (
-                self.youtube_api_key is None
-                or not self.youtube_api_key.get_secret_value().strip()
+                self.youtube_api_key is None or not self.youtube_api_key.get_secret_value().strip()
             )
             and self.worker_role != "scheduler"
         ):
