@@ -66,10 +66,11 @@ if ! table_state=$(PGDATABASE=$database_url psql -X --set=ON_ERROR_STOP=1 --tupl
 fi
 
 case "$table_state" in
-  $'rp\tru') ;;
+  $'rp\tru') youtube_discoveries=present ;;
+  $'rp\t0') youtube_discoveries=absent ;;
   *)
     unset database_url
-    die "database retention preflight requires logged source_policies and UNLOGGED youtube_discoveries tables"
+    die "database retention preflight requires logged source_policies and youtube_discoveries either absent or UNLOGGED"
     ;;
 esac
 
@@ -79,17 +80,28 @@ if ! youtube_policy_id=$(PGDATABASE=$database_url psql -X --set=ON_ERROR_STOP=1 
   unset database_url
   die "database retention policy lookup failed"
 fi
-if [[ -z $youtube_policy_id ]]; then
-  unset database_url
-  die "database retention policy lookup returned no YouTube policy"
-fi
 if [[ $youtube_policy_id == *$'\n'* ]]; then
   unset database_url
   die "database retention policy lookup was ambiguous"
 fi
-if [[ ! $youtube_policy_id =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+
+sanitizer_arguments=(
+  --source-policies present
+  --youtube-discoveries "$youtube_discoveries"
+)
+if [[ $youtube_discoveries == present ]]; then
+  if [[ -z $youtube_policy_id ]]; then
+    unset database_url
+    die "database retention policy lookup returned no YouTube policy"
+  fi
+  if [[ ! $youtube_policy_id =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+    unset database_url
+    die "database retention policy id was malformed"
+  fi
+  sanitizer_arguments+=(--youtube-policy-id "$youtube_policy_id")
+elif [[ -n $youtube_policy_id ]]; then
   unset database_url
-  die "database retention policy id was malformed"
+  die "database retention policy exists without youtube_discoveries"
 fi
 
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
@@ -118,9 +130,7 @@ if ! PGDATABASE=$database_url pg_dump \
   --no-privileges \
   --encoding=UTF8 \
   | python3 "$SCRIPT_DIR/../lib/sanitize_plain_backup.py" \
-      --source-policies present \
-      --youtube-discoveries present \
-      --youtube-policy-id "$youtube_policy_id" \
+      "${sanitizer_arguments[@]}" \
   | gzip -9 > "$temporary"; then
   unset database_url
   die "database dump retention sanitization failed"

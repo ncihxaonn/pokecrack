@@ -403,6 +403,16 @@ cp "$FAKE_DOWNLOAD" "$output"
 
 
 class BackupScriptTests(unittest.TestCase):
+    @staticmethod
+    def pre_youtube_dump() -> bytes:
+        return b"""-- PostgreSQL database dump fixture
+CREATE TABLE ingest.source_policies (
+);
+COPY ingest.source_policies (source_key, id) FROM stdin;
+other\t22222222-2222-4222-8222-222222222222
+\\.
+"""
+
     def make_fake_commands(self, base: Path) -> Path:
         fake_bin = base / "bin"
         fake_bin.mkdir()
@@ -536,6 +546,72 @@ fi
                 (base / "psql-preflight.log").read_text(encoding="utf-8").splitlines(),
                 ["table-state:set-role", "policy-lookup:set-role"],
             )
+
+    def test_coherent_pre_youtube_schema_is_backed_up_without_policy_id(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            dump = self.pre_youtube_dump()
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20260729T020000Z",
+                dump=dump,
+                table_state="rp\t0",
+                policy_output="",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("very-secret", result.stdout + result.stderr)
+            backup = backup_dir / "pokecrack-20260729T020000Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                self.assertEqual(stream.read(), dump)
+            self.assertEqual(
+                (backup_dir / ".last-successful-backup")
+                .read_text(encoding="utf-8")
+                .splitlines(),
+                [backup.name, "completed_at=20260729T020000Z"],
+            )
+
+    def test_partial_youtube_migration_states_fail_atomically(self) -> None:
+        policy = "11111111-1111-4111-8111-111111111111"
+        cases = {
+            "table-without-policy": {
+                "table_state": "rp\tru",
+                "policy_output": "",
+            },
+            "policy-without-table": {
+                "table_state": "rp\t0",
+                "policy_output": policy,
+            },
+            "old-preflight-with-new-dump": {
+                "table_state": "rp\t0",
+                "policy_output": "",
+            },
+            "new-preflight-with-old-dump": {
+                "table_state": "rp\tru",
+                "policy_output": policy,
+                "dump": self.pre_youtube_dump(),
+            },
+        }
+        for name, values in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                dir=DEPLOY_ROOT / "tests"
+            ) as temporary:
+                base = Path(temporary)
+                fake_bin = self.make_fake_commands(base)
+                backup_dir = base / "backups"
+                result = self.run_backup(
+                    fake_bin=fake_bin,
+                    backup_dir=backup_dir,
+                    timestamp="20260729T020000Z",
+                    table_state=values["table_state"],
+                    policy_output=values["policy_output"],
+                    dump=values.get("dump"),
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("very-secret", result.stdout + result.stderr)
+                self.assertEqual(list(backup_dir.iterdir()), [])
 
     def test_database_url_file_must_be_owner_only(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
