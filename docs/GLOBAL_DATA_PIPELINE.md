@@ -1,8 +1,10 @@
 # Global data pipeline contract
 
-PokeCrack's global collection layer discovers and normalizes evidence from
-multiple countries. It does **not** make a global pull-rate claim from search,
-social, marketplace, or catalog metadata.
+PokeCrack's global collection contract can discover and normalize eligible
+evidence without restricting discovery to one country. This revision has only
+fixture evidence and collection remains disabled, so it does **not** establish
+live multi-country coverage or make a global pull-rate claim from search, social,
+marketplace, or catalog metadata.
 
 ## Data classes
 
@@ -20,9 +22,9 @@ a listing, or a channel country is not evidence that a region has better packs.
 
 ## YouTube discovery boundary
 
-The live adapter uses only the official YouTube Data API. Each job selects one
-exact, versioned query by name; job payloads cannot supply arbitrary queries,
-URLs, regions, or endpoints. The adapter may make exactly one bounded
+The network-capable adapter uses only the official YouTube Data API. Each job
+selects one exact, versioned query by name; job payloads cannot supply arbitrary
+queries, URLs, regions, or endpoints. The adapter may make exactly one bounded
 `search.list` request. It must not call `channels.list` or download video, audio,
 captions, thumbnails, descriptions, channel metadata, or raw channel identifiers.
 
