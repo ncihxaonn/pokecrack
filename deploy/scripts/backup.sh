@@ -5,6 +5,7 @@ umask 077
 
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 PORTABILITY_HELPER="$SCRIPT_DIR/../lib/shell_portability.sh"
+DATABASE_URL_RUNNER="$SCRIPT_DIR/../lib/run_with_database_url.py"
 # shellcheck disable=SC1090
 source "$PORTABILITY_HELPER"
 BACKUP_DIR=${BACKUP_DIR:-/opt/pokecrack/backups}
@@ -17,7 +18,7 @@ die() {
   exit 1
 }
 
-for command in pg_dump gzip python3 date mktemp stat; do
+for command in pg_dump psql gzip python3 date mktemp stat; do
   command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
 done
 [[ $BACKUP_DIR == /* ]] || die "BACKUP_DIR must be an absolute path"
@@ -39,9 +40,84 @@ fi
 unset SUPABASE_DB_URL
 [[ -n $database_url ]] || die "SUPABASE_DB_URL_FILE or SUPABASE_DB_URL is required"
 
+run_database_command() {
+  printf '%s' "$database_url" | python3 "$DATABASE_URL_RUNNER" -- "$@"
+}
+
 install -d -m 0700 "$BACKUP_DIR"
 [[ -d $BACKUP_DIR && ! -L $BACKUP_DIR ]] || die "backup directory is not a real directory"
 chmod 0700 "$BACKUP_DIR"
+
+# Prove that both the policy registry and the dedicated disposable cache have
+# the expected physical shape without placing the database URL in argv or
+# output. The sanitizer checks the same policy/table pair inside the dump, so
+# a schema race fails instead of retaining cache rows.
+table_state_query="set role service_role;
+select concat_ws(E'\\t',
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.source_policies')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.youtube_discoveries')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.source_request_gates')
+  ), '0'),
+  coalesce(has_table_privilege(
+    'service_role',
+    to_regclass('ingest.source_request_gates'),
+    'MAINTAIN'
+  )::text, 'false')
+);"
+if ! table_state=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$table_state_query" 2>/dev/null); then
+  unset database_url
+  die "database retention preflight failed"
+fi
+
+case "$table_state" in
+  $'rp\tru\trp\ttrue') youtube_discoveries=present ;;
+  $'rp\t0\trp\ttrue') youtube_discoveries=absent ;;
+  *)
+    unset database_url
+    die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, and youtube_discoveries either absent or UNLOGGED"
+    ;;
+esac
+
+policy_query="set role service_role;
+select id::text from ingest.source_policies where source_key = 'youtube_discovery' order by id::text;"
+if ! youtube_policy_id=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$policy_query" 2>/dev/null); then
+  unset database_url
+  die "database retention policy lookup failed"
+fi
+if [[ $youtube_policy_id == *$'\n'* ]]; then
+  unset database_url
+  die "database retention policy lookup was ambiguous"
+fi
+
+sanitizer_arguments=(
+  --source-policies present
+  --youtube-discoveries "$youtube_discoveries"
+)
+if [[ $youtube_discoveries == present ]]; then
+  if [[ -z $youtube_policy_id ]]; then
+    unset database_url
+    die "database retention policy lookup returned no YouTube policy"
+  fi
+  if [[ ! $youtube_policy_id =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+    unset database_url
+    die "database retention policy id was malformed"
+  fi
+  sanitizer_arguments+=(--youtube-policy-id "$youtube_policy_id")
+elif [[ -n $youtube_policy_id ]]; then
+  unset database_url
+  die "database retention policy exists without youtube_discoveries"
+fi
 
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
 [[ $timestamp =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || die "date returned an invalid UTC timestamp"
@@ -61,13 +137,22 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-# PGDATABASE keeps the credential out of process arguments and command output.
-PGDATABASE=$database_url pg_dump \
+# The URL runner translates stdin into libpq environment fields, keeping the
+# credential out of process arguments and command output. Gate rows are live
+# lease state; retain the schema under MAINTAIN but never request their data.
+if ! run_database_command pg_dump \
   --format=plain \
+  --role=service_role \
   --no-owner \
   --no-privileges \
   --encoding=UTF8 \
-  | gzip -9 > "$temporary"
+  --exclude-table-data=ingest.source_request_gates \
+  | python3 "$SCRIPT_DIR/../lib/sanitize_plain_backup.py" \
+      "${sanitizer_arguments[@]}" \
+  | gzip -9 > "$temporary"; then
+  unset database_url
+  die "database dump retention sanitization failed"
+fi
 unset database_url
 
 [[ -s $temporary ]] || die "compressed backup is empty"

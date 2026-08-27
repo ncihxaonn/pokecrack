@@ -5,6 +5,9 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1
 
 WORKDIR /app
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
 RUN groupadd --system pokecrack && useradd --system --gid pokecrack --home /app pokecrack
 
 COPY pyproject.toml ./

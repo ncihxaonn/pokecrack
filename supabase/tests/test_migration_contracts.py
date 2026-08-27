@@ -4,6 +4,8 @@ from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+SUPABASE_CONFIG = (ROOT / "config.toml").read_text()
+MIGRATION_WORKFLOW = (ROOT.parent / ".github/workflows/migrate-database.yml").read_text()
 CATALOG = (ROOT / "migrations/20260825000100_catalog.sql").read_text()
 INGEST = (ROOT / "migrations/20260825000200_ingest.sql").read_text()
 ANALYTICS = (ROOT / "migrations/20260825000300_analytics.sql").read_text()
@@ -11,6 +13,13 @@ PUBLIC = (ROOT / "migrations/20260825000400_public_tables.sql").read_text()
 RPC = (ROOT / "migrations/20260825000500_public_rpc_security.sql").read_text()
 FENCING = (ROOT / "migrations/20260827000000_job_lease_fencing.sql").read_text()
 TCGDEX_PIPELINE = (ROOT / "migrations/20260828000000_tcgdex_sets_pipeline.sql").read_text()
+BACKUP_GATE_LOCK = (
+    ROOT / "migrations/20260828500000_backup_request_gate_lock.sql"
+).read_text()
+ADMIN_SESSION_FENCE = (
+    ROOT / "migrations/20260828750000_admin_session_fence.sql"
+).read_text()
+YOUTUBE_PIPELINE = (ROOT / "migrations/20260829000000_youtube_global_discovery.sql").read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -88,6 +97,12 @@ def _sql_text(value: str) -> str:
 
 
 class IngestMigrationContractTests(unittest.TestCase):
+    def test_local_supabase_matches_the_postgresql_17_backup_contract(self) -> None:
+        self.assertIn("major_version = 17", SUPABASE_CONFIG)
+        self.assertNotIn("major_version = 15", SUPABASE_CONFIG)
+        self.assertIn("server_version_num", MIGRATION_WORKFLOW)
+        self.assertIn("server_version_num >= 170000", MIGRATION_WORKFLOW)
+
     def test_seed_aggregate_rows_obey_count_and_practical_probability_contracts(self) -> None:
         source_fields = {
             "analytics.set_metrics_daily": "independent_source_count",
@@ -256,6 +271,20 @@ class IngestMigrationContractTests(unittest.TestCase):
             "grant select on table ingest.source_request_gates to service_role", lowered
         )
 
+    def test_backup_can_lock_but_never_read_the_opaque_request_gate(self) -> None:
+        backup_lock = " ".join(BACKUP_GATE_LOCK.casefold().split())
+        youtube = " ".join(YOUTUBE_PIPELINE.casefold().split())
+        self.assertIn("server_version_num", backup_lock)
+        self.assertIn(
+            "grant maintain on table ingest.source_request_gates to service_role",
+            backup_lock,
+        )
+        self.assertNotIn("grant select", backup_lock)
+        self.assertIn(
+            "revoke all on table ingest.source_request_gates from service_role; grant maintain on table ingest.source_request_gates to service_role",
+            youtube,
+        )
+
     def test_scheduled_enqueue_reserves_a_durable_slot_before_one_live_job(self) -> None:
         lowered = TCGDEX_PIPELINE.casefold()
         function = lowered.split(
@@ -393,6 +422,283 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("heartbeat_job_v2:", DATABASE_TYPES)
         self.assertIn("fail_job_v2:", DATABASE_TYPES)
 
+    def test_youtube_pipeline_is_exact_bounded_metadata_only_activity(self) -> None:
+        lowered = YOUTUBE_PIPELINE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertIn("'youtube_discovery'", compact)
+        self.assertIn("'youtube global discovery api'", compact)
+        self.assertIn("'youtube.googleapis.com'", compact)
+        self.assertIn("'https://youtube.googleapis.com/youtube/v3'", compact)
+        self.assertIn("2, 1, 25, 1, false, 28", compact)
+        self.assertIn("'youtube-global-discovery-v1'", compact)
+        self.assertIn(
+            "'{\"metadata_only\":true,\"media_download\":false,"
+            "\"max_response_bytes\":2097152,\"query_allowlist\":["
+            "\"pokemon-tcg-booster-box-opening\",\"pokemon-tcg-etb-opening\","
+            "\"pokemon-tcg-booster-bundle-opening\",\"pokemon-tcg-pack-opening\","
+            "\"pokemon-tcg-opening-batch-code\"]}'::jsonb",
+            compact,
+        )
+        for forbidden_contract_field in (
+            "product_type_hints",
+            "batch_code_hints",
+            "youtube-metadata-v1",
+            "discovery_scope",
+            "geography_status",
+            "evidence_tier",
+            "channel_country_code",
+        ):
+            self.assertNotIn(forbidden_contract_field, lowered)
+        self.assertNotIn("youtube_api_key", lowered)
+        self.assertNotIn("service_role_key", lowered)
+        self.assertNotIn("insert into ingest.openings", lowered)
+        self.assertNotIn("insert into ingest.opening_hits", lowered)
+        self.assertNotIn("insert into public.", lowered)
+
+    def test_youtube_cache_is_unlogged_private_unlinked_and_mode_safe(self) -> None:
+        lowered = YOUTUBE_PIPELINE.casefold()
+        compact = " ".join(lowered.split())
+        duplicate_cluster_fk = lowered.split(
+            "add constraint source_items_duplicate_cluster_mode_fkey", 1
+        )[1].split("create unique index source_items_normalized_url_uidx", 1)[0]
+        self.assertIn("create unlogged table ingest.youtube_discoveries", lowered)
+        self.assertIn(
+            "alter table ingest.youtube_discoveries force row level security",
+            lowered,
+        )
+        self.assertIn(
+            "grant select on table ingest.youtube_discoveries to service_role",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant insert on table ingest.youtube_discoveries to service_role",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant update on table ingest.youtube_discoveries to service_role",
+            lowered,
+        )
+        self.assertIn("youtube_discoveries_live_only_check check (not is_demo)", compact)
+        self.assertIn("expires_at = last_seen_at + interval '28 days'", compact)
+        self.assertNotIn("ingest.source_discoveries", lowered)
+        self.assertNotIn("is_youtube_discovery_metadata_source", lowered)
+        self.assertNotIn("reject_youtube_discovery", lowered)
+        self.assertNotIn("enforce_youtube_discovery", lowered)
+        self.assertNotIn("create constraint trigger", lowered)
+        self.assertNotIn("jobs_id_mode_unique", lowered)
+        self.assertNotIn("alter column content_hash drop not null", compact)
+        self.assertNotIn("alter column language drop not null", compact)
+        self.assertIn(
+            "on ingest.source_items (normalized_url, is_demo)", compact
+        )
+        self.assertIn(
+            "on ingest.source_items (platform, external_id, is_demo)", compact
+        )
+        self.assertIn("source_items_id_mode_unique unique (id, is_demo)", compact)
+        self.assertIn("drop constraint source_items_duplicate_cluster_id_fkey", compact)
+        self.assertIn("foreign key (duplicate_cluster_id, is_demo)", compact)
+        self.assertIn("references ingest.source_items (id, is_demo)", compact)
+        self.assertIn("on update restrict", duplicate_cluster_fk)
+        self.assertIn("on delete set null (duplicate_cluster_id)", duplicate_cluster_fk)
+        self.assertIn("source_items_duplicate_cluster_mode_fkey", DATABASE_TYPES)
+        self.assertIn("columns: ['duplicate_cluster_id', 'is_demo']", DATABASE_TYPES)
+        self.assertIn("referencedcolumns: ['id', 'is_demo']", DATABASE_TYPES.casefold())
+        self.assertIn("youtube_discoveries:", DATABASE_TYPES)
+        self.assertIn(
+            "youtube_discoveries_source_policy_id_fkey",
+            DATABASE_TYPES,
+        )
+        youtube_types = DATABASE_TYPES.split("youtube_discoveries:", 1)[1].split(
+            "source_request_gates:", 1
+        )[0]
+        for forbidden in (
+            "source_item_id",
+            "query_name",
+            "job_id",
+            "result_rank",
+            "channel_country_code",
+            "geography_status",
+            "geography_basis",
+            "metadata:",
+            "text_excerpt",
+            "author_hash",
+            "content_hash",
+            "language:",
+        ):
+            self.assertNotIn(forbidden, youtube_types)
+
+    def test_service_role_is_read_only_and_worker_writes_use_fenced_rpcs(self) -> None:
+        lowered = YOUTUBE_PIPELINE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertIn("jobs_live_scheduled_enqueue_allowlist_check", lowered)
+        self.assertIn("dedupe_key !~ '^schedule:'", compact)
+        self.assertIn(
+            "job_type in ('catalog.tcgdex.sets.sync', 'maintenance.cleanup')",
+            compact,
+        )
+        self.assertIn("job_type = 'source.youtube.discovery'", compact)
+        self.assertIn("payload - array['query_name'] = '{}'::jsonb", compact)
+        scheduled = lowered.rsplit(
+            "create or replace function ingest.enqueue_scheduled_job_v1", 1
+        )[1].split("alter function ingest.enqueue_scheduled_job_v1", 1)[0]
+        self.assertIn("job_type is not approved for scheduled enqueue", scheduled)
+        self.assertIn("youtube jobs require one exact approved query_name", scheduled)
+        self.assertLess(
+            scheduled.index("job_type is not approved for scheduled enqueue"),
+            scheduled.index("from ingest.jobs as jobs"),
+        )
+        self.assertIn(
+            "schedule slot request must match its original job type and payload",
+            scheduled,
+        )
+        self.assertIn(
+            "revoke all privileges "
+            "on all tables in schema catalog, ingest, analytics, public "
+            "from service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant select on all tables in schema catalog, ingest, analytics, public "
+            "to service_role",
+            compact,
+        )
+        self.assertIn(
+            "revoke all on table ingest.source_request_gates from service_role",
+            compact,
+        )
+        self.assertEqual(lowered.count("_service_role_all on "), 23)
+        self.assertEqual(lowered.count("_service_all on "), 9)
+        self.assertEqual(lowered.count("_service_role_select on "), 23)
+        self.assertEqual(lowered.count("_service_select on "), 9)
+        for function_name in (
+            "enqueue_job_v1",
+            "complete_job_v2",
+            "pause_job_for_budget_v2",
+            "upsert_worker_heartbeat_v1",
+        ):
+            function = lowered.split(
+                f"create or replace function ingest.{function_name}", 1
+            )[1].split(f"alter function ingest.{function_name}", 1)[0]
+            self.assertIn("security definer", function)
+            self.assertIn("set search_path = pg_catalog", function)
+            self.assertIn(f"{function_name}:", DATABASE_TYPES)
+        self.assertIn("typed live jobs require their dedicated fenced finalizer", lowered)
+        self.assertIn("p_lease_generation", lowered)
+        self.assertIn("lock_expires_at >", lowered)
+
+    def test_youtube_begin_and_finalize_are_exact_fenced_kill_switches(self) -> None:
+        lowered = YOUTUBE_PIPELINE.casefold()
+        begin = lowered.split(
+            "create or replace function ingest.begin_youtube_discovery_job", 1
+        )[1].split("alter function ingest.begin_youtube_discovery_job", 1)[0]
+        finalizer = lowered.split(
+            "create or replace function ingest.finalize_youtube_discovery_job", 1
+        )[1].split("alter function ingest.finalize_youtube_discovery_job", 1)[0]
+        for function in (begin, finalizer):
+            self.assertIn("security definer", function)
+            self.assertIn("set search_path = pg_catalog", function)
+            self.assertIn("for update of jobs", function)
+            self.assertIn("lease_generation", function)
+            self.assertIn("lock_expires_at <=", function)
+            self.assertIn("'source.youtube.discovery'", function)
+            self.assertIn("'youtube_discovery'", function)
+            self.assertIn("policies.enabled", function)
+            self.assertIn("not policies.statistics_eligible_default", function)
+            self.assertIn("policies.retention_days = 28", function)
+            self.assertIn("policies.max_items_per_run = 25", function)
+            self.assertIn("policies.max_pages_per_run = 1", function)
+            self.assertIn("for update of policies", function)
+            self.assertLess(
+                function.index("for update of policies"),
+                function.rindex("lease_checked_at := clock_timestamp()"),
+            )
+        self.assertIn(
+            "returns table( acquired boolean, retry_at timestamptz )",
+            " ".join(begin.split()),
+        )
+        self.assertIn("lease_checked_at + interval '75 seconds'", begin)
+        self.assertIn("owner_lease_generation = $3", begin)
+        self.assertIn("octet_length(result::text) > 2097152", finalizer)
+        self.assertIn("jsonb_array_length(result -> 'items') > 25", finalizer)
+        self.assertIn(
+            "not (item_value ?& array[ 'external_id', 'source_url', 'title', "
+            "'published_at', 'collector_version', 'source_policy_version' ])",
+            " ".join(finalizer.split()),
+        )
+        for forbidden_item_field in (
+            "'normalized_url'",
+            "'text_excerpt'",
+            "'author_hash'",
+            "'content_hash'",
+            "'language'",
+            "'metadata'",
+        ):
+            self.assertNotIn(forbidden_item_field, finalizer)
+        self.assertNotIn("with ordinality", finalizer)
+        self.assertIn("youtube result identities must be unique", finalizer)
+        self.assertIn("insert into ingest.youtube_discoveries", finalizer)
+        persistence_loop = finalizer[finalizer.rindex("for item_record in") :]
+        self.assertIn("discovery_seen_at := clock_timestamp()", persistence_loop)
+        self.assertIn("discovery_seen_at + interval '28 days'", persistence_loop)
+        self.assertNotIn(
+            "lease_checked_at + interval '28 days'",
+            persistence_loop,
+        )
+        self.assertIn("on conflict (video_id)", finalizer)
+        self.assertIn("expires_at = excluded.expires_at", finalizer)
+        self.assertNotIn("insert into ingest.source_items", finalizer)
+        self.assertNotIn("update ingest.source_items", finalizer)
+        self.assertNotIn("insert into ingest.source_discoveries", finalizer)
+        self.assertNotIn("insert into ingest.extraction_runs", finalizer)
+        self.assertNotIn("insert into ingest.openings", finalizer)
+        self.assertNotIn("insert into ingest.batch_sightings", finalizer)
+        self.assertIn("last_attempt_at = greatest", finalizer)
+        self.assertIn("last_success_at = policy_attempt_time", finalizer)
+        self.assertIn("owner_job_id = null", finalizer)
+        self.assertIn("owner_lease_generation = null", finalizer)
+        self.assertIn("begin_youtube_discovery_job:", DATABASE_TYPES)
+        self.assertIn("finalize_youtube_discovery_job:", DATABASE_TYPES)
+
+    def test_request_gate_lifecycle_is_source_agnostic_and_retention_deletes_safely(self) -> None:
+        lowered = YOUTUBE_PIPELINE.casefold()
+        heartbeat = lowered.split(
+            "create or replace function ingest.heartbeat_job_v2", 1
+        )[1].split("alter function ingest.heartbeat_job_v2", 1)[0]
+        failure = lowered.split(
+            "create or replace function ingest.fail_job_v2", 1
+        )[1].split("alter function ingest.fail_job_v2", 1)[0]
+        self.assertNotIn("gates.source_key = 'tcgdex_catalog'", heartbeat)
+        self.assertNotIn("gates.source_key = 'tcgdex_catalog'", failure)
+        self.assertIn("gates.owner_job_id = $1", heartbeat)
+        self.assertIn("gates.owner_lease_generation = $3", heartbeat)
+        self.assertIn("gates.owner_job_id = $1", failure)
+        self.assertIn("gates.owner_lease_generation = $3", failure)
+        self.assertIn("policies.source_key = gates.source_key", failure)
+        self.assertIn("last_attempt_at = greatest", failure)
+        self.assertIn("last_failure_at = cooldown_recorded_at", failure)
+        self.assertLess(
+            failure.index("last_failure_at = cooldown_recorded_at"),
+            failure.index("set owner_job_id = null"),
+        )
+        cleanup = lowered.split(
+            "create or replace function ingest.prune_expired_ephemera_v2", 1
+        )[1].split("alter function ingest.prune_expired_ephemera_v2", 1)[0]
+        youtube_candidates = cleanup.split(
+            "delete from ingest.youtube_discoveries", 1
+        )[0]
+        self.assertIn("from ingest.youtube_discoveries", youtube_candidates)
+        self.assertIn("discoveries.expires_at <= cutoff", youtube_candidates)
+        self.assertIn(
+            "order by discoveries.expires_at, discoveries.video_id",
+            youtube_candidates,
+        )
+        self.assertIn("for update of discoveries skip locked", youtube_candidates)
+        self.assertIn("limit max_rows", youtube_candidates)
+        self.assertIn("delete from ingest.youtube_discoveries", cleanup)
+        self.assertIn("youtube_discoveries_deleted", cleanup)
+        self.assertNotIn("source_discoveries", cleanup)
+        self.assertNotIn("source_policy_id", youtube_candidates)
+
     def test_admin_control_rpc_is_callable_only_by_service_role_with_explicit_actor(self) -> None:
         admin = (ROOT / "migrations/20260825000600_admin_control.sql").read_text().casefold()
         self.assertIn("p_actor_id uuid", admin)
@@ -402,6 +708,37 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("from public, anon, authenticated", admin)
         self.assertIn("to service_role", admin)
         self.assertNotIn("to authenticated", admin)
+
+    def test_admin_wrappers_reject_direct_database_service_role_sessions(self) -> None:
+        fence = " ".join(ADMIN_SESSION_FENCE.casefold().split())
+        self.assertIn(
+            "alter function public.get_admin_dashboard_snapshot_v1() set schema ingest",
+            fence,
+        )
+        self.assertIn(
+            "alter function public.admin_control_and_audit_v1(text, uuid, text, text, text) set schema ingest",
+            fence,
+        )
+        self.assertEqual(fence.count("session_user <> 'authenticator'"), 2)
+        self.assertEqual(fence.count("auth.jwt() ->> 'role'"), 2)
+        self.assertIn(
+            "revoke all on function ingest.admin_control_and_audit_v1",
+            fence,
+        )
+        self.assertIn(
+            "revoke all on function ingest.get_admin_dashboard_snapshot_v1",
+            fence,
+        )
+        self.assertIn(
+            "grant execute on function public.admin_control_and_audit_v1",
+            fence,
+        )
+        self.assertIn(
+            "grant execute on function public.get_admin_dashboard_snapshot_v1",
+            fence,
+        )
+        self.assertEqual(DATABASE_TYPES.count("admin_control_and_audit_v1:"), 2)
+        self.assertEqual(DATABASE_TYPES.count("get_admin_dashboard_snapshot_v1:"), 2)
 
     def test_admin_control_rpc_is_audited_and_matches_generated_types(self) -> None:
         migrations = "\n".join(

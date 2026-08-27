@@ -40,6 +40,7 @@ from pokecrack_worker.validation.catalog import CatalogCard, CatalogSet, InMemor
 from pokecrack_worker.validation.decisions import resolve_evidence
 from pokecrack_worker.validation.models import ValidatorOutput
 from pokecrack_worker.validation.pipeline import EvidencePipeline, PipelineStatus
+from pokecrack_worker.validation.prechecks import run_prechecks
 from pokecrack_worker.validation.service import VALIDATOR_SYSTEM_PROMPT, AIValidator
 
 WORKER = Path(__file__).resolve().parents[1]
@@ -730,8 +731,10 @@ def _pipeline(extractor: dict[str, object], validator: dict[str, object]) -> Evi
     )
 
 
-def test_out_of_scope_validator_escalation_consensus_never_becomes_rate_eligible() -> None:
-    extraction = ExtractorOutput.from_mapping(extractor_payload())
+def test_unsupported_product_escalation_consensus_never_becomes_rate_eligible() -> None:
+    extraction_payload = extractor_payload()
+    extraction_payload["location"]["country_code"] = "US"
+    extraction = ExtractorOutput.from_mapping(extraction_payload)
     payload = validator_payload()
     payload["observed"]["country_code"] = "US"
     payload["observed"]["is_complete"] = False
@@ -743,8 +746,8 @@ def test_out_of_scope_validator_escalation_consensus_never_becomes_rate_eligible
 
     assert decision.status.value == "rejected"
     assert decision.eligible_for_rates is False
-    assert "outside_scope_country" in decision.reason_codes
     assert "outside_scope_product" in decision.reason_codes
+    assert "outside_scope_country" not in decision.reason_codes
 
 
 def test_incomplete_validator_escalation_consensus_is_activity_only() -> None:
@@ -1083,25 +1086,70 @@ def test_pipeline_rejects_validator_completeness_disagreement() -> None:
     assert "unresolved_disagreement" in result.decision.reason_codes
 
 
-def test_pipeline_rejects_explicit_non_australian_or_unsupported_scope_before_validator() -> None:
-    for mutate in (
-        lambda payload: payload["location"].update(country_code="US"),
-        lambda payload: payload["product"].update(type="other"),
-    ):
-        extraction = extractor_payload()
-        mutate(extraction)
-        validator = FixtureAIProvider([validator_payload()])
-        pipeline = EvidencePipeline(
-            extractor=AIExtractor(FixtureAIProvider([extraction])),
-            validator=AIValidator(validator),
-            catalog=InMemoryCatalogMatcher(sets=[CatalogSet("sv2", "Paldea Evolved")], cards=[]),
-        )
+@pytest.mark.parametrize("country_code", ["US", "JP", "GB"])
+def test_pipeline_accepts_complete_supported_global_country_facts(country_code: str) -> None:
+    extraction = extractor_payload()
+    extraction["location"]["country_code"] = country_code
+    validation = validator_payload()
+    validation["observed"]["country_code"] = country_code
 
-        result = pipeline.process("Synthetic out-of-scope opening.")
+    result = _pipeline(extraction, validation).process("Synthetic complete global opening.")
 
-        assert result.decision.status.value == "rejected"
-        assert result.decision.eligible_for_rates is False
-        assert validator.remaining == 1
+    assert result.decision.status.value == "accepted"
+    assert result.decision.eligible_for_rates is True
+    assert "outside_scope_country" not in result.decision.reason_codes
+
+
+def test_pipeline_rejects_unsupported_product_before_validator() -> None:
+    extraction = extractor_payload()
+    extraction["product"]["type"] = "other"
+    validator = FixtureAIProvider([validator_payload()])
+    pipeline = EvidencePipeline(
+        extractor=AIExtractor(FixtureAIProvider([extraction])),
+        validator=AIValidator(validator),
+        catalog=InMemoryCatalogMatcher(sets=[CatalogSet("sv2", "Paldea Evolved")], cards=[]),
+    )
+
+    result = pipeline.process("Synthetic unsupported product opening.")
+
+    assert result.decision.status.value == "rejected"
+    assert result.decision.eligible_for_rates is False
+    assert validator.remaining == 1
+
+
+def test_pipeline_demotes_unresolved_country_instead_of_inventing_australia() -> None:
+    extraction = extractor_payload()
+    extraction["location"]["country_code"] = None
+    validation = validator_payload()
+    validation["observed"]["country_code"] = None
+
+    result = _pipeline(extraction, validation).process("Synthetic opening without a country.")
+
+    assert result.decision.status.value == "activity_only"
+    assert result.decision.eligible_for_rates is False
+    assert "country_unresolved" in result.decision.reason_codes
+    assert result.decision.selected is not None
+    assert result.decision.selected.country_code is None
+
+
+@pytest.mark.parametrize("country_code", ["USA", "us"])
+def test_country_prechecks_reject_non_iso_shaped_values(country_code: str) -> None:
+    extraction = extractor_payload()
+    extraction["location"]["country_code"] = country_code
+
+    result = run_prechecks(ExtractorOutput.from_mapping(extraction))
+
+    assert result.passed is False
+    assert [issue.code for issue in result.issues] == ["invalid_country_code"]
+
+
+@pytest.mark.parametrize("country_code", ["USA", "us"])
+def test_validator_schema_rejects_non_iso_shaped_country_values(country_code: str) -> None:
+    validation = validator_payload()
+    validation["observed"]["country_code"] = country_code
+
+    with pytest.raises(SchemaValidationError, match="country_code"):
+        ValidatorOutput.from_mapping(validation)
 
 
 def test_pipeline_demotes_incomplete_duplicate_or_validator_ineligible_evidence() -> None:

@@ -384,7 +384,7 @@ def test_live_scheduler_dry_run_does_not_build_a_database_repository(
         composition.TCGDEX_SETS_JOB_TYPE,
         composition.CLEANUP_JOB_TYPE,
     ]
-    assert "official_api" in payload["unwired_schedules"]
+    assert "official_api" not in payload["unwired_schedules"]
     assert "catalog_sync" not in payload["unwired_schedules"]
 
 

@@ -1,20 +1,10 @@
 {
-  "kind": "youtube#searchListResponse",
   "items": [
     {
       "id": {"kind": "youtube#video", "videoId": "dQw4w9WgXcQ"},
       "snippet": {
         "publishedAt": "2026-08-24T08:00:00Z",
-        "channelId": "fixture-channel-id",
-        "title": "Synthetic Pokémon TCG opening",
-        "description": "Synthetic fixture only: metadata discovery example.",
-        "channelTitle": "Fixture Channel",
-        "thumbnails": {
-          "default": {
-            "url": "https://i.ytimg.com/vi/dQw4w9WgXcQ/default.jpg"
-          }
-        },
-        "liveBroadcastContent": "none"
+        "title": "Synthetic Pokémon TCG opening"
       }
     }
   ]

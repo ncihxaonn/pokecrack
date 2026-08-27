@@ -13,6 +13,10 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     UV_LINK_MODE=copy \
     PATH=/app/services/worker/.venv/bin:$PATH
 
+RUN apt-get update \
+    && apt-get install --yes --no-install-recommends ca-certificates curl \
+    && rm -rf /var/lib/apt/lists/*
+
 RUN groupadd --gid 10001 pokecrack \
     && useradd --uid 10001 --gid 10001 --no-create-home --home-dir /nonexistent --shell /usr/sbin/nologin pokecrack
 

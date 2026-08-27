@@ -80,6 +80,21 @@
       "migration": "20260825000600_admin_control.sql",
       "statement_sha256": "8bcba652b743e4974ee7daab91d74837ad2c53fece88253508c7365480b1356f",
       "reason": "Audited record exclusion removes affected mode public signals before rebuild."
+    },
+    {
+      "migration": "20260829000000_youtube_global_discovery.sql",
+      "statement_sha256": "995ac80db1a41add562159088c793f2666b5112ddf602d826304129e21b5525b",
+      "reason": "Bounded fenced retention deletes only rows from the dedicated unlogged YouTube discovery cache whose database-clock expires_at is at or before the requested cutoff."
+    },
+    {
+      "migration": "20260829000000_youtube_global_discovery.sql",
+      "statement_sha256": "3d5d94d3d5600e99e93a8d464170a117cc7ebc8fd77ac19e41ce915bf08e95f9",
+      "reason": "Bounded fenced retention deletes only expired extraction runs that are not referenced by an opening."
+    },
+    {
+      "migration": "20260829000000_youtube_global_discovery.sql",
+      "statement_sha256": "0de01b703a9a6585d569186d22c59c0d669689e54feecf35ba8a2abd64c862ec",
+      "reason": "Bounded fenced retention deletes only expired private analytics signals selected by its ordered candidate CTE."
     }
   ]
 }

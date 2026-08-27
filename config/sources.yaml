@@ -71,16 +71,23 @@ sources:
     access_mode: official_api
     robots_policy: not_applicable
     min_delay_seconds: 2
-    max_pages_per_run: 5
-    max_concurrency: 2
+    max_pages_per_run: 1
+    max_concurrency: 1
     dynamic_allowed: false
     login_required: false
     statistics_eligible_default: false
-    retention_days: 90
-    version: "1"
+    retention_days: 28
+    version: youtube-global-discovery-v1
     config:
-      collector_version: youtube-data-v3
+      metadata_only: true
       media_download: false
+      max_response_bytes: 2097152
+      query_allowlist:
+        - pokemon-tcg-booster-box-opening
+        - pokemon-tcg-etb-opening
+        - pokemon-tcg-booster-bundle-opening
+        - pokemon-tcg-pack-opening
+        - pokemon-tcg-opening-batch-code
     reason: YouTube Data API metadata discovery only; video downloads are prohibited.
     routes: [youtube]
     adapter: youtube_data_api
@@ -91,22 +98,22 @@ sources:
     retain_raw_html: false
     terms_url: https://developers.google.com/youtube/terms/api-services-terms-of-service
   youtube.com:
-    enabled: true
-    collector: official_api
-    access_mode: official_api
+    enabled: false
+    collector: disabled
+    access_mode: disabled
     robots_policy: not_applicable
     min_delay_seconds: 2
-    max_pages_per_run: 5
-    max_concurrency: 2
+    max_pages_per_run: 1
+    max_concurrency: 1
     dynamic_allowed: false
     login_required: false
     statistics_eligible_default: false
-    retention_days: 90
-    version: "1"
+    retention_days: 28
+    version: youtube-global-discovery-v1
     config:
-      collector_version: youtube-data-v3
+      metadata_only: true
       media_download: false
-    reason: Canonical metadata identity for Data API results; no page or media fetching.
+    reason: Canonical metadata identity only; direct page and media fetching are disabled.
     routes: [youtube]
     adapter: youtube_metadata
     include_subdomains: true

@@ -1,8 +1,29 @@
 # Deployment
 
-The approved Personal targets currently host a private GitHub repository, an empty Supabase schema through migration `20260825000600`, and a Vercel Demo-mode Web deployment. No VPS/live collection deployment was performed. The steps below remain an operator runbook; completion must be evidenced with account-specific IDs/URLs, exact SHA and health output.
+The approved Personal targets currently host a private GitHub repository, a
+Supabase schema through migration `20260828000000_tcgdex_sets_pipeline`, and a
+Vercel Demo-mode Web deployment. The hosted catalog contains 218 live TCGdex set
+rows but no live opening or rate data. The MAM VPS runs exact merged `main`
+commit `9428e1d`; its six services and catalog-only TCGdex path were observed
+healthy. These facts describe that prior owner-approved rollout only. The steps
+below remain an operator runbook; later completion must be evidenced with
+account-specific IDs/URLs, exact SHA and health output.
 
-> **Current release blocker:** the single-process composition now contains two bounded code paths: fenced cleanup and TCGdex English sets-catalog metadata sync. The new catalog path is not deployed; the approved hosted database still lacks both the lease-fencing and TCGdex pipeline migrations, and no VPS is approved or available. General collection, AI-worker, and aggregator roles remain fail closed. Do not describe or deploy this as a complete live research pipeline. The steps below are an account-owner runbook, not evidence that deployment occurred.
+> **Current release blocker:** this branch adds a fenced, metadata-only global
+> YouTube discovery path plus migrations `20260828500000`, `20260828750000`,
+> and `20260829000000`, but none of those migrations or the worker revision is
+> deployed.
+> `YOUTUBE_COLLECTION_ENABLED` remains false and the dedicated API-restricted key
+> is absent. The current database worker login also inherits `service_role`; a
+> dedicated `NOINHERIT`, least-privilege collector and backup roles plus
+> provider-managed backup-retention revalidation are required before enablement.
+> The transitional `service_role` gate `MAINTAIN` grant exists only for PostgreSQL
+> 17 logical-backup schema locking and is not the final credential model.
+> Current project rules require fresh explicit approval after CI before changing
+> the hosted schema or VPS. General URL/browser collection,
+> AI-worker, and aggregator roles remain fail closed. Do not describe or deploy
+> this as a complete live research pipeline. The steps below are an
+> account-owner runbook, not evidence that the branch was released.
 
 ## 1. Account-bound prerequisites
 
@@ -13,11 +34,13 @@ Keep `DATA_MODE=demo`, `AI_PROVIDER=fixture`, `OPENCLI_ENABLED=false`, public si
 ## 2. Database
 
 1. Create a dedicated Supabase project; record region/project reference privately.
-2. Test all migrations and pgTAP locally in Docker-capable CI.
+2. Test all migrations and pgTAP locally in Docker-capable CI. For YouTube,
+   verify the dedicated cache is `UNLOGGED`, forced-RLS, service-role read-only,
+   and absent from public/Admin/analytics relations.
 3. Take/verify a backup before production changes.
-4. Before the lease-fencing migration, stop every legacy worker and verify that no old worker process or in-flight job remains. This protocol upgrade is not compatible with a rolling old/new worker deployment. Run `.github/workflows/migrate-database.yml` manually against a protected environment. `confirm_sha` must equal `GITHUB_SHA`; supply the fresh backup reference. Before any remote push, the workflow reads the applied migration versions, audits only pending migrations, requires an exact reasoned fingerprint for every reviewed `DELETE`, rejects `DROP`/`TRUNCATE`, builds the schema locally, and rejects generated TypeScript drift. It previews and applies forward migrations only—no automatic destructive rollback/reset. Deploy only generation-aware workers after the migration; never roll code back to the legacy claim/naked-cleanup protocol.
+4. Before the lease-fencing migration, stop every legacy worker and verify that no old worker process or in-flight job remains. This protocol upgrade is not compatible with a rolling old/new worker deployment. Run `.github/workflows/migrate-database.yml` manually against a protected environment. `confirm_sha` must equal `GITHUB_SHA`; supply the fresh backup reference. Before any remote push, the workflow requires hosted PostgreSQL 17 or newer, reads the applied migration versions, audits only pending migrations, requires an exact reasoned fingerprint for every reviewed `DELETE`, rejects `DROP`/`TRUNCATE`, builds the schema locally on PostgreSQL 17, and rejects generated TypeScript drift. It previews and applies forward migrations only—no automatic destructive rollback/reset. Deploy only generation-aware workers after the migration; never roll code back to the legacy claim/naked-cleanup protocol.
 5. Create the first admin account manually; disable public signup; configure redirect/email settings deliberately.
-6. Verify private-schema grants/RLS and query the intended public-safe API as anon. Never expose DB/service-role credentials to browser variables.
+6. Verify private-schema grants/RLS and query the intended public-safe API as anon. Create a dedicated `NOINHERIT` collector login with only queue access and execute permission on the fenced collector RPCs; do not reuse broad `service_role` membership as the steady-state worker permission model. Create a separate `NOINHERIT` backup login/role with only the required read/grant path and PostgreSQL 17 gate-table schema lock, then prove it cannot read gate rows. Never expose DB/service-role credentials to browser variables.
 
 ## 3. Web (Vercel)
 

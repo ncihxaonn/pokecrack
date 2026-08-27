@@ -5,7 +5,11 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from pokecrack_worker.config.registries import RarityTaxonomy, YouTubeQueryRegistry
+from pokecrack_worker.config.registries import (
+    REQUIRED_YOUTUBE_QUERIES,
+    RarityTaxonomy,
+    YouTubeQueryRegistry,
+)
 from pokecrack_worker.config.settings import AIProviderName, DataMode, Settings
 from pokecrack_worker.config.source_policy import (
     CollectorRoute,
@@ -40,6 +44,7 @@ def test_settings_default_to_network_free_demo_fixture_mode(
     assert settings.ai_provider is AIProviderName.FIXTURE
     assert settings.supabase_db_url is None
     assert settings.youtube_api_key is None
+    assert settings.youtube_collection_enabled is False
     assert settings.scrapling_save_raw_html is False
     assert settings.scrapling_dynamic_enabled is False
     assert settings.worker_max_concurrency == 1
@@ -55,9 +60,93 @@ def test_live_and_http_ai_modes_fail_closed_without_required_configuration() -> 
         Settings(_env_file=None, ai_provider="http")
 
 
+def test_youtube_enablement_requires_key_only_in_the_network_collector() -> None:
+    with pytest.raises(ValidationError, match="YOUTUBE_API_KEY for collectors"):
+        Settings(_env_file=None, youtube_collection_enabled=True, worker_role="collector")
+    with pytest.raises(ValidationError, match="YOUTUBE_API_KEY for collectors"):
+        Settings(
+            _env_file=None,
+            youtube_collection_enabled=True,
+            youtube_api_key="   ",
+            worker_role="collector",
+        )
+
+    scheduler = Settings(
+        _env_file=None,
+        youtube_collection_enabled=True,
+        worker_role="scheduler",
+    )
+    assert scheduler.youtube_api_key is None
+
+
+@pytest.mark.parametrize(
+    ("field", "schedule"),
+    (
+        ("schedule_official_api", "* * * * *"),
+        ("schedule_official_api", "0 */12 * * *"),
+        ("schedule_official_api", " 0 */6 * * *"),
+        ("schedule_official_api", "0 */6 * * * "),
+        ("schedule_cleanup", "30 3 * * 0"),
+        ("schedule_cleanup", " 30 3 * * *"),
+        ("schedule_cleanup", "30 3 * * * "),
+    ),
+)
+def test_youtube_enablement_rejects_collection_or_retention_schedule_drift(
+    field: str,
+    schedule: str,
+) -> None:
+    expected_name = (
+        "SCHEDULE_OFFICIAL_API" if field == "schedule_official_api" else "SCHEDULE_CLEANUP"
+    )
+    with pytest.raises(ValidationError, match=expected_name):
+        Settings(
+            _env_file=None,
+            youtube_collection_enabled=True,
+            worker_role="scheduler",
+            **{field: schedule},
+        )
+
+
 def test_worker_concurrency_above_one_is_rejected_until_pooling_is_implemented() -> None:
     with pytest.raises(ValidationError, match="worker_max_concurrency"):
         Settings(_env_file=None, worker_max_concurrency=2)
+
+
+@pytest.mark.parametrize(
+    ("field", "drifted_value"),
+    (
+        ("metadata_only", False),
+        ("max_results", 50),
+        ("published_within_days", 3650),
+        ("order", "relevance"),
+    ),
+)
+def test_youtube_version_one_registry_rejects_query_parameter_drift(
+    field: str,
+    drifted_value: object,
+) -> None:
+    queries = [
+        {
+            "name": name,
+            "query": query,
+            "enabled": False,
+            "metadata_only": True,
+            "max_results": 25,
+            "published_within_days": 30,
+            "order": "date",
+        }
+        for name, query in REQUIRED_YOUTUBE_QUERIES
+    ]
+    queries[0][field] = drifted_value
+
+    with pytest.raises(ValidationError):
+        YouTubeQueryRegistry.from_mapping(
+            {
+                "version": 1,
+                "default_enabled": False,
+                "queries": queries,
+            }
+        )
 
 
 @pytest.mark.parametrize(
@@ -140,13 +229,30 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
     assert tcgdex.max_concurrency == 1
     assert tcgdex.requests_per_minute == 6
     assert tcgdex.config == {"collector_version": "tcgdex-sets-v1"}
-    assert sources.require(
-        "https://youtube.googleapis.com/youtube/v3/search", "youtube"
-    ).metadata_only
+    youtube_api = sources.require("https://youtube.googleapis.com/youtube/v3/search", "youtube")
+    assert youtube_api.metadata_only
+    assert youtube_api.retention_days == 28
+    assert youtube_api.max_pages_per_run == 1
+    assert youtube_api.config == {
+        "metadata_only": True,
+        "media_download": False,
+        "max_response_bytes": 2_097_152,
+        "query_allowlist": [name for name, _query in REQUIRED_YOUTUBE_QUERIES],
+    }
+    youtube_identity = sources.resolve("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    assert youtube_identity.enabled is False
+    assert youtube_identity.retention_days == 28
+    assert youtube_identity.version == "youtube-global-discovery-v1"
+    assert youtube_identity.config == {
+        "metadata_only": True,
+        "media_download": False,
+    }
 
     assert queries.default_enabled is False
     assert len(queries.queries) == 5
     assert all(query.metadata_only for query in queries.queries)
+    assert all(query.enabled is False and query.region_code is None for query in queries.queries)
+    assert queries.require("pokemon-tcg-pack-opening").query == "Pokemon TCG pack opening"
     assert taxonomy.baseline_priority == (
         ("set_id", "language", "product_type"),
         ("set_id", "language"),

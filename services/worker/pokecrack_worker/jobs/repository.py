@@ -9,7 +9,13 @@ from threading import RLock
 from typing import Any
 from uuid import uuid4
 
-from .models import CompletionEffect, Job, JobStatus, TCGdexSetsSyncCompletion
+from .models import (
+    CompletionEffect,
+    Job,
+    JobStatus,
+    TCGdexSetsSyncCompletion,
+    YouTubeDiscoveryCompletion,
+)
 
 
 class JobRepositoryError(RuntimeError):
@@ -232,7 +238,10 @@ class InMemoryJobRepository:
         worker_id: str,
         lease_generation: int,
         now: datetime,
-        effect: CompletionEffect | TCGdexSetsSyncCompletion | None = None,
+        effect: CompletionEffect
+        | TCGdexSetsSyncCompletion
+        | YouTubeDiscoveryCompletion
+        | None = None,
     ) -> Job:
         with self._lock:
             if effect is not None:

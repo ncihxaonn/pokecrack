@@ -23,6 +23,13 @@ class RepositoryGuardTests(unittest.TestCase):
                 "browser-profiles/social-western/Cookies",
                 "backups/live.sql.gz",
                 "evidence/source.mp4",
+                "evidence/source.mp3",
+                "evidence/source.wav",
+                "evidence/source.m4a",
+                "evidence/source.aac",
+                "evidence/source.flac",
+                "evidence/captions.srt",
+                "evidence/captions.vtt",
             ):
                 path = root / relative
                 path.parent.mkdir(parents=True, exist_ok=True)
@@ -30,7 +37,7 @@ class RepositoryGuardTests(unittest.TestCase):
 
             findings = find_forbidden_artifacts(root)
 
-            self.assertEqual(4, len(findings))
+            self.assertEqual(11, len(findings))
 
     def test_examples_and_gitkeep_are_allowed(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

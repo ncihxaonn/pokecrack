@@ -6,11 +6,14 @@ from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
+from pydantic import SecretStr
 
 from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
+from pokecrack_worker.collectors.official_api.youtube import YouTubeRequestStateUnknown
 from pokecrack_worker.composition import (
     CLEANUP_JOB_TYPE,
     TCGDEX_SETS_JOB_TYPE,
+    YOUTUBE_DISCOVERY_JOB_TYPE,
     LiveCompositionError,
     build_live_scheduler,
     build_live_worker_runtime,
@@ -18,6 +21,7 @@ from pokecrack_worker.composition import (
     require_worker_job_types,
     write_health_heartbeat,
 )
+from pokecrack_worker.config.registries import REQUIRED_YOUTUBE_QUERIES
 from pokecrack_worker.config.settings import Settings
 from pokecrack_worker.runtime import RuntimeStatus
 
@@ -62,7 +66,9 @@ def _job_row(
         "priority": 10,
         "available_at": NOW,
         "attempts": 1,
-        "max_attempts": 3 if job_type == TCGDEX_SETS_JOB_TYPE else 5,
+        "max_attempts": (
+            3 if job_type in {TCGDEX_SETS_JOB_TYPE, YOUTUBE_DISCOVERY_JOB_TYPE} else 5
+        ),
         "lease_generation": 1,
         "locked_by": "worker-1" if locked else None,
         "locked_at": NOW if locked else None,
@@ -70,7 +76,7 @@ def _job_row(
         "last_error_code": None,
         "last_error_message": None,
         "completed_at": NOW if status == "completed" else None,
-        "dedupe_key": f"schedule:{'catalog_sync' if job_type == TCGDEX_SETS_JOB_TYPE else 'cleanup'}:20260825T120000Z",
+        "dedupe_key": f"schedule:{job_type}:20260825T120000Z",
         "created_at": NOW,
         "updated_at": NOW,
     }
@@ -110,13 +116,14 @@ def test_live_health_probes_postgres_and_upserts_a_role_heartbeat() -> None:
     assert "ingest.heartbeat_job_v2" in dependency_sql
     assert "ingest.fail_job_v2" in dependency_sql
     assert "ingest.finalize_cleanup_job" in dependency_sql
-    assert dependency_params == {"worker_type": "watchdog"}
+    assert "ingest.upsert_worker_heartbeat_v1" in dependency_sql
+    assert "ingest.pause_job_for_budget_v2" in dependency_sql
+    assert "NOT has_table_privilege" in dependency_sql
+    assert dependency_params == {"worker_type": "watchdog", "youtube_enabled": False}
     sql, params = executor.calls[1]
-    assert "SELECT 1 AS reachable" in sql
-    assert "INSERT INTO ingest.worker_heartbeats" in sql
-    assert "ON CONFLICT (worker_id) DO UPDATE" in sql
-    assert "metadata, is_demo" in sql
-    assert "WHERE not heartbeats.is_demo" in sql
+    assert "ingest.upsert_worker_heartbeat_v1" in sql
+    assert "INSERT INTO ingest.worker_heartbeats" not in sql
+    assert "UPDATE ingest.worker_heartbeats" not in sql
     assert params["worker_id"] == "worker-1"
     assert params["worker_type"] == "watchdog"
     assert json.loads(str(params["metadata"])) == {
@@ -149,8 +156,79 @@ def test_collector_health_fails_before_heartbeat_when_policy_or_rpcs_are_unavail
     assert "policies.min_delay_seconds = 10" in sql
     assert "policies.max_items_per_run = 1000" in sql
     assert "policies.expected_interval_seconds = 86400" in sql
-    assert params == {"worker_type": "collector"}
+    assert params == {"worker_type": "collector", "youtube_enabled": False}
     assert "INSERT INTO ingest.worker_heartbeats" not in sql
+
+
+def test_enabled_youtube_health_requires_exact_rpc_policy_and_permissions() -> None:
+    executor = RecordingExecutor([[{"ready": False}]])
+
+    with pytest.raises(LiveCompositionError, match="dependencies"):
+        write_health_heartbeat(_youtube_settings(), executor=executor)
+
+    assert len(executor.calls) == 1
+    sql, params = executor.calls[0]
+    assert params == {"worker_type": "collector", "youtube_enabled": True}
+    assert "ingest.begin_youtube_discovery_job" in sql
+    assert "ingest.finalize_youtube_discovery_job" in sql
+    assert "youtube_discovery" in sql
+    assert "YouTube Global Discovery API" in sql
+    assert "policies.max_pages_per_run = 1" in sql
+    assert "policies.max_items_per_run = 25" in sql
+    assert "policies.retention_days = 28" in sql
+    assert "youtube-global-discovery-v1" in sql
+    assert '"max_response_bytes":2097152' in sql
+    assert "youtube-metadata-v1" not in sql
+    assert "geography_status" not in sql
+    assert "evidence_tier" not in sql
+    assert "has_function_privilege" in sql
+
+
+def test_enabled_youtube_scheduler_requires_the_shared_exact_dependencies() -> None:
+    settings = _youtube_settings("scheduler")
+    executor = RecordingExecutor([[{"ready": False}]])
+
+    with pytest.raises(LiveCompositionError, match="dependencies"):
+        write_health_heartbeat(settings, executor=executor)
+
+    assert settings.youtube_api_key is None
+    assert len(executor.calls) == 1
+    sql, params = executor.calls[0]
+    assert params == {"worker_type": "scheduler", "youtube_enabled": True}
+    assert sql.startswith("WITH youtube_dependencies AS")
+    assert sql.count("policies.source_key = 'youtube_discovery'") == 1
+    assert sql.count("policies.retention_days = 28") == 1
+    assert sql.count("ingest.begin_youtube_discovery_job(uuid,text,bigint)") == 2
+    assert sql.count("ingest.finalize_youtube_discovery_job(uuid,text,bigint,jsonb)") == 2
+    assert sql.count("(SELECT ready FROM youtube_dependencies)") == 2
+    assert "policies.base_url = 'https://youtube.googleapis.com/youtube/v3'" in sql
+    assert "policies.max_pages_per_run = 1" in sql
+    assert "policies.max_items_per_run = 25" in sql
+    assert "policies.expected_interval_seconds = 21600" in sql
+    assert "youtube-global-discovery-v1" in sql
+    assert "INSERT INTO ingest.worker_heartbeats" not in sql
+    assert "YOUTUBE_API_KEY" not in repr(executor.calls)
+
+
+def test_flag_off_scheduler_health_only_requires_enqueue_readiness() -> None:
+    settings = _settings("scheduler")
+    executor = RecordingExecutor([[{"ready": True}], [{"last_seen_at": NOW}]])
+
+    heartbeat = write_health_heartbeat(settings, executor=executor)
+
+    assert heartbeat.worker_role.value == "scheduler"
+    assert settings.youtube_collection_enabled is False
+    assert settings.youtube_api_key is None
+    dependency_sql, dependency_params = executor.calls[0]
+    scheduler_branch = dependency_sql[
+        dependency_sql.index("WHEN 'scheduler'") : dependency_sql.index("WHEN 'watchdog'")
+    ]
+    assert dependency_params == {"worker_type": "scheduler", "youtube_enabled": False}
+    assert "ingest.enqueue_scheduled_job_v1" in scheduler_branch
+    assert "has_function_privilege" in scheduler_branch
+    assert "NOT %(youtube_enabled)s::boolean" in scheduler_branch
+    assert "OR (SELECT ready FROM youtube_dependencies)" in scheduler_branch
+    assert "YOUTUBE_API_KEY" not in repr(executor.calls)
 
 
 def test_live_health_refuses_unready_roles_before_writing_a_heartbeat() -> None:
@@ -209,7 +287,54 @@ class RecordingTCGdexTransport:
         return self.response
 
 
+class RecordingYouTubeTransport:
+    def __init__(self, responses: Sequence[APIResponse]) -> None:
+        self.responses = list(responses)
+        self.calls: list[tuple[str, dict[str, str], float]] = []
+
+    def get(
+        self,
+        url: str,
+        *,
+        params: dict[str, str],
+        api_key: SecretStr,
+        timeout_seconds: float,
+    ) -> APIResponse:
+        assert repr(api_key) == "SecretStr('**********')"
+        self.calls.append((url, params, timeout_seconds))
+        return self.responses.pop(0)
+
+
 TCGDEX_BODY = b'[{"id":"sv1","name":"Scarlet & Violet","cardCount":{"total":258,"official":198}}]'
+YOUTUBE_SEARCH_BODY = json.dumps(
+    {
+        "items": [
+            {
+                "id": {"kind": "youtube#video", "videoId": "dQw4w9WgXcQ"},
+                "snippet": {
+                    "publishedAt": "2026-08-24T08:00:00Z",
+                    "channelId": "UC-private-fixture",
+                    "title": "Pokemon ETB opening",
+                    "description": "Elite Trainer Box, batch code: AB-123",
+                },
+            },
+            {
+                "id": {"kind": "youtube#video", "videoId": "futurevid01"},
+                "snippet": {
+                    "publishedAt": "2026-08-25T12:00:01Z",
+                    "title": "Upcoming ETB premiere",
+                },
+            },
+        ]
+    }
+).encode()
+
+
+def _youtube_settings(role: str = "collector") -> Settings:
+    values: dict[str, object] = {"youtube_collection_enabled": True}
+    if role != "scheduler":
+        values["youtube_api_key"] = "fixture-youtube-secret"
+    return _settings(role, **values)
 
 
 def test_collector_runs_only_the_fenced_tcgdex_sets_pipeline() -> None:
@@ -255,6 +380,282 @@ def test_collector_runs_only_the_fenced_tcgdex_sets_pipeline() -> None:
     }
     assert len(persisted["content_sha256"]) == 64
     assert len(transport.calls) == 1
+
+
+def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> None:
+    executor = RecordingExecutor(
+        [
+            [
+                _job_row(
+                    status="running",
+                    payload={"query_name": "pokemon-tcg-etb-opening"},
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+            [{"acquired": True, "retry_at": None}],
+            [
+                _job_row(
+                    status="completed",
+                    payload={"query_name": "pokemon-tcg-etb-opening"},
+                    locked=False,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+        ]
+    )
+    transport = RecordingYouTubeTransport([APIResponse(200, {}, YOUTUBE_SEARCH_BODY)])
+    runtime = build_live_worker_runtime(
+        _youtube_settings(),
+        executor=executor,
+        clock=lambda: NOW,
+        youtube_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.COMPLETED
+    assert executor.calls[0][1]["kinds"] == [
+        TCGDEX_SETS_JOB_TYPE,
+        YOUTUBE_DISCOVERY_JOB_TYPE,
+    ]
+    assert "ingest.begin_youtube_discovery_job" in executor.calls[1][0]
+    assert len(transport.calls) == 1
+    assert transport.calls[0][0].endswith("/search")
+    assert all("key" not in params for _url, params, _timeout in transport.calls)
+    assert transport.calls[0][1]["q"] == "Pokemon TCG ETB opening"
+    assert transport.calls[0][1]["relevanceLanguage"] == "en"
+    assert transport.calls[0][1]["publishedBefore"] == "2026-08-25T12:00:00Z"
+    assert transport.calls[0][1]["fields"] == ("items(id(kind,videoId),snippet(publishedAt,title))")
+    assert "regionCode" not in transport.calls[0][1]
+    assert transport.calls[0][2] == 30.0
+    finalizer_sql, finalizer_params = executor.calls[2]
+    assert "ingest.finalize_youtube_discovery_job" in finalizer_sql
+    persisted = json.loads(str(finalizer_params["result"]))
+    assert persisted["query_name"] == "pokemon-tcg-etb-opening"
+    assert len(persisted["items"]) == 1
+    item = persisted["items"][0]
+    assert item["collector_version"] == "youtube-global-discovery-v1"
+    assert item["source_policy_version"] == "youtube-global-discovery-v1"
+    assert item["title"] == "Pokemon ETB opening"
+    assert item["published_at"] == "2026-08-24T08:00:00Z"
+    assert set(item) == {
+        "external_id",
+        "source_url",
+        "title",
+        "published_at",
+        "collector_version",
+        "source_policy_version",
+    }
+    serialized = json.dumps(persisted)
+    assert "UC-private-fixture" not in serialized
+    assert "must-not-persist" not in serialized
+    assert "Elite Trainer Box, batch code: AB-123" not in serialized
+    assert "futurevid01" not in serialized
+    assert "fixture-youtube-secret" not in repr(executor.calls + transport.calls)
+
+
+@pytest.mark.parametrize(
+    "payload",
+    (
+        {},
+        {"query_name": "not-approved"},
+        {"query_name": "pokemon-tcg-etb-opening", "region_code": "AU"},
+    ),
+)
+def test_youtube_job_payload_cannot_expand_query_or_geography_scope(
+    payload: Mapping[str, object],
+) -> None:
+    executor = RecordingExecutor(
+        [
+            [
+                _job_row(
+                    status="running",
+                    payload=payload,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+            [
+                _job_row(
+                    status="dead",
+                    payload=payload,
+                    locked=False,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+        ]
+    )
+    transport = RecordingYouTubeTransport([])
+    runtime = build_live_worker_runtime(
+        _youtube_settings(),
+        executor=executor,
+        clock=lambda: NOW,
+        youtube_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.FAILED
+    assert result.error_code == "ValueError"
+    assert len(executor.calls) == 2
+    assert "ingest.begin_youtube_discovery_job" not in executor.calls[1][0]
+    assert transport.calls == []
+
+
+def test_busy_youtube_request_gate_defers_before_network_access() -> None:
+    retry_at = NOW + timedelta(seconds=2)
+    payload = {"query_name": "pokemon-tcg-pack-opening"}
+    executor = RecordingExecutor(
+        [
+            [
+                _job_row(
+                    status="running",
+                    payload=payload,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+            [{"acquired": False, "retry_at": retry_at}],
+            [
+                _job_row(
+                    status="pending",
+                    payload=payload,
+                    locked=False,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+        ]
+    )
+    transport = RecordingYouTubeTransport([])
+    runtime = build_live_worker_runtime(
+        _youtube_settings(),
+        executor=executor,
+        clock=lambda: NOW,
+        youtube_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.DEFERRED
+    assert result.error_code == "youtube_request_deferred"
+    assert transport.calls == []
+    assert "ingest.pause_job_for_budget_v2" in executor.calls[2][0]
+    assert "UPDATE ingest.jobs" not in executor.calls[2][0]
+
+
+@pytest.mark.parametrize(
+    ("response", "error_code", "retryable"),
+    (
+        (APIResponse(200, {}, b"not-json"), "invalid_response", False),
+        (APIResponse(429, {}, b"quota"), "http_error", True),
+    ),
+)
+def test_youtube_response_failures_keep_typed_retry_disposition(
+    response: APIResponse,
+    error_code: str,
+    retryable: bool,
+) -> None:
+    payload = {"query_name": "pokemon-tcg-pack-opening"}
+    executor = RecordingExecutor(
+        [
+            [
+                _job_row(
+                    status="running",
+                    payload=payload,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+            [{"acquired": True, "retry_at": None}],
+            [
+                _job_row(
+                    status="pending" if retryable else "dead",
+                    payload=payload,
+                    locked=False,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+        ]
+    )
+    runtime = build_live_worker_runtime(
+        _youtube_settings(),
+        executor=executor,
+        clock=lambda: NOW,
+        youtube_transport=RecordingYouTubeTransport([response]),
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.FAILED
+    assert result.error_code == error_code
+    fail_sql, fail_params = executor.calls[2]
+    assert "ingest.fail_job_v2" in fail_sql
+    assert fail_params["error_code"] == error_code
+    assert fail_params["retryable"] is retryable
+
+
+def test_unreaped_youtube_request_is_fatal_and_leaves_request_gate_fenced() -> None:
+    class UnknownStateTransport:
+        def get(self, *_args: object, **_kwargs: object) -> APIResponse:
+            raise YouTubeRequestStateUnknown()
+
+    payload = {"query_name": "pokemon-tcg-pack-opening"}
+    executor = RecordingExecutor(
+        [
+            [
+                _job_row(
+                    status="running",
+                    payload=payload,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+            [{"acquired": True, "retry_at": None}],
+        ]
+    )
+    runtime = build_live_worker_runtime(
+        _youtube_settings(),
+        executor=executor,
+        clock=lambda: NOW,
+        youtube_transport=UnknownStateTransport(),
+    )
+
+    with pytest.raises(YouTubeRequestStateUnknown):
+        runtime.run_once()
+
+    assert len(executor.calls) == 2
+    assert "ingest.begin_youtube_discovery_job" in executor.calls[1][0]
+    assert all("ingest.fail_job_v2" not in sql for sql, _params in executor.calls)
+    assert all(
+        "ingest.finalize_youtube_discovery_job" not in sql for sql, _params in executor.calls
+    )
+
+
+def test_stale_youtube_finalizer_cannot_persist_discovered_metadata() -> None:
+    payload = {"query_name": "pokemon-tcg-etb-opening"}
+    executor = RecordingExecutor(
+        [
+            [
+                _job_row(
+                    status="running",
+                    payload=payload,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+            [{"acquired": True, "retry_at": None}],
+            [],
+        ]
+    )
+    transport = RecordingYouTubeTransport([APIResponse(200, {}, YOUTUBE_SEARCH_BODY)])
+    runtime = build_live_worker_runtime(
+        _youtube_settings(),
+        executor=executor,
+        clock=lambda: NOW,
+        youtube_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.LEASE_LOST
+    assert len(transport.calls) == 1
+    assert "ingest.finalize_youtube_discovery_job" in executor.calls[2][0]
+    assert all("INSERT INTO ingest.source_items" not in sql for sql, _params in executor.calls)
 
 
 def test_stale_tcgdex_preflight_blocks_the_network_request() -> None:
@@ -357,7 +758,8 @@ def test_busy_tcgdex_request_gate_defers_without_network_or_consuming_an_attempt
     assert result.error_code == "tcgdex_request_deferred"
     assert transport.calls == []
     pause_sql, pause_params = executor.calls[2]
-    assert "attempts = GREATEST(0, attempts - 1)" in pause_sql
+    assert "ingest.pause_job_for_budget_v2" in pause_sql
+    assert "UPDATE ingest.jobs" not in pause_sql
     assert pause_params["retry_at"] == retry_at
 
 
@@ -587,6 +989,58 @@ def test_live_scheduler_registers_the_daily_tcgdex_sets_job() -> None:
     assert params["payload"] == "{}"
     assert params["priority"] == 20
     assert params["max_attempts"] == 3
+
+
+def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_key() -> None:
+    settings = _settings(
+        "scheduler",
+        youtube_collection_enabled=True,
+        schedule_catalog_sync="0 0 31 2 *",
+    )
+    expected_names = [name for name, _query in REQUIRED_YOUTUBE_QUERIES]
+    executor = RecordingExecutor(
+        [
+            [
+                _job_row(
+                    status="pending",
+                    payload={"query_name": name},
+                    locked=False,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ]
+            for name in expected_names
+        ]
+    )
+
+    youtube_slot = NOW.replace(hour=0)
+    result = build_live_scheduler(settings, executor=executor).run_due(now=youtube_slot)
+
+    assert settings.youtube_api_key is None
+    assert result.created == 5
+    assert result.due_names == tuple(f"youtube_{name}" for name in expected_names)
+    assert len(executor.calls) == 5
+    assert [json.loads(str(params["payload"])) for _sql, params in executor.calls] == [
+        {"query_name": name} for name in expected_names
+    ]
+    assert all(params["kind"] == YOUTUBE_DISCOVERY_JOB_TYPE for _sql, params in executor.calls)
+    assert all(params["max_attempts"] == 3 for _sql, params in executor.calls)
+
+
+def test_enabled_youtube_cleanup_has_a_bounded_restart_catch_up_margin() -> None:
+    entries = live_schedule_entries(_youtube_settings("scheduler"))
+    cleanup = next(entry for entry in entries if entry.name == "cleanup")
+    missed_slot = NOW.replace(hour=3, minute=30)
+
+    assert cleanup.catch_up_within == timedelta(hours=12)
+    assert cleanup.catch_up_check_interval == timedelta(hours=1)
+    assert cleanup.slot(NOW) == missed_slot
+    assert cleanup.slot(missed_slot + timedelta(hours=12, minutes=1)) is None
+
+
+def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
+    entries = live_schedule_entries(_settings("scheduler"))
+
+    assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
 def test_live_scheduler_validates_even_unwired_cron_configuration() -> None:

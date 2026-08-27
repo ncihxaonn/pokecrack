@@ -92,7 +92,23 @@ jobs:
           npx --yes supabase@2.115.0 start
           npx --yes supabase@2.115.0 db reset
       - name: Run pgTAP database tests
-        run: npx --yes supabase@2.115.0 test db
+        run: |
+          regular_tests=()
+          for test_file in supabase/tests/*.sql; do
+            case "$test_file" in
+              supabase/tests/003_public_security.sql|supabase/tests/009_admin_session_fence.sql) ;;
+              *) regular_tests+=("$test_file") ;;
+            esac
+          done
+          npx --yes supabase@2.115.0 test db "${regular_tests[@]}"
+
+          # These two suites change immutable session_user to reproduce the
+          # PostgREST authenticator boundary. Keep every other suite on the
+          # non-superuser postgres role and elevate only these exact files.
+          npx --yes supabase@2.115.0 test db \
+            --db-url postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres \
+            supabase/tests/003_public_security.sql \
+            supabase/tests/009_admin_session_fence.sql
       - name: Stop local Supabase
         if: always()
         run: npx --yes supabase@2.115.0 stop --no-backup

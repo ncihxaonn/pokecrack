@@ -26,6 +26,10 @@ class AIProviderName(StrEnum):
     OPENAI_COMPATIBLE = "openai_compatible"
 
 
+YOUTUBE_DISCOVERY_SCHEDULE = "0 */6 * * *"
+YOUTUBE_CLEANUP_SCHEDULE = "30 3 * * *"
+
+
 class Settings(BaseSettings):
     """Validated worker settings loaded directly from the documented env names."""
 
@@ -63,6 +67,7 @@ class Settings(BaseSettings):
     ai_output_per_million_aud: Decimal = Field(default=Decimal("0"), ge=0)
 
     youtube_api_key: SecretStr | None = None
+    youtube_collection_enabled: bool = False
 
     scrapling_enabled: bool = True
     scrapling_http_concurrency: int = Field(default=4, ge=1, le=32)
@@ -103,12 +108,12 @@ class Settings(BaseSettings):
     profile_backup_enabled: bool = False
     profile_backup_encryption_key_file: Path | None = None
 
-    schedule_official_api: str = "0 */6 * * *"
+    schedule_official_api: str = YOUTUBE_DISCOVERY_SCHEDULE
     schedule_public_collection: str = "15 */6 * * *"
     schedule_auth_collection: str = "30 */12 * * *"
     schedule_catalog_sync: str = "0 2 * * *"
     schedule_aggregates: str = "5 * * * *"
-    schedule_cleanup: str = "30 3 * * *"
+    schedule_cleanup: str = YOUTUBE_CLEANUP_SCHEDULE
     schedule_backup: str = "0 4 * * *"
     schedule_browser_check: str = "*/30 * * * *"
 
@@ -152,6 +157,25 @@ class Settings(BaseSettings):
                 missing.append("AI_OUTPUT_PER_MILLION_AUD")
             if missing:
                 raise ValueError("network AI provider requires " + ", ".join(missing))
+        if (
+            self.youtube_collection_enabled
+            and (
+                self.youtube_api_key is None or not self.youtube_api_key.get_secret_value().strip()
+            )
+            and self.worker_role != "scheduler"
+        ):
+            raise ValueError("YOUTUBE_COLLECTION_ENABLED requires YOUTUBE_API_KEY for collectors")
+        if self.youtube_collection_enabled:
+            if self.schedule_official_api != YOUTUBE_DISCOVERY_SCHEDULE:
+                raise ValueError(
+                    "YOUTUBE_COLLECTION_ENABLED requires "
+                    f"SCHEDULE_OFFICIAL_API={YOUTUBE_DISCOVERY_SCHEDULE!r}"
+                )
+            if self.schedule_cleanup != YOUTUBE_CLEANUP_SCHEDULE:
+                raise ValueError(
+                    "YOUTUBE_COLLECTION_ENABLED requires "
+                    f"SCHEDULE_CLEANUP={YOUTUBE_CLEANUP_SCHEDULE!r}"
+                )
         if self.database_warning_mb > self.database_critical_mb:
             raise ValueError("DATABASE_WARNING_MB must not exceed DATABASE_CRITICAL_MB")
         if self.storage_warning_mb > self.storage_critical_mb:

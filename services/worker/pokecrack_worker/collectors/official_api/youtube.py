@@ -1,234 +1,660 @@
-"""YouTube Data API metadata discovery. Full video download is intentionally absent."""
+"""Bounded YouTube Data API discovery; video and page downloads are absent."""
 
 from __future__ import annotations
 
 import html
 import json
-from collections.abc import Callable, Mapping, Sequence
+import os
+import re
+import selectors
+import signal
+import subprocess
+import unicodedata
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from time import monotonic
+from types import MappingProxyType
 from typing import Any, Protocol
+from urllib.parse import urlencode
 
-import httpx
+from pydantic import SecretStr
 
 from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
-from pokecrack_worker.config.registries import YouTubeQuery
+from pokecrack_worker.config.registries import REQUIRED_YOUTUBE_QUERIES, YouTubeQuery
 from pokecrack_worker.config.source_policy import CollectorRoute, SourcePolicyRegistry
-from pokecrack_worker.models import CollectorType, SourceItemCandidate, hash_author
+from pokecrack_worker.models import CollectorType, SourceItemCandidate
+
+YOUTUBE_SEARCH_URL = "https://youtube.googleapis.com/youtube/v3/search"
+YOUTUBE_MAX_RESPONSE_BYTES = 2 * 1024 * 1024
+YOUTUBE_TIMEOUT_SECONDS = 30.0
+_YOUTUBE_CURL_TRANSFER_SECONDS = 27.0
+_YOUTUBE_PROCESS_DEADLINE_SECONDS = 29.0
+_YOUTUBE_REAP_ATTEMPTS = 4
+_YOUTUBE_REAP_SLICE_SECONDS = 0.4
+_YOUTUBE_PIPE_CHUNK_BYTES = 64 * 1024
+_YOUTUBE_STDERR_LIMIT_BYTES = 64 * 1024
+_YOUTUBE_CURL_PATH = "/usr/bin/curl"
+_PROCESS_DEADLINE_SUPPORTED = os.name == "posix"
+YOUTUBE_COLLECTOR_VERSION = "youtube-global-discovery-v1"
+YOUTUBE_APPROVED_QUERY_TEXT: Mapping[str, str] = MappingProxyType(dict(REQUIRED_YOUTUBE_QUERIES))
+YOUTUBE_QUERY_ALLOWLIST = tuple(YOUTUBE_APPROVED_QUERY_TEXT)
+_EXPECTED_POLICY_CONFIG: dict[str, Any] = {
+    "metadata_only": True,
+    "media_download": False,
+    "max_response_bytes": YOUTUBE_MAX_RESPONSE_BYTES,
+    "query_allowlist": list(YOUTUBE_QUERY_ALLOWLIST),
+}
+
+_VIDEO_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
 
 
 class YouTubeError(RuntimeError):
-    pass
+    """Safe typed error whose code/retry disposition can cross the job boundary."""
+
+    def __init__(self, code: str, *, retryable: bool) -> None:
+        self.code = code
+        self.retryable = retryable
+        super().__init__(code)
+
+
+class YouTubeRequestStateUnknown(BaseException):
+    """Fatal boundary: an upstream request may still be running.
+
+    This intentionally bypasses normal job-failure handling so the persistent
+    request gate remains fenced until its database lease expires.
+    """
+
+    def __init__(self) -> None:
+        super().__init__("youtube_request_state_unknown")
 
 
 class YouTubeCredentialsUnavailable(YouTubeError):
-    pass
+    def __init__(self) -> None:
+        super().__init__("credentials_unavailable", retryable=False)
 
 
 class YouTubeHTTPError(YouTubeError):
     def __init__(self, status_code: int) -> None:
         self.status_code = status_code
-        super().__init__(f"YouTube Data API HTTP status {status_code}")
+        super().__init__(
+            "http_error",
+            retryable=status_code in {408, 425, 429} or status_code >= 500,
+        )
+
+
+class YouTubeInvalidResponse(YouTubeError):
+    def __init__(self, code: str = "invalid_response") -> None:
+        super().__init__(code, retryable=False)
+
+
+class _StreamLimitExceeded(Exception):
+    def __init__(self, code: str) -> None:
+        self.code = code
+        super().__init__(code)
 
 
 @dataclass(frozen=True, slots=True)
-class YouTubeDiscoveryFailure:
-    query_name: str
-    error_code: str
-    retryable: bool
+class _SearchItem:
+    video_id: str
+    title: str | None
+    published_at: datetime
 
 
 @dataclass(frozen=True, slots=True)
-class YouTubeDiscoveryResult:
-    items: tuple[SourceItemCandidate, ...]
-    failures: tuple[YouTubeDiscoveryFailure, ...]
+class _ReapOutcome:
+    reaped: bool
+    completed_within_deadline: bool
+    control_flow: BaseException | None = None
 
 
 class YouTubeTransport(Protocol):
-    def get(self, url: str, *, params: dict[str, str], timeout_seconds: float) -> APIResponse: ...
+    def get(
+        self,
+        url: str,
+        *,
+        params: dict[str, str],
+        api_key: SecretStr,
+        timeout_seconds: float,
+    ) -> APIResponse: ...
 
 
 class HTTPXYouTubeTransport:
-    """Bounded no-redirect network path for metadata-only API responses."""
+    """Fixed-host curl boundary with byte and synchronous wall-time caps.
 
-    def __init__(self, *, max_response_bytes: int = 2_000_000) -> None:
-        if not 1 <= max_response_bytes <= 10_000_000:
-            raise ValueError("max_response_bytes must be between 1 and 10000000")
+    DNS resolution lives inside the child process. A deadline therefore terminates
+    both the request and any resolver work before this synchronous method returns.
+    """
+
+    def __init__(
+        self,
+        *,
+        max_response_bytes: int = YOUTUBE_MAX_RESPONSE_BYTES,
+    ) -> None:
+        if not 1 <= max_response_bytes <= YOUTUBE_MAX_RESPONSE_BYTES:
+            raise ValueError(
+                f"max_response_bytes must be between 1 and {YOUTUBE_MAX_RESPONSE_BYTES}"
+            )
         self.max_response_bytes = max_response_bytes
 
-    def get(self, url: str, *, params: dict[str, str], timeout_seconds: float) -> APIResponse:
+    def get(
+        self,
+        url: str,
+        *,
+        params: dict[str, str],
+        api_key: SecretStr,
+        timeout_seconds: float,
+    ) -> APIResponse:
+        if url != YOUTUBE_SEARCH_URL:
+            raise ValueError("YouTube transport accepts only the fixed search endpoint")
+        if timeout_seconds != YOUTUBE_TIMEOUT_SECONDS:
+            raise ValueError("YouTube transport requires the fixed 30-second timeout")
+        if not _PROCESS_DEADLINE_SUPPORTED:
+            raise YouTubeError("absolute_deadline_unavailable", retryable=False)
+        secret = api_key.get_secret_value()
+        if (
+            not secret
+            or not secret.isascii()
+            or any(character in secret for character in ("\r", "\n", "\0"))
+        ):
+            raise YouTubeCredentialsUnavailable()
+
+        started_at = monotonic()
+        hard_deadline = started_at + YOUTUBE_TIMEOUT_SECONDS
+        process_deadline = started_at + _YOUTUBE_PROCESS_DEADLINE_SECONDS
+        transfer_deadline = started_at + _YOUTUBE_CURL_TRANSFER_SECONDS
+        query_url = f"{url}?{urlencode(params)}"
+        command = (
+            _YOUTUBE_CURL_PATH,
+            "--disable",
+            "--silent",
+            "--show-error",
+            "--request",
+            "GET",
+            "--proto",
+            "=https",
+            "--proxy",
+            "",
+            "--noproxy",
+            "*",
+            "--max-redirs",
+            "0",
+            "--connect-timeout",
+            "10",
+            "--max-time",
+            str(int(_YOUTUBE_CURL_TRANSFER_SECONDS)),
+            "--max-filesize",
+            str(self.max_response_bytes),
+            "--header",
+            "@-",
+            "--header",
+            "Accept: application/json",
+            "--header",
+            "Accept-Encoding: identity",
+            "--write-out",
+            (
+                "%{stderr}POKECRACK_HTTP_CODE:%{http_code}\\n"
+                "POKECRACK_CONTENT_ENCODING:%header{content-encoding}\\n"
+                "POKECRACK_CONTENT_LENGTH:%header{content-length}\\n"
+            ),
+            query_url,
+        )
         try:
-            with httpx.stream(
-                "GET",
-                url,
-                params=params,
-                timeout=timeout_seconds,
-                follow_redirects=False,
-            ) as response:
-                declared_length = response.headers.get("content-length")
-                if declared_length is not None:
+            process = subprocess.Popen(  # noqa: S603 - fixed absolute executable and argv
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=True,
+                start_new_session=True,
+                env={"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"},
+            )
+        except OSError:
+            raise YouTubeError("transport_unavailable", retryable=False) from None
+
+        try:
+            stdout, stderr = _bounded_exchange(
+                process,
+                stdin_bytes=f"X-Goog-Api-Key: {secret}\n".encode("ascii"),
+                stdout_limit=self.max_response_bytes,
+                stderr_limit=_YOUTUBE_STDERR_LIMIT_BYTES,
+                deadline=transfer_deadline,
+            )
+        except _StreamLimitExceeded as error:
+            _terminate_and_reap(process, deadline=process_deadline)
+            raise YouTubeInvalidResponse(error.code) from None
+        except subprocess.TimeoutExpired:
+            _terminate_and_reap(process, deadline=process_deadline)
+            raise YouTubeError("request_timeout", retryable=True) from None
+        except BaseException as error:
+            # start_new_session isolates curl and any resolver descendants. Always
+            # tear that group down before an interrupt, shutdown, or unexpected
+            # stream-exchange failure can escape this synchronous boundary.
+            _terminate_and_reap(
+                process,
+                deadline=process_deadline,
+                pending_control_flow=(error if not isinstance(error, Exception) else None),
+            )
+            if isinstance(error, Exception):
+                raise YouTubeError("network_error", retryable=True) from None
+            raise
+
+        if monotonic() > hard_deadline:
+            raise YouTubeError("request_timeout", retryable=True)
+        if process.returncode == 28:
+            raise YouTubeError("request_timeout", retryable=True)
+        if process.returncode == 63:
+            raise YouTubeInvalidResponse("response_too_large")
+        if process.returncode != 0:
+            raise YouTubeError("network_error", retryable=True)
+        if len(stdout) > self.max_response_bytes:
+            raise YouTubeInvalidResponse("response_too_large")
+
+        response_metadata = _curl_response_metadata(stderr)
+        content_encoding = response_metadata["content-encoding"]
+        if content_encoding.casefold() not in {"", "identity"}:
+            raise YouTubeInvalidResponse("unsupported_content_encoding")
+        declared_length = response_metadata["content-length"]
+        if declared_length:
+            try:
+                parsed_length = int(declared_length)
+            except ValueError as error:
+                raise YouTubeInvalidResponse("invalid_content_length") from error
+            if parsed_length < 0:
+                raise YouTubeInvalidResponse("invalid_content_length")
+            if parsed_length > self.max_response_bytes:
+                raise YouTubeInvalidResponse("response_too_large")
+        try:
+            status_code = int(response_metadata["http-code"])
+        except ValueError as error:
+            raise YouTubeInvalidResponse() from error
+        if not 100 <= status_code <= 599:
+            raise YouTubeInvalidResponse()
+        if monotonic() > hard_deadline:
+            raise YouTubeError("request_timeout", retryable=True)
+        return APIResponse(
+            status_code,
+            {
+                "content-encoding": content_encoding,
+                "content-length": declared_length,
+            },
+            stdout,
+        )
+
+
+def _remaining_seconds(deadline: float) -> float:
+    remaining = deadline - monotonic()
+    if remaining <= 0:
+        raise subprocess.TimeoutExpired(_YOUTUBE_CURL_PATH, 0)
+    return remaining
+
+
+def _bounded_exchange(
+    process: subprocess.Popen[bytes],
+    *,
+    stdin_bytes: bytes,
+    stdout_limit: int,
+    stderr_limit: int,
+    deadline: float,
+) -> tuple[bytes, bytes]:
+    """Drain curl pipes while retaining at most each limit plus one sentinel byte."""
+
+    stdin = process.stdin
+    stdout = process.stdout
+    stderr = process.stderr
+    if stdin is None or stdout is None or stderr is None:
+        raise OSError("curl pipes are unavailable")
+
+    selector = selectors.DefaultSelector()
+    buffers = {"stdout": bytearray(), "stderr": bytearray()}
+    output_pipes = {"stdout": stdout, "stderr": stderr}
+    limits = {"stdout": stdout_limit, "stderr": stderr_limit}
+    limit_codes = {
+        "stdout": "response_too_large",
+        "stderr": "response_headers_too_large",
+    }
+    stdin_offset = 0
+    stdin_view = memoryview(stdin_bytes)
+    pipes = (stdin, stdout, stderr)
+    try:
+        for pipe in pipes:
+            os.set_blocking(pipe.fileno(), False)
+        selector.register(stdin, selectors.EVENT_WRITE, "stdin")
+        selector.register(stdout, selectors.EVENT_READ, "stdout")
+        selector.register(stderr, selectors.EVENT_READ, "stderr")
+
+        while selector.get_map():
+            ready = selector.select(timeout=_remaining_seconds(deadline))
+            if not ready:
+                raise subprocess.TimeoutExpired(_YOUTUBE_CURL_PATH, 0)
+            for key, _events in ready:
+                stream_name = key.data
+                if stream_name == "stdin":
                     try:
-                        if int(declared_length) > self.max_response_bytes:
-                            raise YouTubeError("YouTube Data API response exceeds byte cap")
-                    except ValueError as error:
-                        raise YouTubeError("YouTube Data API content length is invalid") from error
-                body = bytearray()
-                for chunk in response.iter_bytes():
-                    body.extend(chunk)
-                    if len(body) > self.max_response_bytes:
-                        raise YouTubeError("YouTube Data API response exceeds byte cap")
-                return APIResponse(response.status_code, dict(response.headers), bytes(body))
-        except httpx.HTTPError:
-            raise YouTubeError("YouTube Data API request failed") from None
+                        written = os.write(key.fd, stdin_view[stdin_offset:])
+                    except BlockingIOError:
+                        continue
+                    except BrokenPipeError:
+                        selector.unregister(key.fileobj)
+                        stdin.close()
+                        continue
+                    stdin_offset += written
+                    if stdin_offset == len(stdin_view):
+                        selector.unregister(key.fileobj)
+                        stdin.close()
+                    continue
+
+                buffer = buffers[stream_name]
+                limit = limits[stream_name]
+                read_size = min(_YOUTUBE_PIPE_CHUNK_BYTES, limit + 1 - len(buffer))
+                try:
+                    chunk = os.read(key.fd, max(1, read_size))
+                except BlockingIOError:
+                    continue
+                if not chunk:
+                    selector.unregister(key.fileobj)
+                    output_pipes[stream_name].close()
+                    continue
+                buffer.extend(chunk)
+                if len(buffer) > limit:
+                    raise _StreamLimitExceeded(limit_codes[stream_name])
+
+        process.wait(timeout=_remaining_seconds(deadline))
+        return bytes(buffers["stdout"]), bytes(buffers["stderr"])
+    finally:
+        selector.close()
+        for pipe in pipes:
+            try:
+                pipe.close()
+            except OSError:
+                pass
+
+
+def _terminate_and_reap(
+    process: subprocess.Popen[bytes],
+    *,
+    deadline: float,
+    pending_control_flow: BaseException | None = None,
+) -> None:
+    outcome = _reap_process_group(process, deadline=deadline)
+    control_flow = (
+        pending_control_flow if pending_control_flow is not None else outcome.control_flow
+    )
+    if control_flow is not None:
+        # Shutdown always remains fatal/non-finalizing. If the process was
+        # reaped, releasing the interpreter is safe; if it was not, leaving the
+        # database request gate leased prevents a second concurrent request.
+        raise control_flow
+    if not outcome.reaped:
+        raise YouTubeRequestStateUnknown() from None
+    if not outcome.completed_within_deadline:
+        raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
+
+
+def _reap_process_group(process: subprocess.Popen[bytes], *, deadline: float) -> _ReapOutcome:
+    try:
+        return _reap_process_group_guarded(process, deadline=deadline)
+    except BaseException as error:
+        control_flow = error if not isinstance(error, Exception) else None
+        return _ReapOutcome(False, False, control_flow)
+
+
+def _reap_process_group_guarded(
+    process: subprocess.Popen[bytes], *, deadline: float
+) -> _ReapOutcome:
+    cleanup_control_flow: BaseException | None = None
+    reaped = False
+
+    def remember_control_flow(error: BaseException) -> None:
+        nonlocal cleanup_control_flow
+        if not isinstance(error, Exception) and cleanup_control_flow is None:
+            cleanup_control_flow = error
+
+    def poll_confirms_reap() -> bool | None:
+        try:
+            return process.poll() is not None
+        except BaseException as error:
+            remember_control_flow(error)
+            return None
+
+    for _attempt in range(_YOUTUBE_REAP_ATTEMPTS):
+        # Popen only publishes a non-None return code after wait()/poll() has
+        # collected the child. Poll before every signal because waitpid() may
+        # reap and then be interrupted before publishing that return code. If
+        # poll is interrupted too, retry it without risking a reused PID.
+        if process.returncode is not None:
+            reaped = True
+            break
+        poll_result = poll_confirms_reap()
+        if poll_result is None:
+            continue
+        if poll_result:
+            reaped = True
+            break
+        try:
+            os.killpg(process.pid, signal.SIGKILL)
+        except BaseException as error:
+            remember_control_flow(error)
+        try:
+            process.kill()
+        except BaseException as error:
+            remember_control_flow(error)
+
+        try:
+            remaining = deadline - monotonic()
+        except BaseException as error:
+            remember_control_flow(error)
+            continue
+        if remaining <= 0:
+            return _ReapOutcome(False, False, cleanup_control_flow)
+        try:
+            process.wait(timeout=min(_YOUTUBE_REAP_SLICE_SECONDS, remaining))
+        except BaseException as error:
+            remember_control_flow(error)
+        else:
+            reaped = True
+            break
+
+        if poll_confirms_reap():
+            reaped = True
+            break
+
+    if not reaped and process.returncode is not None:
+        reaped = True
+    if not reaped and poll_confirms_reap():
+        reaped = True
+    if not reaped:
+        return _ReapOutcome(False, False, cleanup_control_flow)
+    try:
+        completed_within_deadline = monotonic() <= deadline
+    except BaseException as error:
+        remember_control_flow(error)
+        completed_within_deadline = False
+    return _ReapOutcome(reaped, completed_within_deadline, cleanup_control_flow)
+
+
+def _curl_response_metadata(stderr: bytes) -> dict[str, str]:
+    if len(stderr) > _YOUTUBE_STDERR_LIMIT_BYTES:
+        raise YouTubeInvalidResponse("response_headers_too_large")
+    try:
+        lines = stderr.decode("utf-8", errors="strict").splitlines()
+    except UnicodeDecodeError as error:
+        raise YouTubeInvalidResponse() from error
+    prefixes = {
+        "POKECRACK_HTTP_CODE:": "http-code",
+        "POKECRACK_CONTENT_ENCODING:": "content-encoding",
+        "POKECRACK_CONTENT_LENGTH:": "content-length",
+    }
+    metadata: dict[str, str] = {}
+    for line in lines:
+        for prefix, key in prefixes.items():
+            if line.startswith(prefix):
+                if key in metadata:
+                    raise YouTubeInvalidResponse("duplicate_response_metadata")
+                metadata[key] = line[len(prefix) :].strip()
+    if set(metadata) != set(prefixes.values()):
+        raise YouTubeInvalidResponse()
+    return metadata
+
+
+def _normalize_text(value: str, *, max_chars: int) -> str | None:
+    decoded = unicodedata.normalize("NFKC", html.unescape(value))
+    without_controls = "".join(
+        " " if unicodedata.category(character).startswith("C") else character
+        for character in decoded
+    )
+    normalized = " ".join(without_controls.split())
+    return normalized[:max_chars] or None
+
+
+def _json_mapping(body: bytes) -> Mapping[str, Any]:
+    def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+        result: dict[str, Any] = {}
+        for key, value in pairs:
+            if key in result:
+                raise YouTubeInvalidResponse("duplicate_json_key")
+            result[key] = value
+        return result
+
+    try:
+        payload: Any = json.loads(body, object_pairs_hook=reject_duplicate_keys)
+    except (json.JSONDecodeError, UnicodeDecodeError) as error:
+        raise YouTubeInvalidResponse() from error
+    if not isinstance(payload, Mapping):
+        raise YouTubeInvalidResponse()
+    return payload
+
+
+def _published_at(value: object) -> datetime:
+    if not isinstance(value, str) or len(value) > 64:
+        raise YouTubeInvalidResponse()
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError as error:
+        raise YouTubeInvalidResponse() from error
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise YouTubeInvalidResponse()
+    return parsed.astimezone(UTC)
+
+
+def _parse_search_response(body: bytes, *, max_results: int) -> tuple[_SearchItem, ...]:
+    payload = _json_mapping(body)
+    raw_items = payload.get("items")
+    if not isinstance(raw_items, list) or len(raw_items) > max_results:
+        raise YouTubeInvalidResponse()
+    items: list[_SearchItem] = []
+    seen_video_ids: set[str] = set()
+    for raw_item in raw_items:
+        if not isinstance(raw_item, Mapping):
+            raise YouTubeInvalidResponse()
+        identity = raw_item.get("id")
+        snippet = raw_item.get("snippet")
+        if not isinstance(identity, Mapping) or not isinstance(snippet, Mapping):
+            raise YouTubeInvalidResponse()
+        video_id = identity.get("videoId")
+        title = snippet.get("title")
+        if (
+            identity.get("kind") != "youtube#video"
+            or not isinstance(video_id, str)
+            or _VIDEO_ID_PATTERN.fullmatch(video_id) is None
+            or not isinstance(title, str)
+        ):
+            raise YouTubeInvalidResponse()
+        if video_id in seen_video_ids:
+            raise YouTubeInvalidResponse("duplicate_video_id")
+        seen_video_ids.add(video_id)
+        items.append(
+            _SearchItem(
+                video_id=video_id,
+                title=_normalize_text(title, max_chars=500),
+                published_at=_published_at(snippet.get("publishedAt")),
+            )
+        )
+    return tuple(items)
 
 
 class YouTubeDataClient:
-    media_download = False
-
     def __init__(
         self,
         *,
         api_key: str,
         transport: YouTubeTransport,
         policies: SourcePolicyRegistry,
-        base_url: str = "https://youtube.googleapis.com/youtube/v3",
-        timeout_seconds: float = 30,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not api_key:
-            raise YouTubeCredentialsUnavailable(
-                "YOUTUBE_API_KEY is required for YouTube Data API discovery"
-            )
-        self._api_key = api_key
+            raise YouTubeCredentialsUnavailable()
+        self._api_key = SecretStr(api_key)
         self.transport = transport
         self.policies = policies
-        self.base_url = base_url.rstrip("/")
-        self.timeout_seconds = timeout_seconds
         self._clock = clock or (lambda: datetime.now(UTC))
 
-    @staticmethod
-    def _thumbnail(snippet: Mapping[str, Any]) -> tuple[str, ...]:
-        thumbnails = snippet.get("thumbnails")
-        if not isinstance(thumbnails, Mapping):
-            return ()
-        for quality in ("maxres", "high", "medium", "default"):
-            item = thumbnails.get(quality)
-            if isinstance(item, Mapping) and isinstance(item.get("url"), str):
-                return (item["url"],)
-        return ()
-
     def discover(self, query: YouTubeQuery) -> tuple[SourceItemCandidate, ...]:
-        endpoint = f"{self.base_url}/search"
-        policy = self.policies.require(endpoint, CollectorRoute.YOUTUBE)
-        published_after = self._clock().astimezone(UTC) - timedelta(
-            days=query.published_within_days
+        policy = self.policies.require(YOUTUBE_SEARCH_URL, CollectorRoute.YOUTUBE)
+        if (
+            policy.version != YOUTUBE_COLLECTOR_VERSION
+            or policy.min_delay_seconds != 2
+            or policy.max_pages_per_run != 1
+            or policy.max_concurrency != 1
+            or policy.retention_days != 28
+            or not policy.metadata_only
+            or policy.statistics_eligible_default
+            or policy.config != _EXPECTED_POLICY_CONFIG
+            or YOUTUBE_APPROVED_QUERY_TEXT.get(query.name) != query.query
+            or query.enabled is not False
+            or query.metadata_only is not True
+            or query.max_results != 25
+            or query.region_code is not None
+            or query.published_within_days != 30
+            or query.order != "date"
+        ):
+            raise YouTubeInvalidResponse("source_policy_version_mismatch")
+        collection_cutoff = self._clock()
+        if collection_cutoff.tzinfo is None or collection_cutoff.utcoffset() is None:
+            raise YouTubeInvalidResponse("clock_invalid")
+        collection_cutoff = collection_cutoff.astimezone(UTC).replace(microsecond=0)
+        published_after = collection_cutoff - timedelta(days=query.published_within_days)
+        # This is an English text-relevance hint, never a region or observed geography.
+        search_response = self.transport.get(
+            YOUTUBE_SEARCH_URL,
+            params={
+                "part": "snippet",
+                "type": "video",
+                "q": query.query,
+                "maxResults": str(query.max_results),
+                "order": query.order,
+                "publishedAfter": published_after.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "publishedBefore": collection_cutoff.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                "relevanceLanguage": "en",
+                "fields": "items(id(kind,videoId),snippet(publishedAt,title))",
+            },
+            api_key=self._api_key,
+            timeout_seconds=YOUTUBE_TIMEOUT_SECONDS,
         )
-        params = {
-            "part": "snippet",
-            "type": "video",
-            "q": query.query,
-            "maxResults": str(query.max_results),
-            "order": query.order,
-            "publishedAfter": published_after.strftime("%Y-%m-%dT%H:%M:%SZ"),
-            "key": self._api_key,
-        }
-        if query.region_code:
-            params["regionCode"] = query.region_code
-        response = self.transport.get(endpoint, params=params, timeout_seconds=self.timeout_seconds)
-        if response.status_code != 200:
-            raise YouTubeHTTPError(response.status_code)
-        try:
-            payload: Any = json.loads(response.body)
-        except json.JSONDecodeError as error:
-            raise YouTubeError(f"YouTube Data API returned invalid JSON: {error}") from error
-        if not isinstance(payload, Mapping) or not isinstance(payload.get("items"), list):
-            raise YouTubeError("YouTube Data API response requires an items array")
+        if search_response.status_code != 200:
+            raise YouTubeHTTPError(search_response.status_code)
+        search_items = _parse_search_response(search_response.body, max_results=query.max_results)
+
         candidates: list[SourceItemCandidate] = []
-        for raw_item in payload["items"]:
-            if not isinstance(raw_item, Mapping):
+        for item in search_items:
+            if item.published_at > collection_cutoff:
                 continue
-            identity = raw_item.get("id")
-            snippet = raw_item.get("snippet")
-            if not isinstance(identity, Mapping) or not isinstance(snippet, Mapping):
-                continue
-            video_id = identity.get("videoId")
-            if not isinstance(video_id, str) or not video_id:
-                continue
-            title = snippet.get("title")
-            description = snippet.get("description")
-            channel_id = snippet.get("channelId")
-            channel_title = snippet.get("channelTitle")
-            author_identity = channel_id if isinstance(channel_id, str) else channel_title
-            metadata: dict[str, Any] = {
-                "query_name": query.name,
-                "metadata_only": True,
-                "media_download": False,
-            }
-            candidates.append(
-                SourceItemCandidate(
+            try:
+                candidate = SourceItemCandidate(
                     platform="youtube",
-                    external_id=video_id,
-                    source_url=f"https://www.youtube.com/watch?v={video_id}",
-                    title=(html.unescape(title) if isinstance(title, str) else None),
-                    text=(
-                        html.unescape(description)[:20_000]
-                        if isinstance(description, str)
-                        else None
-                    ),
-                    published_at=(
-                        snippet.get("publishedAt")
-                        if isinstance(snippet.get("publishedAt"), str)
-                        else None
-                    ),
-                    author_hash=(
-                        hash_author(author_identity)
-                        if isinstance(author_identity, str) and author_identity.strip()
-                        else None
-                    ),
-                    media_urls=self._thumbnail(snippet),
-                    metadata=metadata,
+                    external_id=item.video_id,
+                    source_url=f"https://www.youtube.com/watch?v={item.video_id}",
+                    title=item.title,
+                    text=None,
+                    published_at=item.published_at,
+                    author_hash=None,
+                    media_urls=(),
+                    metadata={},
                     collector=CollectorType.OFFICIAL_API,
-                    collector_version=str(
-                        policy.config.get("collector_version", "youtube-data-v3")
-                    ),
+                    collector_version=YOUTUBE_COLLECTOR_VERSION,
                     source_policy_version=policy.version,
                 )
-            )
+            except (TypeError, ValueError) as error:
+                raise YouTubeInvalidResponse() from error
+            candidates.append(candidate)
         return tuple(candidates)
-
-    def discover_many(self, queries: Sequence[YouTubeQuery]) -> YouTubeDiscoveryResult:
-        """Run at most five approved query objects and isolate per-query failures."""
-
-        if len(queries) > 5:
-            raise ValueError("YouTube discovery is limited to five queries per run")
-        items: list[SourceItemCandidate] = []
-        failures: list[YouTubeDiscoveryFailure] = []
-        identities: set[tuple[str, str | None, str]] = set()
-        for query in queries:
-            try:
-                discovered = self.discover(query)
-            except YouTubeHTTPError as error:
-                failures.append(
-                    YouTubeDiscoveryFailure(
-                        query_name=query.name,
-                        error_code="http_error",
-                        retryable=error.status_code == 429 or error.status_code >= 500,
-                    )
-                )
-                continue
-            except YouTubeError:
-                failures.append(
-                    YouTubeDiscoveryFailure(
-                        query_name=query.name,
-                        error_code="invalid_response",
-                        retryable=False,
-                    )
-                )
-                continue
-            for item in discovered:
-                identity = (item.platform, item.external_id, item.normalized_url or item.source_url)
-                if identity in identities:
-                    continue
-                identities.add(identity)
-                items.append(item)
-        return YouTubeDiscoveryResult(tuple(items), tuple(failures))

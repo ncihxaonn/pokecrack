@@ -1,4 +1,4 @@
-"""Generation-fenced PostgreSQL preflight for the live TCGdex request."""
+"""Generation-fenced PostgreSQL preflights for live official API requests."""
 
 from __future__ import annotations
 
@@ -17,6 +17,15 @@ FROM ingest.begin_tcgdex_sets_job(
 )
 """.strip()
 
+BEGIN_YOUTUBE_DISCOVERY_SQL = """
+SELECT *
+FROM ingest.begin_youtube_discovery_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint
+)
+""".strip()
+
 _TCGDEX_ETAG_PATTERN = re.compile(r'(?:W/)?"[\x21\x23-\x7e]*"')
 
 
@@ -28,6 +37,16 @@ class TCGdexRequestDeferred(RuntimeError):
             raise ValueError("TCGdex retry timestamp must be timezone-aware")
         self.retry_at = retry_at
         super().__init__("TCGdex request gate deferred")
+
+
+class YouTubeRequestDeferred(RuntimeError):
+    """The shared YouTube request gate is busy; retry without burning an attempt."""
+
+    def __init__(self, retry_at: datetime) -> None:
+        if retry_at.tzinfo is None or retry_at.utcoffset() is None:
+            raise ValueError("YouTube retry timestamp must be timezone-aware")
+        self.retry_at = retry_at
+        super().__init__("YouTube request gate deferred")
 
 
 @dataclass(frozen=True, slots=True)
@@ -121,3 +140,39 @@ class PostgresTCGdexCheckpointRepository:
             item_count=item_count,
             revision=revision,
         )
+
+
+class PostgresYouTubeDiscoveryGate:
+    def __init__(self, executor: QueryExecutor) -> None:
+        self._executor = executor
+
+    def begin(
+        self,
+        *,
+        job_id: str,
+        worker_id: str,
+        lease_generation: int,
+    ) -> None:
+        """Authorize at most one bounded search request under the lease."""
+
+        rows = self._executor.query(
+            BEGIN_YOUTUBE_DISCOVERY_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        row = rows[0]
+        acquired = row.get("acquired")
+        retry_at = row.get("retry_at")
+        if acquired is False:
+            if not isinstance(retry_at, datetime):
+                raise TypeError("deferred YouTube preflight requires a retry timestamp")
+            raise YouTubeRequestDeferred(retry_at)
+        if acquired is not True:
+            raise TypeError("YouTube preflight acquired flag must be boolean")
+        if retry_at is not None:
+            raise ValueError("acquired YouTube preflight cannot include a retry timestamp")
