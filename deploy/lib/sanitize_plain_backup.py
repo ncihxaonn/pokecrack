@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remove retention-bounded YouTube rows from a plain PostgreSQL dump.
+"""Remove the disposable YouTube discovery cache from a plain PostgreSQL dump.
 
 The backup entrypoint invokes this program between ``pg_dump`` and ``gzip``.
 It deliberately supports only the stable, line-oriented ``COPY ... FROM
@@ -21,16 +21,16 @@ from typing import BinaryIO
 from uuid import UUID
 
 SOURCE_POLICIES = ("ingest", "source_policies")
-SOURCE_ITEMS = ("ingest", "source_items")
-SOURCE_DISCOVERIES = ("ingest", "source_discoveries")
-TARGET_TABLES = frozenset({SOURCE_POLICIES, SOURCE_ITEMS, SOURCE_DISCOVERIES})
+YOUTUBE_DISCOVERIES = ("ingest", "youtube_discoveries")
+RETENTION_CONTROL_TABLES = frozenset({SOURCE_POLICIES, YOUTUBE_DISCOVERIES})
 YOUTUBE_SOURCE_KEY = b"youtube_discovery"
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 TARGET_INSERT = re.compile(
-    r'^INSERT\s+INTO\s+(?:ingest|"ingest")\.'
-    r'(?:source_policies|"source_policies"|source_items|"source_items"|'
-    r'source_discoveries|"source_discoveries")(?:\s|\()'
+    r'^\s*INSERT\s+INTO\s+(?:ingest|"ingest")\.'
+    r'(?:source_policies|"source_policies"|'
+    r'youtube_discoveries|"youtube_discoveries")(?:\s|\()',
+    re.IGNORECASE,
 )
 
 
@@ -44,7 +44,7 @@ class CopyHeader:
     columns: tuple[str, ...]
 
 
-@dataclass
+@dataclass(frozen=True)
 class CopyBlock:
     header: CopyHeader
     column_indexes: dict[str, int]
@@ -176,98 +176,97 @@ class PlainBackupSanitizer:
         self,
         *,
         source_policies_present: bool,
-        source_items_present: bool,
-        source_discoveries_present: bool,
+        youtube_discoveries_present: bool,
         youtube_policy_id: str | None,
     ) -> None:
         if youtube_policy_id is not None:
             youtube_policy_id = _canonical_uuid(
                 youtube_policy_id.encode("ascii"), field="YouTube policy id"
             )
-        if source_discoveries_present and youtube_policy_id is None:
-            raise SanitizationError("source_discoveries exists without an exact YouTube policy id")
-        if source_items_present and not source_policies_present:
-            raise SanitizationError("source_items exists without source_policies")
-        if youtube_policy_id is not None and not (source_policies_present and source_items_present):
+        if youtube_discoveries_present and not (
+            source_policies_present and youtube_policy_id is not None
+        ):
             raise SanitizationError(
-                "YouTube policy exists without source_policies and source_items"
+                "youtube_discoveries exists without one exact YouTube policy"
             )
-        if source_discoveries_present and not source_items_present:
-            raise SanitizationError("source_discoveries exists without source_items")
+        if youtube_policy_id is not None and not youtube_discoveries_present:
+            raise SanitizationError(
+                "YouTube policy exists without youtube_discoveries"
+            )
 
         self.expected = {
             SOURCE_POLICIES: source_policies_present,
-            SOURCE_ITEMS: source_items_present,
-            SOURCE_DISCOVERIES: source_discoveries_present,
+            YOUTUBE_DISCOVERIES: youtube_discoveries_present,
         }
         self.preflight_youtube_policy_id = youtube_policy_id
-        self.dump_youtube_policy_id: str | None = None
-        self.seen = {table: 0 for table in TARGET_TABLES}
+        self.seen = {table: 0 for table in RETENTION_CONTROL_TABLES}
         self.youtube_policy_rows: list[str] = []
-        self.discovery_source_item_ids: set[str] = set()
 
     def _start_block(self, header: CopyHeader) -> CopyBlock:
         indexes = _column_indexes(header)
-        if header.table in TARGET_TABLES:
+        if header.table in RETENTION_CONTROL_TABLES:
             self.seen[header.table] += 1
             if self.seen[header.table] != 1:
-                raise SanitizationError("duplicate retention-sensitive COPY block")
+                raise SanitizationError(
+                    "duplicate retention-control COPY block: "
+                    f"{'.'.join(header.table)}"
+                )
         if header.table == SOURCE_POLICIES:
             if "id" not in indexes or "source_key" not in indexes:
                 raise SanitizationError("source_policies COPY lacks id or source_key")
-        elif header.table == SOURCE_ITEMS:
-            if "id" not in indexes or "source_policy_id" not in indexes:
-                raise SanitizationError("source_items COPY lacks id or source_policy_id")
-        elif header.table == SOURCE_DISCOVERIES and "source_item_id" not in indexes:
-            raise SanitizationError("source_discoveries COPY lacks source_item_id")
+        elif (
+            header.table == YOUTUBE_DISCOVERIES
+            and "source_policy_id" not in indexes
+        ):
+            raise SanitizationError(
+                "youtube_discoveries COPY lacks source_policy_id"
+            )
         return CopyBlock(header=header, column_indexes=indexes)
 
     def _target_fields(self, block: CopyBlock, line: bytes) -> list[bytes]:
-        content = _without_line_ending(line)
-        fields = content.split(b"\t")
+        fields = _without_line_ending(line).split(b"\t")
         if len(fields) != len(block.header.columns):
-            raise SanitizationError("retention-sensitive COPY row has wrong field count")
+            raise SanitizationError(
+                "retention-control COPY row has wrong field count"
+            )
         return fields
 
-    def _inspect_row(self, block: CopyBlock, line: bytes) -> None:
-        table = block.header.table
-        if table not in TARGET_TABLES:
+    def _inspect_control_row(self, block: CopyBlock, line: bytes) -> None:
+        if block.header.table not in RETENTION_CONTROL_TABLES:
             return
         fields = self._target_fields(block, line)
-        if table == SOURCE_DISCOVERIES:
-            source_item_id = _canonical_uuid(
-                fields[block.column_indexes["source_item_id"]],
-                field="discovery source item id",
-            )
-            self.discovery_source_item_ids.add(source_item_id)
-            return
-        if table == SOURCE_POLICIES:
+        if block.header.table == SOURCE_POLICIES:
             source_key = fields[block.column_indexes["source_key"]]
             if b"\\" in source_key or source_key == b"\\N":
                 raise SanitizationError("source policy key is not plain text")
             if source_key == YOUTUBE_SOURCE_KEY:
-                policy_id = _canonical_uuid(
-                    fields[block.column_indexes["id"]], field="dump policy id"
+                self.youtube_policy_rows.append(
+                    _canonical_uuid(
+                        fields[block.column_indexes["id"]], field="dump policy id"
+                    )
                 )
-                self.youtube_policy_rows.append(policy_id)
             return
-
-        _canonical_uuid(fields[block.column_indexes["id"]], field="source item id")
-        _canonical_uuid(
+        policy_id = _canonical_uuid(
             fields[block.column_indexes["source_policy_id"]],
-            field="source item policy id",
+            field="YouTube discovery policy id",
         )
+        if policy_id != self.preflight_youtube_policy_id:
+            raise SanitizationError(
+                "youtube_discoveries row does not use the exact YouTube policy"
+            )
 
     def _validate_complete(self) -> None:
         for table, expected_present in self.expected.items():
             count = self.seen[table]
             if expected_present and count != 1:
                 raise SanitizationError(
-                    f"expected retention-sensitive COPY block is missing: {'.'.join(table)}"
+                    "expected retention-control COPY block is missing: "
+                    f"{'.'.join(table)}"
                 )
             if not expected_present and count != 0:
                 raise SanitizationError(
-                    f"unexpected retention-sensitive COPY block: {'.'.join(table)}"
+                    "unexpected retention-control COPY block: "
+                    f"{'.'.join(table)}"
                 )
 
         if self.preflight_youtube_policy_id is None:
@@ -275,15 +274,11 @@ class PlainBackupSanitizer:
                 raise SanitizationError(
                     "dump contains a YouTube policy absent from the database preflight"
                 )
-            self.dump_youtube_policy_id = None
-        elif self.youtube_policy_rows != [self.preflight_youtube_policy_id]:
+            return
+        if self.youtube_policy_rows != [self.preflight_youtube_policy_id]:
             raise SanitizationError(
                 "dump YouTube policy does not exactly match the database preflight"
             )
-        else:
-            # Filtering is deliberately keyed by the mapping parsed from this
-            # exact pg_dump snapshot. The psql value is only a cross-check.
-            self.dump_youtube_policy_id = self.youtube_policy_rows[0]
 
     def _scan(self, source: BinaryIO, spool: BinaryIO) -> None:
         block: CopyBlock | None = None
@@ -293,7 +288,7 @@ class PlainBackupSanitizer:
                 if line in (b"\\.\n", b"\\.\r\n"):
                     block = None
                     continue
-                self._inspect_row(block, line)
+                self._inspect_control_row(block, line)
                 continue
 
             header = parse_copy_header(line)
@@ -306,7 +301,9 @@ class PlainBackupSanitizer:
             except UnicodeDecodeError:
                 text = ""
             if TARGET_INSERT.match(text):
-                raise SanitizationError("retention-sensitive table data must use COPY FROM stdin")
+                raise SanitizationError(
+                    "retention-control table data must use COPY FROM stdin"
+                )
 
         if block is not None:
             raise SanitizationError("unterminated COPY data block")
@@ -314,52 +311,30 @@ class PlainBackupSanitizer:
 
     def _emit(self, source: BinaryIO, destination: BinaryIO) -> None:
         block: CopyBlock | None = None
-        unmatched_discovery_ids = set(self.discovery_source_item_ids)
-
         for line in source:
             if block is not None:
                 if line in (b"\\.\n", b"\\.\r\n"):
                     destination.write(line)
                     block = None
                     continue
-
-                table = block.header.table
-                if table == SOURCE_DISCOVERIES:
-                    continue
-                if table == SOURCE_ITEMS:
-                    fields = self._target_fields(block, line)
-                    source_item_id = _canonical_uuid(
-                        fields[block.column_indexes["id"]],
-                        field="source item id",
-                    )
-                    policy_id = _canonical_uuid(
-                        fields[block.column_indexes["source_policy_id"]],
-                        field="source item policy id",
-                    )
-                    is_discovery_parent = source_item_id in self.discovery_source_item_ids
-                    if is_discovery_parent:
-                        unmatched_discovery_ids.discard(source_item_id)
-                    if is_discovery_parent or policy_id == self.dump_youtube_policy_id:
-                        continue
-                destination.write(line)
+                if block.header.table != YOUTUBE_DISCOVERIES:
+                    destination.write(line)
                 continue
 
             header = parse_copy_header(line)
             if header is not None:
-                # The first pass already proved uniqueness and required columns.
-                block = CopyBlock(header=header, column_indexes=_column_indexes(header))
+                block = CopyBlock(
+                    header=header, column_indexes=_column_indexes(header)
+                )
             destination.write(line)
 
         if block is not None:
             raise SanitizationError("unterminated COPY data block")
-        if unmatched_discovery_ids:
-            raise SanitizationError("discovery row refers to a source item absent from the dump")
 
     def sanitize(self, source: BinaryIO, destination: BinaryIO) -> None:
-        # pg_dump is internally snapshot-consistent, but table order is not a
-        # retention contract. Spooling to an unlinked 0600 file lets the first
-        # pass derive every discovery parent and policy mapping from one dump,
-        # then lets the second pass filter without buffering the dump in RAM.
+        # Spool the entire pg_dump snapshot before emitting anything. This
+        # keeps every structural mismatch fail-closed while avoiding buffering
+        # a potentially large logical backup in RAM.
         with tempfile.TemporaryFile(mode="w+b") as spool:
             os.fchmod(spool.fileno(), 0o600)
             if stat.S_IMODE(os.fstat(spool.fileno()).st_mode) != 0o600:
@@ -370,18 +345,13 @@ class PlainBackupSanitizer:
             self._emit(spool, destination)
 
 
-def _presence(value: str) -> bool:
-    return value == "present"
-
-
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Sanitize retention-bounded rows from a plain PostgreSQL dump."
+        description="Remove disposable YouTube discovery rows from a plain dump."
     )
-    choices = ("present", "absent")
-    parser.add_argument("--source-policies", required=True, choices=choices)
-    parser.add_argument("--source-items", required=True, choices=choices)
-    parser.add_argument("--source-discoveries", required=True, choices=choices)
+    presence = ("present", "absent")
+    parser.add_argument("--source-policies", required=True, choices=presence)
+    parser.add_argument("--youtube-discoveries", required=True, choices=presence)
     parser.add_argument("--youtube-policy-id")
     return parser.parse_args(argv)
 
@@ -390,9 +360,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(sys.argv[1:] if argv is None else argv)
     try:
         sanitizer = PlainBackupSanitizer(
-            source_policies_present=_presence(args.source_policies),
-            source_items_present=_presence(args.source_items),
-            source_discoveries_present=_presence(args.source_discoveries),
+            source_policies_present=args.source_policies == "present",
+            youtube_discoveries_present=args.youtube_discoveries == "present",
             youtube_policy_id=args.youtube_policy_id,
         )
         sanitizer.sanitize(sys.stdin.buffer, sys.stdout.buffer)

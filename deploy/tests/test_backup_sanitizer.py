@@ -11,9 +11,11 @@ SANITIZER = REPOSITORY_ROOT / "deploy" / "lib" / "sanitize_plain_backup.py"
 
 YOUTUBE_POLICY = "11111111-1111-4111-8111-111111111111"
 OTHER_POLICY = "22222222-2222-4222-8222-222222222222"
+WRONG_POLICY = "33333333-3333-4333-8333-333333333333"
 YOUTUBE_ITEM = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
-REBOUND_ITEM = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
 OTHER_ITEM = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+FIRST_VIDEO = "AbCdEfGhI_1"
+SECOND_VIDEO = "ZyXwVuTsR-2"
 
 
 def copy_block(table: str, columns: str, *rows: bytes, crlf: bool = False) -> bytes:
@@ -28,8 +30,7 @@ class BackupSanitizerTests(unittest.TestCase):
         dump: bytes,
         *,
         source_policies: str = "present",
-        source_items: str = "present",
-        source_discoveries: str = "present",
+        youtube_discoveries: str = "present",
         policy_id: str | None = YOUTUBE_POLICY,
         environment: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess[bytes]:
@@ -38,10 +39,8 @@ class BackupSanitizerTests(unittest.TestCase):
             str(SANITIZER),
             "--source-policies",
             source_policies,
-            "--source-items",
-            source_items,
-            "--source-discoveries",
-            source_discoveries,
+            "--youtube-discoveries",
+            youtube_discoveries,
         ]
         if policy_id is not None:
             command.extend(("--youtube-policy-id", policy_id))
@@ -57,7 +56,7 @@ class BackupSanitizerTests(unittest.TestCase):
         self,
         *,
         quoted: bool = False,
-        discoveries_first: bool = False,
+        cache_first: bool = False,
     ) -> bytes:
         if quoted:
             policies = copy_block(
@@ -70,16 +69,21 @@ class BackupSanitizerTests(unittest.TestCase):
             items = copy_block(
                 '"ingest"."source_items"',
                 '"note", "id", "source_policy_id"',
-                f"youtube\\ttab\\nline\t{YOUTUBE_ITEM}\t{YOUTUBE_POLICY}".encode(),
-                f"rebound\\tfield\t{REBOUND_ITEM}\t{OTHER_POLICY}".encode(),
-                f"keep\\nfield\t{OTHER_ITEM}\t{OTHER_POLICY}".encode(),
+                f"youtube-source\\titem\t{YOUTUBE_ITEM}\t{YOUTUBE_POLICY}".encode(),
+                f"other-source\\nitem\t{OTHER_ITEM}\t{OTHER_POLICY}".encode(),
                 crlf=True,
             )
-            discoveries = copy_block(
+            legacy = copy_block(
                 '"ingest"."source_discoveries"',
                 '"note", "source_item_id"',
-                f"query\\tA\t{YOUTUBE_ITEM}".encode(),
-                f"query\\nB\t{REBOUND_ITEM}".encode(),
+                f"legacy-youtube\t{YOUTUBE_ITEM}".encode(),
+                crlf=True,
+            )
+            cache = copy_block(
+                '"ingest"."youtube_discoveries"',
+                '"title", "source_policy_id", "video_id"',
+                f"cache\\tfirst\t{YOUTUBE_POLICY}\t{FIRST_VIDEO}".encode(),
+                f"cache\\nsecond\t{YOUTUBE_POLICY}\t{SECOND_VIDEO}".encode(),
                 crlf=True,
             )
         else:
@@ -92,67 +96,76 @@ class BackupSanitizerTests(unittest.TestCase):
             items = copy_block(
                 "ingest.source_items",
                 "note, source_policy_id, id",
-                f"youtube\\ttab\\nline\t{YOUTUBE_POLICY}\t{YOUTUBE_ITEM}".encode(),
-                f"rebound\\tfield\t{OTHER_POLICY}\t{REBOUND_ITEM}".encode(),
-                f"keep\\nfield\t{OTHER_POLICY}\t{OTHER_ITEM}".encode(),
+                f"youtube-source\\titem\t{YOUTUBE_POLICY}\t{YOUTUBE_ITEM}".encode(),
+                f"other-source\\nitem\t{OTHER_POLICY}\t{OTHER_ITEM}".encode(),
             )
-            discoveries = copy_block(
+            legacy = copy_block(
                 "ingest.source_discoveries",
                 "source_item_id, note",
-                f"{YOUTUBE_ITEM}\tquery\\tA".encode(),
-                f"{REBOUND_ITEM}\tquery\\nB".encode(),
+                f"{YOUTUBE_ITEM}\tlegacy-youtube".encode(),
+            )
+            cache = copy_block(
+                "ingest.youtube_discoveries",
+                "video_id, source_policy_id, title",
+                f"{FIRST_VIDEO}\t{YOUTUBE_POLICY}\tcache\\tfirst".encode(),
+                f"{SECOND_VIDEO}\t{YOUTUBE_POLICY}\tcache\\nsecond".encode(),
             )
         unrelated = copy_block(
             "public.unrelated",
             "id, note",
             b"1\tescaped\\ttab\\nnewline",
+            crlf=quoted,
         )
         sections = (
-            (discoveries, unrelated, policies, items)
-            if discoveries_first
-            else (
-                unrelated,
-                policies,
-                items,
-                discoveries,
-            )
+            (cache, legacy, unrelated, policies, items)
+            if cache_first
+            else (unrelated, policies, items, legacy, cache)
         )
-        return b"-- fixture start\n" + b"".join(sections) + b"-- fixture end\n"
+        newline = b"\r\n" if quoted else b"\n"
+        return newline.join((b"-- fixture start", b"".join(sections), b"-- fixture end", b""))
 
-    def assert_sanitized(self, result: subprocess.CompletedProcess[bytes]) -> None:
+    def assert_only_cache_rows_removed(
+        self, result: subprocess.CompletedProcess[bytes]
+    ) -> None:
         self.assertEqual(result.returncode, 0, result.stderr.decode())
         self.assertEqual(result.stderr, b"")
-        self.assertNotIn(YOUTUBE_ITEM.encode(), result.stdout)
-        self.assertNotIn(REBOUND_ITEM.encode(), result.stdout)
+        self.assertNotIn(FIRST_VIDEO.encode(), result.stdout)
+        self.assertNotIn(SECOND_VIDEO.encode(), result.stdout)
+        self.assertIn(YOUTUBE_ITEM.encode(), result.stdout)
         self.assertIn(OTHER_ITEM.encode(), result.stdout)
+        self.assertIn(b"legacy-youtube", result.stdout)
         self.assertIn(YOUTUBE_POLICY.encode(), result.stdout)
         self.assertIn(b"1\tescaped\\ttab\\nnewline", result.stdout)
-        discovery = result.stdout.split(b"COPY ingest.source_discoveries", 1)[-1]
-        if b"COPY ingest.source_discoveries" in result.stdout:
-            self.assertTrue(discovery.startswith(b" (source_item_id, note) FROM stdin;\n\\.\n"))
-
-    def test_filters_policy_rows_and_rebound_discovery_parents_in_any_table_order(
-        self,
-    ) -> None:
-        for discoveries_first in (False, True):
-            with self.subTest(discoveries_first=discoveries_first):
-                result = self.run_sanitizer(self.complete_dump(discoveries_first=discoveries_first))
-                self.assert_sanitized(result)
-
-    def test_supports_quoted_schema_table_columns_crlf_and_copy_escapes(self) -> None:
-        result = self.run_sanitizer(self.complete_dump(quoted=True, discoveries_first=True))
-        self.assertEqual(result.returncode, 0, result.stderr.decode())
-        self.assertNotIn(YOUTUBE_ITEM.encode(), result.stdout)
-        self.assertNotIn(REBOUND_ITEM.encode(), result.stdout)
-        self.assertIn(OTHER_ITEM.encode(), result.stdout)
         self.assertIn(
-            b'COPY "ingest"."source_discoveries" ("note", "source_item_id") FROM stdin;\r\n\\.\r\n',
+            b"COPY ingest.youtube_discoveries (video_id, source_policy_id, title) FROM stdin;\n\\.\n",
             result.stdout,
         )
 
-    def test_no_youtube_policy_and_no_discovery_table_is_byte_preserving(self) -> None:
+    def test_removes_all_cache_rows_only_in_any_table_order(self) -> None:
+        for cache_first in (False, True):
+            with self.subTest(cache_first=cache_first):
+                result = self.run_sanitizer(
+                    self.complete_dump(cache_first=cache_first)
+                )
+                self.assert_only_cache_rows_removed(result)
+
+    def test_supports_quoted_identifiers_crlf_and_copy_escapes(self) -> None:
+        result = self.run_sanitizer(
+            self.complete_dump(quoted=True, cache_first=True)
+        )
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertNotIn(FIRST_VIDEO.encode(), result.stdout)
+        self.assertNotIn(SECOND_VIDEO.encode(), result.stdout)
+        self.assertIn(YOUTUBE_ITEM.encode(), result.stdout)
+        self.assertIn(b"legacy-youtube", result.stdout)
+        self.assertIn(
+            b'COPY "ingest"."youtube_discoveries" ("title", "source_policy_id", "video_id") FROM stdin;\r\n\\.\r\n',
+            result.stdout,
+        )
+
+    def test_old_source_tables_are_byte_preserving_without_cache(self) -> None:
         dump = (
-            b"-- old schema\n"
+            b"-- schema without dedicated cache\n"
             + copy_block(
                 "ingest.source_policies",
                 "source_key, id",
@@ -161,47 +174,49 @@ class BackupSanitizerTests(unittest.TestCase):
             + copy_block(
                 "ingest.source_items",
                 "id, source_policy_id, note",
-                f"{OTHER_ITEM}\t{OTHER_POLICY}\tescaped\\tvalue".encode(),
+                f"{YOUTUBE_ITEM}\t{OTHER_POLICY}\tyoutube-source-item".encode(),
+            )
+            + copy_block(
+                "ingest.source_discoveries",
+                "source_item_id, note",
+                f"{YOUTUBE_ITEM}\tlegacy-youtube".encode(),
             )
         )
-        result = self.run_sanitizer(dump, source_discoveries="absent", policy_id=None)
+        result = self.run_sanitizer(
+            dump, youtube_discoveries="absent", policy_id=None
+        )
         self.assertEqual(result.returncode, 0, result.stderr.decode())
         self.assertEqual(result.stdout, dump)
 
-    def test_policy_without_discovery_table_still_filters_matching_source_items(
+    def test_policy_snapshot_missing_different_or_duplicate_fails_before_output(
         self,
     ) -> None:
-        dump = copy_block(
-            "ingest.source_policies",
-            "id, source_key",
-            f"{YOUTUBE_POLICY}\tyoutube_discovery".encode(),
-            f"{OTHER_POLICY}\tother".encode(),
-        ) + copy_block(
-            "ingest.source_items",
-            "source_policy_id, id",
-            f"{YOUTUBE_POLICY}\t{YOUTUBE_ITEM}".encode(),
-            f"{OTHER_POLICY}\t{OTHER_ITEM}".encode(),
-        )
-        result = self.run_sanitizer(dump, source_discoveries="absent")
-        self.assertEqual(result.returncode, 0, result.stderr.decode())
-        self.assertNotIn(YOUTUBE_ITEM.encode(), result.stdout)
-        self.assertIn(OTHER_ITEM.encode(), result.stdout)
+        base = self.complete_dump()
+        policy_row = f"{YOUTUBE_POLICY}\tyoutube_discovery\tpolicy\n".encode()
+        cases = {
+            "missing": base.replace(policy_row, b""),
+            "different": base.replace(
+                policy_row,
+                f"{WRONG_POLICY}\tyoutube_discovery\tpolicy\n".encode(),
+            ),
+            "duplicate": base.replace(policy_row, policy_row + policy_row),
+        }
+        for name, dump in cases.items():
+            with self.subTest(name=name):
+                result = self.run_sanitizer(dump)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
 
-    def test_preflight_policy_mismatch_and_ambiguity_fail_before_output(self) -> None:
+    def test_cache_policy_mismatch_and_malformed_id_fail_before_output(self) -> None:
         base = self.complete_dump()
         cases = {
-            "missing": base.replace(f"{YOUTUBE_POLICY}\tyoutube_discovery\tpolicy\n".encode(), b""),
             "different": base.replace(
-                YOUTUBE_POLICY.encode(),
-                b"33333333-3333-4333-8333-333333333333",
-                1,
+                f"{FIRST_VIDEO}\t{YOUTUBE_POLICY}".encode(),
+                f"{FIRST_VIDEO}\t{WRONG_POLICY}".encode(),
             ),
-            "duplicate": base.replace(
-                f"{YOUTUBE_POLICY}\tyoutube_discovery\tpolicy\n".encode(),
-                (
-                    f"{YOUTUBE_POLICY}\tyoutube_discovery\tpolicy\n"
-                    f"{YOUTUBE_POLICY}\tyoutube_discovery\tagain\n"
-                ).encode(),
+            "malformed": base.replace(
+                f"{FIRST_VIDEO}\t{YOUTUBE_POLICY}".encode(),
+                f"{FIRST_VIDEO}\tnot-a-uuid".encode(),
             ),
         }
         for name, dump in cases.items():
@@ -210,29 +225,55 @@ class BackupSanitizerTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(result.stdout, b"")
 
-    def test_policy_appearing_after_absent_preflight_fails_closed(self) -> None:
-        result = self.run_sanitizer(
-            self.complete_dump(), policy_id=None, source_discoveries="present"
+    def test_presence_races_and_malformed_preflight_id_fail_before_output(self) -> None:
+        missing_cache = self.complete_dump().replace(
+            copy_block(
+                "ingest.youtube_discoveries",
+                "video_id, source_policy_id, title",
+                f"{FIRST_VIDEO}\t{YOUTUBE_POLICY}\tcache\\tfirst".encode(),
+                f"{SECOND_VIDEO}\t{YOUTUBE_POLICY}\tcache\\nsecond".encode(),
+            ),
+            b"",
         )
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, b"")
+        cases = {
+            "missing-cache": self.run_sanitizer(missing_cache),
+            "unexpected-cache": self.run_sanitizer(
+                self.complete_dump(),
+                source_policies="absent",
+                youtube_discoveries="absent",
+                policy_id=None,
+            ),
+            "missing-policy-id": self.run_sanitizer(
+                self.complete_dump(), policy_id=None
+            ),
+            "malformed-policy-id": self.run_sanitizer(
+                self.complete_dump(), policy_id="not-a-uuid"
+            ),
+        }
+        for name, result in cases.items():
+            with self.subTest(name=name):
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
 
-    def test_malformed_sensitive_copy_rows_columns_and_terminators_fail_closed(
-        self,
-    ) -> None:
+    def test_malformed_control_copy_shapes_fail_before_output(self) -> None:
         base = self.complete_dump()
+        cache = copy_block(
+            "ingest.youtube_discoveries",
+            "video_id, source_policy_id, title",
+            f"{FIRST_VIDEO}\t{YOUTUBE_POLICY}\tcache\\tfirst".encode(),
+            f"{SECOND_VIDEO}\t{YOUTUBE_POLICY}\tcache\\nsecond".encode(),
+        )
         cases = {
             "wrong-field-count": base.replace(
-                f"{OTHER_POLICY}\tother\tother\n".encode(),
-                f"{OTHER_POLICY}\tother\n".encode(),
+                f"{FIRST_VIDEO}\t{YOUTUBE_POLICY}\tcache\\tfirst\n".encode(),
+                f"{FIRST_VIDEO}\t{YOUTUBE_POLICY}\n".encode(),
             ),
             "missing-policy-column": base.replace(
-                b"COPY ingest.source_items (note, source_policy_id, id) FROM stdin;",
-                b"COPY ingest.source_items (note, policy, id) FROM stdin;",
+                b"COPY ingest.youtube_discoveries (video_id, source_policy_id, title) FROM stdin;",
+                b"COPY ingest.youtube_discoveries (video_id, policy, title) FROM stdin;",
             ),
-            "unterminated": base.rsplit(b"\\.\n", 1)[0],
-            "duplicate-copy": base
-            + copy_block("ingest.source_discoveries", "source_item_id", REBOUND_ITEM.encode()),
+            "unterminated": base.replace(cache, cache.rsplit(b"\\.\n", 1)[0]),
+            "duplicate-copy": base + cache,
         }
         for name, dump in cases.items():
             with self.subTest(name=name):
@@ -240,42 +281,25 @@ class BackupSanitizerTests(unittest.TestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(result.stdout, b"")
 
-    def test_orphan_discovery_parent_and_target_insert_do_not_succeed(self) -> None:
-        orphan = self.complete_dump().replace(
-            REBOUND_ITEM.encode(),
-            b"dddddddd-dddd-4ddd-8ddd-dddddddddddd",
-            1,
+    def test_target_insert_is_rejected_but_legacy_data_is_not_targeted(self) -> None:
+        legacy_inserts = self.complete_dump() + (
+            b"INSERT INTO ingest.source_items (id) VALUES ('source-item-kept');\n"
+            b"INSERT INTO ingest.source_discoveries (source_item_id) "
+            b"VALUES ('legacy-discovery-kept');\n"
         )
-        result = self.run_sanitizer(orphan)
-        self.assertNotEqual(result.returncode, 0)
+        success = self.run_sanitizer(legacy_inserts)
+        self.assertEqual(success.returncode, 0, success.stderr.decode())
+        self.assertIn(b"source-item-kept", success.stdout)
+        self.assertIn(b"legacy-discovery-kept", success.stdout)
 
         target_insert = self.complete_dump() + (
-            b"INSERT INTO ingest.source_items (id) VALUES ('payload-must-not-leak');\n"
+            b"  insert into ingest.youtube_discoveries (video_id) "
+            b"VALUES ('payload-must-not-leak');\n"
         )
-        result = self.run_sanitizer(target_insert)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, b"")
-        self.assertNotIn(b"payload-must-not-leak", result.stderr)
-
-    def test_unexpected_discovery_table_and_noncanonical_ids_fail_closed(self) -> None:
-        result = self.run_sanitizer(self.complete_dump(), source_discoveries="absent")
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, b"")
-
-        inconsistent = self.run_sanitizer(
-            b"-- inconsistent preflight\n",
-            source_policies="absent",
-            source_items="present",
-            source_discoveries="absent",
-            policy_id=None,
-        )
-        self.assertNotEqual(inconsistent.returncode, 0)
-        self.assertEqual(inconsistent.stdout, b"")
-
-        malformed = self.complete_dump().replace(OTHER_ITEM.encode(), b"not-a-uuid", 1)
-        result = self.run_sanitizer(malformed)
-        self.assertNotEqual(result.returncode, 0)
-        self.assertEqual(result.stdout, b"")
+        failure = self.run_sanitizer(target_insert)
+        self.assertNotEqual(failure.returncode, 0)
+        self.assertEqual(failure.stdout, b"")
+        self.assertNotIn(b"payload-must-not-leak", failure.stderr)
 
     def test_temporary_spool_is_removed_after_success_and_scan_failure(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
@@ -283,16 +307,19 @@ class BackupSanitizerTests(unittest.TestCase):
             environment = os.environ.copy()
             environment["TMPDIR"] = str(spool_root)
 
-            success = self.run_sanitizer(self.complete_dump(), environment=environment)
+            success = self.run_sanitizer(
+                self.complete_dump(), environment=environment
+            )
             self.assertEqual(success.returncode, 0, success.stderr.decode())
             self.assertEqual(list(spool_root.iterdir()), [])
 
             malformed = self.complete_dump().replace(
-                b"COPY ingest.source_items (note, source_policy_id, id) FROM stdin;",
-                b"COPY ingest.source_items (note, wrong_column, id) FROM stdin;",
+                b"COPY ingest.youtube_discoveries (video_id, source_policy_id, title) FROM stdin;",
+                b"COPY ingest.youtube_discoveries (video_id, wrong_policy, title) FROM stdin;",
             )
             failure = self.run_sanitizer(malformed, environment=environment)
             self.assertNotEqual(failure.returncode, 0)
+            self.assertEqual(failure.stdout, b"")
             self.assertEqual(list(spool_root.iterdir()), [])
 
 

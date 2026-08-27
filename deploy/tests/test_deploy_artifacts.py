@@ -434,7 +434,14 @@ if [[ -n ${FAKE_DUMP_FILE:-} ]]; then
   /bin/cat "$FAKE_DUMP_FILE"
   exit 0
 fi
-printf '%s\n' '-- PostgreSQL database dump fixture' 'CREATE TABLE fixture (id integer);'
+printf '%s\n' \
+  '-- PostgreSQL database dump fixture' \
+  'CREATE TABLE fixture (id integer);' \
+  'COPY ingest.source_policies (id, source_key) FROM stdin;' \
+  $'11111111-1111-4111-8111-111111111111\tyoutube_discovery' \
+  '\\.' \
+  'COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;' \
+  '\\.'
 """,
         )
         write_executable(
@@ -451,7 +458,7 @@ if [[ ${FAKE_PSQL_FAIL:-0} == 1 ]]; then
 fi
 arguments="$*"
 if [[ $arguments == *to_regclass* ]]; then
-  printf '%b\n' "${FAKE_TABLE_STATE:-0\\t0\\t0}"
+  printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru}"
 elif [[ $arguments == *youtube_discovery* ]]; then
   if [[ -n ${FAKE_POLICY_OUTPUT:-} ]]; then
     printf '%s\n' "$FAKE_POLICY_OUTPUT"
@@ -471,8 +478,8 @@ fi
         timestamp: str,
         empty: bool = False,
         dump: bytes | None = None,
-        table_state: str = "0\t0\t0",
-        policy_output: str = "",
+        table_state: str = "rp\tru",
+        policy_output: str = "11111111-1111-4111-8111-111111111111",
         psql_fail: bool = False,
     ) -> subprocess.CompletedProcess[str]:
         environment = os.environ.copy()
@@ -586,12 +593,14 @@ fi
             self.assertFalse((backup_dir / ".last-successful-backup").exists())
             self.assertEqual(list(backup_dir.glob("pokecrack-*.sql.gz")), [])
 
-    def test_backup_filters_policy_rows_and_rebound_discovery_parents(self) -> None:
+    def test_backup_removes_only_dedicated_youtube_discovery_rows(self) -> None:
         youtube_policy = "11111111-1111-4111-8111-111111111111"
         other_policy = "22222222-2222-4222-8222-222222222222"
         youtube_item = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
         rebound_item = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
         other_item = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+        first_video = "AbCdEfGhI_1"
+        second_video = "ZyXwVuTsR-2"
         dump = f"""-- PostgreSQL database dump fixture
 COPY ingest.source_policies (source_key, id) FROM stdin;
 youtube_discovery\t{youtube_policy}
@@ -606,6 +615,10 @@ COPY ingest.source_discoveries (note, source_item_id) FROM stdin;
 query-a\t{youtube_item}
 query-b\t{rebound_item}
 \\.
+COPY ingest.youtube_discoveries (title, source_policy_id, video_id) FROM stdin;
+cache-first\t{youtube_policy}\t{first_video}
+cache-second\t{youtube_policy}\t{second_video}
+\\.
 """.encode()
 
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
@@ -617,19 +630,23 @@ query-b\t{rebound_item}
                 backup_dir=backup_dir,
                 timestamp="20260729T020000Z",
                 dump=dump,
-                table_state="1\t1\t1",
-                policy_output=youtube_policy,
             )
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertNotIn("very-secret", result.stdout + result.stderr)
             backup = backup_dir / "pokecrack-20260729T020000Z.sql.gz"
             with gzip.open(backup, "rb") as stream:
                 sanitized = stream.read()
-            self.assertNotIn(youtube_item.encode(), sanitized)
-            self.assertNotIn(rebound_item.encode(), sanitized)
+            self.assertNotIn(first_video.encode(), sanitized)
+            self.assertNotIn(second_video.encode(), sanitized)
+            self.assertIn(youtube_item.encode(), sanitized)
+            self.assertIn(rebound_item.encode(), sanitized)
             self.assertIn(other_item.encode(), sanitized)
             self.assertIn(
-                b"COPY ingest.source_discoveries (note, source_item_id) FROM stdin;\n\\.\n",
+                b"COPY ingest.source_discoveries (note, source_item_id) FROM stdin;\nquery-a\t",
+                sanitized,
+            )
+            self.assertIn(
+                b"COPY ingest.youtube_discoveries (title, source_policy_id, video_id) FROM stdin;\n\\.\n",
                 sanitized,
             )
 
@@ -667,7 +684,6 @@ query-b\t{rebound_item}
                     fake_bin=fake_bin,
                     backup_dir=backup_dir,
                     timestamp="20260729T020000Z",
-                    table_state="1\t1\t1",
                     policy_output=policy_output,
                 )
                 self.assertNotEqual(result.returncode, 0)
@@ -675,13 +691,16 @@ query-b\t{rebound_item}
                 self.assertEqual(list(backup_dir.iterdir()), [])
 
     def test_malformed_or_inconsistent_table_preflight_is_atomic(self) -> None:
-        policy = "11111111-1111-4111-8111-111111111111"
         cases = {
-            "malformed": ("unexpected", ""),
-            "items-without-policies": ("0\t1\t0", ""),
-            "discoveries-without-items": ("1\t0\t1", policy),
+            "malformed": "unexpected",
+            "missing-policies": "0\tru",
+            "unlogged-policies": "ru\tru",
+            "missing-youtube-table": "rp\t0",
+            "logged-youtube-table": "rp\trp",
+            "temporary-youtube-table": "rp\trt",
+            "youtube-view": "rp\tvp",
         }
-        for name, (table_state, policy_output) in cases.items():
+        for name, table_state in cases.items():
             with self.subTest(name=name), tempfile.TemporaryDirectory(
                 dir=DEPLOY_ROOT / "tests"
             ) as temporary:
@@ -693,39 +712,59 @@ query-b\t{rebound_item}
                     backup_dir=backup_dir,
                     timestamp="20260729T020000Z",
                     table_state=table_state,
-                    policy_output=policy_output,
                 )
                 self.assertNotEqual(result.returncode, 0)
                 self.assertNotIn("very-secret", result.stdout + result.stderr)
                 self.assertEqual(list(backup_dir.iterdir()), [])
 
-    def test_sanitizer_failure_is_atomic_and_does_not_advance_marker(self) -> None:
+    def test_dump_snapshot_mismatches_are_atomic_and_do_not_advance_marker(
+        self,
+    ) -> None:
         policy = "11111111-1111-4111-8111-111111111111"
-        malformed_dump = f"""COPY ingest.source_policies (id, source_key) FROM stdin;
-{policy}\tyoutube_discovery
-\\.
-COPY ingest.source_items (id, wrong_policy_column) FROM stdin;
-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa\t{policy}
-\\.
-COPY ingest.source_discoveries (source_item_id) FROM stdin;
-aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa
+        wrong_policy = "33333333-3333-4333-8333-333333333333"
+        policy_row = f"{policy}\tyoutube_discovery\n".encode()
+        cache_block = f"""COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
+AbCdEfGhI_1\t{policy}
 \\.
 """.encode()
-        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
-            base = Path(temporary)
-            fake_bin = self.make_fake_commands(base)
-            backup_dir = base / "backups"
-            result = self.run_backup(
-                fake_bin=fake_bin,
-                backup_dir=backup_dir,
-                timestamp="20260729T020000Z",
-                dump=malformed_dump,
-                table_state="1\t1\t1",
-                policy_output=policy,
-            )
-            self.assertNotEqual(result.returncode, 0)
-            self.assertNotIn("very-secret", result.stdout + result.stderr)
-            self.assertEqual(list(backup_dir.iterdir()), [])
+        valid_dump = (
+            f"""COPY ingest.source_policies (id, source_key) FROM stdin;
+{policy}\tyoutube_discovery
+\\.
+""".encode()
+            + cache_block
+        )
+        cases = {
+            "missing-policy-row": valid_dump.replace(policy_row, b""),
+            "duplicate-policy-row": valid_dump.replace(
+                policy_row, policy_row + policy_row
+            ),
+            "missing-cache-copy": valid_dump.replace(cache_block, b""),
+            "malformed-cache-copy": valid_dump.replace(
+                b"video_id, source_policy_id",
+                b"video_id, wrong_policy_column",
+            ),
+            "cache-policy-mismatch": valid_dump.replace(
+                f"AbCdEfGhI_1\t{policy}".encode(),
+                f"AbCdEfGhI_1\t{wrong_policy}".encode(),
+            ),
+        }
+        for name, dump in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory(
+                dir=DEPLOY_ROOT / "tests"
+            ) as temporary:
+                base = Path(temporary)
+                fake_bin = self.make_fake_commands(base)
+                backup_dir = base / "backups"
+                result = self.run_backup(
+                    fake_bin=fake_bin,
+                    backup_dir=backup_dir,
+                    timestamp="20260729T020000Z",
+                    dump=dump,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("very-secret", result.stdout + result.stderr)
+                self.assertEqual(list(backup_dir.iterdir()), [])
 
 
 class DeployAndRollbackScriptTests(unittest.TestCase):
