@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import html
 import json
 import re
@@ -9,7 +10,6 @@ import unicodedata
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
-from time import monotonic
 from types import MappingProxyType
 from typing import Any, Protocol
 
@@ -90,15 +90,13 @@ class HTTPXYouTubeTransport:
         self,
         *,
         max_response_bytes: int = YOUTUBE_MAX_RESPONSE_BYTES,
-        monotonic_clock: Callable[[], float] = monotonic,
-        http_transport: httpx.BaseTransport | None = None,
+        http_transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         if not 1 <= max_response_bytes <= YOUTUBE_MAX_RESPONSE_BYTES:
             raise ValueError(
                 f"max_response_bytes must be between 1 and {YOUTUBE_MAX_RESPONSE_BYTES}"
             )
         self.max_response_bytes = max_response_bytes
-        self._monotonic = monotonic_clock
         self._http_transport = http_transport
 
     def get(
@@ -113,7 +111,45 @@ class HTTPXYouTubeTransport:
             raise ValueError("YouTube transport accepts only the fixed search endpoint")
         if timeout_seconds != YOUTUBE_TIMEOUT_SECONDS:
             raise ValueError("YouTube transport requires the fixed 30-second timeout")
-        deadline = self._monotonic() + timeout_seconds
+
+        # The live runtime executes synchronous job handlers in a worker thread. An
+        # async client gives that thread one cancellable wall-clock deadline without
+        # spawning a request thread that could outlive the job. Nested event loops
+        # cannot provide that guarantee, so reject them before revealing the key or
+        # opening a connection.
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            pass
+        else:
+            raise YouTubeError("absolute_deadline_unavailable", retryable=False)
+
+        try:
+            return asyncio.run(
+                self._get_with_absolute_deadline(
+                    url,
+                    params=params,
+                    api_key=api_key,
+                    timeout_seconds=timeout_seconds,
+                )
+            )
+        except TimeoutError:
+            raise YouTubeError("request_timeout", retryable=True) from None
+        except YouTubeError:
+            raise
+        except httpx.TimeoutException:
+            raise YouTubeError("request_timeout", retryable=True) from None
+        except httpx.HTTPError:
+            raise YouTubeError("network_error", retryable=True) from None
+
+    async def _get_with_absolute_deadline(
+        self,
+        url: str,
+        *,
+        params: dict[str, str],
+        api_key: SecretStr,
+        timeout_seconds: float,
+    ) -> APIResponse:
         timeout = httpx.Timeout(
             timeout=min(timeout_seconds, 10.0),
             connect=min(timeout_seconds, 10.0),
@@ -121,8 +157,8 @@ class HTTPXYouTubeTransport:
             write=min(timeout_seconds, 10.0),
             pool=min(timeout_seconds, 10.0),
         )
-        try:
-            with httpx.Client(
+        async with asyncio.timeout(timeout_seconds):
+            async with httpx.AsyncClient(
                 follow_redirects=False,
                 trust_env=False,
                 timeout=timeout,
@@ -132,13 +168,11 @@ class HTTPXYouTubeTransport:
                     "Accept-Encoding": "identity",
                 },
             ) as client:
-                with client.stream(
+                async with client.stream(
                     "GET",
                     url,
                     params={**params, "key": api_key.get_secret_value()},
                 ) as response:
-                    if self._monotonic() > deadline:
-                        raise YouTubeError("request_timeout", retryable=True)
                     declared_length = response.headers.get("content-length")
                     content_encoding = response.headers.get("content-encoding")
                     if content_encoding is not None and content_encoding.strip().casefold() not in {
@@ -156,21 +190,11 @@ class HTTPXYouTubeTransport:
                         if parsed_length > self.max_response_bytes:
                             raise YouTubeInvalidResponse("response_too_large")
                     body = bytearray()
-                    for chunk in response.iter_raw():
-                        if self._monotonic() > deadline:
-                            raise YouTubeError("request_timeout", retryable=True)
+                    async for chunk in response.aiter_raw():
                         body.extend(chunk)
                         if len(body) > self.max_response_bytes:
                             raise YouTubeInvalidResponse("response_too_large")
-                    if self._monotonic() > deadline:
-                        raise YouTubeError("request_timeout", retryable=True)
                     return APIResponse(response.status_code, dict(response.headers), bytes(body))
-        except YouTubeError:
-            raise
-        except httpx.TimeoutException:
-            raise YouTubeError("request_timeout", retryable=True) from None
-        except httpx.HTTPError:
-            raise YouTubeError("network_error", retryable=True) from None
 
 
 def _normalize_text(value: str, *, max_chars: int) -> str | None:

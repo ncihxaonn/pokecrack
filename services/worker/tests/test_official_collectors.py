@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import asyncio
 import gzip
 import json
+import signal
+import time
+from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from pathlib import Path
@@ -10,7 +14,6 @@ import httpx
 import pytest
 from pydantic import SecretStr
 
-import pokecrack_worker.collectors.official_api.youtube as youtube_module
 from pokecrack_worker.collectors.official_api.tcgdex import (
     TCGDEX_SETS_URL,
     TCGDEX_TIMEOUT_SECONDS,
@@ -255,15 +258,37 @@ def test_youtube_http_transport_rejects_encoded_content_and_unapproved_endpoints
         )
 
 
-def test_youtube_http_transport_has_an_absolute_deadline() -> None:
-    moments = iter((0.0, 0.0, 31.0))
-    transport = HTTPXYouTubeTransport(
-        monotonic_clock=lambda: next(moments),
-        http_transport=httpx.MockTransport(
-            lambda _request: httpx.Response(200, stream=httpx.ByteStream(b"{}"))
-        ),
-    )
+def test_youtube_http_transport_interrupts_a_blocked_request_at_one_absolute_deadline(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    requested_deadlines: list[float | None] = []
+    real_timeout = asyncio.timeout
 
+    def accelerated_timeout(delay: float | None) -> asyncio.Timeout:
+        requested_deadlines.append(delay)
+        return real_timeout(0.02)
+
+    class BlockingTransport(httpx.AsyncBaseTransport):
+        cancelled = False
+        closed = False
+
+        async def handle_async_request(self, request: httpx.Request) -> httpx.Response:
+            assert request.url.host == "youtube.googleapis.com"
+            try:
+                await asyncio.Event().wait()
+            except asyncio.CancelledError:
+                self.cancelled = True
+                raise
+            raise AssertionError("the blocked request must be cancelled")
+
+        async def aclose(self) -> None:
+            self.closed = True
+
+    blocking_transport = BlockingTransport()
+    monkeypatch.setattr(asyncio, "timeout", accelerated_timeout)
+    transport = HTTPXYouTubeTransport(http_transport=blocking_transport)
+
+    started = time.monotonic()
     with pytest.raises(YouTubeError) as raised:
         transport.get(
             YOUTUBE_SEARCH_URL,
@@ -272,8 +297,85 @@ def test_youtube_http_transport_has_an_absolute_deadline() -> None:
             timeout_seconds=30,
         )
 
+    assert time.monotonic() - started < 0.5
     assert raised.value.code == "request_timeout"
     assert raised.value.retryable is True
+    assert requested_deadlines == [30]
+    assert blocking_transport.cancelled is True
+    assert blocking_transport.closed is True
+    assert "fixture-key" not in repr(raised.value)
+
+
+@pytest.mark.skipif(
+    not all(hasattr(signal, name) for name in ("SIGALRM", "ITIMER_REAL", "getitimer", "setitimer")),
+    reason="POSIX real-time timers are unavailable",
+)
+def test_youtube_http_transport_preserves_existing_process_timer_and_handler() -> None:
+    alarm = signal.SIGALRM
+    timer = signal.ITIMER_REAL
+    original_handler = signal.getsignal(alarm)
+    original_timer = signal.getitimer(timer)
+    test_started = time.monotonic()
+    observed_signals: list[int] = []
+
+    def existing_handler(signum: int, _frame: object) -> None:
+        observed_signals.append(signum)
+
+    try:
+        signal.signal(alarm, existing_handler)
+        signal.setitimer(timer, 60.0, 10.0)
+        response = HTTPXYouTubeTransport(
+            http_transport=httpx.MockTransport(
+                lambda _request: httpx.Response(200, stream=httpx.ByteStream(b"{}"))
+            )
+        ).get(
+            YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-key"),
+            timeout_seconds=30,
+        )
+
+        remaining, interval = signal.getitimer(timer)
+        assert response.status_code == 200
+        assert signal.getsignal(alarm) is existing_handler
+        assert 58.0 < remaining <= 60.0
+        assert interval == 10.0
+        assert observed_signals == []
+    finally:
+        signal.setitimer(timer, 0.0)
+        signal.signal(alarm, original_handler)
+        elapsed = time.monotonic() - test_started
+        restored_remaining = max(0.0, original_timer[0] - elapsed)
+        signal.setitimer(timer, restored_remaining, original_timer[1])
+
+
+def test_youtube_http_transport_fails_closed_inside_a_running_event_loop() -> None:
+    class CountingTransport(httpx.AsyncBaseTransport):
+        calls = 0
+
+        async def handle_async_request(self, _request: httpx.Request) -> httpx.Response:
+            self.calls += 1
+            return httpx.Response(200, stream=httpx.ByteStream(b"{}"))
+
+    counting_transport = CountingTransport()
+    transport = HTTPXYouTubeTransport(http_transport=counting_transport)
+
+    async def invoke_from_unsupported_context() -> YouTubeError:
+        with pytest.raises(YouTubeError) as raised:
+            transport.get(
+                YOUTUBE_SEARCH_URL,
+                params={},
+                api_key=SecretStr("fixture-key"),
+                timeout_seconds=30,
+            )
+        return raised.value
+
+    error = asyncio.run(invoke_from_unsupported_context())
+
+    assert error.code == "absolute_deadline_unavailable"
+    assert error.retryable is False
+    assert counting_transport.calls == 0
+    assert "fixture-key" not in repr(error)
 
 
 def test_youtube_http_transport_disables_proxy_env_and_redirect_following(
@@ -285,33 +387,36 @@ def test_youtube_http_transport_disables_proxy_env_and_redirect_following(
         status_code = 302
         headers: dict[str, str] = {}
 
-        def __enter__(self) -> Response:
+        async def __aenter__(self) -> Response:
             return self
 
-        def __exit__(self, *args: object) -> None:
+        async def __aexit__(self, *args: object) -> None:
             return None
 
-        def iter_raw(self) -> tuple[bytes, ...]:
-            return ()
+        async def aiter_raw(self) -> AsyncIterator[bytes]:
+            if False:
+                yield b""
 
     class Client:
         def __init__(self, **kwargs: object) -> None:
             captured.update(kwargs)
 
-        def __enter__(self) -> Client:
+        async def __aenter__(self) -> Client:
             return self
 
-        def __exit__(self, *args: object) -> None:
+        async def __aexit__(self, *args: object) -> None:
             return None
 
         def stream(self, method: str, url: str, **kwargs: object) -> Response:
             captured["method"] = method
             captured["url"] = url
-            params = dict(kwargs["params"])  # type: ignore[arg-type]
+            raw_params = kwargs["params"]
+            assert isinstance(raw_params, dict)
+            params = dict(raw_params)
             captured["param_keys"] = set(params)
             return Response()
 
-    monkeypatch.setattr(youtube_module.httpx, "Client", Client)
+    monkeypatch.setattr(httpx, "AsyncClient", Client)
     response = HTTPXYouTubeTransport().get(
         YOUTUBE_SEARCH_URL,
         params={"part": "snippet"},
@@ -326,5 +431,11 @@ def test_youtube_http_transport_disables_proxy_env_and_redirect_following(
         "Accept": "application/json",
         "Accept-Encoding": "identity",
     }
+    timeout = captured["timeout"]
+    assert isinstance(timeout, httpx.Timeout)
+    assert timeout.connect == 10.0
+    assert timeout.read == 10.0
+    assert timeout.write == 10.0
+    assert timeout.pool == 10.0
     assert captured["param_keys"] == {"part", "key"}
     assert "fixture-key" not in repr(captured)
