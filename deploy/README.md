@@ -85,7 +85,7 @@ The container automatically starts the allowlisted profile selected by `CHROMIUM
 
 ## Operations scripts
 
-- `deploy/scripts/backup.sh`: `pg_dump` -> gzip, non-empty validation, UTC filename, atomic last-success marker, newest 7 daily plus 4 weekly representatives.
+- `deploy/scripts/backup.sh`: `psql` retention preflight -> one-snapshot plain `pg_dump` -> two-pass fail-closed YouTube row sanitizer -> gzip, non-empty validation, UTC filename, atomic last-success marker, newest 7 daily plus 4 weekly representatives.
 - `deploy/scripts/cleanup.sh`: removes only stopped project containers and unused labeled images; never stops services or prunes volumes/profiles/backups/extensions.
 - `deploy/scripts/deploy.sh`: exact-SHA build/start/health gate.
 - `deploy/scripts/rollback.sh`: explicit-SHA deployment.

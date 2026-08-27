@@ -17,7 +17,7 @@ die() {
   exit 1
 }
 
-for command in pg_dump gzip python3 date mktemp stat; do
+for command in pg_dump psql gzip python3 date mktemp stat; do
   command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
 done
 [[ $BACKUP_DIR == /* ]] || die "BACKUP_DIR must be an absolute path"
@@ -43,6 +43,68 @@ install -d -m 0700 "$BACKUP_DIR"
 [[ -d $BACKUP_DIR && ! -L $BACKUP_DIR ]] || die "backup directory is not a real directory"
 chmod 0700 "$BACKUP_DIR"
 
+# Resolve the exact retention boundary without placing the database URL in
+# argv or output. The sanitizer rechecks this mapping inside the dump, so a
+# schema/policy race fails rather than retaining a newly introduced data set.
+table_state_query="select concat_ws(E'\\t',
+  case when to_regclass('ingest.source_policies') is null then '0' else '1' end,
+  case when to_regclass('ingest.source_items') is null then '0' else '1' end,
+  case when to_regclass('ingest.source_discoveries') is null then '0' else '1' end
+);"
+if ! table_state=$(PGDATABASE=$database_url psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$table_state_query" 2>/dev/null); then
+  unset database_url
+  die "database retention preflight failed"
+fi
+
+case "$table_state" in
+  $'0\t0\t0') source_policies_presence=absent; source_items_presence=absent; source_discoveries_presence=absent ;;
+  $'0\t0\t1') source_policies_presence=absent; source_items_presence=absent; source_discoveries_presence=present ;;
+  $'0\t1\t0') source_policies_presence=absent; source_items_presence=present; source_discoveries_presence=absent ;;
+  $'0\t1\t1') source_policies_presence=absent; source_items_presence=present; source_discoveries_presence=present ;;
+  $'1\t0\t0') source_policies_presence=present; source_items_presence=absent; source_discoveries_presence=absent ;;
+  $'1\t0\t1') source_policies_presence=present; source_items_presence=absent; source_discoveries_presence=present ;;
+  $'1\t1\t0') source_policies_presence=present; source_items_presence=present; source_discoveries_presence=absent ;;
+  $'1\t1\t1') source_policies_presence=present; source_items_presence=present; source_discoveries_presence=present ;;
+  *)
+    unset database_url
+    die "database retention preflight returned malformed table state"
+    ;;
+esac
+
+youtube_policy_id=''
+if [[ $source_policies_presence == present ]]; then
+  policy_query="select id::text from ingest.source_policies where source_key = 'youtube_discovery' order by id::text;"
+  if ! youtube_policy_id=$(PGDATABASE=$database_url psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$policy_query" 2>/dev/null); then
+    unset database_url
+    die "database retention policy lookup failed"
+  fi
+  if [[ $youtube_policy_id == *$'\n'* ]]; then
+    unset database_url
+    die "database retention policy lookup was ambiguous"
+  fi
+  if [[ -n $youtube_policy_id && ! $youtube_policy_id =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+    unset database_url
+    die "database retention policy id was malformed"
+  fi
+fi
+
+if [[ $source_discoveries_presence == present && -z $youtube_policy_id ]]; then
+  unset database_url
+  die "YouTube discovery table exists without one exact retention policy"
+fi
+if [[ $source_items_presence == present && $source_policies_presence != present ]]; then
+  unset database_url
+  die "source_items exists without source_policies"
+fi
+if [[ -n $youtube_policy_id && $source_items_presence != present ]]; then
+  unset database_url
+  die "YouTube retention policy exists without source_items"
+fi
+if [[ $source_discoveries_presence == present && $source_items_presence != present ]]; then
+  unset database_url
+  die "YouTube discovery table exists without source_items"
+fi
+
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
 [[ $timestamp =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || die "date returned an invalid UTC timestamp"
 filename="pokecrack-${timestamp}.sql.gz"
@@ -62,12 +124,24 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 
 # PGDATABASE keeps the credential out of process arguments and command output.
-PGDATABASE=$database_url pg_dump \
+sanitizer_arguments=(
+  --source-policies "$source_policies_presence"
+  --source-items "$source_items_presence"
+  --source-discoveries "$source_discoveries_presence"
+)
+if [[ -n $youtube_policy_id ]]; then
+  sanitizer_arguments+=(--youtube-policy-id "$youtube_policy_id")
+fi
+if ! PGDATABASE=$database_url pg_dump \
   --format=plain \
   --no-owner \
   --no-privileges \
   --encoding=UTF8 \
-  | gzip -9 > "$temporary"
+  | python3 "$SCRIPT_DIR/../lib/sanitize_plain_backup.py" "${sanitizer_arguments[@]}" \
+  | gzip -9 > "$temporary"; then
+  unset database_url
+  die "database dump retention sanitization failed"
+fi
 unset database_url
 
 [[ -s $temporary ]] || die "compressed backup is empty"

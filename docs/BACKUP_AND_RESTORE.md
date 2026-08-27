@@ -2,7 +2,9 @@
 
 ## Database backup
 
-`deploy/scripts/backup.sh` requires `pg_dump`, `gzip`, Python and either `SUPABASE_DB_URL_FILE` (preferred) or `SUPABASE_DB_URL`. It keeps the URL out of process arguments/output, writes with umask `077`, creates `pokecrack-YYYYMMDDTHHMMSSZ.sql.gz`, validates compressed and non-empty uncompressed content, moves atomically, then writes `.last-successful-backup`.
+`deploy/scripts/backup.sh` requires `pg_dump`, `psql`, `gzip`, Python and either `SUPABASE_DB_URL_FILE` (preferred) or `SUPABASE_DB_URL`. It keeps the URL out of process arguments/output, writes with umask `077`, creates `pokecrack-YYYYMMDDTHHMMSSZ.sql.gz`, validates compressed and non-empty uncompressed content, moves atomically, then writes `.last-successful-backup`.
+
+Before compression, the plain dump passes through a fail-closed retention sanitizer. A first pass over one internally consistent `pg_dump` snapshot derives the exact `youtube_discovery` policy and every `ingest.source_discoveries.source_item_id`; a second pass removes every discovery row and every `ingest.source_items` row selected either by that policy or by discovery parent identity. This also removes a discovery parent that was later rebound to another policy. The raw snapshot is spooled only to an unlinked mode-`0600` temporary file. `psql` independently validates the live table/policy state without putting the database URL in arguments; the dump mapping remains authoritative and any mismatch, missing/ambiguous policy, unsupported COPY shape, orphan discovery, command failure or malformed row aborts the backup without advancing the success marker. Consequently, managed weekly backups cannot extend retention of this non-authorized YouTube API metadata beyond its 30-day database lifecycle.
 
 Defaults retain the newest backup on each of the newest 7 UTC dates plus the newest backup in each of the newest 4 ISO weeks (union). Unknown files are untouched and every managed deletion is logged. Schedule from a restricted systemd timer/cron environment, for example:
 
