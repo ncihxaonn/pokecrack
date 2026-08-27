@@ -120,14 +120,14 @@ export function RegionHeatmap({ regions }: { regions: readonly RegionMetric[] })
   const selectedMetricLabel = metric === "rate" ? "Observed rate" : "Sample volume";
 
   return (
-    <section className={styles.atlas} aria-labelledby="coverage-title">
+    <section className={`${styles.atlas} dashboard-feature`} aria-labelledby="coverage-title">
       <header className={styles.header}>
         <div>
           <span className={styles.kicker}>Australia · state-level published coverage</span>
           <h2 id="coverage-title">Observed regional pull map</h2>
           <p>Compare published regions in this snapshot. State fill shows the relative selected metric; labels show exact aggregate values.</p>
         </div>
-        <div className={styles.toggle} role="group" aria-label="Heat map metric">
+        <div className={styles.toggle} role="group" aria-label="Heat map metric" data-selected={metric}>
           {metricOptions.map((option) => (
             <button
               type="button"
@@ -147,7 +147,7 @@ export function RegionHeatmap({ regions }: { regions: readonly RegionMetric[] })
 
           <figcaption className={styles.caption}>
             {ticks ? (
-              <div className={styles.legend} role="img" aria-label={`${selectedMetricLabel}, relative scale within this snapshot: low ${ticks[0]}, midpoint ${ticks[1]}, high ${ticks[2]}`}>
+              <div key={metric} className={styles.legend} role="img" aria-label={`${selectedMetricLabel}, relative scale within this snapshot: low ${ticks[0]}, midpoint ${ticks[1]}, high ${ticks[2]}`}>
                 <span className={styles.legendScale} aria-hidden="true" />
                 <span className={styles.legendTicks} aria-hidden="true"><span>{ticks[0]}</span><span>{ticks[1]}</span><span>{ticks[2]}</span></span>
               </div>
@@ -165,7 +165,7 @@ export function RegionHeatmap({ regions }: { regions: readonly RegionMetric[] })
           {rows.length === 0 ? (
             <p className={styles.empty}>No region aggregates are published in this snapshot.</p>
           ) : (
-            <ol className={styles.regionList}>
+            <ol key={metric} className={styles.regionList}>
               {rows.map((row, index) => (
                 <li key={row.region.slug}>
                   <Link

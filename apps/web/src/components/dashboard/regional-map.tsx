@@ -201,7 +201,7 @@ export function RegionalMap({
 
   return (
     <div className={styles.shell}>
-      <div className={styles.viewport} role="img" aria-label={mapDescription} data-testid="australia-region-map">
+      <div className={styles.viewport} role="img" aria-label={mapDescription} data-status={status} data-testid="australia-region-map">
         <div ref={containerRef} className={styles.map} aria-hidden="true" />
         <span className={styles.coverageBadge} aria-hidden="true">{mappedCount} of 8 with data</span>
         {status === "loading" ? <span className={styles.loading} aria-hidden="true">Rendering regional map…</span> : null}

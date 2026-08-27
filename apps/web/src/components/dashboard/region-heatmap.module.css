@@ -1,7 +1,7 @@
 .atlas {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 22px;
+  border-radius: 24px;
   background: var(--surface);
   box-shadow: var(--shadow-card);
 }
@@ -26,8 +26,11 @@
 }
 
 .toggle {
-  display: inline-flex;
-  gap: .25rem;
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 242px;
+  overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 999px;
   padding: .25rem;
@@ -35,7 +38,26 @@
   white-space: nowrap;
 }
 
+.toggle::before {
+  position: absolute;
+  z-index: 0;
+  top: .25rem;
+  bottom: .25rem;
+  left: .25rem;
+  width: calc((100% - .5rem) / 2);
+  border-radius: 999px;
+  background: var(--ink);
+  box-shadow: 0 3px 10px rgba(19, 23, 32, .14);
+  content: "";
+  transform: translateX(0);
+  transition: transform 260ms var(--ease-in-out);
+}
+
+.toggle[data-selected="packs"]::before { transform: translateX(100%); }
+
 .toggle button {
+  position: relative;
+  z-index: 1;
   cursor: pointer;
   min-height: 44px;
   border: 0;
@@ -44,16 +66,13 @@
   background: transparent;
   color: var(--muted);
   font: 700 12px/1 var(--sans);
-  transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease;
+  transition: color 180ms var(--ease-out), transform 140ms var(--ease-out);
   touch-action: manipulation;
 }
-.toggle button:hover { color: var(--ink); }
 .toggle button:active { transform: scale(.98); }
 
 .toggle button[aria-pressed="true"] {
-  background: var(--ink);
   color: #fff;
-  box-shadow: 0 3px 10px rgba(19, 23, 32, .14);
 }
 
 .body {
@@ -88,8 +107,15 @@
 
 .caption p { max-width: 600px; color: var(--muted); font-size: .8rem; }
 .caption a { color: var(--ink); text-decoration: underline; text-decoration-color: #c1c7d0; text-underline-offset: 2px; }
-.caption a:hover { color: var(--blue); text-decoration-color: currentColor; }
-.legend { display: grid; width: 190px; flex: 0 0 auto; gap: .35rem; color: var(--muted); font: 650 12px var(--mono); }
+.legend {
+  display: grid;
+  width: 190px;
+  flex: 0 0 auto;
+  gap: .35rem;
+  color: var(--muted);
+  font: 650 12px var(--mono);
+  animation: data-refresh 220ms var(--ease-out) both;
+}
 .legendScale { height: 8px; border-radius: 99px; background: linear-gradient(90deg, var(--blue), var(--violet), var(--pink)); }
 .legendTicks { display: flex; justify-content: space-between; gap: .35rem; }
 .noValues { flex: 0 0 auto; border: 1px solid var(--line); border-radius: 999px; padding: .4rem .6rem; color: var(--muted); font: 700 12px var(--sans); }
@@ -109,7 +135,10 @@
 .railHeading strong { font: 750 1.25rem var(--display); }
 .railHeading small { border: 1px solid var(--line); border-radius: 999px; padding: .3rem .5rem; color: var(--muted); font: 700 12px var(--mono); text-transform: uppercase; }
 
-.regionList { list-style: none; }
+.regionList {
+  list-style: none;
+  animation: data-refresh 220ms var(--ease-out) both;
+}
 .regionList li { border-top: 1px solid var(--line); }
 .regionList a {
   display: grid;
@@ -119,9 +148,8 @@
   min-height: 68px;
   padding: .65rem .25rem;
   border-radius: 10px;
-  transition: background-color 180ms ease, transform 180ms ease;
+  transition: background-color 180ms var(--ease-out), transform 180ms var(--ease-out);
 }
-.regionList a:hover { background: var(--surface-hover); color: var(--ink); transform: translateX(2px); }
 .swatch { width: 8px; height: 32px; border-radius: 99px; background: currentColor; }
 .rank { color: var(--faint); font: 650 12px var(--mono); }
 .regionName { display: flex; min-width: 0; flex-direction: column; }
@@ -144,8 +172,19 @@
   font-weight: 750;
   touch-action: manipulation;
 }
-.allRegions:hover { color: var(--blue); }
 .allRegions:active { transform: translateY(1px); }
+
+@keyframes data-refresh {
+  from { opacity: .45; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .toggle button:not([aria-pressed="true"]):hover { color: var(--ink); }
+  .caption a:hover { color: var(--blue); text-decoration-color: currentColor; }
+  .regionList a:hover { background: var(--surface-hover); color: var(--ink); transform: translateX(2px); }
+  .allRegions:hover { color: var(--blue); }
+}
 
 @media (max-width: 900px) {
   .header { align-items: flex-start; flex-direction: column; gap: 1rem; }
@@ -158,7 +197,7 @@
 @media (max-width: 600px) {
   .atlas { border-radius: 18px; }
   .header { padding: 1.1rem; }
-  .toggle { width: 100%; }
+  .toggle { width: 100%; min-width: 0; }
   .toggle button { flex: 1; }
   .mapFigure { padding: .45rem .7rem .85rem; }
   .caption { flex-direction: column; gap: .65rem; padding-inline: .25rem; }
@@ -167,5 +206,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .toggle button, .regionList a { transition: none; }
+  .toggle::before, .toggle button, .regionList a { transition: none; }
+  .legend, .regionList { animation: none; }
 }

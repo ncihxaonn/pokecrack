@@ -19,6 +19,7 @@ describe("RegionHeatmap", () => {
     expect(screen.getByTestId("australia-region-map")).toBeVisible();
     expect(screen.queryByTestId("dotted-world-map")).not.toBeInTheDocument();
     expect(screen.getByText(/current published coverage is Australia-only/i)).toBeVisible();
+    expect(screen.getByRole("group", { name: "Heat map metric" })).toHaveAttribute("data-selected", "rate");
     expect(screen.getByRole("button", { name: "Observed rate" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("link", { name: /VIC \/ Melbourne: 16\.1%/i })).toHaveAttribute("href", "/regions/au-vic-melbourne");
     expect(screen.getByRole("link", { name: /NSW \/ Sydney: 14\.9%/i })).toBeVisible();
@@ -30,6 +31,7 @@ describe("RegionHeatmap", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Sample volume" }));
 
+    expect(screen.getByRole("group", { name: "Heat map metric" })).toHaveAttribute("data-selected", "packs");
     expect(screen.getByRole("button", { name: "Sample volume" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("link", { name: /NSW \/ Sydney: 1\.5K packs/i })).toBeVisible();
     const rail = screen.getByRole("complementary", { name: "Published regional observations" });
