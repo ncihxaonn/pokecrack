@@ -23,6 +23,7 @@ class OpeningObservation:
     source_id: str
     set_id: str | None
     pack_count: int | None
+    country_code: str | None
     hit_count: int = 0
     source_status: str = "accepted"
     validation_status: str = "accepted"
@@ -34,7 +35,6 @@ class OpeningObservation:
     catalog_mapped: bool = True
     language: str = "en"
     product_type: str = "unknown"
-    country_code: str = "AU"
     region_id: str | None = None
     retailer_id: str | None = None
     batch_code: str | None = None
@@ -53,6 +53,11 @@ class OpeningObservation:
             raise ValueError("hit_count must not exceed pack_count")
         if self.observed_at.tzinfo is None or self.observed_at.utcoffset() is None:
             raise ValueError("observed_at must be timezone-aware")
+        if self.country_code is not None and not (
+            len(self.country_code) == 2
+            and all("A" <= character <= "Z" for character in self.country_code)
+        ):
+            raise ValueError("country_code must be two uppercase ASCII letters when present")
 
 
 @dataclass(frozen=True, slots=True)

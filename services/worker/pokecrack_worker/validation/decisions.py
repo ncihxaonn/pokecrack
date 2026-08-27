@@ -9,6 +9,7 @@ from pokecrack_worker.extraction.models import EvidenceTier, ExtractorOutput, Pr
 
 from .catalog import normalize_catalog_text
 from .models import FieldCheckStatus, ValidationVerdict, ValidatorOutput
+from .prechecks import is_valid_country_code
 
 STATISTICS_FIELD_CHECKS = frozenset(
     {
@@ -182,9 +183,10 @@ def _resolved(
             escalated=escalated,
         )
 
+    if selected.country_code is not None and not is_valid_country_code(selected.country_code):
+        return _rejected("invalid_country_code", escalated=escalated)
+
     selected_scope_rejections: list[str] = []
-    if selected.country_code is not None and selected.country_code.strip().upper() != "AU":
-        selected_scope_rejections.append("outside_scope_country")
     if selected.product_type not in (
         ProductType.BOOSTER_BOX,
         ProductType.ETB,
@@ -261,8 +263,11 @@ def resolve_evidence(
     """
 
     hard_rejections: list[str] = []
-    if extraction.country_code is not None and extraction.country_code.strip().upper() != "AU":
-        hard_rejections.append("outside_scope_country")
+    if any(
+        country_code is not None and not is_valid_country_code(country_code)
+        for country_code in (extraction.country_code, validation.country_code)
+    ):
+        hard_rejections.append("invalid_country_code")
     if extraction.product_type not in (
         ProductType.BOOSTER_BOX,
         ProductType.ETB,
@@ -303,6 +308,10 @@ def resolve_evidence(
         if escalation is None:
             return _rejected("unresolved_disagreement")
         escalation_rejections: list[str] = []
+        if escalation.country_code is not None and not is_valid_country_code(
+            escalation.country_code
+        ):
+            escalation_rejections.append("invalid_country_code")
         if escalation.confidence < min_confidence:
             escalation_rejections.append("low_confidence")
         if escalation.conflict_codes:

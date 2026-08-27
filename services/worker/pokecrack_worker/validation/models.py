@@ -296,7 +296,7 @@ class ValidatorOutput:
                             },
                         },
                     },
-                    "country_code": {"type": ["string", "null"], "maxLength": 2},
+                    "country_code": {"type": ["string", "null"], "pattern": "^[A-Z]{2}$"},
                     "region": {"type": ["string", "null"], "maxLength": 160},
                     "retailer": {"type": ["string", "null"], "maxLength": 200},
                     "batch_code": {"type": ["string", "null"], "maxLength": 128},
