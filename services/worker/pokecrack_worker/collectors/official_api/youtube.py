@@ -415,7 +415,7 @@ class YouTubeDataClient:
             or policy.min_delay_seconds != 2
             or policy.max_pages_per_run != 2
             or policy.max_concurrency != 1
-            or policy.retention_days != 30
+            or policy.retention_days != 28
             or not policy.metadata_only
             or policy.statistics_eligible_default
             or policy.config != _EXPECTED_POLICY_CONFIG

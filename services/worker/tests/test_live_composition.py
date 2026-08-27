@@ -173,10 +173,57 @@ def test_enabled_youtube_health_requires_exact_rpc_policy_and_permissions() -> N
     assert "YouTube Global Discovery API" in sql
     assert "policies.max_pages_per_run = 2" in sql
     assert "policies.max_items_per_run = 50" in sql
-    assert "policies.retention_days = 30" in sql
+    assert "policies.retention_days = 28" in sql
     assert "youtube-global-discovery-v1" in sql
     assert "youtube-metadata-v1" in sql
     assert "has_function_privilege" in sql
+
+
+def test_enabled_youtube_scheduler_requires_the_shared_exact_dependencies() -> None:
+    settings = _youtube_settings("scheduler")
+    executor = RecordingExecutor([[{"ready": False}]])
+
+    with pytest.raises(LiveCompositionError, match="dependencies"):
+        write_health_heartbeat(settings, executor=executor)
+
+    assert settings.youtube_api_key is None
+    assert len(executor.calls) == 1
+    sql, params = executor.calls[0]
+    assert params == {"worker_type": "scheduler", "youtube_enabled": True}
+    assert sql.startswith("WITH youtube_dependencies AS")
+    assert sql.count("policies.source_key = 'youtube_discovery'") == 1
+    assert sql.count("policies.retention_days = 28") == 1
+    assert sql.count("ingest.begin_youtube_discovery_job(uuid,text,bigint)") == 2
+    assert sql.count("ingest.finalize_youtube_discovery_job(uuid,text,bigint,jsonb)") == 2
+    assert sql.count("(SELECT ready FROM youtube_dependencies)") == 2
+    assert "policies.base_url = 'https://youtube.googleapis.com/youtube/v3'" in sql
+    assert "policies.max_pages_per_run = 2" in sql
+    assert "policies.max_items_per_run = 50" in sql
+    assert "policies.expected_interval_seconds = 21600" in sql
+    assert "youtube-global-discovery-v1" in sql
+    assert "INSERT INTO ingest.worker_heartbeats" not in sql
+    assert "YOUTUBE_API_KEY" not in repr(executor.calls)
+
+
+def test_flag_off_scheduler_health_only_requires_enqueue_readiness() -> None:
+    settings = _settings("scheduler")
+    executor = RecordingExecutor([[{"ready": True}], [{"last_seen_at": NOW}]])
+
+    heartbeat = write_health_heartbeat(settings, executor=executor)
+
+    assert heartbeat.worker_role.value == "scheduler"
+    assert settings.youtube_collection_enabled is False
+    assert settings.youtube_api_key is None
+    dependency_sql, dependency_params = executor.calls[0]
+    scheduler_branch = dependency_sql[
+        dependency_sql.index("WHEN 'scheduler'") : dependency_sql.index("WHEN 'watchdog'")
+    ]
+    assert dependency_params == {"worker_type": "scheduler", "youtube_enabled": False}
+    assert "ingest.enqueue_scheduled_job_v1" in scheduler_branch
+    assert "has_function_privilege" in scheduler_branch
+    assert "NOT %(youtube_enabled)s::boolean" in scheduler_branch
+    assert "OR (SELECT ready FROM youtube_dependencies)" in scheduler_branch
+    assert "YOUTUBE_API_KEY" not in repr(executor.calls)
 
 
 def test_live_health_refuses_unready_roles_before_writing_a_heartbeat() -> None:

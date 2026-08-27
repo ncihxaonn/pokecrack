@@ -106,6 +106,67 @@ RETURNING last_seen_at
 """.strip()
 
 LIVE_ROLE_DEPENDENCIES_SQL = """
+WITH youtube_dependencies AS (
+  SELECT COALESCE(
+    to_regprocedure('ingest.begin_youtube_discovery_job(uuid,text,bigint)') IS NOT NULL
+    AND to_regprocedure(
+      'ingest.finalize_youtube_discovery_job(uuid,text,bigint,jsonb)'
+    ) IS NOT NULL
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.begin_youtube_discovery_job(uuid,text,bigint)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.finalize_youtube_discovery_job(uuid,text,bigint,jsonb)'),
+      'EXECUTE'
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM ingest.source_policies AS policies
+      WHERE policies.source_key = 'youtube_discovery'
+        AND policies.display_name = 'YouTube Global Discovery API'
+        AND policies.domain = 'youtube.googleapis.com'
+        AND policies.base_url = 'https://youtube.googleapis.com/youtube/v3'
+        AND policies.enabled
+        AND NOT policies.is_demo
+        AND policies.source_kind = 'official_api'
+        AND policies.collector_type = 'official_api'
+        AND policies.access_mode = 'official_api'
+        AND policies.robots_policy = 'not_applicable'
+        AND policies.routes = ARRAY['official_api']::text[]
+        AND NOT policies.include_subdomains
+        AND policies.min_delay_seconds = 2
+        AND policies.max_pages_per_run = 2
+        AND policies.max_items_per_run = 50
+        AND policies.max_concurrency = 1
+        AND policies.browser_profile IS NULL
+        AND NOT policies.statistics_eligible_default
+        AND policies.retention_days = 28
+        AND policies.config = '{
+          "metadata_only":true,
+          "media_download":false,
+          "discovery_scope":"global",
+          "geography_status":"unresolved",
+          "evidence_tier":"D",
+          "statistics_eligible":false,
+          "parser_version":"youtube-metadata-v1",
+          "max_response_bytes":2097152,
+          "query_allowlist":[
+            "pokemon-tcg-booster-box-opening",
+            "pokemon-tcg-etb-opening",
+            "pokemon-tcg-booster-bundle-opening",
+            "pokemon-tcg-pack-opening",
+            "pokemon-tcg-opening-batch-code"
+          ]
+        }'::jsonb
+        AND policies.version = 'youtube-global-discovery-v1'
+        AND policies.expected_interval_seconds = 21600
+    ),
+    false
+  ) AS ready
+)
 SELECT CASE %(worker_type)s
   WHEN 'collector' THEN
     to_regclass('ingest.source_request_gates') IS NOT NULL
@@ -167,66 +228,7 @@ SELECT CASE %(worker_type)s
     )
     AND (
       NOT %(youtube_enabled)s::boolean
-      OR (
-        to_regprocedure('ingest.begin_youtube_discovery_job(uuid,text,bigint)') IS NOT NULL
-        AND to_regprocedure(
-          'ingest.finalize_youtube_discovery_job(uuid,text,bigint,jsonb)'
-        ) IS NOT NULL
-        AND has_function_privilege(
-          current_user,
-          to_regprocedure('ingest.begin_youtube_discovery_job(uuid,text,bigint)'),
-          'EXECUTE'
-        )
-        AND has_function_privilege(
-          current_user,
-          to_regprocedure(
-            'ingest.finalize_youtube_discovery_job(uuid,text,bigint,jsonb)'
-          ),
-          'EXECUTE'
-        )
-        AND EXISTS (
-          SELECT 1
-          FROM ingest.source_policies AS policies
-          WHERE policies.source_key = 'youtube_discovery'
-            AND policies.display_name = 'YouTube Global Discovery API'
-            AND policies.domain = 'youtube.googleapis.com'
-            AND policies.base_url = 'https://youtube.googleapis.com/youtube/v3'
-            AND policies.enabled
-            AND NOT policies.is_demo
-            AND policies.source_kind = 'official_api'
-            AND policies.collector_type = 'official_api'
-            AND policies.access_mode = 'official_api'
-            AND policies.robots_policy = 'not_applicable'
-            AND policies.routes = ARRAY['official_api']::text[]
-            AND NOT policies.include_subdomains
-            AND policies.min_delay_seconds = 2
-            AND policies.max_pages_per_run = 2
-            AND policies.max_items_per_run = 50
-            AND policies.max_concurrency = 1
-            AND policies.browser_profile IS NULL
-            AND NOT policies.statistics_eligible_default
-            AND policies.retention_days = 30
-            AND policies.config = '{
-              "metadata_only":true,
-              "media_download":false,
-              "discovery_scope":"global",
-              "geography_status":"unresolved",
-              "evidence_tier":"D",
-              "statistics_eligible":false,
-              "parser_version":"youtube-metadata-v1",
-              "max_response_bytes":2097152,
-              "query_allowlist":[
-                "pokemon-tcg-booster-box-opening",
-                "pokemon-tcg-etb-opening",
-                "pokemon-tcg-booster-bundle-opening",
-                "pokemon-tcg-pack-opening",
-                "pokemon-tcg-opening-batch-code"
-              ]
-            }'::jsonb
-            AND policies.version = 'youtube-global-discovery-v1'
-            AND policies.expected_interval_seconds = 21600
-        )
-      )
+      OR (SELECT ready FROM youtube_dependencies)
     )
   WHEN 'scheduler' THEN
     to_regprocedure(
@@ -238,6 +240,10 @@ SELECT CASE %(worker_type)s
         'ingest.enqueue_scheduled_job_v1(text,timestamptz,text,jsonb,integer,integer)'
       ),
       'EXECUTE'
+    )
+    AND (
+      NOT %(youtube_enabled)s::boolean
+      OR (SELECT ready FROM youtube_dependencies)
     )
   WHEN 'watchdog' THEN
     to_regclass('ingest.source_request_gates') IS NOT NULL

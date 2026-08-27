@@ -76,7 +76,7 @@ sources:
     dynamic_allowed: false
     login_required: false
     statistics_eligible_default: false
-    retention_days: 30
+    retention_days: 28
     version: youtube-global-discovery-v1
     config:
       metadata_only: true
@@ -113,7 +113,7 @@ sources:
     dynamic_allowed: false
     login_required: false
     statistics_eligible_default: false
-    retention_days: 30
+    retention_days: 28
     version: youtube-global-discovery-v1
     config:
       metadata_only: true

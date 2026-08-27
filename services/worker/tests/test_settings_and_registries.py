@@ -215,12 +215,12 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
     assert tcgdex.max_concurrency == 1
     assert tcgdex.requests_per_minute == 6
     assert tcgdex.config == {"collector_version": "tcgdex-sets-v1"}
-    assert sources.require(
-        "https://youtube.googleapis.com/youtube/v3/search", "youtube"
-    ).metadata_only
+    youtube_api = sources.require("https://youtube.googleapis.com/youtube/v3/search", "youtube")
+    assert youtube_api.metadata_only
+    assert youtube_api.retention_days == 28
     youtube_identity = sources.resolve("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
     assert youtube_identity.enabled is False
-    assert youtube_identity.retention_days == 30
+    assert youtube_identity.retention_days == 28
     assert youtube_identity.version == "youtube-global-discovery-v1"
 
     assert queries.default_enabled is False
