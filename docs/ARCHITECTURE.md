@@ -40,7 +40,9 @@ The deployment artifacts define `collector`, `ai-worker`, `aggregator`, `schedul
 
 `ingest.jobs` is the durable queue contract: bounded attempts, finite leases, lease-expiry recovery, and terminal states. Durable `schedule_slots` reserve a UTC slot even after its job becomes terminal; schedulers use interval buckets rather than depending on an exact loop phase. The forward fencing protocol increments `lease_generation` on every claim; heartbeat, pause, fail, and completion must match the exact owner and generation while the database-clock lease is live. Claiming uses `FOR UPDATE SKIP LOCKED`.
 
-The worker login inherits `service_role`, but the forward migration leaves that role read-only across application tables and denies direct access to the request-gate table. Enqueue, generic no-effect completion, budget pause, health heartbeat, and every persistent collector effect cross narrow `SECURITY DEFINER` RPCs; current typed jobs cannot use generic completion to bypass their finalizers.
+The worker login inherits `service_role`, but the forward migration leaves that role without direct application-table row mutation and denies request-gate reads. The gate's sole direct exception is PostgreSQL 17 `MAINTAIN` for the logical backup schema lock; it does not expose rows, but it is another reason to separate dedicated worker and backup credentials before enablement. Enqueue, generic no-effect completion, budget pause, health heartbeat, and every persistent collector effect cross narrow `SECURITY DEFINER` RPCs; current typed jobs cannot use generic completion to bypass their finalizers.
+
+Admin public RPCs are a PostgREST-only boundary: their non-public implementations live in `ingest`, while the stable public wrappers require both the immutable `authenticator` login session and a `service_role` JWT claim. A direct database worker cannot satisfy that session check by inheriting or setting the service role.
 
 Every persistent collector has its own transactional database boundary. Cleanup uses `finalize_cleanup_job`. TCGdex uses a fenced policy/request-gate preflight and `finalize_tcgdex_sets_job`. YouTube discovery uses `begin_youtube_discovery_job` before one bounded `search.list` call and `finalize_youtube_discovery_job` afterward. The finalizer rechecks the exact lease, generation, policy, request gate, result version, identities, and size bounds before atomically upserting the dedicated `UNLOGGED`, forced-RLS `ingest.youtube_discoveries` cache and completing the job. That cache has no path into generic source items, extraction, openings, analytics, Admin, or public relations. A stale lease, disabled kill switch, malformed response, or identity collision produces no partial persistence. Future persistent handlers still require their own typed finalizer and external idempotency. PostgreSQL is already required and is adequate for expected low concurrency. Omitting Redis removes another credentialed, patched, monitored, backed-up stateful service. Add a broker only after measured latency/throughput or lock pressure proves this design insufficient. Repository contracts are not evidence that a migration or worker revision has been deployed.
 
@@ -64,11 +66,13 @@ Every persistent collector has its own transactional database boundary. Cleanup 
 - Browser profiles/cookies live only in a mode-`0700` VPS volume and are account credentials, not project data.
 - The logical database backup stream strips all data rows from the dedicated
   retention-bounded YouTube cache before compression; a malformed or ambiguous
-  dump fails without advancing the success marker. The sanitizer also uniquely
-  verifies the cache's `CREATE UNLOGGED TABLE` header inside that same dump.
+  dump fails without advancing the success marker. It excludes request-gate
+  data, rejects any gate row that still appears, and restores only canonical
+  idle gate keys. The sanitizer also uniquely verifies the cache's
+  `CREATE UNLOGGED TABLE` and regular gate-table headers inside that same dump.
   Provider-managed snapshot retention must be revalidated separately before the
   feature is enabled.
 
 ## Failure behavior
 
-Missing live configuration yields unavailable/failure, never silent demo substitution. A collector error leaves the job retryable/dead-lettered; it does not fabricate an opening. AI budget exhaustion pauses AI work. Health failure prevents the deploy success marker. Database migrations and external deployments remain explicit operator actions.
+Missing live configuration yields unavailable/failure, never silent demo substitution. A collector error leaves the job retryable/dead-lettered; it does not fabricate an opening. If curl cannot be confirmed reaped, the worker crosses a fatal boundary instead of finalizing the job, leaving the persistent request gate fenced until its database lease expires. Shutdown control flow likewise propagates without normal failure finalization. AI budget exhaustion pauses AI work. Health failure prevents the deploy success marker. Database migrations and external deployments remain explicit operator actions.

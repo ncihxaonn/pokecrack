@@ -1980,6 +1980,17 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      get_admin_dashboard_snapshot_v1: { Args: Record<PropertyKey, never>; Returns: Json };
+      admin_control_and_audit_v1: {
+        Args: {
+          p_action: string;
+          p_actor_id: string;
+          p_actor_email: string;
+          p_source_url?: string | null;
+          p_target_id?: string | null;
+        };
+        Returns: Json;
+      };
       begin_youtube_discovery_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null }[];

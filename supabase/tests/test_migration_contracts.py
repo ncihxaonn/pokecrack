@@ -4,6 +4,8 @@ from pathlib import Path
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
+SUPABASE_CONFIG = (ROOT / "config.toml").read_text()
+MIGRATION_WORKFLOW = (ROOT.parent / ".github/workflows/migrate-database.yml").read_text()
 CATALOG = (ROOT / "migrations/20260825000100_catalog.sql").read_text()
 INGEST = (ROOT / "migrations/20260825000200_ingest.sql").read_text()
 ANALYTICS = (ROOT / "migrations/20260825000300_analytics.sql").read_text()
@@ -11,6 +13,12 @@ PUBLIC = (ROOT / "migrations/20260825000400_public_tables.sql").read_text()
 RPC = (ROOT / "migrations/20260825000500_public_rpc_security.sql").read_text()
 FENCING = (ROOT / "migrations/20260827000000_job_lease_fencing.sql").read_text()
 TCGDEX_PIPELINE = (ROOT / "migrations/20260828000000_tcgdex_sets_pipeline.sql").read_text()
+BACKUP_GATE_LOCK = (
+    ROOT / "migrations/20260828500000_backup_request_gate_lock.sql"
+).read_text()
+ADMIN_SESSION_FENCE = (
+    ROOT / "migrations/20260828750000_admin_session_fence.sql"
+).read_text()
 YOUTUBE_PIPELINE = (ROOT / "migrations/20260829000000_youtube_global_discovery.sql").read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
@@ -89,6 +97,12 @@ def _sql_text(value: str) -> str:
 
 
 class IngestMigrationContractTests(unittest.TestCase):
+    def test_local_supabase_matches_the_postgresql_17_backup_contract(self) -> None:
+        self.assertIn("major_version = 17", SUPABASE_CONFIG)
+        self.assertNotIn("major_version = 15", SUPABASE_CONFIG)
+        self.assertIn("server_version_num", MIGRATION_WORKFLOW)
+        self.assertIn("server_version_num >= 170000", MIGRATION_WORKFLOW)
+
     def test_seed_aggregate_rows_obey_count_and_practical_probability_contracts(self) -> None:
         source_fields = {
             "analytics.set_metrics_daily": "independent_source_count",
@@ -255,6 +269,20 @@ class IngestMigrationContractTests(unittest.TestCase):
         )
         self.assertNotIn(
             "grant select on table ingest.source_request_gates to service_role", lowered
+        )
+
+    def test_backup_can_lock_but_never_read_the_opaque_request_gate(self) -> None:
+        backup_lock = " ".join(BACKUP_GATE_LOCK.casefold().split())
+        youtube = " ".join(YOUTUBE_PIPELINE.casefold().split())
+        self.assertIn("server_version_num", backup_lock)
+        self.assertIn(
+            "grant maintain on table ingest.source_request_gates to service_role",
+            backup_lock,
+        )
+        self.assertNotIn("grant select", backup_lock)
+        self.assertIn(
+            "revoke all on table ingest.source_request_gates from service_role; grant maintain on table ingest.source_request_gates to service_role",
+            youtube,
         )
 
     def test_scheduled_enqueue_reserves_a_durable_slot_before_one_live_job(self) -> None:
@@ -659,6 +687,37 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("from public, anon, authenticated", admin)
         self.assertIn("to service_role", admin)
         self.assertNotIn("to authenticated", admin)
+
+    def test_admin_wrappers_reject_direct_database_service_role_sessions(self) -> None:
+        fence = " ".join(ADMIN_SESSION_FENCE.casefold().split())
+        self.assertIn(
+            "alter function public.get_admin_dashboard_snapshot_v1() set schema ingest",
+            fence,
+        )
+        self.assertIn(
+            "alter function public.admin_control_and_audit_v1(text, uuid, text, text, text) set schema ingest",
+            fence,
+        )
+        self.assertEqual(fence.count("session_user <> 'authenticator'"), 2)
+        self.assertEqual(fence.count("auth.jwt() ->> 'role'"), 2)
+        self.assertIn(
+            "revoke all on function ingest.admin_control_and_audit_v1",
+            fence,
+        )
+        self.assertIn(
+            "revoke all on function ingest.get_admin_dashboard_snapshot_v1",
+            fence,
+        )
+        self.assertIn(
+            "grant execute on function public.admin_control_and_audit_v1",
+            fence,
+        )
+        self.assertIn(
+            "grant execute on function public.get_admin_dashboard_snapshot_v1",
+            fence,
+        )
+        self.assertEqual(DATABASE_TYPES.count("admin_control_and_audit_v1:"), 2)
+        self.assertEqual(DATABASE_TYPES.count("get_admin_dashboard_snapshot_v1:"), 2)
 
     def test_admin_control_rpc_is_audited_and_matches_generated_types(self) -> None:
         migrations = "\n".join(

@@ -22,14 +22,17 @@ from uuid import UUID
 
 SOURCE_POLICIES = ("ingest", "source_policies")
 YOUTUBE_DISCOVERIES = ("ingest", "youtube_discoveries")
+SOURCE_REQUEST_GATES = ("ingest", "source_request_gates")
 RETENTION_CONTROL_TABLES = frozenset({SOURCE_POLICIES, YOUTUBE_DISCOVERIES})
+TCGDEX_SOURCE_KEY = b"tcgdex_catalog"
 YOUTUBE_SOURCE_KEY = b"youtube_discovery"
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 TARGET_INSERT = re.compile(
     r'^\s*INSERT\s+INTO\s+(?:ingest|"ingest")\.'
     r'(?:source_policies|"source_policies"|'
-    r'youtube_discoveries|"youtube_discoveries")(?:\s|\()',
+    r'youtube_discoveries|"youtube_discoveries"|'
+    r'source_request_gates|"source_request_gates")(?:\s|\()',
     re.IGNORECASE,
 )
 YOUTUBE_CREATE_REFERENCE = re.compile(
@@ -45,10 +48,266 @@ YOUTUBE_CREATE = re.compile(
     r'(?:youtube_discoveries(?![A-Za-z0-9_$])|"youtube_discoveries")\s*\(',
     re.IGNORECASE,
 )
+REQUEST_GATES_CREATE_REFERENCE = re.compile(
+    r'^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+'
+    r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
+    r'(?:source_request_gates(?![A-Za-z0-9_$])|"source_request_gates")'
+    r'(?:\s|\()',
+    re.IGNORECASE,
+)
+REQUEST_GATES_CREATE = re.compile(
+    r'^\s*CREATE\s+TABLE\s+'
+    r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
+    r'(?:source_request_gates(?![A-Za-z0-9_$])|"source_request_gates")\s*\(',
+    re.IGNORECASE,
+)
+
+
+def _normalize_sql(lines: list[bytes] | tuple[bytes, ...]) -> str:
+    try:
+        text = b"".join(lines).decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise SanitizationError("request-gate schema is not UTF-8") from error
+    # pg_dump quotes only identifiers that require it. Supporting simple quoted
+    # fixture identifiers does not weaken the exact semantic contract below.
+    text = re.sub(r'"([A-Za-z_][A-Za-z0-9_$]*)"', r"\1", text)
+    return " ".join(text.casefold().split())
+
+
+REQUEST_GATES_CREATE_COMMON = """CREATE TABLE ingest.source_request_gates (
+    source_key text NOT NULL,
+    owner_job_id uuid,
+    owner_lease_generation bigint,
+    acquired_at timestamp with time zone,
+    active_until timestamp with time zone,
+    CONSTRAINT source_request_gates_owner_check CHECK ((((owner_job_id IS NULL) AND (owner_lease_generation IS NULL) AND (acquired_at IS NULL) AND (active_until IS NULL)) OR ((owner_job_id IS NOT NULL) AND (owner_lease_generation >= 1) AND (acquired_at IS NOT NULL) AND (active_until > acquired_at)))),
+    {source_constraint}
+);
+"""
+REQUEST_GATES_CREATE_EXPECTED = {
+    False: _normalize_sql(
+        (
+            REQUEST_GATES_CREATE_COMMON.format(
+                source_constraint=(
+                    "CONSTRAINT source_request_gates_source_check "
+                    "CHECK ((source_key = 'tcgdex_catalog'::text))"
+                )
+            ).encode("utf-8"),
+        )
+    ),
+    True: _normalize_sql(
+        (
+            REQUEST_GATES_CREATE_COMMON.format(
+                source_constraint=(
+                    "CONSTRAINT source_request_gates_source_check CHECK "
+                    "((source_key ~ '^[a-z0-9][a-z0-9_-]{0,62}$'::text))"
+                )
+            ).encode("utf-8"),
+        )
+    ),
+}
+REQUEST_GATES_FORCE_RLS = _normalize_sql(
+    (b"ALTER TABLE ONLY ingest.source_request_gates FORCE ROW LEVEL SECURITY;\n",)
+)
+REQUEST_GATES_PRIMARY_KEY = _normalize_sql(
+    (
+        b"ALTER TABLE ONLY ingest.source_request_gates\n",
+        b"    ADD CONSTRAINT source_request_gates_pkey PRIMARY KEY (source_key);\n",
+    )
+)
+REQUEST_GATES_ENABLE_RLS = _normalize_sql(
+    (b"ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;\n",)
+)
+POLICY_STATEMENT_PREFIXES = (
+    "create policy ",
+    "alter policy ",
+    "drop policy ",
+    "comment on policy ",
+)
+POLICY_DOLLAR_QUOTE = re.compile(r"\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$")
 
 
 class SanitizationError(ValueError):
     """The dump cannot be proved safe to retain."""
+
+
+PolicyToken = tuple[str, str]
+
+
+def _only_sql_trivia(text: str, start: int) -> bool:
+    index = start
+    while index < len(text):
+        if text[index].isspace():
+            index += 1
+            continue
+        if text.startswith("--", index):
+            newline = text.find("\n", index + 2)
+            if newline < 0:
+                return True
+            index = newline + 1
+            continue
+        if text.startswith("/*", index):
+            depth = 1
+            index += 2
+            while index < len(text) and depth:
+                if text.startswith("/*", index):
+                    depth += 1
+                    index += 2
+                elif text.startswith("*/", index):
+                    depth -= 1
+                    index += 2
+                else:
+                    index += 1
+            if depth:
+                return False
+            continue
+        return False
+    return True
+
+
+def _policy_tokens_if_complete(
+    lines: list[bytes],
+) -> list[PolicyToken] | None:
+    try:
+        text = b"".join(lines).decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise SanitizationError("policy statement is not UTF-8") from error
+
+    tokens: list[PolicyToken] = []
+    index = 0
+    while index < len(text):
+        character = text[index]
+        if character.isspace():
+            index += 1
+            continue
+        if text.startswith("--", index):
+            newline = text.find("\n", index + 2)
+            if newline < 0:
+                return None
+            index = newline + 1
+            continue
+        if text.startswith("/*", index):
+            depth = 1
+            index += 2
+            while index < len(text) and depth:
+                if text.startswith("/*", index):
+                    depth += 1
+                    index += 2
+                elif text.startswith("*/", index):
+                    depth -= 1
+                    index += 2
+                else:
+                    index += 1
+            if depth:
+                return None
+            continue
+        if character == "'":
+            escape_backslashes = (
+                index > 0
+                and text[index - 1] in "Ee"
+                and (
+                    index == 1
+                    or not (
+                        text[index - 2].isalnum()
+                        or text[index - 2] in "_$"
+                    )
+                )
+            )
+            index += 1
+            while index < len(text):
+                if escape_backslashes and text[index] == "\\":
+                    index += 2
+                elif text[index] == "'":
+                    if index + 1 < len(text) and text[index + 1] == "'":
+                        index += 2
+                    else:
+                        index += 1
+                        break
+                else:
+                    index += 1
+            else:
+                return None
+            tokens.append(("literal", ""))
+            continue
+        if character == '"':
+            decoded: list[str] = []
+            index += 1
+            while index < len(text):
+                if text[index] == '"':
+                    if index + 1 < len(text) and text[index + 1] == '"':
+                        decoded.append('"')
+                        index += 2
+                    else:
+                        index += 1
+                        break
+                else:
+                    decoded.append(text[index])
+                    index += 1
+            else:
+                return None
+            tokens.append(("quoted_identifier", "".join(decoded)))
+            continue
+        if character == "$":
+            delimiter_match = POLICY_DOLLAR_QUOTE.match(text, index)
+            if delimiter_match is not None:
+                delimiter = delimiter_match.group(0)
+                content_start = delimiter_match.end()
+                content_end = text.find(delimiter, content_start)
+                if content_end < 0:
+                    return None
+                tokens.append(("literal", ""))
+                index = content_end + len(delimiter)
+                continue
+        if character == ";":
+            if not _only_sql_trivia(text, index + 1):
+                raise SanitizationError(
+                    "policy statement has unsupported trailing SQL"
+                )
+            return tokens
+        if character.isalpha() or character == "_":
+            end = index + 1
+            while end < len(text) and (
+                text[end].isalnum() or text[end] in "_$"
+            ):
+                end += 1
+            tokens.append(("word", text[index:end].casefold()))
+            index = end
+            continue
+        tokens.append(("punctuation", character))
+        index += 1
+    return None
+
+
+def _identifier_is(token: PolicyToken, expected: str) -> bool:
+    kind, value = token
+    return (kind == "word" and value == expected) or (
+        kind == "quoted_identifier" and value == expected
+    )
+
+
+def _policy_targets_request_gates(tokens: list[PolicyToken]) -> bool:
+    words = [token[1] if token[0] == "word" else None for token in tokens]
+    if words[:2] in (["create", "policy"], ["alter", "policy"], ["drop", "policy"]):
+        search_start = 2
+    elif words[:3] == ["comment", "on", "policy"]:
+        search_start = 3
+    else:
+        raise SanitizationError("unsupported policy statement prefix")
+
+    for index in range(search_start, len(tokens)):
+        if tokens[index] != ("word", "on"):
+            continue
+        target = index + 1
+        if target < len(tokens) and tokens[target] == ("word", "only"):
+            target += 1
+        if target + 2 >= len(tokens):
+            raise SanitizationError("policy statement has no qualified table target")
+        return (
+            _identifier_is(tokens[target], "ingest")
+            and tokens[target + 1] == ("punctuation", ".")
+            and _identifier_is(tokens[target + 2], "source_request_gates")
+        )
+    raise SanitizationError("policy statement has no table target")
 
 
 @dataclass(frozen=True)
@@ -188,6 +447,24 @@ def parse_youtube_create(line: bytes) -> bool | None:
     return True
 
 
+def parse_request_gates_create(line: bytes) -> bool | None:
+    """Identify the one regular request-gate table definition."""
+
+    try:
+        text = line.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if not re.match(r"^\s*CREATE(?:\s|\Z)", text, re.IGNORECASE):
+        return None
+    if not REQUEST_GATES_CREATE_REFERENCE.match(text):
+        return None
+    if REQUEST_GATES_CREATE.match(text) is None:
+        raise SanitizationError(
+            "unsupported source_request_gates CREATE TABLE header"
+        )
+    return True
+
+
 def _without_line_ending(line: bytes) -> bytes:
     if line.endswith(b"\r\n"):
         return line[:-2]
@@ -243,7 +520,54 @@ class PlainBackupSanitizer:
         self.preflight_youtube_policy_id = youtube_policy_id
         self.seen = {table: 0 for table in RETENTION_CONTROL_TABLES}
         self.youtube_policy_rows: list[str] = []
+        self.tcgdex_policy_rows = 0
         self.youtube_create_count = 0
+        self.request_gates_create_count = 0
+        self.request_gates_create_lines: list[bytes] | None = None
+        self.request_gates_alter_lines: list[bytes] | None = None
+        self.policy_statement_lines: list[bytes] | None = None
+        self.request_gates_force_rls_count = 0
+        self.request_gates_primary_key_count = 0
+        self.request_gates_enable_rls_count = 0
+
+    def _finish_request_gates_create(self) -> None:
+        lines = self.request_gates_create_lines
+        if lines is None:
+            raise SanitizationError("request-gate CREATE state is missing")
+        expected = REQUEST_GATES_CREATE_EXPECTED[
+            self.expected[YOUTUBE_DISCOVERIES]
+        ]
+        if _normalize_sql(lines) != expected:
+            raise SanitizationError("unsupported source_request_gates schema")
+        self.request_gates_create_lines = None
+
+    def _finish_request_gates_alter(self) -> None:
+        lines = self.request_gates_alter_lines
+        if lines is None:
+            raise SanitizationError("request-gate ALTER state is missing")
+        statement = _normalize_sql(lines)
+        if statement == REQUEST_GATES_FORCE_RLS:
+            self.request_gates_force_rls_count += 1
+        elif statement == REQUEST_GATES_PRIMARY_KEY:
+            self.request_gates_primary_key_count += 1
+        elif statement == REQUEST_GATES_ENABLE_RLS:
+            self.request_gates_enable_rls_count += 1
+        else:
+            raise SanitizationError("unsupported source_request_gates ALTER TABLE")
+        self.request_gates_alter_lines = None
+
+    def _maybe_finish_policy_statement(self) -> None:
+        lines = self.policy_statement_lines
+        if lines is None:
+            raise SanitizationError("policy statement state is missing")
+        tokens = _policy_tokens_if_complete(lines)
+        if tokens is None:
+            return
+        if _policy_targets_request_gates(tokens):
+            raise SanitizationError(
+                "source_request_gates must not have a row-level security policy"
+            )
+        self.policy_statement_lines = None
 
     def _start_block(self, header: CopyHeader) -> CopyBlock:
         indexes = _column_indexes(header)
@@ -288,6 +612,8 @@ class PlainBackupSanitizer:
                         fields[block.column_indexes["id"]], field="dump policy id"
                     )
                 )
+            elif source_key == TCGDEX_SOURCE_KEY:
+                self.tcgdex_policy_rows += 1
             return
         policy_id = _canonical_uuid(
             fields[block.column_indexes["source_policy_id"]],
@@ -323,6 +649,21 @@ class PlainBackupSanitizer:
                 "unexpected youtube_discoveries CREATE TABLE header"
             )
 
+        if self.request_gates_create_count != 1:
+            raise SanitizationError(
+                "expected one regular source_request_gates CREATE TABLE header"
+            )
+        if self.request_gates_force_rls_count != 1:
+            raise SanitizationError("expected one source_request_gates FORCE RLS")
+        if self.request_gates_primary_key_count != 1:
+            raise SanitizationError("expected one source_request_gates primary key")
+        if self.request_gates_enable_rls_count != 1:
+            raise SanitizationError("expected one source_request_gates ENABLE RLS")
+        if self.tcgdex_policy_rows != 1:
+            raise SanitizationError(
+                "dump must contain one exact TCGdex catalog source policy"
+            )
+
         if self.preflight_youtube_policy_id is None:
             if self.youtube_policy_rows:
                 raise SanitizationError(
@@ -345,8 +686,29 @@ class PlainBackupSanitizer:
                 self._inspect_control_row(block, line)
                 continue
 
+            if self.request_gates_create_lines is not None:
+                self.request_gates_create_lines.append(line)
+                if line.rstrip() == b");":
+                    self._finish_request_gates_create()
+                continue
+
+            if self.request_gates_alter_lines is not None:
+                self.request_gates_alter_lines.append(line)
+                if line.rstrip().endswith(b";"):
+                    self._finish_request_gates_alter()
+                continue
+
+            if self.policy_statement_lines is not None:
+                self.policy_statement_lines.append(line)
+                self._maybe_finish_policy_statement()
+                continue
+
             header = parse_copy_header(line)
             if header is not None:
+                if header.table == SOURCE_REQUEST_GATES:
+                    raise SanitizationError(
+                        "source_request_gates data must be excluded by pg_dump"
+                    )
                 block = self._start_block(header)
                 continue
 
@@ -356,6 +718,30 @@ class PlainBackupSanitizer:
                     raise SanitizationError(
                         "duplicate youtube_discoveries CREATE TABLE header"
                     )
+                continue
+
+            if parse_request_gates_create(line):
+                self.request_gates_create_count += 1
+                if self.request_gates_create_count != 1:
+                    raise SanitizationError(
+                        "duplicate source_request_gates CREATE TABLE header"
+                    )
+                self.request_gates_create_lines = [line]
+                continue
+
+            normalized_line = _normalize_sql((line,))
+            if normalized_line.startswith(POLICY_STATEMENT_PREFIXES):
+                self.policy_statement_lines = [line]
+                self._maybe_finish_policy_statement()
+                continue
+            if normalized_line.startswith(
+                "alter table only ingest.source_request_gates"
+            ) or normalized_line.startswith(
+                "alter table ingest.source_request_gates"
+            ):
+                self.request_gates_alter_lines = [line]
+                if line.rstrip().endswith(b";"):
+                    self._finish_request_gates_alter()
                 continue
 
             try:
@@ -369,10 +755,17 @@ class PlainBackupSanitizer:
 
         if block is not None:
             raise SanitizationError("unterminated COPY data block")
+        if self.request_gates_create_lines is not None:
+            raise SanitizationError("unterminated source_request_gates CREATE TABLE")
+        if self.request_gates_alter_lines is not None:
+            raise SanitizationError("unterminated source_request_gates ALTER TABLE")
+        if self.policy_statement_lines is not None:
+            raise SanitizationError("unterminated policy statement")
         self._validate_complete()
 
     def _emit(self, source: BinaryIO, destination: BinaryIO) -> None:
         block: CopyBlock | None = None
+        gate_seed_written = False
         for line in source:
             if block is not None:
                 if line in (b"\\.\n", b"\\.\r\n"):
@@ -388,10 +781,23 @@ class PlainBackupSanitizer:
                 block = CopyBlock(
                     header=header, column_indexes=_column_indexes(header)
                 )
+            if _normalize_sql((line,)) == REQUEST_GATES_ENABLE_RLS:
+                destination.write(
+                    b"\n-- Canonical idle request gates; live lease ownership is not retained.\n"
+                    b"COPY ingest.source_request_gates (source_key) FROM stdin;\n"
+                    b"tcgdex_catalog\n"
+                )
+                if self.expected[YOUTUBE_DISCOVERIES]:
+                    destination.write(b"youtube_discovery\n")
+                destination.write(b"\\.\n\n")
+                gate_seed_written = True
             destination.write(line)
 
         if block is not None:
             raise SanitizationError("unterminated COPY data block")
+
+        if not gate_seed_written:
+            raise SanitizationError("request-gate seed insertion point is missing")
 
     def sanitize(self, source: BinaryIO, destination: BinaryIO) -> None:
         # Spool the entire pg_dump snapshot before emitting anything. This

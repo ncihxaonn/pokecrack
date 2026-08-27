@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(20);
+select plan(21);
 
 select is(
   (select count(*)::integer
@@ -47,6 +47,11 @@ select is(
 select ok(
   not has_table_privilege('service_role', 'ingest.source_request_gates', 'select'),
   'request-gate ownership remains opaque to service_role'
+);
+
+select ok(
+  has_table_privilege('service_role', 'ingest.source_request_gates', 'maintain'),
+  'service_role can lock the opaque request gate for schema-only backup'
 );
 
 select is(

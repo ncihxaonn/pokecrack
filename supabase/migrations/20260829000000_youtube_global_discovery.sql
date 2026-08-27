@@ -1566,8 +1566,10 @@ revoke all privileges
   from service_role;
 grant select on all tables in schema catalog, ingest, analytics, public
   to service_role;
--- Request-gate ownership remains fully opaque outside its SECURITY DEFINER
--- lifecycle functions; this exception predates and survives the read-only sweep.
+-- Request-gate rows remain opaque outside SECURITY DEFINER lifecycle functions.
+-- MAINTAIN is the PostgreSQL 17 schema-lock privilege required by the logical
+-- backup role; it does not grant SELECT or row mutation.
 revoke all on table ingest.source_request_gates from service_role;
+grant maintain on table ingest.source_request_gates to service_role;
 
 commit;

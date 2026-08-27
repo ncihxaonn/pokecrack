@@ -234,9 +234,10 @@ select ok(
   'only service_role can invoke the admin control RPC'
 );
 select matches(
-  coalesce((select pg_get_functiondef(to_regprocedure('public.admin_control_and_audit_v1(text,uuid,text,text,text)'))), ''),
-  '(?is)service_role.*p_actor_id.*p_actor_email.*insert into ingest\.admin_audit_log',
-  'admin RPC requires service authorization and explicit audited actor identity'
+  coalesce((select pg_get_functiondef(to_regprocedure('public.admin_control_and_audit_v1(text,uuid,text,text,text)'))), '')
+    || coalesce((select pg_get_functiondef(to_regprocedure('ingest.admin_control_and_audit_v1(text,uuid,text,text,text)'))), ''),
+  '(?is)p_actor_id.*p_actor_email.*service_role.*insert into ingest\.admin_audit_log',
+  'Admin wrapper requires service authorization and its private implementation audits the explicit actor'
 );
 select ok(
   not exists (
@@ -285,9 +286,9 @@ select set_eq(
   'both Admin RPCs grant non-owner EXECUTE only to service_role, never PUBLIC'
 );
 select doesnt_match(
-  coalesce((select pg_get_functiondef(to_regprocedure('public.get_admin_dashboard_snapshot_v1()'))), ''),
+  coalesce((select pg_get_functiondef(to_regprocedure('ingest.get_admin_dashboard_snapshot_v1()'))), ''),
   '(?is)payload|last_error|authenticated_sources|provider|model|prompt|source_excerpt|ip_address|cookie|secret',
-  'Admin snapshot definition does not expose private payload, error, browser-auth, AI-provider, source, address or secret fields'
+  'Admin snapshot implementation does not expose private payload, error, browser-auth, AI-provider, source, address or secret fields'
 );
 
 insert into ingest.jobs (
@@ -346,6 +347,7 @@ insert into ingest.ai_usage_daily (
   9000, 9000, 9000, 9000, true
 );
 
+set session authorization authenticator;
 set local request.jwt.claims = '{"role":"service_role"}';
 set local role service_role;
 do $admin_runtime_calls$
@@ -369,6 +371,7 @@ begin
 end;
 $admin_runtime_calls$;
 reset role;
+reset session authorization;
 
 create temporary table admin_runtime_results (
   snapshot jsonb not null,

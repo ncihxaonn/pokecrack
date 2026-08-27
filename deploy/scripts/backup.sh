@@ -5,6 +5,7 @@ umask 077
 
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 PORTABILITY_HELPER="$SCRIPT_DIR/../lib/shell_portability.sh"
+DATABASE_URL_RUNNER="$SCRIPT_DIR/../lib/run_with_database_url.py"
 # shellcheck disable=SC1090
 source "$PORTABILITY_HELPER"
 BACKUP_DIR=${BACKUP_DIR:-/opt/pokecrack/backups}
@@ -39,6 +40,10 @@ fi
 unset SUPABASE_DB_URL
 [[ -n $database_url ]] || die "SUPABASE_DB_URL_FILE or SUPABASE_DB_URL is required"
 
+run_database_command() {
+  printf '%s' "$database_url" | python3 "$DATABASE_URL_RUNNER" -- "$@"
+}
+
 install -d -m 0700 "$BACKUP_DIR"
 [[ -d $BACKUP_DIR && ! -L $BACKUP_DIR ]] || die "backup directory is not a real directory"
 chmod 0700 "$BACKUP_DIR"
@@ -58,25 +63,35 @@ select concat_ws(E'\\t',
     select relkind::text || relpersistence::text
     from pg_catalog.pg_class
     where oid = to_regclass('ingest.youtube_discoveries')
-  ), '0')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.source_request_gates')
+  ), '0'),
+  coalesce(has_table_privilege(
+    'service_role',
+    to_regclass('ingest.source_request_gates'),
+    'MAINTAIN'
+  )::text, 'false')
 );"
-if ! table_state=$(PGDATABASE=$database_url psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$table_state_query" 2>/dev/null); then
+if ! table_state=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$table_state_query" 2>/dev/null); then
   unset database_url
   die "database retention preflight failed"
 fi
 
 case "$table_state" in
-  $'rp\tru') youtube_discoveries=present ;;
-  $'rp\t0') youtube_discoveries=absent ;;
+  $'rp\tru\trp\ttrue') youtube_discoveries=present ;;
+  $'rp\t0\trp\ttrue') youtube_discoveries=absent ;;
   *)
     unset database_url
-    die "database retention preflight requires logged source_policies and youtube_discoveries either absent or UNLOGGED"
+    die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, and youtube_discoveries either absent or UNLOGGED"
     ;;
 esac
 
 policy_query="set role service_role;
 select id::text from ingest.source_policies where source_key = 'youtube_discovery' order by id::text;"
-if ! youtube_policy_id=$(PGDATABASE=$database_url psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$policy_query" 2>/dev/null); then
+if ! youtube_policy_id=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$policy_query" 2>/dev/null); then
   unset database_url
   die "database retention policy lookup failed"
 fi
@@ -122,13 +137,16 @@ cleanup() {
 }
 trap cleanup EXIT HUP INT TERM
 
-# PGDATABASE keeps the credential out of process arguments and command output.
-if ! PGDATABASE=$database_url pg_dump \
+# The URL runner translates stdin into libpq environment fields, keeping the
+# credential out of process arguments and command output. Gate rows are live
+# lease state; retain the schema under MAINTAIN but never request their data.
+if ! run_database_command pg_dump \
   --format=plain \
   --role=service_role \
   --no-owner \
   --no-privileges \
   --encoding=UTF8 \
+  --exclude-table-data=ingest.source_request_gates \
   | python3 "$SCRIPT_DIR/../lib/sanitize_plain_backup.py" \
       "${sanitizer_arguments[@]}" \
   | gzip -9 > "$temporary"; then

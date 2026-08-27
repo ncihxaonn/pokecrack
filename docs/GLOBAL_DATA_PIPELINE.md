@@ -66,6 +66,12 @@ The live path is:
    dedicated private `ingest.youtube_discoveries` cache, completes the job, and
    releases the gate in one transaction.
 
+If the curl subprocess cannot be confirmed reaped, the worker does not convert
+that uncertainty into an ordinary failed job. It raises a fatal boundary that
+bypasses normal failure/finalizer handling, so the persistent request gate stays
+leased until database expiry and prevents a second concurrent upstream request.
+`KeyboardInterrupt`/`SystemExit` follow the same non-finalizing shutdown path.
+
 Stale leases, disabled policies, malformed or oversized responses, identity
 collisions, and failed finalization perform no partial persistence. The cache is
 an `UNLOGGED`, forced-RLS table with no foreign key or promotion path into generic
@@ -76,13 +82,18 @@ reached. A 12-hour scheduler restart catch-up keeps the supported 28-day
 lifecycle below 30 days with operational margin; collection must remain off
 without watchdog, stale-cleanup, and queue-delay alerts.
 
-Managed logical backups apply the same boundary. A fail-closed two-pass filter
-accepts either a coherent pre-YouTube schema with both policy and table absent,
-or the exact policy plus one `CREATE UNLOGGED TABLE` definition from one
-internally consistent plain dump. In the latter state it removes every
-`ingest.youtube_discoveries` data row before compression. It does not remove
-generic source rows. Partial, malformed, or ambiguous structure aborts the
-backup without advancing its success marker.
+Managed logical backups apply the same boundary. After the backup-lock migration,
+a fail-closed two-pass filter accepts either a coherent pre-YouTube schema with
+both policy and table absent, or the exact policy plus one `CREATE UNLOGGED TABLE`
+definition from one internally consistent plain dump. In the latter state it
+removes every
+`ingest.youtube_discoveries` data row before compression. Request-gate data is
+excluded by `pg_dump`, independently rejected by the sanitizer, and replaced
+only with canonical idle source keys immediately before RLS is enabled; live
+lease ownership is never restored. The exact gate columns, constraints, primary
+key and forced/enabled RLS must match, and any gate policy is rejected. It does
+not remove generic source rows. Partial, malformed, or ambiguous structure
+aborts the backup without advancing its success marker.
 
 ## Global validation versus publication
 
@@ -121,6 +132,9 @@ rate”, “guaranteed”, or imply a causal regional/store advantage.
   database role with only the queue and fenced-RPC permissions it needs. The
   existing broad `service_role` membership is not an acceptable steady-state
   collector credential.
+- Separate a dedicated `NOINHERIT` backup credential with only required reads,
+  role/grant access, and the PostgreSQL 17 request-gate schema lock. Do not leave
+  backup `MAINTAIN` capability reachable by the steady-state worker credential.
 - Revalidate the hosted provider's automatic-backup and point-in-time retention
   behavior before enabling the feature; logical backup filtering alone cannot
   sanitize provider-managed snapshots.

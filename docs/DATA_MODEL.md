@@ -48,7 +48,9 @@ The SQL eligibility constraint permits `eligible_for_statistics=true` only with 
 
 A running job must carry worker/start/expiry fields and an expiry after lease start; only terminal jobs carry `completed_at`. Lease authority is the exact `(locked_by, lease_generation)` pair while `lock_expires_at` is still in the future according to the database clock. Every claim increments the generation, so reusing a stable worker ID cannot revive an older attempt. Canonical URL and platform/external identity are unique within live/demo mode, active queue dedupe keys are unique, and self-duplicate links are forbidden. The separate YouTube discovery cache has no content hash or route into this generic identity graph; its typed finalizer still rejects video/URL identity collisions and enforces the exact minimal result contract.
 
-The forward migration makes `service_role` a read-only table principal across `catalog`, `ingest`, `analytics`, and `public`; `ingest.source_request_gates` is not directly readable. Worker mutations go through narrow `SECURITY DEFINER` RPCs that validate the exact job family, payload, live lease generation, retry window, heartbeat metadata, policy gate, and typed finalizer. Inheriting `service_role` does not confer direct `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, or `TRIGGER` rights on application tables after that migration is applied.
+The forward migration makes `service_role` a read-only table principal across `catalog`, `ingest`, `analytics`, and `public`; `ingest.source_request_gates` is not directly readable or row-mutable. Its only direct exception is PostgreSQL 17 `MAINTAIN`, required for the logical backup's schema lock while gate data is excluded. Worker mutations go through narrow `SECURITY DEFINER` RPCs that validate the exact job family, payload, live lease generation, retry window, heartbeat metadata, policy gate, and typed finalizer. Inheriting `service_role` does not confer direct `INSERT`, `UPDATE`, `DELETE`, `TRUNCATE`, `REFERENCES`, or `TRIGGER` rights on application tables after that migration is applied. Dedicated worker and backup credentials must replace the shared broad role before collection is enabled.
+
+The Admin RPC implementations live in `ingest` with no non-owner execution. Their public compatibility wrappers require `session_user=authenticator` plus a `service_role` JWT claim, so a direct database worker cannot turn inherited role membership or a forged request GUC into Admin access.
 
 ## Public contract
 
@@ -69,7 +71,8 @@ passed; collection enablement fails if either the six-hour discovery schedule or
 daily cleanup schedule drifts. No discovery row can be promoted
 or referenced as an extraction, opening, batch, duplicate, analytic, Admin, or
 public record because no such schema relationship or code path exists. Managed
-logical backups independently remove every cache data row, while
+logical backups independently remove every cache data row and replace request
+gate state with canonical idle rows, while
 provider-managed snapshot retention must be revalidated before collection is
 enabled. Cleanup/watchdog health and stale-success alerts are also enablement
 requirements because a prolonged outage can exceed the supported catch-up
