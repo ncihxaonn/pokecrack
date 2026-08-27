@@ -80,16 +80,30 @@ def test_youtube_enablement_requires_key_only_in_the_network_collector() -> None
 
 
 @pytest.mark.parametrize(
-    "schedule",
-    ("* * * * *", "0 */12 * * *", " 0 */6 * * *", "0 */6 * * * "),
+    ("field", "schedule"),
+    (
+        ("schedule_official_api", "* * * * *"),
+        ("schedule_official_api", "0 */12 * * *"),
+        ("schedule_official_api", " 0 */6 * * *"),
+        ("schedule_official_api", "0 */6 * * * "),
+        ("schedule_cleanup", "30 3 * * 0"),
+        ("schedule_cleanup", " 30 3 * * *"),
+        ("schedule_cleanup", "30 3 * * * "),
+    ),
 )
-def test_youtube_enablement_rejects_schedule_drift(schedule: str) -> None:
-    with pytest.raises(ValidationError, match="SCHEDULE_OFFICIAL_API"):
+def test_youtube_enablement_rejects_collection_or_retention_schedule_drift(
+    field: str,
+    schedule: str,
+) -> None:
+    expected_name = (
+        "SCHEDULE_OFFICIAL_API" if field == "schedule_official_api" else "SCHEDULE_CLEANUP"
+    )
+    with pytest.raises(ValidationError, match=expected_name):
         Settings(
             _env_file=None,
             youtube_collection_enabled=True,
             worker_role="scheduler",
-            schedule_official_api=schedule,
+            **{field: schedule},
         )
 
 
@@ -218,10 +232,21 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
     youtube_api = sources.require("https://youtube.googleapis.com/youtube/v3/search", "youtube")
     assert youtube_api.metadata_only
     assert youtube_api.retention_days == 28
+    assert youtube_api.max_pages_per_run == 1
+    assert youtube_api.config == {
+        "metadata_only": True,
+        "media_download": False,
+        "max_response_bytes": 2_097_152,
+        "query_allowlist": [name for name, _query in REQUIRED_YOUTUBE_QUERIES],
+    }
     youtube_identity = sources.resolve("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
     assert youtube_identity.enabled is False
     assert youtube_identity.retention_days == 28
     assert youtube_identity.version == "youtube-global-discovery-v1"
+    assert youtube_identity.config == {
+        "metadata_only": True,
+        "media_download": False,
+    }
 
     assert queries.default_enabled is False
     assert len(queries.queries) == 5

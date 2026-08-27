@@ -153,7 +153,7 @@ class PostgresYouTubeDiscoveryGate:
         worker_id: str,
         lease_generation: int,
     ) -> None:
-        """Authorize at most one bounded two-request discovery under the lease."""
+        """Authorize at most one bounded search request under the lease."""
 
         rows = self._executor.query(
             BEGIN_YOUTUBE_DISCOVERY_SQL,

@@ -19,7 +19,6 @@ from .tcgdex import (
 from .youtube import (
     HTTPXYouTubeTransport,
     YouTubeDataClient,
-    YouTubeDiscoveryResult,
     YouTubeTransport,
 )
 
@@ -37,7 +36,6 @@ __all__ = [
     "TCGdexSetsSyncOutcome",
     "TCGdexSetsSyncResult",
     "YouTubeDataClient",
-    "YouTubeDiscoveryResult",
     "YouTubeRequestDeferred",
     "YouTubeTransport",
 ]

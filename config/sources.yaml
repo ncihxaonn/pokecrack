@@ -71,7 +71,7 @@ sources:
     access_mode: official_api
     robots_policy: not_applicable
     min_delay_seconds: 2
-    max_pages_per_run: 2
+    max_pages_per_run: 1
     max_concurrency: 1
     dynamic_allowed: false
     login_required: false
@@ -81,11 +81,6 @@ sources:
     config:
       metadata_only: true
       media_download: false
-      discovery_scope: global
-      geography_status: unresolved
-      evidence_tier: D
-      statistics_eligible: false
-      parser_version: youtube-metadata-v1
       max_response_bytes: 2097152
       query_allowlist:
         - pokemon-tcg-booster-box-opening
@@ -118,11 +113,6 @@ sources:
     config:
       metadata_only: true
       media_download: false
-      discovery_scope: global
-      geography_status: unresolved
-      evidence_tier: D
-      statistics_eligible: false
-      parser_version: youtube-metadata-v1
     reason: Canonical metadata identity only; direct page and media fetching are disabled.
     routes: [youtube]
     adapter: youtube_metadata

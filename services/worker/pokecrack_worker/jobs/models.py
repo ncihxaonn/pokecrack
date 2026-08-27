@@ -22,20 +22,6 @@ _YOUTUBE_QUERY_NAMES = frozenset(
         "pokemon-tcg-opening-batch-code",
     }
 )
-_YOUTUBE_METADATA_KEYS = frozenset(
-    {
-        "query_name",
-        "metadata_only",
-        "media_download",
-        "discovery_scope",
-        "geography_status",
-        "evidence_tier",
-        "statistics_eligible",
-        "parser_version",
-        "channel_country_code",
-        "geography_basis",
-    }
-)
 
 
 class JobStatus(StrEnum):
@@ -163,18 +149,12 @@ class TCGdexSetsSyncCompletion:
 
 @dataclass(frozen=True, slots=True)
 class YouTubeSourceItemWrite:
-    """Exact, activity-only row accepted by the YouTube discovery finalizer."""
+    """Minimal API fields accepted by the isolated YouTube discovery finalizer."""
 
     external_id: str
     source_url: str
-    normalized_url: str
     title: str | None
-    text_excerpt: str | None
     published_at: datetime | None
-    author_hash: str | None
-    content_hash: str | None
-    language: str | None
-    metadata: Mapping[str, Any]
     collector_version: str
     source_policy_version: str
 
@@ -185,22 +165,14 @@ class YouTubeSourceItemWrite:
         ):
             raise ValueError("YouTube external ID is invalid")
         expected_url = f"https://www.youtube.com/watch?v={self.external_id}"
-        if self.source_url != expected_url or self.normalized_url != expected_url:
-            raise ValueError("YouTube source URLs must use the exact canonical watch form")
+        if self.source_url != expected_url:
+            raise ValueError("YouTube source URL must use the exact canonical watch form")
         if self.title is not None and (
             not isinstance(self.title, str)
             or len(self.title) > 500
             or any(unicodedata.category(character).startswith("C") for character in self.title)
         ):
             raise ValueError("YouTube title is invalid")
-        for name, value in (
-            ("text_excerpt", self.text_excerpt),
-            ("author_hash", self.author_hash),
-            ("content_hash", self.content_hash),
-            ("language", self.language),
-        ):
-            if value is not None:
-                raise ValueError(f"YouTube {name} must be null")
         if self.published_at is not None:
             if (
                 not isinstance(self.published_at, datetime)
@@ -215,45 +187,6 @@ class YouTubeSourceItemWrite:
             raise ValueError("YouTube collector version is not approved")
         if self.source_policy_version != "youtube-global-discovery-v1":
             raise ValueError("YouTube source policy version is not approved")
-        self._validate_metadata()
-
-    def _validate_metadata(self) -> None:
-        if not isinstance(self.metadata, Mapping) or set(self.metadata) != _YOUTUBE_METADATA_KEYS:
-            raise ValueError("YouTube activity metadata keys are invalid")
-        metadata = self.metadata
-        boolean_constants = {
-            "metadata_only": True,
-            "media_download": False,
-            "statistics_eligible": False,
-        }
-        if any(metadata.get(key) is not value for key, value in boolean_constants.items()):
-            raise ValueError("YouTube activity metadata booleans are invalid")
-        string_constants = {
-            "discovery_scope": "global",
-            "evidence_tier": "D",
-            "parser_version": "youtube-metadata-v1",
-        }
-        if any(
-            type(metadata.get(key)) is not str or metadata.get(key) != value
-            for key, value in string_constants.items()
-        ):
-            raise ValueError("YouTube activity metadata constants are invalid")
-        query_name = metadata.get("query_name")
-        if not isinstance(query_name, str) or query_name not in _YOUTUBE_QUERY_NAMES:
-            raise ValueError("YouTube metadata query name is not approved")
-        country = metadata.get("channel_country_code")
-        geography_status = metadata.get("geography_status")
-        geography_basis = metadata.get("geography_basis")
-        if country is None:
-            if geography_status != "unresolved" or geography_basis != "unresolved":
-                raise ValueError("unresolved YouTube geography metadata is inconsistent")
-        elif (
-            not isinstance(country, str)
-            or re.fullmatch(r"[A-Z]{2}", country) is None
-            or geography_status != "channel_country_proxy"
-            or geography_basis != "youtube_channel_country"
-        ):
-            raise ValueError("YouTube channel-country proxy metadata is invalid")
 
     def as_payload(self) -> dict[str, Any]:
         self.__post_init__()
@@ -265,14 +198,8 @@ class YouTubeSourceItemWrite:
         return {
             "external_id": self.external_id,
             "source_url": self.source_url,
-            "normalized_url": self.normalized_url,
             "title": self.title,
-            "text_excerpt": self.text_excerpt,
             "published_at": published_at,
-            "author_hash": self.author_hash,
-            "content_hash": self.content_hash,
-            "language": self.language,
-            "metadata": dict(self.metadata),
             "collector_version": self.collector_version,
             "source_policy_version": self.source_policy_version,
         }
@@ -290,12 +217,10 @@ class YouTubeDiscoveryCompletion:
             raise ValueError("YouTube completion query name is not approved")
         if (
             not isinstance(self.items, tuple)
-            or len(self.items) > 50
+            or len(self.items) > 25
             or any(not isinstance(item, YouTubeSourceItemWrite) for item in self.items)
         ):
-            raise ValueError("YouTube completion requires 0 to 50 typed items")
-        if any(item.metadata.get("query_name") != self.query_name for item in self.items):
-            raise ValueError("YouTube completion item query provenance is inconsistent")
+            raise ValueError("YouTube completion requires 0 to 25 typed items")
         external_ids = [item.external_id for item in self.items]
         if len(external_ids) != len(set(external_ids)):
             raise ValueError("YouTube completion external IDs must be unique")

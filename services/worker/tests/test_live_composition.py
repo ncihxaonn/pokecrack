@@ -171,11 +171,14 @@ def test_enabled_youtube_health_requires_exact_rpc_policy_and_permissions() -> N
     assert "ingest.finalize_youtube_discovery_job" in sql
     assert "youtube_discovery" in sql
     assert "YouTube Global Discovery API" in sql
-    assert "policies.max_pages_per_run = 2" in sql
-    assert "policies.max_items_per_run = 50" in sql
+    assert "policies.max_pages_per_run = 1" in sql
+    assert "policies.max_items_per_run = 25" in sql
     assert "policies.retention_days = 28" in sql
     assert "youtube-global-discovery-v1" in sql
-    assert "youtube-metadata-v1" in sql
+    assert '"max_response_bytes":2097152' in sql
+    assert "youtube-metadata-v1" not in sql
+    assert "geography_status" not in sql
+    assert "evidence_tier" not in sql
     assert "has_function_privilege" in sql
 
 
@@ -197,8 +200,8 @@ def test_enabled_youtube_scheduler_requires_the_shared_exact_dependencies() -> N
     assert sql.count("ingest.finalize_youtube_discovery_job(uuid,text,bigint,jsonb)") == 2
     assert sql.count("(SELECT ready FROM youtube_dependencies)") == 2
     assert "policies.base_url = 'https://youtube.googleapis.com/youtube/v3'" in sql
-    assert "policies.max_pages_per_run = 2" in sql
-    assert "policies.max_items_per_run = 50" in sql
+    assert "policies.max_pages_per_run = 1" in sql
+    assert "policies.max_items_per_run = 25" in sql
     assert "policies.expected_interval_seconds = 21600" in sql
     assert "youtube-global-discovery-v1" in sql
     assert "INSERT INTO ingest.worker_heartbeats" not in sql
@@ -316,16 +319,6 @@ YOUTUBE_SEARCH_BODY = json.dumps(
         ]
     }
 ).encode()
-YOUTUBE_CHANNELS_BODY = json.dumps(
-    {
-        "items": [
-            {
-                "id": "UC-private-fixture",
-                "snippet": {"country": "US", "title": "must-not-persist"},
-            }
-        ]
-    }
-).encode()
 
 
 def _youtube_settings(role: str = "collector") -> Settings:
@@ -401,20 +394,12 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
             ],
         ]
     )
-    transport = RecordingYouTubeTransport(
-        [
-            APIResponse(200, {}, YOUTUBE_SEARCH_BODY),
-            APIResponse(200, {}, YOUTUBE_CHANNELS_BODY),
-        ]
-    )
-    sleeps: list[float] = []
+    transport = RecordingYouTubeTransport([APIResponse(200, {}, YOUTUBE_SEARCH_BODY)])
     runtime = build_live_worker_runtime(
         _youtube_settings(),
         executor=executor,
         clock=lambda: NOW,
         youtube_transport=transport,
-        monotonic_clock=lambda: 0.0,
-        sleeper=sleeps.append,
     )
 
     result = runtime.run_once()
@@ -425,14 +410,14 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
         YOUTUBE_DISCOVERY_JOB_TYPE,
     ]
     assert "ingest.begin_youtube_discovery_job" in executor.calls[1][0]
-    assert len(transport.calls) == 2
-    assert sleeps == [2.0]
+    assert len(transport.calls) == 1
     assert transport.calls[0][0].endswith("/search")
-    assert transport.calls[1][0].endswith("/channels")
     assert all("key" not in params for _url, params, _timeout in transport.calls)
     assert transport.calls[0][1]["q"] == "Pokemon TCG ETB opening"
     assert transport.calls[0][1]["relevanceLanguage"] == "en"
+    assert transport.calls[0][1]["fields"] == ("items(id(kind,videoId),snippet(publishedAt,title))")
     assert "regionCode" not in transport.calls[0][1]
+    assert transport.calls[0][2] == 30.0
     finalizer_sql, finalizer_params = executor.calls[2]
     assert "ingest.finalize_youtube_discovery_job" in finalizer_sql
     persisted = json.loads(str(finalizer_params["result"]))
@@ -443,21 +428,13 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
     assert item["source_policy_version"] == "youtube-global-discovery-v1"
     assert item["title"] == "Pokemon ETB opening"
     assert item["published_at"] == "2026-08-24T08:00:00Z"
-    assert item["text_excerpt"] is None
-    assert item["author_hash"] is None
-    assert item["content_hash"] is None
-    assert item["language"] is None
-    assert item["metadata"] == {
-        "channel_country_code": "US",
-        "discovery_scope": "global",
-        "evidence_tier": "D",
-        "geography_basis": "youtube_channel_country",
-        "geography_status": "channel_country_proxy",
-        "media_download": False,
-        "metadata_only": True,
-        "parser_version": "youtube-metadata-v1",
-        "query_name": "pokemon-tcg-etb-opening",
-        "statistics_eligible": False,
+    assert set(item) == {
+        "external_id",
+        "source_url",
+        "title",
+        "published_at",
+        "collector_version",
+        "source_policy_version",
     }
     serialized = json.dumps(persisted)
     assert "UC-private-fixture" not in serialized
@@ -617,25 +594,18 @@ def test_stale_youtube_finalizer_cannot_persist_discovered_metadata() -> None:
             [],
         ]
     )
-    transport = RecordingYouTubeTransport(
-        [
-            APIResponse(200, {}, YOUTUBE_SEARCH_BODY),
-            APIResponse(200, {}, YOUTUBE_CHANNELS_BODY),
-        ]
-    )
+    transport = RecordingYouTubeTransport([APIResponse(200, {}, YOUTUBE_SEARCH_BODY)])
     runtime = build_live_worker_runtime(
         _youtube_settings(),
         executor=executor,
         clock=lambda: NOW,
         youtube_transport=transport,
-        monotonic_clock=lambda: 0.0,
-        sleeper=lambda _seconds: None,
     )
 
     result = runtime.run_once()
 
     assert result.status is RuntimeStatus.LEASE_LOST
-    assert len(transport.calls) == 2
+    assert len(transport.calls) == 1
     assert "ingest.finalize_youtube_discovery_job" in executor.calls[2][0]
     assert all("INSERT INTO ingest.source_items" not in sql for sql, _params in executor.calls)
 
@@ -993,7 +963,8 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
         ]
     )
 
-    result = build_live_scheduler(settings, executor=executor).run_due(now=NOW)
+    youtube_slot = NOW.replace(hour=0)
+    result = build_live_scheduler(settings, executor=executor).run_due(now=youtube_slot)
 
     assert settings.youtube_api_key is None
     assert result.created == 5
@@ -1004,6 +975,17 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
     ]
     assert all(params["kind"] == YOUTUBE_DISCOVERY_JOB_TYPE for _sql, params in executor.calls)
     assert all(params["max_attempts"] == 3 for _sql, params in executor.calls)
+
+
+def test_enabled_youtube_cleanup_has_a_bounded_restart_catch_up_margin() -> None:
+    entries = live_schedule_entries(_youtube_settings("scheduler"))
+    cleanup = next(entry for entry in entries if entry.name == "cleanup")
+    missed_slot = NOW.replace(hour=3, minute=30)
+
+    assert cleanup.catch_up_within == timedelta(hours=12)
+    assert cleanup.catch_up_check_interval == timedelta(hours=1)
+    assert cleanup.slot(NOW) == missed_slot
+    assert cleanup.slot(missed_slot + timedelta(hours=12, minutes=1)) is None
 
 
 def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:

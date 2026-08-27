@@ -80,7 +80,7 @@ def test_tcgdex_sync_maps_only_set_metadata_and_reuses_etag() -> None:
 @dataclass
 class FixtureYouTubeTransport:
     responses: list[APIResponse]
-    calls: list[tuple[str, dict[str, str]]] = field(default_factory=list)
+    calls: list[tuple[str, dict[str, str], float]] = field(default_factory=list)
 
     def get(
         self,
@@ -91,28 +91,7 @@ class FixtureYouTubeTransport:
         timeout_seconds: float,
     ) -> APIResponse:
         assert repr(api_key) == "SecretStr('**********')"
-        self.calls.append((url, params))
-        return self.responses.pop(0)
-
-
-@dataclass
-class AdvancingYouTubeTransport:
-    responses: list[APIResponse]
-    advances: list[float]
-    clock: list[float]
-    calls: list[tuple[str, float]] = field(default_factory=list)
-
-    def get(
-        self,
-        url: str,
-        *,
-        params: dict[str, str],
-        api_key: SecretStr,
-        timeout_seconds: float,
-    ) -> APIResponse:
-        del params, api_key
-        self.calls.append((url, timeout_seconds))
-        self.clock[0] += self.advances.pop(0)
+        self.calls.append((url, params, timeout_seconds))
         return self.responses.pop(0)
 
 
@@ -123,12 +102,7 @@ def test_youtube_discovery_maps_only_bounded_activity_metadata() -> None:
                 200,
                 {},
                 (ROOT / "data" / "examples" / "youtube-search.json").read_bytes(),
-            ),
-            APIResponse(
-                200,
-                {},
-                b'{"items":[{"id":"fixture-channel-id","snippet":{"country":"AU"}}]}',
-            ),
+            )
         ]
     )
     queries = YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml")
@@ -136,7 +110,6 @@ def test_youtube_discovery_maps_only_bounded_activity_metadata() -> None:
         api_key="fixture-key",
         transport=transport,
         policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
-        sleeper=lambda _seconds: None,
     )
 
     items = client.discover(queries.queries[0])
@@ -157,33 +130,19 @@ def test_youtube_discovery_maps_only_bounded_activity_metadata() -> None:
     assert "Fixture Channel" not in serialized
     assert "Synthetic fixture only" not in serialized
     assert item.media_urls == ()
-    assert item.metadata["geography_status"] == "channel_country_proxy"
-    assert item.metadata["channel_country_code"] == "AU"
-    assert item.metadata["statistics_eligible"] is False
-    assert set(item.metadata) == {
-        "query_name",
-        "metadata_only",
-        "media_download",
-        "discovery_scope",
-        "geography_status",
-        "evidence_tier",
-        "statistics_eligible",
-        "parser_version",
-        "channel_country_code",
-        "geography_basis",
-    }
-    assert len(transport.calls) == 2
+    assert item.metadata == {}
+    assert len(transport.calls) == 1
     assert transport.calls[0][0].endswith("/youtube/v3/search")
     assert transport.calls[0][1]["type"] == "video"
     assert transport.calls[0][1]["q"] == queries.queries[0].query
     assert transport.calls[0][1]["relevanceLanguage"] == "en"
+    assert transport.calls[0][1]["fields"] == ("items(id(kind,videoId),snippet(publishedAt,title))")
     assert "regionCode" not in transport.calls[0][1]
     assert "key" not in transport.calls[0][1]
-    assert transport.calls[1][0].endswith("/youtube/v3/channels")
-    assert transport.calls[1][1]["id"] == "fixture-channel-id"
+    assert transport.calls[0][2] == 30.0
 
 
-def test_youtube_discovery_rejects_non_string_description_before_country_lookup() -> None:
+def test_youtube_discovery_ignores_unrequested_channel_and_description_fields() -> None:
     body = json.dumps(
         {
             "items": [
@@ -207,11 +166,13 @@ def test_youtube_discovery_rejects_non_string_description_before_country_lookup(
     )
     query = YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[0]
 
-    with pytest.raises(YouTubeError) as raised:
-        client.discover(query)
+    items = client.discover(query)
 
-    assert raised.value.code == "invalid_response"
-    assert raised.value.retryable is False
+    assert len(items) == 1
+    serialized = items[0].model_dump_json()
+    assert "fixture-channel-id" not in serialized
+    assert "description" not in serialized
+    assert items[0].metadata == {}
     assert len(transport.calls) == 1
 
 
@@ -249,84 +210,6 @@ def test_youtube_programmatic_query_drift_is_rejected_before_network(
     assert transport.calls == []
 
 
-def test_youtube_discovery_does_not_send_channels_after_spacing_exhausts_budget() -> None:
-    state = [0.0]
-    transport = AdvancingYouTubeTransport(
-        responses=[
-            APIResponse(
-                200,
-                {},
-                (ROOT / "data" / "examples" / "youtube-search.json").read_bytes(),
-            )
-        ],
-        advances=[1.5],
-        clock=state,
-    )
-    sleeps: list[float] = []
-
-    def oversleep(seconds: float) -> None:
-        sleeps.append(seconds)
-        state[0] += 1.5
-
-    client = YouTubeDataClient(
-        api_key="fixture-key",
-        transport=transport,
-        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
-        timeout_seconds=3,
-        monotonic_clock=lambda: state[0],
-        sleeper=oversleep,
-    )
-
-    with pytest.raises(YouTubeError) as raised:
-        client.discover(
-            YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[0]
-        )
-
-    assert raised.value.code == "request_timeout"
-    assert raised.value.retryable is True
-    assert sleeps == [pytest.approx(0.5)]
-    assert transport.calls == [(YOUTUBE_SEARCH_URL, pytest.approx(3.0))]
-
-
-def test_youtube_discovery_shares_one_absolute_budget_across_both_api_calls() -> None:
-    state = [0.0]
-    transport = AdvancingYouTubeTransport(
-        responses=[
-            APIResponse(
-                200,
-                {},
-                (ROOT / "data" / "examples" / "youtube-search.json").read_bytes(),
-            ),
-            APIResponse(
-                200,
-                {},
-                b'{"items":[{"id":"fixture-channel-id","snippet":{}}]}',
-            ),
-        ],
-        advances=[5.0, 24.0],
-        clock=state,
-    )
-    client = YouTubeDataClient(
-        api_key="fixture-key",
-        transport=transport,
-        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
-        timeout_seconds=30,
-        monotonic_clock=lambda: state[0],
-        sleeper=lambda _seconds: pytest.fail("search time already satisfies source spacing"),
-    )
-
-    items = client.discover(
-        YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[0]
-    )
-
-    assert len(items) == 1
-    assert state[0] == 29.0
-    assert transport.calls == [
-        (YOUTUBE_SEARCH_URL, pytest.approx(30.0)),
-        (youtube_module.YOUTUBE_CHANNELS_URL, pytest.approx(25.0)),
-    ]
-
-
 def test_youtube_http_transport_rejects_response_over_byte_cap() -> None:
     def respond(request: httpx.Request) -> httpx.Response:
         assert request.headers["accept-encoding"] == "identity"
@@ -341,7 +224,7 @@ def test_youtube_http_transport_rejects_response_over_byte_cap() -> None:
             YOUTUBE_SEARCH_URL,
             params={},
             api_key=SecretStr("fixture-key"),
-            timeout_seconds=2,
+            timeout_seconds=30,
         )
 
 
@@ -361,19 +244,19 @@ def test_youtube_http_transport_rejects_encoded_content_and_unapproved_endpoints
             YOUTUBE_SEARCH_URL,
             params={},
             api_key=SecretStr("fixture-key"),
-            timeout_seconds=2,
+            timeout_seconds=30,
         )
-    with pytest.raises(ValueError, match="fixed official endpoints"):
+    with pytest.raises(ValueError, match="fixed search endpoint"):
         transport.get(
             "https://example.com/search",
             params={},
             api_key=SecretStr("fixture-key"),
-            timeout_seconds=2,
+            timeout_seconds=30,
         )
 
 
 def test_youtube_http_transport_has_an_absolute_deadline() -> None:
-    moments = iter((0.0, 0.0, 2.0))
+    moments = iter((0.0, 0.0, 31.0))
     transport = HTTPXYouTubeTransport(
         monotonic_clock=lambda: next(moments),
         http_transport=httpx.MockTransport(
@@ -386,7 +269,7 @@ def test_youtube_http_transport_has_an_absolute_deadline() -> None:
             YOUTUBE_SEARCH_URL,
             params={},
             api_key=SecretStr("fixture-key"),
-            timeout_seconds=1,
+            timeout_seconds=30,
         )
 
     assert raised.value.code == "request_timeout"
@@ -433,7 +316,7 @@ def test_youtube_http_transport_disables_proxy_env_and_redirect_following(
         YOUTUBE_SEARCH_URL,
         params={"part": "snippet"},
         api_key=SecretStr("fixture-key"),
-        timeout_seconds=2,
+        timeout_seconds=30,
     )
 
     assert response.status_code == 302

@@ -13,7 +13,6 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
-from time import monotonic, sleep
 
 from pokecrack_worker import __version__
 from pokecrack_worker.collectors.official_api.postgres import (
@@ -138,8 +137,8 @@ WITH youtube_dependencies AS (
         AND policies.routes = ARRAY['official_api']::text[]
         AND NOT policies.include_subdomains
         AND policies.min_delay_seconds = 2
-        AND policies.max_pages_per_run = 2
-        AND policies.max_items_per_run = 50
+        AND policies.max_pages_per_run = 1
+        AND policies.max_items_per_run = 25
         AND policies.max_concurrency = 1
         AND policies.browser_profile IS NULL
         AND NOT policies.statistics_eligible_default
@@ -147,11 +146,6 @@ WITH youtube_dependencies AS (
         AND policies.config = '{
           "metadata_only":true,
           "media_download":false,
-          "discovery_scope":"global",
-          "geography_status":"unresolved",
-          "evidence_tier":"D",
-          "statistics_eligible":false,
-          "parser_version":"youtube-metadata-v1",
           "max_response_bytes":2097152,
           "query_allowlist":[
             "pokemon-tcg-booster-box-opening",
@@ -516,8 +510,6 @@ def _youtube_discovery_handler(
     worker_id: str,
     transport: YouTubeTransport,
     clock: Callable[[], datetime] | None,
-    monotonic_clock: Callable[[], float],
-    sleeper: Callable[[float], None],
 ) -> JobHandler:
     if not settings.youtube_collection_enabled or settings.youtube_api_key is None:
         raise RuntimeError("YouTube discovery handler requires explicit credentials and enablement")
@@ -528,8 +520,6 @@ def _youtube_discovery_handler(
         transport=transport,
         policies=SourcePolicyRegistry.from_yaml(SOURCES_CONFIG),
         clock=clock,
-        monotonic_clock=monotonic_clock,
-        sleeper=sleeper,
     )
 
     def discover(job: Job) -> YouTubeDiscoveryCompletion:
@@ -556,20 +546,12 @@ def _youtube_discovery_handler(
             raise JobExecutionError(code=error.code, retryable=error.retryable) from None
         writes: list[YouTubeSourceItemWrite] = []
         for candidate in candidates:
-            if candidate.normalized_url is None:
-                raise RuntimeError("YouTube candidate normalization is unavailable")
             writes.append(
                 YouTubeSourceItemWrite(
                     external_id=candidate.external_id or "",
                     source_url=candidate.source_url,
-                    normalized_url=candidate.normalized_url,
                     title=candidate.title,
-                    text_excerpt=None,
                     published_at=candidate.published_at,
-                    author_hash=None,
-                    content_hash=None,
-                    language=None,
-                    metadata=dict(candidate.metadata),
                     collector_version=candidate.collector_version,
                     source_policy_version=candidate.source_policy_version,
                 )
@@ -588,8 +570,6 @@ def _handlers_for_role(
     tcgdex_transport: TCGdexTransport | None,
     youtube_transport: YouTubeTransport | None,
     clock: Callable[[], datetime] | None,
-    monotonic_clock: Callable[[], float],
-    sleeper: Callable[[float], None],
 ) -> Mapping[str, JobHandler]:
     if role is WorkerRole.COLLECTOR:
         handlers: dict[str, JobHandler] = {
@@ -607,8 +587,6 @@ def _handlers_for_role(
                 worker_id=worker_id,
                 transport=youtube_transport or HTTPXYouTubeTransport(),
                 clock=clock,
-                monotonic_clock=monotonic_clock,
-                sleeper=sleeper,
             )
         return handlers
     if role is WorkerRole.WATCHDOG:
@@ -623,8 +601,6 @@ def build_live_worker_runtime(
     clock: Callable[[], datetime] | None = None,
     tcgdex_transport: TCGdexTransport | None = None,
     youtube_transport: YouTubeTransport | None = None,
-    monotonic_clock: Callable[[], float] = monotonic,
-    sleeper: Callable[[float], None] = sleep,
 ) -> WorkerRuntime:
     """Compose the live queue with a non-empty allowlist of concrete handlers."""
 
@@ -639,8 +615,6 @@ def build_live_worker_runtime(
         tcgdex_transport=tcgdex_transport,
         youtube_transport=youtube_transport,
         clock=clock,
-        monotonic_clock=monotonic_clock,
-        sleeper=sleeper,
     )
     if tuple(handlers) != expected_job_types:
         raise RuntimeError("live worker handler registry is inconsistent")
@@ -696,6 +670,13 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
             cron=settings.schedule_cleanup,
             priority=10,
             max_attempts=settings.worker_max_attempts,
+            # The YouTube cache expires at 28 days. Daily cleanup plus a
+            # bounded 12-hour restart catch-up keeps the supported retention
+            # path below 30 days with a 12-hour operational margin.
+            catch_up_within=(timedelta(hours=12) if settings.youtube_collection_enabled else None),
+            catch_up_check_interval=(
+                timedelta(hours=1) if settings.youtube_collection_enabled else None
+            ),
         ),
     )
     return catalog + youtube + cleanup

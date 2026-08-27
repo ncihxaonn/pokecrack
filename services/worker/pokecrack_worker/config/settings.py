@@ -27,6 +27,7 @@ class AIProviderName(StrEnum):
 
 
 YOUTUBE_DISCOVERY_SCHEDULE = "0 */6 * * *"
+YOUTUBE_CLEANUP_SCHEDULE = "30 3 * * *"
 
 
 class Settings(BaseSettings):
@@ -112,7 +113,7 @@ class Settings(BaseSettings):
     schedule_auth_collection: str = "30 */12 * * *"
     schedule_catalog_sync: str = "0 2 * * *"
     schedule_aggregates: str = "5 * * * *"
-    schedule_cleanup: str = "30 3 * * *"
+    schedule_cleanup: str = YOUTUBE_CLEANUP_SCHEDULE
     schedule_backup: str = "0 4 * * *"
     schedule_browser_check: str = "*/30 * * * *"
 
@@ -164,14 +165,17 @@ class Settings(BaseSettings):
             and self.worker_role != "scheduler"
         ):
             raise ValueError("YOUTUBE_COLLECTION_ENABLED requires YOUTUBE_API_KEY for collectors")
-        if (
-            self.youtube_collection_enabled
-            and self.schedule_official_api != YOUTUBE_DISCOVERY_SCHEDULE
-        ):
-            raise ValueError(
-                "YOUTUBE_COLLECTION_ENABLED requires "
-                f"SCHEDULE_OFFICIAL_API={YOUTUBE_DISCOVERY_SCHEDULE!r}"
-            )
+        if self.youtube_collection_enabled:
+            if self.schedule_official_api != YOUTUBE_DISCOVERY_SCHEDULE:
+                raise ValueError(
+                    "YOUTUBE_COLLECTION_ENABLED requires "
+                    f"SCHEDULE_OFFICIAL_API={YOUTUBE_DISCOVERY_SCHEDULE!r}"
+                )
+            if self.schedule_cleanup != YOUTUBE_CLEANUP_SCHEDULE:
+                raise ValueError(
+                    "YOUTUBE_COLLECTION_ENABLED requires "
+                    f"SCHEDULE_CLEANUP={YOUTUBE_CLEANUP_SCHEDULE!r}"
+                )
         if self.database_warning_mb > self.database_critical_mb:
             raise ValueError("DATABASE_WARNING_MB must not exceed DATABASE_CRITICAL_MB")
         if self.storage_warning_mb > self.storage_critical_mb:

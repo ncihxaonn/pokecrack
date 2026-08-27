@@ -15,7 +15,7 @@ from pokecrack_worker.collectors.official_api.tcgdex import (
     TCGdexSetsSyncOutcome,
     parse_tcgdex_sets,
 )
-from pokecrack_worker.collectors.official_api.youtube import YouTubeDataClient
+from pokecrack_worker.collectors.official_api.youtube import YouTubeDataClient, YouTubeError
 from pokecrack_worker.config.registries import (
     REQUIRED_YOUTUBE_QUERIES,
     YouTubeQueryRegistry,
@@ -209,32 +209,34 @@ class SequenceYouTubeTransport:
         return self.responses.pop(0)
 
 
-def test_youtube_query_batch_continues_after_nonfatal_api_failure() -> None:
+def test_youtube_queries_are_independent_single_request_jobs() -> None:
     body = (ROOT / "data" / "examples" / "youtube-search.json").read_bytes()
     transport = SequenceYouTubeTransport(
         [
             APIResponse(503, {}, b"synthetic unavailable"),
             APIResponse(200, {}, body),
-            APIResponse(200, {}, b'{"items":[]}'),
         ]
     )
     client = YouTubeDataClient(
         api_key="fixture-key",
         transport=transport,
         policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
-        sleeper=lambda _seconds: None,
     )
     queries = YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[:2]
 
-    result = client.discover_many(queries)
+    with pytest.raises(YouTubeError) as raised:
+        client.discover(queries[0])
+    items = client.discover(queries[1])
 
-    assert len(result.items) == 1
-    assert result.items[0].external_id == "dQw4w9WgXcQ"
-    assert [(failure.query_name, failure.error_code) for failure in result.failures] == [
-        ("pokemon-tcg-booster-box-opening", "http_error")
-    ]
-    assert len(transport.calls) == 3
+    assert raised.value.code == "http_error"
+    assert raised.value.retryable is True
+    assert len(items) == 1
+    assert items[0].external_id == "dQw4w9WgXcQ"
+    assert len(transport.calls) == 2
     assert transport.calls[0]["type"] == "video"
     assert transport.calls[1]["type"] == "video"
-    assert "type" not in transport.calls[2]
+    assert all(
+        call["fields"] == "items(id(kind,videoId),snippet(publishedAt,title))"
+        for call in transport.calls
+    )
     assert all("key" not in call for call in transport.calls)

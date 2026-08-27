@@ -962,25 +962,8 @@ def _youtube_write() -> YouTubeSourceItemWrite:
     return YouTubeSourceItemWrite(
         external_id="dQw4w9WgXcQ",
         source_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
-        normalized_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
         title="Pokemon booster box opening",
-        text_excerpt=None,
         published_at=NOW,
-        author_hash=None,
-        content_hash=None,
-        language=None,
-        metadata={
-            "query_name": "pokemon-tcg-booster-box-opening",
-            "metadata_only": True,
-            "media_download": False,
-            "discovery_scope": "global",
-            "geography_status": "channel_country_proxy",
-            "evidence_tier": "D",
-            "statistics_eligible": False,
-            "parser_version": "youtube-metadata-v1",
-            "channel_country_code": "AU",
-            "geography_basis": "youtube_channel_country",
-        },
         collector_version="youtube-global-discovery-v1",
         source_policy_version="youtube-global-discovery-v1",
     )
@@ -1040,14 +1023,8 @@ def test_postgres_youtube_completion_uses_one_exact_activity_only_finalizer() ->
     assert set(item) == {
         "external_id",
         "source_url",
-        "normalized_url",
         "title",
-        "text_excerpt",
         "published_at",
-        "author_hash",
-        "content_hash",
-        "language",
-        "metadata",
         "collector_version",
         "source_policy_version",
     }
@@ -1055,75 +1032,55 @@ def test_postgres_youtube_completion_uses_one_exact_activity_only_finalizer() ->
     assert item["source_policy_version"] == "youtube-global-discovery-v1"
     assert item["title"] == "Pokemon booster box opening"
     assert item["published_at"] == "2026-08-25T12:00:00Z"
-    assert item["text_excerpt"] is None
-    assert item["author_hash"] is None
-    assert item["content_hash"] is None
-    assert item["language"] is None
-    assert item["metadata"]["evidence_tier"] == "D"
-    assert item["metadata"]["statistics_eligible"] is False
-    assert "media_urls" not in item
-    assert "channel_id" not in json.dumps(persisted)
+    serialized = json.dumps(persisted)
+    for forbidden in (
+        "normalized_url",
+        "text_excerpt",
+        "author_hash",
+        "content_hash",
+        "language",
+        "metadata",
+        "media_urls",
+        "channel_id",
+        "description",
+        "result_rank",
+    ):
+        assert forbidden not in serialized
 
 
-def test_youtube_completion_rejects_rate_claims_and_noncanonical_watch_urls() -> None:
-    write = _youtube_write()
-    unsafe_metadata = {**write.metadata, "statistics_eligible": True}
-    with pytest.raises(ValueError, match="metadata booleans"):
-        replace(write, metadata=unsafe_metadata)
-
+def test_youtube_completion_rejects_noncanonical_watch_url() -> None:
     with pytest.raises(ValueError, match="canonical watch form"):
-        replace(write, normalized_url="https://youtube.com/watch?v=dQw4w9WgXcQ")
-
-
-@pytest.mark.parametrize("derived_key", ("product_type_hints", "batch_code_hints"))
-def test_youtube_completion_rejects_derived_content_hints(derived_key: str) -> None:
-    write = _youtube_write()
-    metadata = {**write.metadata, derived_key: []}
-
-    with pytest.raises(ValueError, match="metadata keys"):
-        replace(write, metadata=metadata)
+        replace(_youtube_write(), source_url="https://youtube.com/watch?v=dQw4w9WgXcQ")
 
 
 @pytest.mark.parametrize(
-    ("key", "integer_impostor"),
+    "forbidden_field",
     (
-        ("metadata_only", 1),
-        ("media_download", 0),
-        ("statistics_eligible", 0),
+        "normalized_url",
+        "text_excerpt",
+        "author_hash",
+        "content_hash",
+        "language",
+        "metadata",
+        "query_name",
+        "result_rank",
+        "channel_id",
+        "description",
+        "product_type_hints",
+        "batch_code_hints",
     ),
 )
-def test_youtube_metadata_booleans_reject_integer_impostors(
-    key: str,
-    integer_impostor: int,
+def test_youtube_write_contract_has_no_derived_or_placeholder_fields(
+    forbidden_field: str,
 ) -> None:
-    write = _youtube_write()
-    metadata = {**write.metadata, key: integer_impostor}
-
-    with pytest.raises(ValueError, match="metadata booleans"):
-        replace(write, metadata=metadata)
+    with pytest.raises(TypeError, match="unexpected keyword"):
+        replace(_youtube_write(), **{forbidden_field: "forbidden"})
 
 
 @pytest.mark.parametrize("control", ("\x00", "\t", "\n", "\r", "\x7f", "\u0085"))
 def test_youtube_title_rejects_every_control_character(control: str) -> None:
     with pytest.raises(ValueError, match="title is invalid"):
         replace(_youtube_write(), title=f"Pokemon{control}opening")
-
-
-@pytest.mark.parametrize(
-    ("field", "value"),
-    (
-        ("text_excerpt", "Batch code: AB-123"),
-        ("author_hash", "a" * 64),
-        ("content_hash", "b" * 64),
-        ("language", "en"),
-    ),
-)
-def test_youtube_activity_only_fields_reject_every_non_null_value(
-    field: str,
-    value: str,
-) -> None:
-    with pytest.raises(ValueError, match=rf"{field} must be null"):
-        replace(_youtube_write(), **{field: value})
 
 
 def test_youtube_payload_matches_sql_primitive_and_range_boundaries() -> None:
@@ -1136,16 +1093,16 @@ def test_youtube_payload_matches_sql_primitive_and_range_boundaries() -> None:
 
     payload = write.as_payload()
 
-    metadata = payload["metadata"]
-    assert type(metadata["metadata_only"]) is bool
-    assert type(metadata["media_download"]) is bool
-    assert type(metadata["statistics_eligible"]) is bool
+    assert set(payload) == {
+        "external_id",
+        "source_url",
+        "title",
+        "published_at",
+        "collector_version",
+        "source_policy_version",
+    }
     assert payload["published_at"] == "2005-01-01T00:00:00Z"
     assert "\t" not in str(payload["title"])
-    assert payload["text_excerpt"] is None
-    assert payload["author_hash"] is None
-    assert payload["content_hash"] is None
-    assert payload["language"] is None
 
     with pytest.raises(ValueError, match="approved range"):
         replace(write, published_at=minimum - timedelta(microseconds=1))
@@ -1153,13 +1110,12 @@ def test_youtube_payload_matches_sql_primitive_and_range_boundaries() -> None:
         replace(write, published_at=datetime.now(UTC) + timedelta(minutes=1))
 
 
-def test_youtube_payload_revalidates_mutable_metadata_before_sql_serialization() -> None:
-    write = _youtube_write()
-    assert isinstance(write.metadata, dict)
-    write.metadata["statistics_eligible"] = 0
-
-    with pytest.raises(ValueError, match="metadata booleans"):
-        write.as_payload()
+def test_youtube_completion_rejects_more_than_one_search_page() -> None:
+    with pytest.raises(ValueError, match="0 to 25"):
+        YouTubeDiscoveryCompletion(
+            query_name="pokemon-tcg-booster-box-opening",
+            items=tuple(_youtube_write() for _ in range(26)),
+        )
 
 
 def test_postgres_budget_pause_and_completion_clear_canonical_locks() -> None:
