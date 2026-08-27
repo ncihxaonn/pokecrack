@@ -12,9 +12,11 @@ social, marketplace, or catalog metadata.
 | `activity_only` | YouTube search metadata, channel-country proxy, unverified product or batch hints | Private discovery coverage and review queues only |
 | `statistics` | Complete, nonduplicate opening with a verified pack denominator and tier A/B evidence | Observed-rate calculations after deterministic and independent validation |
 
-Activity-only records never create an opening, hit, denominator, aggregate, or
-public signal. A popular video, a rare-card post, a listing, or a channel country
-is not evidence that a region has better packs.
+The tier-D YouTube discovery records defined here never create an opening, hit,
+denominator, aggregate, or public signal. Other separately reviewed activity-only
+opening records may contribute an explicitly labelled activity count, but never a
+pack denominator, hit rate, or anomaly claim. A popular video, a rare-card post,
+a listing, or a channel country is not evidence that a region has better packs.
 
 ## YouTube discovery boundary
 
@@ -24,10 +26,19 @@ URLs, regions, or endpoints. The adapter may call `search.list` and one bounded
 `channels.list` enrichment request. It must not download video, audio, captions,
 thumbnails, channel names, or raw channel identifiers.
 
+The five exact global-English queries run on one fixed six-hour schedule when
+the feature is enabled. Both the registry and network adapter independently
+verify the frozen query text, `order=date`, 25-result cap, 30-day publication
+window, metadata-only flag, and absence of `regionCode` before network I/O. One
+30-second monotonic budget covers request spacing, `search.list`, and the
+optional `channels.list` enrichment. Persisted channel identity is a
+domain-separated, case-sensitive SHA-256 digest of the opaque API identifier.
+
 Persisted metadata is retention-bounded and always classified as evidence tier
-D / `activity_only`. Deterministic parsing may add unverified hints for the three
-supported sealed product types and explicitly labelled batch or lot codes. Those
-hints route later review; they do not promote evidence.
+D / `activity_only`. It must be refreshed or deleted within 30 days. Deterministic
+parsing may add unverified hints for the three supported sealed product types and
+explicitly labelled batch or lot codes. Those hints route later review; they do
+not promote evidence.
 
 YouTube `regionCode` describes availability in a viewer market, not the physical
 location of an opening, so it is not used for geography. A creator-configured
@@ -39,8 +50,10 @@ purchase, store, batch, or pull-rate location.
 
 The live path is:
 
-1. The UTC scheduler enqueues one job per exact query only when the explicit
-   collection flag is enabled and a dedicated YouTube API key is configured.
+1. The UTC scheduler sees only the explicit collection flag and, when enabled,
+   enqueues one job per exact query every six hours. Any schedule drift is a
+   startup error. Operators must not enable the flag until the collector has its
+   dedicated YouTube API key; the scheduler never receives or verifies that key.
 2. PostgreSQL verifies the exact job payload, current lease generation, enabled
    source policy, request spacing, and persistent request-gate ownership before
    any network request.
@@ -53,7 +66,16 @@ The live path is:
 
 Stale leases, disabled policies, malformed or oversized responses, identity
 collisions, and failed finalization perform no partial persistence. Live and demo
-source identities are isolated.
+source identities are isolated. Database triggers prohibit these tier-D rows from
+entering extraction, opening, batch-sighting, or duplicate-cluster relationships,
+so bounded cleanup can delete the complete API record and its query provenance at
+the 30-day boundary unless a later official API call refreshed it.
+
+Managed database backups apply the same boundary. A fail-closed two-pass filter
+derives the exact policy and discovery parents from one internally consistent
+plain dump, then removes all discovery rows and matching source parents before
+compression. It also catches parents rebound away from the policy; malformed or
+ambiguous dump structure aborts the backup without advancing its success marker.
 
 ## Global validation versus publication
 

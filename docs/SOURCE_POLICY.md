@@ -14,7 +14,24 @@ Every source route uses one of the following exact values and no aliases: `offic
 4. Authenticated OpenCLI/Browser Bridge only for an owner-authorized account and permitted metadata.
 5. Manual synthetic fixture import for tests.
 
-The current registry enables TCGdex catalog metadata, YouTube Data API metadata (credential required; no video download), and `example.com` only as a fixture-safe adapter. The first live handler is narrower than that registry: it accepts only one daily scheduled job for `https://api.tcgdex.net/v2/en/sets`; each bounded attempt performs at most one fixed conditional GET, capped at 2 MiB and 1,000 sets, after both a local allowlist check and a fenced live database-policy check. It stores only English set names, upstream IDs, counts, ETag and a content hash. It cannot fetch cards, rarity, arbitrary URLs, images, openings or probability evidence. The disabled fixture proves fail-closed behavior. Real retailer domains are not enabled by default.
+The current registry enables TCGdex catalog metadata, YouTube Data API metadata
+(credential required; no video download), and `example.com` only as a
+fixture-safe adapter. Live TCGdex collection accepts one daily scheduled job for
+`https://api.tcgdex.net/v2/en/sets`; each bounded attempt performs at most one
+fixed conditional GET, capped at 2 MiB and 1,000 sets, after both a local
+allowlist check and a fenced live database-policy check. It stores only English
+set names, upstream IDs, counts, ETag and a content hash.
+
+Live YouTube discovery defaults off. When explicitly enabled, its schedule is
+frozen to every six hours and enqueues exactly five versioned global-English
+queries. The scheduler receives the flag but no credential; only the collector
+receives a dedicated YouTube Data API key. Every request is fenced by
+`begin_youtube_discovery_job` and every result by
+`finalize_youtube_discovery_job`. The adapter can call only the fixed official
+`search.list` and bounded `channels.list` endpoints. Neither live path accepts an
+arbitrary URL or fetches video, audio, captions, thumbnails, cards, rarity,
+openings, or probability evidence. The disabled fixture proves fail-closed
+behavior. Real retailer domains are not enabled by default.
 
 ## Required review before enabling a source
 

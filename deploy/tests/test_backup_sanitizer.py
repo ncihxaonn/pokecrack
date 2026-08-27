@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 import os
-from pathlib import Path
 import subprocess
 import tempfile
 import unittest
-
+from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 SANITIZER = REPOSITORY_ROOT / "deploy" / "lib" / "sanitize_plain_backup.py"
@@ -130,24 +129,18 @@ class BackupSanitizerTests(unittest.TestCase):
         self.assertIn(b"1\tescaped\\ttab\\nnewline", result.stdout)
         discovery = result.stdout.split(b"COPY ingest.source_discoveries", 1)[-1]
         if b"COPY ingest.source_discoveries" in result.stdout:
-            self.assertTrue(
-                discovery.startswith(b" (source_item_id, note) FROM stdin;\n\\.\n")
-            )
+            self.assertTrue(discovery.startswith(b" (source_item_id, note) FROM stdin;\n\\.\n"))
 
     def test_filters_policy_rows_and_rebound_discovery_parents_in_any_table_order(
         self,
     ) -> None:
         for discoveries_first in (False, True):
             with self.subTest(discoveries_first=discoveries_first):
-                result = self.run_sanitizer(
-                    self.complete_dump(discoveries_first=discoveries_first)
-                )
+                result = self.run_sanitizer(self.complete_dump(discoveries_first=discoveries_first))
                 self.assert_sanitized(result)
 
     def test_supports_quoted_schema_table_columns_crlf_and_copy_escapes(self) -> None:
-        result = self.run_sanitizer(
-            self.complete_dump(quoted=True, discoveries_first=True)
-        )
+        result = self.run_sanitizer(self.complete_dump(quoted=True, discoveries_first=True))
         self.assertEqual(result.returncode, 0, result.stderr.decode())
         self.assertNotIn(YOUTUBE_ITEM.encode(), result.stdout)
         self.assertNotIn(REBOUND_ITEM.encode(), result.stdout)
@@ -197,9 +190,7 @@ class BackupSanitizerTests(unittest.TestCase):
     def test_preflight_policy_mismatch_and_ambiguity_fail_before_output(self) -> None:
         base = self.complete_dump()
         cases = {
-            "missing": base.replace(
-                f"{YOUTUBE_POLICY}\tyoutube_discovery\tpolicy\n".encode(), b""
-            ),
+            "missing": base.replace(f"{YOUTUBE_POLICY}\tyoutube_discovery\tpolicy\n".encode(), b""),
             "different": base.replace(
                 YOUTUBE_POLICY.encode(),
                 b"33333333-3333-4333-8333-333333333333",
@@ -241,9 +232,7 @@ class BackupSanitizerTests(unittest.TestCase):
             ),
             "unterminated": base.rsplit(b"\\.\n", 1)[0],
             "duplicate-copy": base
-            + copy_block(
-                "ingest.source_discoveries", "source_item_id", REBOUND_ITEM.encode()
-            ),
+            + copy_block("ingest.source_discoveries", "source_item_id", REBOUND_ITEM.encode()),
         }
         for name, dump in cases.items():
             with self.subTest(name=name):

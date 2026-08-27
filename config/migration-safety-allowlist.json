@@ -84,7 +84,7 @@
     {
       "migration": "20260829000000_youtube_global_discovery.sql",
       "statement_sha256": "d970495bc61d6f59a7fec2e4267c144c0c05856c27728631b7f00038f5b4ce50",
-      "reason": "Bounded fenced retention deletes only expired live YouTube discovery rows with no extraction, opening, or batch-sighting reference; provenance cascades with the selected source row."
+      "reason": "Bounded fenced retention hard-deletes live YouTube discovery rows expired by immutable MAX(last_seen_at)+30 days (or the exact-policy expiry fallback); immediate and deferred database triggers prohibit evidence and duplicate references, and query provenance cascades with the selected source row."
     },
     {
       "migration": "20260829000000_youtube_global_discovery.sql",

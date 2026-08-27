@@ -74,22 +74,28 @@ The adapter:
 
 - uses fixed `youtube.googleapis.com` endpoint constants, disables environment
   proxies and redirects, requests identity encoding, rejects compressed
-  responses, applies a 30-second absolute deadline, and counts raw bytes against
-  a 2 MiB cap;
+  responses, shares one 30-second monotonic deadline across spacing and both API
+  calls, and counts raw bytes against a 2 MiB cap;
+- independently rejects any drift from the five exact query texts,
+  `order=date`, 25-result cap, 30-day publication window, metadata-only flag, or
+  absent `regionCode` before network I/O;
 - validates duplicate JSON keys, exact 11-character video IDs, response shape,
   timestamps, and bounded normalized text;
 - never downloads or retains video, audio, captions, thumbnails, channel names,
   or raw channel IDs;
-- stores a channel-ID hash and, when supplied by YouTube, an explicitly labelled
-  channel-country proxy. It does not use `regionCode` as opening geography;
+- stores a domain-separated, case-sensitive SHA-256 channel-ID hash and, when
+  supplied by YouTube, an explicitly labelled channel-country proxy. It does
+  not use `regionCode` as opening geography;
 - extracts only deterministic, unverified hints for the three supported sealed
   product types and up to five explicitly labelled batch/lot codes;
 - persists every result as tier D / `activity_only`, with 30-day expiry.
 
 The scheduler receives only `YOUTUBE_COLLECTION_ENABLED`; it never receives the
-API key. The collector requires both the flag and a dedicated key. The checked-in
-flag default is false, and the database source policy remains an independent
-kill switch.
+API key. The collector requires both the flag and a dedicated key. Enabling the
+feature also freezes `SCHEDULE_OFFICIAL_API` to exactly every six hours, so an
+operator cannot accidentally enqueue expensive searches every minute. The
+checked-in flag default is false, and the database source policy remains an
+independent kill switch.
 
 ### Fenced persistence
 
@@ -103,9 +109,18 @@ Migration `20260829000000_youtube_global_discovery.sql` adds:
 - `finalize_youtube_discovery_job`, which rechecks the lease, policy, gate,
   versioned result shape, identities, bounds, and metadata before atomically
   upserting private rows and completing the job;
-- bounded cleanup of expired, unreferenced YouTube metadata. Rediscovery updates
-  freshness/provenance without demoting or overwriting later review decisions,
-  attempts, or errors.
+- composite `(id, is_demo)` foreign keys that prevent cross-mode source/job
+  provenance even if a parent mode is edited;
+- immediate and deferred end-state triggers that prohibit YouTube discovery
+  rows from extraction, openings, batch sightings, or duplicate clusters,
+  including sibling writable-CTE attempts and policy rebinds;
+- hard cleanup ordered by the immutable
+  `MAX(source_discoveries.last_seen_at) + 30 days` marker, with exact-policy
+  `expires_at` only as a no-marker fallback. The complete source row and query
+  provenance are deleted; the mutable cache expiry cannot starve an expired row
+  behind the bounded cleanup limit;
+- post-network success/failure timestamps that preserve cross-job request
+  spacing before releasing the persistent gate.
 
 The RPCs are service-role-only. `anon`, `authenticated`, and `public` receive
 no execute or direct DML access. A stale lease, disabled policy, malformed result,
@@ -124,25 +139,27 @@ uv run mypy pokecrack_worker
 uv run pytest -q
 ```
 
-Result: **355 passed, 1 optional Scrapling runtime skipped, and 2 subtests
+Result: **391 passed, 1 optional Scrapling runtime skipped, and 2 subtests
 passed**. Ruff and format checks passed; mypy reported no issues in 64 source
 files. Coverage includes flag-off behavior, five scheduler jobs, scheduler
-operation without the key, preflight deferral, two fixed API calls, 429 retry
-classification, malformed-response rejection, raw-byte/content-encoding bounds,
-stale leases, typed finalization, and global-country/AU-publication boundaries.
+operation without the key, exact six-hour cadence, query-drift rejection before
+network I/O, preflight deferral, two fixed API calls, 429 retry classification,
+malformed-response rejection, raw-byte/content-encoding bounds, stale leases,
+typed finalization, and global-country/AU-publication boundaries.
 
 ### Database
 
-- Static migration/type contracts: **42/42 passed**.
+- Static migration/type contracts: **43/43 passed**.
 - An isolated PostgreSQL 17 container on the previously approved VPS compiled
   all 10 migrations and loaded the synthetic seed without production data or
   credentials.
-- pgTAP plans passed **536/536**: 132 schema/queue, 54 analytics, 79
-  public/security/Admin, 42 seed, 50 lease fencing, 121 TCGdex, and 58 YouTube
+- pgTAP plans passed **560/560**: 132 schema/queue, 54 analytics, 79
+  public/security/Admin, 42 seed, 50 lease fencing, 121 TCGdex, and 82 YouTube
   discovery assertions.
-- The strengthened YouTube file passed **58/58** again, including a two-item
-  identity-conflict case proving statement-wide rollback after the first item
-  would otherwise have been written.
+- The strengthened YouTube file passed **82/82**, including identity-conflict
+  statement rollback, both policy-rebind and fresh-parent writable-CTE attacks,
+  deferred-constraint flushing, immutable-expiry ordering, and hard deletion
+  after an attempted ten-year cache-expiry extension.
 - The temporary database container had no published port or persistent volume
   and was deleted after testing. No hosted schema was changed.
 
@@ -155,10 +172,16 @@ provides the clean replay/pgTAP evidence for this revision.
 - `pnpm lint`, `pnpm typecheck`, `pnpm test`, and `pnpm build` passed. Test
   counts were shared config 9, shared types 114, and unchanged base Web 105
   (**228/228 total**); Next.js generated 13 static pages.
-- The 17 non-Docker deployment tests and the new scheduler/key-isolation test
-  passed (**18/18**). Six Compose-render tests remain unavailable on the Mac
-  because no Docker executable is installed; no new Compose runtime claim is
-  made until CI.
+- All **32/32** deployment tests that do not invoke Docker passed. Full discovery
+  reported 38 passing tests and six errors solely where Compose rendering tried
+  to execute a missing local Docker CLI; no new Compose runtime claim is made
+  until CI.
+- The backup sanitizer and backup-script boundary passed **18/18** targeted
+  tests. It uses an unlinked mode-`0600` spool and two passes over one dump to
+  remove all YouTube discovery rows plus policy-bound or marker-bound source
+  parents. Preflight/dump mismatch, orphan provenance, malformed COPY data, and
+  sanitizer/`psql` failures all abort atomically without exposing the database
+  URL or advancing the success marker.
 - Repository/migration-safety guard tests passed **18/18**. The repository guard
   returned `{"ok": true, "findings": []}`.
 - Pending-migration safety passed with exactly three reviewed DELETE

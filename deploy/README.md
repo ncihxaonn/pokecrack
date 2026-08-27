@@ -1,6 +1,11 @@
 # VPS deployment artifacts
 
-These files are **implemented deployment artifacts, not evidence of a deployment**. No VPS, GitHub remote, Supabase project, browser account, DNS record, or production release was available while they were authored. Local Docker builds were not run because `/var/run/docker.sock` is absent.
+These files are **implemented deployment artifacts, not evidence that the
+current branch was deployed**. The exact previously verified hosted baseline is
+recorded in `docs/IMPLEMENTATION_NOTES.md`; do not infer a later migration,
+worker, browser account, DNS change, or release from repository files alone.
+Local Docker builds were not run on this Mac because the Docker CLI/socket is
+absent.
 
 ## Runtime layout
 

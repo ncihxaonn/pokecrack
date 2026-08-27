@@ -5,14 +5,13 @@ import hashlib
 import importlib.util
 import json
 import os
-from pathlib import Path
-import stat
 import shutil
+import stat
 import subprocess
 import tempfile
 import unittest
 import zipfile
-
+from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEPLOY_ROOT = REPOSITORY_ROOT / "deploy"

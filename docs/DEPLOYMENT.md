@@ -1,8 +1,22 @@
 # Deployment
 
-The approved Personal targets currently host a private GitHub repository, an empty Supabase schema through migration `20260825000600`, and a Vercel Demo-mode Web deployment. No VPS/live collection deployment was performed. The steps below remain an operator runbook; completion must be evidenced with account-specific IDs/URLs, exact SHA and health output.
+The approved Personal targets currently host a private GitHub repository, a
+Supabase schema through migration `20260828000000_tcgdex_sets_pipeline`, and a
+Vercel Demo-mode Web deployment. The hosted catalog contains 218 live TCGdex set
+rows but no live opening or rate data. The MAM VPS runs exact merged `main`
+commit `9428e1d`; its six services and catalog-only TCGdex path were observed
+healthy. These facts describe that prior owner-approved rollout only. The steps
+below remain an operator runbook; later completion must be evidenced with
+account-specific IDs/URLs, exact SHA and health output.
 
-> **Current release blocker:** the single-process composition now contains two bounded code paths: fenced cleanup and TCGdex English sets-catalog metadata sync. The new catalog path is not deployed; the approved hosted database still lacks both the lease-fencing and TCGdex pipeline migrations, and no VPS is approved or available. General collection, AI-worker, and aggregator roles remain fail closed. Do not describe or deploy this as a complete live research pipeline. The steps below are an account-owner runbook, not evidence that deployment occurred.
+> **Current release blocker:** this branch adds a fenced, metadata-only global
+> YouTube discovery path and migration `20260829000000`, but neither is deployed.
+> `YOUTUBE_COLLECTION_ENABLED` remains false and the dedicated API-restricted key
+> is absent. Current project rules require fresh explicit approval after CI
+> before changing the hosted schema or VPS. General URL/browser collection,
+> AI-worker, and aggregator roles remain fail closed. Do not describe or deploy
+> this as a complete live research pipeline. The steps below are an
+> account-owner runbook, not evidence that the branch was released.
 
 ## 1. Account-bound prerequisites
 

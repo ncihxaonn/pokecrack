@@ -11,15 +11,14 @@ promoted to a managed backup.
 from __future__ import annotations
 
 import argparse
-from dataclasses import dataclass
 import os
 import re
 import stat
 import sys
 import tempfile
+from dataclasses import dataclass
 from typing import BinaryIO
 from uuid import UUID
-
 
 SOURCE_POLICIES = ("ingest", "source_policies")
 SOURCE_ITEMS = ("ingest", "source_items")
@@ -138,12 +137,8 @@ def parse_copy_header(line: bytes) -> CopyHeader | None:
     if not COPY_SUFFIX.fullmatch(suffix):
         raise SanitizationError("COPY must use FROM stdin")
 
-    table = tuple(
-        _parse_identifier(part) for part in _split_outside_quotes(table_text, ".")
-    )
-    columns = tuple(
-        _parse_identifier(part) for part in _split_outside_quotes(columns_text, ",")
-    )
+    table = tuple(_parse_identifier(part) for part in _split_outside_quotes(table_text, "."))
+    columns = tuple(_parse_identifier(part) for part in _split_outside_quotes(columns_text, ","))
     if len(table) not in (1, 2) or not columns:
         raise SanitizationError("unsupported COPY table or column list")
     if len(set(columns)) != len(columns):
@@ -190,14 +185,10 @@ class PlainBackupSanitizer:
                 youtube_policy_id.encode("ascii"), field="YouTube policy id"
             )
         if source_discoveries_present and youtube_policy_id is None:
-            raise SanitizationError(
-                "source_discoveries exists without an exact YouTube policy id"
-            )
+            raise SanitizationError("source_discoveries exists without an exact YouTube policy id")
         if source_items_present and not source_policies_present:
             raise SanitizationError("source_items exists without source_policies")
-        if youtube_policy_id is not None and not (
-            source_policies_present and source_items_present
-        ):
+        if youtube_policy_id is not None and not (source_policies_present and source_items_present):
             raise SanitizationError(
                 "YouTube policy exists without source_policies and source_items"
             )
@@ -226,9 +217,7 @@ class PlainBackupSanitizer:
                 raise SanitizationError("source_policies COPY lacks id or source_key")
         elif header.table == SOURCE_ITEMS:
             if "id" not in indexes or "source_policy_id" not in indexes:
-                raise SanitizationError(
-                    "source_items COPY lacks id or source_policy_id"
-                )
+                raise SanitizationError("source_items COPY lacks id or source_policy_id")
         elif header.table == SOURCE_DISCOVERIES and "source_item_id" not in indexes:
             raise SanitizationError("source_discoveries COPY lacks source_item_id")
         return CopyBlock(header=header, column_indexes=indexes)
@@ -237,9 +226,7 @@ class PlainBackupSanitizer:
         content = _without_line_ending(line)
         fields = content.split(b"\t")
         if len(fields) != len(block.header.columns):
-            raise SanitizationError(
-                "retention-sensitive COPY row has wrong field count"
-            )
+            raise SanitizationError("retention-sensitive COPY row has wrong field count")
         return fields
 
     def _inspect_row(self, block: CopyBlock, line: bytes) -> None:
@@ -319,9 +306,7 @@ class PlainBackupSanitizer:
             except UnicodeDecodeError:
                 text = ""
             if TARGET_INSERT.match(text):
-                raise SanitizationError(
-                    "retention-sensitive table data must use COPY FROM stdin"
-                )
+                raise SanitizationError("retention-sensitive table data must use COPY FROM stdin")
 
         if block is not None:
             raise SanitizationError("unterminated COPY data block")
@@ -351,9 +336,7 @@ class PlainBackupSanitizer:
                         fields[block.column_indexes["source_policy_id"]],
                         field="source item policy id",
                     )
-                    is_discovery_parent = (
-                        source_item_id in self.discovery_source_item_ids
-                    )
+                    is_discovery_parent = source_item_id in self.discovery_source_item_ids
                     if is_discovery_parent:
                         unmatched_discovery_ids.discard(source_item_id)
                     if is_discovery_parent or policy_id == self.dump_youtube_policy_id:
@@ -370,9 +353,7 @@ class PlainBackupSanitizer:
         if block is not None:
             raise SanitizationError("unterminated COPY data block")
         if unmatched_discovery_ids:
-            raise SanitizationError(
-                "discovery row refers to a source item absent from the dump"
-            )
+            raise SanitizationError("discovery row refers to a source item absent from the dump")
 
     def sanitize(self, source: BinaryIO, destination: BinaryIO) -> None:
         # pg_dump is internally snapshot-consistent, but table order is not a

@@ -56,4 +56,16 @@ The migrations define the private catalog/ingest/analytics relations, public agg
 
 ## Lifecycle
 
-Collection payloads and model runs use bounded retention; YouTube API metadata uses a 30-day expiry unless refreshed. Cleanup removes only expired, unreferenced discovery material and must preserve reviewed downstream decisions and the auditability needed to reproduce a published aggregate version. Deletion jobs should mark/purge source material without rewriting historical public claims silently. Backups contain private data and receive the same or stronger controls as the database.
+Collection payloads and model runs use bounded retention. YouTube API metadata
+is a deliberately transient exception: immediate and deferred database triggers
+prohibit its source rows from entering extraction, opening, batch-sighting, or
+duplicate-cluster relationships, including through one-statement writable CTEs.
+Its immutable discovery marker determines expiry at
+`MAX(last_seen_at) + 30 days`; cleanup then hard-deletes the complete source row
+and cascades its query provenance. An exact-policy `expires_at` check is the
+fallback only when no marker exists. The managed backup stream independently
+removes every YouTube discovery row and its source parent, including a parent
+later rebound away from that policy, so daily/weekly backup retention cannot
+extend this API-data lifetime. Other reviewed source material and published
+aggregate auditability keep their existing preservation rules; deletion must
+not silently rewrite historical public claims.

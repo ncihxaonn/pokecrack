@@ -34,7 +34,7 @@ VPS Docker Compose
   watchdog -> heartbeats, budget/free-tier/backup freshness alerts
 ```
 
-The deployment artifacts define `collector`, `ai-worker`, `aggregator`, `scheduler`, and `watchdog` as roles of one worker image with role-specific commands and least-privilege environment variables. The live composition is deliberately single-process (`WORKER_MAX_CONCURRENCY=1`). Cleanup and the daily TCGdex English sets-catalog sync are fixed jobs. When the explicit YouTube collection flag is enabled, the scheduler may also enqueue one fenced job for each of five versioned global discovery queries; it does not receive the API key. Only the collector receives the dedicated key and may claim those jobs. General URL and browser collection, `ai-worker`, and `aggregator` still fail closed. TCGdex rows are catalog-only. YouTube rows are tier-D/activity-only metadata. Neither path creates cards, openings, hits, denominators, aggregates, or pull-rate evidence. `auth-browser` has its own Chromium/noVNC image and sensitive persistent profile volume.
+The deployment artifacts define `collector`, `ai-worker`, `aggregator`, `scheduler`, and `watchdog` as roles of one worker image with role-specific commands and least-privilege environment variables. The live composition is deliberately single-process (`WORKER_MAX_CONCURRENCY=1`). Cleanup and the daily TCGdex English sets-catalog sync are fixed jobs. When the explicit YouTube collection flag is enabled, the scheduler enqueues one fenced job for each of five versioned global discovery queries on an exact six-hour schedule; any cadence drift fails startup, and the scheduler does not receive the API key. Only the collector receives the dedicated key and may claim those jobs. General URL and browser collection, `ai-worker`, and `aggregator` still fail closed. TCGdex rows are catalog-only. YouTube rows are tier-D/activity-only metadata. Neither path creates cards, openings, hits, denominators, aggregates, or pull-rate evidence. `auth-browser` has its own Chromium/noVNC image and sensitive persistent profile volume.
 
 ## PostgreSQL queue; no Redis in the free MVP
 
@@ -60,6 +60,9 @@ Every persistent collector has its own transactional database boundary. Cleanup 
 - Compose has an internal-only network plus a non-published bridge needed for outbound Internet/Supabase. No service binds a public host interface.
 - Host loopback `6080` is the sole published browser-support port. CDP, raw VNC, OpenCLI daemon, PostgreSQL, and Docker socket are not published/mounted.
 - Browser profiles/cookies live only in a mode-`0700` VPS volume and are account credentials, not project data.
+- The database backup stream strips retention-bounded YouTube discovery rows and
+  their source parents before compression; a malformed or ambiguous dump fails
+  without advancing the success marker.
 
 ## Failure behavior
 
