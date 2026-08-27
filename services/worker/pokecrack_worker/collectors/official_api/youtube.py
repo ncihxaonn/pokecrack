@@ -2,18 +2,20 @@
 
 from __future__ import annotations
 
-import asyncio
 import html
 import json
+import os
 import re
+import subprocess
 import unicodedata
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from time import monotonic
 from types import MappingProxyType
 from typing import Any, Protocol
+from urllib.parse import urlencode
 
-import httpx
 from pydantic import SecretStr
 
 from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
@@ -24,6 +26,10 @@ from pokecrack_worker.models import CollectorType, SourceItemCandidate
 YOUTUBE_SEARCH_URL = "https://youtube.googleapis.com/youtube/v3/search"
 YOUTUBE_MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 YOUTUBE_TIMEOUT_SECONDS = 30.0
+_YOUTUBE_CURL_TRANSFER_SECONDS = 27.0
+_YOUTUBE_PROCESS_DEADLINE_SECONDS = 29.0
+_YOUTUBE_CURL_PATH = "/usr/bin/curl"
+_PROCESS_DEADLINE_SUPPORTED = os.name == "posix"
 YOUTUBE_COLLECTOR_VERSION = "youtube-global-discovery-v1"
 YOUTUBE_APPROVED_QUERY_TEXT: Mapping[str, str] = MappingProxyType(dict(REQUIRED_YOUTUBE_QUERIES))
 YOUTUBE_QUERY_ALLOWLIST = tuple(YOUTUBE_APPROVED_QUERY_TEXT)
@@ -84,20 +90,22 @@ class YouTubeTransport(Protocol):
 
 
 class HTTPXYouTubeTransport:
-    """Fixed-host, no-proxy, no-redirect transport with byte and wall-time caps."""
+    """Fixed-host curl boundary with byte and synchronous wall-time caps.
+
+    DNS resolution lives inside the child process. A deadline therefore terminates
+    both the request and any resolver work before this synchronous method returns.
+    """
 
     def __init__(
         self,
         *,
         max_response_bytes: int = YOUTUBE_MAX_RESPONSE_BYTES,
-        http_transport: httpx.AsyncBaseTransport | None = None,
     ) -> None:
         if not 1 <= max_response_bytes <= YOUTUBE_MAX_RESPONSE_BYTES:
             raise ValueError(
                 f"max_response_bytes must be between 1 and {YOUTUBE_MAX_RESPONSE_BYTES}"
             )
         self.max_response_bytes = max_response_bytes
-        self._http_transport = http_transport
 
     def get(
         self,
@@ -111,90 +119,176 @@ class HTTPXYouTubeTransport:
             raise ValueError("YouTube transport accepts only the fixed search endpoint")
         if timeout_seconds != YOUTUBE_TIMEOUT_SECONDS:
             raise ValueError("YouTube transport requires the fixed 30-second timeout")
-
-        # The live runtime executes synchronous job handlers in a worker thread. An
-        # async client gives that thread one cancellable wall-clock deadline without
-        # spawning a request thread that could outlive the job. Nested event loops
-        # cannot provide that guarantee, so reject them before revealing the key or
-        # opening a connection.
-        try:
-            asyncio.get_running_loop()
-        except RuntimeError:
-            pass
-        else:
+        if not _PROCESS_DEADLINE_SUPPORTED:
             raise YouTubeError("absolute_deadline_unavailable", retryable=False)
+        secret = api_key.get_secret_value()
+        if (
+            not secret
+            or not secret.isascii()
+            or any(character in secret for character in ("\r", "\n", "\0"))
+        ):
+            raise YouTubeCredentialsUnavailable()
+
+        started_at = monotonic()
+        hard_deadline = started_at + YOUTUBE_TIMEOUT_SECONDS
+        process_deadline = started_at + _YOUTUBE_PROCESS_DEADLINE_SECONDS
+        transfer_deadline = started_at + _YOUTUBE_CURL_TRANSFER_SECONDS
+        query_url = f"{url}?{urlencode(params)}"
+        command = (
+            _YOUTUBE_CURL_PATH,
+            "--disable",
+            "--silent",
+            "--show-error",
+            "--request",
+            "GET",
+            "--proto",
+            "=https",
+            "--proxy",
+            "",
+            "--noproxy",
+            "*",
+            "--max-redirs",
+            "0",
+            "--connect-timeout",
+            "10",
+            "--max-time",
+            str(int(_YOUTUBE_CURL_TRANSFER_SECONDS)),
+            "--max-filesize",
+            str(self.max_response_bytes),
+            "--header",
+            "@-",
+            "--header",
+            "Accept: application/json",
+            "--header",
+            "Accept-Encoding: identity",
+            "--write-out",
+            (
+                "%{stderr}POKECRACK_HTTP_CODE:%{http_code}\\n"
+                "POKECRACK_CONTENT_ENCODING:%header{content-encoding}\\n"
+                "POKECRACK_CONTENT_LENGTH:%header{content-length}\\n"
+            ),
+            query_url,
+        )
+        try:
+            process = subprocess.Popen(  # noqa: S603 - fixed absolute executable and argv
+                command,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                close_fds=True,
+                start_new_session=True,
+                env={"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"},
+            )
+        except OSError:
+            raise YouTubeError("transport_unavailable", retryable=False) from None
 
         try:
-            return asyncio.run(
-                self._get_with_absolute_deadline(
-                    url,
-                    params=params,
-                    api_key=api_key,
-                    timeout_seconds=timeout_seconds,
-                )
+            stdout, stderr = process.communicate(
+                input=f"X-Goog-Api-Key: {secret}\n".encode("ascii"),
+                timeout=_remaining_seconds(transfer_deadline),
             )
-        except TimeoutError:
+        except subprocess.TimeoutExpired:
+            _terminate_and_reap(process, deadline=process_deadline)
+            if monotonic() > process_deadline:
+                raise YouTubeError("deadline_cleanup_failed", retryable=False) from None
             raise YouTubeError("request_timeout", retryable=True) from None
-        except YouTubeError:
-            raise
-        except httpx.TimeoutException:
-            raise YouTubeError("request_timeout", retryable=True) from None
-        except httpx.HTTPError:
-            raise YouTubeError("network_error", retryable=True) from None
 
-    async def _get_with_absolute_deadline(
-        self,
-        url: str,
-        *,
-        params: dict[str, str],
-        api_key: SecretStr,
-        timeout_seconds: float,
-    ) -> APIResponse:
-        timeout = httpx.Timeout(
-            timeout=min(timeout_seconds, 10.0),
-            connect=min(timeout_seconds, 10.0),
-            read=min(timeout_seconds, 10.0),
-            write=min(timeout_seconds, 10.0),
-            pool=min(timeout_seconds, 10.0),
+        if monotonic() > hard_deadline:
+            raise YouTubeError("request_timeout", retryable=True)
+        if process.returncode == 28:
+            raise YouTubeError("request_timeout", retryable=True)
+        if process.returncode == 63:
+            raise YouTubeInvalidResponse("response_too_large")
+        if process.returncode != 0:
+            raise YouTubeError("network_error", retryable=True)
+        if len(stdout) > self.max_response_bytes:
+            raise YouTubeInvalidResponse("response_too_large")
+
+        response_metadata = _curl_response_metadata(stderr)
+        content_encoding = response_metadata["content-encoding"]
+        if content_encoding.casefold() not in {"", "identity"}:
+            raise YouTubeInvalidResponse("unsupported_content_encoding")
+        declared_length = response_metadata["content-length"]
+        if declared_length:
+            try:
+                parsed_length = int(declared_length)
+            except ValueError as error:
+                raise YouTubeInvalidResponse("invalid_content_length") from error
+            if parsed_length < 0:
+                raise YouTubeInvalidResponse("invalid_content_length")
+            if parsed_length > self.max_response_bytes:
+                raise YouTubeInvalidResponse("response_too_large")
+        try:
+            status_code = int(response_metadata["http-code"])
+        except ValueError as error:
+            raise YouTubeInvalidResponse() from error
+        if not 100 <= status_code <= 599:
+            raise YouTubeInvalidResponse()
+        if monotonic() > hard_deadline:
+            raise YouTubeError("request_timeout", retryable=True)
+        return APIResponse(
+            status_code,
+            {
+                "content-encoding": content_encoding,
+                "content-length": declared_length,
+            },
+            stdout,
         )
-        async with asyncio.timeout(timeout_seconds):
-            async with httpx.AsyncClient(
-                follow_redirects=False,
-                trust_env=False,
-                timeout=timeout,
-                transport=self._http_transport,
-                headers={
-                    "Accept": "application/json",
-                    "Accept-Encoding": "identity",
-                },
-            ) as client:
-                async with client.stream(
-                    "GET",
-                    url,
-                    params={**params, "key": api_key.get_secret_value()},
-                ) as response:
-                    declared_length = response.headers.get("content-length")
-                    content_encoding = response.headers.get("content-encoding")
-                    if content_encoding is not None and content_encoding.strip().casefold() not in {
-                        "",
-                        "identity",
-                    }:
-                        raise YouTubeInvalidResponse("unsupported_content_encoding")
-                    if declared_length is not None:
-                        try:
-                            parsed_length = int(declared_length)
-                        except ValueError as error:
-                            raise YouTubeInvalidResponse("invalid_content_length") from error
-                        if parsed_length < 0:
-                            raise YouTubeInvalidResponse("invalid_content_length")
-                        if parsed_length > self.max_response_bytes:
-                            raise YouTubeInvalidResponse("response_too_large")
-                    body = bytearray()
-                    async for chunk in response.aiter_raw():
-                        body.extend(chunk)
-                        if len(body) > self.max_response_bytes:
-                            raise YouTubeInvalidResponse("response_too_large")
-                    return APIResponse(response.status_code, dict(response.headers), bytes(body))
+
+
+def _remaining_seconds(deadline: float) -> float:
+    remaining = deadline - monotonic()
+    if remaining <= 0:
+        raise subprocess.TimeoutExpired(_YOUTUBE_CURL_PATH, 0)
+    return remaining
+
+
+def _terminate_and_reap(process: subprocess.Popen[bytes], *, deadline: float) -> None:
+    try:
+        process.kill()
+    except OSError:
+        pass
+    remaining = deadline - monotonic()
+    if remaining <= 0:
+        return
+    try:
+        process.communicate(timeout=remaining)
+    except subprocess.TimeoutExpired:
+        try:
+            process.kill()
+        except OSError:
+            pass
+        remaining = deadline - monotonic()
+        if remaining <= 0:
+            return
+        try:
+            process.wait(timeout=remaining)
+        except subprocess.TimeoutExpired:
+            return
+
+
+def _curl_response_metadata(stderr: bytes) -> dict[str, str]:
+    if len(stderr) > 64 * 1024:
+        raise YouTubeInvalidResponse("response_headers_too_large")
+    try:
+        lines = stderr.decode("utf-8", errors="strict").splitlines()
+    except UnicodeDecodeError as error:
+        raise YouTubeInvalidResponse() from error
+    prefixes = {
+        "POKECRACK_HTTP_CODE:": "http-code",
+        "POKECRACK_CONTENT_ENCODING:": "content-encoding",
+        "POKECRACK_CONTENT_LENGTH:": "content-length",
+    }
+    metadata: dict[str, str] = {}
+    for line in lines:
+        for prefix, key in prefixes.items():
+            if line.startswith(prefix):
+                if key in metadata:
+                    raise YouTubeInvalidResponse("duplicate_response_metadata")
+                metadata[key] = line[len(prefix) :].strip()
+    if set(metadata) != set(prefixes.values()):
+        raise YouTubeInvalidResponse()
+    return metadata
 
 
 def _normalize_text(value: str, *, max_chars: int) -> str | None:
