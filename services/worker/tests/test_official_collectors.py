@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import gzip
+import json
 from dataclasses import dataclass, field
+from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
@@ -114,7 +116,7 @@ class AdvancingYouTubeTransport:
         return self.responses.pop(0)
 
 
-def test_youtube_discovery_maps_metadata_without_downloading_video_or_raw_author() -> None:
+def test_youtube_discovery_maps_only_bounded_activity_metadata() -> None:
     transport = FixtureYouTubeTransport(
         [
             APIResponse(
@@ -145,7 +147,15 @@ def test_youtube_discovery_maps_metadata_without_downloading_video_or_raw_author
     assert item.external_id == "dQw4w9WgXcQ"
     assert item.collector.value == "official_api"
     assert item.collector_version == "youtube-global-discovery-v1"
-    assert item.author_hash and "Fixture Channel" not in item.model_dump_json()
+    assert item.title == "Synthetic Pokémon TCG opening"
+    assert item.published_at == datetime(2026, 8, 24, 8, 0, tzinfo=UTC)
+    assert item.text is None
+    assert item.author_hash is None
+    assert item.content_hash is None
+    serialized = item.model_dump_json()
+    assert "fixture-channel-id" not in serialized
+    assert "Fixture Channel" not in serialized
+    assert "Synthetic fixture only" not in serialized
     assert item.media_urls == ()
     assert item.metadata["geography_status"] == "channel_country_proxy"
     assert item.metadata["channel_country_code"] == "AU"
@@ -165,9 +175,44 @@ def test_youtube_discovery_maps_metadata_without_downloading_video_or_raw_author
     assert len(transport.calls) == 2
     assert transport.calls[0][0].endswith("/youtube/v3/search")
     assert transport.calls[0][1]["type"] == "video"
+    assert transport.calls[0][1]["q"] == queries.queries[0].query
+    assert transport.calls[0][1]["relevanceLanguage"] == "en"
     assert "regionCode" not in transport.calls[0][1]
     assert "key" not in transport.calls[0][1]
     assert transport.calls[1][0].endswith("/youtube/v3/channels")
+    assert transport.calls[1][1]["id"] == "fixture-channel-id"
+
+
+def test_youtube_discovery_rejects_non_string_description_before_country_lookup() -> None:
+    body = json.dumps(
+        {
+            "items": [
+                {
+                    "id": {"kind": "youtube#video", "videoId": "dQw4w9WgXcQ"},
+                    "snippet": {
+                        "publishedAt": "2026-08-24T08:00:00Z",
+                        "channelId": "fixture-channel-id",
+                        "title": "Synthetic Pokémon TCG opening",
+                        "description": None,
+                    },
+                }
+            ]
+        }
+    ).encode()
+    transport = FixtureYouTubeTransport([APIResponse(200, {}, body)])
+    client = YouTubeDataClient(
+        api_key="fixture-key",
+        transport=transport,
+        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+    )
+    query = YouTubeQueryRegistry.from_yaml(ROOT / "config" / "youtube-queries.yaml").queries[0]
+
+    with pytest.raises(YouTubeError) as raised:
+        client.discover(query)
+
+    assert raised.value.code == "invalid_response"
+    assert raised.value.retryable is False
+    assert len(transport.calls) == 1
 
 
 @pytest.mark.parametrize(
@@ -280,15 +325,6 @@ def test_youtube_discovery_shares_one_absolute_budget_across_both_api_calls() ->
         (YOUTUBE_SEARCH_URL, pytest.approx(30.0)),
         (youtube_module.YOUTUBE_CHANNELS_URL, pytest.approx(25.0)),
     ]
-
-
-def test_youtube_author_hash_is_case_sensitive_and_has_a_fixed_namespaced_vector() -> None:
-    lower_author_hash = youtube_module._hash_channel_id("UCabcDEF123")
-    upper_author_hash = youtube_module._hash_channel_id("UCAbcDEF123")
-
-    assert lower_author_hash == "5198073a1d03da30fe16abf97e926a02b7cc2516810954ef864e6a9019cff779"
-    assert upper_author_hash == "8b729a14e558235b805b57df386dea6471a0ab51bda87dbb1102cd3078407928"
-    assert lower_author_hash != upper_author_hash
 
 
 def test_youtube_http_transport_rejects_response_over_byte_cap() -> None:

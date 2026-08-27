@@ -11,7 +11,6 @@ from enum import StrEnum
 from typing import Any
 
 _TCGDEX_ETAG_PATTERN = re.compile(r'(?:W/)?"[\x21\x23-\x7e]*"')
-_LOWER_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 _YOUTUBE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _YOUTUBE_PUBLISHED_AT_MIN = datetime(2005, 1, 1, tzinfo=UTC)
 _YOUTUBE_QUERY_NAMES = frozenset(
@@ -174,7 +173,7 @@ class YouTubeSourceItemWrite:
     published_at: datetime | None
     author_hash: str | None
     content_hash: str | None
-    language: str
+    language: str | None
     metadata: Mapping[str, Any]
     collector_version: str
     source_policy_version: str
@@ -194,15 +193,14 @@ class YouTubeSourceItemWrite:
             or any(unicodedata.category(character).startswith("C") for character in self.title)
         ):
             raise ValueError("YouTube title is invalid")
-        if self.text_excerpt is not None and (
-            not isinstance(self.text_excerpt, str)
-            or len(self.text_excerpt) > 20_000
-            or any(
-                unicodedata.category(character).startswith("C") and character not in "\t\n\r"
-                for character in self.text_excerpt
-            )
+        for name, value in (
+            ("text_excerpt", self.text_excerpt),
+            ("author_hash", self.author_hash),
+            ("content_hash", self.content_hash),
+            ("language", self.language),
         ):
-            raise ValueError("YouTube text_excerpt is invalid")
+            if value is not None:
+                raise ValueError(f"YouTube {name} must be null")
         if self.published_at is not None:
             if (
                 not isinstance(self.published_at, datetime)
@@ -213,16 +211,6 @@ class YouTubeSourceItemWrite:
             published_at = self.published_at.astimezone(UTC)
             if not _YOUTUBE_PUBLISHED_AT_MIN <= published_at <= datetime.now(UTC):
                 raise ValueError("YouTube published_at is outside the approved range")
-        for name, value in (
-            ("author_hash", self.author_hash),
-            ("content_hash", self.content_hash),
-        ):
-            if value is not None and (
-                not isinstance(value, str) or _LOWER_SHA256_PATTERN.fullmatch(value) is None
-            ):
-                raise ValueError(f"YouTube {name} must be lowercase SHA-256 or null")
-        if self.language != "en":
-            raise ValueError("YouTube global discovery v1 uses the English query language")
         if self.collector_version != "youtube-global-discovery-v1":
             raise ValueError("YouTube collector version is not approved")
         if self.source_policy_version != "youtube-global-discovery-v1":

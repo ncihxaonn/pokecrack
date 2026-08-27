@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import hashlib
 import html
 import json
 import re
@@ -45,7 +44,6 @@ _EXPECTED_POLICY_CONFIG: dict[str, Any] = {
 
 _VIDEO_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _CHANNEL_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{3,128}$")
-_CHANNEL_HASH_NAMESPACE = b"youtube-channel-v1\0"
 
 
 class YouTubeError(RuntimeError):
@@ -94,7 +92,6 @@ class _SearchItem:
     video_id: str
     channel_id: str
     title: str | None
-    description: str | None
     published_at: datetime
 
 
@@ -209,14 +206,6 @@ def _normalize_text(value: str, *, max_chars: int) -> str | None:
     return normalized[:max_chars] or None
 
 
-def _hash_channel_id(channel_id: str) -> str:
-    """Hash the validated case-sensitive opaque ID without person-name normalization."""
-
-    if _CHANNEL_ID_PATTERN.fullmatch(channel_id) is None:
-        raise YouTubeInvalidResponse("invalid_channel_id")
-    return hashlib.sha256(_CHANNEL_HASH_NAMESPACE + channel_id.encode("ascii")).hexdigest()
-
-
 def _json_mapping(body: bytes) -> Mapping[str, Any]:
     def reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
         result: dict[str, Any] = {}
@@ -283,7 +272,6 @@ def _parse_search_response(body: bytes, *, max_results: int) -> tuple[_SearchIte
                 video_id=video_id,
                 channel_id=channel_id,
                 title=_normalize_text(title, max_chars=500),
-                description=_normalize_text(description, max_chars=20_000),
                 published_at=_published_at(snippet.get("publishedAt")),
             )
         )
@@ -462,9 +450,9 @@ class YouTubeDataClient:
                     external_id=item.video_id,
                     source_url=f"https://www.youtube.com/watch?v={item.video_id}",
                     title=item.title,
-                    text=item.description,
+                    text=None,
                     published_at=item.published_at,
-                    author_hash=_hash_channel_id(item.channel_id),
+                    author_hash=None,
                     media_urls=(),
                     metadata=metadata,
                     collector=CollectorType.OFFICIAL_API,

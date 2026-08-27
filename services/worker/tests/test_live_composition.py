@@ -430,6 +430,8 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
     assert transport.calls[0][0].endswith("/search")
     assert transport.calls[1][0].endswith("/channels")
     assert all("key" not in params for _url, params, _timeout in transport.calls)
+    assert transport.calls[0][1]["q"] == "Pokemon TCG ETB opening"
+    assert transport.calls[0][1]["relevanceLanguage"] == "en"
     assert "regionCode" not in transport.calls[0][1]
     finalizer_sql, finalizer_params = executor.calls[2]
     assert "ingest.finalize_youtube_discovery_job" in finalizer_sql
@@ -439,6 +441,12 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
     item = persisted["items"][0]
     assert item["collector_version"] == "youtube-global-discovery-v1"
     assert item["source_policy_version"] == "youtube-global-discovery-v1"
+    assert item["title"] == "Pokemon ETB opening"
+    assert item["published_at"] == "2026-08-24T08:00:00Z"
+    assert item["text_excerpt"] is None
+    assert item["author_hash"] is None
+    assert item["content_hash"] is None
+    assert item["language"] is None
     assert item["metadata"] == {
         "channel_country_code": "US",
         "discovery_scope": "global",
@@ -454,6 +462,7 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
     serialized = json.dumps(persisted)
     assert "UC-private-fixture" not in serialized
     assert "must-not-persist" not in serialized
+    assert "Elite Trainer Box, batch code: AB-123" not in serialized
     assert "fixture-youtube-secret" not in repr(executor.calls + transport.calls)
 
 

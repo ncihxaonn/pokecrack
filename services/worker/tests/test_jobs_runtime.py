@@ -964,11 +964,11 @@ def _youtube_write() -> YouTubeSourceItemWrite:
         source_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
         normalized_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
         title="Pokemon booster box opening",
-        text_excerpt="Batch code: AB-123",
+        text_excerpt=None,
         published_at=NOW,
-        author_hash="a" * 64,
-        content_hash="b" * 64,
-        language="en",
+        author_hash=None,
+        content_hash=None,
+        language=None,
         metadata={
             "query_name": "pokemon-tcg-booster-box-opening",
             "metadata_only": True,
@@ -1053,6 +1053,12 @@ def test_postgres_youtube_completion_uses_one_exact_activity_only_finalizer() ->
     }
     assert item["collector_version"] == "youtube-global-discovery-v1"
     assert item["source_policy_version"] == "youtube-global-discovery-v1"
+    assert item["title"] == "Pokemon booster box opening"
+    assert item["published_at"] == "2026-08-25T12:00:00Z"
+    assert item["text_excerpt"] is None
+    assert item["author_hash"] is None
+    assert item["content_hash"] is None
+    assert item["language"] is None
     assert item["metadata"]["evidence_tier"] == "D"
     assert item["metadata"]["statistics_eligible"] is False
     assert "media_urls" not in item
@@ -1103,10 +1109,21 @@ def test_youtube_title_rejects_every_control_character(control: str) -> None:
         replace(_youtube_write(), title=f"Pokemon{control}opening")
 
 
-@pytest.mark.parametrize("control", ("\x00", "\x08", "\x0b", "\x0c", "\x7f", "\u0085"))
-def test_youtube_excerpt_rejects_controls_other_than_tab_lf_cr(control: str) -> None:
-    with pytest.raises(ValueError, match="text_excerpt is invalid"):
-        replace(_youtube_write(), text_excerpt=f"Batch{control}code")
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("text_excerpt", "Batch code: AB-123"),
+        ("author_hash", "a" * 64),
+        ("content_hash", "b" * 64),
+        ("language", "en"),
+    ),
+)
+def test_youtube_activity_only_fields_reject_every_non_null_value(
+    field: str,
+    value: str,
+) -> None:
+    with pytest.raises(ValueError, match=rf"{field} must be null"):
+        replace(_youtube_write(), **{field: value})
 
 
 def test_youtube_payload_matches_sql_primitive_and_range_boundaries() -> None:
@@ -1114,7 +1131,6 @@ def test_youtube_payload_matches_sql_primitive_and_range_boundaries() -> None:
     write = replace(
         _youtube_write(),
         title="Pokemon opening",
-        text_excerpt="Batch\tcode: AB-123\nLot\rcode: CD-456",
         published_at=minimum,
     )
 
@@ -1126,9 +1142,10 @@ def test_youtube_payload_matches_sql_primitive_and_range_boundaries() -> None:
     assert type(metadata["statistics_eligible"]) is bool
     assert payload["published_at"] == "2005-01-01T00:00:00Z"
     assert "\t" not in str(payload["title"])
-    assert "\t" in str(payload["text_excerpt"])
-    assert "\n" in str(payload["text_excerpt"])
-    assert "\r" in str(payload["text_excerpt"])
+    assert payload["text_excerpt"] is None
+    assert payload["author_hash"] is None
+    assert payload["content_hash"] is None
+    assert payload["language"] is None
 
     with pytest.raises(ValueError, match="approved range"):
         replace(write, published_at=minimum - timedelta(microseconds=1))
