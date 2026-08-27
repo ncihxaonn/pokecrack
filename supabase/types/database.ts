@@ -1642,6 +1642,69 @@ export type Database = {
           },
         ];
       };
+      source_discoveries: {
+        Row: {
+          id: string;
+          source_item_id: string;
+          query_name: string;
+          job_id: string;
+          first_seen_at: string;
+          last_seen_at: string;
+          result_rank: number;
+          channel_country_code: string | null;
+          geography_status: string;
+          geography_basis: string;
+          is_demo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          source_item_id: string;
+          query_name: string;
+          job_id: string;
+          first_seen_at: string;
+          last_seen_at: string;
+          result_rank: number;
+          channel_country_code?: string | null;
+          geography_status: string;
+          geography_basis: string;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          source_item_id?: string;
+          query_name?: string;
+          job_id?: string;
+          first_seen_at?: string;
+          last_seen_at?: string;
+          result_rank?: number;
+          channel_country_code?: string | null;
+          geography_status?: string;
+          geography_basis?: string;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'source_discoveries_job_id_fkey';
+            columns: ['job_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'source_discoveries_source_item_id_fkey';
+            columns: ['source_item_id'];
+            isOneToOne: false;
+            referencedRelation: 'source_items';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       source_request_gates: {
         Row: {
           source_key: string;
@@ -1680,7 +1743,7 @@ export type Database = {
           published_at: string | null;
           discovered_at: string;
           author_hash: string | null;
-          content_hash: string;
+          content_hash: string | null;
           media_hash: string | null;
           video_fingerprint: string | null;
           audio_fingerprint: string | null;
@@ -1717,7 +1780,7 @@ export type Database = {
           published_at?: string | null;
           discovered_at?: string;
           author_hash?: string | null;
-          content_hash: string;
+          content_hash?: string | null;
           media_hash?: string | null;
           video_fingerprint?: string | null;
           audio_fingerprint?: string | null;
@@ -1754,7 +1817,7 @@ export type Database = {
           published_at?: string | null;
           discovered_at?: string;
           author_hash?: string | null;
-          content_hash?: string;
+          content_hash?: string | null;
           media_hash?: string | null;
           video_fingerprint?: string | null;
           audio_fingerprint?: string | null;
@@ -1930,6 +1993,10 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      begin_youtube_discovery_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number };
+        Returns: { acquired: boolean; retry_at: string | null }[];
+      };
       begin_tcgdex_sets_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null; etag: string | null; content_sha256: string | null; item_count: number; revision: number }[];
@@ -1949,6 +2016,10 @@ export type Database = {
       };
       finalize_cleanup_job: { Args: { job_id: string; worker_id: string; lease_generation: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
       finalize_tcgdex_sets_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      finalize_youtube_discovery_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
