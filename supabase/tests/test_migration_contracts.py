@@ -346,6 +346,7 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("last_success_at", finalizer)
         self.assertIn("changed tcgdex results require a new content hash", finalizer)
         self.assertIn("expected_revision", finalizer)
+        self.assertIn("if result_expected_revision <> (", finalizer)
         self.assertIn("states.revision = result_expected_revision", finalizer)
         self.assertIn("states.revision + 1", finalizer)
         self.assertIn("stale checkpoint revision", finalizer)
