@@ -530,6 +530,27 @@ class IngestMigrationContractTests(unittest.TestCase):
     def test_service_role_is_read_only_and_worker_writes_use_fenced_rpcs(self) -> None:
         lowered = YOUTUBE_PIPELINE.casefold()
         compact = " ".join(lowered.split())
+        self.assertIn("jobs_live_scheduled_enqueue_allowlist_check", lowered)
+        self.assertIn("dedupe_key !~ '^schedule:'", compact)
+        self.assertIn(
+            "job_type in ('catalog.tcgdex.sets.sync', 'maintenance.cleanup')",
+            compact,
+        )
+        self.assertIn("job_type = 'source.youtube.discovery'", compact)
+        self.assertIn("payload - array['query_name'] = '{}'::jsonb", compact)
+        scheduled = lowered.rsplit(
+            "create or replace function ingest.enqueue_scheduled_job_v1", 1
+        )[1].split("alter function ingest.enqueue_scheduled_job_v1", 1)[0]
+        self.assertIn("job_type is not approved for scheduled enqueue", scheduled)
+        self.assertIn("youtube jobs require one exact approved query_name", scheduled)
+        self.assertLess(
+            scheduled.index("job_type is not approved for scheduled enqueue"),
+            scheduled.index("from ingest.jobs as jobs"),
+        )
+        self.assertIn(
+            "schedule slot request must match its original job type and payload",
+            scheduled,
+        )
         self.assertIn(
             "revoke all privileges "
             "on all tables in schema catalog, ingest, analytics, public "

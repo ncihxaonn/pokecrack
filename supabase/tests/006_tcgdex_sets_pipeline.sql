@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(121);
+select plan(122);
 
 create temporary table tcgdex_test_times on commit drop as
 select
@@ -197,8 +197,8 @@ select throws_ok(
   'future scheduling is bounded to five minutes'
 );
 select throws_ok(
-  $$select * from ingest.enqueue_scheduled_job_v1('bad-payload', date_trunc('minute', clock_timestamp()), 'test.job', '[]'::jsonb)$$,
-  '22023', 'payload must be a JSON object no larger than 32768 bytes',
+  $$select * from ingest.enqueue_scheduled_job_v1('bad-payload', date_trunc('minute', clock_timestamp()), 'maintenance.cleanup', '[]'::jsonb)$$,
+  '22023', 'payload must be a bounded JSON object',
   'scheduled payloads must be bounded objects'
 );
 
@@ -210,7 +210,7 @@ insert into ingest.jobs (
 )
 select
   id,
-  'legacy.slot',
+  'catalog.tcgdex.sets.sync',
   '{}'::jsonb,
   'completed',
   0,
@@ -229,7 +229,7 @@ create temporary table adopted_legacy_job on commit drop as
 select * from ingest.enqueue_scheduled_job_v1(
   'legacy-slot',
   (select legacy_slot from tcgdex_test_times),
-  'legacy.slot'
+  'catalog.tcgdex.sets.sync'
 );
 select is(
   (select id from adopted_legacy_job),
@@ -254,8 +254,8 @@ create temporary table first_slot_job on commit drop as
 select * from ingest.enqueue_scheduled_job_v1(
   schedule_name => 'slot-contract',
   scheduled_for => (select slot_contract from tcgdex_test_times),
-  job_type => 'slot.contract',
-  payload => '{"bounded":true}',
+  job_type => 'maintenance.cleanup',
+  payload => '{}'::jsonb,
   priority => 7,
   max_attempts => 3
 );
@@ -271,17 +271,28 @@ select ok(
 );
 select is((select count(*)::integer from ingest.schedule_slots where schedule_name = 'slot-contract'), 1, 'exactly one slot is persisted');
 
+select throws_ok(
+  $$select * from ingest.enqueue_scheduled_job_v1(
+    'slot-contract',
+    (select slot_contract from tcgdex_test_times),
+    'maintenance.cleanup',
+    '{"ignored":true}'::jsonb
+  )$$,
+  '22023', 'catalog and cleanup jobs require an empty payload',
+  'an existing slot still rejects a payload outside the live allowlist'
+);
+
 create temporary table repeated_slot_job on commit drop as
 select * from ingest.enqueue_scheduled_job_v1(
   'slot-contract',
   (select slot_contract from tcgdex_test_times),
-  'slot.contract',
-  '{"ignored":true}',
+  'maintenance.cleanup',
+  '{}'::jsonb,
   99,
   9
 );
 select is((select id from repeated_slot_job), (select id from first_slot_job), 'repeating a slot returns its original job');
-select is((select count(*)::integer from ingest.jobs where job_type = 'slot.contract'), 1, 'repeating a slot never inserts a second job');
+select is((select count(*)::integer from ingest.jobs where job_type = 'maintenance.cleanup'), 1, 'repeating a slot never inserts a second job');
 
 update ingest.jobs
 set status = 'completed', completed_at = clock_timestamp()
@@ -290,11 +301,11 @@ create temporary table completed_slot_job on commit drop as
 select * from ingest.enqueue_scheduled_job_v1(
   'slot-contract',
   (select slot_contract from tcgdex_test_times),
-  'slot.contract'
+  'maintenance.cleanup'
 );
 select is((select status from completed_slot_job), 'completed', 'a completed slot returns the original completed job');
 select is((select id from completed_slot_job), (select id from first_slot_job), 'completed slot identity is immutable');
-select is((select count(*)::integer from ingest.jobs where job_type = 'slot.contract'), 1, 'completed active-dedupe release cannot duplicate a durable slot');
+select is((select count(*)::integer from ingest.jobs where job_type = 'maintenance.cleanup'), 1, 'completed active-dedupe release cannot duplicate a durable slot');
 
 create temporary table tcgdex_job on commit drop as
 select * from ingest.enqueue_scheduled_job_v1(

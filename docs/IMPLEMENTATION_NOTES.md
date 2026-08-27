@@ -167,13 +167,14 @@ than direct DML, and global-country/AU-publication boundaries.
 - An isolated PostgreSQL 17 container on the previously approved VPS compiled
   all 12 migrations, loaded the synthetic seed, and passed all nine pgTAP files
   without production data or credentials.
-- pgTAP plans passed **571/571**: 132 schema/queue, 54 analytics, 79
-  public/security/Admin, 42 seed, 50 lease fencing, 121 TCGdex, 60 YouTube
+- pgTAP plans passed **575/575**: 132 schema/queue, 54 analytics, 79
+  public/security/Admin, 42 seed, 50 lease fencing, 122 TCGdex, 63 YouTube
   discovery, 21 service-role least-privilege, and 12 Admin session-fence
   assertions.
-- The dedicated YouTube file passed **60/60**, including exact six-field item
+- The dedicated YouTube file passed **63/63**, including exact six-field item
   shape, 25-item/one-page/four-key-policy bounds, direct-DML denial, fenced
-  finalization, per-row database-clock expiry, independent bounded deletion, and
+  finalization, scheduled-job allowlisting, per-row database-clock expiry,
+  independent bounded deletion, and
   absence of generic source/evidence/public relationships.
 - The least-privilege file passed **21/21**: all 36 application tables have no
   direct service-role row-mutation privilege, 35 remain readable, the request

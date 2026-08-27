@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(60);
+select plan(63);
 
 create function pg_temp.sqlstate_of(statement text)
 returns text
@@ -748,6 +748,38 @@ select ok(
     'execute'
   ),
   'service_role cannot bypass fenced retention cleanup'
+);
+
+select is(
+  pg_temp.sqlstate_of(
+    $$select * from ingest.enqueue_scheduled_job_v1(
+      'unapproved-live-job-test',
+      date_trunc('minute', clock_timestamp()),
+      'unapproved.live.job',
+      '{}'::jsonb
+    )$$
+  ),
+  '22023',
+  'scheduled enqueue cannot bypass the live job-type allowlist'
+);
+select is(
+  (select count(*)::integer
+   from ingest.schedule_slots
+   where schedule_name = 'unapproved-live-job-test'),
+  0,
+  'a rejected scheduled job rolls back its durable slot reservation'
+);
+select is(
+  pg_temp.sqlstate_of(
+    $$select * from ingest.enqueue_scheduled_job_v1(
+      'unapproved-youtube-payload-test',
+      date_trunc('minute', clock_timestamp()),
+      'source.youtube.discovery',
+      '{"query_name":"unapproved-query"}'::jsonb
+    )$$
+  ),
+  '22023',
+  'scheduled YouTube enqueue requires one exact approved query payload'
 );
 
 select * from finish();

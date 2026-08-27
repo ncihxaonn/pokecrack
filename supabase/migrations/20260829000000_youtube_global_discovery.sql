@@ -1139,6 +1139,263 @@ comment on function ingest.finalize_youtube_discovery_job(uuid, text, bigint, js
 -- never a table writer. The existing service_role grants pre-date the fenced
 -- queue/finalizer protocol and would otherwise let an inheriting worker bypass
 -- every lease, policy, retention and audit check below.
+-- The durable scheduler RPC was introduced before the live-job allowlist. Keep
+-- its durable slot reservation contract, but make the table boundary reject
+-- every newly inserted scheduled job outside the same exact live families.
+alter table ingest.jobs
+  add constraint jobs_live_scheduled_enqueue_allowlist_check
+  check (
+    is_demo
+    or dedupe_key is null
+    or dedupe_key !~ '^schedule:'
+    or (
+      job_type in ('catalog.tcgdex.sets.sync', 'maintenance.cleanup')
+      and payload = '{}'::jsonb
+    )
+    or (
+      job_type = 'source.youtube.discovery'
+      and payload ?& array['query_name']
+      and payload - array['query_name'] = '{}'::jsonb
+      and jsonb_typeof(payload -> 'query_name') = 'string'
+      and payload ->> 'query_name' in (
+        'pokemon-tcg-booster-box-opening',
+        'pokemon-tcg-etb-opening',
+        'pokemon-tcg-booster-bundle-opening',
+        'pokemon-tcg-pack-opening',
+        'pokemon-tcg-opening-batch-code'
+      )
+    )
+  );
+
+-- Re-issue the durable scheduler boundary with the live allowlist ahead of
+-- every legacy-job lookup. The table constraint above is defense in depth;
+-- this RPC also rejects a malformed repeat instead of returning an old slot.
+create or replace function ingest.enqueue_scheduled_job_v1(
+  schedule_name text,
+  scheduled_for timestamptz,
+  job_type text,
+  payload jsonb default '{}'::jsonb,
+  priority integer default 0,
+  max_attempts integer default 5
+)
+returns setof ingest.jobs
+language plpgsql
+security definer
+volatile
+parallel unsafe
+set search_path = pg_catalog
+as $$
+declare
+  enqueue_time timestamptz := clock_timestamp();
+  proposed_job_id uuid := gen_random_uuid();
+  reserved_job_id uuid;
+  legacy_created_at timestamptz;
+  returned_job ingest.jobs%rowtype;
+  schedule_dedupe_key text;
+begin
+  if schedule_name is null
+    or schedule_name !~ '^[a-z][a-z0-9_.-]{0,79}$'
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'schedule_name must use the canonical job-name format';
+  end if;
+  if scheduled_for is null
+    or scheduled_for <> date_trunc('minute', scheduled_for)
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'scheduled_for must be an exact UTC minute';
+  end if;
+  if scheduled_for < enqueue_time - interval '36 hours'
+    or scheduled_for > enqueue_time + interval '5 minutes'
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'scheduled_for must be within 36 hours past and 5 minutes future';
+  end if;
+  if job_type is null or job_type not in (
+    'catalog.tcgdex.sets.sync',
+    'maintenance.cleanup',
+    'source.youtube.discovery'
+  ) then
+    raise exception using
+      errcode = '22023',
+      message = 'job_type is not approved for scheduled enqueue';
+  end if;
+  if payload is null
+    or jsonb_typeof(payload) is distinct from 'object'
+    or octet_length(payload::text) > 4096
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'payload must be a bounded JSON object';
+  end if;
+  if job_type in ('catalog.tcgdex.sets.sync', 'maintenance.cleanup')
+    and payload <> '{}'::jsonb
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'catalog and cleanup jobs require an empty payload';
+  end if;
+  if job_type = 'source.youtube.discovery' and (
+    not (payload ?& array['query_name'])
+    or payload - array['query_name'] <> '{}'::jsonb
+    or jsonb_typeof(payload -> 'query_name') is distinct from 'string'
+    or payload ->> 'query_name' not in (
+      'pokemon-tcg-booster-box-opening',
+      'pokemon-tcg-etb-opening',
+      'pokemon-tcg-booster-bundle-opening',
+      'pokemon-tcg-pack-opening',
+      'pokemon-tcg-opening-batch-code'
+    )
+  ) then
+    raise exception using
+      errcode = '22023',
+      message = 'YouTube jobs require one exact approved query_name';
+  end if;
+  if priority is null or priority < -1000 or priority > 1000 then
+    raise exception using
+      errcode = '22023',
+      message = 'priority must be between -1000 and 1000';
+  end if;
+  if max_attempts is null or max_attempts < 1 or max_attempts > 100 then
+    raise exception using
+      errcode = '22023',
+      message = 'max_attempts must be between 1 and 100';
+  end if;
+
+  schedule_dedupe_key := 'schedule:' || enqueue_scheduled_job_v1.schedule_name || ':'
+    || to_char(
+      scheduled_for at time zone 'UTC',
+      'YYYYMMDD"T"HH24MISS"Z"'
+    );
+
+  select jobs.id, jobs.created_at
+  into reserved_job_id, legacy_created_at
+  from ingest.jobs as jobs
+  where jobs.dedupe_key = schedule_dedupe_key
+    and not jobs.is_demo
+  order by jobs.created_at, jobs.id
+  limit 1
+  for share of jobs;
+
+  if found then
+    insert into ingest.schedule_slots as slots (
+      schedule_name, slot_at, job_id, created_at
+    ) values (
+      enqueue_scheduled_job_v1.schedule_name,
+      enqueue_scheduled_job_v1.scheduled_for,
+      reserved_job_id,
+      legacy_created_at
+    )
+    on conflict on constraint schedule_slots_pkey do nothing;
+
+    select slots.job_id
+    into reserved_job_id
+    from ingest.schedule_slots as slots
+    where slots.schedule_name = enqueue_scheduled_job_v1.schedule_name
+      and slots.slot_at = enqueue_scheduled_job_v1.scheduled_for
+    for share of slots;
+
+    if reserved_job_id is null then
+      raise exception using
+        errcode = 'P0002',
+        message = 'schedule slot lost its original job reference';
+    end if;
+
+    select jobs.*
+    into returned_job
+    from ingest.jobs as jobs
+    where jobs.id = reserved_job_id;
+
+    if not found then
+      raise exception using
+        errcode = 'P0002',
+        message = 'schedule slot original job is unavailable';
+    end if;
+    if returned_job.job_type <> enqueue_scheduled_job_v1.job_type
+      or returned_job.payload <> enqueue_scheduled_job_v1.payload
+    then
+      raise exception using
+        errcode = '22023',
+        message = 'schedule slot request must match its original job type and payload';
+    end if;
+
+    return next returned_job;
+    return;
+  end if;
+
+  insert into ingest.schedule_slots as slots (
+    schedule_name, slot_at, job_id, created_at
+  ) values (
+    enqueue_scheduled_job_v1.schedule_name,
+    enqueue_scheduled_job_v1.scheduled_for,
+    proposed_job_id,
+    enqueue_time
+  )
+  on conflict on constraint schedule_slots_pkey do nothing
+  returning slots.job_id into reserved_job_id;
+
+  if reserved_job_id is not null then
+    insert into ingest.jobs (
+      id, job_type, payload, status, priority, attempts, max_attempts,
+      available_at, dedupe_key, is_demo
+    ) values (
+      reserved_job_id, job_type, payload, 'pending', priority, 0, max_attempts,
+      enqueue_scheduled_job_v1.scheduled_for, schedule_dedupe_key, false
+    )
+    returning * into returned_job;
+  else
+    select slots.job_id
+    into reserved_job_id
+    from ingest.schedule_slots as slots
+    where slots.schedule_name = enqueue_scheduled_job_v1.schedule_name
+      and slots.slot_at = enqueue_scheduled_job_v1.scheduled_for
+    for share of slots;
+
+    if reserved_job_id is null then
+      raise exception using
+        errcode = 'P0002',
+        message = 'schedule slot lost its original job reference';
+    end if;
+
+    select jobs.*
+    into returned_job
+    from ingest.jobs as jobs
+    where jobs.id = reserved_job_id;
+
+    if not found then
+      raise exception using
+        errcode = 'P0002',
+        message = 'schedule slot original job is unavailable';
+    end if;
+    if returned_job.job_type <> enqueue_scheduled_job_v1.job_type
+      or returned_job.payload <> enqueue_scheduled_job_v1.payload
+    then
+      raise exception using
+        errcode = '22023',
+        message = 'schedule slot request must match its original job type and payload';
+    end if;
+  end if;
+
+  return next returned_job;
+end;
+$$;
+
+alter function ingest.enqueue_scheduled_job_v1(
+  text, timestamptz, text, jsonb, integer, integer
+) owner to postgres;
+revoke all on function ingest.enqueue_scheduled_job_v1(
+  text, timestamptz, text, jsonb, integer, integer
+) from public, anon, authenticated, service_role;
+grant execute on function ingest.enqueue_scheduled_job_v1(
+  text, timestamptz, text, jsonb, integer, integer
+) to service_role;
+comment on function ingest.enqueue_scheduled_job_v1(
+  text, timestamptz, text, jsonb, integer, integer
+) is 'Durably reserves one allowlisted live UTC-minute schedule slot before inserting its single canonical job.';
+
 create or replace function ingest.enqueue_job_v1(
   p_job_type text,
   p_payload jsonb default '{}'::jsonb,
@@ -1157,7 +1414,7 @@ as $$
 declare
   enqueue_time timestamptz := clock_timestamp();
 begin
-  if p_job_type not in (
+  if p_job_type is null or p_job_type not in (
     'catalog.tcgdex.sets.sync',
     'maintenance.cleanup',
     'source.youtube.discovery'
