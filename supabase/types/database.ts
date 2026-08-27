@@ -946,6 +946,56 @@ export type Database = {
           },
         ];
       };
+      sync_state: {
+        Row: {
+          source: string;
+          scope: string;
+          language: string;
+          is_demo: boolean;
+          revision: number;
+          etag: string | null;
+          content_sha256: string;
+          item_count: number;
+          last_checked_at: string;
+          last_changed_at: string;
+          last_job_id: string | null;
+        };
+        Insert: {
+          source: string;
+          scope: string;
+          language: string;
+          is_demo?: boolean;
+          revision?: number;
+          etag?: string | null;
+          content_sha256: string;
+          item_count: number;
+          last_checked_at: string;
+          last_changed_at: string;
+          last_job_id?: string | null;
+        };
+        Update: {
+          source?: string;
+          scope?: string;
+          language?: string;
+          is_demo?: boolean;
+          revision?: number;
+          etag?: string | null;
+          content_sha256?: string;
+          item_count?: number;
+          last_checked_at?: string;
+          last_changed_at?: string;
+          last_job_id?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'sync_state_last_job_id_fkey';
+            columns: ['last_job_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -1563,6 +1613,59 @@ export type Database = {
           },
         ];
       };
+      schedule_slots: {
+        Row: {
+          schedule_name: string;
+          slot_at: string;
+          job_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          schedule_name: string;
+          slot_at: string;
+          job_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          schedule_name?: string;
+          slot_at?: string;
+          job_id?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'schedule_slots_job_id_fkey';
+            columns: ['job_id'];
+            isOneToOne: false;
+            referencedRelation: 'jobs';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      source_request_gates: {
+        Row: {
+          source_key: string;
+          owner_job_id: string | null;
+          owner_lease_generation: number | null;
+          acquired_at: string | null;
+          active_until: string | null;
+        };
+        Insert: {
+          source_key: string;
+          owner_job_id?: string | null;
+          owner_lease_generation?: number | null;
+          acquired_at?: string | null;
+          active_until?: string | null;
+        };
+        Update: {
+          source_key?: string;
+          owner_job_id?: string | null;
+          owner_lease_generation?: number | null;
+          acquired_at?: string | null;
+          active_until?: string | null;
+        };
+        Relationships: [];
+      };
       source_items: {
         Row: {
           id: string;
@@ -1827,9 +1930,43 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      begin_tcgdex_sets_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number };
+        Returns: { acquired: boolean; retry_at: string | null; etag: string | null; content_sha256: string | null; item_count: number; revision: number }[];
+      };
       claim_jobs: { Args: { worker_id: string; job_types?: string[] | null; batch_size?: number; lease_seconds?: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
       claim_jobs_v2: { Args: { worker_id: string; job_types?: string[] | null; batch_size?: number; lease_seconds?: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
+      enqueue_scheduled_job_v1: {
+        Args: {
+          schedule_name: string;
+          scheduled_for: string;
+          job_type: string;
+          payload?: Json;
+          priority?: number;
+          max_attempts?: number;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       finalize_cleanup_job: { Args: { job_id: string; worker_id: string; lease_generation: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
+      finalize_tcgdex_sets_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      fail_job_v2: {
+        Args: {
+          job_id: string;
+          worker_id: string;
+          lease_generation: number;
+          error_code: string;
+          error_message: string;
+          retryable: boolean;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      heartbeat_job_v2: {
+        Args: { job_id: string; worker_id: string; lease_generation: number; lease_seconds: number };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       prune_expired_ephemera: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
       prune_expired_ephemera_v2: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
     };

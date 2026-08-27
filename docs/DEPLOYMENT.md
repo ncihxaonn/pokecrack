@@ -2,7 +2,7 @@
 
 The approved Personal targets currently host a private GitHub repository, an empty Supabase schema through migration `20260825000600`, and a Vercel Demo-mode Web deployment. No VPS/live collection deployment was performed. The steps below remain an operator runbook; completion must be evidenced with account-specific IDs/URLs, exact SHA and health output.
 
-> **Current release blocker:** the single-process live composition currently supports only the scheduler's cleanup schedule and the watchdog cleanup handler. Collector, AI-worker, and aggregator roles deliberately fail closed with exit code 78. Do not perform a live VPS deployment until their persistent PostgreSQL handlers and end-to-end data path are wired and integration-tested. The steps below are an account-owner runbook, not evidence that deployment occurred.
+> **Current release blocker:** the single-process composition now contains two bounded code paths: fenced cleanup and TCGdex English sets-catalog metadata sync. The new catalog path is not deployed; the approved hosted database still lacks both the lease-fencing and TCGdex pipeline migrations, and no VPS is approved or available. General collection, AI-worker, and aggregator roles remain fail closed. Do not describe or deploy this as a complete live research pipeline. The steps below are an account-owner runbook, not evidence that deployment occurred.
 
 ## 1. Account-bound prerequisites
 

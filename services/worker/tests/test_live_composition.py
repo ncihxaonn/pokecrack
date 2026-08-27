@@ -7,8 +7,10 @@ from typing import Any
 
 import pytest
 
+from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
 from pokecrack_worker.composition import (
     CLEANUP_JOB_TYPE,
+    TCGDEX_SETS_JOB_TYPE,
     LiveCompositionError,
     build_live_scheduler,
     build_live_worker_runtime,
@@ -50,16 +52,17 @@ def _job_row(
     status: str,
     payload: Mapping[str, object] | None = None,
     locked: bool = True,
+    job_type: str = CLEANUP_JOB_TYPE,
 ) -> dict[str, object]:
     return {
         "id": "00000000-0000-0000-0000-000000000001",
-        "job_type": CLEANUP_JOB_TYPE,
+        "job_type": job_type,
         "payload": dict(payload or {}),
         "status": status,
         "priority": 10,
         "available_at": NOW,
         "attempts": 1,
-        "max_attempts": 5,
+        "max_attempts": 3 if job_type == TCGDEX_SETS_JOB_TYPE else 5,
         "lease_generation": 1,
         "locked_by": "worker-1" if locked else None,
         "locked_at": NOW if locked else None,
@@ -67,22 +70,48 @@ def _job_row(
         "last_error_code": None,
         "last_error_message": None,
         "completed_at": NOW if status == "completed" else None,
-        "dedupe_key": "schedule:cleanup:20260825T120000Z",
+        "dedupe_key": f"schedule:{'catalog_sync' if job_type == TCGDEX_SETS_JOB_TYPE else 'cleanup'}:20260825T120000Z",
         "created_at": NOW,
         "updated_at": NOW,
     }
 
 
+def _checkpoint_row(
+    *,
+    acquired: bool = True,
+    retry_at: datetime | None = None,
+    etag: str | None = None,
+    content_sha256: str | None = None,
+    item_count: int = 0,
+    revision: int = 0,
+) -> dict[str, object]:
+    return {
+        "acquired": acquired,
+        "retry_at": retry_at,
+        "etag": etag,
+        "content_sha256": content_sha256,
+        "item_count": item_count,
+        "revision": revision,
+    }
+
+
 def test_live_health_probes_postgres_and_upserts_a_role_heartbeat() -> None:
-    executor = RecordingExecutor([[{"last_seen_at": NOW}]])
+    executor = RecordingExecutor([[{"ready": True}], [{"last_seen_at": NOW}]])
 
     heartbeat = write_health_heartbeat(_settings("watchdog"), executor=executor)
 
     assert heartbeat.worker_id == "worker-1"
     assert heartbeat.worker_role.value == "watchdog"
     assert heartbeat.last_seen_at == NOW
-    assert len(executor.calls) == 1
-    sql, params = executor.calls[0]
+    assert len(executor.calls) == 2
+    dependency_sql, dependency_params = executor.calls[0]
+    assert "ingest.source_request_gates" in dependency_sql
+    assert "ingest.claim_jobs_v2" in dependency_sql
+    assert "ingest.heartbeat_job_v2" in dependency_sql
+    assert "ingest.fail_job_v2" in dependency_sql
+    assert "ingest.finalize_cleanup_job" in dependency_sql
+    assert dependency_params == {"worker_type": "watchdog"}
+    sql, params = executor.calls[1]
     assert "SELECT 1 AS reachable" in sql
     assert "INSERT INTO ingest.worker_heartbeats" in sql
     assert "ON CONFLICT (worker_id) DO UPDATE" in sql
@@ -99,19 +128,44 @@ def test_live_health_probes_postgres_and_upserts_a_role_heartbeat() -> None:
     assert "postgresql://" not in repr(executor.calls)
 
 
+def test_collector_health_fails_before_heartbeat_when_policy_or_rpcs_are_unavailable() -> None:
+    executor = RecordingExecutor([[{"ready": False}]])
+
+    with pytest.raises(LiveCompositionError) as raised:
+        write_health_heartbeat(_settings("collector"), executor=executor)
+
+    assert raised.value.code == "live_dependencies_unavailable"
+    assert len(executor.calls) == 1
+    sql, params = executor.calls[0]
+    assert "ingest.source_request_gates" in sql
+    assert "ingest.claim_jobs_v2" in sql
+    assert "ingest.heartbeat_job_v2" in sql
+    assert "ingest.fail_job_v2" in sql
+    assert "ingest.begin_tcgdex_sets_job" in sql
+    assert "ingest.finalize_tcgdex_sets_job" in sql
+    assert "tcgdex_catalog" in sql
+    assert "has_function_privilege" in sql
+    assert "policies.base_url = 'https://api.tcgdex.net/v2'" in sql
+    assert "policies.min_delay_seconds = 10" in sql
+    assert "policies.max_items_per_run = 1000" in sql
+    assert "policies.expected_interval_seconds = 86400" in sql
+    assert params == {"worker_type": "collector"}
+    assert "INSERT INTO ingest.worker_heartbeats" not in sql
+
+
 def test_live_health_refuses_unready_roles_before_writing_a_heartbeat() -> None:
     executor = RecordingExecutor([[{"last_seen_at": NOW}]])
 
     with pytest.raises(LiveCompositionError) as raised:
-        write_health_heartbeat(_settings("collector"), executor=executor)
+        write_health_heartbeat(_settings("ai-worker"), executor=executor)
 
     assert raised.value.code == "worker_role_not_ready"
     assert executor.calls == []
 
 
-@pytest.mark.parametrize("role", (None, "unknown", "collector", "ai-worker", "aggregator"))
+@pytest.mark.parametrize("role", (None, "unknown", "ai-worker", "aggregator"))
 def test_live_worker_roles_without_safe_handlers_fail_closed(role: str | None) -> None:
-    expected = "worker_role_not_ready" if role in {"collector", "ai-worker", "aggregator"} else None
+    expected = "worker_role_not_ready" if role in {"ai-worker", "aggregator"} else None
 
     with pytest.raises(LiveCompositionError) as raised:
         require_worker_job_types(_settings(role))
@@ -143,6 +197,293 @@ def test_live_worker_dry_run_never_touches_the_database() -> None:
 
     assert result.results[0].status is RuntimeStatus.DRY_RUN
     assert executor.calls == []
+
+
+class RecordingTCGdexTransport:
+    def __init__(self, response: APIResponse) -> None:
+        self.response = response
+        self.calls: list[tuple[str, dict[str, str], float]] = []
+
+    def get(self, url: str, *, headers: dict[str, str], timeout_seconds: float) -> APIResponse:
+        self.calls.append((url, headers, timeout_seconds))
+        return self.response
+
+
+TCGDEX_BODY = b'[{"id":"sv1","name":"Scarlet & Violet","cardCount":{"total":258,"official":198}}]'
+
+
+def test_collector_runs_only_the_fenced_tcgdex_sets_pipeline() -> None:
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running", job_type=TCGDEX_SETS_JOB_TYPE)],
+            [_checkpoint_row()],
+            [_job_row(status="completed", locked=False, job_type=TCGDEX_SETS_JOB_TYPE)],
+        ]
+    )
+    transport = RecordingTCGdexTransport(APIResponse(200, {"etag": '"v1"'}, TCGDEX_BODY))
+    runtime = build_live_worker_runtime(
+        _settings("collector"),
+        executor=executor,
+        clock=lambda: NOW,
+        tcgdex_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.COMPLETED
+    assert result.job_type == TCGDEX_SETS_JOB_TYPE
+    assert len(executor.calls) == 3
+    assert executor.calls[0][1]["kinds"] == [TCGDEX_SETS_JOB_TYPE]
+    assert "ingest.begin_tcgdex_sets_job" in executor.calls[1][0]
+    finalizer_sql, finalizer_params = executor.calls[2]
+    assert "ingest.finalize_tcgdex_sets_job" in finalizer_sql
+    persisted = json.loads(str(finalizer_params["result"]))
+    assert persisted == {
+        "content_sha256": persisted["content_sha256"],
+        "etag": '"v1"',
+        "expected_revision": 0,
+        "outcome": "changed",
+        "sets": [
+            {
+                "card_count_official": 198,
+                "card_count_total": 258,
+                "id": "sv1",
+                "name": "Scarlet & Violet",
+            }
+        ],
+        "version": 1,
+    }
+    assert len(persisted["content_sha256"]) == 64
+    assert len(transport.calls) == 1
+
+
+def test_stale_tcgdex_preflight_blocks_the_network_request() -> None:
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running", job_type=TCGDEX_SETS_JOB_TYPE)],
+            [],
+        ]
+    )
+    transport = RecordingTCGdexTransport(APIResponse(200, {}, TCGDEX_BODY))
+    runtime = build_live_worker_runtime(
+        _settings("collector"),
+        executor=executor,
+        clock=lambda: NOW,
+        tcgdex_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.LEASE_LOST
+    assert len(executor.calls) == 2
+    assert "ingest.begin_tcgdex_sets_job" in executor.calls[1][0]
+    assert transport.calls == []
+
+
+def test_database_policy_rejection_blocks_tcgdex_before_network_access() -> None:
+    class PolicyRejectedExecutor(RecordingExecutor):
+        def query(self, sql: str, params: Mapping[str, object]) -> Sequence[Mapping[str, Any]]:
+            self.calls.append((sql, dict(params)))
+            if "ingest.claim_jobs_v2" in sql:
+                return [_job_row(status="running", job_type=TCGDEX_SETS_JOB_TYPE)]
+            if "ingest.begin_tcgdex_sets_job" in sql:
+                raise RuntimeError("TCGdex source policy is disabled")
+            return [_job_row(status="pending", locked=False, job_type=TCGDEX_SETS_JOB_TYPE)]
+
+    executor = PolicyRejectedExecutor()
+    transport = RecordingTCGdexTransport(APIResponse(200, {}, TCGDEX_BODY))
+    runtime = build_live_worker_runtime(
+        _settings("collector"),
+        executor=executor,
+        clock=lambda: NOW,
+        tcgdex_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.FAILED
+    assert result.error_code == "RuntimeError"
+    assert transport.calls == []
+    assert len(executor.calls) == 3
+    assert "ingest.fail_job_v2" in executor.calls[2][0]
+
+
+def test_invalid_tcgdex_response_is_dead_lettered_without_blind_retries() -> None:
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running", job_type=TCGDEX_SETS_JOB_TYPE)],
+            [_checkpoint_row()],
+            [_job_row(status="dead", locked=False, job_type=TCGDEX_SETS_JOB_TYPE)],
+        ]
+    )
+    transport = RecordingTCGdexTransport(APIResponse(200, {}, b"not-json"))
+    runtime = build_live_worker_runtime(
+        _settings("collector"),
+        executor=executor,
+        clock=lambda: NOW,
+        tcgdex_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.FAILED
+    assert result.error_code == "invalid_response"
+    fail_sql, fail_params = executor.calls[2]
+    assert "ingest.fail_job_v2" in fail_sql
+    assert fail_params["error_code"] == "invalid_response"
+    assert fail_params["retryable"] is False
+
+
+def test_busy_tcgdex_request_gate_defers_without_network_or_consuming_an_attempt() -> None:
+    retry_at = NOW + timedelta(seconds=10)
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running", job_type=TCGDEX_SETS_JOB_TYPE)],
+            [_checkpoint_row(acquired=False, retry_at=retry_at)],
+            [_job_row(status="pending", locked=False, job_type=TCGDEX_SETS_JOB_TYPE)],
+        ]
+    )
+    transport = RecordingTCGdexTransport(APIResponse(200, {}, TCGDEX_BODY))
+    runtime = build_live_worker_runtime(
+        _settings("collector"),
+        executor=executor,
+        clock=lambda: NOW,
+        tcgdex_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.DEFERRED
+    assert result.error_code == "tcgdex_request_deferred"
+    assert transport.calls == []
+    pause_sql, pause_params = executor.calls[2]
+    assert "attempts = GREATEST(0, attempts - 1)" in pause_sql
+    assert pause_params["retry_at"] == retry_at
+
+
+def test_tcgdex_finalizer_rejection_is_failed_without_ending_the_worker_loop() -> None:
+    class RejectingFinalizerExecutor(RecordingExecutor):
+        def query(self, sql: str, params: Mapping[str, object]) -> Sequence[Mapping[str, Any]]:
+            self.calls.append((sql, dict(params)))
+            if "ingest.claim_jobs_v2" in sql:
+                return [_job_row(status="running", job_type=TCGDEX_SETS_JOB_TYPE)]
+            if "ingest.begin_tcgdex_sets_job" in sql:
+                return [_checkpoint_row()]
+            if "ingest.finalize_tcgdex_sets_job" in sql:
+                raise RuntimeError("policy changed during finalization")
+            return [_job_row(status="pending", locked=False, job_type=TCGDEX_SETS_JOB_TYPE)]
+
+    executor = RejectingFinalizerExecutor()
+    transport = RecordingTCGdexTransport(APIResponse(200, {"etag": '"v1"'}, TCGDEX_BODY))
+    runtime = build_live_worker_runtime(
+        _settings("collector"),
+        executor=executor,
+        clock=lambda: NOW,
+        tcgdex_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.FAILED
+    assert result.error_code == "RuntimeError"
+    assert len(executor.calls) == 4
+    assert "ingest.finalize_tcgdex_sets_job" in executor.calls[2][0]
+    assert "ingest.fail_job_v2" in executor.calls[3][0]
+
+
+def test_tcgdex_304_uses_the_persisted_validator_and_atomic_finalizer() -> None:
+    existing_hash = "a" * 64
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running", job_type=TCGDEX_SETS_JOB_TYPE)],
+            [
+                _checkpoint_row(
+                    etag='"v1"',
+                    content_sha256=existing_hash,
+                    item_count=218,
+                    revision=7,
+                )
+            ],
+            [_job_row(status="completed", locked=False, job_type=TCGDEX_SETS_JOB_TYPE)],
+        ]
+    )
+    transport = RecordingTCGdexTransport(APIResponse(304, {"etag": '"v1"'}, b""))
+    runtime = build_live_worker_runtime(
+        _settings("collector"),
+        executor=executor,
+        clock=lambda: NOW,
+        tcgdex_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.COMPLETED
+    assert transport.calls[0][1]["If-None-Match"] == '"v1"'
+    persisted = json.loads(str(executor.calls[2][1]["result"]))
+    assert persisted["outcome"] == "not_modified"
+    assert persisted["expected_revision"] == 7
+    assert persisted["content_sha256"] == existing_hash
+    assert persisted["sets"] == []
+
+
+def test_stale_tcgdex_finalizer_cannot_persist_after_the_get() -> None:
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running", job_type=TCGDEX_SETS_JOB_TYPE)],
+            [_checkpoint_row()],
+            [],
+        ]
+    )
+    transport = RecordingTCGdexTransport(APIResponse(200, {"etag": '"v1"'}, TCGDEX_BODY))
+    runtime = build_live_worker_runtime(
+        _settings("collector"),
+        executor=executor,
+        clock=lambda: NOW,
+        tcgdex_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.LEASE_LOST
+    assert len(transport.calls) == 1
+    assert "ingest.finalize_tcgdex_sets_job" in executor.calls[2][0]
+    assert all("INSERT INTO catalog.sets" not in sql for sql, _ in executor.calls)
+
+
+def test_tcgdex_job_payload_cannot_change_the_fixed_endpoint_or_scope() -> None:
+    executor = RecordingExecutor(
+        [
+            [
+                _job_row(
+                    status="running",
+                    payload={"language": "ja"},
+                    job_type=TCGDEX_SETS_JOB_TYPE,
+                )
+            ],
+            [
+                _job_row(
+                    status="pending",
+                    payload={"language": "ja"},
+                    locked=False,
+                    job_type=TCGDEX_SETS_JOB_TYPE,
+                )
+            ],
+        ]
+    )
+    transport = RecordingTCGdexTransport(APIResponse(200, {}, TCGDEX_BODY))
+    runtime = build_live_worker_runtime(
+        _settings("collector"),
+        executor=executor,
+        clock=lambda: NOW,
+        tcgdex_transport=transport,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.FAILED
+    assert result.error_code == "ValueError"
+    assert transport.calls == []
+    assert "ingest.begin_tcgdex_sets_job" not in executor.calls[1][0]
 
 
 def test_watchdog_cleanup_handler_uses_one_fenced_atomic_finalizer() -> None:
@@ -204,12 +545,16 @@ def test_cleanup_handler_rejects_payloads_instead_of_expanding_its_authority() -
     assert len(executor.calls) == 2
     assert "ingest.prune_expired_ephemera" not in executor.calls[1][0]
     assert "ingest.finalize_cleanup_job" not in executor.calls[1][0]
-    assert "last_error_code" in executor.calls[1][0]
+    assert "ingest.fail_job_v2" in executor.calls[1][0]
 
 
-def test_live_scheduler_registers_only_cleanup_and_uses_the_slot_dedupe_key() -> None:
+def test_live_scheduler_enqueues_cleanup_through_the_durable_slot_rpc() -> None:
     executor = RecordingExecutor([[_job_row(status="pending", locked=False)]])
-    settings = _settings("scheduler", schedule_cleanup="* * * * *")
+    settings = _settings(
+        "scheduler",
+        schedule_cleanup="* * * * *",
+        schedule_catalog_sync="0 0 31 2 *",
+    )
 
     result = build_live_scheduler(settings, executor=executor).run_due(now=NOW)
 
@@ -217,9 +562,31 @@ def test_live_scheduler_registers_only_cleanup_and_uses_the_slot_dedupe_key() ->
     assert result.created == 1
     assert len(executor.calls) == 1
     sql, params = executor.calls[0]
-    assert "INSERT INTO ingest.jobs" in sql
+    assert "ingest.enqueue_scheduled_job_v1" in sql
     assert params["kind"] == CLEANUP_JOB_TYPE
-    assert params["dedupe_key"] == "schedule:cleanup:20260825T120000Z"
+    assert params["schedule_name"] == "cleanup"
+    assert params["scheduled_for"] == NOW
+
+
+def test_live_scheduler_registers_the_daily_tcgdex_sets_job() -> None:
+    catalog_time = NOW.replace(hour=2)
+    executor = RecordingExecutor(
+        [[_job_row(status="pending", locked=False, job_type=TCGDEX_SETS_JOB_TYPE)]]
+    )
+    settings = _settings("scheduler")
+
+    result = build_live_scheduler(settings, executor=executor).run_due(now=catalog_time)
+
+    assert result.due_names == ("catalog_sync",)
+    assert result.created == 1
+    sql, params = executor.calls[0]
+    assert "ingest.enqueue_scheduled_job_v1" in sql
+    assert params["schedule_name"] == "catalog_sync"
+    assert params["scheduled_for"] == catalog_time
+    assert params["kind"] == TCGDEX_SETS_JOB_TYPE
+    assert params["payload"] == "{}"
+    assert params["priority"] == 20
+    assert params["max_attempts"] == 3
 
 
 def test_live_scheduler_validates_even_unwired_cron_configuration() -> None:

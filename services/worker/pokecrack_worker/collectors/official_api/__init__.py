@@ -1,13 +1,32 @@
 """Official, metadata-only API collectors."""
 
-from .tcgdex import InMemoryTCGdexCache, TCGdexClient, TCGdexSyncAttempt, TCGdexSyncResult
+from .postgres import (
+    PostgresTCGdexCheckpointRepository,
+    TCGdexRequestDeferred,
+    TCGdexSetsCheckpoint,
+)
+from .tcgdex import (
+    HTTPXTCGdexTransport,
+    InMemoryTCGdexSetsCache,
+    TCGdexSetBrief,
+    TCGdexSetsClient,
+    TCGdexSetsSyncAttempt,
+    TCGdexSetsSyncOutcome,
+    TCGdexSetsSyncResult,
+)
 from .youtube import YouTubeDataClient, YouTubeDiscoveryResult
 
 __all__ = [
-    "InMemoryTCGdexCache",
-    "TCGdexClient",
-    "TCGdexSyncAttempt",
-    "TCGdexSyncResult",
+    "HTTPXTCGdexTransport",
+    "InMemoryTCGdexSetsCache",
+    "PostgresTCGdexCheckpointRepository",
+    "TCGdexRequestDeferred",
+    "TCGdexSetBrief",
+    "TCGdexSetsClient",
+    "TCGdexSetsCheckpoint",
+    "TCGdexSetsSyncAttempt",
+    "TCGdexSetsSyncOutcome",
+    "TCGdexSetsSyncResult",
     "YouTubeDataClient",
     "YouTubeDiscoveryResult",
 ]

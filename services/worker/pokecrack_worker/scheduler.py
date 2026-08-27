@@ -11,16 +11,16 @@ from pokecrack_worker.jobs import Job
 
 
 class SchedulerRepository(Protocol):
-    def enqueue(
+    def enqueue_scheduled(
         self,
         kind: str,
         payload: Mapping[str, Any] | None = None,
         *,
+        schedule_name: str,
+        scheduled_for: datetime,
         priority: int,
         now: datetime,
         max_attempts: int,
-        dedupe_key: str | None,
-        available_at: datetime | None = None,
     ) -> Job: ...
 
 
@@ -146,6 +146,8 @@ class ScheduleEntry:
     payload: Mapping[str, Any] = field(default_factory=dict)
     priority: int = 0
     max_attempts: int = 5
+    catch_up_within: timedelta | None = None
+    catch_up_check_interval: timedelta | None = None
     _parsed_cron: CronExpression | None = field(init=False, repr=False, compare=False)
 
     def __post_init__(self) -> None:
@@ -155,6 +157,19 @@ class ScheduleEntry:
             raise ValueError("schedule requires exactly one of interval or cron")
         if self.interval is not None and self.interval <= timedelta():
             raise ValueError("schedule interval must be positive")
+        if (self.catch_up_within is None) != (self.catch_up_check_interval is None):
+            raise ValueError("cron catch-up requires both a window and check interval")
+        if self.catch_up_within is not None:
+            if self.cron is None:
+                raise ValueError("catch-up is supported only for cron schedules")
+            assert self.catch_up_check_interval is not None
+            for value in (self.catch_up_within, self.catch_up_check_interval):
+                if value <= timedelta() or value.total_seconds() % 60 != 0:
+                    raise ValueError("cron catch-up durations must use whole positive minutes")
+            if self.catch_up_check_interval > self.catch_up_within:
+                raise ValueError("cron catch-up check interval cannot exceed its window")
+            if self.catch_up_within > timedelta(hours=36):
+                raise ValueError("cron catch-up window cannot exceed 36 hours")
         parsed = CronExpression.parse(self.cron) if self.cron is not None else None
         object.__setattr__(self, "_parsed_cron", parsed)
 
@@ -163,9 +178,23 @@ class ScheduleEntry:
             raise ValueError("scheduler timestamps must be timezone-aware")
         moment = now.astimezone(UTC)
         if self._parsed_cron is not None:
-            if not self._parsed_cron.matches(moment):
+            current_slot = moment.replace(second=0, microsecond=0)
+            if self._parsed_cron.matches(current_slot):
+                return current_slot
+            if self.catch_up_within is None:
                 return None
-            return moment.replace(second=0, microsecond=0)
+            assert self.catch_up_check_interval is not None
+            check_seconds = int(self.catch_up_check_interval.total_seconds())
+            check_slot_seconds = int(current_slot.timestamp()) // check_seconds * check_seconds
+            check_slot = datetime.fromtimestamp(check_slot_seconds, tz=UTC)
+            window_minutes = int(self.catch_up_within.total_seconds() // 60)
+            for missed_minutes in range(window_minutes + 1):
+                candidate = check_slot - timedelta(minutes=missed_minutes)
+                if current_slot - candidate > self.catch_up_within:
+                    break
+                if self._parsed_cron.matches(candidate):
+                    return candidate
+            return None
         assert self.interval is not None
         interval_seconds = self.interval.total_seconds()
         if not interval_seconds.is_integer() or interval_seconds < 1:
@@ -201,12 +230,13 @@ class Scheduler:
         )
         if not dry_run:
             for entry, slot in due:
-                self.repository.enqueue(
+                self.repository.enqueue_scheduled(
                     entry.job_type,
                     entry.payload,
+                    schedule_name=entry.name,
+                    scheduled_for=slot,
                     priority=entry.priority,
                     max_attempts=entry.max_attempts,
-                    dedupe_key=f"schedule:{entry.name}:{slot.strftime('%Y%m%dT%H%M%SZ')}",
                     now=now,
                 )
         return SchedulerResult(

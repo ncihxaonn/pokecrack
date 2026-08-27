@@ -50,6 +50,72 @@ def test_scheduler_uses_the_same_cron_slot_key_across_instances() -> None:
     assert jobs[0].dedupe_key == "schedule:cleanup:20260825T120000Z"
 
 
+def test_scheduler_slot_remains_reserved_after_the_job_completes() -> None:
+    repository = InMemoryJobRepository()
+    entry = ScheduleEntry(name="cleanup", job_type="maintenance.cleanup", cron="* * * * *")
+    scheduler = Scheduler(repository, [entry])
+
+    scheduler.run_due(now=NOW)
+    claimed = repository.lease("watchdog", now=NOW, lease_for=timedelta(minutes=5))
+    assert claimed is not None
+    repository.complete(
+        claimed.id,
+        worker_id="watchdog",
+        lease_generation=claimed.lease_generation,
+        now=NOW,
+    )
+
+    scheduler.run_due(now=NOW + timedelta(seconds=30))
+
+    jobs = repository.list_jobs()
+    assert len(jobs) == 1
+    assert jobs[0].status is JobStatus.COMPLETED
+
+
+def test_cron_catch_up_uses_the_latest_bounded_slot_without_wall_clock_phase() -> None:
+    entry = ScheduleEntry(
+        name="catalog_sync",
+        job_type="catalog.tcgdex.sets.sync",
+        cron="0 2 * * *",
+        catch_up_within=timedelta(hours=36),
+        catch_up_check_interval=timedelta(hours=1),
+    )
+
+    assert entry.slot(NOW.replace(hour=3)) == NOW.replace(hour=2)
+    assert entry.slot(NOW.replace(hour=3, minute=30, second=17)) == NOW.replace(hour=2)
+    assert entry.slot(NOW.replace(hour=3, minute=31, second=17)) == NOW.replace(hour=2)
+    assert entry.slot(NOW.replace(hour=2)) == NOW.replace(hour=2)
+    assert entry.slot(NOW.replace(hour=2) + timedelta(days=2, hours=13)) == NOW.replace(
+        hour=2
+    ) + timedelta(days=2)
+
+
+def test_cron_catch_up_configuration_is_strict_and_bounded() -> None:
+    with pytest.raises(ValueError, match="both"):
+        ScheduleEntry(
+            name="catalog_sync",
+            job_type="catalog.tcgdex.sets.sync",
+            cron="0 2 * * *",
+            catch_up_within=timedelta(hours=36),
+        )
+    with pytest.raises(ValueError, match="cannot exceed"):
+        ScheduleEntry(
+            name="catalog_sync",
+            job_type="catalog.tcgdex.sets.sync",
+            cron="0 2 * * *",
+            catch_up_within=timedelta(minutes=30),
+            catch_up_check_interval=timedelta(hours=1),
+        )
+    with pytest.raises(ValueError, match="36 hours"):
+        ScheduleEntry(
+            name="catalog_sync",
+            job_type="catalog.tcgdex.sets.sync",
+            cron="0 2 * * *",
+            catch_up_within=timedelta(hours=37),
+            catch_up_check_interval=timedelta(hours=1),
+        )
+
+
 def test_five_field_cron_supports_ranges_lists_steps_and_utc_conversion() -> None:
     weekdays = CronExpression.parse("0,30 9-17/2 * * 1-5")
     local_time = datetime(2026, 8, 24, 19, 30, tzinfo=timezone(timedelta(hours=10)))

@@ -7,7 +7,7 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
-from .models import CompletionEffect, Job, JobStatus
+from .models import CompletionEffect, Job, JobStatus, TCGdexSetsSyncCompletion
 from .repository import LeaseLostError
 
 
@@ -42,48 +42,39 @@ FROM ingest.claim_jobs_v2(
 )
 """.strip()
 
+ENQUEUE_SCHEDULED_SQL = """
+SELECT *
+FROM ingest.enqueue_scheduled_job_v1(
+    %(schedule_name)s,
+    %(scheduled_for)s,
+    %(kind)s,
+    %(payload)s::jsonb,
+    %(priority)s,
+    %(max_attempts)s
+)
+""".strip()
+
 
 HEARTBEAT_SQL = """
-WITH lease_clock AS (SELECT clock_timestamp() AS now)
-UPDATE ingest.jobs
-SET lock_expires_at = lease_clock.now + make_interval(secs => %(lease_seconds)s),
-    updated_at = lease_clock.now
-FROM lease_clock
-WHERE id = %(job_id)s
-  AND status = 'running'
-  AND locked_by = %(worker_id)s
-  AND lease_generation = %(lease_generation)s
-  AND lock_expires_at > lease_clock.now
-RETURNING *
+SELECT *
+FROM ingest.heartbeat_job_v2(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    lease_seconds => %(lease_seconds)s::integer
+)
 """.strip()
 
 FAIL_SQL = """
-WITH lease_clock AS (SELECT clock_timestamp() AS now)
-UPDATE ingest.jobs
-SET status = CASE WHEN attempts >= max_attempts THEN 'dead' ELSE 'pending' END,
-    available_at = CASE
-        WHEN attempts >= max_attempts THEN available_at
-        ELSE lease_clock.now + make_interval(
-            secs => LEAST(
-                3600,
-                30 * POWER(2, LEAST(10, GREATEST(0, attempts - 1)))
-            )::integer
-        )
-    END,
-    locked_by = NULL,
-    locked_at = NULL,
-    lock_expires_at = NULL,
-    completed_at = CASE WHEN attempts >= max_attempts THEN lease_clock.now ELSE NULL END,
-    last_error_code = %(error_code)s,
-    last_error_message = %(error_message)s,
-    updated_at = lease_clock.now
-FROM lease_clock
-WHERE id = %(job_id)s
-  AND status = 'running'
-  AND locked_by = %(worker_id)s
-  AND lease_generation = %(lease_generation)s
-  AND lock_expires_at > lease_clock.now
-RETURNING *
+SELECT *
+FROM ingest.fail_job_v2(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    error_code => %(error_code)s,
+    error_message => %(error_message)s,
+    retryable => %(retryable)s::boolean
+)
 """.strip()
 
 COMPLETE_SQL = """
@@ -112,6 +103,16 @@ FROM ingest.finalize_cleanup_job(
     job_id => %(job_id)s::uuid,
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint
+)
+""".strip()
+
+FINALIZE_TCGDEX_SETS_SQL = """
+SELECT *
+FROM ingest.finalize_tcgdex_sets_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    result => %(result)s::jsonb
 )
 """.strip()
 
@@ -217,6 +218,33 @@ class PostgresJobRepository:
             raise RuntimeError("job enqueue returned no row")
         return job_from_row(rows[0])
 
+    def enqueue_scheduled(
+        self,
+        kind: str,
+        payload: Mapping[str, Any] | None = None,
+        *,
+        schedule_name: str,
+        scheduled_for: datetime,
+        priority: int = 0,
+        now: datetime,
+        max_attempts: int = 5,
+    ) -> Job:
+        del now
+        rows = self._executor.query(
+            ENQUEUE_SCHEDULED_SQL,
+            {
+                "schedule_name": schedule_name,
+                "scheduled_for": scheduled_for,
+                "kind": kind,
+                "payload": json.dumps(dict(payload or {}), separators=(",", ":")),
+                "priority": priority,
+                "max_attempts": max_attempts,
+            },
+        )
+        if not rows:
+            raise RuntimeError("scheduled job enqueue returned no row")
+        return job_from_row(rows[0])
+
     def lease(
         self,
         worker_id: str,
@@ -272,20 +300,27 @@ class PostgresJobRepository:
         worker_id: str,
         lease_generation: int,
         now: datetime,
-        effect: CompletionEffect | None = None,
+        effect: CompletionEffect | TCGdexSetsSyncCompletion | None = None,
     ) -> Job:
         del now
-        sql = COMPLETE_SQL if effect is None else _COMPLETION_EFFECT_SQL.get(effect)
+        params: dict[str, object] = {
+            "job_id": job_id,
+            "worker_id": worker_id,
+            "lease_generation": lease_generation,
+        }
+        sql: str | None
+        if effect is None:
+            sql = COMPLETE_SQL
+        elif isinstance(effect, TCGdexSetsSyncCompletion):
+            sql = FINALIZE_TCGDEX_SETS_SQL
+            params["result"] = json.dumps(
+                effect.as_payload(), separators=(",", ":"), sort_keys=True
+            )
+        else:
+            sql = _COMPLETION_EFFECT_SQL.get(effect)
         if sql is None:
             raise ValueError("unsupported completion effect")
-        rows = self._executor.query(
-            sql,
-            {
-                "job_id": job_id,
-                "worker_id": worker_id,
-                "lease_generation": lease_generation,
-            },
-        )
+        rows = self._executor.query(sql, params)
         if not rows:
             raise LeaseLostError(job_id)
         return job_from_row(rows[0])
@@ -322,6 +357,7 @@ class PostgresJobRepository:
         lease_generation: int,
         now: datetime,
         error_code: str = "job_failed",
+        retryable: bool = True,
     ) -> Job:
         del now
         rows = self._executor.query(
@@ -332,6 +368,7 @@ class PostgresJobRepository:
                 "lease_generation": lease_generation,
                 "error_code": error_code[:160],
                 "error_message": error[:8_000],
+                "retryable": retryable,
             },
         )
         if not rows:

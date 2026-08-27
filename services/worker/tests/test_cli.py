@@ -308,7 +308,8 @@ def test_live_worker_rejects_unknown_or_unimplemented_roles_without_database_acc
     monkeypatch.setattr(cli.composition, "build_live_worker_runtime", forbidden)
     for role, expected_error in (
         ("unknown", "unsupported_worker_role"),
-        ("collector", "worker_role_not_ready"),
+        ("ai-worker", "worker_role_not_ready"),
+        ("aggregator", "worker_role_not_ready"),
     ):
         result = runner.invoke(
             app,
@@ -324,6 +325,33 @@ def test_live_worker_rejects_unknown_or_unimplemented_roles_without_database_acc
 
         assert result.exit_code == 78
         assert json.loads(result.output)["error"] == expected_error
+
+
+def test_live_collector_dry_run_registers_only_tcgdex_sets_without_database_access(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def forbidden(_settings: object) -> None:
+        raise AssertionError("collector dry-run built the database runtime")
+
+    monkeypatch.setattr(cli.composition, "build_live_worker_runtime", forbidden)
+    result = runner.invoke(
+        app,
+        ["worker", "--forever", "--dry-run"],
+        env={
+            "DATA_MODE": "live",
+            "SUPABASE_DB_URL": "postgresql://db.example.invalid/pokecrack",
+            "WORKER_ROLE": "collector",
+            "WORKER_MAX_CONCURRENCY": "1",
+            "AI_PROVIDER": "fixture",
+        },
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.stdout)
+    assert payload["registered_job_types"] == [composition.TCGDEX_SETS_JOB_TYPE]
+    assert payload["worker_role"] == "collector"
+    assert payload["dry_run"] is True
+    assert payload["mutated"] is False
 
 
 def test_live_scheduler_dry_run_does_not_build_a_database_repository(
@@ -342,6 +370,7 @@ def test_live_scheduler_dry_run_does_not_build_a_database_repository(
             "WORKER_ROLE": "scheduler",
             "WORKER_MAX_CONCURRENCY": "1",
             "SCHEDULE_CLEANUP": "* * * * *",
+            "SCHEDULE_CATALOG_SYNC": "0 0 31 2 *",
             "AI_PROVIDER": "fixture",
         },
     )
@@ -351,8 +380,12 @@ def test_live_scheduler_dry_run_does_not_build_a_database_repository(
     assert payload["dry_run"] is True
     assert payload["mutated"] is False
     assert payload["planned"] == 1
-    assert payload["registered_job_types"] == [composition.CLEANUP_JOB_TYPE]
+    assert payload["registered_job_types"] == [
+        composition.TCGDEX_SETS_JOB_TYPE,
+        composition.CLEANUP_JOB_TYPE,
+    ]
     assert "official_api" in payload["unwired_schedules"]
+    assert "catalog_sync" not in payload["unwired_schedules"]
 
 
 def test_live_scheduler_runs_the_composed_postgres_scheduler(
