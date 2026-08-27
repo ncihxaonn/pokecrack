@@ -12,15 +12,42 @@ COMPOSE_FILE="$REPOSITORY_ROOT/deploy/compose.prod.yml"
 ENV_FILE=${POKECRACK_ENV_FILE:-/etc/pokecrack/production.env}
 STATE_DIR=${POKECRACK_DEPLOY_STATE_DIR:-/var/lib/pokecrack/deploy}
 HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-180}
-SERVICES=(collector auth-browser ai-worker aggregator scheduler watchdog)
+SERVICE_SET=tcgdex
+SERVICES=(collector scheduler watchdog)
+SERVICES_CSV=collector,scheduler,watchdog
 
 rollback_marker() {
-  local marker rollback
-  marker="$STATE_DIR/last-successful-sha"
+  local marker marker_mode version_line sha_line service_set_line services_line extra_line
+  local rollback valid_marker
+  marker="$STATE_DIR/last-successful-deployment"
   if [[ -d $STATE_DIR && ! -L $STATE_DIR && -f $marker && ! -L $marker ]]; then
-    IFS= read -r rollback < "$marker" || true
-    if [[ $rollback =~ ^[0-9a-f]{40}$ ]]; then
-      printf "Rollback commit: %s\n" "$rollback" >&2
+    marker_mode=$(pokecrack_stat_mode "$marker") || return 0
+    [[ $marker_mode == 600 ]] || return 0
+    version_line=''
+    sha_line=''
+    service_set_line=''
+    services_line=''
+    extra_line=''
+    valid_marker=true
+    {
+      IFS= read -r version_line || valid_marker=false
+      IFS= read -r sha_line || valid_marker=false
+      IFS= read -r service_set_line || valid_marker=false
+      IFS= read -r services_line || valid_marker=false
+      if IFS= read -r extra_line || [[ -n $extra_line ]]; then
+        valid_marker=false
+      fi
+    } < "$marker"
+    rollback=${sha_line#sha=}
+    if [[ $valid_marker == true \
+      && $version_line == 'version=1' \
+      && $sha_line == "sha=$rollback" \
+      && $rollback =~ ^[0-9a-f]{40}$ \
+      && $service_set_line == 'service_set=tcgdex' \
+      && $services_line == "services=$SERVICES_CSV" ]]
+    then
+      printf "Rollback commit: %s (service set: tcgdex; services: %s)\n" \
+        "$rollback" "$SERVICES_CSV" >&2
     fi
   fi
 }
@@ -39,6 +66,10 @@ Options:
   --env-file ABSOLUTE_PATH    Compose interpolation file (default: /etc/pokecrack/production.env)
   --state-dir ABSOLUTE_PATH   Success-marker directory (default: /var/lib/pokecrack/deploy)
   --health-timeout SECONDS    Health deadline (default: 180)
+  --service-set NAME          Exact release service set (only: tcgdex; default: tcgdex)
+
+The full service set is intentionally unavailable: ai-worker and aggregator do
+not have safe live handlers in this release.
 USAGE
 }
 
@@ -50,6 +81,7 @@ while (($#)); do
     --env-file) (($# >= 2)) || die "--env-file requires a value"; ENV_FILE=$2; shift 2 ;;
     --state-dir) (($# >= 2)) || die "--state-dir requires a value"; STATE_DIR=$2; shift 2 ;;
     --health-timeout) (($# >= 2)) || die "--health-timeout requires a value"; HEALTH_TIMEOUT=$2; shift 2 ;;
+    --service-set) (($# >= 2)) || die "--service-set requires a value"; SERVICE_SET=$2; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
@@ -61,8 +93,13 @@ done
 [[ $STATE_DIR == /* ]] || die "state directory path must be absolute"
 [[ $HEALTH_TIMEOUT =~ ^[1-9][0-9]*$ ]] || die "health timeout must be a positive integer"
 [[ -f $COMPOSE_FILE ]] || die "Compose file is missing: $COMPOSE_FILE"
+case $SERVICE_SET in
+  tcgdex) ;;
+  full) die "full service set is unavailable because ai-worker and aggregator fail closed in live mode" ;;
+  *) die "unsupported service set: $SERVICE_SET (allowed: tcgdex)" ;;
+esac
 
-for command in docker git install mktemp mv stat; do
+for command in docker git install mktemp python3 stat; do
   command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
 done
 
@@ -70,6 +107,15 @@ env_mode=$(pokecrack_stat_mode "$ENV_FILE") || die "could not validate environme
 [[ $env_mode =~ ^[0-7]{3,4}$ ]] || die "could not validate environment file permissions"
 env_permissions=$((8#$env_mode))
 (( (env_permissions & 0077) == 0 )) || die "environment file must not be accessible by group or other users (use mode 0600)"
+
+[[ ! -L $STATE_DIR ]] || die "state directory must not be a symbolic link"
+install -d -m 0700 "$STATE_DIR"
+[[ -d $STATE_DIR && ! -L $STATE_DIR ]] || die "state directory is invalid"
+manifest="$STATE_DIR/last-successful-deployment"
+if [[ -e $manifest || -L $manifest ]]; then
+  [[ -f $manifest && ! -L $manifest ]] || \
+    die "success manifest path must be a regular, non-symlink file"
+fi
 
 actual_root=$(git -C "$REPOSITORY_ROOT" rev-parse --show-toplevel 2>/dev/null) || die "repository root is not a Git working tree"
 actual_root=$(CDPATH='' cd -- "$actual_root" && pwd -P)
@@ -94,9 +140,23 @@ compose=(docker compose --project-name pokecrack --env-file "$ENV_FILE" -f "$COM
 
 docker compose version >/dev/null
 "${compose[@]}" config --quiet
-"${compose[@]}" build --pull
+existing_services=$(docker ps --all \
+  --filter label=com.docker.compose.project=pokecrack \
+  --format '{{.ID}}|{{.Label "com.docker.compose.service"}}') || \
+  die "could not enumerate existing Pokecrack project containers"
+while IFS='|' read -r existing_id existing_service extra_field; do
+  [[ -n $existing_id ]] || continue
+  [[ -n $existing_service && -z $extra_field ]] || \
+    die "Pokecrack project container is missing a valid Compose service label: $existing_id"
+  case $existing_service in
+    collector|scheduler|watchdog) ;;
+    *) die \
+      "non-TCGdex service container exists: $existing_service; retire it through a separately approved operation" ;;
+  esac
+done <<< "$existing_services"
+"${compose[@]}" build --pull "${SERVICES[@]}"
 "${compose[@]}" config --quiet
-"${compose[@]}" up --detach --remove-orphans
+"${compose[@]}" up --detach "${SERVICES[@]}"
 
 deadline=$((SECONDS + HEALTH_TIMEOUT))
 while true; do
@@ -123,12 +183,14 @@ while true; do
   sleep 1
 done
 
-[[ ! -L $STATE_DIR ]] || die "state directory must not be a symbolic link"
-install -d -m 0700 "$STATE_DIR"
-[[ -d $STATE_DIR && ! -L $STATE_DIR ]] || die "state directory is invalid"
-marker=$(mktemp "$STATE_DIR/.last-successful-sha.XXXXXXXX")
-printf '%s\n' "$target_sha" > "$marker"
+marker=$(mktemp "$STATE_DIR/.last-successful-deployment.XXXXXXXX")
+printf 'version=1\nsha=%s\nservice_set=%s\nservices=%s\n' \
+  "$target_sha" "$SERVICE_SET" "$SERVICES_CSV" > "$marker"
 chmod 0600 "$marker"
-mv -f "$marker" "$STATE_DIR/last-successful-sha"
+if ! pokecrack_atomic_replace "$marker" "$manifest"; then
+  rm -f -- "$marker" || true
+  die "could not atomically replace the success manifest"
+fi
 
-printf 'Deployment healthy at exact SHA %s.\n' "$target_sha"
+printf 'Deployment healthy at exact SHA %s for service set %s (%s).\n' \
+  "$target_sha" "$SERVICE_SET" "$SERVICES_CSV"
