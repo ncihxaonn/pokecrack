@@ -419,9 +419,14 @@ printf '%s\n' "$FAKE_UTC"
             """#!/usr/bin/env bash
 set -Eeuo pipefail
 [[ ${PGDATABASE:-} == 'postgresql://backup-user:very-secret@example.invalid/pokecrack' ]]
+role_argument_count=0
 for argument in "$@"; do
   [[ $argument != *'very-secret'* ]]
+  if [[ $argument == '--role=service_role' ]]; then
+    role_argument_count=$((role_argument_count + 1))
+  fi
 done
+[[ $role_argument_count == 1 ]]
 if [[ ${FAKE_EMPTY_DUMP:-0} == 1 ]]; then
   exit 0
 fi

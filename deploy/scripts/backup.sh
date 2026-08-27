@@ -134,6 +134,7 @@ if [[ -n $youtube_policy_id ]]; then
 fi
 if ! PGDATABASE=$database_url pg_dump \
   --format=plain \
+  --role=service_role \
   --no-owner \
   --no-privileges \
   --encoding=UTF8 \

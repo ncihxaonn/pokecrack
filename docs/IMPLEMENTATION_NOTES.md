@@ -182,6 +182,12 @@ provides the clean replay/pgTAP evidence for this revision.
   parents. Preflight/dump mismatch, orphan provenance, malformed COPY data, and
   sanitizer/`psql` failures all abort atomically without exposing the database
   URL or advancing the success marker.
+- A read-only live-role probe confirmed `pokecrack_worker` is an inheriting
+  `service_role` member but does not itself have `BYPASSRLS`: bare `pg_dump` was
+  rejected by forced RLS, while `pg_dump --role=service_role` completed against
+  `ingest.source_items` without emitting or retaining table data. The backup
+  entrypoint now uses that explicit role and every script-path fixture requires
+  the exact argument. This is a permission-path check, not a restore drill.
 - Repository/migration-safety guard tests passed **18/18**. The repository guard
   returned `{"ok": true, "findings": []}`.
 - Pending-migration safety passed with exactly three reviewed DELETE
