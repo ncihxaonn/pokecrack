@@ -140,7 +140,7 @@ uv run mypy pokecrack_worker
 uv run pytest -q
 ```
 
-Result: **404 passed, 1 optional Scrapling runtime skipped, and 2 subtests
+Result: **405 passed, 1 optional Scrapling runtime skipped, and 2 subtests
 passed**. Ruff and format checks passed; mypy reported no issues in 64 source
 files. Coverage includes flag-off behavior, five scheduler jobs, scheduler
 operation without the key, exact six-hour cadence, query-drift rejection before
