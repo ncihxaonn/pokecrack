@@ -7,7 +7,13 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
-from .models import CompletionEffect, Job, JobStatus, TCGdexSetsSyncCompletion
+from .models import (
+    CompletionEffect,
+    Job,
+    JobStatus,
+    TCGdexSetsSyncCompletion,
+    YouTubeDiscoveryCompletion,
+)
 from .repository import LeaseLostError
 
 
@@ -109,6 +115,16 @@ FROM ingest.finalize_cleanup_job(
 FINALIZE_TCGDEX_SETS_SQL = """
 SELECT *
 FROM ingest.finalize_tcgdex_sets_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    result => %(result)s::jsonb
+)
+""".strip()
+
+FINALIZE_YOUTUBE_DISCOVERY_SQL = """
+SELECT *
+FROM ingest.finalize_youtube_discovery_job(
     job_id => %(job_id)s::uuid,
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint,
@@ -300,7 +316,7 @@ class PostgresJobRepository:
         worker_id: str,
         lease_generation: int,
         now: datetime,
-        effect: CompletionEffect | TCGdexSetsSyncCompletion | None = None,
+        effect: CompletionEffect | TCGdexSetsSyncCompletion | YouTubeDiscoveryCompletion | None = None,
     ) -> Job:
         del now
         params: dict[str, object] = {
@@ -313,6 +329,11 @@ class PostgresJobRepository:
             sql = COMPLETE_SQL
         elif isinstance(effect, TCGdexSetsSyncCompletion):
             sql = FINALIZE_TCGDEX_SETS_SQL
+            params["result"] = json.dumps(
+                effect.as_payload(), separators=(",", ":"), sort_keys=True
+            )
+        elif isinstance(effect, YouTubeDiscoveryCompletion):
+            sql = FINALIZE_YOUTUBE_DISCOVERY_SQL
             params["result"] = json.dumps(
                 effect.as_payload(), separators=(",", ":"), sort_keys=True
             )

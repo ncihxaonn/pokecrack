@@ -11,7 +11,13 @@ from enum import StrEnum
 from time import sleep
 from typing import Protocol
 
-from pokecrack_worker.jobs import CompletionEffect, Job, LeaseLostError, TCGdexSetsSyncCompletion
+from pokecrack_worker.jobs import (
+    CompletionEffect,
+    Job,
+    LeaseLostError,
+    TCGdexSetsSyncCompletion,
+    YouTubeDiscoveryCompletion,
+)
 
 
 class RuntimeRepository(Protocol):
@@ -41,7 +47,7 @@ class RuntimeRepository(Protocol):
         worker_id: str,
         lease_generation: int,
         now: datetime,
-        effect: CompletionEffect | TCGdexSetsSyncCompletion | None = None,
+        effect: CompletionEffect | TCGdexSetsSyncCompletion | YouTubeDiscoveryCompletion | None = None,
     ) -> Job: ...
 
     def fail(
@@ -67,7 +73,7 @@ class RuntimeRepository(Protocol):
     ) -> Job: ...
 
 
-Completion = CompletionEffect | TCGdexSetsSyncCompletion
+Completion = CompletionEffect | TCGdexSetsSyncCompletion | YouTubeDiscoveryCompletion
 JobHandler = Callable[[Job], Completion | None]
 
 
@@ -171,7 +177,8 @@ class WorkerRuntime:
                 try:
                     effect = future.result(timeout=interval_seconds)
                     if effect is not None and not isinstance(
-                        effect, (CompletionEffect, TCGdexSetsSyncCompletion)
+                        effect,
+                        (CompletionEffect, TCGdexSetsSyncCompletion, YouTubeDiscoveryCompletion),
                     ):
                         raise TypeError(
                             "job handlers must return a typed completion effect or None"

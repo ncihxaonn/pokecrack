@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 import pytest
+from pydantic import SecretStr
 
 from pokecrack_worker.collectors.official_api.tcgdex import (
     APIResponse,
@@ -17,7 +18,6 @@ from pokecrack_worker.collectors.official_api.tcgdex import (
 from pokecrack_worker.collectors.official_api.youtube import YouTubeDataClient
 from pokecrack_worker.config.registries import (
     REQUIRED_YOUTUBE_QUERIES,
-    YouTubeQuery,
     YouTubeQueryRegistry,
 )
 from pokecrack_worker.config.source_policy import SourcePolicyRegistry
@@ -196,7 +196,15 @@ class SequenceYouTubeTransport:
     responses: list[APIResponse]
     calls: list[dict[str, str]] = field(default_factory=list)
 
-    def get(self, url: str, *, params: dict[str, str], timeout_seconds: float) -> APIResponse:
+    def get(
+        self,
+        url: str,
+        *,
+        params: dict[str, str],
+        api_key: SecretStr,
+        timeout_seconds: float,
+    ) -> APIResponse:
+        assert repr(api_key) == "SecretStr('**********')"
         self.calls.append(params)
         return self.responses.pop(0)
 
@@ -204,34 +212,31 @@ class SequenceYouTubeTransport:
 def test_youtube_query_batch_continues_after_nonfatal_api_failure() -> None:
     body = (ROOT / "data" / "examples" / "youtube-search.json").read_bytes()
     transport = SequenceYouTubeTransport(
-        [APIResponse(503, {}, b"synthetic unavailable"), APIResponse(200, {}, body)]
+        [
+            APIResponse(503, {}, b"synthetic unavailable"),
+            APIResponse(200, {}, body),
+            APIResponse(200, {}, b'{"items":[]}'),
+        ]
     )
     client = YouTubeDataClient(
         api_key="fixture-key",
         transport=transport,
         policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+        sleeper=lambda _seconds: None,
     )
-    queries = (
-        YouTubeQuery(
-            name="first-synthetic",
-            query="first synthetic query",
-            enabled=True,
-            metadata_only=True,
-        ),
-        YouTubeQuery(
-            name="second-synthetic",
-            query="second synthetic query",
-            enabled=True,
-            metadata_only=True,
-        ),
-    )
+    queries = YouTubeQueryRegistry.from_yaml(
+        ROOT / "config" / "youtube-queries.yaml"
+    ).queries[:2]
 
     result = client.discover_many(queries)
 
     assert len(result.items) == 1
     assert result.items[0].external_id == "dQw4w9WgXcQ"
     assert [(failure.query_name, failure.error_code) for failure in result.failures] == [
-        ("first-synthetic", "http_error")
+        ("pokemon-tcg-booster-box-opening", "http_error")
     ]
-    assert len(transport.calls) == 2
-    assert all(call["type"] == "video" for call in transport.calls)
+    assert len(transport.calls) == 3
+    assert transport.calls[0]["type"] == "video"
+    assert transport.calls[1]["type"] == "video"
+    assert "type" not in transport.calls[2]
+    assert all("key" not in call for call in transport.calls)

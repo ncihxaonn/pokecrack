@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     ai_output_per_million_aud: Decimal = Field(default=Decimal("0"), ge=0)
 
     youtube_api_key: SecretStr | None = None
+    youtube_collection_enabled: bool = False
 
     scrapling_enabled: bool = True
     scrapling_http_concurrency: int = Field(default=4, ge=1, le=32)
@@ -152,6 +153,15 @@ class Settings(BaseSettings):
                 missing.append("AI_OUTPUT_PER_MILLION_AUD")
             if missing:
                 raise ValueError("network AI provider requires " + ", ".join(missing))
+        if (
+            self.youtube_collection_enabled
+            and (
+                self.youtube_api_key is None
+                or not self.youtube_api_key.get_secret_value().strip()
+            )
+            and self.worker_role != "scheduler"
+        ):
+            raise ValueError("YOUTUBE_COLLECTION_ENABLED requires YOUTUBE_API_KEY for collectors")
         if self.database_warning_mb > self.database_critical_mb:
             raise ValueError("DATABASE_WARNING_MB must not exceed DATABASE_CRITICAL_MB")
         if self.storage_warning_mb > self.storage_critical_mb:

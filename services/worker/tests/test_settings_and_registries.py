@@ -40,6 +40,7 @@ def test_settings_default_to_network_free_demo_fixture_mode(
     assert settings.ai_provider is AIProviderName.FIXTURE
     assert settings.supabase_db_url is None
     assert settings.youtube_api_key is None
+    assert settings.youtube_collection_enabled is False
     assert settings.scrapling_save_raw_html is False
     assert settings.scrapling_dynamic_enabled is False
     assert settings.worker_max_concurrency == 1
@@ -53,6 +54,25 @@ def test_live_and_http_ai_modes_fail_closed_without_required_configuration() -> 
 
     with pytest.raises(ValidationError, match="AI_API_KEY.*AI_EXTRACT_MODEL"):
         Settings(_env_file=None, ai_provider="http")
+
+
+def test_youtube_enablement_requires_key_only_in_the_network_collector() -> None:
+    with pytest.raises(ValidationError, match="YOUTUBE_API_KEY for collectors"):
+        Settings(_env_file=None, youtube_collection_enabled=True, worker_role="collector")
+    with pytest.raises(ValidationError, match="YOUTUBE_API_KEY for collectors"):
+        Settings(
+            _env_file=None,
+            youtube_collection_enabled=True,
+            youtube_api_key="   ",
+            worker_role="collector",
+        )
+
+    scheduler = Settings(
+        _env_file=None,
+        youtube_collection_enabled=True,
+        worker_role="scheduler",
+    )
+    assert scheduler.youtube_api_key is None
 
 
 def test_worker_concurrency_above_one_is_rejected_until_pooling_is_implemented() -> None:
@@ -143,10 +163,16 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
     assert sources.require(
         "https://youtube.googleapis.com/youtube/v3/search", "youtube"
     ).metadata_only
+    youtube_identity = sources.resolve("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    assert youtube_identity.enabled is False
+    assert youtube_identity.retention_days == 30
+    assert youtube_identity.version == "youtube-global-discovery-v1"
 
     assert queries.default_enabled is False
     assert len(queries.queries) == 5
     assert all(query.metadata_only for query in queries.queries)
+    assert all(query.enabled is False and query.region_code is None for query in queries.queries)
+    assert queries.require("pokemon-tcg-pack-opening").query == "Pokemon TCG pack opening"
     assert taxonomy.baseline_priority == (
         ("set_id", "language", "product_type"),
         ("set_id", "language"),

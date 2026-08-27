@@ -1,43 +1,38 @@
 version: 1
 default_enabled: false
 queries:
-  - name: pokemon-tcg-opening-australia
-    query: Pokemon TCG opening Australia
+  - name: pokemon-tcg-booster-box-opening
+    query: Pokemon TCG booster box opening
     enabled: false
     metadata_only: true
     max_results: 25
-    region_code: AU
     published_within_days: 30
     order: date
-  - name: pokemon-booster-box-opening-melbourne
-    query: Pokemon booster box opening Melbourne
+  - name: pokemon-tcg-etb-opening
+    query: Pokemon TCG ETB opening
     enabled: false
     metadata_only: true
     max_results: 25
-    region_code: AU
     published_within_days: 30
     order: date
-  - name: pokemon-etb-opening-australia
-    query: Pokemon ETB opening Australia
+  - name: pokemon-tcg-booster-bundle-opening
+    query: Pokemon TCG booster bundle opening
     enabled: false
     metadata_only: true
     max_results: 25
-    region_code: AU
     published_within_days: 30
     order: date
-  - name: pokemon-booster-bundle-opening-sydney
-    query: Pokemon booster bundle opening Sydney
+  - name: pokemon-tcg-pack-opening
+    query: Pokemon TCG pack opening
     enabled: false
     metadata_only: true
     max_results: 25
-    region_code: AU
     published_within_days: 30
     order: date
-  - name: pokemon-card-opening-batch-code
-    query: Pokemon card opening batch code
+  - name: pokemon-tcg-opening-batch-code
+    query: Pokemon TCG opening batch code
     enabled: false
     metadata_only: true
     max_results: 25
-    region_code: AU
     published_within_days: 30
     order: date

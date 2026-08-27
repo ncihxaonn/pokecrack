@@ -10,6 +10,34 @@ from enum import StrEnum
 from typing import Any
 
 _TCGDEX_ETAG_PATTERN = re.compile(r'(?:W/)?"[\x21\x23-\x7e]*"')
+_LOWER_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+_YOUTUBE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
+_BATCH_HINT_PATTERN = re.compile(r"^[A-Z0-9][A-Z0-9_-]{1,31}$")
+_YOUTUBE_QUERY_NAMES = frozenset(
+    {
+        "pokemon-tcg-booster-box-opening",
+        "pokemon-tcg-etb-opening",
+        "pokemon-tcg-booster-bundle-opening",
+        "pokemon-tcg-pack-opening",
+        "pokemon-tcg-opening-batch-code",
+    }
+)
+_YOUTUBE_METADATA_KEYS = frozenset(
+    {
+        "query_name",
+        "metadata_only",
+        "media_download",
+        "discovery_scope",
+        "geography_status",
+        "evidence_tier",
+        "statistics_eligible",
+        "parser_version",
+        "product_type_hints",
+        "batch_code_hints",
+        "channel_country_code",
+        "geography_basis",
+    }
+)
 
 
 class JobStatus(StrEnum):
@@ -132,6 +160,171 @@ class TCGdexSetsSyncCompletion:
                 }
                 for item in self.sets
             ],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class YouTubeSourceItemWrite:
+    """Exact, activity-only row accepted by the YouTube discovery finalizer."""
+
+    external_id: str
+    source_url: str
+    normalized_url: str
+    title: str | None
+    text_excerpt: str | None
+    published_at: datetime | None
+    author_hash: str | None
+    content_hash: str | None
+    language: str
+    metadata: Mapping[str, Any]
+    collector_version: str
+    source_policy_version: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.external_id, str) or _YOUTUBE_ID_PATTERN.fullmatch(
+            self.external_id
+        ) is None:
+            raise ValueError("YouTube external ID is invalid")
+        expected_url = f"https://www.youtube.com/watch?v={self.external_id}"
+        if self.source_url != expected_url or self.normalized_url != expected_url:
+            raise ValueError("YouTube source URLs must use the exact canonical watch form")
+        for name, value, maximum in (
+            ("title", self.title, 500),
+            ("text_excerpt", self.text_excerpt, 20_000),
+        ):
+            if value is not None and (
+                not isinstance(value, str)
+                or len(value) > maximum
+                or any(ord(character) < 32 and character not in "\t\n\r" for character in value)
+            ):
+                raise ValueError(f"YouTube {name} is invalid")
+        if self.published_at is not None and (
+            not isinstance(self.published_at, datetime)
+            or self.published_at.tzinfo is None
+            or self.published_at.utcoffset() is None
+        ):
+            raise ValueError("YouTube published_at must be timezone-aware or null")
+        for name, value in (
+            ("author_hash", self.author_hash),
+            ("content_hash", self.content_hash),
+        ):
+            if value is not None and (
+                not isinstance(value, str) or _LOWER_SHA256_PATTERN.fullmatch(value) is None
+            ):
+                raise ValueError(f"YouTube {name} must be lowercase SHA-256 or null")
+        if self.language != "en":
+            raise ValueError("YouTube global discovery v1 uses the English query language")
+        if self.collector_version != "youtube-global-discovery-v1":
+            raise ValueError("YouTube collector version is not approved")
+        if self.source_policy_version != "youtube-global-discovery-v1":
+            raise ValueError("YouTube source policy version is not approved")
+        self._validate_metadata()
+
+    def _validate_metadata(self) -> None:
+        if not isinstance(self.metadata, Mapping) or set(self.metadata) != _YOUTUBE_METADATA_KEYS:
+            raise ValueError("YouTube activity metadata keys are invalid")
+        metadata = self.metadata
+        constants = {
+            "metadata_only": True,
+            "media_download": False,
+            "discovery_scope": "global",
+            "evidence_tier": "D",
+            "statistics_eligible": False,
+            "parser_version": "youtube-metadata-v1",
+        }
+        if any(metadata.get(key) != value for key, value in constants.items()):
+            raise ValueError("YouTube activity metadata constants are invalid")
+        query_name = metadata.get("query_name")
+        if not isinstance(query_name, str) or query_name not in _YOUTUBE_QUERY_NAMES:
+            raise ValueError("YouTube metadata query name is not approved")
+        products = metadata.get("product_type_hints")
+        if (
+            not isinstance(products, list)
+            or len(products) > 3
+            or any(
+                not isinstance(item, str)
+                or item not in {"booster_box", "etb", "booster_bundle"}
+                for item in products
+            )
+            or len(products) != len(set(products))
+        ):
+            raise ValueError("YouTube product hints are invalid")
+        batches = metadata.get("batch_code_hints")
+        if (
+            not isinstance(batches, list)
+            or len(batches) > 5
+            or any(
+                not isinstance(item, str) or _BATCH_HINT_PATTERN.fullmatch(item) is None
+                for item in batches
+            )
+            or len(batches) != len(set(batches))
+        ):
+            raise ValueError("YouTube batch hints are invalid")
+        country = metadata.get("channel_country_code")
+        geography_status = metadata.get("geography_status")
+        geography_basis = metadata.get("geography_basis")
+        if country is None:
+            if geography_status != "unresolved" or geography_basis != "unresolved":
+                raise ValueError("unresolved YouTube geography metadata is inconsistent")
+        elif (
+            not isinstance(country, str)
+            or re.fullmatch(r"[A-Z]{2}", country) is None
+            or geography_status != "channel_country_proxy"
+            or geography_basis != "youtube_channel_country"
+        ):
+            raise ValueError("YouTube channel-country proxy metadata is invalid")
+
+    def as_payload(self) -> dict[str, Any]:
+        self._validate_metadata()
+        published_at = (
+            self.published_at.astimezone(UTC).isoformat().replace("+00:00", "Z")
+            if self.published_at is not None
+            else None
+        )
+        return {
+            "external_id": self.external_id,
+            "source_url": self.source_url,
+            "normalized_url": self.normalized_url,
+            "title": self.title,
+            "text_excerpt": self.text_excerpt,
+            "published_at": published_at,
+            "author_hash": self.author_hash,
+            "content_hash": self.content_hash,
+            "language": self.language,
+            "metadata": dict(self.metadata),
+            "collector_version": self.collector_version,
+            "source_policy_version": self.source_policy_version,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class YouTubeDiscoveryCompletion:
+    """One exact allowlisted query and its bounded atomic persistence input."""
+
+    query_name: str
+    items: tuple[YouTubeSourceItemWrite, ...]
+
+    def __post_init__(self) -> None:
+        if self.query_name not in _YOUTUBE_QUERY_NAMES:
+            raise ValueError("YouTube completion query name is not approved")
+        if (
+            not isinstance(self.items, tuple)
+            or len(self.items) > 50
+            or any(not isinstance(item, YouTubeSourceItemWrite) for item in self.items)
+        ):
+            raise ValueError("YouTube completion requires 0 to 50 typed items")
+        if any(item.metadata.get("query_name") != self.query_name for item in self.items):
+            raise ValueError("YouTube completion item query provenance is inconsistent")
+        external_ids = [item.external_id for item in self.items]
+        if len(external_ids) != len(set(external_ids)):
+            raise ValueError("YouTube completion external IDs must be unique")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        return {
+            "version": 1,
+            "query_name": self.query_name,
+            "items": [item.as_payload() for item in self.items],
         }
 
 

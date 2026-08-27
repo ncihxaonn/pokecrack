@@ -1,8 +1,8 @@
 """Fail-closed live PostgreSQL composition for the worker entry point.
 
 Only job types with a bounded, database-backed implementation are registered
-here. The collector is limited to the fixed TCGdex English sets endpoint; AI,
-aggregation, and general URL collection remain deliberately unavailable.
+here. The collector supports fixed TCGdex catalog sync plus explicitly enabled
+YouTube metadata discovery; AI and general URL collection remain unavailable.
 """
 
 from __future__ import annotations
@@ -13,11 +13,14 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
+from time import monotonic, sleep
 
 from pokecrack_worker import __version__
 from pokecrack_worker.collectors.official_api.postgres import (
     PostgresTCGdexCheckpointRepository,
+    PostgresYouTubeDiscoveryGate,
     TCGdexRequestDeferred,
+    YouTubeRequestDeferred,
 )
 from pokecrack_worker.collectors.official_api.tcgdex import (
     HTTPXTCGdexTransport,
@@ -27,6 +30,13 @@ from pokecrack_worker.collectors.official_api.tcgdex import (
     TCGdexSetsSyncOutcome,
     TCGdexTransport,
 )
+from pokecrack_worker.collectors.official_api.youtube import (
+    HTTPXYouTubeTransport,
+    YouTubeDataClient,
+    YouTubeError,
+    YouTubeTransport,
+)
+from pokecrack_worker.config.registries import YouTubeQueryRegistry
 from pokecrack_worker.config.settings import DataMode, Settings
 from pokecrack_worker.config.source_policy import SourcePolicyRegistry
 from pokecrack_worker.db import PsycopgQueryExecutor
@@ -38,6 +48,8 @@ from pokecrack_worker.jobs import (
     TCGdexSetsSyncCompletion,
     TCGdexSetWrite,
     TCGdexSyncOutcome,
+    YouTubeDiscoveryCompletion,
+    YouTubeSourceItemWrite,
 )
 from pokecrack_worker.runtime import JobDeferred, JobExecutionError, JobHandler, WorkerRuntime
 from pokecrack_worker.scheduler import CronExpression, ScheduleEntry, Scheduler
@@ -69,8 +81,10 @@ class HeartbeatResult:
 
 CLEANUP_JOB_TYPE = "maintenance.cleanup"
 TCGDEX_SETS_JOB_TYPE = "catalog.tcgdex.sets.sync"
+YOUTUBE_DISCOVERY_JOB_TYPE = "source.youtube.discovery"
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SOURCES_CONFIG = PROJECT_ROOT / "config" / "sources.yaml"
+YOUTUBE_QUERIES_CONFIG = PROJECT_ROOT / "config" / "youtube-queries.yaml"
 
 WORKER_HEARTBEAT_SQL = """
 WITH database_probe AS (
@@ -151,6 +165,69 @@ SELECT CASE %(worker_type)s
         AND policies.version = 'tcgdex-sets-v1'
         AND policies.expected_interval_seconds = 86400
     )
+    AND (
+      NOT %(youtube_enabled)s::boolean
+      OR (
+        to_regprocedure('ingest.begin_youtube_discovery_job(uuid,text,bigint)') IS NOT NULL
+        AND to_regprocedure(
+          'ingest.finalize_youtube_discovery_job(uuid,text,bigint,jsonb)'
+        ) IS NOT NULL
+        AND has_function_privilege(
+          current_user,
+          to_regprocedure('ingest.begin_youtube_discovery_job(uuid,text,bigint)'),
+          'EXECUTE'
+        )
+        AND has_function_privilege(
+          current_user,
+          to_regprocedure(
+            'ingest.finalize_youtube_discovery_job(uuid,text,bigint,jsonb)'
+          ),
+          'EXECUTE'
+        )
+        AND EXISTS (
+          SELECT 1
+          FROM ingest.source_policies AS policies
+          WHERE policies.source_key = 'youtube_discovery'
+            AND policies.display_name = 'YouTube Global Discovery API'
+            AND policies.domain = 'youtube.googleapis.com'
+            AND policies.base_url = 'https://youtube.googleapis.com/youtube/v3'
+            AND policies.enabled
+            AND NOT policies.is_demo
+            AND policies.source_kind = 'official_api'
+            AND policies.collector_type = 'official_api'
+            AND policies.access_mode = 'official_api'
+            AND policies.robots_policy = 'not_applicable'
+            AND policies.routes = ARRAY['official_api']::text[]
+            AND NOT policies.include_subdomains
+            AND policies.min_delay_seconds = 2
+            AND policies.max_pages_per_run = 2
+            AND policies.max_items_per_run = 50
+            AND policies.max_concurrency = 1
+            AND policies.browser_profile IS NULL
+            AND NOT policies.statistics_eligible_default
+            AND policies.retention_days = 30
+            AND policies.config = '{
+              "metadata_only":true,
+              "media_download":false,
+              "discovery_scope":"global",
+              "geography_status":"unresolved",
+              "evidence_tier":"D",
+              "statistics_eligible":false,
+              "parser_version":"youtube-metadata-v1",
+              "max_response_bytes":2097152,
+              "query_allowlist":[
+                "pokemon-tcg-booster-box-opening",
+                "pokemon-tcg-etb-opening",
+                "pokemon-tcg-booster-bundle-opening",
+                "pokemon-tcg-pack-opening",
+                "pokemon-tcg-opening-batch-code"
+              ]
+            }'::jsonb
+            AND policies.version = 'youtube-global-discovery-v1'
+            AND policies.expected_interval_seconds = 21600
+        )
+      )
+    )
   WHEN 'scheduler' THEN
     to_regprocedure(
       'ingest.enqueue_scheduled_job_v1(text,timestamptz,text,jsonb,integer,integer)'
@@ -193,7 +270,7 @@ END AS ready
 """.strip()
 
 _WORKER_JOB_TYPES: Mapping[WorkerRole, tuple[str, ...]] = {
-    WorkerRole.COLLECTOR: (TCGDEX_SETS_JOB_TYPE,),
+    WorkerRole.COLLECTOR: (TCGDEX_SETS_JOB_TYPE, YOUTUBE_DISCOVERY_JOB_TYPE),
     WorkerRole.WATCHDOG: (CLEANUP_JOB_TYPE,),
 }
 
@@ -209,7 +286,9 @@ _SCHEDULE_FIELDS: tuple[tuple[str, str], ...] = (
 )
 
 UNWIRED_SCHEDULE_NAMES = tuple(
-    name for name, _field_name in _SCHEDULE_FIELDS if name not in {"catalog_sync", "cleanup"}
+    name
+    for name, _field_name in _SCHEDULE_FIELDS
+    if name not in {"official_api", "catalog_sync", "cleanup"}
 )
 
 
@@ -259,6 +338,8 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
             "worker_role_not_ready",
             "the configured role has no safe live job handlers in this build",
         )
+    if role is WorkerRole.COLLECTOR and not settings.youtube_collection_enabled:
+        return (TCGDEX_SETS_JOB_TYPE,)
     return job_types
 
 
@@ -300,7 +381,10 @@ def write_health_heartbeat(
     database = executor or executor_from_settings(settings)
     dependency_rows = database.query(
         LIVE_ROLE_DEPENDENCIES_SQL,
-        {"worker_type": role.value},
+        {
+            "worker_type": role.value,
+            "youtube_enabled": settings.youtube_collection_enabled,
+        },
     )
     if not dependency_rows or dependency_rows[0].get("ready") is not True:
         raise LiveCompositionError(
@@ -419,16 +503,90 @@ def _tcgdex_sets_handler(
     return sync_sets
 
 
+def _youtube_discovery_handler(
+    *,
+    settings: Settings,
+    executor: QueryExecutor,
+    worker_id: str,
+    transport: YouTubeTransport,
+    clock: Callable[[], datetime] | None,
+    monotonic_clock: Callable[[], float],
+    sleeper: Callable[[float], None],
+) -> JobHandler:
+    if not settings.youtube_collection_enabled or settings.youtube_api_key is None:
+        raise RuntimeError("YouTube discovery handler requires explicit credentials and enablement")
+    registry = YouTubeQueryRegistry.from_yaml(YOUTUBE_QUERIES_CONFIG)
+    gates = PostgresYouTubeDiscoveryGate(executor)
+    client = YouTubeDataClient(
+        api_key=settings.youtube_api_key.get_secret_value(),
+        transport=transport,
+        policies=SourcePolicyRegistry.from_yaml(SOURCES_CONFIG),
+        clock=clock,
+        monotonic_clock=monotonic_clock,
+        sleeper=sleeper,
+    )
+
+    def discover(job: Job) -> YouTubeDiscoveryCompletion:
+        if job.kind != YOUTUBE_DISCOVERY_JOB_TYPE or set(job.payload) != {"query_name"}:
+            raise ValueError("YouTube discovery jobs require the exact query_name payload")
+        query_name = job.payload.get("query_name")
+        if not isinstance(query_name, str):
+            raise ValueError("YouTube query_name must be text")
+        query = registry.require(query_name)
+        try:
+            gates.begin(
+                job_id=job.id,
+                worker_id=worker_id,
+                lease_generation=job.lease_generation,
+            )
+        except YouTubeRequestDeferred as deferred:
+            raise JobDeferred(
+                retry_at=deferred.retry_at,
+                code="youtube_request_deferred",
+            ) from None
+        try:
+            candidates = client.discover(query)
+        except YouTubeError as error:
+            raise JobExecutionError(code=error.code, retryable=error.retryable) from None
+        writes: list[YouTubeSourceItemWrite] = []
+        for candidate in candidates:
+            if candidate.normalized_url is None:
+                raise RuntimeError("YouTube candidate normalization is unavailable")
+            writes.append(
+                YouTubeSourceItemWrite(
+                    external_id=candidate.external_id or "",
+                    source_url=candidate.source_url,
+                    normalized_url=candidate.normalized_url,
+                    title=candidate.title,
+                    text_excerpt=candidate.text,
+                    published_at=candidate.published_at,
+                    author_hash=candidate.author_hash,
+                    content_hash=candidate.content_hash,
+                    language="en",
+                    metadata=dict(candidate.metadata),
+                    collector_version=candidate.collector_version,
+                    source_policy_version=candidate.source_policy_version,
+                )
+            )
+        return YouTubeDiscoveryCompletion(query_name=query.name, items=tuple(writes))
+
+    return discover
+
+
 def _handlers_for_role(
     role: WorkerRole,
     *,
+    settings: Settings,
     executor: QueryExecutor,
     worker_id: str,
     tcgdex_transport: TCGdexTransport | None,
+    youtube_transport: YouTubeTransport | None,
     clock: Callable[[], datetime] | None,
+    monotonic_clock: Callable[[], float],
+    sleeper: Callable[[float], None],
 ) -> Mapping[str, JobHandler]:
     if role is WorkerRole.COLLECTOR:
-        return {
+        handlers: dict[str, JobHandler] = {
             TCGDEX_SETS_JOB_TYPE: _tcgdex_sets_handler(
                 executor=executor,
                 worker_id=worker_id,
@@ -436,6 +594,17 @@ def _handlers_for_role(
                 clock=clock,
             )
         }
+        if settings.youtube_collection_enabled:
+            handlers[YOUTUBE_DISCOVERY_JOB_TYPE] = _youtube_discovery_handler(
+                settings=settings,
+                executor=executor,
+                worker_id=worker_id,
+                transport=youtube_transport or HTTPXYouTubeTransport(),
+                clock=clock,
+                monotonic_clock=monotonic_clock,
+                sleeper=sleeper,
+            )
+        return handlers
     if role is WorkerRole.WATCHDOG:
         return {CLEANUP_JOB_TYPE: _cleanup_handler()}
     return {}
@@ -447,6 +616,9 @@ def build_live_worker_runtime(
     executor: QueryExecutor | None = None,
     clock: Callable[[], datetime] | None = None,
     tcgdex_transport: TCGdexTransport | None = None,
+    youtube_transport: YouTubeTransport | None = None,
+    monotonic_clock: Callable[[], float] = monotonic,
+    sleeper: Callable[[float], None] = sleep,
 ) -> WorkerRuntime:
     """Compose the live queue with a non-empty allowlist of concrete handlers."""
 
@@ -455,10 +627,14 @@ def build_live_worker_runtime(
     database = executor or executor_from_settings(settings)
     handlers = _handlers_for_role(
         role,
+        settings=settings,
         executor=database,
         worker_id=settings.worker_id,
         tcgdex_transport=tcgdex_transport,
+        youtube_transport=youtube_transport,
         clock=clock,
+        monotonic_clock=monotonic_clock,
+        sleeper=sleeper,
     )
     if tuple(handlers) != expected_job_types:
         raise RuntimeError("live worker handler registry is inconsistent")
@@ -479,7 +655,7 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
     require_scheduler_role(settings)
     for _name, field_name in _SCHEDULE_FIELDS:
         CronExpression.parse(str(getattr(settings, field_name)))
-    return (
+    catalog = (
         ScheduleEntry(
             name="catalog_sync",
             job_type=TCGDEX_SETS_JOB_TYPE,
@@ -489,6 +665,25 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
             catch_up_within=timedelta(hours=36),
             catch_up_check_interval=timedelta(hours=1),
         ),
+    )
+    youtube = (
+        tuple(
+            ScheduleEntry(
+                name=f"youtube_{query.name}",
+                job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                cron=settings.schedule_official_api,
+                payload={"query_name": query.name},
+                priority=15,
+                max_attempts=min(3, settings.worker_max_attempts),
+                catch_up_within=timedelta(hours=12),
+                catch_up_check_interval=timedelta(hours=1),
+            )
+            for query in YouTubeQueryRegistry.from_yaml(YOUTUBE_QUERIES_CONFIG).queries
+        )
+        if settings.youtube_collection_enabled
+        else ()
+    )
+    cleanup = (
         ScheduleEntry(
             name="cleanup",
             job_type=CLEANUP_JOB_TYPE,
@@ -497,6 +692,7 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
             max_attempts=settings.worker_max_attempts,
         ),
     )
+    return catalog + youtube + cleanup
 
 
 def build_live_scheduler(

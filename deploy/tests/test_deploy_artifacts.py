@@ -865,6 +865,23 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("AI_OUTPUT_PER_MILLION_AUD", environment)
         self.assertEqual(environment["AI_MAX_OUTPUT_TOKENS"], "4096")
 
+    def test_youtube_collection_flag_reaches_scheduler_without_sharing_the_api_key(self) -> None:
+        compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
+        collector = compose[compose.index("  collector:") : compose.index("  auth-browser:")]
+        scheduler = compose[compose.index("  scheduler:") : compose.index("  watchdog:")]
+        expected_flag = 'YOUTUBE_COLLECTION_ENABLED: "${YOUTUBE_COLLECTION_ENABLED:-false}"'
+        self.assertIn(expected_flag, collector)
+        self.assertIn(expected_flag, scheduler)
+        self.assertIn("YOUTUBE_API_KEY:", collector)
+        self.assertNotIn("YOUTUBE_API_KEY:", scheduler)
+
+        for path in (
+            REPOSITORY_ROOT / ".env.example",
+            DEPLOY_ROOT / "env" / "production.env.example",
+        ):
+            source = path.read_text(encoding="utf-8")
+            self.assertIn("YOUTUBE_COLLECTION_ENABLED=false", source)
+
     def test_auth_browser_pins_opencli_and_starts_its_loopback_daemon(self) -> None:
         dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(encoding="utf-8")
         entrypoint = (DEPLOY_ROOT / "auth-browser-entrypoint.sh").read_text(encoding="utf-8")

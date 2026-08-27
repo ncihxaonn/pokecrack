@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -14,6 +16,8 @@ from pokecrack_worker.jobs import (
     TCGdexSetsSyncCompletion,
     TCGdexSetWrite,
     TCGdexSyncOutcome,
+    YouTubeDiscoveryCompletion,
+    YouTubeSourceItemWrite,
 )
 
 NOW = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
@@ -952,6 +956,119 @@ def test_tcgdex_completion_effect_rejects_unbounded_or_mismatched_data() -> None
             etag='"ÿ"',
             content_sha256="a" * 64,
         )
+
+
+def _youtube_write() -> YouTubeSourceItemWrite:
+    return YouTubeSourceItemWrite(
+        external_id="dQw4w9WgXcQ",
+        source_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        normalized_url="https://www.youtube.com/watch?v=dQw4w9WgXcQ",
+        title="Pokemon booster box opening",
+        text_excerpt="Batch code: AB-123",
+        published_at=NOW,
+        author_hash="a" * 64,
+        content_hash="b" * 64,
+        language="en",
+        metadata={
+            "query_name": "pokemon-tcg-booster-box-opening",
+            "metadata_only": True,
+            "media_download": False,
+            "discovery_scope": "global",
+            "geography_status": "channel_country_proxy",
+            "evidence_tier": "D",
+            "statistics_eligible": False,
+            "parser_version": "youtube-metadata-v1",
+            "product_type_hints": ["booster_box"],
+            "batch_code_hints": ["AB-123"],
+            "channel_country_code": "AU",
+            "geography_basis": "youtube_channel_country",
+        },
+        collector_version="youtube-global-discovery-v1",
+        source_policy_version="youtube-global-discovery-v1",
+    )
+
+
+def test_postgres_youtube_completion_uses_one_exact_activity_only_finalizer() -> None:
+    completed_row: dict[str, object] = {
+        "id": "job-1",
+        "job_type": "source.youtube.discovery",
+        "payload": {"query_name": "pokemon-tcg-booster-box-opening"},
+        "status": "completed",
+        "priority": 15,
+        "available_at": NOW,
+        "attempts": 1,
+        "max_attempts": 3,
+        "lease_generation": 2,
+        "locked_by": None,
+        "locked_at": None,
+        "lock_expires_at": None,
+        "last_error_code": None,
+        "last_error_message": None,
+        "completed_at": NOW,
+        "dedupe_key": "schedule:youtube:20260825T120000Z",
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+    class Executor:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, dict[str, object]]] = []
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            self.calls.append((sql, params))
+            return [completed_row]
+
+    executor = Executor()
+    completion = YouTubeDiscoveryCompletion(
+        query_name="pokemon-tcg-booster-box-opening",
+        items=(_youtube_write(),),
+    )
+    completed = PostgresJobRepository(executor).complete(
+        "job-1",
+        worker_id="collector-1",
+        lease_generation=2,
+        now=NOW,
+        effect=completion,
+    )
+
+    assert completed.status is JobStatus.COMPLETED
+    sql, params = executor.calls[0]
+    assert "ingest.finalize_youtube_discovery_job" in sql
+    persisted = json.loads(str(params["result"]))
+    assert set(persisted) == {"version", "query_name", "items"}
+    assert persisted["query_name"] == "pokemon-tcg-booster-box-opening"
+    assert len(persisted["items"]) == 1
+    item = persisted["items"][0]
+    assert set(item) == {
+        "external_id",
+        "source_url",
+        "normalized_url",
+        "title",
+        "text_excerpt",
+        "published_at",
+        "author_hash",
+        "content_hash",
+        "language",
+        "metadata",
+        "collector_version",
+        "source_policy_version",
+    }
+    assert item["collector_version"] == "youtube-global-discovery-v1"
+    assert item["source_policy_version"] == "youtube-global-discovery-v1"
+    assert item["metadata"]["evidence_tier"] == "D"
+    assert item["metadata"]["statistics_eligible"] is False
+    assert "media_urls" not in item
+    assert "channel_id" not in json.dumps(persisted)
+
+
+def test_youtube_completion_rejects_rate_claims_and_noncanonical_watch_urls() -> None:
+    write = _youtube_write()
+    unsafe_metadata = {**write.metadata, "statistics_eligible": True}
+    with pytest.raises(ValueError, match="constants"):
+        replace(write, metadata=unsafe_metadata)
+
+    with pytest.raises(ValueError, match="canonical watch form"):
+        replace(write, normalized_url="https://youtube.com/watch?v=dQw4w9WgXcQ")
 
 
 def test_postgres_budget_pause_and_completion_clear_canonical_locks() -> None:
