@@ -12,6 +12,7 @@ describe("RegionHeatmap", () => {
 
     expect(screen.getByRole("heading", { name: "Observed regional pull map" })).toBeVisible();
     expect(screen.getByRole("img", { name: /world map with published australian regional observations/i })).toBeVisible();
+    expect(screen.getByTestId("dotted-world-map")).toHaveAttribute("href", "/world-map-dots.svg");
     expect(screen.getByText(/current published coverage is Australia-only/i)).toBeVisible();
     expect(screen.getByRole("button", { name: "Observed rate" })).toHaveAttribute("aria-pressed", "true");
     expect(screen.getByRole("link", { name: /VIC \/ Melbourne: 16\.1%/i })).toHaveAttribute("href", "/regions/au-vic-melbourne");

@@ -11,6 +11,7 @@ import styles from "./region-heatmap.module.css";
 export type RegionHeatMetric = "rate" | "packs";
 
 type MapCoordinate = Readonly<{ x: number; y: number }>;
+type GeoCoordinate = Readonly<{ lat: number; lng: number }>;
 
 export interface RegionHeatRow {
   readonly coordinate: MapCoordinate | null;
@@ -20,24 +21,27 @@ export interface RegionHeatRow {
   readonly tone: "cool" | "mid" | "hot" | "withheld";
 }
 
-const regionAnchors: Readonly<Record<string, MapCoordinate>> = {
-  "au-wa-perth": { x: 719, y: 339 },
-  "au-vic-melbourne": { x: 787, y: 360 },
-  "au-nsw-sydney": { x: 807, y: 342 },
-  "au-qld-brisbane": { x: 812, y: 316 },
+const regionAnchors: Readonly<Record<string, GeoCoordinate>> = {
+  "au-wa-perth": { lat: -31.9523, lng: 115.8613 },
+  "au-vic-melbourne": { lat: -37.8136, lng: 144.9631 },
+  "au-nsw-sydney": { lat: -33.8688, lng: 151.2093 },
+  "au-qld-brisbane": { lat: -27.4698, lng: 153.0251 },
 };
 
-const worldLandPaths = [
-  "M72 104C98 70 142 61 173 74c19 8 31 6 51 2l42 13 19 26-12 23-28 8-18 31-27 17-25 7-31-24-45-15-42-32-15-28 3-25Z",
-  "M268 205c26 7 48 28 52 53l-10 38-18 42-17 43-15-8-4-37-18-31-7-42 17-35 20-23Z",
-  "M366 91l31-21 39 7 17 20-19 17-31-2-19 13-20-12 2-22Z",
-  "M405 132c28-22 64-30 97-22l38-15 47 3 32 20 38-3 52 21 61 13 41 30-18 18-36-5-23 19-31-7-36 19-47-4-28 23-41-14-40-34-38-11-33 14-34-10-32-31-25-17 1-26Z",
-  "M438 196c24-13 55-9 74 7l18 35-10 46-31 48-31-3-19-38-16-47 15-48Z",
-  "M704 300l33-18 46 7 32 24-8 31-38 20-43-7-25-27 3-30Z",
-  "M831 341l11 6 7 21-9 19-8-7 3-20-4-19Z",
-  "M750 213l9-13 8 14-8 18-9-19Z",
-];
-const australiaLandPath = worldLandPaths[5]!;
+// These dimensions and bounds match scripts/generate-world-map.mjs output.
+const worldMap = {
+  width: 190,
+  height: 72,
+  lat: { min: -56, max: 71 },
+  lng: { min: -168, max: 168 },
+} as const;
+
+function projectMapCoordinate(coordinate: GeoCoordinate): MapCoordinate {
+  return {
+    x: worldMap.width * (coordinate.lng - worldMap.lng.min) / (worldMap.lng.max - worldMap.lng.min),
+    y: worldMap.height * (worldMap.lat.max - coordinate.lat) / (worldMap.lat.max - worldMap.lat.min),
+  };
+}
 
 const metricOptions: readonly { value: RegionHeatMetric; label: string }[] = [
   { value: "rate", label: "Observed rate" },
@@ -69,13 +73,14 @@ export function buildRegionHeatRows(
   return regions
     .map((region) => {
       const value = metricValue(region, metric);
+      const anchor = regionAnchors[region.slug];
       const normalized = value === null || minimum === null || maximum === null
         ? null
         : maximum === minimum
           ? 0.5
           : Math.min(1, Math.max(0, (value - minimum) / (maximum - minimum)));
       return {
-        coordinate: regionAnchors[region.slug] ?? null,
+        coordinate: anchor ? projectMapCoordinate(anchor) : null,
         metricValue: value,
         normalized,
         region,
@@ -118,6 +123,7 @@ export function RegionHeatmap({ regions }: { regions: readonly RegionMetric[] })
   const rows = useMemo(() => buildRegionHeatRows(regions, metric), [metric, regions]);
   const ticks = legendValues(rows, metric);
   const plotted = rows.filter((row) => row.coordinate !== null);
+  const plottedByHeat = [...plotted].sort((left, right) => (left.normalized ?? -1) - (right.normalized ?? -1));
   const unmappedCount = rows.length - plotted.length;
   const selectedMetricLabel = metric === "rate" ? "Observed rate" : "Sample volume";
 
@@ -145,38 +151,36 @@ export function RegionHeatmap({ regions }: { regions: readonly RegionMetric[] })
 
       <div className={styles.body}>
         <figure className={styles.mapFigure}>
-          <svg className={styles.map} viewBox="0 0 900 430" role="img" aria-labelledby="region-map-title region-map-description" aria-describedby="coverage-caveat">
+          <span className={styles.coverageBadge}>AU-only published sample</span>
+          <svg className={styles.map} viewBox={`0 0 ${worldMap.width} ${worldMap.height}`} role="img" aria-labelledby="region-map-title region-map-description" aria-describedby="coverage-caveat">
             <title id="region-map-title">World map with published Australian regional observations</title>
-            <desc id="region-map-description">Only Australia has published observations. Coloured circles are regional aggregation anchors, not precise observation locations. Exact values and coverage descriptions are listed beside the map.</desc>
+            <desc id="region-map-description">An accurate dotted world map provides geographic context. Only Australia has published observations. Coloured heat blooms are regional aggregation anchors, not precise observation locations. Exact values and coverage descriptions are listed beside the map. There are no routes or connections between regions.</desc>
             <defs>
-              <pattern id="world-dot-pattern" width="9" height="9" patternUnits="userSpaceOnUse">
-                <circle className={styles.worldDot} cx="2.2" cy="2.2" r="1.35" />
-              </pattern>
-              <pattern id="world-grid-pattern" width="36" height="36" patternUnits="userSpaceOnUse">
-                <path d="M36 0H0V36" fill="none" />
-              </pattern>
+              <filter id="regional-heat-blur" x="-80%" y="-80%" width="260%" height="260%">
+                <feGaussianBlur stdDeviation="1.15" />
+              </filter>
             </defs>
-            <rect className={styles.grid} width="900" height="430" fill="url(#world-grid-pattern)" />
-            <g className={styles.land} aria-hidden="true">
-              {worldLandPaths.map((path) => <path d={path} key={path} fill="url(#world-dot-pattern)" />)}
-            </g>
-            <path className={styles.australiaOutline} aria-hidden="true" d={australiaLandPath} />
+            <image
+              data-testid="dotted-world-map"
+              href="/world-map-dots.svg"
+              width={worldMap.width}
+              height={worldMap.height}
+              preserveAspectRatio="xMidYMid meet"
+              aria-hidden="true"
+            />
             <g aria-hidden="true">
-              {plotted.map((row) => {
+              {plottedByHeat.map((row) => {
                 const coordinate = row.coordinate as MapCoordinate;
-                const radius = 11 + Math.min(11, Math.sqrt(row.region.packsObserved) / 3.5);
+                const radius = 1.15 + Math.min(0.65, Math.sqrt(row.region.packsObserved) / 60);
                 return (
                   <g className={`${styles.marker} ${styles[row.tone]}`} key={row.region.slug} transform={`translate(${coordinate.x} ${coordinate.y})`}>
-                    <circle className={styles.markerHalo} r={radius * 1.85} />
+                    <circle className={styles.markerBloom} r={radius * 3.5} filter="url(#regional-heat-blur)" />
+                    <circle className={styles.markerHalo} r={radius * 1.9} />
                     <circle className={styles.markerRing} r={radius} />
-                    <circle className={styles.markerCore} r="4.5" />
+                    <circle className={styles.markerCore} r="0.48" />
                   </g>
                 );
               })}
-            </g>
-            <g className={styles.mapLabel} aria-hidden="true">
-              <path d="M690 382h142" />
-              <text x="690" y="402">AUSTRALIA · PUBLISHED SAMPLE</text>
             </g>
           </svg>
 

@@ -59,37 +59,45 @@
 .body {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(270px, 330px);
-  min-height: 470px;
+  min-height: 400px;
   border-top: 1px solid var(--line);
 }
 
 .mapFigure {
+  position: relative;
   min-width: 0;
   margin: 0;
   padding: 1rem 1.1rem .95rem;
-  background:
-    radial-gradient(circle at 80% 76%, rgba(68, 103, 255, .08), transparent 25%),
-    linear-gradient(180deg, #fbfcff, #f7f8fb);
+  background: #fff;
 }
 
-.map { display: block; width: 100%; min-height: 330px; }
-.grid { stroke: #e8ebf1; stroke-width: 1; opacity: .62; }
-.land { color: #ccd2dc; fill: currentColor; }
-.land path { stroke: #d4d9e1; stroke-width: 1.2; }
-.worldDot { fill: #c6cdd8; }
-.australiaOutline { fill: rgba(49, 94, 251, .04); stroke: rgba(49, 94, 251, .58); stroke-width: 2; }
+.coverageBadge {
+  position: absolute;
+  z-index: 1;
+  top: 1.15rem;
+  left: 1.25rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: .38rem .58rem;
+  background: rgba(255, 255, 255, .9);
+  color: var(--muted);
+  font: 700 10px/1 var(--mono);
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  backdrop-filter: blur(8px);
+}
+
+.map { display: block; width: 100%; height: auto; min-height: 0; }
 
 .marker { color: var(--blue); }
-.markerHalo { fill: currentColor; opacity: .12; }
-.markerRing { fill: rgba(255, 255, 255, .8); stroke: currentColor; stroke-width: 4; }
-.markerCore { fill: currentColor; stroke: #fff; stroke-width: 2; }
+.markerBloom { fill: currentColor; opacity: .18; }
+.markerHalo { fill: currentColor; opacity: .14; }
+.markerRing { fill: rgba(255, 255, 255, .88); stroke: currentColor; stroke-width: .52; }
+.markerCore { fill: currentColor; stroke: #fff; stroke-width: .26; }
 .marker.cool, .swatch.cool { color: var(--blue); }
 .marker.mid, .swatch.mid { color: var(--violet); }
 .marker.hot, .swatch.hot { color: var(--pink); }
 .marker.withheld, .swatch.withheld { color: #98a1af; }
-
-.mapLabel path { stroke: #9ea7b5; stroke-width: 1; }
-.mapLabel text { fill: #667085; font: 700 12px var(--mono); letter-spacing: .08em; }
 
 .caption {
   display: flex;
@@ -173,11 +181,10 @@
   .toggle { width: 100%; }
   .toggle button { flex: 1; }
   .mapFigure { padding: .45rem .7rem .85rem; }
-  .map { min-height: 240px; }
   .caption { flex-direction: column; gap: .65rem; padding-inline: .25rem; }
   .regionList { grid-template-columns: 1fr; }
   .regionList a { min-height: 64px; }
-  .mapLabel { display: none; }
+  .coverageBadge { top: .7rem; left: .85rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
