@@ -79,6 +79,20 @@ def test_youtube_enablement_requires_key_only_in_the_network_collector() -> None
     assert scheduler.youtube_api_key is None
 
 
+@pytest.mark.parametrize(
+    "schedule",
+    ("* * * * *", "0 */12 * * *", " 0 */6 * * *", "0 */6 * * * "),
+)
+def test_youtube_enablement_rejects_schedule_drift(schedule: str) -> None:
+    with pytest.raises(ValidationError, match="SCHEDULE_OFFICIAL_API"):
+        Settings(
+            _env_file=None,
+            youtube_collection_enabled=True,
+            worker_role="scheduler",
+            schedule_official_api=schedule,
+        )
+
+
 def test_worker_concurrency_above_one_is_rejected_until_pooling_is_implemented() -> None:
     with pytest.raises(ValidationError, match="worker_max_concurrency"):
         Settings(_env_file=None, worker_max_concurrency=2)
