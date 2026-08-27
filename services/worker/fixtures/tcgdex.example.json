@@ -1,19 +1,12 @@
-{
-  "sets": [
-    {
-      "id": "sv2",
-      "name": "Paldea Evolved",
-      "aliases": ["Paldea"],
-      "cards": [
-        {
-          "id": "sv2-203",
-          "set_id": "sv2",
-          "name": "Magikarp",
-          "localId": "203/193",
-          "rarity": "Special Illustration Rare",
-          "aliases": []
-        }
-      ]
+[
+  {
+    "id": "sv2",
+    "name": "Paldea Evolved",
+    "logo": "https://assets.tcgdex.net/en/sv/sv2/logo",
+    "symbol": "https://assets.tcgdex.net/univ/sv/sv2/symbol",
+    "cardCount": {
+      "total": 279,
+      "official": 193
     }
-  ]
-}
+  }
+]

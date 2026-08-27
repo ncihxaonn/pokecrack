@@ -1,8 +1,8 @@
 """Fail-closed live PostgreSQL composition for the worker entry point.
 
 Only job types with a bounded, database-backed implementation are registered
-here.  Collector, AI, and aggregation services remain deliberately unavailable
-until their persistence and external-service boundaries are implemented.
+here. The collector is limited to the fixed TCGdex English sets endpoint; AI,
+aggregation, and general URL collection remain deliberately unavailable.
 """
 
 from __future__ import annotations
@@ -10,14 +10,36 @@ from __future__ import annotations
 import json
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
+from pathlib import Path
 
 from pokecrack_worker import __version__
+from pokecrack_worker.collectors.official_api.postgres import (
+    PostgresTCGdexCheckpointRepository,
+    TCGdexRequestDeferred,
+)
+from pokecrack_worker.collectors.official_api.tcgdex import (
+    HTTPXTCGdexTransport,
+    InMemoryTCGdexSetsCache,
+    TCGdexSetsClient,
+    TCGdexSetsSnapshot,
+    TCGdexSetsSyncOutcome,
+    TCGdexTransport,
+)
 from pokecrack_worker.config.settings import DataMode, Settings
+from pokecrack_worker.config.source_policy import SourcePolicyRegistry
 from pokecrack_worker.db import PsycopgQueryExecutor
-from pokecrack_worker.jobs import CompletionEffect, Job, PostgresJobRepository, QueryExecutor
-from pokecrack_worker.runtime import JobHandler, WorkerRuntime
+from pokecrack_worker.jobs import (
+    CompletionEffect,
+    Job,
+    PostgresJobRepository,
+    QueryExecutor,
+    TCGdexSetsSyncCompletion,
+    TCGdexSetWrite,
+    TCGdexSyncOutcome,
+)
+from pokecrack_worker.runtime import JobDeferred, JobExecutionError, JobHandler, WorkerRuntime
 from pokecrack_worker.scheduler import CronExpression, ScheduleEntry, Scheduler
 
 
@@ -46,6 +68,9 @@ class HeartbeatResult:
 
 
 CLEANUP_JOB_TYPE = "maintenance.cleanup"
+TCGDEX_SETS_JOB_TYPE = "catalog.tcgdex.sets.sync"
+PROJECT_ROOT = Path(__file__).resolve().parents[3]
+SOURCES_CONFIG = PROJECT_ROOT / "config" / "sources.yaml"
 
 WORKER_HEARTBEAT_SQL = """
 WITH database_probe AS (
@@ -66,7 +91,109 @@ WHERE not heartbeats.is_demo
 RETURNING last_seen_at
 """.strip()
 
+LIVE_ROLE_DEPENDENCIES_SQL = """
+SELECT CASE %(worker_type)s
+  WHEN 'collector' THEN
+    to_regclass('ingest.source_request_gates') IS NOT NULL
+    AND to_regprocedure('ingest.claim_jobs_v2(text,text[],integer,integer)') IS NOT NULL
+    AND to_regprocedure('ingest.heartbeat_job_v2(uuid,text,bigint,integer)') IS NOT NULL
+    AND to_regprocedure('ingest.fail_job_v2(uuid,text,bigint,text,text,boolean)') IS NOT NULL
+    AND to_regprocedure('ingest.begin_tcgdex_sets_job(uuid,text,bigint)') IS NOT NULL
+    AND to_regprocedure('ingest.finalize_tcgdex_sets_job(uuid,text,bigint,jsonb)') IS NOT NULL
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.claim_jobs_v2(text,text[],integer,integer)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.heartbeat_job_v2(uuid,text,bigint,integer)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.fail_job_v2(uuid,text,bigint,text,text,boolean)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.begin_tcgdex_sets_job(uuid,text,bigint)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.finalize_tcgdex_sets_job(uuid,text,bigint,jsonb)'),
+      'EXECUTE'
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM ingest.source_policies AS policies
+      WHERE policies.source_key = 'tcgdex_catalog'
+        AND policies.display_name = 'TCGdex Catalog API'
+        AND policies.domain = 'api.tcgdex.net'
+        AND policies.base_url = 'https://api.tcgdex.net/v2'
+        AND policies.enabled
+        AND NOT policies.is_demo
+        AND policies.source_kind = 'official_api'
+        AND policies.collector_type = 'official_api'
+        AND policies.access_mode = 'official_api'
+        AND policies.robots_policy = 'not_applicable'
+        AND policies.routes = ARRAY['official_api']::text[]
+        AND NOT policies.include_subdomains
+        AND policies.min_delay_seconds = 10
+        AND policies.max_pages_per_run = 1
+        AND policies.max_items_per_run = 1000
+        AND policies.max_concurrency = 1
+        AND policies.browser_profile IS NULL
+        AND NOT policies.statistics_eligible_default
+        AND policies.retention_days = 365
+        AND policies.config = '{"scope":"sets","metadata_only":true}'::jsonb
+        AND policies.version = 'tcgdex-sets-v1'
+        AND policies.expected_interval_seconds = 86400
+    )
+  WHEN 'scheduler' THEN
+    to_regprocedure(
+      'ingest.enqueue_scheduled_job_v1(text,timestamptz,text,jsonb,integer,integer)'
+    ) IS NOT NULL
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.enqueue_scheduled_job_v1(text,timestamptz,text,jsonb,integer,integer)'
+      ),
+      'EXECUTE'
+    )
+  WHEN 'watchdog' THEN
+    to_regclass('ingest.source_request_gates') IS NOT NULL
+    AND to_regprocedure('ingest.claim_jobs_v2(text,text[],integer,integer)') IS NOT NULL
+    AND to_regprocedure('ingest.heartbeat_job_v2(uuid,text,bigint,integer)') IS NOT NULL
+    AND to_regprocedure('ingest.fail_job_v2(uuid,text,bigint,text,text,boolean)') IS NOT NULL
+    AND to_regprocedure('ingest.finalize_cleanup_job(uuid,text,bigint)') IS NOT NULL
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.claim_jobs_v2(text,text[],integer,integer)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.heartbeat_job_v2(uuid,text,bigint,integer)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.fail_job_v2(uuid,text,bigint,text,text,boolean)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.finalize_cleanup_job(uuid,text,bigint)'),
+      'EXECUTE'
+    )
+  ELSE false
+END AS ready
+""".strip()
+
 _WORKER_JOB_TYPES: Mapping[WorkerRole, tuple[str, ...]] = {
+    WorkerRole.COLLECTOR: (TCGDEX_SETS_JOB_TYPE,),
     WorkerRole.WATCHDOG: (CLEANUP_JOB_TYPE,),
 }
 
@@ -81,7 +208,9 @@ _SCHEDULE_FIELDS: tuple[tuple[str, str], ...] = (
     ("browser_check", "schedule_browser_check"),
 )
 
-UNWIRED_SCHEDULE_NAMES = tuple(name for name, _field_name in _SCHEDULE_FIELDS if name != "cleanup")
+UNWIRED_SCHEDULE_NAMES = tuple(
+    name for name, _field_name in _SCHEDULE_FIELDS if name not in {"catalog_sync", "cleanup"}
+)
 
 
 def _require_live_settings(settings: Settings) -> None:
@@ -169,6 +298,15 @@ def write_health_heartbeat(
             "the configured role has no safe live command in this build",
         )
     database = executor or executor_from_settings(settings)
+    dependency_rows = database.query(
+        LIVE_ROLE_DEPENDENCIES_SQL,
+        {"worker_type": role.value},
+    )
+    if not dependency_rows or dependency_rows[0].get("ready") is not True:
+        raise LiveCompositionError(
+            "live_dependencies_unavailable",
+            "the configured role database dependencies are unavailable",
+        )
     rows = database.query(
         WORKER_HEARTBEAT_SQL,
         {
@@ -209,7 +347,95 @@ def _cleanup_handler() -> JobHandler:
     return cleanup
 
 
-def _handlers_for_role(role: WorkerRole) -> Mapping[str, JobHandler]:
+def _tcgdex_sets_handler(
+    *,
+    executor: QueryExecutor,
+    worker_id: str,
+    transport: TCGdexTransport,
+    clock: Callable[[], datetime] | None,
+) -> JobHandler:
+    checkpoints = PostgresTCGdexCheckpointRepository(executor)
+    policies = SourcePolicyRegistry.from_yaml(SOURCES_CONFIG)
+    now = clock or (lambda: datetime.now(UTC))
+
+    def sync_sets(job: Job) -> TCGdexSetsSyncCompletion:
+        if job.kind != TCGDEX_SETS_JOB_TYPE or job.payload:
+            raise ValueError("TCGdex catalog jobs require an empty payload")
+        try:
+            checkpoint = checkpoints.begin(
+                job_id=job.id,
+                worker_id=worker_id,
+                lease_generation=job.lease_generation,
+            )
+        except TCGdexRequestDeferred as deferred:
+            raise JobDeferred(
+                retry_at=deferred.retry_at,
+                code="tcgdex_request_deferred",
+            ) from None
+        cache = InMemoryTCGdexSetsCache()
+        if checkpoint.content_sha256 is not None:
+            cache.put(
+                TCGdexSetsSnapshot(
+                    sets=(),
+                    etag=checkpoint.etag,
+                    content_sha256=checkpoint.content_sha256,
+                    synced_at=now(),
+                )
+            )
+        attempt = TCGdexSetsClient(
+            transport=transport,
+            cache=cache,
+            policies=policies,
+            clock=clock,
+        ).sync_safe()
+        if attempt.result is None:
+            raise JobExecutionError(
+                code=attempt.error_code or "tcgdex_sync_failed",
+                retryable=attempt.retryable,
+            )
+        result = attempt.result
+        outcome = TCGdexSyncOutcome(result.outcome.value)
+        writes = (
+            tuple(
+                TCGdexSetWrite(
+                    external_id=item.set_id,
+                    name=item.name,
+                    card_count_total=item.card_count_total,
+                    card_count_official=item.card_count_official,
+                )
+                for item in result.snapshot.sets
+            )
+            if result.outcome is TCGdexSetsSyncOutcome.CHANGED
+            else ()
+        )
+        return TCGdexSetsSyncCompletion(
+            outcome=outcome,
+            expected_revision=checkpoint.revision,
+            etag=result.snapshot.etag,
+            content_sha256=result.snapshot.content_sha256,
+            sets=writes,
+        )
+
+    return sync_sets
+
+
+def _handlers_for_role(
+    role: WorkerRole,
+    *,
+    executor: QueryExecutor,
+    worker_id: str,
+    tcgdex_transport: TCGdexTransport | None,
+    clock: Callable[[], datetime] | None,
+) -> Mapping[str, JobHandler]:
+    if role is WorkerRole.COLLECTOR:
+        return {
+            TCGDEX_SETS_JOB_TYPE: _tcgdex_sets_handler(
+                executor=executor,
+                worker_id=worker_id,
+                transport=tcgdex_transport or HTTPXTCGdexTransport(),
+                clock=clock,
+            )
+        }
     if role is WorkerRole.WATCHDOG:
         return {CLEANUP_JOB_TYPE: _cleanup_handler()}
     return {}
@@ -220,13 +446,20 @@ def build_live_worker_runtime(
     *,
     executor: QueryExecutor | None = None,
     clock: Callable[[], datetime] | None = None,
+    tcgdex_transport: TCGdexTransport | None = None,
 ) -> WorkerRuntime:
     """Compose the live queue with a non-empty allowlist of concrete handlers."""
 
     expected_job_types = require_worker_job_types(settings)
     role = require_supported_role(settings)
     database = executor or executor_from_settings(settings)
-    handlers = _handlers_for_role(role)
+    handlers = _handlers_for_role(
+        role,
+        executor=database,
+        worker_id=settings.worker_id,
+        tcgdex_transport=tcgdex_transport,
+        clock=clock,
+    )
     if tuple(handlers) != expected_job_types:
         raise RuntimeError("live worker handler registry is inconsistent")
     return WorkerRuntime(
@@ -247,6 +480,15 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
     for _name, field_name in _SCHEDULE_FIELDS:
         CronExpression.parse(str(getattr(settings, field_name)))
     return (
+        ScheduleEntry(
+            name="catalog_sync",
+            job_type=TCGDEX_SETS_JOB_TYPE,
+            cron=settings.schedule_catalog_sync,
+            priority=20,
+            max_attempts=min(3, settings.worker_max_attempts),
+            catch_up_within=timedelta(hours=36),
+            catch_up_check_interval=timedelta(hours=1),
+        ),
         ScheduleEntry(
             name="cleanup",
             job_type=CLEANUP_JOB_TYPE,

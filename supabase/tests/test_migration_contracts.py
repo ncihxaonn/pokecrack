@@ -10,6 +10,7 @@ ANALYTICS = (ROOT / "migrations/20260825000300_analytics.sql").read_text()
 PUBLIC = (ROOT / "migrations/20260825000400_public_tables.sql").read_text()
 RPC = (ROOT / "migrations/20260825000500_public_rpc_security.sql").read_text()
 FENCING = (ROOT / "migrations/20260827000000_job_lease_fencing.sql").read_text()
+TCGDEX_PIPELINE = (ROOT / "migrations/20260828000000_tcgdex_sets_pipeline.sql").read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -207,6 +208,190 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("ingest.prune_expired_ephemera_v2(timestamptz, integer)", lowered)
         self.assertIn("finalize_cleanup_job:", DATABASE_TYPES)
         self.assertIn("lease_generation: number;", DATABASE_TYPES)
+
+    def test_tcgdex_pipeline_provisions_only_the_exact_approved_live_policy(self) -> None:
+        compact = " ".join(TCGDEX_PIPELINE.casefold().split())
+        self.assertIn("'tcgdex_catalog'", compact)
+        self.assertIn("'api.tcgdex.net'", compact)
+        self.assertIn("'official_api'", compact)
+        self.assertIn("'not_applicable'", compact)
+        self.assertIn("array['official_api']::text[]", compact)
+        self.assertIn("10, 1, 1000, 1, false", compact)
+        self.assertIn("'tcgdex-sets-v1'", compact)
+        self.assertNotIn("api_key", compact)
+        self.assertNotIn("service_role_key", compact)
+
+    def test_tcgdex_catalog_state_and_schedule_slots_are_private_and_mode_safe(self) -> None:
+        lowered = TCGDEX_PIPELINE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertIn("create table catalog.sync_state", lowered)
+        self.assertIn("primary key (source, scope, language, is_demo)", compact)
+        self.assertIn("revision bigint not null default 1", compact)
+        self.assertIn("constraint sync_state_revision_check check (revision >= 1)", compact)
+        self.assertIn("etag !~ '[[:cntrl:]]'", compact)
+        self.assertIn("create table ingest.schedule_slots", lowered)
+        self.assertIn("primary key (schedule_name, slot_at)", compact)
+        self.assertIn("create table ingest.source_request_gates", lowered)
+        self.assertIn("source_key text primary key", compact)
+        self.assertIn("source_key = 'tcgdex_catalog'", compact)
+        self.assertIn("owner_lease_generation >= 1", compact)
+        self.assertIn("active_until > acquired_at", compact)
+        self.assertIn("unique (slug, is_demo)", compact)
+        self.assertIn(
+            "unique (external_source, external_id, language, is_demo)",
+            compact,
+        )
+        self.assertIn("alter table catalog.sync_state force row level security", lowered)
+        self.assertIn("alter table ingest.schedule_slots force row level security", lowered)
+        self.assertIn(
+            "alter table ingest.source_request_gates force row level security", lowered
+        )
+        self.assertIn("grant select on table catalog.sync_state to service_role", lowered)
+        self.assertIn("grant select on table ingest.schedule_slots to service_role", lowered)
+        self.assertIn(
+            "revoke all on table ingest.source_request_gates from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertNotIn(
+            "grant select on table ingest.source_request_gates to service_role", lowered
+        )
+
+    def test_scheduled_enqueue_reserves_a_durable_slot_before_one_live_job(self) -> None:
+        lowered = TCGDEX_PIPELINE.casefold()
+        function = lowered.split(
+            "create or replace function ingest.enqueue_scheduled_job_v1", 1
+        )[1].split("alter function ingest.enqueue_scheduled_job_v1", 1)[0]
+        self.assertIn("security definer", function)
+        self.assertIn("set search_path = pg_catalog", function)
+        self.assertLess(
+            function.index("insert into ingest.schedule_slots"),
+            function.index("insert into ingest.jobs"),
+        )
+        self.assertIn("on conflict on constraint schedule_slots_pkey do nothing", function)
+        self.assertIn("jobs.dedupe_key = schedule_dedupe_key", function)
+        self.assertIn("order by jobs.created_at, jobs.id", function)
+        self.assertIn("interval '36 hours'", function)
+        self.assertIn("interval '5 minutes'", function)
+        self.assertIn("false", function)
+
+        self.assertIn(
+            "^schedule:([a-z][a-z0-9_.-]{0,79}):([0-9]{8}t[0-9]{4}00z)$",
+            lowered,
+        )
+        self.assertIn("make_timestamptz", lowered)
+        self.assertIn("legacy_job.slot_token", lowered)
+        self.assertLess(
+            lowered.index("do $$"),
+            lowered.index("create or replace function ingest.enqueue_scheduled_job_v1"),
+        )
+
+    def test_tcgdex_begin_and_finalize_recheck_fencing_and_policy(self) -> None:
+        lowered = TCGDEX_PIPELINE.casefold()
+        begin = lowered.split(
+            "create or replace function ingest.begin_tcgdex_sets_job", 1
+        )[1].split("alter function ingest.begin_tcgdex_sets_job", 1)[0]
+        finalizer = lowered.split(
+            "create or replace function ingest.finalize_tcgdex_sets_job", 1
+        )[1].split("alter function ingest.finalize_tcgdex_sets_job", 1)[0]
+        compact_begin = " ".join(begin.split())
+        for function in (begin, finalizer):
+            self.assertIn("security definer", function)
+            self.assertIn("set search_path = pg_catalog", function)
+            self.assertIn("for update of jobs", function)
+            self.assertIn("lease_generation", function)
+            self.assertIn("lock_expires_at <=", function)
+            self.assertIn("'tcgdex_catalog'", function)
+            self.assertIn("'api.tcgdex.net'", function)
+            self.assertIn("policies.enabled", function)
+            self.assertIn("not policies.is_demo", function)
+            for exact_policy_fragment in (
+                "policies.display_name = 'tcgdex catalog api'",
+                "policies.base_url = 'https://api.tcgdex.net/v2'",
+                "not policies.include_subdomains",
+                "policies.min_delay_seconds = 10",
+                "policies.max_pages_per_run = 1",
+                "policies.max_items_per_run = 1000",
+                "policies.max_concurrency = 1",
+                "policies.browser_profile is null",
+                "not policies.statistics_eligible_default",
+                "policies.retention_days = 365",
+                "policies.config = '{\"scope\":\"sets\",\"metadata_only\":true}'::jsonb",
+                "policies.expected_interval_seconds = 86400",
+            ):
+                self.assertIn(exact_policy_fragment, function)
+            self.assertIn("for update of policies", function)
+            self.assertLess(
+                function.index("for update of policies"),
+                function.rindex("lease_checked_at := clock_timestamp()"),
+            )
+        self.assertIn("last_attempt_at", begin)
+        self.assertIn(
+            "returns table( acquired boolean, retry_at timestamptz, etag text, content_sha256 text, item_count integer, revision bigint )",
+            compact_begin,
+        )
+        self.assertIn("pg_advisory_xact_lock", begin)
+        self.assertIn("for update of gates", begin)
+        self.assertIn("request_gate.active_until > lease_checked_at", begin)
+        self.assertIn("return query select false", compact_begin)
+        self.assertIn("lease_checked_at + interval '45 seconds'", begin)
+        self.assertIn("owner_lease_generation = $3", begin)
+        self.assertNotIn("earlier_jobs", begin)
+        self.assertIn("policy_last_attempt_at + interval '10 seconds'", begin)
+        self.assertIn("pg_advisory_xact_lock", finalizer)
+        self.assertIn("for update of gates", finalizer)
+        self.assertIn("request_gate.owner_job_id is distinct from $1", finalizer)
+        self.assertIn("request_gate.owner_lease_generation is distinct from $3", finalizer)
+        self.assertIn("insert into catalog.sets", finalizer)
+        self.assertIn("insert into catalog.sync_state", finalizer)
+        self.assertIn("last_success_at", finalizer)
+        self.assertIn("changed tcgdex results require a new content hash", finalizer)
+        self.assertIn("expected_revision", finalizer)
+        self.assertIn("if result_expected_revision <> (", finalizer)
+        self.assertIn("states.revision = result_expected_revision", finalizer)
+        self.assertIn("states.revision + 1", finalizer)
+        self.assertIn("stale checkpoint revision", finalizer)
+        self.assertIn("result_etag ~ '[[:cntrl:]]'", finalizer)
+        self.assertIn("result_etag !~ '^(w/)?\"[!#-~]*\"$'", finalizer)
+        self.assertIn("set_external_id ~ '[[:cntrl:]]'", finalizer)
+        self.assertIn("set_name ~ '[[:cntrl:]]'", finalizer)
+        self.assertNotIn("(elements.value ->> 'card_count_total')::numeric", finalizer)
+        self.assertIn("is_active = true", finalizer)
+        self.assertIn("update ingest.jobs", finalizer)
+        self.assertIn("jobs.locked_by = $2", finalizer)
+        self.assertIn("jobs.lease_generation = $3", finalizer)
+        self.assertIn("owner_job_id = null", finalizer)
+        self.assertIn("owner_lease_generation = null", finalizer)
+        self.assertIn("tcgdex completion lost its request gate ownership", finalizer)
+        self.assertNotIn("delete from catalog.sets", finalizer)
+        self.assertNotIn("is_active = false", finalizer)
+        self.assertIn("revision: number;", DATABASE_TYPES)
+        self.assertIn(
+            "acquired: boolean; retry_at: string | null; etag: string | null; content_sha256: string | null; item_count: number; revision: number",
+            DATABASE_TYPES,
+        )
+
+    def test_fenced_job_lifecycle_rpcs_own_request_gate_mutation(self) -> None:
+        lowered = TCGDEX_PIPELINE.casefold()
+        heartbeat = lowered.split(
+            "create or replace function ingest.heartbeat_job_v2", 1
+        )[1].split("alter function ingest.heartbeat_job_v2", 1)[0]
+        failure = lowered.split(
+            "create or replace function ingest.fail_job_v2", 1
+        )[1].split("alter function ingest.fail_job_v2", 1)[0]
+        for function in (heartbeat, failure):
+            self.assertIn("security definer", function)
+            self.assertIn("set search_path = pg_catalog", function)
+            self.assertIn("for update of jobs", function)
+            self.assertIn("jobs.lease_generation = $3", function)
+            self.assertIn("and not jobs.is_demo", function)
+            self.assertIn("ingest.source_request_gates", function)
+        self.assertIn("set active_until = renewed_job.lock_expires_at", heartbeat)
+        self.assertIn("lease_checked_at + make_interval(secs => $4)", heartbeat)
+        self.assertIn("owner_job_id = null", failure)
+        self.assertIn("owner_lease_generation = null", failure)
+        self.assertIn("when not $6", failure)
+        self.assertIn("heartbeat_job_v2:", DATABASE_TYPES)
+        self.assertIn("fail_job_v2:", DATABASE_TYPES)
 
     def test_admin_control_rpc_is_callable_only_by_service_role_with_explicit_actor(self) -> None:
         admin = (ROOT / "migrations/20260825000600_admin_control.sql").read_text().casefold()

@@ -9,7 +9,7 @@ from threading import RLock
 from typing import Any
 from uuid import uuid4
 
-from .models import CompletionEffect, Job, JobStatus
+from .models import CompletionEffect, Job, JobStatus, TCGdexSetsSyncCompletion
 
 
 class JobRepositoryError(RuntimeError):
@@ -27,6 +27,7 @@ class LeaseLostError(JobRepositoryError):
 class InMemoryJobRepository:
     def __init__(self) -> None:
         self._jobs: dict[str, Job] = {}
+        self._scheduled_slots: dict[tuple[str, datetime], str] = {}
         self._lock = RLock()
 
     def enqueue(
@@ -61,6 +62,36 @@ class InMemoryJobRepository:
                 updated_at=now,
             )
             self._jobs[job.id] = job
+            return job
+
+    def enqueue_scheduled(
+        self,
+        kind: str,
+        payload: Mapping[str, Any] | None = None,
+        *,
+        schedule_name: str,
+        scheduled_for: datetime,
+        priority: int = 0,
+        now: datetime,
+        max_attempts: int = 5,
+    ) -> Job:
+        """Reserve one durable logical slot even after its job becomes terminal."""
+
+        with self._lock:
+            slot_key = (schedule_name, scheduled_for)
+            existing_id = self._scheduled_slots.get(slot_key)
+            if existing_id is not None:
+                return self._jobs[existing_id]
+            dedupe_key = f"schedule:{schedule_name}:{scheduled_for.strftime('%Y%m%dT%H%M%SZ')}"
+            job = self.enqueue(
+                kind,
+                payload,
+                priority=priority,
+                now=now,
+                max_attempts=max_attempts,
+                dedupe_key=dedupe_key,
+            )
+            self._scheduled_slots[slot_key] = job.id
             return job
 
     def lease(
@@ -201,7 +232,7 @@ class InMemoryJobRepository:
         worker_id: str,
         lease_generation: int,
         now: datetime,
-        effect: CompletionEffect | None = None,
+        effect: CompletionEffect | TCGdexSetsSyncCompletion | None = None,
     ) -> Job:
         with self._lock:
             if effect is not None:
@@ -274,7 +305,10 @@ class InMemoryJobRepository:
         worker_id: str,
         lease_generation: int,
         now: datetime,
+        error_code: str = "job_failed",
+        retryable: bool = True,
     ) -> Job:
+        del error_code
         with self._lock:
             job = self._active_lease(
                 job_id,
@@ -282,7 +316,7 @@ class InMemoryJobRepository:
                 lease_generation=lease_generation,
                 now=now,
             )
-            exhausted = job.attempts >= job.max_attempts
+            exhausted = not retryable or job.attempts >= job.max_attempts
             status = JobStatus.DEAD if exhausted else JobStatus.PENDING
             backoff_seconds = min(3_600, 30 * (2 ** max(0, job.attempts - 1)))
             failed = replace(

@@ -3,9 +3,20 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from threading import Event
 
-from pokecrack_worker.jobs import InMemoryJobRepository, Job, JobStatus, LeaseLostError
-from pokecrack_worker.jobs.models import CompletionEffect
-from pokecrack_worker.runtime import BudgetPaused, RuntimeStatus, WorkerRuntime
+from pokecrack_worker.jobs import (
+    CompletionEffect,
+    InMemoryJobRepository,
+    Job,
+    JobStatus,
+    LeaseLostError,
+    TCGdexSetsSyncCompletion,
+)
+from pokecrack_worker.runtime import (
+    BudgetPaused,
+    JobExecutionError,
+    RuntimeStatus,
+    WorkerRuntime,
+)
 
 NOW = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
 
@@ -200,7 +211,7 @@ def test_lease_lost_during_atomic_completion_is_not_retried_as_a_failure() -> No
             worker_id: str,
             lease_generation: int,
             now: datetime,
-            effect: CompletionEffect | None = None,
+            effect: CompletionEffect | TCGdexSetsSyncCompletion | None = None,
         ) -> Job:
             raise LeaseLostError(job_id)
 
@@ -252,3 +263,91 @@ def test_runtime_can_require_a_typed_atomic_completion_effect() -> None:
     assert failed is not None
     assert failed.status is JobStatus.PENDING
     assert failed.last_error == "CompletionEffectRequiredError"
+
+
+def test_nonretryable_typed_handler_failure_is_dead_lettered_immediately() -> None:
+    repository = InMemoryJobRepository()
+    queued = repository.enqueue("catalog.sync", {}, now=NOW, max_attempts=5)
+
+    def reject(_job: Job) -> None:
+        raise JobExecutionError(code="invalid_response", retryable=False)
+
+    result = WorkerRuntime(
+        repository,
+        handlers={"catalog.sync": reject},
+        worker_id="worker-a",
+        clock=lambda: NOW,
+    ).run_once()
+
+    failed = repository.get(queued.id)
+    assert result.status is RuntimeStatus.FAILED
+    assert result.error_code == "invalid_response"
+    assert failed is not None
+    assert failed.status is JobStatus.DEAD
+    assert failed.attempts == 1
+    assert failed.last_error == "invalid_response"
+
+
+def test_definite_atomic_finalizer_error_is_recorded_without_ending_the_loop() -> None:
+    class RejectingFinalizerRepository(InMemoryJobRepository):
+        def complete(
+            self,
+            job_id: str,
+            *,
+            worker_id: str,
+            lease_generation: int,
+            now: datetime,
+            effect: CompletionEffect | TCGdexSetsSyncCompletion | None = None,
+        ) -> Job:
+            raise RuntimeError("transaction rolled back")
+
+    repository = RejectingFinalizerRepository()
+    queued = repository.enqueue("catalog.sync", {}, now=NOW)
+    result = WorkerRuntime(
+        repository,
+        handlers={"catalog.sync": lambda _job: None},
+        worker_id="worker-a",
+        clock=lambda: NOW,
+    ).run_once()
+
+    failed = repository.get(queued.id)
+    assert result.status is RuntimeStatus.FAILED
+    assert result.error_code == "RuntimeError"
+    assert failed is not None
+    assert failed.status is JobStatus.PENDING
+    assert failed.last_error == "RuntimeError"
+
+
+def test_ambiguous_finalizer_commit_is_never_overwritten_by_failure_state() -> None:
+    class AmbiguousCommitRepository(InMemoryJobRepository):
+        def complete(
+            self,
+            job_id: str,
+            *,
+            worker_id: str,
+            lease_generation: int,
+            now: datetime,
+            effect: CompletionEffect | TCGdexSetsSyncCompletion | None = None,
+        ) -> Job:
+            super().complete(
+                job_id,
+                worker_id=worker_id,
+                lease_generation=lease_generation,
+                now=now,
+                effect=effect,
+            )
+            raise RuntimeError("commit response lost")
+
+    repository = AmbiguousCommitRepository()
+    queued = repository.enqueue("catalog.sync", {}, now=NOW)
+    result = WorkerRuntime(
+        repository,
+        handlers={"catalog.sync": lambda _job: None},
+        worker_id="worker-a",
+        clock=lambda: NOW,
+    ).run_once()
+
+    completed = repository.get(queued.id)
+    assert result.status is RuntimeStatus.LEASE_LOST
+    assert completed is not None
+    assert completed.status is JobStatus.COMPLETED

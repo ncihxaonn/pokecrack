@@ -6,12 +6,15 @@ import pytest
 
 from pokecrack_worker.db import PsycopgQueryExecutor
 from pokecrack_worker.jobs import (
+    CompletionEffect,
     InMemoryJobRepository,
     JobStatus,
     LeaseLostError,
     PostgresJobRepository,
+    TCGdexSetsSyncCompletion,
+    TCGdexSetWrite,
+    TCGdexSyncOutcome,
 )
-from pokecrack_worker.jobs.models import CompletionEffect
 
 NOW = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
 
@@ -415,14 +418,24 @@ def test_postgres_lease_mutations_use_one_database_clock_for_ownership() -> None
             operation()
 
     assert len(executor.calls) == 4
-    for sql, params in executor.calls:
+    heartbeat_sql, heartbeat_params = executor.calls[0]
+    complete_sql, complete_params = executor.calls[1]
+    fail_sql, fail_params = executor.calls[2]
+    pause_sql, pause_params = executor.calls[3]
+    assert "ingest.heartbeat_job_v2" in heartbeat_sql
+    assert "ingest.fail_job_v2" in fail_sql
+    for sql in (complete_sql, pause_sql):
         assert "clock_timestamp()" in sql
         assert "lock_expires_at > lease_clock.now" in sql
-        assert "lease_generation = %(lease_generation)s" in sql
+    for sql, params in executor.calls:
+        assert "%(lease_generation)s" in sql
         assert "%(now)s" not in sql
         assert "now" not in params
         assert params["lease_generation"] == 1
-    assert executor.calls[0][1]["lease_seconds"] == 30
+    assert heartbeat_params["lease_seconds"] == 30
+    assert complete_params["lease_generation"] == 1
+    assert fail_params["lease_generation"] == 1
+    assert pause_params["lease_generation"] == 1
 
 
 def test_postgres_completion_requires_an_unexpired_lease() -> None:
@@ -513,8 +526,8 @@ def test_postgres_failure_requires_an_unexpired_lease() -> None:
     with pytest.raises(LeaseLostError):
         repository.fail("job-1", "late", worker_id="worker-a", lease_generation=1, now=NOW)
 
-    assert "lock_expires_at > lease_clock.now" in executor.sql
-    assert "lease_generation = %(lease_generation)s" in executor.sql
+    assert "ingest.fail_job_v2" in executor.sql
+    assert "lease_generation => %(lease_generation)s::bigint" in executor.sql
 
 
 def test_postgres_budget_pause_requires_an_unexpired_lease() -> None:
@@ -567,9 +580,11 @@ def test_postgres_failure_atomically_requeues_with_exponential_backoff() -> None
     class Executor:
         def __init__(self) -> None:
             self.sql = ""
+            self.params: dict[str, object] = {}
 
         def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
             self.sql = sql
+            self.params = params
             return [row]
 
     executor = Executor()
@@ -580,10 +595,56 @@ def test_postgres_failure_atomically_requeues_with_exponential_backoff() -> None
 
     assert retrying.status is JobStatus.PENDING
     assert retrying.available_at == NOW + timedelta(seconds=30)
-    assert "ELSE 'pending'" in executor.sql
-    assert "available_at = CASE" in executor.sql
-    assert "POWER" in executor.sql.upper()
-    assert "completed_at = CASE" in executor.sql
+    assert "ingest.fail_job_v2" in executor.sql
+    assert "UPDATE ingest.jobs" not in executor.sql
+    assert executor.params["retryable"] is True
+
+
+def test_postgres_nonretryable_failure_dead_letters_under_the_same_fence() -> None:
+    row: dict[str, object] = {
+        "id": "job-1",
+        "job_type": "catalog.tcgdex.sets.sync",
+        "payload": {},
+        "status": "dead",
+        "priority": 0,
+        "available_at": NOW,
+        "attempts": 1,
+        "max_attempts": 5,
+        "lease_generation": 1,
+        "locked_by": None,
+        "locked_at": None,
+        "lock_expires_at": None,
+        "last_error_code": "invalid_response",
+        "last_error_message": "invalid_response",
+        "completed_at": NOW,
+        "dedupe_key": None,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+    class Executor:
+        def __init__(self) -> None:
+            self.params: dict[str, object] = {}
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            assert "ingest.fail_job_v2" in sql
+            self.params = params
+            return [row]
+
+    executor = Executor()
+    failed = PostgresJobRepository(executor).fail(
+        "job-1",
+        "invalid_response",
+        worker_id="worker-a",
+        lease_generation=1,
+        now=NOW,
+        error_code="invalid_response",
+        retryable=False,
+    )
+
+    assert failed.status is JobStatus.DEAD
+    assert executor.params["retryable"] is False
+    assert executor.params["error_code"] == "invalid_response"
 
 
 def test_postgres_heartbeat_and_failure_use_owner_guard_and_dead_mapping() -> None:
@@ -614,7 +675,7 @@ def test_postgres_heartbeat_and_failure_use_owner_guard_and_dead_mapping() -> No
 
         def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
             self.calls.append((sql, params))
-            if "last_error_message" in sql:
+            if "ingest.fail_job_v2" in sql:
                 return [
                     {
                         **base_row,
@@ -638,8 +699,10 @@ def test_postgres_heartbeat_and_failure_use_owner_guard_and_dead_mapping() -> No
 
     assert heartbeat.status is JobStatus.RUNNING
     assert dead.status is JobStatus.DEAD
-    assert all("locked_by = %(worker_id)s" in sql for sql, _ in executor.calls)
-    assert all("lease_generation = %(lease_generation)s" in sql for sql, _ in executor.calls)
+    assert "ingest.heartbeat_job_v2" in executor.calls[0][0]
+    assert "ingest.fail_job_v2" in executor.calls[1][0]
+    assert all(params["worker_id"] == "worker-a" for _, params in executor.calls)
+    assert all("%(lease_generation)s" in sql for sql, _ in executor.calls)
 
 
 def test_psycopg_query_executor_commits_and_returns_mapping_rows() -> None:
@@ -730,6 +793,165 @@ def test_postgres_enqueue_is_atomic_and_respects_active_dedupe_constraint() -> N
     assert "updated_at, is_demo" in executor.sql
     assert "%(now)s, false" in executor.sql
     assert executor.params["dedupe_key"] == "url:example"
+
+
+def test_postgres_scheduled_enqueue_uses_the_durable_slot_rpc() -> None:
+    row: dict[str, object] = {
+        "id": "job-1",
+        "job_type": "catalog.tcgdex.sets.sync",
+        "payload": {},
+        "status": "pending",
+        "priority": 20,
+        "available_at": NOW,
+        "attempts": 0,
+        "max_attempts": 3,
+        "lease_generation": 0,
+        "locked_by": None,
+        "locked_at": None,
+        "lock_expires_at": None,
+        "last_error_code": None,
+        "last_error_message": None,
+        "completed_at": None,
+        "dedupe_key": "schedule:catalog_sync:20260825T120000Z",
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+    class Executor:
+        def __init__(self) -> None:
+            self.sql = ""
+            self.params: dict[str, object] = {}
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            self.sql = sql
+            self.params = params
+            return [row]
+
+    executor = Executor()
+    job = PostgresJobRepository(executor).enqueue_scheduled(
+        "catalog.tcgdex.sets.sync",
+        {},
+        schedule_name="catalog_sync",
+        scheduled_for=NOW,
+        priority=20,
+        now=NOW,
+        max_attempts=3,
+    )
+
+    assert job.id == "job-1"
+    assert "ingest.enqueue_scheduled_job_v1" in executor.sql
+    assert "INSERT INTO ingest.jobs" not in executor.sql
+    assert executor.params == {
+        "schedule_name": "catalog_sync",
+        "scheduled_for": NOW,
+        "kind": "catalog.tcgdex.sets.sync",
+        "payload": "{}",
+        "priority": 20,
+        "max_attempts": 3,
+    }
+
+
+def test_postgres_tcgdex_completion_uses_one_data_bearing_atomic_rpc() -> None:
+    completed_row: dict[str, object] = {
+        "id": "job-1",
+        "job_type": "catalog.tcgdex.sets.sync",
+        "payload": {},
+        "status": "completed",
+        "priority": 20,
+        "available_at": NOW,
+        "attempts": 1,
+        "max_attempts": 3,
+        "lease_generation": 4,
+        "locked_by": None,
+        "locked_at": None,
+        "lock_expires_at": None,
+        "last_error_code": None,
+        "last_error_message": None,
+        "completed_at": NOW,
+        "dedupe_key": "schedule:catalog_sync:20260825T120000Z",
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+    class Executor:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, dict[str, object]]] = []
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            self.calls.append((sql, params))
+            return [completed_row]
+
+    executor = Executor()
+    completed = PostgresJobRepository(executor).complete(
+        "job-1",
+        worker_id="collector-1",
+        lease_generation=4,
+        now=NOW,
+        effect=TCGdexSetsSyncCompletion(
+            outcome=TCGdexSyncOutcome.CHANGED,
+            expected_revision=0,
+            etag='"v1"',
+            content_sha256="a" * 64,
+            sets=(
+                TCGdexSetWrite(
+                    external_id="sv1",
+                    name="Scarlet & Violet",
+                    card_count_total=258,
+                    card_count_official=198,
+                ),
+            ),
+        ),
+    )
+
+    assert completed.status is JobStatus.COMPLETED
+    assert len(executor.calls) == 1
+    sql, params = executor.calls[0]
+    assert "ingest.finalize_tcgdex_sets_job" in sql
+    assert "INSERT INTO catalog.sets" not in sql
+    assert "UPDATE ingest.jobs" not in sql
+    assert params["job_id"] == "job-1"
+    assert params["worker_id"] == "collector-1"
+    assert params["lease_generation"] == 4
+    assert '"outcome":"changed"' in str(params["result"])
+
+
+def test_tcgdex_completion_effect_rejects_unbounded_or_mismatched_data() -> None:
+    one_set = TCGdexSetWrite(
+        external_id="sv1",
+        name="Scarlet & Violet",
+        card_count_total=258,
+        card_count_official=198,
+    )
+
+    with pytest.raises(ValueError, match="1 to 1000"):
+        TCGdexSetsSyncCompletion(
+            outcome=TCGdexSyncOutcome.CHANGED,
+            expected_revision=0,
+            etag='"v1"',
+            content_sha256="a" * 64,
+        )
+    with pytest.raises(ValueError, match="must not carry"):
+        TCGdexSetsSyncCompletion(
+            outcome=TCGdexSyncOutcome.NOT_MODIFIED,
+            expected_revision=1,
+            etag='"v1"',
+            content_sha256="a" * 64,
+            sets=(one_set,),
+        )
+    with pytest.raises(ValueError, match="lowercase hexadecimal"):
+        TCGdexSetsSyncCompletion(
+            outcome=TCGdexSyncOutcome.NOT_MODIFIED,
+            expected_revision=1,
+            etag='"v1"',
+            content_sha256="A" * 64,
+        )
+    with pytest.raises(ValueError, match="bounded HTTP field value"):
+        TCGdexSetsSyncCompletion(
+            outcome=TCGdexSyncOutcome.NOT_MODIFIED,
+            expected_revision=1,
+            etag='"ÿ"',
+            content_sha256="a" * 64,
+        )
 
 
 def test_postgres_budget_pause_and_completion_clear_canonical_locks() -> None:
