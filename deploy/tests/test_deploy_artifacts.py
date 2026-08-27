@@ -454,14 +454,23 @@ set -Eeuo pipefail
 for argument in "$@"; do
   [[ $argument != *'very-secret'* ]]
 done
+set_role_count=0
+for argument in "$@"; do
+  if [[ $argument == 'set role service_role;'$'\n''select '* ]]; then
+    set_role_count=$((set_role_count + 1))
+  fi
+done
+[[ $set_role_count == 1 ]]
 if [[ ${FAKE_PSQL_FAIL:-0} == 1 ]]; then
   printf '%s\n' 'fixture connection failure' >&2
   exit 17
 fi
 arguments="$*"
 if [[ $arguments == *to_regclass* ]]; then
+  [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'table-state:set-role' >> "$FAKE_PSQL_LOG"
   printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru}"
 elif [[ $arguments == *youtube_discovery* ]]; then
+  [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'policy-lookup:set-role' >> "$FAKE_PSQL_LOG"
   if [[ -n ${FAKE_POLICY_OUTPUT:-} ]]; then
     printf '%s\n' "$FAKE_POLICY_OUTPUT"
   fi
@@ -495,6 +504,7 @@ fi
         environment["BACKUP_RETENTION_WEEKLY"] = "4"
         environment["FAKE_TABLE_STATE"] = table_state
         environment["FAKE_POLICY_OUTPUT"] = policy_output
+        environment["FAKE_PSQL_LOG"] = str(fake_bin.parent / "psql-preflight.log")
         if empty:
             environment["FAKE_EMPTY_DUMP"] = "1"
         if dump is not None:
@@ -510,6 +520,22 @@ fi
             capture_output=True,
             env=environment,
         )
+
+    def test_both_preflights_set_service_role_in_their_psql_session(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=base / "backups",
+                timestamp="20260729T020000Z",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("very-secret", result.stdout + result.stderr)
+            self.assertEqual(
+                (base / "psql-preflight.log").read_text(encoding="utf-8").splitlines(),
+                ["table-state:set-role", "policy-lookup:set-role"],
+            )
 
     def test_database_url_file_must_be_owner_only(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:

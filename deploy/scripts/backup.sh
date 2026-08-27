@@ -47,7 +47,8 @@ chmod 0700 "$BACKUP_DIR"
 # the expected physical shape without placing the database URL in argv or
 # output. The sanitizer checks the same policy/table pair inside the dump, so
 # a schema race fails instead of retaining cache rows.
-table_state_query="select concat_ws(E'\\t',
+table_state_query="set role service_role;
+select concat_ws(E'\\t',
   coalesce((
     select relkind::text || relpersistence::text
     from pg_catalog.pg_class
@@ -72,7 +73,8 @@ case "$table_state" in
     ;;
 esac
 
-policy_query="select id::text from ingest.source_policies where source_key = 'youtube_discovery' order by id::text;"
+policy_query="set role service_role;
+select id::text from ingest.source_policies where source_key = 'youtube_discovery' order by id::text;"
 if ! youtube_policy_id=$(PGDATABASE=$database_url psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$policy_query" 2>/dev/null); then
   unset database_url
   die "database retention policy lookup failed"
