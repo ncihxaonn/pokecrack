@@ -15,6 +15,12 @@ x-worker-environment: &worker-environment
   WORKER_POLL_SECONDS: "${WORKER_POLL_SECONDS:-10}"
   WORKER_MAX_CONCURRENCY: "${WORKER_MAX_CONCURRENCY:-1}"
 
+x-service-logging: &service-logging
+  driver: local
+  options:
+    max-size: "10m"
+    max-file: "5"
+
 x-worker-base: &worker-base
   image: "${POKECRACK_WORKER_IMAGE:-pokecrack-worker}:${DEPLOY_SHA:?DEPLOY_SHA must be an exact 40-character Git commit}"
   build: *worker-build
@@ -31,6 +37,7 @@ x-worker-base: &worker-base
     - internal
     - egress
   environment: *worker-environment
+  logging: *service-logging
   healthcheck:
     test: ["CMD", "pokecrack-worker", "health"]
     interval: 30s
@@ -63,6 +70,7 @@ services:
     pids_limit: 256
 
   auth-browser:
+    profiles: ["unready-full"]
     image: "${POKECRACK_AUTH_BROWSER_IMAGE:-pokecrack-auth-browser}:${DEPLOY_SHA:?DEPLOY_SHA must be an exact 40-character Git commit}"
     build:
       context: ..
@@ -117,6 +125,7 @@ services:
       POKECRACK_DAEMON_PORT: "${OPENCLI_DAEMON_PORT:-19825}"
       POKECRACK_ADAPTER_ROOT: /opt/pokecrack/auth-browser/adapters
       POKECRACK_CHROMIUM_EXECUTABLE: /usr/bin/chromium
+    logging: *service-logging
     secrets:
       - source: novnc_password
         target: novnc_password
@@ -143,6 +152,7 @@ services:
     pids_limit: 512
 
   ai-worker:
+    profiles: ["unready-full"]
     <<: *worker-base
     command: ["ai-worker"]
     environment:
@@ -173,6 +183,7 @@ services:
     pids_limit: 256
 
   aggregator:
+    profiles: ["unready-full"]
     <<: *worker-base
     command: ["aggregator"]
     environment:

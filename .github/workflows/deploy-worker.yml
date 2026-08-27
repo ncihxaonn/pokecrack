@@ -7,6 +7,13 @@ on:
         description: Exact GITHUB_SHA to deploy
         required: true
         type: string
+      service_set:
+        description: Exact worker service set to deploy
+        required: true
+        default: tcgdex
+        type: choice
+        options:
+          - tcgdex
 
 permissions:
   contents: read
@@ -21,6 +28,8 @@ jobs:
     timeout-minutes: 40
     environment: worker-production
     env:
+      REQUESTED_SHA: ${{ inputs.confirm_sha }}
+      REQUESTED_SERVICE_SET: ${{ inputs.service_set }}
       VPS_HOST: ${{ vars.VPS_HOST }}
       VPS_USER: ${{ vars.VPS_USER }}
       VPS_PORT: ${{ vars.VPS_PORT || '22' }}
@@ -35,8 +44,12 @@ jobs:
           set -Eeuo pipefail
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
           if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
-            [[ "${{ inputs.confirm_sha }}" == "$GITHUB_SHA" ]] || {
+            [[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]] || {
               printf 'confirm_sha must equal GITHUB_SHA (%s)\n' "$GITHUB_SHA" >&2
+              exit 1
+            }
+            [[ "$REQUESTED_SERVICE_SET" == tcgdex ]] || {
+              printf 'service_set must be tcgdex\n' >&2
               exit 1
             }
           fi
@@ -59,7 +72,8 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          printf -v remote_command 'bash -s -- %q %q %q' "$GITHUB_SHA" "$VPS_DEPLOY_PATH" "$VPS_ENV_FILE"
+          printf -v remote_command 'bash -s -- %q %q %q %q' \
+            "$GITHUB_SHA" "$VPS_DEPLOY_PATH" "$VPS_ENV_FILE" "$REQUESTED_SERVICE_SET"
           ssh -i "$HOME/.ssh/id_ed25519" \
             -p "$VPS_PORT" \
             -o BatchMode=yes \
@@ -70,9 +84,22 @@ jobs:
           sha=$1
           repository=$2
           env_file=$3
+          service_set=$4
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$service_set" == tcgdex ]]
           [[ -d "$repository/.git" ]]
-          "$repository/deploy/scripts/deploy.sh" "$sha" --env-file "$env_file"
+          git -C "$repository" diff --quiet --ignore-submodules --
+          git -C "$repository" diff --cached --quiet --ignore-submodules --
+          [[ -z $(git -C "$repository" status --porcelain --untracked-files=all) ]]
+          if ! git -C "$repository" cat-file -e "${sha}^{commit}" 2>/dev/null; then
+            git -C "$repository" fetch --no-tags --no-write-fetch-head origin "$sha"
+          fi
+          resolved=$(git -C "$repository" rev-parse --verify "${sha}^{commit}")
+          [[ "$resolved" == "$sha" ]]
+          git -C "$repository" checkout --detach "$sha"
+          "$repository/deploy/scripts/deploy.sh" "$sha" \
+            --env-file "$env_file" \
+            --service-set "$service_set"
           actual=$(git -C "$repository" rev-parse --verify HEAD)
           [[ "$actual" == "$sha" ]]
           REMOTE

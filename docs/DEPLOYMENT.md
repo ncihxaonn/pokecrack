@@ -48,16 +48,17 @@ Import the private repository and use `apps/web` as the project root. Pin the pr
 
 ## 4. VPS
 
-Use a patched Linux host, dedicated non-root deploy user, SSH keys only, host firewall and Docker Engine/Compose. Clone the private repo to an absolute path; keep config/secrets outside it. Follow `deploy/README.md` to create bind directories (profile root mode `0700`, uid/gid `10001`), install the noVNC secret, configure `/etc/pokecrack/production.env`, and pin the Bridge.
+Use a patched Linux host, dedicated non-root deploy user, SSH keys only, host firewall and Docker Engine/Compose. Clone the private repo to an absolute path; keep config/secrets outside it. Follow `deploy/README.md` to configure the mode-`0600` `/etc/pokecrack/production.env` and backup-marker directory. Browser profile/noVNC/Bridge preparation is not part of the TCGdex-only release.
 
 Deploy an exact commit:
 
 ```bash
 deploy/scripts/deploy.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
-  --env-file /etc/pokecrack/production.env
+  --env-file /etc/pokecrack/production.env \
+  --service-set tcgdex
 ```
 
-The GitHub deploy workflow uses the same script and verifies remote `HEAD == GITHUB_SHA`; it never uses `git pull`. Protect the `worker-production` environment and configure `VPS_HOST`, `VPS_USER`, `VPS_PORT`, `VPS_DEPLOY_PATH`, `VPS_ENV_FILE`, `VPS_SSH_PRIVATE_KEY` and pinned `VPS_KNOWN_HOSTS`.
+The only released service set is `tcgdex`: collector, scheduler, and watchdog. The script refuses full mode and refuses to continue if a browser/AI/aggregator container already exists; retiring those services requires separate approval. Its atomic success manifest records SHA, service-set name, and exact services. The GitHub deploy workflow requires the same explicit choice and verifies remote `HEAD == GITHUB_SHA`; it never uses `git pull`. Protect the `worker-production` environment and configure `VPS_HOST`, `VPS_USER`, `VPS_PORT`, `VPS_DEPLOY_PATH`, `VPS_ENV_FILE`, `VPS_SSH_PRIVATE_KEY` and pinned `VPS_KNOWN_HOSTS`.
 
 ## 5. Authenticated browser
 
@@ -71,4 +72,4 @@ Complete login/CAPTCHA/2FA manually, run doctor/auth/read-only adapter checks, t
 
 ## 6. Acceptance record
 
-For a real release record: exact Git SHA; CI run; migration run and backup reference; Vercel deployment URL; Supabase project reference (not secret); VPS host identifier; six healthy services; loopback-only port check; fixture/live/disabled adapters; browser doctor/auth state; restore-drill date; and known warnings. A Compose render, migration file, or successful script write alone is not deployment evidence.
+For a real TCGdex release record: exact Git SHA; `tcgdex` success manifest; CI run; migration run and backup reference; Supabase project reference (not secret); VPS host identifier; collector/scheduler/watchdog healthy; non-core services absent; completed catalog sync with updated `catalog.sync_state`; restore-drill date; and known warnings. A Compose render, migration file, heartbeat-only health result, or successful script write alone is not deployment evidence. Browser doctor/auth state belongs to a future separately approved browser release.
