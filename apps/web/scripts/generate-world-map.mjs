@@ -13,7 +13,7 @@ const isoCodesPath = resolve(appDirectory, "src/data/iso-alpha2.json");
 const source = {
   name: "Natural Earth Admin 0 Countries and Tiny Countries",
   version: "5.1.1",
-  projection: "Equal Earth",
+  projection: "Robinson",
   scale: "1:110m",
   boundaryModel: "de facto",
   license: "Public domain",
@@ -61,7 +61,7 @@ function runMapshaper(countriesPath, tinyCountriesPath, svgPath) {
       tinyCountriesPath,
       "combine-files",
       "-proj",
-      "eqearth",
+      "robin",
       "densify",
       "target=*",
       "-target",

@@ -140,6 +140,7 @@ export function WorldHeatmap({
           <svg
             className={styles.map}
             viewBox={mapData.viewBox}
+            preserveAspectRatio="xMidYMid meet"
             role="img"
             aria-labelledby={`world-map-title-${instanceId}`}
             aria-describedby={`world-map-description-${instanceId} world-map-caveat-${instanceId}`}
@@ -228,7 +229,7 @@ export function WorldHeatmap({
             {integer.format(observations.sourceCountryContributions)} source-country contributions. A single source may appear in more than one country, so this is not labelled as a global independent-source count.
           </p>
           <p className="sr-only" role="status" aria-live="polite">
-            {metricLabel} selected. The world map and exact-value table have updated.
+            {metricLabel} selected. The world map has updated.
           </p>
         </aside>
       </div>
