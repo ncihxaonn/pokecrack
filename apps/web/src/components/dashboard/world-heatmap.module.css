@@ -23,11 +23,12 @@
 .toggle button { cursor: pointer; min-height: 44px; border: 0; border-radius: 999px; padding: .55rem .8rem; background: transparent; color: var(--muted); font: 700 12px/1 var(--sans); transition: background-color 180ms ease, color 180ms ease, box-shadow 180ms ease; touch-action: manipulation; }
 .toggle button:hover { color: var(--ink); }
 .toggle button:active { transform: scale(.98); }
+.toggle button:focus-visible { outline-offset: 2px; }
 .toggle button[aria-pressed="true"] { background: var(--ink); color: #fff; box-shadow: 0 3px 10px rgba(19, 23, 32, .14); }
 
 .body { display: grid; grid-template-columns: minmax(0, 1fr) minmax(250px, 300px); min-height: 440px; border-top: 1px solid var(--line); }
 .mapFigure { min-width: 0; margin: 0; padding: 1rem 1.1rem .95rem; background: radial-gradient(circle at 76% 70%, rgba(49, 94, 251, .07), transparent 27%), linear-gradient(180deg, #fbfcff, #f7f8fb); }
-.map { display: block; width: 100%; min-height: 315px; }
+.map { display: block; width: 100%; height: auto; }
 .country { stroke: #d5dae3; stroke-width: .55; vector-effect: non-scaling-stroke; transition: fill 160ms ease; }
 .tinyCountry { stroke: #fff; stroke-width: .7; vector-effect: non-scaling-stroke; transition: fill 160ms ease, r 160ms ease; }
 
@@ -58,6 +59,7 @@
 .tableHeading strong { margin-top: .15rem; font-size: .95rem; }
 .tableHeading small { color: var(--faint); font: 500 11px var(--mono); }
 .tableFrame { overflow: auto; max-height: 340px; border: 1px solid var(--line); border-radius: 12px; }
+.tableFrame:focus-visible { outline-offset: 2px; }
 .tableFrame th { position: sticky; z-index: 1; top: 0; background: #fafbfc; }
 .tableFrame td { font: 500 12px var(--mono); }
 .tableFrame td:first-child { font-family: var(--sans); }
@@ -84,7 +86,6 @@
   .toggle { width: 100%; }
   .toggle button { flex: 1; }
   .mapFigure { padding: .45rem .7rem .85rem; }
-  .map { min-height: 235px; }
   .caption { flex-direction: column; gap: .65rem; padding-inline: .25rem; }
   .legend { width: 100%; }
   .tableBlock { padding-inline: .75rem; }
