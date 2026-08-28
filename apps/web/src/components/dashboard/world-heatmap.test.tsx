@@ -19,7 +19,10 @@ describe("WorldHeatmap", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Worldwide qualifying-hit map" })).toBeVisible();
-    expect(screen.getByRole("img", { name: "Baseline delta across the world" })).toBeVisible();
+    expect(screen.getByRole("img", { name: "Baseline delta across the world" })).toHaveAttribute(
+      "preserveAspectRatio",
+      "xMidYMid meet",
+    );
     expect(screen.getByRole("region", { name: "Exact global country values" })).toBeVisible();
     expect(screen.getByRole("cell", { name: "Brazil BR" })).toBeVisible();
     expect(screen.getAllByText("Withheld").length).toBeGreaterThan(0);
