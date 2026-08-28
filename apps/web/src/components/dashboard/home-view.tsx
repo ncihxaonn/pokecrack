@@ -1,12 +1,13 @@
 import React from "react";
 import type { Route } from "next";
 import Link from "next/link";
+import { CircleCheckBig, Database, Globe2, Layers, PackageOpen, ScanSearch } from "lucide-react";
 
 import { BRAND } from "@/config/brand";
 import type { PublicDashboardData } from "@/data/types";
-import { formatDateTime, formatProbability } from "@/lib/format";
+import { formatDate, formatDateTime, formatProbability } from "@/lib/format";
 import { TrendChart } from "@/components/charts/trend-chart";
-import { CoverageGrid } from "./coverage-grid";
+import { WorldHeatmap } from "./world-heatmap";
 import { DataModeNotice, MetricDisclaimer, Panel, SectionHeading, SignalBadge, TableFrame } from "@/components/ui/dashboard-ui";
 
 const integer = new Intl.NumberFormat("en-AU");
@@ -16,50 +17,67 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
     .sort((left, right) => right.packsObserved - left.packsObserved)
     .slice(0, 4);
   const watched = data.sets.filter((set) => set.state === "watch" || set.state === "anomaly");
+  const catalogPreview = data.catalog.sets.slice(0, 8);
 
   return (
     <div className="page-shell home-page">
-      <DataModeNotice synthetic={synthetic} generatedAt={data.generatedAt} />
-
-      <section className="hero" aria-labelledby="hero-title">
-        <div className="hero__copy">
-          <span className="hero__brand">{BRAND.name}</span>
-          <span className="eyebrow">Australia · observed activity · {data.summary.methodologyVersion}</span>
+      <section className="dashboard-intro" aria-labelledby="hero-title">
+        <div>
+          <span className="eyebrow">Worldwide · country-level observations · {data.summary.methodologyVersion}</span>
           <h1 id="hero-title">{BRAND.tagline}</h1>
           <p>{BRAND.description}</p>
-          <div className="hero__actions">
-            <Link className="button" href="/sets">Explore sets</Link>
-            <Link className="text-link" href="/methodology">Read the methodology <span aria-hidden="true">→</span></Link>
-          </div>
         </div>
-        <div className="terminal-card" aria-label="Current aggregate snapshot">
-          <div className="terminal-card__bar"><span /><span /><span /><code>snapshot.json</code></div>
-          <pre>{`{
-  "mode": "${synthetic ? "synthetic-demo" : "live"}",
-  "scope": "AU",
-  "packs_observed": ${data.summary.observedPacks},
-  "rate": "${formatProbability(data.summary.baselineHitRate)}",
-  "prediction": null
-}`}</pre>
+        <div className="dashboard-intro__actions">
+          <Link className="button" href="/sets">Explore sets <span aria-hidden="true">↗</span></Link>
+          <Link className="button button--secondary" href="/methodology">How we measure</Link>
         </div>
       </section>
 
-      <dl className="stat-grid stat-grid--summary" aria-label="Dashboard totals">
-        <div><dt>Observed Packs</dt><dd>{integer.format(data.summary.observedPacks)}</dd><small>eligible denominator</small></div>
-        <div><dt>Complete Openings</dt><dd>{integer.format(data.summary.completeOpenings)}</dd><small>validated observations</small></div>
-        <div><dt>AI-Validated Sources</dt><dd>{integer.format(data.summary.aiValidatedSources)}</dd><small>aggregate source count</small></div>
-        <div><dt>Tracked Sets</dt><dd>{integer.format(data.summary.trackedSets)}</dd><small>published aggregates</small></div>
-        <div><dt>Tracked Regions</dt><dd>{integer.format(data.summary.trackedRegions)}</dd><small>Australian coverage</small></div>
-        <div><dt>Batch Sightings</dt><dd>{integer.format(data.summary.batchSightings)}</dd><small>visible labels only</small></div>
+      <DataModeNotice synthetic={synthetic} generatedAt={data.generatedAt} />
+      <WorldHeatmap cells={data.mapCells} observations={data.observations} />
+
+      <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
+        <div><dt><span className="stat-icon stat-icon--blue" aria-hidden="true"><Database size={19} /></span>Catalog Sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>
+        <div><dt><span className="stat-icon stat-icon--violet" aria-hidden="true"><Globe2 size={19} /></span>Countries Observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>latest shared period</small></dd></div>
+        <div><dt><span className="stat-icon stat-icon--pink" aria-hidden="true"><ScanSearch size={19} /></span>Published Rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>threshold-qualified countries</small></dd></div>
+        <div><dt><span className="stat-icon stat-icon--green" aria-hidden="true"><PackageOpen size={19} /></span>Observed Packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>eligible denominator</small></dd></div>
+        <div><dt><span className="stat-icon stat-icon--amber" aria-hidden="true"><CircleCheckBig size={19} /></span>Complete Openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>verified observations</small></dd></div>
+        <div><dt><span className="stat-icon stat-icon--ink" aria-hidden="true"><Layers size={19} /></span>Source Contributions</dt><dd>{integer.format(data.observations.sourceCountryContributions)}<small>not globally deduplicated</small></dd></div>
       </dl>
 
-      <section className="dashboard-section" aria-labelledby="coverage-title">
-        <SectionHeading title="Australian activity coverage" detail="Activity volume is not a measure of luck, product quality, or likely contents." />
-        <div id="coverage-title"><CoverageGrid regions={data.regions} /></div>
+      <section className="dashboard-section" aria-labelledby="catalog-title">
+        <SectionHeading
+          id="catalog-title"
+          title="Global set catalog"
+          detail={`${data.catalog.name} set metadata is shown for discovery only. It is never opening evidence or a pull-rate denominator.`}
+          action={<span className={`catalog-state catalog-state--${data.catalog.status}`}>{data.catalog.status}</span>}
+        />
+        <Panel>
+          <TableFrame label="Global TCGdex set catalog preview">
+            <table>
+              <thead><tr><th scope="col">Set</th><th scope="col">Series</th><th scope="col">Release</th><th scope="col">Language</th></tr></thead>
+              <tbody>
+                {catalogPreview.length === 0 ? (
+                  <tr><td colSpan={4} className="empty-cell">No current catalog sets are available.</td></tr>
+                ) : catalogPreview.map((set) => (
+                  <tr key={set.id}>
+                    <td><strong>{set.name}</strong><small>{set.slug}</small></td>
+                    <td>{set.series ?? "Unspecified"}</td>
+                    <td>{set.releaseDate ? formatDate(set.releaseDate) : "Unscheduled"}</td>
+                    <td>{set.language.toUpperCase()}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </TableFrame>
+          <p className="catalog-footnote">
+            Showing {integer.format(catalogPreview.length)} of {integer.format(data.catalog.setCount)} current sets. Last checked {formatDateTime(data.catalog.lastCheckedAt)}.
+          </p>
+        </Panel>
       </section>
 
-      <section className="dashboard-section" aria-labelledby="trend-title">
-        <SectionHeading title="Observed trend" detail="Weekly aggregate and rolling baseline; a visual aid with a textual table below." />
+      {data.trend.length > 0 ? <section className="dashboard-section" aria-labelledby="trend-title">
+        <SectionHeading id="trend-title" title="Observed trend" detail="Weekly aggregate and rolling baseline; a visual aid with a textual table below." />
         <Panel className="trend-panel">
           <TrendChart points={data.trend} />
           <TableFrame label="Observed trend values">
@@ -69,11 +87,11 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
             </table>
           </TableFrame>
         </Panel>
-      </section>
+      </section> : null}
 
-      <div className="dashboard-split">
+      {trending.length > 0 || watched.length > 0 ? <div className="dashboard-split">
         <section className="dashboard-section" aria-labelledby="trending-title">
-          <SectionHeading title="Trending sets" detail="Ordered by observed sample volume, not expected outcomes." action={<Link className="text-link" href="/sets">All sets →</Link>} />
+          <SectionHeading id="trending-title" title="Trending sets" detail="Ordered by observed sample volume, not expected outcomes." action={<Link className="text-link" href="/sets">All sets →</Link>} />
           <Panel>
             {trending.length === 0 ? <p className="empty-cell">No set aggregates are published.</p> : <ol className="rank-list">
               {trending.map((set, index) => (
@@ -88,7 +106,7 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
         </section>
 
         <section className="dashboard-section" aria-labelledby="watch-title">
-          <SectionHeading title="Signal watch" detail="Exploratory thresholds only; causal interpretation is not supported." />
+          <SectionHeading id="watch-title" title="Signal watch" detail="Exploratory thresholds only; causal interpretation is not supported." />
           <Panel>
             {watched.length === 0 ? <p className="empty-cell">No watch signals are published in this snapshot.</p> : <ul className="watch-list">
               {watched.map((set) => (
@@ -97,10 +115,10 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
             </ul>}
           </Panel>
         </section>
-      </div>
+      </div> : null}
 
-      <section className="dashboard-section" aria-labelledby="activity-title">
-        <SectionHeading title="Recent observed activity" detail="Published source activity can include entries that are not statistically eligible." />
+      {data.recentActivity.length > 0 ? <section className="dashboard-section" aria-labelledby="activity-title">
+        <SectionHeading id="activity-title" title="Recent observed activity" detail="Published source activity can include entries that are not statistically eligible." />
         <Panel>
           <TableFrame label="Recent observed activity">
             <table>
@@ -119,10 +137,10 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
             </table>
           </TableFrame>
         </Panel>
-      </section>
+      </section> : null}
 
       <section className="dashboard-section methodology-glance" aria-labelledby="methodology-title">
-        <SectionHeading title="Methodology at a glance" detail="Conservative publication thresholds keep incomplete observations out of rate denominators." />
+        <SectionHeading id="methodology-title" title="Methodology at a glance" detail="Conservative publication thresholds keep incomplete observations out of rate denominators." />
         <div className="method-steps">
           {[
             ["01", "Collect", "Allowlisted, bounded discovery and metadata only."],

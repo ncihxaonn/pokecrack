@@ -15,9 +15,9 @@ export default async function HomePage() {
   }
 
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? BRAND.defaultSiteUrl;
-  const website = { "@context": "https://schema.org", "@type": "WebSite", name: BRAND.name, url: siteUrl, description: BRAND.description, inLanguage: "en-AU" };
-  const catalog = { "@context": "https://schema.org", "@type": "DataCatalog", name: `${BRAND.name} observed activity catalog`, description: BRAND.description, url: siteUrl, spatialCoverage: "Australia", dataset: { "@id": `${siteUrl}/#dataset` } };
-  const dataset = { "@context": "https://schema.org", "@type": "Dataset", "@id": `${siteUrl}/#dataset`, name: "Observed Pokémon TCG pack-opening activity", description: BRAND.observationDisclaimer, spatialCoverage: "Australia", temporalCoverage: `../${result.data.generatedAt.slice(0, 10)}`, isAccessibleForFree: true, creator: { "@type": "Organization", name: BRAND.name }, url: siteUrl };
+  const website = { "@context": "https://schema.org", "@type": "WebSite", name: BRAND.name, url: siteUrl, description: BRAND.description, inLanguage: "en" };
+  const catalog = { "@context": "https://schema.org", "@type": "DataCatalog", name: `${BRAND.name} global observed activity catalog`, description: BRAND.description, url: siteUrl, spatialCoverage: "Worldwide", dataset: { "@id": `${siteUrl}/#dataset` } };
+  const dataset = { "@context": "https://schema.org", "@type": "Dataset", "@id": `${siteUrl}/#dataset`, name: "Worldwide observed Pokémon TCG pack-opening activity", description: BRAND.observationDisclaimer, spatialCoverage: "Worldwide", temporalCoverage: `../${result.data.generatedAt.slice(0, 10)}`, isAccessibleForFree: true, creator: { "@type": "Organization", name: BRAND.name }, url: siteUrl };
 
   return <><JsonLd data={website} /><JsonLd data={catalog} /><JsonLd data={dataset} /><HomeView data={result.data} synthetic={result.synthetic} /></>;
 }

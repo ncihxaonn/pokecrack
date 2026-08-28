@@ -1,4 +1,4 @@
-export const PUBLIC_DASHBOARD_RPC = "get_public_dashboard_snapshot_v1" as const;
+export const PUBLIC_DASHBOARD_RPC = "get_public_dashboard_snapshot_v2" as const;
 export const ADMIN_DASHBOARD_RPC = "get_admin_dashboard_snapshot_v1" as const;
 
 interface RpcResult {

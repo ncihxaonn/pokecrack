@@ -5,9 +5,9 @@ const batchDisclaimer =
 const footerDisclaimer =
   "Pokecrack is an unofficial research dashboard and is not affiliated with, endorsed by, or sponsored by The Pokémon Company, Nintendo, Game Freak or Creatures.";
 const projectDescription =
-  "An unofficial data dashboard for observed Pokémon TCG pull activity across sets, products, regions, retailers and visible batches.";
+  "An unofficial global dashboard for country-level Pokémon TCG pack-opening observations, set-catalog coverage and conservative qualifying-hit estimates.";
 const projectScope =
-  "Free, personal, experimental and non-commercial; English-language observations of physical Pokémon TCG Booster Boxes, ETBs and Booster Bundles in Australia only.";
+  "Free, personal, experimental and non-commercial; worldwide country-level aggregation of verified English-language evidence for physical Pokémon TCG Booster Boxes, ETBs and Booster Bundles.";
 
 export const BRAND = {
   name: "Pokecrack",
@@ -22,7 +22,7 @@ export const BRAND = {
   footerDisclaimer,
   unofficialNotice: footerDisclaimer,
   demoNotice:
-    "Demo data is deterministic, synthetic, Australia-only, and illustrative. It is not a claim about real products, regions, retailers, or batches.",
+    "Demo data is deterministic, synthetic, worldwide, and illustrative. It is not a claim about real products, countries, retailers, or batches.",
   copyright: "Data for research and community education only.",
   defaultSiteUrl: "https://pokecrack.example",
 } as const;

@@ -9,6 +9,8 @@ The SQL migrations are authoritative. They currently establish private `catalog`
 - `catalog.cards`: catalog identity, collector number, rarity and hit flag.
 - `catalog.regions`: country/region/timezone reference.
 - `catalog.retailers` and `catalog.stores`: normalized retailer/location reference.
+- `catalog.iso_alpha2_codes`: reviewed 249-code ISO 3166-1 alpha-2 allowlist used
+  by the independent global public v2 country dimension.
 
 Catalog rows carry `is_demo`; synthetic and live rows must not be conflated.
 
@@ -55,6 +57,21 @@ The Admin RPC implementations live in `ingest` with no non-owner execution. Thei
 ## Public contract
 
 Public DTOs contain aggregate labels, rates/intervals, sample sizes, freshness and demo provenance. They must exclude source URLs when unsafe, raw payloads, author identifiers/hashes, exact account/profile/session data, job payloads, AI prompts/output, service health internals and credentials. Public relations require explicit grants and tests; adding a table does not make it public.
+
+Public v1 remains the frozen Australia-only regional contract. The independent
+v2 contract reads only three narrow forced-RLS projections:
+
+- `public.tcgdex_set_index`: safe current set identity/release metadata;
+- `public.tcgdex_catalog_status`: catalog revision, count and freshness without
+  hashes, ETags, job IDs or raw payloads;
+- `public.country_period_map_cells`: one explicit country/time-window denominator
+  with all inference fields withheld below the publication threshold.
+
+`get_public_dashboard_snapshot_v2()` selects one shared latest country period,
+keeps the full catalog count separate from its bounded preview array, and returns
+an honest empty observation state when no country cells exist. Summed per-country
+source counts are labelled `sourceCountryContributions`; they are not represented
+as a globally deduplicated independent-source count.
 
 The migrations define the private catalog/ingest/analytics relations, public aggregate tables, and versioned public/Admin RPCs. Their existence is not evidence of live observations. Every schema change—including each collector finalizer—must pass a clean reset and pgTAP run, then be verified against the exact approved hosted project before its behavior is claimed as deployed.
 

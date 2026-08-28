@@ -108,7 +108,7 @@ export function RegionsView({ data, synthetic }: { data: PublicDashboardData; sy
   const rows = data.regions.map((region) => ({ key: region.slug, href: `/regions/${region.slug}` as Route, name: region.name, meta: region.coverage, metric: region }));
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
-      <PageIntro eyebrow="Australia coverage" title="Regional observations" description="Geographic aggregates describe collected Australian observations and their uneven coverage." />
+      <PageIntro eyebrow="Legacy Australia v1 detail" title="Regional observations" description="These legacy regional aggregates retain the reviewed Australia-only v1 boundary. The global country-level atlas is published on the dashboard." />
       <div className="coverage-grid coverage-grid--list">{data.regions.map((region, index) => <Link className={`coverage-cell coverage-cell--${(index % 4) + 1}`} href={`/regions/${region.slug}` as Route} key={region.slug}><span className="coverage-cell__index">{region.countryCode}.{String(index + 1).padStart(2, "0")}</span><strong>{region.name}</strong><span>{region.coverage}</span><SignalBadge metric={region} /></Link>)}</div>
       <MetricTable rows={rows} label="Regional aggregate comparison" emptyMessage="No region aggregates are published in this snapshot." />
       <MetricDisclaimer />

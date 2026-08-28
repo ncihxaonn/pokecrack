@@ -8,7 +8,7 @@ import { createPageMetadata } from "../_lib/metadata";
 
 export const revalidate = 900;
 
-export const metadata: Metadata = createPageMetadata("Regional observations", "Australian geographic coverage and published observation aggregates.", "/regions");
+export const metadata: Metadata = createPageMetadata("Regional observations", "Legacy Australian regional detail alongside the worldwide country-level dashboard.", "/regions");
 
 export default async function RegionsPage() {
   const result = await loadDashboard();
