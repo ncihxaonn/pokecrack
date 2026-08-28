@@ -81,9 +81,11 @@ function stateLabel(cell: CountryMapCell) {
 
 export function WorldHeatmap({
   cells,
+  coverageSummary,
   observations,
 }: {
   readonly cells: readonly CountryMapCell[];
+  readonly coverageSummary: string;
   readonly observations: ObservationReadiness;
 }) {
   const [metric, setMetric] = useState<WorldHeatMetric>("delta");
@@ -98,8 +100,13 @@ export function WorldHeatmap({
   const withheldCount = rows.length - publishedCount;
   const metricLabel = metric === "delta" ? "Baseline delta" : "Observed rate";
   const period = observations.period
-    ? `${formatDate(observations.period.start)} – ${formatDate(observations.period.end)}`
+    ? `${formatDate(observations.period.start)} - ${formatDate(observations.period.end)}`
     : "No verified period yet";
+  const readinessLabel = observations.status === "empty"
+    ? "Awaiting observations"
+    : observations.status === "collecting"
+      ? "Collection in progress"
+      : "Published";
   const mapDescription = rows.length === 0
     ? "No verified country-level pack-opening observations are published. Every country is shown in the neutral no-data colour."
     : `${rows.length} countries have verified observations: ${publishedCount} publish a rate and ${withheldCount} withhold the rate below the evidence threshold.`;
@@ -115,7 +122,7 @@ export function WorldHeatmap({
     <section className={styles.atlas} aria-labelledby="world-coverage-title">
       <header className={styles.header}>
         <div>
-          <span className={styles.kicker}>Global atlas · one shared observation period</span>
+          <span className={styles.kicker}>Global evidence atlas</span>
           <h2 id="world-coverage-title">Worldwide qualifying-hit map</h2>
           <p>
             Country-level qualifying-hit rates from verified pack-opening samples. Catalog records and discovery activity never enter the denominator.
@@ -137,60 +144,68 @@ export function WorldHeatmap({
 
       <div className={styles.body}>
         <figure className={styles.mapFigure}>
-          <svg
-            className={styles.map}
-            viewBox={mapData.viewBox}
-            preserveAspectRatio="xMidYMid meet"
-            role="img"
-            aria-labelledby={`world-map-title-${instanceId}`}
-            aria-describedby={`world-map-description-${instanceId} world-map-caveat-${instanceId}`}
-            focusable="false"
-          >
-            <title id={`world-map-title-${instanceId}`}>{`${metricLabel} across the world`}</title>
-            <desc id={`world-map-description-${instanceId}`}>{mapDescription}</desc>
-            <defs>
-              <pattern
-                id={withheldPatternId}
-                width="7"
-                height="7"
-                patternUnits="userSpaceOnUse"
-                patternTransform="rotate(35)"
-              >
-                <rect width="7" height="7" fill="#e2e6ec" />
-                <path d="M0 0V7" stroke="#9da6b4" strokeWidth="2" />
-              </pattern>
-            </defs>
-            <g aria-hidden="true">
-              {mapData.countries.map((country, index) => (
-                <path
-                  className={styles.country}
-                  d={country.path}
-                  fill={countryFill(country.countryCode)}
-                  key={`${country.countryName}-${index}`}
-                />
-              ))}
-              {mapData.tinyCountries.map((country, index) => {
-                const row = country.countryCode
-                  ? cellsByCountry.get(country.countryCode)
-                  : undefined;
-                const fill = row?.status === "published"
-                  ? row.fill
-                  : row?.status === "withheld"
-                    ? "#aab2bf"
-                    : "#eef0f4";
-                return (
-                  <circle
-                    className={styles.tinyCountry}
-                    cx={country.x}
-                    cy={country.y}
-                    fill={fill}
+          <div className={styles.mapStage}>
+            <svg
+              className={styles.map}
+              viewBox={mapData.viewBox}
+              preserveAspectRatio="xMidYMid meet"
+              role="img"
+              aria-labelledby={`world-map-title-${instanceId}`}
+              aria-describedby={`world-map-description-${instanceId} world-map-caveat-${instanceId}`}
+              focusable="false"
+            >
+              <title id={`world-map-title-${instanceId}`}>{`${metricLabel} across the world`}</title>
+              <desc id={`world-map-description-${instanceId}`}>{mapDescription}</desc>
+              <defs>
+                <pattern
+                  id={withheldPatternId}
+                  width="7"
+                  height="7"
+                  patternUnits="userSpaceOnUse"
+                  patternTransform="rotate(35)"
+                >
+                  <rect width="7" height="7" fill="#e2e6ec" />
+                  <path d="M0 0V7" stroke="#9da6b4" strokeWidth="2" />
+                </pattern>
+              </defs>
+              <g aria-hidden="true">
+                {mapData.countries.map((country, index) => (
+                  <path
+                    className={styles.country}
+                    d={country.path}
+                    fill={countryFill(country.countryCode)}
                     key={`${country.countryName}-${index}`}
-                    r={row ? 2.8 : 1.8}
                   />
-                );
-              })}
-            </g>
-          </svg>
+                ))}
+                {mapData.tinyCountries.map((country, index) => {
+                  const row = country.countryCode
+                    ? cellsByCountry.get(country.countryCode)
+                    : undefined;
+                  const fill = row?.status === "published"
+                    ? row.fill
+                    : row?.status === "withheld"
+                      ? "#aab2bf"
+                      : "#eef0f4";
+                  return (
+                    <circle
+                      className={styles.tinyCountry}
+                      cx={country.x}
+                      cy={country.y}
+                      fill={fill}
+                      key={`${country.countryName}-${index}`}
+                      r={row ? 2.8 : 1.8}
+                    />
+                  );
+                })}
+              </g>
+            </svg>
+            {rows.length === 0 ? (
+              <div className={styles.emptyMapMessage} role="note">
+                <strong>No published country rates yet</strong>
+                <span>The map stays neutral until verified samples meet the publication threshold.</span>
+              </div>
+            ) : null}
+          </div>
 
           <figcaption className={styles.caption}>
             <div className={styles.legend}>
@@ -216,7 +231,7 @@ export function WorldHeatmap({
         <aside className={styles.rail} aria-label="Global observation readiness">
           <div className={styles.railIntro}>
             <span>Observation readiness</span>
-            <strong>{observations.status === "empty" ? "Collecting" : observations.status}</strong>
+            <strong>{readinessLabel}</strong>
             <small>{period}</small>
           </div>
           <dl className={styles.readinessList}>
@@ -225,8 +240,10 @@ export function WorldHeatmap({
             <div><dt>Observed packs</dt><dd>{integer.format(observations.observedPacks)}</dd></div>
             <div><dt>Complete openings</dt><dd>{integer.format(observations.completeOpenings)}</dd></div>
           </dl>
-          <p className={styles.sourceNote}>
-            {integer.format(observations.sourceCountryContributions)} source-country contributions. A single source may appear in more than one country, so this is not labelled as a global independent-source count.
+          <p className={styles.coverageSummary}>{coverageSummary}</p>
+          <p className={styles.sourceNote}>{observations.sourceCountryContributions === 0
+            ? "No verified source-country contributions have reached publication yet."
+            : `${integer.format(observations.sourceCountryContributions)} source-country contributions. A source may appear in more than one country, so this is not a global independent-source count.`}
           </p>
           <p className="sr-only" role="status" aria-live="polite">
             {metricLabel} selected. The world map has updated.
@@ -236,8 +253,8 @@ export function WorldHeatmap({
 
       <div className={styles.tableBlock}>
         <div className={styles.tableHeading}>
-          <div><span>Exact values</span><strong>Country observations</strong></div>
-          <small>Alphabetical · not a ranking</small>
+          <strong>Country observations</strong>
+          <small>Alphabetical, not a ranking</small>
         </div>
         <div className={styles.tableFrame} role="region" aria-label="Exact global country values" tabIndex={0}>
           <table>
