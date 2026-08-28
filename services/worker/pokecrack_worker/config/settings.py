@@ -9,7 +9,7 @@ from __future__ import annotations
 from decimal import Decimal
 from enum import StrEnum
 from pathlib import Path
-from typing import Literal, Self
+from typing import Self
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -76,7 +76,7 @@ class Settings(BaseSettings):
     scrapling_request_timeout_seconds: float = Field(default=30, gt=0, le=120)
     scrapling_default_delay_seconds: float = Field(default=8, ge=0, le=86_400)
     scrapling_dynamic_enabled: bool = False
-    scrapling_save_raw_html: Literal[False] = False
+    scrapling_save_raw_html: bool = False
     scrapling_max_raw_text_chars: int = Field(default=20_000, ge=1, le=20_000)
 
     worker_id: str = Field(default="demo-worker", min_length=1, max_length=160)
@@ -176,6 +176,8 @@ class Settings(BaseSettings):
                     "YOUTUBE_COLLECTION_ENABLED requires "
                     f"SCHEDULE_CLEANUP={YOUTUBE_CLEANUP_SCHEDULE!r}"
                 )
+        if self.scrapling_save_raw_html:
+            raise ValueError("SCRAPLING_SAVE_RAW_HTML must remain false")
         if self.database_warning_mb > self.database_critical_mb:
             raise ValueError("DATABASE_WARNING_MB must not exceed DATABASE_CRITICAL_MB")
         if self.storage_warning_mb > self.storage_critical_mb:
