@@ -14,6 +14,7 @@ describe("WorldHeatmap", () => {
     render(
       <WorldHeatmap
         cells={DEMO_PUBLIC_DATA.mapCells}
+        coverageSummary={DEMO_PUBLIC_DATA.summary.globalCoverage}
         observations={DEMO_PUBLIC_DATA.observations}
       />,
     );
@@ -26,13 +27,14 @@ describe("WorldHeatmap", () => {
     expect(screen.getByRole("region", { name: "Exact global country values" })).toBeVisible();
     expect(screen.getByRole("cell", { name: "Brazil BR" })).toBeVisible();
     expect(screen.getAllByText("Withheld").length).toBeGreaterThan(0);
-    expect(screen.getByText(/not labelled as a global independent-source count/i)).toBeVisible();
+    expect(screen.getByText(/not a global independent-source count/i)).toBeVisible();
   });
 
   it("switches between delta and rate without snapshot-relative normalization", () => {
     render(
       <WorldHeatmap
         cells={DEMO_PUBLIC_DATA.mapCells}
+        coverageSummary={DEMO_PUBLIC_DATA.summary.globalCoverage}
         observations={DEMO_PUBLIC_DATA.observations}
       />,
     );
@@ -64,6 +66,7 @@ describe("WorldHeatmap", () => {
     render(
       <WorldHeatmap
         cells={[]}
+        coverageSummary="No verified country-level opening samples are published yet."
         observations={{
           ...DEMO_PUBLIC_DATA.observations,
           status: "empty",
@@ -78,6 +81,8 @@ describe("WorldHeatmap", () => {
         }}
       />,
     );
+    expect(screen.getByText("Awaiting observations")).toBeVisible();
+    expect(screen.getByText("No published country rates yet")).toBeVisible();
     expect(screen.getByText("No verified country observations are published yet.")).toBeVisible();
     expect(screen.getByRole("img", { name: "Baseline delta across the world" })).toHaveAccessibleDescription(
       /every country is shown in the neutral no-data colour/i,
