@@ -594,9 +594,9 @@ select is(
   259,
   'legacy summary compatibility uses the same latest-period denominator'
 );
-select like(
+select matches(
   public.get_public_dashboard_snapshot_v2() #>> '{sources,0,note}',
-  '%never used as opening evidence or a pull-rate denominator%',
+  'never used as opening evidence or a pull-rate denominator',
   'TCGdex is explicitly labelled catalog-only in the public payload'
 );
 
