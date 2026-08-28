@@ -112,6 +112,17 @@ def test_worker_concurrency_above_one_is_rejected_until_pooling_is_implemented()
         Settings(_env_file=None, worker_max_concurrency=2)
 
 
+def test_raw_html_env_false_parses_but_true_remains_forbidden(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SCRAPLING_SAVE_RAW_HTML", "false")
+    assert Settings(_env_file=None).scrapling_save_raw_html is False
+
+    monkeypatch.setenv("SCRAPLING_SAVE_RAW_HTML", "true")
+    with pytest.raises(ValidationError, match="SCRAPLING_SAVE_RAW_HTML must remain false"):
+        Settings(_env_file=None)
+
+
 @pytest.mark.parametrize(
     ("field", "drifted_value"),
     (
