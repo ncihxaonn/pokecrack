@@ -52,6 +52,19 @@ Apply labels in order:
 
 Multiple cuts and repeated monitoring increase false positives; labels are exploratory and must show the tested scope/window. Never turn a posterior probability into a guarantee. Settings/DTOs are static contracts until the aggregate implementation is run against a migrated database.
 
+## Global country map
+
+The global v2 map is a country-level view of the same qualifying-hit metric, not
+a ranking of countries. It publishes at most one cell per official ISO alpha-2
+code and selects one shared latest complete period, so countries from different
+windows are never mixed. A missing cell means no public country observation; a
+present insufficient cell uses a withheld pattern and exposes counts but no rate,
+baseline, posterior, interval, delta, or hit numerator.
+
+Map colours use fixed absolute scales rather than the minimum and maximum of the
+current snapshot. The exact table remains authoritative. TCGdex catalog rows and
+global discovery activity never create a denominator or colour a country.
+
 ## Reproducibility
 
 Each result must retain configuration/catalog/methodology version, eligibility filters, observation window, counts, source diversity, prior/baseline identity and build SHA. Method changes create a new aggregate version; they do not silently rewrite the meaning of old screenshots/exports.

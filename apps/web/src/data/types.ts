@@ -40,6 +40,60 @@ export interface RegionMetric extends ObservedMetric {
   readonly coverage: string;
 }
 
+export interface CountryMapCell extends ObservedMetric {
+  readonly countryCode: string;
+  readonly countryName: string;
+  readonly periodStart: string;
+  readonly periodEnd: string;
+  readonly setScope: "all";
+  readonly productScope: "all";
+  readonly metricKey: "qualifying_hit_pack_rate";
+  readonly metricVersion: string;
+  readonly methodologyVersion: string;
+}
+
+export interface CatalogSet {
+  readonly id: string;
+  readonly slug: string;
+  readonly name: string;
+  readonly series: string | null;
+  readonly releaseDate: string | null;
+  readonly language: "en";
+  readonly current: true;
+  readonly refreshedAt: string;
+}
+
+export interface CatalogSnapshot {
+  readonly source: "tcgdex";
+  readonly name: "TCGdex";
+  readonly language: "en";
+  readonly status: "fresh" | "stale" | "attention" | "unavailable";
+  readonly setCount: number;
+  readonly upstreamSetCount: number | null;
+  readonly lastCheckedAt: string | null;
+  readonly lastChangedAt: string | null;
+  readonly revision: number | null;
+  readonly catalogOnly: true;
+  readonly sets: readonly CatalogSet[];
+}
+
+export interface ObservationReadiness {
+  readonly status: "empty" | "collecting" | "published";
+  readonly period: Readonly<{ start: string; end: string }> | null;
+  readonly observedPacks: number;
+  readonly completeOpenings: number;
+  readonly independentSources: null;
+  readonly sourceCountryContributions: number;
+  readonly countriesObserved: number;
+  readonly countriesWithPublishedRate: number;
+  readonly asOf: string | null;
+  readonly methodologyVersion: string | null;
+  readonly minimumPacks: 30;
+  readonly minimumSources: 3;
+  readonly watchMinimumPacks: 200;
+  readonly metricKey: "qualifying_hit_pack_rate";
+}
+
 export interface RetailerMetric extends ObservedMetric {
   readonly slug: string;
   readonly name: string;
@@ -139,6 +193,7 @@ export interface SystemCheck {
 }
 
 export interface DashboardData {
+  readonly schemaVersion: "2.0.0";
   readonly mode: "demo" | "live";
   readonly generatedAt: string;
   readonly summary: {
@@ -149,9 +204,12 @@ export interface DashboardData {
     readonly trackedRegions: number;
     readonly batchSightings: number;
     readonly baselineHitRate: number | null;
-    readonly australiaCoverage: string;
+    readonly globalCoverage: string;
     readonly methodologyVersion: string;
   };
+  readonly catalog: CatalogSnapshot;
+  readonly observations: ObservationReadiness;
+  readonly mapCells: readonly CountryMapCell[];
   readonly sets: readonly SetMetric[];
   readonly regions: readonly RegionMetric[];
   readonly retailers: readonly RetailerMetric[];
