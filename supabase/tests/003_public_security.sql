@@ -242,7 +242,11 @@ select matches(
 select ok(
   not exists (
     select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-    where n.nspname = 'public' and p.proname <> 'get_public_dashboard_snapshot_v1'
+    where n.nspname = 'public'
+      and p.proname not in (
+        'get_public_dashboard_snapshot_v1',
+        'get_public_dashboard_snapshot_v2'
+      )
       and has_function_privilege('anon', p.oid, 'execute')
   ),
   'anon can execute no other public-schema function'

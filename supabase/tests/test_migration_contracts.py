@@ -20,6 +20,7 @@ ADMIN_SESSION_FENCE = (
     ROOT / "migrations/20260828750000_admin_session_fence.sql"
 ).read_text()
 YOUTUBE_PIPELINE = (ROOT / "migrations/20260829000000_youtube_global_discovery.sql").read_text()
+GLOBAL_DASHBOARD = (ROOT / "migrations/20260830000000_global_live_dashboard.sql").read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -97,6 +98,99 @@ def _sql_text(value: str) -> str:
 
 
 class IngestMigrationContractTests(unittest.TestCase):
+    def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
+        lowered = GLOBAL_DASHBOARD.casefold()
+        compact = " ".join(lowered.split())
+        self.assertNotIn("alter table catalog.regions", lowered)
+        self.assertNotIn("alter table public.region_summaries", lowered)
+        self.assertNotIn("create or replace function public.get_public_dashboard_snapshot_v1", lowered)
+        self.assertIn("create table catalog.iso_alpha2_codes", lowered)
+        codes = re.search(
+            r"select unnest\(array\[(.*?)\]::text\[\]\)",
+            GLOBAL_DASHBOARD,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(codes)
+        code_values = re.findall(r"'([A-Z]{2})'", codes.group(1) if codes else "")
+        self.assertEqual(len(code_values), 249)
+        self.assertEqual(len(set(code_values)), 249)
+        self.assertIn("AU", code_values)
+        self.assertIn("US", code_values)
+        self.assertNotIn("UK", code_values)
+        self.assertNotIn("ZZ", code_values)
+        self.assertIn(
+            "references catalog.iso_alpha2_codes(code)",
+            compact,
+        )
+        self.assertIn("num_nonnulls(", lowered)
+        self.assertIn("observed_packs >= 30", lowered)
+        self.assertIn("independent_source_count >= 3", lowered)
+        self.assertIn("or observed_packs >= 200", lowered)
+        self.assertNotIn("hit_pack_count", lowered)
+
+    def test_global_public_rpc_reads_only_its_three_public_projections(self) -> None:
+        lowered = GLOBAL_DASHBOARD.casefold()
+        snapshot = lowered.split(
+            "create or replace function public.get_public_dashboard_snapshot_v2()", 1
+        )[1].split("revoke all on function public.get_public_dashboard_snapshot_v2()", 1)[0]
+        for relation in (
+            "public.tcgdex_set_index",
+            "public.tcgdex_catalog_status",
+            "public.country_period_map_cells",
+        ):
+            self.assertIn(relation, snapshot)
+        for forbidden in (
+            "dashboard_overview",
+            "get_public_dashboard_snapshot_v1",
+            "catalog.sets",
+            "catalog.sync_state",
+            "ingest.",
+            "analytics.",
+            "218",
+        ):
+            self.assertNotIn(forbidden, snapshot)
+        self.assertIn("security invoker", snapshot)
+        self.assertIn("set search_path = pg_catalog, public", snapshot)
+        self.assertIn("limit 1000", snapshot)
+        self.assertIn("limit 249", snapshot)
+        self.assertIn("join latest_period as period", snapshot)
+        self.assertIn("'period', case", snapshot)
+        self.assertIn("'mapcells', values.map_cells", snapshot)
+        self.assertIn("get_public_dashboard_snapshot_v2:", DATABASE_TYPES)
+
+    def test_global_catalog_projection_is_narrow_current_and_trigger_owned(self) -> None:
+        lowered = GLOBAL_DASHBOARD.casefold()
+        compact = " ".join(lowered.split())
+        public_index = lowered.split("create table public.tcgdex_set_index", 1)[1].split(
+            "create table public.tcgdex_catalog_status", 1
+        )[0]
+        for private_field in (
+            "external_id",
+            "metadata",
+            "etag",
+            "content_sha256",
+            "last_job_id",
+        ):
+            self.assertNotIn(private_field, public_index)
+        self.assertIn("pg_advisory_xact_lock", lowered)
+        self.assertIn("sets_publish_tcgdex_set_index", lowered)
+        self.assertIn("sync_state_publish_tcgdex_catalog_status", lowered)
+        self.assertIn("published.refreshed_at < new.last_changed_at", compact)
+        self.assertIn("checkpoint count does not match", lowered)
+        self.assertIn("using (not is_demo and is_current)", compact)
+        self.assertIn(
+            "grant select on table public.tcgdex_set_index, public.tcgdex_catalog_status, public.country_period_map_cells to anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_dashboard_snapshot_v2() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_dashboard_snapshot_v2() to service_role",
+            compact,
+        )
+
     def test_local_supabase_matches_the_postgresql_17_backup_contract(self) -> None:
         self.assertIn("major_version = 17", SUPABASE_CONFIG)
         self.assertNotIn("major_version = 15", SUPABASE_CONFIG)

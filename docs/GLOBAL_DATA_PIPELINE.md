@@ -107,10 +107,19 @@ aborts the backup without advancing its success marker.
 
 Private extraction and validation may preserve an explicit two-letter uppercase
 country fact from any country. Missing geography is never defaulted to Australia
-and cannot become rate-eligible. The current public v1 aggregation remains
-Australia/English-only until a separately reviewed global metric dimension and
-public v2 contract exist. This lets global evidence accumulate privately without
-silently changing the current UI or published methodology.
+and cannot become rate-eligible. Public v1 remains the frozen
+Australia/English-only contract. The forward global-dashboard migration adds a
+separate strict ISO country dimension, country-period publication table, and
+public v2 snapshot; it does not loosen v1. The country table starts empty and has
+no ingestion route from discovery metadata, so the global map remains neutral
+until a separately reviewed aggregator publishes a real denominator.
+
+The v2 map selects one latest complete period for all countries. A cell must
+contain a positive pack denominator and complete-opening/source counts. Every
+rate field is withheld below 30 observed packs or three independent sources;
+Watch and Possible anomaly remain unavailable below 200 packs. The browser also
+receives a narrow TCGdex set-catalog projection, explicitly labelled catalog-only
+and never counted as opening evidence.
 
 ## What is required for global observed rates
 

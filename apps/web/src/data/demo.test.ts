@@ -6,14 +6,20 @@ import { publicDashboardDataSchema } from "./schema";
 describe("DEMO_DATA", () => {
   it("contains deterministic dashboard coverage and all required evidence states", () => {
     expect(DEMO_DATA.mode).toBe("demo");
+    expect(DEMO_DATA.schemaVersion).toBe("2.0.0");
     expect(DEMO_DATA.summary.observedPacks).toBeGreaterThan(1_000);
     expect(DEMO_DATA.summary.completeOpenings).toBeGreaterThan(0);
     expect(DEMO_DATA.summary.aiValidatedSources).toBeGreaterThan(0);
     expect(DEMO_DATA.summary.trackedSets).toBe(DEMO_DATA.sets.length);
-    expect(DEMO_DATA.summary.trackedRegions).toBe(DEMO_DATA.regions.length);
+    expect(DEMO_DATA.summary.trackedRegions).toBe(DEMO_DATA.mapCells.length);
     expect(DEMO_DATA.summary.batchSightings).toBe(DEMO_DATA.batches.length);
-    expect(DEMO_DATA.summary.australiaCoverage).toMatch(/Australia/i);
-    expect(DEMO_DATA.summary.methodologyVersion).toMatch(/^v\d/);
+    expect(DEMO_DATA.summary.globalCoverage).toMatch(/continents/i);
+    expect(DEMO_DATA.summary.methodologyVersion).toMatch(/^global-/);
+    expect(DEMO_DATA.catalog.catalogOnly).toBe(true);
+    expect(DEMO_DATA.catalog.setCount).toBe(DEMO_DATA.catalog.sets.length);
+    expect(DEMO_DATA.mapCells.map((item) => item.countryCode)).toEqual(
+      expect.arrayContaining(["AU", "BR", "DE", "GB", "JP", "US"]),
+    );
     expect(DEMO_DATA.sets.some((item) => item.state === "anomaly")).toBe(true);
     expect(DEMO_DATA.sets.some((item) => item.state === "watch")).toBe(true);
     expect(DEMO_DATA.sets.some((item) => item.state === "insufficient")).toBe(true);
@@ -62,8 +68,9 @@ describe("DEMO_DATA", () => {
     }).success).toBe(false);
   });
 
-  it("keeps demo scope Australia-only and limited to supported physical products", () => {
+  it("keeps the legacy regional slice Australia-only while the v2 map is global", () => {
     expect(DEMO_DATA.regions.every((item) => item.countryCode === "AU")).toBe(true);
+    expect(new Set(DEMO_DATA.mapCells.map((item) => item.countryCode)).size).toBeGreaterThan(1);
     expect(
       DEMO_DATA.regions.every((item) =>
         /Australia|Sydney|Melbourne|Brisbane|Adelaide|Perth|Hobart|Darwin|Canberra/.test(
@@ -92,6 +99,7 @@ describe("DEMO_DATA", () => {
       ...DEMO_DATA.regions,
       ...DEMO_DATA.retailers,
       ...DEMO_DATA.batches,
+      ...DEMO_DATA.mapCells,
     ];
     for (const metric of metrics) {
       expect(metric.state === "insufficient").toBe(
@@ -258,11 +266,25 @@ describe("DEMO_DATA", () => {
       ...publicData,
       summary: {
         ...publicData.summary,
-        observedPacks: 29,
-        completeOpenings: 2,
-        aiValidatedSources: 2,
+        observedPacks: 0,
+        completeOpenings: 0,
+        aiValidatedSources: 0,
+        trackedRegions: 0,
         baselineHitRate: null,
       },
+      observations: {
+        ...publicData.observations,
+        status: "empty" as const,
+        period: null,
+        observedPacks: 0,
+        completeOpenings: 0,
+        sourceCountryContributions: 0,
+        countriesObserved: 0,
+        countriesWithPublishedRate: 0,
+        asOf: null,
+        methodologyVersion: null,
+      },
+      mapCells: [],
     };
 
     expect(publicDashboardDataSchema.safeParse(insufficient).success).toBe(true);
@@ -293,9 +315,36 @@ describe("DEMO_DATA", () => {
       ...DEMO_DATA.regions.map((item) => `region:${item.slug}`),
       ...DEMO_DATA.retailers.map((item) => `retailer:${item.slug}`),
       ...DEMO_DATA.batches.map((item) => `batch:${item.code}`),
+      ...DEMO_DATA.mapCells.map((item) => `country:${item.countryCode}`),
     ];
 
     expect(new Set(slugs).size).toBe(slugs.length);
+  });
+
+  it("rejects non-ISO map codes, duplicate countries, and mixed periods", () => {
+    const invalidCode = {
+      ...DEMO_PUBLIC_DATA,
+      mapCells: DEMO_PUBLIC_DATA.mapCells.map((cell, index) =>
+        index === 0 ? { ...cell, countryCode: "UK" } : cell,
+      ),
+    };
+    expect(publicDashboardDataSchema.safeParse(invalidCode).success).toBe(false);
+
+    const duplicate = {
+      ...DEMO_PUBLIC_DATA,
+      mapCells: DEMO_PUBLIC_DATA.mapCells.map((cell, index) =>
+        index === 0 ? { ...cell, countryCode: "BR" } : cell,
+      ),
+    };
+    expect(publicDashboardDataSchema.safeParse(duplicate).success).toBe(false);
+
+    const mixedPeriod = {
+      ...DEMO_PUBLIC_DATA,
+      mapCells: DEMO_PUBLIC_DATA.mapCells.map((cell, index) =>
+        index === 0 ? { ...cell, periodEnd: "2026-08-23" } : cell,
+      ),
+    };
+    expect(publicDashboardDataSchema.safeParse(mixedPeriod).success).toBe(false);
   });
 
   it("does not label any observed entity as lucky, hot, best, or guaranteed", () => {

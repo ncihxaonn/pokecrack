@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { isIsoAlpha2 } from "./iso-alpha2";
+
 const probability = z.number().min(0).max(1);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const isoDateTime = z.string().datetime({ offset: true });
@@ -136,6 +138,138 @@ const batchMetric = observedMetric
   })
   .superRefine(validateObservedMetric);
 
+const catalogSet = z
+  .object({
+    id: z.string().uuid(),
+    slug: z.string().min(1).max(160).regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    name: z.string().min(1).max(160),
+    series: z.string().min(1).max(120).nullable(),
+    releaseDate: isoDate.nullable(),
+    language: z.literal("en"),
+    current: z.literal(true),
+    refreshedAt: isoDateTime,
+  })
+  .strict();
+
+const catalogSnapshot = z
+  .object({
+    source: z.literal("tcgdex"),
+    name: z.literal("TCGdex"),
+    language: z.literal("en"),
+    status: z.enum(["fresh", "stale", "attention", "unavailable"]),
+    setCount: z.number().int().nonnegative().max(1_000_000),
+    upstreamSetCount: z.number().int().nonnegative().max(1_000_000).nullable(),
+    lastCheckedAt: isoDateTime.nullable(),
+    lastChangedAt: isoDateTime.nullable(),
+    revision: z.number().int().positive().nullable(),
+    catalogOnly: z.literal(true),
+    sets: z.array(catalogSet).max(1_000),
+  })
+  .strict()
+  .superRefine((catalog, context) => {
+    if (catalog.sets.length > catalog.setCount) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "The bounded catalog array cannot exceed the full catalog count",
+        path: ["sets"],
+      });
+    }
+    if (new Set(catalog.sets.map((set) => set.id)).size !== catalog.sets.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Catalog set IDs must be unique",
+        path: ["sets"],
+      });
+    }
+    if (new Set(catalog.sets.map((set) => set.slug)).size !== catalog.sets.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Catalog set slugs must be unique",
+        path: ["sets"],
+      });
+    }
+    if (catalog.lastChangedAt !== null && catalog.lastCheckedAt !== null) {
+      if (Date.parse(catalog.lastChangedAt) > Date.parse(catalog.lastCheckedAt)) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Catalog change time cannot follow its check time",
+          path: ["lastChangedAt"],
+        });
+      }
+    }
+  });
+
+const observationReadiness = z
+  .object({
+    status: z.enum(["empty", "collecting", "published"]),
+    period: z.object({ start: isoDate, end: isoDate }).strict().nullable(),
+    observedPacks: z.number().int().nonnegative(),
+    completeOpenings: z.number().int().nonnegative(),
+    independentSources: z.null(),
+    sourceCountryContributions: z.number().int().nonnegative(),
+    countriesObserved: z.number().int().min(0).max(249),
+    countriesWithPublishedRate: z.number().int().min(0).max(249),
+    asOf: isoDateTime.nullable(),
+    methodologyVersion: z.string().min(1).max(120).nullable(),
+    minimumPacks: z.literal(30),
+    minimumSources: z.literal(3),
+    watchMinimumPacks: z.literal(200),
+    metricKey: z.literal("qualifying_hit_pack_rate"),
+  })
+  .strict()
+  .superRefine((observations, context) => {
+    if (observations.completeOpenings > observations.observedPacks) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Complete openings cannot exceed observed packs",
+        path: ["completeOpenings"],
+      });
+    }
+    if (observations.countriesWithPublishedRate > observations.countriesObserved) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Published countries cannot exceed observed countries",
+        path: ["countriesWithPublishedRate"],
+      });
+    }
+    if (
+      observations.period !== null &&
+      observations.period.start > observations.period.end
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Observation period start cannot follow its end",
+        path: ["period"],
+      });
+    }
+  });
+
+const countryMapCell = observedMetric
+  .extend({
+    countryCode: z.string().refine(isIsoAlpha2, "Country code must be an official ISO alpha-2 code"),
+    countryName: z.string().min(1).max(160),
+    periodStart: isoDate,
+    periodEnd: isoDate,
+    setScope: z.literal("all"),
+    productScope: z.literal("all"),
+    metricKey: z.literal("qualifying_hit_pack_rate"),
+    metricVersion: z.string().min(1).max(80).regex(/^[a-z0-9][a-z0-9._-]*$/),
+    methodologyVersion: z.string().min(1).max(120),
+    packsObserved: z.number().int().positive(),
+    openings: z.number().int().positive(),
+    independentSources: z.number().int().positive(),
+  })
+  .superRefine((cell, context) => {
+    validateObservedMetric(cell, context);
+    if (cell.periodStart > cell.periodEnd) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Map-cell period start cannot follow its end",
+        path: ["periodStart"],
+      });
+    }
+  });
+
 const trendPoint = z
   .object({
     date: isoDate,
@@ -241,8 +375,9 @@ const recentActivity = z
   })
   .strict();
 
-export const dashboardDataSchema = z
+const dashboardDataObject = z
   .object({
+    schemaVersion: z.literal("2.0.0"),
     mode: z.enum(["demo", "live"]),
     generatedAt: isoDateTime,
     summary: z
@@ -254,8 +389,8 @@ export const dashboardDataSchema = z
         trackedRegions: z.number().int().nonnegative(),
         batchSightings: z.number().int().nonnegative(),
         baselineHitRate: probability.nullable(),
-        australiaCoverage: z.string().min(1).max(300),
-        methodologyVersion: z.string().min(1).max(80),
+        globalCoverage: z.string().min(1).max(300),
+        methodologyVersion: z.string().min(1).max(120),
       })
       .strict()
       .superRefine((summary, context) => {
@@ -284,6 +419,9 @@ export const dashboardDataSchema = z
           });
         }
       }),
+    catalog: catalogSnapshot,
+    observations: observationReadiness,
+    mapCells: z.array(countryMapCell).max(249),
     sets: z.array(setMetric).max(10_000),
     regions: z.array(regionMetric).max(10_000),
     retailers: z.array(retailerMetric).max(10_000),
@@ -303,8 +441,94 @@ export const dashboardDataSchema = z
   })
   .strict();
 
-export const publicDashboardDataSchema = dashboardDataSchema
+type GlobalSnapshotValue = Pick<
+  z.infer<typeof dashboardDataObject>,
+  "catalog" | "mapCells" | "observations" | "summary"
+>;
+
+function validateGlobalSnapshot(
+  value: GlobalSnapshotValue,
+  context: z.RefinementCtx,
+) {
+  const { mapCells, observations, summary } = value;
+  const addIssue = (message: string, path: readonly PropertyKey[]) =>
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message,
+      path: [...path] as (string | number)[],
+    });
+
+  if (new Set(mapCells.map((cell) => cell.countryCode)).size !== mapCells.length) {
+    addIssue("Map cells must contain unique country codes", ["mapCells"]);
+  }
+
+  const publishedCount = mapCells.filter((cell) => cell.hitRate !== null).length;
+  const packs = mapCells.reduce((total, cell) => total + cell.packsObserved, 0);
+  const openings = mapCells.reduce((total, cell) => total + cell.openings, 0);
+  const sourceContributions = mapCells.reduce(
+    (total, cell) => total + cell.independentSources,
+    0,
+  );
+
+  if (observations.countriesObserved !== mapCells.length) {
+    addIssue("Observed-country count must equal the map-cell count", ["observations", "countriesObserved"]);
+  }
+  if (observations.countriesWithPublishedRate !== publishedCount) {
+    addIssue("Published-country count must equal cells with a public rate", ["observations", "countriesWithPublishedRate"]);
+  }
+  if (observations.observedPacks !== packs) {
+    addIssue("Observation pack total must equal the selected map period", ["observations", "observedPacks"]);
+  }
+  if (observations.completeOpenings !== openings) {
+    addIssue("Observation opening total must equal the selected map period", ["observations", "completeOpenings"]);
+  }
+  if (observations.sourceCountryContributions !== sourceContributions) {
+    addIssue("Source-country contributions must equal the per-country sum", ["observations", "sourceCountryContributions"]);
+  }
+  if (
+    summary.observedPacks !== packs ||
+    summary.completeOpenings !== openings ||
+    summary.trackedRegions !== mapCells.length
+  ) {
+    addIssue("Legacy summary totals must describe the same global map period", ["summary"]);
+  }
+
+  const expectedStatus = mapCells.length === 0
+    ? "empty"
+    : publishedCount === 0
+      ? "collecting"
+      : "published";
+  if (observations.status !== expectedStatus) {
+    addIssue("Observation status must match the map publication state", ["observations", "status"]);
+  }
+
+  if (mapCells.length === 0) {
+    if (observations.period !== null || observations.asOf !== null) {
+      addIssue("An empty observation state cannot fabricate a period or as-of time", ["observations"]);
+    }
+    return;
+  }
+
+  if (observations.period === null || observations.asOf === null) {
+    addIssue("Observed map cells require a shared period and as-of time", ["observations"]);
+    return;
+  }
+  for (const cell of mapCells) {
+    if (
+      cell.periodStart !== observations.period.start ||
+      cell.periodEnd !== observations.period.end
+    ) {
+      addIssue("Every map cell must use the one selected observation period", ["mapCells"]);
+      break;
+    }
+  }
+}
+
+export const dashboardDataSchema = dashboardDataObject.superRefine(validateGlobalSnapshot);
+
+export const publicDashboardDataSchema = dashboardDataObject
   .omit({ admin: true })
+  .superRefine(validateGlobalSnapshot)
   .transform((data) => ({
     ...data,
     recentActivity: data.recentActivity.filter((activity) => activity.published),

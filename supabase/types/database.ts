@@ -8,6 +8,163 @@ export type PublicSignalStatus = 'Insufficient sample' | 'No significant signal'
 export type Database = {
   public: {
     Tables: {
+      country_period_map_cells: {
+        Row: {
+          country_code: string;
+          country_name: string;
+          period_start: string;
+          period_end: string;
+          language: string;
+          set_scope: string;
+          product_scope: string;
+          metric_key: string;
+          metric_version: string;
+          observed_packs: number;
+          complete_openings: number;
+          independent_source_count: number;
+          observed_rate: number | null;
+          posterior_mean: number | null;
+          baseline_rate: number | null;
+          credible_interval_low: number | null;
+          credible_interval_high: number | null;
+          delta_from_baseline: number | null;
+          signal_status: string;
+          methodology_version: string;
+          updated_at: string;
+          is_demo: boolean;
+        };
+        Insert: {
+          country_code: string;
+          country_name: string;
+          period_start: string;
+          period_end: string;
+          language: string;
+          set_scope?: string;
+          product_scope?: string;
+          metric_key: string;
+          metric_version: string;
+          observed_packs: number;
+          complete_openings: number;
+          independent_source_count: number;
+          observed_rate?: number | null;
+          posterior_mean?: number | null;
+          baseline_rate?: number | null;
+          credible_interval_low?: number | null;
+          credible_interval_high?: number | null;
+          delta_from_baseline?: number | null;
+          signal_status: string;
+          methodology_version: string;
+          updated_at: string;
+          is_demo?: boolean;
+        };
+        Update: {
+          country_code?: string;
+          country_name?: string;
+          period_start?: string;
+          period_end?: string;
+          language?: string;
+          set_scope?: string;
+          product_scope?: string;
+          metric_key?: string;
+          metric_version?: string;
+          observed_packs?: number;
+          complete_openings?: number;
+          independent_source_count?: number;
+          observed_rate?: number | null;
+          posterior_mean?: number | null;
+          baseline_rate?: number | null;
+          credible_interval_low?: number | null;
+          credible_interval_high?: number | null;
+          delta_from_baseline?: number | null;
+          signal_status?: string;
+          methodology_version?: string;
+          updated_at?: string;
+          is_demo?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'country_period_map_cells_country_code_fkey';
+            columns: ['country_code'];
+            isOneToOne: false;
+            referencedRelation: 'iso_alpha2_codes';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
+      tcgdex_catalog_status: {
+        Row: {
+          source: string;
+          scope: string;
+          language: string;
+          revision: number;
+          set_count: number;
+          last_checked_at: string;
+          last_changed_at: string;
+          is_current: boolean;
+          is_demo: boolean;
+        };
+        Insert: {
+          source: string;
+          scope: string;
+          language: string;
+          revision: number;
+          set_count: number;
+          last_checked_at: string;
+          last_changed_at: string;
+          is_current: boolean;
+          is_demo: boolean;
+        };
+        Update: {
+          source?: string;
+          scope?: string;
+          language?: string;
+          revision?: number;
+          set_count?: number;
+          last_checked_at?: string;
+          last_changed_at?: string;
+          is_current?: boolean;
+          is_demo?: boolean;
+        };
+        Relationships: [
+        ];
+      };
+      tcgdex_set_index: {
+        Row: {
+          set_id: string;
+          slug: string;
+          name: string;
+          series_name: string | null;
+          release_date: string | null;
+          language: string;
+          is_current: boolean;
+          refreshed_at: string;
+          is_demo: boolean;
+        };
+        Insert: {
+          set_id: string;
+          slug: string;
+          name: string;
+          series_name?: string | null;
+          release_date?: string | null;
+          language: string;
+          is_current: boolean;
+          refreshed_at: string;
+          is_demo: boolean;
+        };
+        Update: {
+          set_id?: string;
+          slug?: string;
+          name?: string;
+          series_name?: string | null;
+          release_date?: string | null;
+          language?: string;
+          is_current?: boolean;
+          refreshed_at?: string;
+          is_demo?: boolean;
+        };
+        Relationships: [
+        ];
+      };
       batch_summaries: {
         Row: {
           id: string;
@@ -614,12 +771,26 @@ export type Database = {
         Returns: Json;
       };
       get_public_dashboard_snapshot_v1: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_public_dashboard_snapshot_v2: { Args: Record<PropertyKey, never>; Returns: Json };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
   };
   catalog: {
     Tables: {
+      iso_alpha2_codes: {
+        Row: {
+          code: string;
+        };
+        Insert: {
+          code: string;
+        };
+        Update: {
+          code?: string;
+        };
+        Relationships: [
+        ];
+      };
       cards: {
         Row: {
           id: string;

@@ -1,6 +1,6 @@
 # Implementation notes
 
-Last audited: **2026-08-27 UTC**
+Last audited: **2026-08-28 UTC**
 
 This file records what was actually exercised. Repository code, a rendered
 configuration, a fixture response, or a successful migration compile is not by
@@ -48,6 +48,11 @@ itself evidence of a live collection run.
   migration, and worker revision are not deployed. The latest project rules
   require a new explicit approval before any hosted migration or VPS production
   change, so this branch stops at PR/CI.
+- The `codex/live-data-dashboard` integration branch adds a separate global
+  public v2 schema/UI contract. It projects the existing TCGdex catalog into
+  browser-safe tables, adds a strict country-period map dimension, and renders a
+  local Natural Earth Equal Earth map. The country observation table has no
+  writer and therefore starts honestly empty. This revision is not deployed.
 
 ## Implemented global backend contract
 
@@ -271,8 +276,11 @@ used as rate denominators.
 3. The three new migrations and worker revision are not deployed or exercised
    against the approved hosted project/VPS. CI must pass before a separate
    deployment approval is requested.
-4. Global denominator-backed ingestion, multilingual discovery, and a reviewed
-   global public metric dimension/v2 DTO do not yet exist. Public v1 stays AU.
+4. The reviewed global public metric dimension and v2 DTO now exist locally, but
+   global denominator-backed ingestion, its fenced aggregate publisher, and
+   multilingual discovery do not. Public v1 stays frozen as the AU legacy slice;
+   v2 country observations remain empty until a real verified denominator is
+   published.
 5. AI reservation/accounting and aggregate publication still need durable
    idempotency, staging, revision locking, and atomic publication before they can
    be enabled as unattended production roles.
@@ -289,8 +297,9 @@ The correct current description is:
 
 > The existing VPS runs the merged catalog-only TCGdex revision and the hosted
 > database contains 218 live catalog set rows but no live opening/rate data. The
-> current backend branch adds a tested, fenced, metadata-only global YouTube
-> discovery path and accepts explicit global country facts privately while
-> keeping public v1 aggregation Australia-only. That revision is not deployed,
-> its dedicated YouTube key is absent, and it cannot yet produce global observed
+> current branches add a tested, fenced, metadata-only global YouTube discovery
+> path plus an independent global public v2 catalog/map contract and white global
+> dashboard. Public v1 remains Australia-only, the v2 country table has no
+> aggregate writer or live rows, neither revision is deployed, and the dedicated
+> YouTube key is absent. The system therefore cannot yet produce global observed
 > pull rates.
