@@ -29,11 +29,31 @@ export function Panel({ children, className = "" }: { children: ReactNode; class
   return <section className={`panel ${className}`.trim()}>{children}</section>;
 }
 
-export function DataModeNotice({ synthetic, generatedAt }: { synthetic: boolean; generatedAt: string }) {
+const integer = new Intl.NumberFormat("en-AU");
+
+export function DataModeNotice({
+  synthetic,
+  generatedAt,
+  catalogSetCount,
+  observationStatus,
+}: {
+  synthetic: boolean;
+  generatedAt: string;
+  catalogSetCount?: number;
+  observationStatus?: "empty" | "collecting" | "published";
+}) {
+  const catalogOnly = !synthetic && observationStatus !== undefined && observationStatus !== "published";
+  const label = synthetic ? "Synthetic demo" : catalogOnly ? "Live catalog" : "Live snapshot";
+  const message = synthetic
+    ? BRAND.demoNotice
+    : catalogOnly
+      ? `${integer.format(catalogSetCount ?? 0)} catalog sets are live. Verified country observations are not published yet.`
+      : "Live response with no demo fixtures.";
+
   return (
     <aside className={`mode-notice ${synthetic ? "mode-notice--demo" : "mode-notice--live"}`} aria-label="Data provenance">
-      <span className="mode-notice__label">{synthetic ? "Synthetic demo" : "Live aggregate"}</span>
-      <p>{synthetic ? BRAND.demoNotice : "Live, validated aggregate snapshot. No demo fixtures are shown."}</p>
+      <span className="mode-notice__label">{label}</span>
+      <p>{message}</p>
       <time dateTime={generatedAt}>Snapshot {formatDateTime(generatedAt)}</time>
     </aside>
   );

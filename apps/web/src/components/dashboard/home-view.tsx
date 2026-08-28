@@ -1,7 +1,7 @@
 import React from "react";
 import type { Route } from "next";
 import Link from "next/link";
-import { CircleCheckBig, Database, Globe2, Layers, PackageOpen, ScanSearch } from "lucide-react";
+import { ArrowUpRight, CircleCheckBig, Database, Globe2, Layers, PackageOpen, ScanSearch } from "lucide-react";
 
 import { BRAND } from "@/config/brand";
 import type { PublicDashboardData } from "@/data/types";
@@ -18,31 +18,44 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
     .slice(0, 4);
   const watched = data.sets.filter((set) => set.state === "watch" || set.state === "anomaly");
   const catalogPreview = data.catalog.sets.slice(0, 8);
+  const observationsPublished = data.observations.status === "published";
+  const heroEyebrow = observationsPublished
+    ? "Worldwide evidence atlas"
+    : "Worldwide catalog and observation readiness";
 
   return (
     <div className="page-shell home-page">
       <section className="dashboard-intro" aria-labelledby="hero-title">
         <div>
-          <span className="eyebrow">Worldwide · country-level observations · {data.summary.methodologyVersion}</span>
+          <span className="eyebrow">{heroEyebrow}</span>
           <h1 id="hero-title">{BRAND.tagline}</h1>
           <p>{BRAND.description}</p>
         </div>
         <div className="dashboard-intro__actions">
-          <Link className="button" href="/sets">Explore sets <span aria-hidden="true">↗</span></Link>
+          <Link className="button" href="/sets">Explore sets <ArrowUpRight aria-hidden="true" size={15} /></Link>
           <Link className="button button--secondary" href="/methodology">How we measure</Link>
         </div>
       </section>
 
-      <DataModeNotice synthetic={synthetic} generatedAt={data.generatedAt} />
-      <WorldHeatmap cells={data.mapCells} observations={data.observations} />
+      <DataModeNotice
+        catalogSetCount={data.catalog.setCount}
+        generatedAt={data.generatedAt}
+        observationStatus={data.observations.status}
+        synthetic={synthetic}
+      />
+      <WorldHeatmap
+        cells={data.mapCells}
+        coverageSummary={data.summary.globalCoverage}
+        observations={data.observations}
+      />
 
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
-        <div><dt><span className="stat-icon stat-icon--blue" aria-hidden="true"><Database size={19} /></span>Catalog Sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>
-        <div><dt><span className="stat-icon stat-icon--violet" aria-hidden="true"><Globe2 size={19} /></span>Countries Observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>latest shared period</small></dd></div>
-        <div><dt><span className="stat-icon stat-icon--pink" aria-hidden="true"><ScanSearch size={19} /></span>Published Rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>threshold-qualified countries</small></dd></div>
-        <div><dt><span className="stat-icon stat-icon--green" aria-hidden="true"><PackageOpen size={19} /></span>Observed Packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>eligible denominator</small></dd></div>
-        <div><dt><span className="stat-icon stat-icon--amber" aria-hidden="true"><CircleCheckBig size={19} /></span>Complete Openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>verified observations</small></dd></div>
-        <div><dt><span className="stat-icon stat-icon--ink" aria-hidden="true"><Layers size={19} /></span>Source Contributions</dt><dd>{integer.format(data.observations.sourceCountryContributions)}<small>not globally deduplicated</small></dd></div>
+        <div><dt><span className="stat-icon" aria-hidden="true"><Database size={18} /></span>Catalog Sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>
+        <div><dt><span className="stat-icon" aria-hidden="true"><Globe2 size={18} /></span>Countries Observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>latest shared period</small></dd></div>
+        <div><dt><span className="stat-icon" aria-hidden="true"><ScanSearch size={18} /></span>Published Rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>threshold-qualified countries</small></dd></div>
+        <div><dt><span className="stat-icon" aria-hidden="true"><PackageOpen size={18} /></span>Observed Packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>eligible denominator</small></dd></div>
+        <div><dt><span className="stat-icon" aria-hidden="true"><CircleCheckBig size={18} /></span>Complete Openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>verified observations</small></dd></div>
+        <div><dt><span className="stat-icon" aria-hidden="true"><Layers size={18} /></span>Source Contributions</dt><dd>{integer.format(data.observations.sourceCountryContributions)}<small>not globally deduplicated</small></dd></div>
       </dl>
 
       <section className="dashboard-section" aria-labelledby="catalog-title">
@@ -141,14 +154,14 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
 
       <section className="dashboard-section methodology-glance" aria-labelledby="methodology-title">
         <SectionHeading id="methodology-title" title="Methodology at a glance" detail="Conservative publication thresholds keep incomplete observations out of rate denominators." />
-        <div className="method-steps">
+        <ol className="method-steps">
           {[
-            ["01", "Collect", "Allowlisted, bounded discovery and metadata only."],
-            ["02", "Validate", "Complete, nonduplicate tier A/B observations qualify."],
-            ["03", "Aggregate", "Packs observed form the denominator; no missing counts are imputed."],
-            ["04", "Publish", "Intervals, sample sizes, freshness and restrained signal labels."],
-          ].map(([number, title, detail]) => <Panel key={number}><span>{number}</span><h3>{title}</h3><p>{detail}</p></Panel>)}
-        </div>
+            ["Collect", "Allowlisted, bounded discovery and metadata only."],
+            ["Validate", "Complete, nonduplicate tier A/B observations qualify."],
+            ["Aggregate", "Packs observed form the denominator; no missing counts are imputed."],
+            ["Publish", "Intervals, sample sizes, freshness and restrained signal labels."],
+          ].map(([title, detail]) => <li key={title}><h3>{title}</h3><p>{detail}</p></li>)}
+        </ol>
         <Link className="button button--secondary" href="/methodology">Full methodology</Link>
       </section>
 
