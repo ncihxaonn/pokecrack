@@ -244,7 +244,7 @@ declare
   request_gate ingest.source_request_gates%rowtype;
   lease_checked_at timestamptz;
   request_retry_at timestamptz;
-  study_key text;
+  requested_study_key text;
   policy_key text;
   expected_domain text;
   expected_url text;
@@ -303,8 +303,8 @@ begin
       message = 'public-study begin requires one exact approved live study payload';
   end if;
 
-  study_key := leased_job.payload ->> 'study_key';
-  if study_key = 'comicbook-perfect-order-us-55-v1' then
+  requested_study_key := leased_job.payload ->> 'study_key';
+  if requested_study_key = 'comicbook-perfect-order-us-55-v1' then
     policy_key := 'public_study_comicbook_us_55';
     expected_domain := 'comicbook.com';
     expected_url := 'https://comicbook.com/gaming/feature/pokemon-tcg-perfect-order-pull-rates-ex-illustration-rares-estimates';
@@ -355,7 +355,7 @@ begin
   end if;
 
   perform pg_advisory_xact_lock(
-    hashtextextended('pokecrack:public-study:' || study_key, 0)
+    hashtextextended('pokecrack:public-study:' || requested_study_key, 0)
   );
 
   select policies.id, policies.last_attempt_at
@@ -514,7 +514,7 @@ declare
   completion_time timestamptz;
   period_start_value date;
   period_end_value date;
-  study_key text;
+  requested_study_key text;
   policy_key text;
   policy_id uuid;
   expected_domain text;
@@ -596,8 +596,8 @@ begin
       message = 'public-study finalizer requires one exact approved live study payload';
   end if;
 
-  study_key := leased_job.payload ->> 'study_key';
-  if study_key = 'comicbook-perfect-order-us-55-v1' then
+  requested_study_key := leased_job.payload ->> 'study_key';
+  if requested_study_key = 'comicbook-perfect-order-us-55-v1' then
     policy_key := 'public_study_comicbook_us_55';
     expected_domain := 'comicbook.com';
     expected_url := 'https://comicbook.com/gaming/feature/pokemon-tcg-perfect-order-pull-rates-ex-illustration-rares-estimates';
@@ -650,7 +650,7 @@ begin
   end if;
 
   perform pg_advisory_xact_lock(
-    hashtextextended('pokecrack:public-study:' || study_key, 0)
+    hashtextextended('pokecrack:public-study:' || requested_study_key, 0)
   );
 
   select policies.id
@@ -701,7 +701,7 @@ begin
   select observations.*
   into existing_observation
   from ingest.public_study_observations as observations
-  where observations.study_key = study_key
+  where observations.study_key = requested_study_key
   for update of observations;
   observation_exists := found;
 
@@ -794,7 +794,7 @@ begin
     )
   );
 
-  if result ->> 'study_key' <> study_key
+  if result ->> 'study_key' <> requested_study_key
     or result ->> 'source_url' <> expected_url
     or result ->> 'collector_version' <> expected_collector_version
     or result ->> 'parser_version' <> expected_parser_version
@@ -813,7 +813,7 @@ begin
       'hex'
     )
     or (
-      study_key = 'comicbook-perfect-order-us-55-v1'
+      requested_study_key = 'comicbook-perfect-order-us-55-v1'
       and (
         position('Opened 55 Packs' in result_title) = 0
         or position('Perfect Order' in result_title) = 0
@@ -821,7 +821,7 @@ begin
       )
     )
     or (
-      study_key = 'wargamer-chaos-rising-gb-17-v1'
+      requested_study_key = 'wargamer-chaos-rising-gb-17-v1'
       and (
         position('opened Pokémon Chaos Rising packs early' in result_title) = 0
         or position('blessing and a curse' in result_title) = 0
@@ -931,7 +931,7 @@ begin
 
     update ingest.public_study_observations as observations
     set last_verified_at = completion_time
-    where observations.study_key = study_key;
+    where observations.study_key = requested_study_key;
 
     -- A successful fresh verification renews the bounded evidence retention.
     -- Cleanup may have cleared an expired excerpt during a long outage; the
@@ -960,7 +960,7 @@ begin
     into existing_source
     from ingest.source_items as source_items
     where source_items.platform = 'public-study'
-      and source_items.external_id = study_key
+      and source_items.external_id = requested_study_key
       and not source_items.is_demo
     for update of source_items;
     source_exists := found;
@@ -1005,7 +1005,7 @@ begin
       source_item_id_value,
       policy_id,
       'public-study',
-      study_key,
+      requested_study_key,
       expected_url,
       expected_url,
       expected_domain,
@@ -1023,7 +1023,7 @@ begin
       'en',
       'accepted',
       jsonb_build_object(
-        'study_key', study_key,
+        'study_key', requested_study_key,
         'geography_basis', expected_geography_basis,
         'geography_confidence', 'tier_b',
         'raw_html_retained', false
@@ -1064,7 +1064,7 @@ begin
       'public-study-v1',
       result_evidence_sha256,
       jsonb_build_object(
-        'study_key', study_key,
+        'study_key', requested_study_key,
         'country_code', expected_country_code,
         'country_name', expected_country_name,
         'geography_basis', expected_geography_basis,
@@ -1166,7 +1166,7 @@ begin
       last_verified_at,
       is_demo
     ) values (
-      study_key,
+      requested_study_key,
       policy_id,
       source_item_id_value,
       extraction_run_id_value,
