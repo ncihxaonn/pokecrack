@@ -238,6 +238,8 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("security definer", finalizer)
         self.assertIn("set search_path = pg_catalog", finalizer)
         self.assertIn("for update of jobs", finalizer)
+        self.assertIn("requested_study_key text", finalizer)
+        self.assertNotIn("observations.study_key = study_key", finalizer)
         self.assertIn("extensions.digest", finalizer)
         self.assertIn("result_excerpt <> expected_evidence", finalizer)
         self.assertIn("result_evidence_sha256 <> expected_evidence_sha256", finalizer)
