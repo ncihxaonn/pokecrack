@@ -21,6 +21,9 @@ ADMIN_SESSION_FENCE = (
 ).read_text()
 YOUTUBE_PIPELINE = (ROOT / "migrations/20260829000000_youtube_global_discovery.sql").read_text()
 GLOBAL_DASHBOARD = (ROOT / "migrations/20260830000000_global_live_dashboard.sql").read_text()
+PUBLIC_STUDY_PIPELINE = (
+    ROOT / "migrations/20260831000000_public_study_pipeline.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -191,11 +194,125 @@ class IngestMigrationContractTests(unittest.TestCase):
             compact,
         )
 
+    def test_public_study_pipeline_provisions_two_exact_private_sources(self) -> None:
+        lowered = PUBLIC_STUDY_PIPELINE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertGreaterEqual(lowered.count("'public_study_comicbook_us_55'"), 6)
+        self.assertGreaterEqual(lowered.count("'public_study_wargamer_gb_17'"), 6)
+        for identity in (
+            "comicbook-perfect-order-us-55-v1",
+            "wargamer-chaos-rising-gb-17-v1",
+        ):
+            self.assertIn(identity, lowered)
+        self.assertIn("create table ingest.public_study_observations", lowered)
+        self.assertIn(
+            "alter table ingest.public_study_observations force row level security",
+            lowered,
+        )
+        self.assertIn(
+            "grant select on table ingest.public_study_observations to service_role",
+            compact,
+        )
+        self.assertNotIn(
+            "grant insert on table ingest.public_study_observations", lowered
+        )
+        self.assertNotIn(
+            "grant update on table ingest.public_study_observations", lowered
+        )
+        self.assertNotIn(
+            "grant delete on table ingest.public_study_observations", lowered
+        )
+        self.assertIn(
+            "drop policy country_period_map_cells_public_read", lowered
+        )
+        self.assertIn(
+            "period_end = (statement_timestamp() at time zone 'utc')::date",
+            compact,
+        )
+
+    def test_public_study_finalizer_is_evidence_only_and_withholds_rates(self) -> None:
+        lowered = PUBLIC_STUDY_PIPELINE.casefold()
+        finalizer = lowered.split(
+            "create or replace function ingest.finalize_public_study_job", 1
+        )[1].split("alter function ingest.finalize_public_study_job", 1)[0]
+        self.assertIn("security definer", finalizer)
+        self.assertIn("set search_path = pg_catalog", finalizer)
+        self.assertIn("for update of jobs", finalizer)
+        self.assertIn("requested_study_key text", finalizer)
+        self.assertNotIn("observations.study_key = study_key", finalizer)
+        self.assertIn("extensions.digest", finalizer)
+        self.assertIn("result_excerpt <> expected_evidence", finalizer)
+        self.assertIn("result_evidence_sha256 <> expected_evidence_sha256", finalizer)
+        self.assertIn("expected_config ->> 'country_code'", finalizer)
+        self.assertIn("expected_config ->> 'pack_count'", finalizer)
+        self.assertIn("pokecrack:public-study-country:", finalizer)
+        self.assertIn(
+            "(observations.source_observed_at at time zone 'utc')::date",
+            finalizer,
+        )
+        self.assertIn("insert into ingest.source_items", finalizer)
+        self.assertIn("insert into ingest.extraction_runs", finalizer)
+        self.assertIn("insert into ingest.openings", finalizer)
+        self.assertIn("insert into ingest.public_study_observations", finalizer)
+        self.assertNotIn("insert into ingest.opening_hits", finalizer)
+        self.assertNotIn("raw_html", finalizer.split("jsonb_build_object", 1)[0])
+        self.assertIn("observed_rate = null", finalizer)
+        self.assertIn("posterior_mean = null", finalizer)
+        self.assertIn("credible_interval_low = null", finalizer)
+        self.assertIn("credible_interval_high = null", finalizer)
+        self.assertIn("signal_status = 'insufficient sample'", finalizer)
+        self.assertIn(
+            "where cells.methodology_version = excluded.methodology_version",
+            finalizer,
+        )
+        self.assertIn("existing_source.text_excerpt is not null", finalizer)
+        self.assertIn("set text_excerpt = result_excerpt", finalizer)
+        self.assertEqual(
+            finalizer.count("expires_at = completion_time + interval '730 days'"),
+            3,
+        )
+
+    def test_public_study_jobs_are_exactly_allowlisted_and_typed(self) -> None:
+        lowered = PUBLIC_STUDY_PIPELINE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertIn("job_type = 'source.public_study.opening'", compact)
+        self.assertIn("payload - array['study_key'] = '{}'::jsonb", compact)
+        self.assertIn(
+            "public-study schedule_name must match its exact study_key", lowered
+        )
+        self.assertIn(
+            "typed live jobs require their dedicated fenced finalizer", lowered
+        )
+        for function_name in (
+            "begin_public_study_job",
+            "finalize_public_study_job",
+        ):
+            function = lowered.split(
+                f"create or replace function ingest.{function_name}", 1
+            )[1].split(f"alter function ingest.{function_name}", 1)[0]
+            self.assertIn("security definer", function)
+            self.assertIn("set search_path = pg_catalog", function)
+            self.assertIn("lease_generation", function)
+            self.assertIn(f"{function_name}:", DATABASE_TYPES)
+
+    def test_generated_public_study_types_preserve_the_dedicated_ledger(self) -> None:
+        observations = DATABASE_TYPES.split(
+            "public_study_observations:", 1
+        )[1].split("schedule_slots:", 1)[0]
+        self.assertGreaterEqual(observations.count("qualifying_hit_pack_count"), 3)
+        self.assertGreaterEqual(observations.count("geography_basis"), 3)
+        openings = DATABASE_TYPES.split("openings:", 1)[1].split(
+            "public_study_observations:", 1
+        )[0]
+        self.assertNotIn("qualifying_hit_pack_count", openings)
+
     def test_local_supabase_matches_the_postgresql_17_backup_contract(self) -> None:
         self.assertIn("major_version = 17", SUPABASE_CONFIG)
         self.assertNotIn("major_version = 15", SUPABASE_CONFIG)
         self.assertIn("server_version_num", MIGRATION_WORKFLOW)
         self.assertIn("server_version_num >= 170000", MIGRATION_WORKFLOW)
+        self.assertIn("deploy/lib/run_with_database_url.py", MIGRATION_WORKFLOW)
+        self.assertNotIn('PGDATABASE="$SUPABASE_DB_URL"', MIGRATION_WORKFLOW)
 
     def test_seed_aggregate_rows_obey_count_and_practical_probability_contracts(self) -> None:
         source_fields = {

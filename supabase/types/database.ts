@@ -1784,6 +1784,120 @@ export type Database = {
           },
         ];
       };
+      public_study_observations: {
+        Row: {
+          study_key: string;
+          source_policy_id: string;
+          source_item_id: string;
+          extraction_run_id: string;
+          opening_id: string;
+          country_code: string;
+          country_name: string;
+          geography_basis: string;
+          geography_confidence: string;
+          source_observed_at: string;
+          pack_count: number;
+          qualifying_hit_pack_count: number;
+          set_external_id: string;
+          product_scope: string;
+          metric_key: string;
+          metric_version: string;
+          collector_version: string;
+          parser_version: string;
+          source_policy_version: string;
+          evidence_sha256: string;
+          first_verified_at: string;
+          last_verified_at: string;
+          is_demo: boolean;
+        };
+        Insert: {
+          study_key: string;
+          source_policy_id: string;
+          source_item_id: string;
+          extraction_run_id: string;
+          opening_id: string;
+          country_code: string;
+          country_name: string;
+          geography_basis: string;
+          geography_confidence: string;
+          source_observed_at: string;
+          pack_count: number;
+          qualifying_hit_pack_count: number;
+          set_external_id: string;
+          product_scope: string;
+          metric_key: string;
+          metric_version: string;
+          collector_version: string;
+          parser_version: string;
+          source_policy_version: string;
+          evidence_sha256: string;
+          first_verified_at: string;
+          last_verified_at: string;
+          is_demo?: boolean;
+        };
+        Update: {
+          study_key?: string;
+          source_policy_id?: string;
+          source_item_id?: string;
+          extraction_run_id?: string;
+          opening_id?: string;
+          country_code?: string;
+          country_name?: string;
+          geography_basis?: string;
+          geography_confidence?: string;
+          source_observed_at?: string;
+          pack_count?: number;
+          qualifying_hit_pack_count?: number;
+          set_external_id?: string;
+          product_scope?: string;
+          metric_key?: string;
+          metric_version?: string;
+          collector_version?: string;
+          parser_version?: string;
+          source_policy_version?: string;
+          evidence_sha256?: string;
+          first_verified_at?: string;
+          last_verified_at?: string;
+          is_demo?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'public_study_observations_country_code_fkey';
+            columns: ['country_code'];
+            isOneToOne: false;
+            referencedRelation: 'iso_alpha2_codes';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'public_study_observations_extraction_run_id_fkey';
+            columns: ['extraction_run_id'];
+            isOneToOne: true;
+            referencedRelation: 'extraction_runs';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'public_study_observations_opening_id_fkey';
+            columns: ['opening_id'];
+            isOneToOne: true;
+            referencedRelation: 'openings';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'public_study_observations_source_item_id_fkey';
+            columns: ['source_item_id'];
+            isOneToOne: true;
+            referencedRelation: 'source_items';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'public_study_observations_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: false;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       schedule_slots: {
         Row: {
           schedule_name: string;
@@ -2166,6 +2280,10 @@ export type Database = {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null }[];
       };
+      begin_public_study_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number };
+        Returns: { acquired: boolean; retry_at: string | null }[];
+      };
       begin_tcgdex_sets_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null; etag: string | null; content_sha256: string | null; item_count: number; revision: number }[];
@@ -2204,6 +2322,10 @@ export type Database = {
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
       finalize_youtube_discovery_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      finalize_public_study_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };

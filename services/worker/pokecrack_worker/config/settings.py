@@ -10,6 +10,7 @@ from decimal import Decimal
 from enum import StrEnum
 from pathlib import Path
 from typing import Self
+from uuid import UUID
 
 from pydantic import Field, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -28,6 +29,7 @@ class AIProviderName(StrEnum):
 
 YOUTUBE_DISCOVERY_SCHEDULE = "0 */6 * * *"
 YOUTUBE_CLEANUP_SCHEDULE = "30 3 * * *"
+PUBLIC_STUDY_SCHEDULE = "15 4 * * *"
 
 
 class Settings(BaseSettings):
@@ -67,7 +69,10 @@ class Settings(BaseSettings):
     ai_output_per_million_aud: Decimal = Field(default=Decimal("0"), ge=0)
 
     youtube_api_key: SecretStr | None = None
+    maton_api_key: SecretStr | None = None
+    youtube_maton_connection_id: UUID | None = None
     youtube_collection_enabled: bool = False
+    public_study_collection_enabled: bool = False
 
     scrapling_enabled: bool = True
     scrapling_http_concurrency: int = Field(default=4, ge=1, le=32)
@@ -109,7 +114,7 @@ class Settings(BaseSettings):
     profile_backup_encryption_key_file: Path | None = None
 
     schedule_official_api: str = YOUTUBE_DISCOVERY_SCHEDULE
-    schedule_public_collection: str = "15 */6 * * *"
+    schedule_public_collection: str = PUBLIC_STUDY_SCHEDULE
     schedule_auth_collection: str = "30 */12 * * *"
     schedule_catalog_sync: str = "0 2 * * *"
     schedule_aggregates: str = "5 * * * *"
@@ -121,11 +126,28 @@ class Settings(BaseSettings):
         "supabase_db_url",
         "ai_api_key",
         "youtube_api_key",
+        "maton_api_key",
         mode="before",
     )
     @classmethod
     def empty_secret_is_missing(cls, value: object) -> object:
-        return None if value == "" else value
+        return None if isinstance(value, str) and not value.strip() else value
+
+    @field_validator("youtube_maton_connection_id", mode="before")
+    @classmethod
+    def canonicalize_optional_uuid(cls, value: object) -> object:
+        if isinstance(value, str):
+            candidate = value.strip()
+            if not candidate:
+                return None
+            try:
+                parsed = UUID(candidate)
+            except ValueError:
+                return value
+            if candidate != str(parsed):
+                raise ValueError("YOUTUBE_MATON_CONNECTION_ID must be a canonical UUID")
+            return candidate
+        return value
 
     @field_validator("ai_extract_model", "ai_validate_model", "ai_escalate_model", mode="before")
     @classmethod
@@ -157,14 +179,34 @@ class Settings(BaseSettings):
                 missing.append("AI_OUTPUT_PER_MILLION_AUD")
             if missing:
                 raise ValueError("network AI provider requires " + ", ".join(missing))
+        direct_youtube = self.youtube_api_key is not None and bool(
+            self.youtube_api_key.get_secret_value().strip()
+        )
+        maton_youtube = self.maton_api_key is not None and bool(
+            self.maton_api_key.get_secret_value().strip()
+        )
+        if (self.maton_api_key is None) is not (self.youtube_maton_connection_id is None):
+            raise ValueError(
+                "MATON_API_KEY and YOUTUBE_MATON_CONNECTION_ID must be configured together"
+            )
+        if (
+            self.youtube_maton_connection_id is not None
+            and self.youtube_maton_connection_id.int == 0
+        ):
+            raise ValueError("YOUTUBE_MATON_CONNECTION_ID must not be the nil UUID")
+        if direct_youtube and maton_youtube:
+            raise ValueError(
+                "configure exactly one YouTube credential path: direct API key or Maton OAuth"
+            )
         if (
             self.youtube_collection_enabled
-            and (
-                self.youtube_api_key is None or not self.youtube_api_key.get_secret_value().strip()
-            )
+            and not direct_youtube
+            and not maton_youtube
             and self.worker_role != "scheduler"
         ):
-            raise ValueError("YOUTUBE_COLLECTION_ENABLED requires YOUTUBE_API_KEY for collectors")
+            raise ValueError(
+                "YOUTUBE_COLLECTION_ENABLED requires YOUTUBE_API_KEY or Maton OAuth for collectors"
+            )
         if self.youtube_collection_enabled:
             if self.schedule_official_api != YOUTUBE_DISCOVERY_SCHEDULE:
                 raise ValueError(
@@ -176,6 +218,20 @@ class Settings(BaseSettings):
                     "YOUTUBE_COLLECTION_ENABLED requires "
                     f"SCHEDULE_CLEANUP={YOUTUBE_CLEANUP_SCHEDULE!r}"
                 )
+        if (
+            self.public_study_collection_enabled
+            and not self.scrapling_enabled
+            and self.worker_role != "scheduler"
+        ):
+            raise ValueError("PUBLIC_STUDY_COLLECTION_ENABLED requires SCRAPLING_ENABLED")
+        if (
+            self.public_study_collection_enabled
+            and self.schedule_public_collection != PUBLIC_STUDY_SCHEDULE
+        ):
+            raise ValueError(
+                "PUBLIC_STUDY_COLLECTION_ENABLED requires "
+                f"SCHEDULE_PUBLIC_COLLECTION={PUBLIC_STUDY_SCHEDULE!r}"
+            )
         if self.scrapling_save_raw_html:
             raise ValueError("SCRAPLING_SAVE_RAW_HTML must remain false")
         if self.database_warning_mb > self.database_critical_mb:

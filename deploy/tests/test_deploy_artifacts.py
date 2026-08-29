@@ -142,6 +142,23 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertLess(checkout, deploy)
         self.assertNotIn("- full", workflow)
 
+    def test_database_migration_workflow_never_interpolates_dispatch_inputs_in_shell(
+        self,
+    ) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "migrate-database.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("CONFIRM_SHA: ${{ inputs.confirm_sha }}", workflow)
+        self.assertIn("BACKUP_REFERENCE: ${{ inputs.backup_reference }}", workflow)
+        self.assertIn('[[ "$CONFIRM_SHA" == "$GITHUB_SHA" ]]', workflow)
+        self.assertIn('[[ "$CONFIRM_SHA" =~ ^[0-9a-f]{40}$ ]]', workflow)
+        self.assertIn(
+            '[[ "$BACKUP_REFERENCE" =~ ^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,255}$ ]]',
+            workflow,
+        )
+        self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
+        self.assertNotIn('[[ -n "${{ inputs.backup_reference }}"', workflow)
+
 
 class BackupRetentionTests(unittest.TestCase):
     def test_keeps_seven_daily_and_four_weekly_representatives(self) -> None:
@@ -569,12 +586,20 @@ ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
         )
 
     @staticmethod
-    def canonical_gate_seed(*, youtube: bool) -> bytes:
+    def canonical_gate_seed(
+        *, youtube: bool, public_studies: bool = False
+    ) -> bytes:
         youtube_row = b"youtube_discovery\n" if youtube else b""
+        public_rows = (
+            b"public_study_comicbook_us_55\n"
+            b"public_study_wargamer_gb_17\n"
+            if public_studies
+            else b""
+        )
         return (
             b"\n-- Canonical idle request gates; live lease ownership is not retained.\n"
             b"COPY ingest.source_request_gates (source_key) FROM stdin;\n"
-            b"tcgdex_catalog\n" + youtube_row + b"\\.\n\n"
+            b"tcgdex_catalog\n" + youtube_row + public_rows + b"\\.\n\n"
         )
 
     @classmethod
@@ -608,6 +633,62 @@ COPY ingest.source_policies (id, source_key) FROM stdin;
 33333333-3333-4333-8333-333333333333\ttcgdex_catalog
 \\.
 COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
+\\.
+"""
+        )
+
+    @classmethod
+    def post_public_study_dump(cls) -> bytes:
+        return (
+            cls.gate_schema_dump(youtube=True)
+            + b"""CREATE UNLOGGED TABLE ingest.youtube_discoveries (
+);
+CREATE TABLE ingest.public_study_observations (
+    study_key text NOT NULL,
+    source_policy_id uuid NOT NULL,
+    source_item_id uuid NOT NULL,
+    extraction_run_id uuid NOT NULL,
+    opening_id uuid NOT NULL,
+    country_code text NOT NULL,
+    country_name text NOT NULL,
+    geography_basis text NOT NULL,
+    geography_confidence text NOT NULL,
+    source_observed_at timestamp with time zone NOT NULL,
+    pack_count integer NOT NULL,
+    qualifying_hit_pack_count integer NOT NULL,
+    set_external_id text NOT NULL,
+    product_scope text NOT NULL,
+    metric_key text NOT NULL,
+    metric_version text NOT NULL,
+    collector_version text NOT NULL,
+    parser_version text NOT NULL,
+    source_policy_version text NOT NULL,
+    evidence_sha256 text NOT NULL,
+    first_verified_at timestamp with time zone NOT NULL,
+    last_verified_at timestamp with time zone NOT NULL,
+    is_demo boolean DEFAULT false NOT NULL,
+    CONSTRAINT public_study_observations_country_name_check CHECK (((btrim(country_name) <> ''::text) AND (char_length(country_name) <= 160))),
+    CONSTRAINT public_study_observations_counts_check CHECK ((((pack_count >= 1) AND (pack_count <= 100000)) AND ((qualifying_hit_pack_count >= 0) AND (qualifying_hit_pack_count <= pack_count)))),
+    CONSTRAINT public_study_observations_geography_check CHECK (((geography_basis = ANY (ARRAY['publisher_country'::text, 'author_public_residence'::text])) AND (geography_confidence = 'tier_b'::text))),
+    CONSTRAINT public_study_observations_hash_check CHECK ((evidence_sha256 ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT public_study_observations_key_check CHECK ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text)),
+    CONSTRAINT public_study_observations_live_only_check CHECK ((NOT is_demo)),
+    CONSTRAINT public_study_observations_metric_check CHECK (((metric_key = 'qualifying_hit_pack_rate'::text) AND (metric_version = 'global-sir-v1'::text))),
+    CONSTRAINT public_study_observations_product_check CHECK ((product_scope = ANY (ARRAY['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text]))),
+    CONSTRAINT public_study_observations_set_check CHECK (((btrim(set_external_id) <> ''::text) AND (char_length(set_external_id) <= 160))),
+    CONSTRAINT public_study_observations_time_check CHECK ((last_verified_at >= first_verified_at)),
+    CONSTRAINT public_study_observations_version_check CHECK (((btrim(collector_version) <> ''::text) AND (char_length(collector_version) <= 120) AND (btrim(parser_version) <> ''::text) AND (char_length(parser_version) <= 120) AND (btrim(source_policy_version) <> ''::text) AND (char_length(source_policy_version) <= 120)))
+);
+COPY ingest.source_policies (id, source_key) FROM stdin;
+11111111-1111-4111-8111-111111111111\tyoutube_discovery
+33333333-3333-4333-8333-333333333333\ttcgdex_catalog
+44444444-4444-4444-8444-444444444444\tpublic_study_comicbook_us_55
+55555555-5555-4555-8555-555555555555\tpublic_study_wargamer_gb_17
+\\.
+COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
+\\.
+COPY ingest.public_study_observations (study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, country_code, country_name, geography_basis, geography_confidence, source_observed_at, pack_count, qualifying_hit_pack_count, set_external_id, product_scope, metric_key, metric_version, collector_version, parser_version, source_policy_version, evidence_sha256, first_verified_at, last_verified_at, is_demo) FROM stdin;
+comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666-6666-4666-8666-666666666666\t77777777-7777-4777-8777-777777777777\t88888888-8888-4888-8888-888888888888\tUS\tUnited States\tpublisher_country\ttier_b\t2026-03-19 21:00:00+00\t55\t1\tme03\tall\tqualifying_hit_pack_rate\tglobal-sir-v1\tpublic-study-comicbook-perfect-order-v1\tcomicbook-perfect-order-evidence-v1\tpublic-study-comicbook-perfect-order-v1\taaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\t2026-08-29 01:02:03+00\t2026-08-29 01:02:03+00\tf
 \\.
 """
         )
@@ -687,7 +768,7 @@ fi
 arguments="$*"
 if [[ $arguments == *to_regclass* ]]; then
   [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'table-state:set-role' >> "$FAKE_PSQL_LOG"
-  printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru\\trp\\ttrue}"
+  printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru\\trp\\t0\\ttrue}"
 elif [[ $arguments == *youtube_discovery* ]]; then
   [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'policy-lookup:set-role' >> "$FAKE_PSQL_LOG"
   if [[ -n ${FAKE_POLICY_OUTPUT:-} ]]; then
@@ -708,7 +789,7 @@ fi
         timestamp: str,
         empty: bool = False,
         dump: bytes | None = None,
-        table_state: str = "rp\tru\trp\ttrue",
+        table_state: str = "rp\tru\trp\t0\ttrue",
         policy_output: str = "11111111-1111-4111-8111-111111111111",
         psql_fail: bool = False,
     ) -> subprocess.CompletedProcess[str]:
@@ -771,7 +852,7 @@ fi
                 backup_dir=backup_dir,
                 timestamp="20260729T020000Z",
                 dump=dump,
-                table_state="rp\t0\trp\ttrue",
+                table_state="rp\t0\trp\t0\ttrue",
                 policy_output="",
             )
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -793,19 +874,19 @@ fi
         policy = "11111111-1111-4111-8111-111111111111"
         cases = {
             "table-without-policy": {
-                "table_state": "rp\tru\trp\ttrue",
+                "table_state": "rp\tru\trp\t0\ttrue",
                 "policy_output": "",
             },
             "policy-without-table": {
-                "table_state": "rp\t0\trp\ttrue",
+                "table_state": "rp\t0\trp\t0\ttrue",
                 "policy_output": policy,
             },
             "old-preflight-with-new-dump": {
-                "table_state": "rp\t0\trp\ttrue",
+                "table_state": "rp\t0\trp\t0\ttrue",
                 "policy_output": "",
             },
             "new-preflight-with-old-dump": {
-                "table_state": "rp\tru\trp\ttrue",
+                "table_state": "rp\tru\trp\t0\ttrue",
                 "policy_output": policy,
                 "dump": self.pre_youtube_dump(),
             },
@@ -925,6 +1006,25 @@ fi
             self.assertFalse((backup_dir / ".last-successful-backup").exists())
             self.assertEqual(list(backup_dir.glob("pokecrack-*.sql.gz")), [])
 
+    def test_non_regular_success_marker_fails_before_creating_a_backup(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            backup_dir.mkdir()
+            (backup_dir / ".last-successful-backup").mkdir()
+
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20260729T020000Z",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("success marker must be a regular", result.stderr)
+            self.assertNotIn("very-secret", result.stdout + result.stderr)
+            self.assertEqual(list(backup_dir.glob("pokecrack-*.sql.gz")), [])
+
     def test_backup_removes_only_dedicated_youtube_discovery_rows(self) -> None:
         youtube_policy = "11111111-1111-4111-8111-111111111111"
         other_policy = "22222222-2222-4222-8222-222222222222"
@@ -995,6 +1095,31 @@ cache-second\t{youtube_policy}\t{second_video}
                 ),
             )
 
+    def test_backup_retains_public_study_ledger_and_reseeds_all_idle_gates(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20260729T020000Z",
+                dump=self.post_public_study_dump(),
+                table_state="rp\tru\trp\trp\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20260729T020000Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            self.assertIn(b"comicbook-perfect-order-us-55-v1", sanitized)
+            self.assertIn(
+                self.canonical_gate_seed(youtube=True, public_studies=True),
+                sanitized,
+            )
+
     def test_psql_failure_is_atomic_and_does_not_expose_database_url(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
             base = Path(temporary)
@@ -1039,15 +1164,17 @@ cache-second\t{youtube_policy}\t{second_video}
     def test_malformed_or_inconsistent_table_preflight_is_atomic(self) -> None:
         cases = {
             "malformed": "unexpected",
-            "missing-policies": "0\tru\trp\ttrue",
-            "unlogged-policies": "ru\tru\trp\ttrue",
-            "missing-youtube-table": "rp\t0\trp\ttrue",
-            "logged-youtube-table": "rp\trp\trp\ttrue",
-            "temporary-youtube-table": "rp\trt\trp\ttrue",
-            "youtube-view": "rp\tvp\trp\ttrue",
-            "missing-request-gate": "rp\tru\t0\tfalse",
-            "unlogged-request-gate": "rp\tru\tru\ttrue",
-            "request-gate-without-maintain": "rp\tru\trp\tfalse",
+            "missing-policies": "0\tru\trp\t0\ttrue",
+            "unlogged-policies": "ru\tru\trp\t0\ttrue",
+            "missing-youtube-table": "rp\t0\trp\t0\ttrue",
+            "logged-youtube-table": "rp\trp\trp\t0\ttrue",
+            "temporary-youtube-table": "rp\trt\trp\t0\ttrue",
+            "youtube-view": "rp\tvp\trp\t0\ttrue",
+            "missing-request-gate": "rp\tru\t0\t0\tfalse",
+            "unlogged-request-gate": "rp\tru\tru\t0\ttrue",
+            "request-gate-without-maintain": "rp\tru\trp\t0\tfalse",
+            "unlogged-public-ledger": "rp\tru\trp\tru\ttrue",
+            "public-ledger-without-youtube": "rp\t0\trp\trp\ttrue",
         }
         for name, table_state in cases.items():
             with (
@@ -1369,7 +1496,9 @@ exit 97
             )
             self.assertIn(f"Rollback commit: {previous}", result.stderr)
 
-    def test_legacy_sha_only_marker_is_not_treated_as_a_service_set_success(self) -> None:
+    def test_legacy_sha_only_marker_is_not_treated_as_a_service_set_success(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
             base = Path(temporary)
             repository, sha = self.setUpRepository(base)
@@ -1815,7 +1944,37 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn(expected_flag, collector)
         self.assertIn(expected_flag, scheduler)
         self.assertIn("YOUTUBE_API_KEY:", collector)
+        self.assertIn("MATON_API_KEY:", collector)
+        self.assertIn("YOUTUBE_MATON_CONNECTION_ID:", collector)
         self.assertNotIn("YOUTUBE_API_KEY:", scheduler)
+        self.assertNotIn("MATON_API_KEY:", scheduler)
+        self.assertNotIn("YOUTUBE_MATON_CONNECTION_ID:", scheduler)
+
+    def test_public_study_schedule_matches_the_fail_closed_worker_contract(
+        self,
+    ) -> None:
+        compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
+        collector = compose[
+            compose.index("  collector:") : compose.index("  auth-browser:")
+        ]
+        scheduler = compose[
+            compose.index("  scheduler:") : compose.index("  watchdog:")
+        ]
+        expected_flag = (
+            "PUBLIC_STUDY_COLLECTION_ENABLED: "
+            '"${PUBLIC_STUDY_COLLECTION_ENABLED:-false}"'
+        )
+
+        self.assertIn(expected_flag, collector)
+        self.assertIn(expected_flag, scheduler)
+        self.assertIn(
+            'SCHEDULE_PUBLIC_COLLECTION: "${SCHEDULE_PUBLIC_COLLECTION:-15 4 * * *}"',
+            scheduler,
+        )
+        self.assertIn(
+            "SCHEDULE_PUBLIC_COLLECTION=15 4 * * *",
+            (REPOSITORY_ROOT / ".env.example").read_text(encoding="utf-8"),
+        )
 
     def test_worker_image_installs_the_bounded_youtube_transport(self) -> None:
         dockerfile = (DEPLOY_ROOT / "Dockerfile.worker").read_text(encoding="utf-8")

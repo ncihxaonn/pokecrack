@@ -10,6 +10,9 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from typing import Any
 
+from pokecrack_worker.config.public_studies import PUBLIC_STUDIES_BY_KEY
+from pokecrack_worker.deduplication.fingerprints import content_sha256
+
 _TCGDEX_ETAG_PATTERN = re.compile(r'(?:W/)?"[\x21\x23-\x7e]*"')
 _YOUTUBE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{11}$")
 _YOUTUBE_PUBLISHED_AT_MIN = datetime(2005, 1, 1, tzinfo=UTC)
@@ -231,6 +234,68 @@ class YouTubeDiscoveryCompletion:
             "version": 1,
             "query_name": self.query_name,
             "items": [item.as_payload() for item in self.items],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class PublicStudyCompletion:
+    """Evidence-only result for one immutable reviewed public study."""
+
+    study_key: str
+    source_url: str
+    title: str
+    evidence_excerpt: str
+    evidence_sha256: str
+    collector_version: str
+    parser_version: str
+    source_policy_version: str
+
+    def __post_init__(self) -> None:
+        identity = PUBLIC_STUDIES_BY_KEY.get(self.study_key)
+        if identity is None or self.source_url != identity.source_url:
+            raise ValueError("public study identity is not approved")
+        if (
+            not isinstance(self.title, str)
+            or not 1 <= len(self.title) <= 500
+            or any(unicodedata.category(character).startswith("C") for character in self.title)
+        ):
+            raise ValueError("public study title is invalid")
+        if (
+            not isinstance(self.evidence_excerpt, str)
+            or not 1 <= len(self.evidence_excerpt) <= 2_000
+            or any(
+                unicodedata.category(character) == "Cc" and character not in "\n\t"
+                for character in self.evidence_excerpt
+            )
+        ):
+            raise ValueError("public study evidence excerpt is invalid")
+        if (
+            not isinstance(self.evidence_sha256, str)
+            or len(self.evidence_sha256) != 64
+            or any(character not in "0123456789abcdef" for character in self.evidence_sha256)
+        ):
+            raise ValueError("public study evidence hash is invalid")
+        if self.evidence_sha256 != content_sha256(self.evidence_excerpt):
+            raise ValueError("public study evidence hash does not match the excerpt")
+        if self.collector_version != identity.collector_version:
+            raise ValueError("public study collector version is not approved")
+        if self.parser_version != identity.parser_version:
+            raise ValueError("public study parser version is not approved")
+        if self.source_policy_version != identity.collector_version:
+            raise ValueError("public study source policy version is not approved")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        return {
+            "version": 1,
+            "study_key": self.study_key,
+            "source_url": self.source_url,
+            "title": self.title,
+            "evidence_excerpt": self.evidence_excerpt,
+            "evidence_sha256": self.evidence_sha256,
+            "collector_version": self.collector_version,
+            "parser_version": self.parser_version,
+            "source_policy_version": self.source_policy_version,
         }
 
 

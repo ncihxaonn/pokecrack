@@ -17,6 +17,7 @@ from time import monotonic
 from types import MappingProxyType
 from typing import Any, Protocol
 from urllib.parse import urlencode
+from uuid import UUID
 
 from pydantic import SecretStr
 
@@ -26,6 +27,7 @@ from pokecrack_worker.config.source_policy import CollectorRoute, SourcePolicyRe
 from pokecrack_worker.models import CollectorType, SourceItemCandidate
 
 YOUTUBE_SEARCH_URL = "https://youtube.googleapis.com/youtube/v3/search"
+MATON_YOUTUBE_SEARCH_URL = "https://gateway.maton.ai/youtube/youtube/v3/search"
 YOUTUBE_MAX_RESPONSE_BYTES = 2 * 1024 * 1024
 YOUTUBE_TIMEOUT_SECONDS = 30.0
 _YOUTUBE_CURL_TRANSFER_SECONDS = 27.0
@@ -145,8 +147,7 @@ class HTTPXYouTubeTransport:
         api_key: SecretStr,
         timeout_seconds: float,
     ) -> APIResponse:
-        if url != YOUTUBE_SEARCH_URL:
-            raise ValueError("YouTube transport accepts only the fixed search endpoint")
+        request_url = self._request_url(url)
         if timeout_seconds != YOUTUBE_TIMEOUT_SECONDS:
             raise ValueError("YouTube transport requires the fixed 30-second timeout")
         if not _PROCESS_DEADLINE_SUPPORTED:
@@ -163,7 +164,7 @@ class HTTPXYouTubeTransport:
         hard_deadline = started_at + YOUTUBE_TIMEOUT_SECONDS
         process_deadline = started_at + _YOUTUBE_PROCESS_DEADLINE_SECONDS
         transfer_deadline = started_at + _YOUTUBE_CURL_TRANSFER_SECONDS
-        query_url = f"{url}?{urlencode(params)}"
+        query_url = f"{request_url}?{urlencode(params)}"
         command = (
             _YOUTUBE_CURL_PATH,
             "--disable",
@@ -215,7 +216,7 @@ class HTTPXYouTubeTransport:
         try:
             stdout, stderr = _bounded_exchange(
                 process,
-                stdin_bytes=f"X-Goog-Api-Key: {secret}\n".encode("ascii"),
+                stdin_bytes=self._authorization_headers(secret),
                 stdout_limit=self.max_response_bytes,
                 stderr_limit=_YOUTUBE_STDERR_LIMIT_BYTES,
                 deadline=transfer_deadline,
@@ -280,6 +281,43 @@ class HTTPXYouTubeTransport:
             },
             stdout,
         )
+
+    def _authorization_headers(self, secret: str) -> bytes:
+        return f"X-Goog-Api-Key: {secret}\n".encode("ascii")
+
+    def _request_url(self, source_url: str) -> str:
+        if source_url != YOUTUBE_SEARCH_URL:
+            raise ValueError("YouTube transport accepts only the fixed search endpoint")
+        return YOUTUBE_SEARCH_URL
+
+
+class MatonYouTubeTransport(HTTPXYouTubeTransport):
+    """Fixed-host Maton OAuth route for the already-authorized YouTube API."""
+
+    def __init__(
+        self,
+        *,
+        connection_id: str,
+        max_response_bytes: int = YOUTUBE_MAX_RESPONSE_BYTES,
+    ) -> None:
+        try:
+            parsed_connection_id = UUID(connection_id)
+        except (AttributeError, TypeError, ValueError) as error:
+            raise ValueError("Maton YouTube connection ID must be a canonical UUID") from error
+        if str(parsed_connection_id) != connection_id:
+            raise ValueError("Maton YouTube connection ID must be a canonical UUID")
+        self.connection_id = connection_id
+        super().__init__(max_response_bytes=max_response_bytes)
+
+    def _authorization_headers(self, secret: str) -> bytes:
+        return (f"Authorization: Bearer {secret}\nMaton-Connection: {self.connection_id}\n").encode(
+            "ascii"
+        )
+
+    def _request_url(self, source_url: str) -> str:
+        if source_url != YOUTUBE_SEARCH_URL:
+            raise ValueError("YouTube transport accepts only the fixed search endpoint")
+        return MATON_YOUTUBE_SEARCH_URL
 
 
 def _remaining_seconds(deadline: float) -> float:

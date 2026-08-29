@@ -7,12 +7,14 @@ from datetime import UTC, datetime, timedelta
 import pytest
 
 from pokecrack_worker.db import PsycopgQueryExecutor
+from pokecrack_worker.deduplication.fingerprints import content_sha256
 from pokecrack_worker.jobs import (
     CompletionEffect,
     InMemoryJobRepository,
     JobStatus,
     LeaseLostError,
     PostgresJobRepository,
+    PublicStudyCompletion,
     TCGdexSetsSyncCompletion,
     TCGdexSetWrite,
     TCGdexSyncOutcome,
@@ -1049,6 +1051,116 @@ def test_postgres_youtube_completion_uses_one_exact_activity_only_finalizer() ->
         "result_rank",
     ):
         assert forbidden not in serialized
+
+
+def test_postgres_public_study_completion_uses_evidence_only_finalizer() -> None:
+    completed_row: dict[str, object] = {
+        "id": "job-1",
+        "job_type": "source.public_study.opening",
+        "payload": {"study_key": "comicbook-perfect-order-us-55-v1"},
+        "status": "completed",
+        "priority": 14,
+        "available_at": NOW,
+        "attempts": 1,
+        "max_attempts": 3,
+        "lease_generation": 2,
+        "locked_by": None,
+        "locked_at": None,
+        "lock_expires_at": None,
+        "last_error_code": None,
+        "last_error_message": None,
+        "completed_at": NOW,
+        "dedupe_key": "schedule:public-study:20260825T120000Z",
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+    class Executor:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, dict[str, object]]] = []
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            self.calls.append((sql, params))
+            return [completed_row]
+
+    executor = Executor()
+    completion = PublicStudyCompletion(
+        study_key="comicbook-perfect-order-us-55-v1",
+        source_url=(
+            "https://comicbook.com/gaming/feature/"
+            "pokemon-tcg-perfect-order-pull-rates-ex-illustration-rares-estimates"
+        ),
+        title="I Opened 55 Packs from Pokémon TCG's Perfect Order — Pull Rates",
+        evidence_excerpt=(
+            "In total, I opened 55 boosters from the upcoming Perfect Order lineup.\n"
+            "1 Special Illustration Rare"
+        ),
+        evidence_sha256=content_sha256(
+            "In total, I opened 55 boosters from the upcoming Perfect Order lineup.\n"
+            "1 Special Illustration Rare"
+        ),
+        collector_version="public-study-comicbook-perfect-order-v1",
+        parser_version="comicbook-perfect-order-evidence-v1",
+        source_policy_version="public-study-comicbook-perfect-order-v1",
+    )
+
+    completed = PostgresJobRepository(executor).complete(
+        "job-1",
+        worker_id="collector-1",
+        lease_generation=2,
+        now=NOW,
+        effect=completion,
+    )
+
+    assert completed.status is JobStatus.COMPLETED
+    sql, params = executor.calls[0]
+    assert "ingest.finalize_public_study_job" in sql
+    persisted = json.loads(str(params["result"]))
+    assert set(persisted) == {
+        "version",
+        "study_key",
+        "source_url",
+        "title",
+        "evidence_excerpt",
+        "evidence_sha256",
+        "collector_version",
+        "parser_version",
+        "source_policy_version",
+    }
+    serialized = json.dumps(persisted)
+    for forbidden in (
+        "country_code",
+        "country_name",
+        "pack_count",
+        "qualifying_hit_pack_count",
+        "observed_rate",
+        "set_external_id",
+        "product_scope",
+    ):
+        assert forbidden not in serialized
+
+
+def test_public_study_completion_rejects_identity_or_version_drift() -> None:
+    common = {
+        "study_key": "comicbook-perfect-order-us-55-v1",
+        "source_url": (
+            "https://comicbook.com/gaming/feature/"
+            "pokemon-tcg-perfect-order-pull-rates-ex-illustration-rares-estimates"
+        ),
+        "title": "Reviewed opening",
+        "evidence_excerpt": "55 packs\n1 Special Illustration Rare",
+        "evidence_sha256": content_sha256("55 packs\n1 Special Illustration Rare"),
+        "collector_version": "public-study-comicbook-perfect-order-v1",
+        "parser_version": "comicbook-perfect-order-evidence-v1",
+        "source_policy_version": "public-study-comicbook-perfect-order-v1",
+    }
+
+    with pytest.raises(ValueError, match="identity"):
+        PublicStudyCompletion(**{**common, "source_url": "https://comicbook.com/wrong"})
+    with pytest.raises(ValueError, match="parser version"):
+        PublicStudyCompletion(**{**common, "parser_version": "drifted"})
+    with pytest.raises(ValueError, match="does not match"):
+        PublicStudyCompletion(**{**common, "evidence_sha256": "b" * 64})
 
 
 def test_youtube_completion_rejects_noncanonical_watch_url() -> None:
