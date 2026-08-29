@@ -77,6 +77,7 @@
 .statusready { border-color: rgba(20, 138, 84, .22); background: rgba(20, 138, 84, .08); color: var(--accent); }
 .statuswatch { border-color: rgba(185, 109, 11, .24); background: rgba(185, 109, 11, .07); color: var(--amber); }
 .statusanomaly { border-color: rgba(206, 66, 80, .24); background: rgba(206, 66, 80, .07); color: var(--red); }
+.statuspending { border-color: rgba(185, 109, 11, .24); background: rgba(185, 109, 11, .07); color: var(--amber); }
 .statusinsufficient { color: var(--faint); }
 .empty { padding: 1.6rem; color: var(--muted); text-align: center; }
 

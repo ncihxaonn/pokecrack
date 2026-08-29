@@ -108,9 +108,9 @@ export function RegionsView({ data, synthetic }: { data: PublicDashboardData; sy
   const rows = data.regions.map((region) => ({ key: region.slug, href: `/regions/${region.slug}` as Route, name: region.name, meta: region.coverage, metric: region }));
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
-      <PageIntro eyebrow="Legacy Australia v1 detail" title="Regional observations" description="These legacy regional aggregates retain the reviewed Australia-only v1 boundary. The global country-level atlas is published on the dashboard." />
+      <PageIntro eyebrow="Worldwide country detail" title="Country observations" description="Browse the same verified country-level samples shown in the global atlas. Rates remain withheld until a country reaches both publication thresholds." />
       <div className="coverage-grid coverage-grid--list">{data.regions.map((region, index) => <Link className={`coverage-cell coverage-cell--${(index % 4) + 1}`} href={`/regions/${region.slug}` as Route} key={region.slug}><span className="coverage-cell__index">{region.countryCode}.{String(index + 1).padStart(2, "0")}</span><strong>{region.name}</strong><span>{region.coverage}</span><SignalBadge metric={region} /></Link>)}</div>
-      <MetricTable rows={rows} label="Regional aggregate comparison" emptyMessage="No region aggregates are published in this snapshot." />
+      <MetricTable rows={rows} label="Country observation comparison" emptyMessage="No country observations are published in this snapshot." />
       <MetricDisclaimer />
     </PublicPage>
   );
@@ -121,11 +121,11 @@ export function RegionDetailView({ data, region, synthetic }: { data: PublicDash
   const batches = data.batches.filter((batch) => batch.region === region.name);
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
-      <PageIntro eyebrow={`${region.countryCode} · regional observation`} title={region.name} description={region.coverage}><div className="intro-meta"><span>Updated {formatDateTime(region.updatedAt)}</span></div></PageIntro>
+      <PageIntro eyebrow={`${region.countryCode} · country observation`} title={region.name} description={region.coverage}><div className="intro-meta"><span>Updated {formatDateTime(region.updatedAt)}</span></div></PageIntro>
       <ObservationStats metric={region} />
-      <div className="detail-grid"><Panel><h2>Coverage note</h2><p>{region.sampleNote}</p><p>Regional activity reflects the sources collected, not the underlying distribution of all purchases.</p></Panel><Panel><h2>Published scope</h2><DefinitionList items={[{ term: "Country", value: region.countryCode }, { term: "Region key", value: <code>{region.slug}</code> }, { term: "Retailer aggregates", value: retailers.length }, { term: "Visible batches", value: batches.length }]} /></Panel></div>
-      <section className="dashboard-section"><SectionHeading title="Retailer observations" detail="Aggregate retailer labels within this regional snapshot." /><MetricTable rows={retailers.map((retailer) => ({ key: retailer.slug, href: `/retailers/${retailer.slug}` as Route, name: retailer.name, meta: retailer.channel, metric: retailer }))} label={`Retailer observations in ${region.name}`} emptyMessage="No retailer aggregates are linked to this region." /></section>
-      <section className="dashboard-section"><SectionHeading title="Visible batch observations" /><MetricTable rows={batches.map((batch) => ({ key: batch.code, href: `/batches/${encodeURIComponent(batch.code)}` as Route, name: batch.code, meta: `${batch.setName} · ${batch.productType}`, metric: batch }))} label={`Batch observations in ${region.name}`} emptyMessage="No visible batches are linked to this region." /></section>
+      <div className="detail-grid"><Panel><h2>Coverage note</h2><p>{region.sampleNote}</p><p>Country activity reflects the sources collected, not the underlying distribution of all purchases.</p></Panel><Panel><h2>Published scope</h2><DefinitionList items={[{ term: "Country", value: region.countryCode }, { term: "Country key", value: <code>{region.slug}</code> }, { term: "Retailer aggregates", value: retailers.length }, { term: "Visible batches", value: batches.length }]} /></Panel></div>
+      <section className="dashboard-section"><SectionHeading title="Retailer observations" detail="Aggregate retailer labels within this country snapshot." /><MetricTable rows={retailers.map((retailer) => ({ key: retailer.slug, href: `/retailers/${retailer.slug}` as Route, name: retailer.name, meta: retailer.channel, metric: retailer }))} label={`Retailer observations in ${region.name}`} emptyMessage="No retailer aggregates are linked to this country." /></section>
+      <section className="dashboard-section"><SectionHeading title="Visible batch observations" /><MetricTable rows={batches.map((batch) => ({ key: batch.code, href: `/batches/${encodeURIComponent(batch.code)}` as Route, name: batch.code, meta: `${batch.setName} · ${batch.productType}`, metric: batch }))} label={`Batch observations in ${region.name}`} emptyMessage="No visible batches are linked to this country." /></section>
       <MetricDisclaimer />
     </PublicPage>
   );

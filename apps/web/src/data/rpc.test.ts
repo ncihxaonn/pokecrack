@@ -4,7 +4,7 @@ import { PUBLIC_DASHBOARD_RPC, unwrapRpcSnapshot } from "./rpc";
 
 describe("aggregate RPC adapter", () => {
   it("uses a versioned public aggregate snapshot contract", () => {
-    expect(PUBLIC_DASHBOARD_RPC).toBe("get_public_dashboard_snapshot_v2");
+    expect(PUBLIC_DASHBOARD_RPC).toBe("get_public_dashboard_snapshot_v3");
     expect(PUBLIC_DASHBOARD_RPC).not.toMatch(/raw|ingest|observation/i);
   });
 

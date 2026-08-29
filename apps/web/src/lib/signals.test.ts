@@ -11,6 +11,7 @@ describe("signal presentation", () => {
     ["ready", "No significant signal", "neutral"],
     ["watch", "Watch", "warning"],
     ["anomaly", "Possible anomaly", "alert"],
+    ["pending", "Publication pending", "muted"],
     ["insufficient", "Insufficient sample", "muted"],
   ] as const)("maps %s to a restrained public label", (state, label, tone) => {
     expect(getSignalPresentation(state)).toMatchObject({ label, tone });
@@ -26,7 +27,7 @@ describe("signal presentation", () => {
   });
 
   it("never uses predictive or promotional signal labels", () => {
-    const copy = ["ready", "watch", "anomaly", "insufficient"]
+    const copy = ["ready", "watch", "anomaly", "pending", "insufficient"]
       .map((state) => getSignalPresentation(state as Parameters<typeof getSignalPresentation>[0]).label)
       .join(" ")
       .toLowerCase();

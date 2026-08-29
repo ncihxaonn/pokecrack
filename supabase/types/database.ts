@@ -772,6 +772,7 @@ export type Database = {
       };
       get_public_dashboard_snapshot_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_dashboard_snapshot_v2: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_public_dashboard_snapshot_v3: { Args: Record<PropertyKey, never>; Returns: Json };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

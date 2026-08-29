@@ -1,10 +1,37 @@
 # Implementation notes
 
-Last audited: **2026-08-28 UTC**
+Last audited: **2026-08-30 UTC**
 
 This file records what was actually exercised. Repository code, a rendered
 configuration, a fixture response, or a successful migration compile is not by
 itself evidence of a live collection run.
+
+## Current 2026-08-30 branch audit
+
+- Production v2 was observed serving the live 218-set TCGdex catalog plus two
+  current country observations: 72 reviewed packs across the United States and
+  United Kingdom. Both countries remain below three independent sources, so no
+  country rate is published.
+- This branch adds `get_public_dashboard_snapshot_v3()`. It connects the two
+  reviewed studies to bounded set and current-period country summaries, merges
+  those denominators with any reviewed published v2 map result, publishes safe
+  status for all four registered source classes, and publishes role-level health
+  for the three currently ready worker services. Denominator rows remain visible
+  as `pending` after the evidence threshold is met if the reviewed baseline and
+  interval publisher has not completed. It does not publish a hit numerator,
+  private YouTube identity, or convert discovery metadata into statistical
+  evidence.
+- v3 is **not deployed/live** merely because the migration and Web adapter exist
+  in this branch. It must pass clean PostgreSQL 17 migration/pgTAP replay, merge,
+  apply to Personal Supabase project `wohnphsxlquhhknuthrj`, and receive live
+  browser verification before that claim changes.
+- The MAM VPS runtime was not re-audited in this branch because the current
+  session had not yet received exact authorization for that boundary. YouTube
+  collection and the hosted worker revision therefore remain unverified here.
+
+The sections below retain the 2026-08-28 implementation record as historical
+evidence; where it conflicts with the current audit above, the dated current
+audit takes precedence.
 
 ## Status vocabulary
 
@@ -18,7 +45,7 @@ itself evidence of a live collection run.
 - **Blocked/unverified:** a required credential, approval, runtime, or complete
   end-to-end observation was absent.
 
-## Repository and external baseline
+## Historical 2026-08-28 repository and external baseline
 
 - The backend integration worktree is
   `/private/tmp/pokecrack-global-backend.VfSoCM` on

@@ -2,6 +2,7 @@ export type EvidenceState =
   | "ready"
   | "watch"
   | "anomaly"
+  | "pending"
   | "insufficient";
 
 export type ProductType = "Booster Box" | "ETB" | "Booster Bundle";
