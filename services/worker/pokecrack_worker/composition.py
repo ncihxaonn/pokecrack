@@ -1,8 +1,9 @@
 """Fail-closed live PostgreSQL composition for the worker entry point.
 
 Only job types with a bounded, database-backed implementation are registered
-here. The collector supports fixed TCGdex catalog sync plus explicitly enabled
-YouTube metadata discovery; AI and general URL collection remain unavailable.
+here. The collector supports fixed TCGdex catalog sync, explicitly enabled
+YouTube metadata discovery, and a tiny allowlist of reviewed public studies;
+AI and general URL collection remain unavailable.
 """
 
 from __future__ import annotations
@@ -15,9 +16,12 @@ from enum import StrEnum
 from pathlib import Path
 
 from pokecrack_worker import __version__
+from pokecrack_worker.collectors.base import CollectionService, CollectorError, HTTPClient
 from pokecrack_worker.collectors.official_api.postgres import (
+    PostgresPublicStudyGate,
     PostgresTCGdexCheckpointRepository,
     PostgresYouTubeDiscoveryGate,
+    PublicStudyRequestDeferred,
     TCGdexRequestDeferred,
     YouTubeRequestDeferred,
 )
@@ -31,10 +35,15 @@ from pokecrack_worker.collectors.official_api.tcgdex import (
 )
 from pokecrack_worker.collectors.official_api.youtube import (
     HTTPXYouTubeTransport,
+    MatonYouTubeTransport,
     YouTubeDataClient,
     YouTubeError,
     YouTubeTransport,
 )
+from pokecrack_worker.collectors.scrapling.adapters.public_studies import RobotsTxtChecker
+from pokecrack_worker.collectors.scrapling.http import ScraplingHTTPClient
+from pokecrack_worker.collectors.scrapling.registry import build_live_static_registry
+from pokecrack_worker.config.public_studies import PUBLIC_STUDIES, PUBLIC_STUDIES_BY_KEY
 from pokecrack_worker.config.registries import YouTubeQueryRegistry
 from pokecrack_worker.config.settings import DataMode, Settings
 from pokecrack_worker.config.source_policy import SourcePolicyRegistry
@@ -43,6 +52,7 @@ from pokecrack_worker.jobs import (
     CompletionEffect,
     Job,
     PostgresJobRepository,
+    PublicStudyCompletion,
     QueryExecutor,
     TCGdexSetsSyncCompletion,
     TCGdexSetWrite,
@@ -81,6 +91,7 @@ class HeartbeatResult:
 CLEANUP_JOB_TYPE = "maintenance.cleanup"
 TCGDEX_SETS_JOB_TYPE = "catalog.tcgdex.sets.sync"
 YOUTUBE_DISCOVERY_JOB_TYPE = "source.youtube.discovery"
+PUBLIC_STUDY_JOB_TYPE = "source.public_study.opening"
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SOURCES_CONFIG = PROJECT_ROOT / "config" / "sources.yaml"
 YOUTUBE_QUERIES_CONFIG = PROJECT_ROOT / "config" / "youtube-queries.yaml"
@@ -148,6 +159,95 @@ WITH youtube_dependencies AS (
         }'::jsonb
         AND policies.version = 'youtube-global-discovery-v1'
         AND policies.expected_interval_seconds = 21600
+    ),
+    false
+  ) AS ready
+),
+public_study_dependencies AS (
+  SELECT COALESCE(
+    to_regclass('ingest.public_study_observations') IS NOT NULL
+    AND to_regprocedure('ingest.begin_public_study_job(uuid,text,bigint)') IS NOT NULL
+    AND to_regprocedure(
+      'ingest.finalize_public_study_job(uuid,text,bigint,jsonb)'
+    ) IS NOT NULL
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.begin_public_study_job(uuid,text,bigint)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.finalize_public_study_job(uuid,text,bigint,jsonb)'),
+      'EXECUTE'
+    )
+    AND has_table_privilege(
+      current_user,
+      'ingest.public_study_observations',
+      'SELECT'
+    )
+    AND NOT has_table_privilege(
+      current_user,
+      'ingest.public_study_observations',
+      'INSERT'
+    )
+    AND NOT has_table_privilege(
+      current_user,
+      'ingest.public_study_observations',
+      'UPDATE'
+    )
+    AND NOT has_table_privilege(
+      current_user,
+      'ingest.public_study_observations',
+      'DELETE'
+    )
+    AND (
+      SELECT
+        count(*) = 2
+        AND bool_and(
+          policies.enabled
+          AND NOT policies.is_demo
+          AND policies.source_kind = 'public_web'
+          AND policies.collector_type = 'scrapling_http'
+          AND policies.access_mode = 'public'
+          AND policies.robots_policy = 'respect'
+          AND policies.routes = ARRAY['scrapling_http']::text[]
+          AND NOT policies.include_subdomains
+          AND policies.min_delay_seconds = 30
+          AND policies.max_pages_per_run = 2
+          AND policies.max_items_per_run = 1
+          AND policies.max_concurrency = 1
+          AND policies.browser_profile IS NULL
+          AND policies.statistics_eligible_default
+          AND policies.retention_days = 730
+          AND policies.expected_interval_seconds = 86400
+        )
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_comicbook_us_55'
+            AND policies.domain = 'comicbook.com'
+            AND policies.base_url = 'https://comicbook.com/gaming/feature/pokemon-tcg-perfect-order-pull-rates-ex-illustration-rares-estimates'
+            AND policies.version = 'public-study-comicbook-perfect-order-v1'
+            AND policies.config ->> 'study_key' = 'comicbook-perfect-order-us-55-v1'
+            AND policies.config ->> 'set_external_id' = 'me03'
+            AND policies.config ->> 'country_code' = 'US'
+            AND policies.config ->> 'pack_count' = '55'
+            AND policies.config ->> 'qualifying_hit_pack_count' = '1'
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_wargamer_gb_17'
+            AND policies.domain = 'www.wargamer.com'
+            AND policies.base_url = 'https://www.wargamer.com/pokemon-trading-card-game/chaos-rising-preview'
+            AND policies.version = 'public-study-wargamer-chaos-rising-v1'
+            AND policies.config ->> 'study_key' = 'wargamer-chaos-rising-gb-17-v1'
+            AND policies.config ->> 'set_external_id' = 'me04'
+            AND policies.config ->> 'country_code' = 'GB'
+            AND policies.config ->> 'pack_count' = '17'
+            AND policies.config ->> 'qualifying_hit_pack_count' = '0'
+        ) = 1
+      FROM ingest.source_policies AS policies
+      WHERE policies.source_key IN (
+        'public_study_comicbook_us_55',
+        'public_study_wargamer_gb_17'
+      )
     ),
     false
   ) AS ready
@@ -238,6 +338,10 @@ SELECT
       NOT %(youtube_enabled)s::boolean
       OR (SELECT ready FROM youtube_dependencies)
     )
+    AND (
+      NOT %(public_study_enabled)s::boolean
+      OR (SELECT ready FROM public_study_dependencies)
+    )
   WHEN 'scheduler' THEN
     to_regprocedure(
       'ingest.enqueue_scheduled_job_v1(text,timestamptz,text,jsonb,integer,integer)'
@@ -252,6 +356,10 @@ SELECT
     AND (
       NOT %(youtube_enabled)s::boolean
       OR (SELECT ready FROM youtube_dependencies)
+    )
+    AND (
+      NOT %(public_study_enabled)s::boolean
+      OR (SELECT ready FROM public_study_dependencies)
     )
   WHEN 'watchdog' THEN
     to_regclass('ingest.source_request_gates') IS NOT NULL
@@ -284,7 +392,7 @@ SELECT
 """.strip()
 
 _WORKER_JOB_TYPES: Mapping[WorkerRole, tuple[str, ...]] = {
-    WorkerRole.COLLECTOR: (TCGDEX_SETS_JOB_TYPE, YOUTUBE_DISCOVERY_JOB_TYPE),
+    WorkerRole.COLLECTOR: (TCGDEX_SETS_JOB_TYPE,),
     WorkerRole.WATCHDOG: (CLEANUP_JOB_TYPE,),
 }
 
@@ -302,7 +410,7 @@ _SCHEDULE_FIELDS: tuple[tuple[str, str], ...] = (
 UNWIRED_SCHEDULE_NAMES = tuple(
     name
     for name, _field_name in _SCHEDULE_FIELDS
-    if name not in {"official_api", "catalog_sync", "cleanup"}
+    if name not in {"official_api", "public_collection", "catalog_sync", "cleanup"}
 )
 
 
@@ -352,9 +460,14 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
             "worker_role_not_ready",
             "the configured role has no safe live job handlers in this build",
         )
-    if role is WorkerRole.COLLECTOR and not settings.youtube_collection_enabled:
-        return (TCGDEX_SETS_JOB_TYPE,)
-    return job_types
+    if role is not WorkerRole.COLLECTOR:
+        return job_types
+    enabled = list(job_types)
+    if settings.youtube_collection_enabled:
+        enabled.append(YOUTUBE_DISCOVERY_JOB_TYPE)
+    if settings.public_study_collection_enabled:
+        enabled.append(PUBLIC_STUDY_JOB_TYPE)
+    return tuple(enabled)
 
 
 def require_scheduler_role(settings: Settings) -> WorkerRole:
@@ -398,6 +511,7 @@ def write_health_heartbeat(
         {
             "worker_type": role.value,
             "youtube_enabled": settings.youtube_collection_enabled,
+            "public_study_enabled": settings.public_study_collection_enabled,
         },
     )
     if not dependency_rows or dependency_rows[0].get("ready") is not True:
@@ -522,16 +636,36 @@ def _youtube_discovery_handler(
     settings: Settings,
     executor: QueryExecutor,
     worker_id: str,
-    transport: YouTubeTransport,
+    transport: YouTubeTransport | None,
     clock: Callable[[], datetime] | None,
 ) -> JobHandler:
-    if not settings.youtube_collection_enabled or settings.youtube_api_key is None:
+    if not settings.youtube_collection_enabled:
+        raise RuntimeError("YouTube discovery handler requires explicit credentials and enablement")
+    direct_credential = (
+        settings.youtube_api_key.get_secret_value().strip()
+        if settings.youtube_api_key is not None
+        else ""
+    )
+    maton_credential = (
+        settings.maton_api_key.get_secret_value().strip()
+        if settings.maton_api_key is not None
+        else ""
+    )
+    if direct_credential:
+        credential = direct_credential
+        resolved_transport = transport or HTTPXYouTubeTransport()
+    elif maton_credential and settings.youtube_maton_connection_id is not None:
+        credential = maton_credential
+        resolved_transport = transport or MatonYouTubeTransport(
+            connection_id=str(settings.youtube_maton_connection_id)
+        )
+    else:
         raise RuntimeError("YouTube discovery handler requires explicit credentials and enablement")
     registry = YouTubeQueryRegistry.from_yaml(YOUTUBE_QUERIES_CONFIG)
     gates = PostgresYouTubeDiscoveryGate(executor)
     client = YouTubeDataClient(
-        api_key=settings.youtube_api_key.get_secret_value(),
-        transport=transport,
+        api_key=credential,
+        transport=resolved_transport,
         policies=SourcePolicyRegistry.from_yaml(SOURCES_CONFIG),
         clock=clock,
     )
@@ -575,6 +709,93 @@ def _youtube_discovery_handler(
     return discover
 
 
+def _public_study_handler(
+    *,
+    settings: Settings,
+    executor: QueryExecutor,
+    worker_id: str,
+    http_client: HTTPClient | None,
+    robots_sleeper: Callable[[float], None] | None,
+) -> JobHandler:
+    if not settings.public_study_collection_enabled or not settings.scrapling_enabled:
+        raise RuntimeError("public-study handler requires explicit Scrapling enablement")
+    client = http_client or ScraplingHTTPClient.live(
+        timeout_seconds=settings.scrapling_request_timeout_seconds
+    )
+    robots = (
+        RobotsTxtChecker(
+            client=client,
+            timeout_seconds=settings.scrapling_request_timeout_seconds,
+            followup_delay_seconds=30.0,
+        )
+        if robots_sleeper is None
+        else RobotsTxtChecker(
+            client=client,
+            timeout_seconds=settings.scrapling_request_timeout_seconds,
+            followup_delay_seconds=30.0,
+            sleeper=robots_sleeper,
+        )
+    )
+    service = CollectionService(
+        policies=SourcePolicyRegistry.from_yaml(SOURCES_CONFIG),
+        http_adapters=build_live_static_registry(http_client=client),
+        robots=robots,
+    )
+    gates = PostgresPublicStudyGate(executor)
+
+    def collect_study(job: Job) -> PublicStudyCompletion:
+        if job.kind != PUBLIC_STUDY_JOB_TYPE or set(job.payload) != {"study_key"}:
+            raise ValueError("public-study jobs require the exact study_key payload")
+        study_key = job.payload.get("study_key")
+        if not isinstance(study_key, str):
+            raise ValueError("public-study study_key must be text")
+        identity = PUBLIC_STUDIES_BY_KEY.get(study_key)
+        if identity is None:
+            raise ValueError("public-study study_key is not approved")
+        try:
+            gates.begin(
+                job_id=job.id,
+                worker_id=worker_id,
+                lease_generation=job.lease_generation,
+            )
+        except PublicStudyRequestDeferred as deferred:
+            raise JobDeferred(
+                retry_at=deferred.retry_at,
+                code="public_study_request_deferred",
+            ) from None
+        try:
+            candidates = service.collect_url(identity.fetch_url, route="static")
+        except CollectorError as error:
+            raise JobExecutionError(
+                code="public_study_contract_failed",
+                retryable=False,
+            ) from error
+        if len(candidates) != 1:
+            raise JobExecutionError(code="public_study_result_invalid", retryable=False)
+        candidate = candidates[0]
+        if (
+            candidate.external_id != study_key
+            or candidate.title is None
+            or candidate.text is None
+            or candidate.content_sha256 is None
+            or candidate.metadata
+            != {"study_key": study_key, "parser_version": identity.parser_version}
+        ):
+            raise JobExecutionError(code="public_study_result_invalid", retryable=False)
+        return PublicStudyCompletion(
+            study_key=study_key,
+            source_url=identity.source_url,
+            title=candidate.title,
+            evidence_excerpt=candidate.text,
+            evidence_sha256=candidate.content_sha256,
+            collector_version=candidate.collector_version,
+            parser_version=identity.parser_version,
+            source_policy_version=candidate.source_policy_version,
+        )
+
+    return collect_study
+
+
 def _handlers_for_role(
     role: WorkerRole,
     *,
@@ -583,6 +804,8 @@ def _handlers_for_role(
     worker_id: str,
     tcgdex_transport: TCGdexTransport | None,
     youtube_transport: YouTubeTransport | None,
+    public_study_http_client: HTTPClient | None,
+    public_study_robots_sleeper: Callable[[float], None] | None,
     clock: Callable[[], datetime] | None,
 ) -> Mapping[str, JobHandler]:
     if role is WorkerRole.COLLECTOR:
@@ -599,8 +822,16 @@ def _handlers_for_role(
                 settings=settings,
                 executor=executor,
                 worker_id=worker_id,
-                transport=youtube_transport or HTTPXYouTubeTransport(),
+                transport=youtube_transport,
                 clock=clock,
+            )
+        if settings.public_study_collection_enabled:
+            handlers[PUBLIC_STUDY_JOB_TYPE] = _public_study_handler(
+                settings=settings,
+                executor=executor,
+                worker_id=worker_id,
+                http_client=public_study_http_client,
+                robots_sleeper=public_study_robots_sleeper,
             )
         return handlers
     if role is WorkerRole.WATCHDOG:
@@ -615,6 +846,8 @@ def build_live_worker_runtime(
     clock: Callable[[], datetime] | None = None,
     tcgdex_transport: TCGdexTransport | None = None,
     youtube_transport: YouTubeTransport | None = None,
+    public_study_http_client: HTTPClient | None = None,
+    public_study_robots_sleeper: Callable[[float], None] | None = None,
 ) -> WorkerRuntime:
     """Compose the live queue with a non-empty allowlist of concrete handlers."""
 
@@ -628,6 +861,8 @@ def build_live_worker_runtime(
         worker_id=settings.worker_id,
         tcgdex_transport=tcgdex_transport,
         youtube_transport=youtube_transport,
+        public_study_http_client=public_study_http_client,
+        public_study_robots_sleeper=public_study_robots_sleeper,
         clock=clock,
     )
     if tuple(handlers) != expected_job_types:
@@ -677,6 +912,23 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
         if settings.youtube_collection_enabled
         else ()
     )
+    public_studies = (
+        tuple(
+            ScheduleEntry(
+                name=f"public_study_{study.study_key}",
+                job_type=PUBLIC_STUDY_JOB_TYPE,
+                cron=settings.schedule_public_collection,
+                payload={"study_key": study.study_key},
+                priority=14,
+                max_attempts=min(3, settings.worker_max_attempts),
+                catch_up_within=timedelta(hours=12),
+                catch_up_check_interval=timedelta(hours=1),
+            )
+            for study in PUBLIC_STUDIES
+        )
+        if settings.public_study_collection_enabled
+        else ()
+    )
     cleanup = (
         ScheduleEntry(
             name="cleanup",
@@ -693,7 +945,7 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
             ),
         ),
     )
-    return catalog + youtube + cleanup
+    return catalog + youtube + public_studies + cleanup
 
 
 def build_live_scheduler(

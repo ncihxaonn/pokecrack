@@ -600,6 +600,24 @@ select matches(
   'TCGdex is explicitly labelled catalog-only in the public payload'
 );
 
+-- Browser RLS exposes only the current UTC rolling snapshot. Keep the fixed
+-- historical fixtures above for deterministic RPC semantics, then add one
+-- current live cell to prove old rows cannot appear fresh to anonymous users.
+insert into public.country_period_map_cells (
+  country_code, country_name, period_start, period_end, language,
+  metric_key, metric_version, observed_packs, complete_openings,
+  independent_source_count, observed_rate, posterior_mean, baseline_rate,
+  credible_interval_low, credible_interval_high, delta_from_baseline,
+  signal_status, methodology_version, updated_at
+) values (
+  'AU', 'Australia',
+  (statement_timestamp() at time zone 'UTC')::date - 364,
+  (statement_timestamp() at time zone 'UTC')::date,
+  'en', 'qualifying_hit_pack_rate', 'global-v1', 100, 8, 3,
+  0.16, 0.16, 0.15, 0.1, 0.22, 0.01,
+  'No significant signal', 'global-v1', clock_timestamp()
+);
+
 set local role anon;
 select is(
   (select count(*)::integer from public.tcgdex_set_index),
@@ -608,13 +626,13 @@ select is(
 );
 select is(
   (select count(*)::integer from public.country_period_map_cells),
-  4,
-  'anon RLS returns live history but never demo map rows'
+  1,
+  'anon RLS returns only the current UTC map snapshot'
 );
 select is(
   jsonb_array_length(public.get_public_dashboard_snapshot_v2() -> 'mapCells'),
-  3,
-  'anon can execute the same latest-period global snapshot'
+  1,
+  'anon snapshot cannot surface historical map cells as current'
 );
 reset role;
 

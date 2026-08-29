@@ -11,6 +11,7 @@ from .models import (
     CompletionEffect,
     Job,
     JobStatus,
+    PublicStudyCompletion,
     TCGdexSetsSyncCompletion,
     YouTubeDiscoveryCompletion,
 )
@@ -111,6 +112,16 @@ FROM ingest.finalize_tcgdex_sets_job(
 FINALIZE_YOUTUBE_DISCOVERY_SQL = """
 SELECT *
 FROM ingest.finalize_youtube_discovery_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    result => %(result)s::jsonb
+)
+""".strip()
+
+FINALIZE_PUBLIC_STUDY_SQL = """
+SELECT *
+FROM ingest.finalize_public_study_job(
     job_id => %(job_id)s::uuid,
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint,
@@ -290,6 +301,7 @@ class PostgresJobRepository:
         lease_generation: int,
         now: datetime,
         effect: CompletionEffect
+        | PublicStudyCompletion
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
         | None = None,
@@ -310,6 +322,11 @@ class PostgresJobRepository:
             )
         elif isinstance(effect, YouTubeDiscoveryCompletion):
             sql = FINALIZE_YOUTUBE_DISCOVERY_SQL
+            params["result"] = json.dumps(
+                effect.as_payload(), separators=(",", ":"), sort_keys=True
+            )
+        elif isinstance(effect, PublicStudyCompletion):
+            sql = FINALIZE_PUBLIC_STUDY_SQL
             params["result"] = json.dumps(
                 effect.as_payload(), separators=(",", ":"), sort_keys=True
             )

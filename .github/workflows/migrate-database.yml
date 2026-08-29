@@ -30,6 +30,8 @@ jobs:
     environment: ${{ inputs.environment }}
     env:
       SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      CONFIRM_SHA: ${{ inputs.confirm_sha }}
+      BACKUP_REFERENCE: ${{ inputs.backup_reference }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
@@ -43,8 +45,9 @@ jobs:
         run: |
           set -Eeuo pipefail
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
-          [[ "${{ inputs.confirm_sha }}" == "$GITHUB_SHA" ]]
-          [[ -n "${{ inputs.backup_reference }}" ]]
+          [[ "$CONFIRM_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$CONFIRM_SHA" == "$GITHUB_SHA" ]]
+          [[ "$BACKUP_REFERENCE" =~ ^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,255}$ ]]
           [[ -n "$SUPABASE_DB_URL" ]]
           [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
       - name: Verify PostgreSQL 17 and read applied migrations without exposing the URL
@@ -52,12 +55,16 @@ jobs:
         run: |
           set -Eeuo pipefail
           command -v psql >/dev/null
-          server_version_num=$(PGCONNECT_TIMEOUT=15 PGDATABASE="$SUPABASE_DB_URL" \
+          run_database_command() {
+            printf '%s' "$SUPABASE_DB_URL" \
+              | python3 deploy/lib/run_with_database_url.py -- "$@"
+          }
+          server_version_num=$(run_database_command \
             psql --no-psqlrc --set=ON_ERROR_STOP=1 --tuples-only --no-align \
               --command "select current_setting('server_version_num')")
           [[ "$server_version_num" =~ ^[0-9]+$ ]]
           (( server_version_num >= 170000 ))
-          PGCONNECT_TIMEOUT=15 PGDATABASE="$SUPABASE_DB_URL" \
+          run_database_command \
             psql --no-psqlrc --set=ON_ERROR_STOP=1 --tuples-only --no-align \
               --command 'select version from supabase_migrations.schema_migrations order by version' \
             > /tmp/pokecrack-applied-migrations.txt

@@ -95,6 +95,16 @@
       "migration": "20260829000000_youtube_global_discovery.sql",
       "statement_sha256": "0de01b703a9a6585d569186d22c59c0d669689e54feecf35ba8a2abd64c862ec",
       "reason": "Bounded fenced retention deletes only expired private analytics signals selected by its ordered candidate CTE."
+    },
+    {
+      "migration": "20260831000000_public_study_pipeline.sql",
+      "statement_sha256": "2b227b752ead5cac9e8f92fa20600573aee2881c336bb9415f3057aa4077394d",
+      "reason": "The public-study finalizer removes only its exact methodology-owned current-country cell when no reviewed observation remains inside the rolling window."
+    },
+    {
+      "migration": "20260831000000_public_study_pipeline.sql",
+      "statement_sha256": "2b227b752ead5cac9e8f92fa20600573aee2881c336bb9415f3057aa4077394d",
+      "reason": "The public-study finalizer removes only its exact methodology-owned insufficient cell when the cohort crosses the display threshold pending a separately reviewed inference publisher."
     }
   ]
 }

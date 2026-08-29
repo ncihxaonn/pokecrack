@@ -17,6 +17,8 @@ from pokecrack_worker.config.source_policy import (
 )
 from pokecrack_worker.models import SourceItemCandidate
 
+PUBLIC_COLLECTOR_USER_AGENT = "PokecrackMetadataCollector/0.1"
+
 
 class CollectorError(RuntimeError):
     pass
@@ -142,7 +144,7 @@ class CollectionService:
         dynamic_adapters: DynamicAdapterRegistry | None = None,
         robots: RobotsChecker | None = None,
         guard: CollectionGuard | None = None,
-        user_agent: str = "PokecrackMetadataCollector/0.1",
+        user_agent: str = PUBLIC_COLLECTOR_USER_AGENT,
     ) -> None:
         self.policies = policies
         self.http_adapters = http_adapters

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Remove the disposable YouTube discovery cache from a plain PostgreSQL dump.
+"""Sanitize retention-controlled state in a plain PostgreSQL dump.
 
 The backup entrypoint invokes this program between ``pg_dump`` and ``gzip``.
 It deliberately supports only the stable, line-oriented ``COPY ... FROM
@@ -17,21 +17,30 @@ import stat
 import sys
 import tempfile
 from dataclasses import dataclass
+from datetime import UTC, datetime
 from typing import BinaryIO
 from uuid import UUID
 
 SOURCE_POLICIES = ("ingest", "source_policies")
 YOUTUBE_DISCOVERIES = ("ingest", "youtube_discoveries")
+PUBLIC_STUDY_OBSERVATIONS = ("ingest", "public_study_observations")
 SOURCE_REQUEST_GATES = ("ingest", "source_request_gates")
-RETENTION_CONTROL_TABLES = frozenset({SOURCE_POLICIES, YOUTUBE_DISCOVERIES})
+RETENTION_CONTROL_TABLES = frozenset(
+    {SOURCE_POLICIES, YOUTUBE_DISCOVERIES, PUBLIC_STUDY_OBSERVATIONS}
+)
 TCGDEX_SOURCE_KEY = b"tcgdex_catalog"
 YOUTUBE_SOURCE_KEY = b"youtube_discovery"
+PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_comicbook_us_55",
+    b"public_study_wargamer_gb_17",
+)
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 TARGET_INSERT = re.compile(
     r'^\s*INSERT\s+INTO\s+(?:ingest|"ingest")\.'
     r'(?:source_policies|"source_policies"|'
     r'youtube_discoveries|"youtube_discoveries"|'
+    r'public_study_observations|"public_study_observations"|'
     r'source_request_gates|"source_request_gates")(?:\s|\()',
     re.IGNORECASE,
 )
@@ -61,6 +70,126 @@ REQUEST_GATES_CREATE = re.compile(
     r'(?:source_request_gates(?![A-Za-z0-9_$])|"source_request_gates")\s*\(',
     re.IGNORECASE,
 )
+PUBLIC_STUDY_CREATE_REFERENCE = re.compile(
+    r'^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+'
+    r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
+    r'(?:public_study_observations(?![A-Za-z0-9_$])|"public_study_observations")'
+    r'(?:\s|\()',
+    re.IGNORECASE,
+)
+PUBLIC_STUDY_CREATE = re.compile(
+    r'^\s*CREATE\s+TABLE\s+'
+    r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
+    r'(?:public_study_observations(?![A-Za-z0-9_$])|"public_study_observations")\s*\(',
+    re.IGNORECASE,
+)
+PUBLIC_STUDY_COPY_COLUMNS = (
+    "study_key",
+    "source_policy_id",
+    "source_item_id",
+    "extraction_run_id",
+    "opening_id",
+    "country_code",
+    "country_name",
+    "geography_basis",
+    "geography_confidence",
+    "source_observed_at",
+    "pack_count",
+    "qualifying_hit_pack_count",
+    "set_external_id",
+    "product_scope",
+    "metric_key",
+    "metric_version",
+    "collector_version",
+    "parser_version",
+    "source_policy_version",
+    "evidence_sha256",
+    "first_verified_at",
+    "last_verified_at",
+    "is_demo",
+)
+PUBLIC_STUDY_COLUMN_DECLARATIONS = (
+    "study_key text not null",
+    "source_policy_id uuid not null",
+    "source_item_id uuid not null",
+    "extraction_run_id uuid not null",
+    "opening_id uuid not null",
+    "country_code text not null",
+    "country_name text not null",
+    "geography_basis text not null",
+    "geography_confidence text not null",
+    "source_observed_at timestamp with time zone not null",
+    "pack_count integer not null",
+    "qualifying_hit_pack_count integer not null",
+    "set_external_id text not null",
+    "product_scope text not null",
+    "metric_key text not null",
+    "metric_version text not null",
+    "collector_version text not null",
+    "parser_version text not null",
+    "source_policy_version text not null",
+    "evidence_sha256 text not null",
+    "first_verified_at timestamp with time zone not null",
+    "last_verified_at timestamp with time zone not null",
+    "is_demo boolean default false not null",
+)
+PUBLIC_STUDY_CHECK_DECLARATIONS = frozenset(
+    {
+        "constraint public_study_observations_country_name_check check (((btrim(country_name) <> ''::text) and (char_length(country_name) <= 160)))",
+        "constraint public_study_observations_counts_check check ((((pack_count >= 1) and (pack_count <= 100000)) and ((qualifying_hit_pack_count >= 0) and (qualifying_hit_pack_count <= pack_count))))",
+        "constraint public_study_observations_geography_check check (((geography_basis = any (array['publisher_country'::text, 'author_public_residence'::text])) and (geography_confidence = 'tier_b'::text)))",
+        "constraint public_study_observations_hash_check check ((evidence_sha256 ~ '^[0-9a-f]{64}$'::text))",
+        "constraint public_study_observations_key_check check ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text))",
+        "constraint public_study_observations_live_only_check check ((not is_demo))",
+        "constraint public_study_observations_metric_check check (((metric_key = 'qualifying_hit_pack_rate'::text) and (metric_version = 'global-sir-v1'::text)))",
+        "constraint public_study_observations_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text])))",
+        "constraint public_study_observations_set_check check (((btrim(set_external_id) <> ''::text) and (char_length(set_external_id) <= 160)))",
+        "constraint public_study_observations_time_check check ((last_verified_at >= first_verified_at))",
+        "constraint public_study_observations_version_check check (((btrim(collector_version) <> ''::text) and (char_length(collector_version) <= 120) and (btrim(parser_version) <> ''::text) and (char_length(parser_version) <= 120) and (btrim(source_policy_version) <> ''::text) and (char_length(source_policy_version) <= 120)))",
+    }
+)
+PUBLIC_STUDY_POLICY_SOURCE_KEY = {
+    b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
+    b"wargamer-chaos-rising-gb-17-v1": b"public_study_wargamer_gb_17",
+}
+PUBLIC_STUDY_EXACT_FIELDS = {
+    b"comicbook-perfect-order-us-55-v1": {
+        "country_code": b"US",
+        "country_name": b"United States",
+        "geography_basis": b"publisher_country",
+        "geography_confidence": b"tier_b",
+        "pack_count": b"55",
+        "qualifying_hit_pack_count": b"1",
+        "set_external_id": b"me03",
+        "product_scope": b"all",
+        "metric_key": b"qualifying_hit_pack_rate",
+        "metric_version": b"global-sir-v1",
+        "collector_version": b"public-study-comicbook-perfect-order-v1",
+        "parser_version": b"comicbook-perfect-order-evidence-v1",
+        "source_policy_version": b"public-study-comicbook-perfect-order-v1",
+        "is_demo": b"f",
+    },
+    b"wargamer-chaos-rising-gb-17-v1": {
+        "country_code": b"GB",
+        "country_name": b"United Kingdom",
+        "geography_basis": b"publisher_country",
+        "geography_confidence": b"tier_b",
+        "pack_count": b"17",
+        "qualifying_hit_pack_count": b"0",
+        "set_external_id": b"me04",
+        "product_scope": b"all",
+        "metric_key": b"qualifying_hit_pack_rate",
+        "metric_version": b"global-sir-v1",
+        "collector_version": b"public-study-wargamer-chaos-rising-v1",
+        "parser_version": b"wargamer-chaos-rising-evidence-v1",
+        "source_policy_version": b"public-study-wargamer-chaos-rising-v1",
+        "is_demo": b"f",
+    },
+}
+PUBLIC_STUDY_OBSERVED_AT = {
+    b"comicbook-perfect-order-us-55-v1": datetime(2026, 3, 19, 21, tzinfo=UTC),
+    b"wargamer-chaos-rising-gb-17-v1": datetime(2026, 5, 11, tzinfo=UTC),
+}
 
 
 def _normalize_sql(lines: list[bytes] | tuple[bytes, ...]) -> str:
@@ -465,6 +594,95 @@ def parse_request_gates_create(line: bytes) -> bool | None:
     return True
 
 
+def parse_public_study_create(line: bytes) -> bool | None:
+    """Identify the one regular public-study ledger table definition."""
+
+    try:
+        text = line.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if not re.match(r"^\s*CREATE(?:\s|\Z)", text, re.IGNORECASE):
+        return None
+    if not PUBLIC_STUDY_CREATE_REFERENCE.match(text):
+        return None
+    if PUBLIC_STUDY_CREATE.match(text) is None:
+        raise SanitizationError(
+            "unsupported public_study_observations CREATE TABLE header"
+        )
+    return True
+
+
+def _split_create_declarations(lines: list[bytes]) -> tuple[str, ...]:
+    try:
+        text = b"".join(lines).decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise SanitizationError("public-study schema is not UTF-8") from error
+    open_parenthesis = text.find("(")
+    close_parenthesis = text.rfind(");")
+    if open_parenthesis < 0 or close_parenthesis <= open_parenthesis:
+        raise SanitizationError("public-study CREATE TABLE is malformed")
+    if text[close_parenthesis + 2 :].strip():
+        raise SanitizationError("public-study CREATE TABLE has trailing SQL")
+    body = text[open_parenthesis + 1 : close_parenthesis]
+    declarations: list[str] = []
+    start = 0
+    depth = 0
+    in_single_quote = False
+    in_double_quote = False
+    index = 0
+    while index < len(body):
+        character = body[index]
+        if in_single_quote:
+            if character == "'":
+                if index + 1 < len(body) and body[index + 1] == "'":
+                    index += 2
+                    continue
+                in_single_quote = False
+        elif in_double_quote:
+            if character == '"':
+                if index + 1 < len(body) and body[index + 1] == '"':
+                    index += 2
+                    continue
+                in_double_quote = False
+        elif character == "'":
+            in_single_quote = True
+        elif character == '"':
+            in_double_quote = True
+        elif character == "(":
+            depth += 1
+        elif character == ")":
+            if depth == 0:
+                raise SanitizationError("public-study schema has unbalanced parentheses")
+            depth -= 1
+        elif character == "," and depth == 0:
+            declarations.append(_normalize_sql((body[start:index].encode("utf-8"),)))
+            start = index + 1
+        index += 1
+    if in_single_quote or in_double_quote or depth:
+        raise SanitizationError("public-study schema is unterminated")
+    declarations.append(_normalize_sql((body[start:].encode("utf-8"),)))
+    if any(not declaration for declaration in declarations):
+        raise SanitizationError("public-study schema has an empty declaration")
+    return tuple(declarations)
+
+
+def _validate_public_study_create(lines: list[bytes]) -> None:
+    declarations = _split_create_declarations(lines)
+    column_count = len(PUBLIC_STUDY_COLUMN_DECLARATIONS)
+    columns = declarations[:column_count]
+    if columns != PUBLIC_STUDY_COLUMN_DECLARATIONS:
+        raise SanitizationError("unsupported public_study_observations column schema")
+    constraint_declarations = declarations[column_count:]
+    if (
+        len(constraint_declarations) != len(PUBLIC_STUDY_CHECK_DECLARATIONS)
+        or len(set(constraint_declarations)) != len(constraint_declarations)
+        or frozenset(constraint_declarations) != PUBLIC_STUDY_CHECK_DECLARATIONS
+    ):
+        raise SanitizationError(
+            "unsupported public_study_observations check-constraint schema"
+        )
+
+
 def _without_line_ending(line: bytes) -> bytes:
     if line.endswith(b"\r\n"):
         return line[:-2]
@@ -486,6 +704,26 @@ def _canonical_uuid(value: bytes, *, field: str) -> str:
     return str(parsed)
 
 
+def _plain_copy_text(value: bytes, *, field: str) -> str:
+    if value == b"\\N" or b"\\" in value or b"\x00" in value:
+        raise SanitizationError(f"{field} is not plain text")
+    try:
+        return value.decode("utf-8")
+    except UnicodeDecodeError as error:
+        raise SanitizationError(f"{field} is not UTF-8") from error
+
+
+def _utc_copy_timestamp(value: bytes, *, field: str) -> datetime:
+    text = _plain_copy_text(value, field=field)
+    try:
+        parsed = datetime.fromisoformat(text)
+    except ValueError as error:
+        raise SanitizationError(f"{field} is not an ISO timestamp") from error
+    if parsed.tzinfo is None or parsed.utcoffset() != UTC.utcoffset(parsed):
+        raise SanitizationError(f"{field} is not an explicit UTC timestamp")
+    return parsed
+
+
 def _column_indexes(header: CopyHeader) -> dict[str, int]:
     return {column: index for index, column in enumerate(header.columns)}
 
@@ -496,6 +734,7 @@ class PlainBackupSanitizer:
         *,
         source_policies_present: bool,
         youtube_discoveries_present: bool,
+        public_studies_present: bool,
         youtube_policy_id: str | None,
     ) -> None:
         if youtube_policy_id is not None:
@@ -512,16 +751,33 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "YouTube policy exists without youtube_discoveries"
             )
+        if public_studies_present and not (
+            source_policies_present and youtube_discoveries_present
+        ):
+            raise SanitizationError(
+                "public-study observations require the policy registry and YouTube-era gate schema"
+            )
 
         self.expected = {
             SOURCE_POLICIES: source_policies_present,
             YOUTUBE_DISCOVERIES: youtube_discoveries_present,
+            PUBLIC_STUDY_OBSERVATIONS: public_studies_present,
         }
         self.preflight_youtube_policy_id = youtube_policy_id
         self.seen = {table: 0 for table in RETENTION_CONTROL_TABLES}
         self.youtube_policy_rows: list[str] = []
         self.tcgdex_policy_rows = 0
+        self.public_study_policy_ids = {
+            source_key: [] for source_key in PUBLIC_STUDY_SOURCE_KEYS
+        }
+        self.public_study_rows: dict[bytes, tuple[bytes, str]] = {}
+        self.public_study_object_ids = {
+            column: set()
+            for column in ("source_item_id", "extraction_run_id", "opening_id")
+        }
         self.youtube_create_count = 0
+        self.public_study_create_count = 0
+        self.public_study_create_lines: list[bytes] | None = None
         self.request_gates_create_count = 0
         self.request_gates_create_lines: list[bytes] | None = None
         self.request_gates_alter_lines: list[bytes] | None = None
@@ -540,6 +796,13 @@ class PlainBackupSanitizer:
         if _normalize_sql(lines) != expected:
             raise SanitizationError("unsupported source_request_gates schema")
         self.request_gates_create_lines = None
+
+    def _finish_public_study_create(self) -> None:
+        lines = self.public_study_create_lines
+        if lines is None:
+            raise SanitizationError("public-study CREATE state is missing")
+        _validate_public_study_create(lines)
+        self.public_study_create_lines = None
 
     def _finish_request_gates_alter(self) -> None:
         lines = self.request_gates_alter_lines
@@ -588,6 +851,13 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "youtube_discoveries COPY lacks source_policy_id"
             )
+        elif (
+            header.table == PUBLIC_STUDY_OBSERVATIONS
+            and header.columns != PUBLIC_STUDY_COPY_COLUMNS
+        ):
+            raise SanitizationError(
+                "public_study_observations COPY columns do not match the exact retained schema"
+            )
         return CopyBlock(header=header, column_indexes=indexes)
 
     def _target_fields(self, block: CopyBlock, line: bytes) -> list[bytes]:
@@ -614,6 +884,16 @@ class PlainBackupSanitizer:
                 )
             elif source_key == TCGDEX_SOURCE_KEY:
                 self.tcgdex_policy_rows += 1
+            elif source_key in self.public_study_policy_ids:
+                self.public_study_policy_ids[source_key].append(
+                    _canonical_uuid(
+                        fields[block.column_indexes["id"]],
+                        field="public-study policy id",
+                    )
+                )
+            return
+        if block.header.table == PUBLIC_STUDY_OBSERVATIONS:
+            self._inspect_public_study_row(block, fields)
             return
         policy_id = _canonical_uuid(
             fields[block.column_indexes["source_policy_id"]],
@@ -623,6 +903,71 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "youtube_discoveries row does not use the exact YouTube policy"
             )
+
+    def _inspect_public_study_row(
+        self, block: CopyBlock, fields: list[bytes]
+    ) -> None:
+        indexes = block.column_indexes
+        study_key_value = fields[indexes["study_key"]]
+        _plain_copy_text(study_key_value, field="public-study key")
+        exact_fields = PUBLIC_STUDY_EXACT_FIELDS.get(study_key_value)
+        source_key = PUBLIC_STUDY_POLICY_SOURCE_KEY.get(study_key_value)
+        expected_observed_at = PUBLIC_STUDY_OBSERVED_AT.get(study_key_value)
+        if (
+            exact_fields is None
+            or source_key is None
+            or expected_observed_at is None
+        ):
+            raise SanitizationError("public-study ledger contains an unapproved study key")
+        if study_key_value in self.public_study_rows:
+            raise SanitizationError("public-study ledger contains a duplicate study key")
+
+        for column, expected_value in exact_fields.items():
+            actual_value = fields[indexes[column]]
+            _plain_copy_text(actual_value, field=f"public-study {column}")
+            if actual_value != expected_value:
+                raise SanitizationError(
+                    f"public-study {column} does not match the reviewed contract"
+                )
+
+        policy_id = _canonical_uuid(
+            fields[indexes["source_policy_id"]], field="public-study policy id"
+        )
+        for column, seen_ids in self.public_study_object_ids.items():
+            object_id = _canonical_uuid(
+                fields[indexes[column]], field=f"public-study {column}"
+            )
+            if object_id in seen_ids:
+                raise SanitizationError(f"public-study {column} is duplicated")
+            seen_ids.add(object_id)
+
+        observed_at = _utc_copy_timestamp(
+            fields[indexes["source_observed_at"]],
+            field="public-study source_observed_at",
+        )
+        if observed_at != expected_observed_at:
+            raise SanitizationError(
+                "public-study source_observed_at does not match the reviewed contract"
+            )
+        first_verified_at = _utc_copy_timestamp(
+            fields[indexes["first_verified_at"]],
+            field="public-study first_verified_at",
+        )
+        last_verified_at = _utc_copy_timestamp(
+            fields[indexes["last_verified_at"]],
+            field="public-study last_verified_at",
+        )
+        if last_verified_at < first_verified_at:
+            raise SanitizationError(
+                "public-study verification timestamps are out of order"
+            )
+        evidence_sha256 = fields[indexes["evidence_sha256"]]
+        _plain_copy_text(evidence_sha256, field="public-study evidence_sha256")
+        if re.fullmatch(rb"[0-9a-f]{64}", evidence_sha256) is None:
+            raise SanitizationError(
+                "public-study evidence_sha256 is not a lowercase SHA-256"
+            )
+        self.public_study_rows[study_key_value] = (source_key, policy_id)
 
     def _validate_complete(self) -> None:
         for table, expected_present in self.expected.items():
@@ -649,6 +994,18 @@ class PlainBackupSanitizer:
                 "unexpected youtube_discoveries CREATE TABLE header"
             )
 
+        expected_public_create_count = int(
+            self.expected[PUBLIC_STUDY_OBSERVATIONS]
+        )
+        if self.public_study_create_count != expected_public_create_count:
+            if expected_public_create_count:
+                raise SanitizationError(
+                    "expected one regular public_study_observations CREATE TABLE definition"
+                )
+            raise SanitizationError(
+                "unexpected public_study_observations CREATE TABLE definition"
+            )
+
         if self.request_gates_create_count != 1:
             raise SanitizationError(
                 "expected one regular source_request_gates CREATE TABLE header"
@@ -663,6 +1020,28 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "dump must contain one exact TCGdex catalog source policy"
             )
+        expected_public_policy_rows = int(self.expected[PUBLIC_STUDY_OBSERVATIONS])
+        if any(
+            len(policy_ids) != expected_public_policy_rows
+            for policy_ids in self.public_study_policy_ids.values()
+        ):
+            raise SanitizationError(
+                "dump public-study policies do not match the database preflight"
+            )
+        retained_public_policy_ids = [
+            policy_ids[0]
+            for policy_ids in self.public_study_policy_ids.values()
+            if policy_ids
+        ]
+        if len(set(retained_public_policy_ids)) != len(retained_public_policy_ids):
+            raise SanitizationError(
+                "public-study source policies must use distinct UUIDs"
+            )
+        for _study_key, (source_key, policy_id) in self.public_study_rows.items():
+            if self.public_study_policy_ids[source_key] != [policy_id]:
+                raise SanitizationError(
+                    "public-study ledger row does not use its exact source policy"
+                )
 
         if self.preflight_youtube_policy_id is None:
             if self.youtube_policy_rows:
@@ -690,6 +1069,12 @@ class PlainBackupSanitizer:
                 self.request_gates_create_lines.append(line)
                 if line.rstrip() == b");":
                     self._finish_request_gates_create()
+                continue
+
+            if self.public_study_create_lines is not None:
+                self.public_study_create_lines.append(line)
+                if line.rstrip() == b");":
+                    self._finish_public_study_create()
                 continue
 
             if self.request_gates_alter_lines is not None:
@@ -729,15 +1114,25 @@ class PlainBackupSanitizer:
                 self.request_gates_create_lines = [line]
                 continue
 
+            if parse_public_study_create(line):
+                self.public_study_create_count += 1
+                if self.public_study_create_count != 1:
+                    raise SanitizationError(
+                        "duplicate public_study_observations CREATE TABLE header"
+                    )
+                self.public_study_create_lines = [line]
+                continue
+
             normalized_line = _normalize_sql((line,))
             if normalized_line.startswith(POLICY_STATEMENT_PREFIXES):
                 self.policy_statement_lines = [line]
                 self._maybe_finish_policy_statement()
                 continue
             if normalized_line.startswith(
-                "alter table only ingest.source_request_gates"
-            ) or normalized_line.startswith(
-                "alter table ingest.source_request_gates"
+                (
+                    "alter table only ingest.source_request_gates",
+                    "alter table ingest.source_request_gates",
+                )
             ):
                 self.request_gates_alter_lines = [line]
                 if line.rstrip().endswith(b";"):
@@ -757,6 +1152,10 @@ class PlainBackupSanitizer:
             raise SanitizationError("unterminated COPY data block")
         if self.request_gates_create_lines is not None:
             raise SanitizationError("unterminated source_request_gates CREATE TABLE")
+        if self.public_study_create_lines is not None:
+            raise SanitizationError(
+                "unterminated public_study_observations CREATE TABLE"
+            )
         if self.request_gates_alter_lines is not None:
             raise SanitizationError("unterminated source_request_gates ALTER TABLE")
         if self.policy_statement_lines is not None:
@@ -789,6 +1188,11 @@ class PlainBackupSanitizer:
                 )
                 if self.expected[YOUTUBE_DISCOVERIES]:
                     destination.write(b"youtube_discovery\n")
+                if self.expected[PUBLIC_STUDY_OBSERVATIONS]:
+                    destination.writelines(
+                        source_key + b"\n"
+                        for source_key in PUBLIC_STUDY_SOURCE_KEYS
+                    )
                 destination.write(b"\\.\n\n")
                 gate_seed_written = True
             destination.write(line)
@@ -820,6 +1224,7 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     presence = ("present", "absent")
     parser.add_argument("--source-policies", required=True, choices=presence)
     parser.add_argument("--youtube-discoveries", required=True, choices=presence)
+    parser.add_argument("--public-studies", required=True, choices=presence)
     parser.add_argument("--youtube-policy-id")
     return parser.parse_args(argv)
 
@@ -830,6 +1235,7 @@ def main(argv: list[str] | None = None) -> int:
         sanitizer = PlainBackupSanitizer(
             source_policies_present=args.source_policies == "present",
             youtube_discoveries_present=args.youtube_discoveries == "present",
+            public_studies_present=args.public_studies == "present",
             youtube_policy_id=args.youtube_policy_id,
         )
         sanitizer.sanitize(sys.stdin.buffer, sys.stdout.buffer)

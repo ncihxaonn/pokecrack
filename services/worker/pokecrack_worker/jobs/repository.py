@@ -13,6 +13,7 @@ from .models import (
     CompletionEffect,
     Job,
     JobStatus,
+    PublicStudyCompletion,
     TCGdexSetsSyncCompletion,
     YouTubeDiscoveryCompletion,
 )
@@ -239,6 +240,7 @@ class InMemoryJobRepository:
         lease_generation: int,
         now: datetime,
         effect: CompletionEffect
+        | PublicStudyCompletion
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
         | None = None,

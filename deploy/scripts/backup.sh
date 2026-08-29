@@ -47,6 +47,10 @@ run_database_command() {
 install -d -m 0700 "$BACKUP_DIR"
 [[ -d $BACKUP_DIR && ! -L $BACKUP_DIR ]] || die "backup directory is not a real directory"
 chmod 0700 "$BACKUP_DIR"
+SUCCESS_MARKER="$BACKUP_DIR/.last-successful-backup"
+if [[ -e $SUCCESS_MARKER || -L $SUCCESS_MARKER ]]; then
+  [[ -f $SUCCESS_MARKER && ! -L $SUCCESS_MARKER ]] || die "success marker must be a regular, non-symlink file"
+fi
 
 # Prove that both the policy registry and the dedicated disposable cache have
 # the expected physical shape without placing the database URL in argv or
@@ -69,6 +73,11 @@ select concat_ws(E'\\t',
     from pg_catalog.pg_class
     where oid = to_regclass('ingest.source_request_gates')
   ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.public_study_observations')
+  ), '0'),
   coalesce(has_table_privilege(
     'service_role',
     to_regclass('ingest.source_request_gates'),
@@ -81,11 +90,21 @@ if ! table_state=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-o
 fi
 
 case "$table_state" in
-  $'rp\tru\trp\ttrue') youtube_discoveries=present ;;
-  $'rp\t0\trp\ttrue') youtube_discoveries=absent ;;
+  $'rp\tru\trp\trp\ttrue')
+    youtube_discoveries=present
+    public_studies=present
+    ;;
+  $'rp\tru\trp\t0\ttrue')
+    youtube_discoveries=present
+    public_studies=absent
+    ;;
+  $'rp\t0\trp\t0\ttrue')
+    youtube_discoveries=absent
+    public_studies=absent
+    ;;
   *)
     unset database_url
-    die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, and youtube_discoveries either absent or UNLOGGED"
+    die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, the public-study ledger either absent or logged, and youtube_discoveries either absent or UNLOGGED"
     ;;
 esac
 
@@ -103,6 +122,7 @@ fi
 sanitizer_arguments=(
   --source-policies present
   --youtube-discoveries "$youtube_discoveries"
+  --public-studies "$public_studies"
 )
 if [[ $youtube_discoveries == present ]]; then
   if [[ -z $youtube_policy_id ]]; then
@@ -173,7 +193,7 @@ mv "$temporary" "$final_path"
 marker_temporary=$(mktemp "$BACKUP_DIR/.last-successful-backup.XXXXXXXX")
 printf '%s\ncompleted_at=%s\n' "$filename" "$timestamp" > "$marker_temporary"
 chmod 0600 "$marker_temporary"
-mv -f "$marker_temporary" "$BACKUP_DIR/.last-successful-backup"
+mv -f "$marker_temporary" "$SUCCESS_MARKER"
 marker_temporary=''
 
 python3 "$SCRIPT_DIR/../lib/prune_backups.py" \

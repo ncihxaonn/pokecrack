@@ -1,8 +1,10 @@
 """Official, metadata-only API collectors."""
 
 from .postgres import (
+    PostgresPublicStudyGate,
     PostgresTCGdexCheckpointRepository,
     PostgresYouTubeDiscoveryGate,
+    PublicStudyRequestDeferred,
     TCGdexRequestDeferred,
     TCGdexSetsCheckpoint,
     YouTubeRequestDeferred,
@@ -18,6 +20,7 @@ from .tcgdex import (
 )
 from .youtube import (
     HTTPXYouTubeTransport,
+    MatonYouTubeTransport,
     YouTubeDataClient,
     YouTubeTransport,
 )
@@ -26,9 +29,12 @@ __all__ = [
     "HTTPXTCGdexTransport",
     "HTTPXYouTubeTransport",
     "InMemoryTCGdexSetsCache",
+    "MatonYouTubeTransport",
     "PostgresTCGdexCheckpointRepository",
+    "PostgresPublicStudyGate",
     "PostgresYouTubeDiscoveryGate",
     "TCGdexRequestDeferred",
+    "PublicStudyRequestDeferred",
     "TCGdexSetBrief",
     "TCGdexSetsClient",
     "TCGdexSetsCheckpoint",
