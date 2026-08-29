@@ -171,9 +171,9 @@ export function BatchDetailView({ data, batch, synthetic }: { data: PublicDashbo
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
       <MetricDisclaimer batch />
-      <PageIntro eyebrow={`${batch.productType} · visible batch observation`} title={batch.code} description={`${batch.setName} observations attributed to ${batch.region}.`}><div className="intro-meta"><span>{formatDate(batch.firstObserved)}–{formatDate(batch.lastObserved)}</span><span>Updated {formatDateTime(batch.updatedAt)}</span></div></PageIntro>
+      <PageIntro eyebrow={`${batch.productType} · visible batch observation`} title={batch.code} description={`${batch.setName} observations attributed to ${batch.region}.`}><div className="intro-meta"><span>{formatDate(batch.firstObserved)} to {formatDate(batch.lastObserved)}</span><span>Updated {formatDateTime(batch.updatedAt)}</span></div></PageIntro>
       <ObservationStats metric={batch} />
-      <div className="detail-grid"><Panel><h2>Interpretation</h2><p>{batch.sampleNote}</p><p>Batch labels are observational groupings and may not correspond to a single production run.</p></Panel><Panel><h2>Published scope</h2><DefinitionList items={[{ term: "Set", value: set ? <Link href={`/sets/${set.slug}` as Route}>{batch.setName}</Link> : batch.setName }, { term: "Product", value: batch.productType }, { term: "Region", value: batch.region }, { term: "Window", value: `${formatDate(batch.firstObserved)}–${formatDate(batch.lastObserved)}` }]} /></Panel></div>
+      <div className="detail-grid"><Panel><h2>Interpretation</h2><p>{batch.sampleNote}</p><p>Batch labels are observational groupings and may not correspond to a single production run.</p></Panel><Panel><h2>Published scope</h2><DefinitionList items={[{ term: "Set", value: set ? <Link href={`/sets/${set.slug}` as Route}>{batch.setName}</Link> : batch.setName }, { term: "Product", value: batch.productType }, { term: "Region", value: batch.region }, { term: "Window", value: `${formatDate(batch.firstObserved)} to ${formatDate(batch.lastObserved)}` }]} /></Panel></div>
     </PublicPage>
   );
 }

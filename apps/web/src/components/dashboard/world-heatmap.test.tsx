@@ -82,7 +82,7 @@ describe("WorldHeatmap", () => {
       />,
     );
     expect(screen.getByText("Awaiting observations")).toBeVisible();
-    expect(screen.getByText("No published country rates yet")).toBeVisible();
+    expect(screen.getByText("No country-level rates published yet")).toBeVisible();
     expect(screen.getByText("No verified country observations are published yet.")).toBeVisible();
     expect(screen.getByRole("img", { name: "Baseline delta across the world" })).toHaveAccessibleDescription(
       /every country is shown in the neutral no-data colour/i,

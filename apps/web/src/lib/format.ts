@@ -21,7 +21,7 @@ export function formatProbability(value: number | null): string {
 }
 
 export function formatSignedProbability(value: number | null): string {
-  if (value === null) return "—";
+  if (value === null) return "N/A";
   const percentagePoints = value * 100;
   const sign = percentagePoints > 0 ? "+" : percentagePoints < 0 ? "−" : "";
   return `${sign}${Math.abs(percentagePoints).toFixed(1)} pp`;
