@@ -51,6 +51,90 @@ POST_YOUTUBE_GATE_SEED = (
     b"youtube_discovery\n"
     b"\\.\n\n"
 )
+PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_comicbook_us_55",
+    b"public_study_wargamer_gb_17",
+)
+COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
+WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
+PUBLIC_STUDY_COLUMNS = (
+    "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
+    "country_code, country_name, geography_basis, geography_confidence, "
+    "source_observed_at, pack_count, qualifying_hit_pack_count, set_external_id, "
+    "product_scope, metric_key, metric_version, collector_version, parser_version, "
+    "source_policy_version, evidence_sha256, first_verified_at, last_verified_at, is_demo"
+)
+PUBLIC_STUDY_DDL = b"""CREATE TABLE ingest.public_study_observations (
+    study_key text NOT NULL,
+    source_policy_id uuid NOT NULL,
+    source_item_id uuid NOT NULL,
+    extraction_run_id uuid NOT NULL,
+    opening_id uuid NOT NULL,
+    country_code text NOT NULL,
+    country_name text NOT NULL,
+    geography_basis text NOT NULL,
+    geography_confidence text NOT NULL,
+    source_observed_at timestamp with time zone NOT NULL,
+    pack_count integer NOT NULL,
+    qualifying_hit_pack_count integer NOT NULL,
+    set_external_id text NOT NULL,
+    product_scope text NOT NULL,
+    metric_key text NOT NULL,
+    metric_version text NOT NULL,
+    collector_version text NOT NULL,
+    parser_version text NOT NULL,
+    source_policy_version text NOT NULL,
+    evidence_sha256 text NOT NULL,
+    first_verified_at timestamp with time zone NOT NULL,
+    last_verified_at timestamp with time zone NOT NULL,
+    is_demo boolean DEFAULT false NOT NULL,
+    CONSTRAINT public_study_observations_country_name_check CHECK (((btrim(country_name) <> ''::text) AND (char_length(country_name) <= 160))),
+    CONSTRAINT public_study_observations_counts_check CHECK ((((pack_count >= 1) AND (pack_count <= 100000)) AND ((qualifying_hit_pack_count >= 0) AND (qualifying_hit_pack_count <= pack_count)))),
+    CONSTRAINT public_study_observations_geography_check CHECK (((geography_basis = ANY (ARRAY['publisher_country'::text, 'author_public_residence'::text])) AND (geography_confidence = 'tier_b'::text))),
+    CONSTRAINT public_study_observations_hash_check CHECK ((evidence_sha256 ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT public_study_observations_key_check CHECK ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text)),
+    CONSTRAINT public_study_observations_live_only_check CHECK ((NOT is_demo)),
+    CONSTRAINT public_study_observations_metric_check CHECK (((metric_key = 'qualifying_hit_pack_rate'::text) AND (metric_version = 'global-sir-v1'::text))),
+    CONSTRAINT public_study_observations_product_check CHECK ((product_scope = ANY (ARRAY['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text]))),
+    CONSTRAINT public_study_observations_set_check CHECK (((btrim(set_external_id) <> ''::text) AND (char_length(set_external_id) <= 160))),
+    CONSTRAINT public_study_observations_time_check CHECK ((last_verified_at >= first_verified_at)),
+    CONSTRAINT public_study_observations_version_check CHECK (((btrim(collector_version) <> ''::text) AND (char_length(collector_version) <= 120) AND (btrim(parser_version) <> ''::text) AND (char_length(parser_version) <= 120) AND (btrim(source_policy_version) <> ''::text) AND (char_length(source_policy_version) <= 120)))
+);
+"""
+POST_PUBLIC_STUDY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
+    b"youtube_discovery\n",
+    b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS) + b"\n",
+)
+
+
+def comicbook_ledger_row(**overrides: bytes) -> bytes:
+    values = {
+        "study_key": b"comicbook-perfect-order-us-55-v1",
+        "source_policy_id": COMICBOOK_POLICY.encode(),
+        "source_item_id": b"77777777-7777-4777-8777-777777777777",
+        "extraction_run_id": b"88888888-8888-4888-8888-888888888888",
+        "opening_id": b"99999999-9999-4999-8999-999999999999",
+        "country_code": b"US",
+        "country_name": b"United States",
+        "geography_basis": b"publisher_country",
+        "geography_confidence": b"tier_b",
+        "source_observed_at": b"2026-03-19 21:00:00+00",
+        "pack_count": b"55",
+        "qualifying_hit_pack_count": b"1",
+        "set_external_id": b"me03",
+        "product_scope": b"all",
+        "metric_key": b"qualifying_hit_pack_rate",
+        "metric_version": b"global-sir-v1",
+        "collector_version": b"public-study-comicbook-perfect-order-v1",
+        "parser_version": b"comicbook-perfect-order-evidence-v1",
+        "source_policy_version": b"public-study-comicbook-perfect-order-v1",
+        "evidence_sha256": b"a" * 64,
+        "first_verified_at": b"2026-08-29 01:02:03.123456+00",
+        "last_verified_at": b"2026-08-29 01:02:03.123456+00",
+        "is_demo": b"f",
+    }
+    values.update(overrides)
+    return b"\t".join(values[column.strip()] for column in PUBLIC_STUDY_COLUMNS.split(","))
 
 
 def copy_block(table: str, columns: str, *rows: bytes, crlf: bool = False) -> bytes:
@@ -66,6 +150,7 @@ class BackupSanitizerTests(unittest.TestCase):
         *,
         source_policies: str = "present",
         youtube_discoveries: str = "present",
+        public_studies: str = "absent",
         policy_id: str | None = YOUTUBE_POLICY,
         environment: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess[bytes]:
@@ -76,6 +161,8 @@ class BackupSanitizerTests(unittest.TestCase):
             source_policies,
             "--youtube-discoveries",
             youtube_discoveries,
+            "--public-studies",
+            public_studies,
         ]
         if policy_id is not None:
             command.extend(("--youtube-policy-id", policy_id))
@@ -171,6 +258,25 @@ class BackupSanitizerTests(unittest.TestCase):
         newline = b"\r\n" if quoted else b"\n"
         return newline.join((b"-- fixture start", b"".join(sections), b"-- fixture end", b""))
 
+    def with_public_study_ledger(
+        self,
+        dump: bytes,
+        *rows: bytes,
+        ddl: bytes = PUBLIC_STUDY_DDL,
+        columns: str = PUBLIC_STUDY_COLUMNS,
+    ) -> bytes:
+        youtube_row = f"{YOUTUBE_POLICY}\tyoutube_discovery\tpolicy\n".encode()
+        policy_rows = (
+            f"{COMICBOOK_POLICY}\tpublic_study_comicbook_us_55\tpolicy\n"
+            f"{WARGAMER_POLICY}\tpublic_study_wargamer_gb_17\tpolicy\n"
+        ).encode()
+        ledger = ddl + copy_block(
+            "ingest.public_study_observations",
+            columns,
+            *rows,
+        )
+        return dump.replace(youtube_row, youtube_row + policy_rows) + ledger
+
     def assert_only_cache_rows_removed(
         self, result: subprocess.CompletedProcess[bytes]
     ) -> None:
@@ -248,6 +354,96 @@ class BackupSanitizerTests(unittest.TestCase):
                 + GATE_ENABLE_RLS,
             ),
         )
+
+    def test_public_study_ledger_is_retained_and_its_idle_gates_are_reseeded(
+        self,
+    ) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(),
+        )
+
+        result = self.run_sanitizer(dump, public_studies="present")
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(b"comicbook-perfect-order-us-55-v1", result.stdout)
+        self.assertIn(POST_PUBLIC_STUDY_GATE_SEED, result.stdout)
+
+    def test_public_study_schema_copy_header_and_rows_are_fail_closed(self) -> None:
+        base = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(),
+        )
+        cases = {
+            "missing-create": base.replace(PUBLIC_STUDY_DDL, b""),
+            "duplicate-create": base.replace(
+                PUBLIC_STUDY_DDL,
+                PUBLIC_STUDY_DDL + PUBLIC_STUDY_DDL,
+            ),
+            "unlogged-table": base.replace(
+                b"CREATE TABLE ingest.public_study_observations",
+                b"CREATE UNLOGGED TABLE ingest.public_study_observations",
+            ),
+            "changed-column-type": base.replace(
+                b"    pack_count integer NOT NULL,",
+                b"    pack_count bigint NOT NULL,",
+            ),
+            "removed-not-null": base.replace(
+                b"    evidence_sha256 text NOT NULL,",
+                b"    evidence_sha256 text,",
+            ),
+            "changed-check-expression": base.replace(
+                b"(char_length(country_name) <= 160)",
+                b"(char_length(country_name) <= 161)",
+            ),
+            "extra-schema-column": base.replace(
+                b"    is_demo boolean DEFAULT false NOT NULL,",
+                b"    raw_html text,\n    is_demo boolean DEFAULT false NOT NULL,",
+            ),
+            "extra-copy-column": base.replace(
+                f"COPY ingest.public_study_observations ({PUBLIC_STUDY_COLUMNS})".encode(),
+                f"COPY ingest.public_study_observations ({PUBLIC_STUDY_COLUMNS}, raw_html)".encode(),
+            ).replace(
+                comicbook_ledger_row() + b"\n",
+                comicbook_ledger_row() + b"\t<html>sensitive</html>\n",
+            ),
+            "wrong-reviewed-count": base.replace(
+                comicbook_ledger_row() + b"\n",
+                comicbook_ledger_row(pack_count=b"56") + b"\n",
+            ),
+            "wrong-source-policy": base.replace(
+                comicbook_ledger_row() + b"\n",
+                comicbook_ledger_row(source_policy_id=WARGAMER_POLICY.encode()) + b"\n",
+            ),
+            "invalid-evidence-hash": base.replace(
+                comicbook_ledger_row() + b"\n",
+                comicbook_ledger_row(evidence_sha256=b"<html>not-a-hash</html>") + b"\n",
+            ),
+            "non-utc-verification-time": base.replace(
+                comicbook_ledger_row() + b"\n",
+                comicbook_ledger_row(first_verified_at=b"2026-08-29 11:02:03+10")
+                + b"\n",
+            ),
+            "duplicate-public-policy-uuid": base.replace(
+                WARGAMER_POLICY.encode(),
+                COMICBOOK_POLICY.encode(),
+            ),
+        }
+        for name, dump in cases.items():
+            with self.subTest(name=name):
+                result = self.run_sanitizer(dump, public_studies="present")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+                self.assertNotIn(b"sensitive", result.stderr)
+
+    def test_public_study_preflight_and_dump_must_match(self) -> None:
+        result = self.run_sanitizer(
+            self.complete_dump(),
+            public_studies="present",
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
 
     def test_policy_snapshot_missing_different_or_duplicate_fails_before_output(
         self,

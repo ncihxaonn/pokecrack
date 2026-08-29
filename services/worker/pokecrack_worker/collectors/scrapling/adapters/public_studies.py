@@ -1,0 +1,322 @@
+"""Deterministic parsers for exact, reviewed public opening studies."""
+
+from __future__ import annotations
+
+import re
+import time
+from collections.abc import Callable, Mapping, Sequence
+from html.parser import HTMLParser
+from urllib.parse import urlsplit
+from urllib.robotparser import RobotFileParser
+
+from pokecrack_worker.collectors.base import CollectorError, HTTPClient
+from pokecrack_worker.config.public_studies import PUBLIC_STUDIES_BY_KEY, PublicStudyIdentity
+from pokecrack_worker.config.source_policy import SourcePolicy
+from pokecrack_worker.deduplication.urls import canonicalize_url
+from pokecrack_worker.models import CollectorType, SourceItemCandidate
+
+
+def _header(headers: object, name: str) -> str:
+    if not hasattr(headers, "items"):
+        return ""
+    expected = name.casefold()
+    return next(
+        (str(value) for key, value in headers.items() if str(key).casefold() == expected),
+        "",
+    )
+
+
+def _require_exact_url(url: str, expected: str) -> str:
+    requested = url.strip()
+    # Validate the URL with the shared canonicalizer, but retain its exact path:
+    # redirects are disabled, so the robots decision and network request must use
+    # the same reviewed URL byte-for-byte.
+    canonicalize_url(requested)
+    if requested != expected:
+        raise CollectorError("public study adapter accepts only its exact reviewed URL")
+    return requested
+
+
+class _VisibleTextParser(HTMLParser):
+    _BLOCK_TAGS = frozenset(
+        {
+            "article",
+            "br",
+            "div",
+            "h1",
+            "h2",
+            "h3",
+            "li",
+            "main",
+            "p",
+            "section",
+            "ul",
+        }
+    )
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.hidden_depth = 0
+        self.article_depth = 0
+        self.heading_depth = 0
+        self.text_parts: list[str] = []
+        self.heading_parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        del attrs
+        normalized = tag.casefold()
+        if normalized in {"script", "style", "noscript", "template"}:
+            self.hidden_depth += 1
+        elif not self.hidden_depth and normalized == "article":
+            self.article_depth += 1
+        elif not self.hidden_depth and self.article_depth and normalized == "h1":
+            self.heading_depth += 1
+        if not self.hidden_depth and self.article_depth and normalized == "br":
+            self.text_parts.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        normalized = tag.casefold()
+        if normalized in {"script", "style", "noscript", "template"} and self.hidden_depth:
+            self.hidden_depth -= 1
+            return
+        if self.hidden_depth:
+            return
+        if normalized == "article" and self.article_depth:
+            self.text_parts.append("\n")
+            self.article_depth -= 1
+            return
+        if self.article_depth and normalized == "h1" and self.heading_depth:
+            self.heading_depth -= 1
+            self.heading_parts.append("\n")
+        if self.article_depth and normalized in self._BLOCK_TAGS:
+            self.text_parts.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        if self.hidden_depth or not self.article_depth or not data.strip():
+            return
+        self.text_parts.append(data)
+        if self.heading_depth:
+            self.heading_parts.append(data)
+
+    @property
+    def title(self) -> str:
+        return " ".join("".join(self.heading_parts).split())
+
+    @property
+    def text(self) -> str:
+        return " ".join("".join(self.text_parts).split())
+
+
+class RobotsTxtChecker:
+    """Fetch and evaluate same-origin robots.txt without retaining it."""
+
+    def __init__(
+        self,
+        *,
+        client: HTTPClient,
+        timeout_seconds: float = 30.0,
+        max_response_bytes: int = 64 * 1024,
+        followup_delay_seconds: float = 30.0,
+        sleeper: Callable[[float], None] = time.sleep,
+    ) -> None:
+        if not 0 <= followup_delay_seconds <= 120:
+            raise ValueError("followup_delay_seconds must be between 0 and 120")
+        self.client = client
+        self.timeout_seconds = timeout_seconds
+        self.max_response_bytes = max_response_bytes
+        self.followup_delay_seconds = followup_delay_seconds
+        self.sleeper = sleeper
+
+    def allowed(self, url: str, *, user_agent: str) -> bool:
+        try:
+            requested_url = url.strip()
+            canonicalize_url(requested_url)
+            parsed = urlsplit(requested_url)
+            if (
+                parsed.scheme != "https"
+                or parsed.hostname is None
+                or parsed.port not in {None, 443}
+                or parsed.username is not None
+                or parsed.password is not None
+                or parsed.query
+                or parsed.fragment
+            ):
+                return False
+            robots_url = f"https://{parsed.hostname}/robots.txt"
+            response = self.client.get(robots_url, timeout_seconds=self.timeout_seconds)
+            if canonicalize_url(response.url) != robots_url or response.status_code != 200:
+                return False
+            if len(response.body) > self.max_response_bytes:
+                return False
+            if "text/plain" not in _header(response.headers, "content-type").casefold():
+                return False
+            document = response.body.decode("utf-8", errors="strict")
+        except (CollectorError, UnicodeDecodeError, ValueError):
+            return False
+        parser = RobotFileParser()
+        parser.set_url(robots_url)
+        parser.parse(document.splitlines())
+        allowed = parser.can_fetch(user_agent, requested_url)
+        if allowed and self.followup_delay_seconds:
+            self.sleeper(self.followup_delay_seconds)
+        return allowed
+
+
+class ReviewedPublicStudyAdapter:
+    """Accept one page only when its policy and evidence remain exact."""
+
+    def __init__(
+        self,
+        *,
+        client: HTTPClient,
+        identity: PublicStudyIdentity,
+        expected_policy_config: Mapping[str, object],
+        title_tokens: Sequence[str],
+        evidence_patterns: Sequence[re.Pattern[str]],
+        timeout_seconds: float = 30.0,
+        max_response_bytes: int = 1_000_000,
+    ) -> None:
+        self.client = client
+        self.identity = identity
+        self.expected_policy_config = dict(expected_policy_config)
+        self.title_tokens = tuple(title_tokens)
+        self.evidence_patterns = tuple(evidence_patterns)
+        self.timeout_seconds = timeout_seconds
+        self.max_response_bytes = max_response_bytes
+
+    def collect(self, url: str, policy: SourcePolicy) -> tuple[SourceItemCandidate, ...]:
+        identity = self.identity
+        if (
+            policy.domain != identity.domain
+            or policy.collector is not CollectorType.SCRAPLING_HTTP
+            or policy.version != identity.collector_version
+            or policy.adapter != identity.adapter
+            or policy.config != self.expected_policy_config
+            or policy.statistics_eligible_default is not True
+            or policy.metadata_only is not False
+            or policy.retain_raw_html is not False
+        ):
+            raise CollectorError("public study source policy does not match the reviewed contract")
+        requested_url = _require_exact_url(url, identity.fetch_url)
+        response = self.client.get(requested_url, timeout_seconds=self.timeout_seconds)
+        _require_exact_url(response.url, identity.fetch_url)
+        if response.status_code != 200:
+            raise CollectorError(f"public study HTTP status {response.status_code}")
+        if len(response.body) > self.max_response_bytes:
+            raise CollectorError("public study response exceeds configured byte cap")
+        if "text/html" not in _header(response.headers, "content-type").casefold():
+            raise CollectorError("public study expected text/html")
+
+        try:
+            document = response.body.decode("utf-8", errors="strict")
+        except UnicodeDecodeError as error:
+            raise CollectorError("public study must be strict UTF-8 HTML") from error
+        parser = _VisibleTextParser()
+        parser.feed(document)
+        parser.close()
+        title = parser.title
+        if not title or not all(token in title for token in self.title_tokens):
+            raise CollectorError("public study title no longer proves the reviewed scope")
+        matches = [pattern.search(parser.text) for pattern in self.evidence_patterns]
+        if any(match is None for match in matches):
+            raise CollectorError("public study evidence no longer matches the reviewed facts")
+        evidence_excerpt = "\n".join(match.group(0) for match in matches if match is not None)
+
+        return (
+            SourceItemCandidate(
+                platform="web",
+                external_id=identity.study_key,
+                source_url=identity.source_url,
+                title=title,
+                text=evidence_excerpt,
+                metadata={
+                    "study_key": identity.study_key,
+                    "parser_version": identity.parser_version,
+                },
+                collector=CollectorType.SCRAPLING_HTTP,
+                collector_version=identity.collector_version,
+                source_policy_version=policy.version,
+            ),
+        )
+
+
+COMICBOOK_IDENTITY = PUBLIC_STUDIES_BY_KEY["comicbook-perfect-order-us-55-v1"]
+COMICBOOK_POLICY_CONFIG: dict[str, object] = {
+    "study_key": COMICBOOK_IDENTITY.study_key,
+    "canonical_url": COMICBOOK_IDENTITY.source_url,
+    "collector_version": COMICBOOK_IDENTITY.collector_version,
+    "parser_version": COMICBOOK_IDENTITY.parser_version,
+    "country_code": "US",
+    "country_name": "United States",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "set_external_id": "me03",
+    "product_scope": "all",
+    "pack_count": 55,
+    "qualifying_hit_pack_count": 1,
+    "qualifying_metric": "sir_pack",
+    "metric_version": "global-sir-v1",
+    "observed_at": "2026-03-19T21:00:00Z",
+    "denominator_complete": True,
+}
+
+WARGAMER_IDENTITY = PUBLIC_STUDIES_BY_KEY["wargamer-chaos-rising-gb-17-v1"]
+WARGAMER_POLICY_CONFIG: dict[str, object] = {
+    "study_key": WARGAMER_IDENTITY.study_key,
+    "canonical_url": WARGAMER_IDENTITY.source_url,
+    "collector_version": WARGAMER_IDENTITY.collector_version,
+    "parser_version": WARGAMER_IDENTITY.parser_version,
+    "country_code": "GB",
+    "country_name": "United Kingdom",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "set_external_id": "me04",
+    "product_scope": "all",
+    "pack_count": 17,
+    "qualifying_hit_pack_count": 0,
+    "qualifying_metric": "sir_pack",
+    "metric_version": "global-sir-v1",
+    "observed_at": "2026-05-11T00:00:00Z",
+    "denominator_complete": True,
+}
+
+
+def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
+    return ReviewedPublicStudyAdapter(
+        client=client,
+        identity=COMICBOOK_IDENTITY,
+        expected_policy_config=COMICBOOK_POLICY_CONFIG,
+        title_tokens=("Opened 55 Packs", "Perfect Order", "Pull Rates"),
+        evidence_patterns=(
+            re.compile(r"In total, I opened 55 boosters from the upcoming Perfect Order lineup\."),
+            re.compile(r"1 Special Illustration Rare"),
+        ),
+    )
+
+
+def wargamer_chaos_rising_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
+    return ReviewedPublicStudyAdapter(
+        client=client,
+        identity=WARGAMER_IDENTITY,
+        expected_policy_config=WARGAMER_POLICY_CONFIG,
+        title_tokens=("opened Pokémon Chaos Rising packs early", "blessing and a curse"),
+        evidence_patterns=(
+            re.compile(
+                r"after opening the 17 Pokémon Chaos Rising packs Wargamer was sent ahead of "
+                r"release, my opinion remains positive on those fronts\."
+            ),
+            re.compile(r"missing out on any SIR mega hits\."),
+        ),
+    )
+
+
+__all__ = [
+    "COMICBOOK_IDENTITY",
+    "COMICBOOK_POLICY_CONFIG",
+    "ReviewedPublicStudyAdapter",
+    "RobotsTxtChecker",
+    "WARGAMER_IDENTITY",
+    "WARGAMER_POLICY_CONFIG",
+    "comicbook_perfect_order_adapter",
+    "wargamer_chaos_rising_adapter",
+]

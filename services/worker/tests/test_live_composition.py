@@ -12,6 +12,7 @@ from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
 from pokecrack_worker.collectors.official_api.youtube import YouTubeRequestStateUnknown
 from pokecrack_worker.composition import (
     CLEANUP_JOB_TYPE,
+    PUBLIC_STUDY_JOB_TYPE,
     TCGDEX_SETS_JOB_TYPE,
     YOUTUBE_DISCOVERY_JOB_TYPE,
     LiveCompositionError,
@@ -119,7 +120,11 @@ def test_live_health_probes_postgres_and_upserts_a_role_heartbeat() -> None:
     assert "ingest.upsert_worker_heartbeat_v1" in dependency_sql
     assert "ingest.pause_job_for_budget_v2" in dependency_sql
     assert "NOT has_table_privilege" in dependency_sql
-    assert dependency_params == {"worker_type": "watchdog", "youtube_enabled": False}
+    assert dependency_params == {
+        "worker_type": "watchdog",
+        "youtube_enabled": False,
+        "public_study_enabled": False,
+    }
     sql, params = executor.calls[1]
     assert "ingest.upsert_worker_heartbeat_v1" in sql
     assert "INSERT INTO ingest.worker_heartbeats" not in sql
@@ -156,7 +161,11 @@ def test_collector_health_fails_before_heartbeat_when_policy_or_rpcs_are_unavail
     assert "policies.min_delay_seconds = 10" in sql
     assert "policies.max_items_per_run = 1000" in sql
     assert "policies.expected_interval_seconds = 86400" in sql
-    assert params == {"worker_type": "collector", "youtube_enabled": False}
+    assert params == {
+        "worker_type": "collector",
+        "youtube_enabled": False,
+        "public_study_enabled": False,
+    }
     assert "INSERT INTO ingest.worker_heartbeats" not in sql
 
 
@@ -168,7 +177,11 @@ def test_enabled_youtube_health_requires_exact_rpc_policy_and_permissions() -> N
 
     assert len(executor.calls) == 1
     sql, params = executor.calls[0]
-    assert params == {"worker_type": "collector", "youtube_enabled": True}
+    assert params == {
+        "worker_type": "collector",
+        "youtube_enabled": True,
+        "public_study_enabled": False,
+    }
     assert "ingest.begin_youtube_discovery_job" in sql
     assert "ingest.finalize_youtube_discovery_job" in sql
     assert "youtube_discovery" in sql
@@ -194,7 +207,11 @@ def test_enabled_youtube_scheduler_requires_the_shared_exact_dependencies() -> N
     assert settings.youtube_api_key is None
     assert len(executor.calls) == 1
     sql, params = executor.calls[0]
-    assert params == {"worker_type": "scheduler", "youtube_enabled": True}
+    assert params == {
+        "worker_type": "scheduler",
+        "youtube_enabled": True,
+        "public_study_enabled": False,
+    }
     assert sql.startswith("WITH youtube_dependencies AS")
     assert sql.count("policies.source_key = 'youtube_discovery'") == 1
     assert sql.count("policies.retention_days = 28") == 1
@@ -223,7 +240,11 @@ def test_flag_off_scheduler_health_only_requires_enqueue_readiness() -> None:
     scheduler_branch = dependency_sql[
         dependency_sql.index("WHEN 'scheduler'") : dependency_sql.index("WHEN 'watchdog'")
     ]
-    assert dependency_params == {"worker_type": "scheduler", "youtube_enabled": False}
+    assert dependency_params == {
+        "worker_type": "scheduler",
+        "youtube_enabled": False,
+        "public_study_enabled": False,
+    }
     assert "ingest.enqueue_scheduled_job_v1" in scheduler_branch
     assert "has_function_privilege" in scheduler_branch
     assert "NOT %(youtube_enabled)s::boolean" in scheduler_branch
@@ -335,6 +356,19 @@ def _youtube_settings(role: str = "collector") -> Settings:
     if role != "scheduler":
         values["youtube_api_key"] = "fixture-youtube-secret"
     return _settings(role, **values)
+
+
+def _public_study_settings(role: str = "collector") -> Settings:
+    return _settings(role, public_study_collection_enabled=True)
+
+
+def _maton_youtube_settings() -> Settings:
+    return _settings(
+        "collector",
+        youtube_collection_enabled=True,
+        maton_api_key="fixture-maton-secret",
+        youtube_maton_connection_id="ba16a50a-9e24-4fb6-9ce3-6cf7d52643da",
+    )
 
 
 def test_collector_runs_only_the_fenced_tcgdex_sets_pipeline() -> None:
@@ -452,6 +486,54 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
     assert "Elite Trainer Box, batch code: AB-123" not in serialized
     assert "futurevid01" not in serialized
     assert "fixture-youtube-secret" not in repr(executor.calls + transport.calls)
+
+
+def test_enabled_collector_can_use_the_exact_maton_youtube_connection(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    executor = RecordingExecutor(
+        [
+            [
+                _job_row(
+                    status="running",
+                    payload={"query_name": "pokemon-tcg-etb-opening"},
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+            [{"acquired": True, "retry_at": None}],
+            [
+                _job_row(
+                    status="completed",
+                    payload={"query_name": "pokemon-tcg-etb-opening"},
+                    locked=False,
+                    job_type=YOUTUBE_DISCOVERY_JOB_TYPE,
+                )
+            ],
+        ]
+    )
+    transport = RecordingYouTubeTransport([APIResponse(200, {}, YOUTUBE_SEARCH_BODY)])
+    seen_connection_ids: list[str] = []
+
+    def transport_factory(*, connection_id: str) -> RecordingYouTubeTransport:
+        seen_connection_ids.append(connection_id)
+        return transport
+
+    monkeypatch.setattr(
+        "pokecrack_worker.composition.MatonYouTubeTransport",
+        transport_factory,
+    )
+    runtime = build_live_worker_runtime(
+        _maton_youtube_settings(),
+        executor=executor,
+        clock=lambda: NOW,
+    )
+
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.COMPLETED
+    assert seen_connection_ids == ["ba16a50a-9e24-4fb6-9ce3-6cf7d52643da"]
+    assert len(transport.calls) == 1
+    assert "fixture-maton-secret" not in repr(executor.calls + transport.calls)
 
 
 @pytest.mark.parametrize(
@@ -1041,6 +1123,38 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     entries = live_schedule_entries(_settings("scheduler"))
 
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
+
+
+def test_public_study_flag_registers_only_the_two_reviewed_daily_jobs() -> None:
+    entries = live_schedule_entries(_public_study_settings("scheduler"))
+    studies = [entry for entry in entries if entry.job_type == PUBLIC_STUDY_JOB_TYPE]
+
+    assert [entry.payload for entry in studies] == [
+        {"study_key": "comicbook-perfect-order-us-55-v1"},
+        {"study_key": "wargamer-chaos-rising-gb-17-v1"},
+    ]
+    assert all(entry.cron == "15 4 * * *" for entry in studies)
+    assert all(entry.max_attempts == 3 for entry in studies)
+
+
+def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -> None:
+    executor = RecordingExecutor([[{"ready": False}]])
+
+    with pytest.raises(LiveCompositionError, match="dependencies"):
+        write_health_heartbeat(_public_study_settings(), executor=executor)
+
+    sql, params = executor.calls[0]
+    assert params == {
+        "worker_type": "collector",
+        "youtube_enabled": False,
+        "public_study_enabled": True,
+    }
+    assert "ingest.public_study_observations" in sql
+    assert "ingest.begin_public_study_job" in sql
+    assert "ingest.finalize_public_study_job" in sql
+    assert "public_study_comicbook_us_55" in sql
+    assert "public_study_wargamer_gb_17" in sql
+    assert "NOT has_table_privilege" in sql
 
 
 def test_live_scheduler_validates_even_unwired_cron_configuration() -> None:

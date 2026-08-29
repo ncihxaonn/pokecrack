@@ -35,6 +35,8 @@ def test_settings_default_to_network_free_demo_fixture_mode(
         "AI_VALIDATE_MODEL",
         "AI_ESCALATE_MODEL",
         "YOUTUBE_API_KEY",
+        "MATON_API_KEY",
+        "YOUTUBE_MATON_CONNECTION_ID",
     ):
         monkeypatch.delenv(key, raising=False)
 
@@ -44,7 +46,10 @@ def test_settings_default_to_network_free_demo_fixture_mode(
     assert settings.ai_provider is AIProviderName.FIXTURE
     assert settings.supabase_db_url is None
     assert settings.youtube_api_key is None
+    assert settings.maton_api_key is None
+    assert settings.youtube_maton_connection_id is None
     assert settings.youtube_collection_enabled is False
+    assert settings.public_study_collection_enabled is False
     assert settings.scrapling_save_raw_html is False
     assert settings.scrapling_dynamic_enabled is False
     assert settings.worker_max_concurrency == 1
@@ -60,10 +65,10 @@ def test_live_and_http_ai_modes_fail_closed_without_required_configuration() -> 
         Settings(_env_file=None, ai_provider="http")
 
 
-def test_youtube_enablement_requires_key_only_in_the_network_collector() -> None:
-    with pytest.raises(ValidationError, match="YOUTUBE_API_KEY for collectors"):
+def test_youtube_enablement_requires_one_credential_path_only_in_the_collector() -> None:
+    with pytest.raises(ValidationError, match="YOUTUBE_API_KEY or Maton OAuth"):
         Settings(_env_file=None, youtube_collection_enabled=True, worker_role="collector")
-    with pytest.raises(ValidationError, match="YOUTUBE_API_KEY for collectors"):
+    with pytest.raises(ValidationError, match="YOUTUBE_API_KEY or Maton OAuth"):
         Settings(
             _env_file=None,
             youtube_collection_enabled=True,
@@ -77,6 +82,78 @@ def test_youtube_enablement_requires_key_only_in_the_network_collector() -> None
         worker_role="scheduler",
     )
     assert scheduler.youtube_api_key is None
+
+    maton = Settings(
+        _env_file=None,
+        youtube_collection_enabled=True,
+        maton_api_key="fixture-maton-secret",
+        youtube_maton_connection_id="ba16a50a-9e24-4fb6-9ce3-6cf7d52643da",
+        worker_role="collector",
+    )
+    assert maton.youtube_api_key is None
+    assert maton.maton_api_key is not None
+    assert str(maton.youtube_maton_connection_id) == "ba16a50a-9e24-4fb6-9ce3-6cf7d52643da"
+
+
+def test_youtube_rejects_partial_or_ambiguous_maton_configuration() -> None:
+    with pytest.raises(ValidationError, match="configured together"):
+        Settings(_env_file=None, maton_api_key="fixture-maton-secret")
+    with pytest.raises(ValidationError, match="configured together"):
+        Settings(
+            _env_file=None,
+            youtube_maton_connection_id="ba16a50a-9e24-4fb6-9ce3-6cf7d52643da",
+        )
+    with pytest.raises(ValidationError, match="exactly one YouTube credential path"):
+        Settings(
+            _env_file=None,
+            youtube_api_key="fixture-youtube-secret",
+            maton_api_key="fixture-maton-secret",
+            youtube_maton_connection_id="ba16a50a-9e24-4fb6-9ce3-6cf7d52643da",
+        )
+    with pytest.raises(ValidationError, match="must not be the nil UUID"):
+        Settings(
+            _env_file=None,
+            maton_api_key="fixture-maton-secret",
+            youtube_maton_connection_id="00000000-0000-0000-0000-000000000000",
+        )
+
+
+def test_blank_optional_credentials_and_connection_id_normalize_to_missing() -> None:
+    settings = Settings(
+        _env_file=None,
+        youtube_api_key="  ",
+        maton_api_key="\t",
+        youtube_maton_connection_id="  ",
+    )
+
+    assert settings.youtube_api_key is None
+    assert settings.maton_api_key is None
+    assert settings.youtube_maton_connection_id is None
+
+
+def test_public_study_enablement_requires_scrapling_and_exact_daily_schedule() -> None:
+    with pytest.raises(ValidationError, match="SCRAPLING_ENABLED"):
+        Settings(
+            _env_file=None,
+            public_study_collection_enabled=True,
+            scrapling_enabled=False,
+            worker_role="collector",
+        )
+    with pytest.raises(ValidationError, match="SCHEDULE_PUBLIC_COLLECTION"):
+        Settings(
+            _env_file=None,
+            public_study_collection_enabled=True,
+            worker_role="scheduler",
+            schedule_public_collection="0 4 * * *",
+        )
+
+    scheduler = Settings(
+        _env_file=None,
+        public_study_collection_enabled=True,
+        scrapling_enabled=False,
+        worker_role="scheduler",
+    )
+    assert scheduler.public_study_collection_enabled is True
 
 
 @pytest.mark.parametrize(
@@ -240,6 +317,30 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
     assert tcgdex.max_concurrency == 1
     assert tcgdex.requests_per_minute == 6
     assert tcgdex.config == {"collector_version": "tcgdex-sets-v1"}
+    comicbook = sources.require(
+        "https://comicbook.com/gaming/feature/"
+        "pokemon-tcg-perfect-order-pull-rates-ex-illustration-rares-estimates",
+        "static",
+    )
+    wargamer = sources.require(
+        "https://www.wargamer.com/pokemon-trading-card-game/chaos-rising-preview",
+        "static",
+    )
+    assert comicbook.config["study_key"] == "comicbook-perfect-order-us-55-v1"
+    assert comicbook.config["pack_count"] == 55
+    assert comicbook.config["qualifying_hit_pack_count"] == 1
+    assert wargamer.config["study_key"] == "wargamer-chaos-rising-gb-17-v1"
+    assert wargamer.config["pack_count"] == 17
+    assert wargamer.config["qualifying_hit_pack_count"] == 0
+    assert all(
+        policy.statistics_eligible_default
+        and policy.metadata_only is False
+        and policy.retain_raw_html is False
+        and policy.min_delay_seconds == 30
+        and policy.max_pages_per_run == 2
+        and policy.max_concurrency == 1
+        for policy in (comicbook, wargamer)
+    )
     youtube_api = sources.require("https://youtube.googleapis.com/youtube/v3/search", "youtube")
     assert youtube_api.metadata_only
     assert youtube_api.retention_days == 28
