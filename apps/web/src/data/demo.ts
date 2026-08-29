@@ -431,7 +431,7 @@ export const DEMO_DATA: DashboardData = {
       credibleInterval: { low: 0.085, high: 0.228 },
       deltaFromBaseline: 0.00233,
       state: "ready",
-      sampleNote: "30–199 observed packs; no significant signal is eligible.",
+      sampleNote: "30 to 199 observed packs; no significant signal is eligible.",
       updatedAt: generatedAt,
     },
   ],

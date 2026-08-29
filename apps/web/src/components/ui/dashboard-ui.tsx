@@ -26,7 +26,7 @@ export function SectionHeading({ id, title, detail, action }: { id?: string; tit
 }
 
 export function Panel({ children, className = "" }: { children: ReactNode; className?: string }) {
-  return <section className={`panel ${className}`.trim()}>{children}</section>;
+  return <div className={`panel ${className}`.trim()}>{children}</div>;
 }
 
 const integer = new Intl.NumberFormat("en-AU");
@@ -81,12 +81,12 @@ export function MetricDisclaimer({ batch = false }: { batch?: boolean }) {
 
 export function SignalBadge({ metric }: { metric: Pick<ObservedMetric, "state"> }) {
   const signal = getSignalPresentation(metric.state);
-  return <span className={`signal signal--${signal.tone}`} title={signal.detail}>{signal.label}</span>;
+  return <span aria-label={`${signal.label}. ${signal.detail}`} className={`signal signal--${signal.tone}`} title={signal.detail}>{signal.label}</span>;
 }
 
 export function ObservationStats({ metric }: { metric: ObservedMetric }) {
   const interval = metric.credibleInterval
-    ? `${formatProbability(metric.credibleInterval.low)}–${formatProbability(metric.credibleInterval.high)}`
+    ? `${formatProbability(metric.credibleInterval.low)} to ${formatProbability(metric.credibleInterval.high)}`
     : "Withheld";
   return (
     <dl className="stat-grid stat-grid--detail">
