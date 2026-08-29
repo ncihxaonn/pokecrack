@@ -19,6 +19,12 @@ Catalog rows carry `is_demo`; synthetic and live rows must not be conflated.
 - `ingest.source_policies`: exact domain, source kind, enabled routes, limits and freshness.
 - `ingest.source_items`: canonical discovery identity, bounded private excerpt/payload, hashes and retention.
 - `ingest.youtube_discoveries`: dedicated `UNLOGGED`, forced-RLS cache containing only exact YouTube video identity, canonical URL, title, publication time, source-policy reference, first/last seen and per-row expiry. The fenced finalizer validates exact collector/policy versions but does not retain those version strings. The cache has no query/rank, channel, description, hash, inferred classification, product/batch hint, geography, evidence, or generic-source relationship.
+- `ingest.public_study_observations`: immutable, forced-RLS ledger for the
+  exact reviewed public studies. It links one bounded source item,
+  deterministic extraction, and complete opening while retaining the
+  policy-owned country, denominator, private qualifying numerator, evidence
+  hash, and version identities. `service_role` can read but cannot mutate it
+  directly.
 - `ingest.extraction_runs`: model/prompt versions, structured outputs, confidence, status and errors.
 - `ingest.openings`: normalized observed opening and the statistical eligibility decision.
 - `ingest.opening_hits`: card/rarity quantities within an opening.
@@ -71,7 +77,9 @@ v2 contract reads only three narrow forced-RLS projections:
 keeps the full catalog count separate from its bounded preview array, and returns
 an honest empty observation state when no country cells exist. Summed per-country
 source counts are labelled `sourceCountryContributions`; they are not represented
-as a globally deduplicated independent-source count.
+as a globally deduplicated independent-source count. Browser RLS exposes only
+cells whose period ends on the current UTC date; historical cells remain
+private audit data and cannot masquerade as fresh coverage.
 
 The migrations define the private catalog/ingest/analytics relations, public aggregate tables, and versioned public/Admin RPCs. Their existence is not evidence of live observations. Every schema change—including each collector finalizer—must pass a clean reset and pgTAP run, then be verified against the exact approved hosted project before its behavior is claimed as deployed.
 
@@ -88,8 +96,9 @@ passed; collection enablement fails if either the six-hour discovery schedule or
 daily cleanup schedule drifts. No discovery row can be promoted
 or referenced as an extraction, opening, batch, duplicate, analytic, Admin, or
 public record because no such schema relationship or code path exists. Managed
-logical backups independently remove every cache data row and replace request
-gate state with canonical idle rows, while
+logical backups independently remove every YouTube cache data row, retain the
+reviewed-study ledger, and replace request-gate state with the exact canonical
+idle TCGdex, YouTube, and public-study rows, while
 provider-managed snapshot retention must be revalidated before collection is
 enabled. Cleanup/watchdog health and stale-success alerts are also enablement
 requirements because a prolonged outage can exceed the supported catch-up

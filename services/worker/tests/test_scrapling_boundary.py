@@ -258,6 +258,10 @@ def test_loaded_static_fetcher_pins_curl_to_the_validated_address(
         "allow_redirects": False,
         "max_redirects": 0,
         "impersonate": "chrome",
+        "headers": {
+            "User-Agent": "PokecrackMetadataCollector/0.1",
+            "Accept-Encoding": "identity",
+        },
     }
 
 
@@ -415,6 +419,10 @@ def test_loaded_async_fetcher_pins_curl_to_the_validated_address(
         "allow_redirects": False,
         "max_redirects": 0,
         "impersonate": "chrome",
+        "headers": {
+            "User-Agent": "PokecrackMetadataCollector/0.1",
+            "Accept-Encoding": "identity",
+        },
     }
 
 

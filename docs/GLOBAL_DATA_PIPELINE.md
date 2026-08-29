@@ -1,10 +1,11 @@
 # Global data pipeline contract
 
 PokeCrack's global collection contract can discover and normalize eligible
-evidence without restricting discovery to one country. This revision has only
-fixture evidence and collection remains disabled, so it does **not** establish
-live multi-country coverage or make a global pull-rate claim from search, social,
-marketplace, or catalog metadata.
+evidence without restricting discovery to one country. The reviewed web-study
+path currently contains exactly two denominator-backed Tier-B studies: 55 packs
+for the United States and 17 packs for the United Kingdom. One source per
+country is still far below the three-source publication gate, so this does
+**not** establish representative worldwide coverage or a global pull-rate claim.
 
 ## Data classes
 
@@ -19,6 +20,30 @@ denominator, aggregate, or public signal. Other separately reviewed activity-onl
 opening records may contribute an explicitly labelled activity count, but never a
 pack denominator, hit rate, or anomaly claim. A popular video, a rare-card post,
 a listing, or a channel country is not evidence that a region has better packs.
+
+## Reviewed public-study boundary
+
+The statistics path accepts only two immutable study identities, URLs, policy
+versions, article-title tokens, and exact evidence excerpts. The worker reads
+`robots.txt`, waits the policy's 30-second follow-up delay, requests one HTML
+page, and parses only text inside the page's `<article>` element. A redirect,
+content-type drift, oversized body, changed title/evidence, malformed UTF-8, or
+robots denial fails closed. Raw HTML, media, author handles, comments, and exact
+addresses are never retained.
+
+The worker returns only the canonical URL, title, bounded evidence excerpt,
+SHA-256, and version identities. Country, observed date, set, pack denominator,
+qualifying-hit-pack count, product scope, and geography confidence come only
+from the exact database policy; a network result cannot override them. The
+typed finalizer atomically creates one source item, deterministic extraction
+audit, complete opening denominator, and immutable private ledger row.
+Aggregate studies never fabricate card-level `opening_hits`.
+
+Both current countries use `geography_basis=publisher_country` and
+`geography_confidence=tier_b`. This is coarse provenance, not proof of the room
+in which packs were opened. The private ledger retains the qualifying numerator
+for audit, while the public cell exposes only pack/opening/source counts until
+all publication thresholds are met.
 
 ## YouTube discovery boundary
 
@@ -62,8 +87,9 @@ The live path is:
 1. The UTC scheduler sees only the explicit collection flag and, when enabled,
    enqueues one job per exact query every six hours. Any schedule drift is a
    startup error. The same flag freezes cleanup to its exact daily schedule.
-   Operators must not enable the flag until the collector has its dedicated
-   YouTube API key; the scheduler never receives or verifies that key.
+   Operators must not enable the flag until the collector has exactly one
+   approved YouTube transport credential; the scheduler never receives or
+   verifies that credential.
 2. PostgreSQL verifies the exact job payload, current lease generation, enabled
    source policy, request spacing, and persistent request-gate ownership before
    any network request.
@@ -90,18 +116,17 @@ reached. A 12-hour scheduler restart catch-up keeps the supported 28-day
 lifecycle below 30 days with operational margin; collection must remain off
 without watchdog, stale-cleanup, and queue-delay alerts.
 
-Managed logical backups apply the same boundary. After the backup-lock migration,
-a fail-closed two-pass filter accepts either a coherent pre-YouTube schema with
-both policy and table absent, or the exact policy plus one `CREATE UNLOGGED TABLE`
-definition from one internally consistent plain dump. In the latter state it
-removes every
-`ingest.youtube_discoveries` data row before compression. Request-gate data is
-excluded by `pg_dump`, independently rejected by the sanitizer, and replaced
-only with canonical idle source keys immediately before RLS is enabled; live
-lease ownership is never restored. The exact gate columns, constraints, primary
-key and forced/enabled RLS must match, and any gate policy is rejected. It does
-not remove generic source rows. Partial, malformed, or ambiguous structure
-aborts the backup without advancing its success marker.
+Managed logical backups apply the same boundary. A fail-closed two-pass filter
+accepts only one internally consistent pre-YouTube, YouTube-only, or
+post-public-study schema. It removes every disposable
+`ingest.youtube_discoveries` row but retains the immutable public-study ledger.
+Request-gate data is excluded by `pg_dump`, independently rejected by the
+sanitizer, and replaced with the exact idle TCGdex, YouTube, and (when present)
+two public-study source keys immediately before RLS is enabled; live lease
+ownership is never restored. The exact gate columns, constraints, primary key,
+forced/enabled RLS, policy identities, and ledger presence must match the
+preflight. Partial or ambiguous structure aborts without advancing the success
+marker.
 
 ## Global validation versus publication
 
@@ -110,9 +135,11 @@ country fact from any country. Missing geography is never defaulted to Australia
 and cannot become rate-eligible. Public v1 remains the frozen
 Australia/English-only contract. The forward global-dashboard migration adds a
 separate strict ISO country dimension, country-period publication table, and
-public v2 snapshot; it does not loosen v1. The country table starts empty and has
-no ingestion route from discovery metadata, so the global map remains neutral
-until a separately reviewed aggregator publishes a real denominator.
+public v2 snapshot; it does not loosen v1. The dedicated reviewed-study
+finalizer is the only current writer for real country denominators. YouTube and
+catalog metadata still have no route to that table. Historical rolling cells
+remain readable to the service boundary for audit, while browser RLS exposes
+only the current UTC-ending period so aged-out evidence cannot look fresh.
 
 The v2 map selects one latest complete period for all countries. A cell must
 contain a positive pack denominator and complete-opening/source counts. Every
@@ -136,8 +163,10 @@ rate”, “guaranteed”, or imply a causal regional/store advantage.
 
 ## Operational prerequisites
 
-- Use a dedicated YouTube Data API key restricted to that API and the worker's
-  deployment context. Do not put a broad OAuth gateway credential on the VPS.
+- Use exactly one YouTube transport: either a dedicated API-restricted raw key,
+  or one explicitly selected Maton YouTube OAuth connection. Never configure
+  both. Only the collector receives the credential/connection identity; the
+  scheduler receives the enable flag alone.
 - Keep the collection enable flag off when the key is absent, invalid, or being
   rotated.
 - Store production credentials outside Git in a mode `0600` environment file.

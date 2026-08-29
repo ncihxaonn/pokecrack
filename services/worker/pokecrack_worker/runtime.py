@@ -15,6 +15,7 @@ from pokecrack_worker.jobs import (
     CompletionEffect,
     Job,
     LeaseLostError,
+    PublicStudyCompletion,
     TCGdexSetsSyncCompletion,
     YouTubeDiscoveryCompletion,
 )
@@ -48,6 +49,7 @@ class RuntimeRepository(Protocol):
         lease_generation: int,
         now: datetime,
         effect: CompletionEffect
+        | PublicStudyCompletion
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
         | None = None,
@@ -76,7 +78,9 @@ class RuntimeRepository(Protocol):
     ) -> Job: ...
 
 
-Completion = CompletionEffect | TCGdexSetsSyncCompletion | YouTubeDiscoveryCompletion
+Completion = (
+    CompletionEffect | PublicStudyCompletion | TCGdexSetsSyncCompletion | YouTubeDiscoveryCompletion
+)
 JobHandler = Callable[[Job], Completion | None]
 
 
@@ -181,7 +185,12 @@ class WorkerRuntime:
                     effect = future.result(timeout=interval_seconds)
                     if effect is not None and not isinstance(
                         effect,
-                        (CompletionEffect, TCGdexSetsSyncCompletion, YouTubeDiscoveryCompletion),
+                        (
+                            CompletionEffect,
+                            PublicStudyCompletion,
+                            TCGdexSetsSyncCompletion,
+                            YouTubeDiscoveryCompletion,
+                        ),
                     ):
                         raise TypeError(
                             "job handlers must return a typed completion effect or None"

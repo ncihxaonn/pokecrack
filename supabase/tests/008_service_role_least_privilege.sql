@@ -11,7 +11,7 @@ select is(
    join pg_namespace as schemas on schemas.oid = relations.relnamespace
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
      and relations.relkind in ('r', 'p')),
-  40,
+  41,
   'the least-privilege matrix covers every application table'
 );
 
@@ -22,7 +22,7 @@ select is(
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
      and relations.relkind in ('r', 'p')
      and has_table_privilege('service_role', relations.oid, 'select')),
-  39,
+  40,
   'service_role can read every application table except the opaque request gate'
 );
 
@@ -70,7 +70,7 @@ select is(
    where schemaname in ('catalog', 'ingest', 'analytics', 'public')
      and 'service_role' = any(roles)
      and cmd = 'SELECT'),
-  39,
+  40,
   'every readable service_role table has one read-only policy'
 );
 
@@ -84,7 +84,9 @@ select ok(
      'ingest.enqueue_job_v1(text,jsonb,integer,text,timestamp with time zone,integer)'::regprocedure,
      'ingest.complete_job_v2(uuid,text,bigint)'::regprocedure,
      'ingest.pause_job_for_budget_v2(uuid,text,bigint,timestamp with time zone)'::regprocedure,
-     'ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)'::regprocedure
+     'ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)'::regprocedure,
+     'ingest.begin_public_study_job(uuid,text,bigint)'::regprocedure,
+     'ingest.finalize_public_study_job(uuid,text,bigint,jsonb)'::regprocedure
    ]) as functions(oid)),
   'only service_role can execute the replacement worker write RPCs'
 );
@@ -96,7 +98,9 @@ select ok(
      'ingest.enqueue_job_v1(text,jsonb,integer,text,timestamp with time zone,integer)'::regprocedure,
      'ingest.complete_job_v2(uuid,text,bigint)'::regprocedure,
      'ingest.pause_job_for_budget_v2(uuid,text,bigint,timestamp with time zone)'::regprocedure,
-     'ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)'::regprocedure
+     'ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)'::regprocedure,
+     'ingest.begin_public_study_job(uuid,text,bigint)'::regprocedure,
+     'ingest.finalize_public_study_job(uuid,text,bigint,jsonb)'::regprocedure
    ])),
   'replacement worker write RPCs are SECURITY DEFINER'
 );
@@ -108,7 +112,9 @@ select ok(
      'ingest.enqueue_job_v1(text,jsonb,integer,text,timestamp with time zone,integer)'::regprocedure,
      'ingest.complete_job_v2(uuid,text,bigint)'::regprocedure,
      'ingest.pause_job_for_budget_v2(uuid,text,bigint,timestamp with time zone)'::regprocedure,
-     'ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)'::regprocedure
+     'ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)'::regprocedure,
+     'ingest.begin_public_study_job(uuid,text,bigint)'::regprocedure,
+     'ingest.finalize_public_study_job(uuid,text,bigint,jsonb)'::regprocedure
    ])),
   'replacement worker write RPCs use an immutable catalog-only search_path'
 );

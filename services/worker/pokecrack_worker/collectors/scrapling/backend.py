@@ -15,7 +15,15 @@ from socket import SOCK_STREAM, getaddrinfo
 from typing import Any
 from urllib.parse import urlsplit
 
-from pokecrack_worker.collectors.base import FetchResponse
+from pokecrack_worker.collectors.base import (
+    PUBLIC_COLLECTOR_USER_AGENT,
+    FetchResponse,
+)
+
+_STATIC_REQUEST_HEADERS = {
+    "User-Agent": PUBLIC_COLLECTOR_USER_AGENT,
+    "Accept-Encoding": "identity",
+}
 
 
 class ScraplingUnavailableError(RuntimeError):
@@ -74,6 +82,7 @@ class _PinnedStaticFetcher:
                     allow_redirects=False,
                     max_redirects=0,
                     impersonate="chrome",
+                    headers=_STATIC_REQUEST_HEADERS,
                     content_callback=write_chunk,
                 )
         except Exception as error:
@@ -130,6 +139,7 @@ class _PinnedAsyncStaticFetcher:
                     allow_redirects=False,
                     max_redirects=0,
                     impersonate="chrome",
+                    headers=_STATIC_REQUEST_HEADERS,
                     content_callback=write_chunk,
                 )
         except Exception as error:

@@ -26,6 +26,15 @@ FROM ingest.begin_youtube_discovery_job(
 )
 """.strip()
 
+BEGIN_PUBLIC_STUDY_SQL = """
+SELECT *
+FROM ingest.begin_public_study_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint
+)
+""".strip()
+
 _TCGDEX_ETAG_PATTERN = re.compile(r'(?:W/)?"[\x21\x23-\x7e]*"')
 
 
@@ -47,6 +56,16 @@ class YouTubeRequestDeferred(RuntimeError):
             raise ValueError("YouTube retry timestamp must be timezone-aware")
         self.retry_at = retry_at
         super().__init__("YouTube request gate deferred")
+
+
+class PublicStudyRequestDeferred(RuntimeError):
+    """The reviewed public-study request gate is busy."""
+
+    def __init__(self, retry_at: datetime) -> None:
+        if retry_at.tzinfo is None or retry_at.utcoffset() is None:
+            raise ValueError("public-study retry timestamp must be timezone-aware")
+        self.retry_at = retry_at
+        super().__init__("public-study request gate deferred")
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,3 +195,39 @@ class PostgresYouTubeDiscoveryGate:
             raise TypeError("YouTube preflight acquired flag must be boolean")
         if retry_at is not None:
             raise ValueError("acquired YouTube preflight cannot include a retry timestamp")
+
+
+class PostgresPublicStudyGate:
+    def __init__(self, executor: QueryExecutor) -> None:
+        self._executor = executor
+
+    def begin(
+        self,
+        *,
+        job_id: str,
+        worker_id: str,
+        lease_generation: int,
+    ) -> None:
+        """Authorize one exact reviewed public page request under the lease."""
+
+        rows = self._executor.query(
+            BEGIN_PUBLIC_STUDY_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        row = rows[0]
+        acquired = row.get("acquired")
+        retry_at = row.get("retry_at")
+        if acquired is False:
+            if not isinstance(retry_at, datetime):
+                raise TypeError("deferred public-study preflight requires a retry timestamp")
+            raise PublicStudyRequestDeferred(retry_at)
+        if acquired is not True:
+            raise TypeError("public-study preflight acquired flag must be boolean")
+        if retry_at is not None:
+            raise ValueError("acquired public-study preflight cannot include a retry timestamp")

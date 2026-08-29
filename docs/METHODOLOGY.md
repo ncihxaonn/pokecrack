@@ -65,6 +65,14 @@ Map colours use fixed absolute scales rather than the minimum and maximum of the
 current snapshot. The exact table remains authoritative. TCGdex catalog rows and
 global discovery activity never create a denominator or colour a country.
 
+The first reviewed public-study inputs use publisher country as a coarse Tier-B
+geography basis. They do not assert the physical opening location and must not
+be shown as city/store evidence. The current US sample has 55 packs and one
+qualifying SIR pack; the current GB sample has 17 packs and zero qualifying SIR
+packs. Each country has only one independent source, so all observed-rate,
+baseline, posterior, interval, delta, and numerator fields remain private or
+null in the public response. Counts may be shown only as collecting evidence.
+
 ## Reproducibility
 
 Each result must retain configuration/catalog/methodology version, eligibility filters, observation window, counts, source diversity, prior/baseline identity and build SHA. Method changes create a new aggregate version; they do not silently rewrite the meaning of old screenshots/exports.

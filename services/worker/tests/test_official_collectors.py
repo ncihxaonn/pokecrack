@@ -23,8 +23,10 @@ from pokecrack_worker.collectors.official_api.tcgdex import (
     TCGdexSetsSyncOutcome,
 )
 from pokecrack_worker.collectors.official_api.youtube import (
+    MATON_YOUTUBE_SEARCH_URL,
     YOUTUBE_SEARCH_URL,
     HTTPXYouTubeTransport,
+    MatonYouTubeTransport,
     YouTubeDataClient,
     YouTubeError,
     YouTubeRequestStateUnknown,
@@ -1157,3 +1159,49 @@ def test_youtube_curl_transport_fixes_network_boundaries_and_hides_key_from_proc
     assert process.communicate_inputs == [b"X-Goog-Api-Key: fixture-key\n"]
     assert "fixture-key" not in repr(command)
     assert "fixture-key" not in repr(options)
+
+
+def test_maton_youtube_transport_uses_fixed_gateway_and_stdin_only_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    connection_id = "ba16a50a-9e24-4fb6-9ce3-6cf7d52643da"
+    process = FixtureCurlProcess(stderr=_curl_metadata(status=200, content_length="2"))
+    factory = _install_fixture_curl(monkeypatch, process)
+
+    response = MatonYouTubeTransport(connection_id=connection_id).get(
+        YOUTUBE_SEARCH_URL,
+        params={"part": "snippet"},
+        api_key=SecretStr("fixture-maton-secret"),
+        timeout_seconds=30,
+    )
+
+    command, options = factory.calls[0]
+    assert response.status_code == 200
+    assert command[-1] == f"{MATON_YOUTUBE_SEARCH_URL}?part=snippet"
+    assert process.communicate_inputs == [
+        (f"Authorization: Bearer fixture-maton-secret\nMaton-Connection: {connection_id}\n").encode(
+            "ascii"
+        )
+    ]
+    assert "fixture-maton-secret" not in repr(command)
+    assert connection_id not in repr(command)
+    assert options["env"] == {"LANG": "C", "LC_ALL": "C", "PATH": "/usr/bin:/bin"}
+
+    with pytest.raises(ValueError, match="fixed search endpoint"):
+        MatonYouTubeTransport(connection_id=connection_id).get(
+            MATON_YOUTUBE_SEARCH_URL,
+            params={},
+            api_key=SecretStr("fixture-maton-secret"),
+            timeout_seconds=30,
+        )
+
+
+@pytest.mark.parametrize(
+    "connection_id",
+    ("", "not-a-uuid", "BA16A50A-9E24-4FB6-9CE3-6CF7D52643DA"),
+)
+def test_maton_youtube_transport_rejects_noncanonical_connection_id(
+    connection_id: str,
+) -> None:
+    with pytest.raises(ValueError, match="canonical UUID"):
+        MatonYouTubeTransport(connection_id=connection_id)
