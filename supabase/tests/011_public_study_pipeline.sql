@@ -645,7 +645,8 @@ end;
 $public_study_stale_setup$;
 reset role;
 update ingest.jobs
-set lock_expires_at = clock_timestamp() - interval '1 second'
+set locked_at = clock_timestamp() - interval '2 seconds',
+    lock_expires_at = clock_timestamp() - interval '1 second'
 where id = current_setting('pokecrack.public_study_stale_job')::uuid;
 update ingest.source_policies
 set last_attempt_at = clock_timestamp() - interval '31 seconds'
