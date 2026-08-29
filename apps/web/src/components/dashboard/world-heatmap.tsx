@@ -43,16 +43,16 @@ export function getWorldMapFill(value: number, metric: WorldHeatMetric): string 
   if (metric === "delta") {
     const bounded = clamp(value, -0.05, 0.05);
     if (bounded <= 0) {
-      return interpolateHex("#315efb", "#f2f4f7", (bounded + 0.05) / 0.05);
+      return interpolateHex("#789388", "#edf2ee", (bounded + 0.05) / 0.05);
     }
-    return interpolateHex("#f2f4f7", "#ef4f91", bounded / 0.05);
+    return interpolateHex("#edf2ee", "#148a54", bounded / 0.05);
   }
 
   const bounded = clamp(value, 0, 0.3);
   if (bounded <= 0.15) {
-    return interpolateHex("#dbe8ff", "#7657ed", bounded / 0.15);
+    return interpolateHex("#e7f2eb", "#43a475", bounded / 0.15);
   }
-  return interpolateHex("#7657ed", "#ef4f91", (bounded - 0.15) / 0.15);
+  return interpolateHex("#43a475", "#075f39", (bounded - 0.15) / 0.15);
 }
 
 export function buildWorldHeatRows(
@@ -112,9 +112,9 @@ export function WorldHeatmap({
     : `${rows.length} countries have verified observations: ${publishedCount} publish a rate and ${withheldCount} withhold the rate below the evidence threshold.`;
 
   const countryFill = (countryCode: string | null) => {
-    if (!countryCode) return "#f8f9fb";
+    if (!countryCode) return "#dfe7e1";
     const row = cellsByCountry.get(countryCode);
-    if (!row) return "#f8f9fb";
+    if (!row) return "#dfe7e1";
     return row.status === "withheld" ? `url(#${withheldPatternId})` : row.fill;
   };
 
@@ -122,7 +122,7 @@ export function WorldHeatmap({
     <section className={styles.atlas} aria-labelledby="world-coverage-title">
       <header className={styles.header}>
         <div>
-          <span className={styles.kicker}>Global evidence atlas</span>
+          <span className={styles.kicker}>Global evidence map</span>
           <h2 id="world-coverage-title">Worldwide qualifying-hit map</h2>
           <p>
             Country-level qualifying-hit rates from verified pack-opening samples. Catalog records and discovery activity never enter the denominator.
@@ -164,8 +164,8 @@ export function WorldHeatmap({
                   patternUnits="userSpaceOnUse"
                   patternTransform="rotate(35)"
                 >
-                  <rect width="7" height="7" fill="#e2e6ec" />
-                  <path d="M0 0V7" stroke="#9da6b4" strokeWidth="2" />
+                  <rect width="7" height="7" fill="#dbe4dd" />
+                  <path d="M0 0V7" stroke="#88978e" strokeWidth="2" />
                 </pattern>
               </defs>
               <g aria-hidden="true">
@@ -184,8 +184,8 @@ export function WorldHeatmap({
                   const fill = row?.status === "published"
                     ? row.fill
                     : row?.status === "withheld"
-                      ? "#aab2bf"
-                      : "#eef0f4";
+                      ? `url(#${withheldPatternId})`
+                      : "#dfe7e1";
                   return (
                     <circle
                       className={styles.tinyCountry}
@@ -199,10 +199,12 @@ export function WorldHeatmap({
                 })}
               </g>
             </svg>
-            {rows.length === 0 ? (
+            {publishedCount === 0 ? (
               <div className={styles.emptyMapMessage} role="note">
-                <strong>No published country rates yet</strong>
-                <span>The map stays neutral until verified samples meet the publication threshold.</span>
+                <strong>No country-level rates published yet</strong>
+                <span>{rows.length === 0
+                  ? "The map stays neutral until verified samples meet the publication threshold."
+                  : `${rows.length} ${rows.length === 1 ? "country is" : "countries are"} observed; all remain below the publication threshold.`}</span>
               </div>
             ) : null}
           </div>
@@ -220,7 +222,11 @@ export function WorldHeatmap({
                   <><span>0%</span><span>15%</span><span>≥ 30%</span></>
                 )}
               </span>
-              <span className={styles.withheldKey}><i aria-hidden="true" />Withheld below 30 packs or 3 sources</span>
+              <span className={styles.legendKeys}>
+                <span className={styles.noDataKey}><i aria-hidden="true" />Not observed</span>
+                <span className={styles.withheldKey}><i aria-hidden="true" />Observed, rate withheld</span>
+                <span className={styles.publishedKey}><i aria-hidden="true" />Published rate</span>
+              </span>
             </div>
             <p id={`world-map-caveat-${instanceId}`}>
               Fixed absolute colour scale; values are never rescaled to the current snapshot. Higher historical observations do not predict future packs, products, stores or countries.
@@ -267,13 +273,13 @@ export function WorldHeatmap({
                 <tr><td colSpan={7} className={styles.empty}>No verified country observations are published yet.</td></tr>
               ) : rows.map((row) => (
                 <tr key={row.cell.countryCode}>
-                  <td><strong>{row.cell.countryName}</strong><small>{row.cell.countryCode}</small></td>
-                  <td>{integer.format(row.cell.packsObserved)}</td>
-                  <td>{integer.format(row.cell.independentSources)}</td>
-                  <td>{formatProbability(row.cell.hitRate)}</td>
-                  <td>{formatProbability(row.cell.baselineRate)}</td>
-                  <td>{formatSignedProbability(row.cell.deltaFromBaseline)}</td>
-                  <td><span className={`${styles.status} ${styles[`status${row.cell.state}`]}`}>{stateLabel(row.cell)}</span></td>
+                  <td data-label="Country"><strong>{row.cell.countryName}</strong><small>{row.cell.countryCode}</small></td>
+                  <td data-label="Packs">{integer.format(row.cell.packsObserved)}</td>
+                  <td data-label="Sources">{integer.format(row.cell.independentSources)}</td>
+                  <td data-label="Observed">{formatProbability(row.cell.hitRate)}</td>
+                  <td data-label="Baseline">{formatProbability(row.cell.baselineRate)}</td>
+                  <td data-label="Delta">{formatSignedProbability(row.cell.deltaFromBaseline)}</td>
+                  <td data-label="Status"><span className={`${styles.status} ${styles[`status${row.cell.state}`]}`}>{stateLabel(row.cell)}</span></td>
                 </tr>
               ))}
             </tbody>

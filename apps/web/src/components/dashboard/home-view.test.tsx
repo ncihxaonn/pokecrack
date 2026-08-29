@@ -69,7 +69,7 @@ describe("HomeView", () => {
     expect(screen.getByText("Worldwide catalog and observation readiness")).toBeVisible();
     expect(screen.getByText("Live catalog")).toBeVisible();
     expect(screen.getByText("218 catalog sets are live. Verified country observations are not published yet.")).toBeVisible();
-    expect(screen.getByText("No published country rates yet")).toBeVisible();
+    expect(screen.getByText("No country-level rates published yet")).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Trending sets" })).not.toBeInTheDocument();
   });
 });

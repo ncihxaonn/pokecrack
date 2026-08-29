@@ -14,7 +14,7 @@ describe("format helpers", () => {
     expect(formatProbability(null)).toBe("Withheld");
     expect(formatSignedProbability(0.032)).toBe("+3.2 pp");
     expect(formatSignedProbability(-0.01)).toBe("−1.0 pp");
-    expect(formatSignedProbability(null)).toBe("—");
+    expect(formatSignedProbability(null)).toBe("N/A");
   });
 
   it("formats counts compactly while preserving small exact values", () => {
