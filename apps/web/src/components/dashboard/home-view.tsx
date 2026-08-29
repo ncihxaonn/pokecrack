@@ -1,7 +1,7 @@
 import React from "react";
 import type { Route } from "next";
 import Link from "next/link";
-import { ArrowUpRight, CircleCheckBig, Database, Globe2, Layers, PackageOpen, ScanSearch } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 
 import { BRAND } from "@/config/brand";
 import type { PublicDashboardData } from "@/data/types";
@@ -22,19 +22,32 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
   const heroEyebrow = observationsPublished
     ? "Worldwide evidence atlas"
     : "Worldwide catalog and observation readiness";
+  const heroObservationValue = data.observations.observedPacks > 0
+    ? integer.format(data.observations.observedPacks)
+    : "Pending";
 
   return (
     <div className="page-shell home-page">
       <section className="dashboard-intro" aria-labelledby="hero-title">
-        <div>
+        <div className="dashboard-intro__copy">
           <span className="eyebrow">{heroEyebrow}</span>
           <h1 id="hero-title">{BRAND.tagline}</h1>
-          <p>{BRAND.description}</p>
+          <p>Verified Pokémon TCG opening evidence, mapped by country and kept separate from catalog activity.</p>
+          <div className="dashboard-intro__actions">
+            <Link className="button" href="/sets">Explore sets <ArrowUpRight aria-hidden="true" size={15} /></Link>
+            <Link className="button button--secondary" href="/methodology">How we measure</Link>
+          </div>
         </div>
-        <div className="dashboard-intro__actions">
-          <Link className="button" href="/sets">Explore sets <ArrowUpRight aria-hidden="true" size={15} /></Link>
-          <Link className="button button--secondary" href="/methodology">How we measure</Link>
-        </div>
+        <dl className="dashboard-intro__ledger" aria-label="Current global index">
+          <div>
+            <dt>Catalog coverage</dt>
+            <dd>{integer.format(data.catalog.setCount)}<small>sets indexed worldwide</small></dd>
+          </div>
+          <div>
+            <dt>Evidence base</dt>
+            <dd>{heroObservationValue}<small>{data.observations.observedPacks > 0 ? "verified packs observed" : "awaiting publishable samples"}</small></dd>
+          </div>
+        </dl>
       </section>
 
       <DataModeNotice
@@ -50,12 +63,12 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
       />
 
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
-        <div><dt><span className="stat-icon" aria-hidden="true"><Database size={18} /></span>Catalog Sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>
-        <div><dt><span className="stat-icon" aria-hidden="true"><Globe2 size={18} /></span>Countries Observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>latest shared period</small></dd></div>
-        <div><dt><span className="stat-icon" aria-hidden="true"><ScanSearch size={18} /></span>Published Rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>threshold-qualified countries</small></dd></div>
-        <div><dt><span className="stat-icon" aria-hidden="true"><PackageOpen size={18} /></span>Observed Packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>eligible denominator</small></dd></div>
-        <div><dt><span className="stat-icon" aria-hidden="true"><CircleCheckBig size={18} /></span>Complete Openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>verified observations</small></dd></div>
-        <div><dt><span className="stat-icon" aria-hidden="true"><Layers size={18} /></span>Source Contributions</dt><dd>{integer.format(data.observations.sourceCountryContributions)}<small>not globally deduplicated</small></dd></div>
+        <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>
+        <div><dt>Countries observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>latest shared period</small></dd></div>
+        <div><dt>Published rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>threshold-qualified countries</small></dd></div>
+        <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>eligible denominator</small></dd></div>
+        <div><dt>Complete openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>verified observations</small></dd></div>
+        <div><dt>Source contributions</dt><dd>{integer.format(data.observations.sourceCountryContributions)}<small>not globally deduplicated</small></dd></div>
       </dl>
 
       <section className="dashboard-section" aria-labelledby="catalog-title">
@@ -65,7 +78,7 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
           detail={`${data.catalog.name} set metadata is shown for discovery only. It is never opening evidence or a pull-rate denominator.`}
           action={<span className={`catalog-state catalog-state--${data.catalog.status}`}>{data.catalog.status}</span>}
         />
-        <Panel>
+        <Panel className="catalog-panel">
           <TableFrame label="Global TCGdex set catalog preview">
             <table>
               <thead><tr><th scope="col">Set</th><th scope="col">Series</th><th scope="col">Release</th><th scope="col">Language</th></tr></thead>
@@ -74,10 +87,10 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
                   <tr><td colSpan={4} className="empty-cell">No current catalog sets are available.</td></tr>
                 ) : catalogPreview.map((set) => (
                   <tr key={set.id}>
-                    <td><strong>{set.name}</strong><small>{set.slug}</small></td>
-                    <td>{set.series ?? "Unspecified"}</td>
-                    <td>{set.releaseDate ? formatDate(set.releaseDate) : "Unscheduled"}</td>
-                    <td>{set.language.toUpperCase()}</td>
+                    <td data-label="Set"><strong>{set.name}</strong><small>{set.slug}</small></td>
+                    <td data-label="Series">{set.series ?? "Unspecified"}</td>
+                    <td data-label="Release">{set.releaseDate ? formatDate(set.releaseDate) : "Unscheduled"}</td>
+                    <td data-label="Language">{set.language.toUpperCase()}</td>
                   </tr>
                 ))}
               </tbody>
@@ -95,7 +108,7 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
           <TrendChart points={data.trend} />
           <TableFrame label="Observed trend values">
             <table>
-              <thead><tr><th>Date</th><th>Observed</th><th>Baseline</th><th>Packs</th></tr></thead>
+              <thead><tr><th scope="col">Date</th><th scope="col">Observed</th><th scope="col">Baseline</th><th scope="col">Packs</th></tr></thead>
               <tbody>{data.trend.map((point) => <tr key={point.date}><td>{point.date}</td><td>{formatProbability(point.observedRate)}</td><td>{formatProbability(point.baselineRate)}</td><td>{integer.format(point.packsObserved)}</td></tr>)}</tbody>
             </table>
           </TableFrame>
@@ -135,7 +148,7 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
         <Panel>
           <TableFrame label="Recent observed activity">
             <table>
-              <thead><tr><th>Observed</th><th>Source</th><th>Set / product</th><th>Region</th><th>Evidence</th></tr></thead>
+              <thead><tr><th scope="col">Observed</th><th scope="col">Source</th><th scope="col">Set / product</th><th scope="col">Region</th><th scope="col">Evidence</th></tr></thead>
               <tbody>
                 {data.recentActivity.length === 0 ? <tr><td colSpan={5} className="empty-cell">No recent public activity is available.</td></tr> : data.recentActivity.map((activity) => (
                   <tr key={activity.id}>
