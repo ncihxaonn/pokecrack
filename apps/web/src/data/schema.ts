@@ -17,6 +17,7 @@ const evidenceState = z.enum([
   "ready",
   "watch",
   "anomaly",
+  "pending",
   "insufficient",
 ]);
 const productType = z.enum(["Booster Box", "ETB", "Booster Bundle"]);
@@ -68,6 +69,16 @@ const validateObservedMetric = (
     ) {
       addIssue("Insufficient samples must withhold rate estimates");
     }
+  } else if (value.state === "pending") {
+    if (
+      value.baselineRate !== null ||
+      value.hitRate !== null ||
+      value.posteriorMean !== null ||
+      value.credibleInterval !== null ||
+      value.deltaFromBaseline !== null
+    ) {
+      addIssue("Publication-pending samples must withhold every inference field");
+    }
   } else {
     if (value.state === "insufficient") {
       addIssue("Sufficient packs and sources cannot be Insufficient sample");
@@ -114,7 +125,7 @@ const regionMetric = observedMetric
   .extend({
     slug: z.string().min(1).max(128),
     name: z.string().min(1).max(160),
-    countryCode: z.literal("AU"),
+    countryCode: z.string().refine(isIsoAlpha2, "Country code must be an official ISO alpha-2 code"),
     coverage: z.string().min(1).max(300),
   })
   .superRefine(validateObservedMetric);

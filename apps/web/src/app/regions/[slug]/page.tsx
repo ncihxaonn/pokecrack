@@ -13,7 +13,7 @@ export const revalidate = 900;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const [{ slug }, result] = await Promise.all([params, loadDashboard()]);
-  if (result.status === "unavailable") return createPageMetadata("Region data unavailable", result.message, "/regions", { index: false });
+  if (result.status === "unavailable") return createPageMetadata("Country data unavailable", result.message, "/regions", { index: false });
   const region = result.data.regions.find((candidate) => candidate.slug === slug);
   if (!region) notFound();
   return createPageMetadata(region.name, `Observed activity coverage and aggregate sample summary for ${region.name}.`, `/regions/${region.slug}`);
@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function RegionPage({ params }: Props) {
   const [{ slug }, result] = await Promise.all([params, loadDashboard()]);
-  if (result.status === "unavailable") return <PublicUnavailable title="Region data is unavailable" message={result.message} code={result.code} />;
+  if (result.status === "unavailable") return <PublicUnavailable title="Country data is unavailable" message={result.message} code={result.code} />;
   const region = result.data.regions.find((candidate) => candidate.slug === slug);
   if (!region) notFound();
   return <RegionDetailView data={result.data} region={region} synthetic={result.synthetic} />;

@@ -81,6 +81,35 @@ as a globally deduplicated independent-source count. Browser RLS exposes only
 cells whose period ends on the current UTC date; historical cells remain
 private audit data and cannot masquerade as fresh coverage.
 
+`get_public_dashboard_snapshot_v3()` preserves v2 as its catalog and reviewed
+published-map base, then adds a no-argument, bounded `SECURITY DEFINER`
+projection for data that already exists behind the browser boundary:
+
+- reviewed-study denominators grouped by TCGdex set and country for the current
+  365-day UTC period; denominator rows never disappear when a threshold is
+  crossed;
+- below-threshold rows use `insufficient`; threshold-sufficient rows without a
+  reviewed baseline/interval use `pending`. Both states keep every rate,
+  numerator, baseline, posterior, interval, and delta field null;
+- a published v2 country aggregate takes precedence over its reviewed
+  denominator row, while exact reviewed rows keep the atlas and country detail
+  routes populated before the aggregate publisher is ready;
+- an exact public source allowlist for TCGdex, YouTube metadata discovery, and
+  the two reviewed studies, exposing only status, freshness, a safe reference,
+  and bounded notes;
+- aggregate heartbeat status for the ready `collector`, `scheduler`, and
+  `watchdog` roles, without host, worker, version, job, payload, or error detail.
+
+The source status check validates the complete immutable policy contract,
+including routes, robots behavior, limits, retention, and a SHA-256 comparison
+of the private config; no private config value is returned. The YouTube count in
+v3 remains activity metadata only. Video identity, title,
+query, channel, geography, content, and all evidence fields stay private and
+cannot become an opening, hit, denominator, or rate. v3 reads only exact source
+keys and policy versions, caps reviewed sets at 100 and countries at 249,
+inherits v2's 1,000-set catalog bound, and grants execution only to browser
+roles.
+
 The migrations define the private catalog/ingest/analytics relations, public aggregate tables, and versioned public/Admin RPCs. Their existence is not evidence of live observations. Every schema change—including each collector finalizer—must pass a clean reset and pgTAP run, then be verified against the exact approved hosted project before its behavior is claimed as deployed.
 
 ## Lifecycle

@@ -62,6 +62,33 @@ describe("WorldHeatmap", () => {
     expect(rows.find((row) => row.cell.countryCode === "BR")?.status).toBe("withheld");
   });
 
+  it("distinguishes a threshold-sufficient row awaiting reviewed publication", () => {
+    const pending = {
+      ...DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "BR")!,
+      independentSources: 3,
+      state: "pending" as const,
+      sampleNote: "Evidence threshold met; reviewed publication pending.",
+    };
+    render(
+      <WorldHeatmap
+        cells={[pending]}
+        coverageSummary="One country awaits reviewed publication."
+        observations={{
+          ...DEMO_PUBLIC_DATA.observations,
+          status: "collecting",
+          observedPacks: pending.packsObserved,
+          completeOpenings: pending.openings,
+          sourceCountryContributions: pending.independentSources,
+          countriesObserved: 1,
+          countriesWithPublishedRate: 0,
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Publication pending")).toBeVisible();
+    expect(screen.getByText(/met the evidence threshold and await reviewed publication/i)).toBeVisible();
+  });
+
   it("shows an honest neutral empty state", () => {
     render(
       <WorldHeatmap

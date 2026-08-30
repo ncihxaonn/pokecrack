@@ -31,6 +31,11 @@ const SIGNALS: Record<EvidenceState, SignalPresentation> = {
     tone: "alert",
     detail: "The configured observational threshold is met; causal interpretation is not supported.",
   },
+  pending: {
+    label: "Publication pending",
+    tone: "muted",
+    detail: "The evidence threshold is met, but the reviewed baseline and interval are not published yet.",
+  },
   insufficient: {
     label: "Insufficient sample",
     tone: "muted",
