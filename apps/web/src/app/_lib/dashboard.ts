@@ -3,7 +3,7 @@ import { cache } from "react";
 
 import { getDashboardData } from "@/data/server";
 
-const cachedDashboard = unstable_cache(getDashboardData, ["public-dashboard-v3"], {
+const cachedDashboard = unstable_cache(getDashboardData, ["public-dashboard-v3-coverage-v1"], {
   revalidate: 900,
   tags: ["public-dashboard"],
 });

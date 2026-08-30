@@ -280,6 +280,46 @@ WARGAMER_POLICY_CONFIG: dict[str, object] = {
     "denominator_complete": True,
 }
 
+CARDCHILL_IDENTITY = PUBLIC_STUDIES_BY_KEY["cardchill-ascended-heroes-gb-90-v1"]
+CARDCHILL_POLICY_CONFIG: dict[str, object] = {
+    "study_key": CARDCHILL_IDENTITY.study_key,
+    "canonical_url": CARDCHILL_IDENTITY.source_url,
+    "collector_version": CARDCHILL_IDENTITY.collector_version,
+    "parser_version": CARDCHILL_IDENTITY.parser_version,
+    "country_code": "GB",
+    "country_name": "United Kingdom",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "set_external_id": "me02.5",
+    "product_scope": "etb",
+    "pack_count": 90,
+    "qualifying_hit_pack_count": 1,
+    "qualifying_metric": "sir_pack",
+    "metric_version": "global-sir-v1",
+    "observed_at": "2026-03-03T11:26:21Z",
+    "denominator_complete": True,
+}
+
+BLEEDINGCOOL_IDENTITY = PUBLIC_STUDIES_BY_KEY["bleedingcool-phantasmal-flames-us-36-v1"]
+BLEEDINGCOOL_POLICY_CONFIG: dict[str, object] = {
+    "study_key": BLEEDINGCOOL_IDENTITY.study_key,
+    "canonical_url": BLEEDINGCOOL_IDENTITY.source_url,
+    "collector_version": BLEEDINGCOOL_IDENTITY.collector_version,
+    "parser_version": BLEEDINGCOOL_IDENTITY.parser_version,
+    "country_code": "US",
+    "country_name": "United States",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "set_external_id": "me02",
+    "product_scope": "booster_box",
+    "pack_count": 36,
+    "qualifying_hit_pack_count": 1,
+    "qualifying_metric": "sir_pack",
+    "metric_version": "global-sir-v1",
+    "observed_at": "2026-01-03T16:12:04Z",
+    "denominator_complete": True,
+}
+
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
@@ -310,13 +350,55 @@ def wargamer_chaos_rising_adapter(*, client: HTTPClient) -> ReviewedPublicStudyA
     )
 
 
+def cardchill_ascended_heroes_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
+    return ReviewedPublicStudyAdapter(
+        client=client,
+        identity=CARDCHILL_IDENTITY,
+        expected_policy_config=CARDCHILL_POLICY_CONFIG,
+        title_tokens=("Ripping 10 Ascended Heroes ETBs", "Mega Attack", "Pull Rate Real"),
+        evidence_patterns=(
+            re.compile(
+                r"I finally sat down with a stack of 10 Ascended Heroes Elite Trainer Boxes\."
+            ),
+            re.compile(r"Out of 90 packs, I pulled 19 Double Rare \(ex\) cards\."),
+            re.compile(r"Across 10 ETBs, I pulled exactly one SIR\."),
+        ),
+    )
+
+
+def bleedingcool_phantasmal_flames_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
+    return ReviewedPublicStudyAdapter(
+        client=client,
+        identity=BLEEDINGCOOL_IDENTITY,
+        expected_policy_config=BLEEDINGCOOL_POLICY_CONFIG,
+        title_tokens=("Opening Pokémon TCG", "Phantasmal Flames Products"),
+        evidence_patterns=(
+            re.compile(r"Now, the meat and potatoes: the booster box\."),
+            re.compile(
+                r"A booster box contains 36 packs, which essentially guarantees some fire\."
+            ),
+            re.compile(
+                r"My Secret Rare count here is a whopping eight, made up of five "
+                r"Illustration Rares, two Full Art Trainer Supporters, and, the biggest hit, "
+                r"a Special Illustration Rare ex\."
+            ),
+        ),
+    )
+
+
 __all__ = [
+    "BLEEDINGCOOL_IDENTITY",
+    "BLEEDINGCOOL_POLICY_CONFIG",
+    "CARDCHILL_IDENTITY",
+    "CARDCHILL_POLICY_CONFIG",
     "COMICBOOK_IDENTITY",
     "COMICBOOK_POLICY_CONFIG",
     "ReviewedPublicStudyAdapter",
     "RobotsTxtChecker",
     "WARGAMER_IDENTITY",
     "WARGAMER_POLICY_CONFIG",
+    "bleedingcool_phantasmal_flames_adapter",
+    "cardchill_ascended_heroes_adapter",
     "comicbook_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",
 ]

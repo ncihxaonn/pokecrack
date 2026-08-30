@@ -326,12 +326,30 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
         "https://www.wargamer.com/pokemon-trading-card-game/chaos-rising-preview",
         "static",
     )
+    cardchill = sources.require(
+        "https://cardchill.com/article/"
+        "ripping-10-ascended-heroes-etbs-is-the-mega-attack-pull-rate-real",
+        "static",
+    )
+    bleedingcool = sources.require(
+        "https://bleedingcool.com/games/"
+        "opening-pokemon-tcg-mega-evolution-phantasmal-flames-products/",
+        "static",
+    )
     assert comicbook.config["study_key"] == "comicbook-perfect-order-us-55-v1"
     assert comicbook.config["pack_count"] == 55
     assert comicbook.config["qualifying_hit_pack_count"] == 1
     assert wargamer.config["study_key"] == "wargamer-chaos-rising-gb-17-v1"
     assert wargamer.config["pack_count"] == 17
     assert wargamer.config["qualifying_hit_pack_count"] == 0
+    assert cardchill.config["study_key"] == "cardchill-ascended-heroes-gb-90-v1"
+    assert cardchill.config["pack_count"] == 90
+    assert cardchill.config["qualifying_hit_pack_count"] == 1
+    assert cardchill.config["product_scope"] == "etb"
+    assert bleedingcool.config["study_key"] == "bleedingcool-phantasmal-flames-us-36-v1"
+    assert bleedingcool.config["pack_count"] == 36
+    assert bleedingcool.config["qualifying_hit_pack_count"] == 1
+    assert bleedingcool.config["product_scope"] == "booster_box"
     assert all(
         policy.statistics_eligible_default
         and policy.metadata_only is False
@@ -339,7 +357,7 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
         and policy.min_delay_seconds == 30
         and policy.max_pages_per_run == 2
         and policy.max_concurrency == 1
-        for policy in (comicbook, wargamer)
+        for policy in (comicbook, wargamer, cardchill, bleedingcool)
     )
     youtube_api = sources.require("https://youtube.googleapis.com/youtube/v3/search", "youtube")
     assert youtube_api.metadata_only

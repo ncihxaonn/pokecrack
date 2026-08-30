@@ -27,6 +27,9 @@ PUBLIC_STUDY_PIPELINE = (
 PUBLIC_PIPELINE_SNAPSHOT = (
     ROOT / "migrations/20260901000000_public_pipeline_snapshot.sql"
 ).read_text()
+REVIEWED_GLOBAL_EVIDENCE = (
+    ROOT / "migrations/20260902000000_reviewed_global_evidence.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -373,6 +376,111 @@ class IngestMigrationContractTests(unittest.TestCase):
             self.assertIn("set search_path = pg_catalog", function)
             self.assertIn("lease_generation", function)
             self.assertIn(f"{function_name}:", DATABASE_TYPES)
+
+    def test_reviewed_coverage_extension_is_denominator_only_and_fail_closed(self) -> None:
+        lowered = REVIEWED_GLOBAL_EVIDENCE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for study_key in (
+            "cardchill-ascended-heroes-gb-90-v1",
+            "bleedingcool-phantasmal-flames-us-36-v1",
+        ):
+            self.assertGreaterEqual(lowered.count(study_key), 4)
+        self.assertIn(
+            "create table ingest.public_study_coverage_observations", lowered
+        )
+        coverage_table = lowered.split(
+            "create table ingest.public_study_coverage_observations", 1
+        )[1].split("create index public_study_coverage_country_time_idx", 1)[0]
+        for private_metric in (
+            "qualifying_hit_pack_count",
+            "observed_rate",
+            "posterior",
+            "baseline",
+            "evidence_excerpt",
+        ):
+            self.assertNotIn(private_metric, coverage_table)
+        self.assertIn(
+            "alter table ingest.public_study_coverage_observations force row level security",
+            compact,
+        )
+        self.assertIn(
+            "grant select on table ingest.public_study_coverage_observations to service_role",
+            compact,
+        )
+        for mutation in ("insert", "update", "delete"):
+            self.assertNotIn(
+                f"grant {mutation} on table ingest.public_study_coverage_observations",
+                compact,
+            )
+
+        finalizer = lowered.split(
+            "create or replace function ingest.finalize_public_study_coverage_job_v1",
+            1,
+        )[1].split(
+            "alter function ingest.finalize_public_study_coverage_job_v1", 1
+        )[0]
+        self.assertIn("security definer", finalizer)
+        self.assertIn("set search_path = pg_catalog", finalizer)
+        self.assertIn("for update of jobs", finalizer)
+        self.assertIn("owner_lease_generation", finalizer)
+        self.assertIn("result_excerpt <> reviewed.evidence_excerpt", finalizer)
+        self.assertIn("extensions.digest", finalizer)
+        self.assertIn(
+            "insert into ingest.public_study_coverage_observations", finalizer
+        )
+        for forbidden_write in (
+            "insert into ingest.source_items",
+            "insert into ingest.extraction_runs",
+            "insert into ingest.openings",
+            "insert into ingest.public_study_observations",
+            "insert into public.country_period_map_cells",
+        ):
+            self.assertNotIn(forbidden_write, finalizer)
+
+        preflight = lowered.split(
+            "create or replace function ingest.begin_public_study_job_v2", 1
+        )[1].split("alter function ingest.begin_public_study_job_v2", 1)[0]
+        self.assertIn("contracts.ordinal in (3, 4)", preflight)
+        self.assertIn("p_schedule_name is null", lowered)
+
+        public_rpc = lowered.split(
+            "create or replace function public.get_public_study_coverage_v1", 1
+        )[1].split(
+            "alter function public.get_public_study_coverage_v1", 1
+        )[0]
+        self.assertIn("security definer", public_rpc)
+        self.assertIn("btrim(catalog_sets.series_name) <> ''", public_rpc)
+        for safe_key in (
+            "'countries'",
+            "'sets'",
+            "'sources'",
+            "'packsobserved'",
+            "'independentsources'",
+        ):
+            self.assertIn(safe_key, public_rpc)
+        for forbidden_json_key in (
+            "'evidence_excerpt'",
+            "'evidence_sha256'",
+            "'qualifying_hit_pack_count'",
+            "'job_id'",
+            "'policy_id'",
+        ):
+            self.assertNotIn(forbidden_json_key, public_rpc)
+        self.assertIn(
+            "grant execute on function public.get_public_study_coverage_v1() to anon, authenticated",
+            compact,
+        )
+        for generated_contract in (
+            "public_study_coverage_observations:",
+            "begin_public_study_job_v2:",
+            "finalize_public_study_coverage_job_v1:",
+            "enqueue_public_study_coverage_job_v1:",
+            "enqueue_scheduled_public_study_coverage_job_v1:",
+            "get_public_study_coverage_v1:",
+        ):
+            self.assertIn(generated_contract, DATABASE_TYPES)
 
     def test_generated_public_study_types_preserve_the_dedicated_ledger(self) -> None:
         observations = DATABASE_TYPES.split(
