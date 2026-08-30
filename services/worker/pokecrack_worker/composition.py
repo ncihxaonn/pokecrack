@@ -599,7 +599,14 @@ _SCHEDULE_FIELDS: tuple[tuple[str, str], ...] = (
 UNWIRED_SCHEDULE_NAMES = tuple(
     name
     for name, _field_name in _SCHEDULE_FIELDS
-    if name not in {"official_api", "public_collection", "catalog_sync", "cleanup"}
+    if name
+    not in {
+        "official_api",
+        "public_collection",
+        "bluesky_collection",
+        "catalog_sync",
+        "cleanup",
+    }
 )
 
 

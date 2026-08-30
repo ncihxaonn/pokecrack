@@ -258,11 +258,11 @@ def test_parser_validates_v2_envelope_time_and_operations() -> None:
 def test_collector_is_bounded_idempotent_and_advances_cursor_for_nonmatches() -> None:
     messages = (
         _frame(1, text="just opening"),
-        _frame(2, text="Pokemon TCG!\r\x00opening"),
-        _frame(3, operation="update", text="Pokemon TCG updated"),
-        _frame(3, operation="update", text="Pokemon TCG duplicate"),
-        _frame(4, rkey="post2", text="Pokemon TCG second"),
-        _frame(5, operation="delete", rkey="post2"),
+        _frame(2, rkey="post2", text="Pokemon TCG!\r\x00opening"),
+        _frame(3, operation="update", rkey="post3", text="Pokemon TCG updated"),
+        _frame(3, operation="update", rkey="post3", text="Pokemon TCG updated"),
+        _frame(4, rkey="post4", text="Pokemon TCG second"),
+        _frame(5, operation="delete", rkey="post5"),
     )
     transport = RecordingTransport(messages)
     collector = BlueskyJetstreamCollector(transport=transport, keywords=_registry())
@@ -273,13 +273,13 @@ def test_collector_is_bounded_idempotent_and_advances_cursor_for_nonmatches() ->
     assert result.end_cursor == 5
     assert result.events_seen == len(messages)
     assert result.bytes_seen == sum(map(len, messages))
-    assert [item.cursor for item in result.candidates] == [3]
-    assert result.candidates[0].at_uri.endswith("/post1")
-    assert result.candidates[0].text_excerpt == "Pokemon TCG updated"
+    assert [item.cursor for item in result.candidates] == [2, 3, 4]
+    assert result.candidates[1].at_uri.endswith("/post3")
+    assert result.candidates[1].text_excerpt == "Pokemon TCG updated"
     assert result.candidates[0].record_sha256.isascii()
     assert len(result.candidates[0].record_sha256) == 64
     assert [(item.at_uri, item.cursor) for item in result.deletions] == [
-        (f"at://{DID}/{BLUESKY_POST_COLLECTION}/post2", 5)
+        (f"at://{DID}/{BLUESKY_POST_COLLECTION}/post5", 5)
     ]
     assert transport.calls == [
         {
@@ -291,13 +291,59 @@ def test_collector_is_bounded_idempotent_and_advances_cursor_for_nonmatches() ->
     ]
 
     inclusive = BlueskyJetstreamCollector(
-        transport=RecordingTransport((_frame(5, text="Pokemon TCG later"), _frame(6))),
+        transport=RecordingTransport(
+            (_frame(5, operation="delete", rkey="post5"), _frame(6, rkey="post6"))
+        ),
         keywords=_registry(),
     )
     resumed = inclusive.collect(start_cursor=5)
     assert resumed.end_cursor == 6
     assert resumed.events_seen == 2
     assert resumed.candidates[0].cursor == 6
+
+
+@pytest.mark.parametrize("second_operation", ("update", "delete"))
+def test_collector_stops_before_a_second_event_reuses_one_identity(
+    second_operation: str,
+) -> None:
+    messages = (
+        _frame(10, rkey="same-post"),
+        _frame(11, operation=second_operation, rkey="same-post", text="Pokemon TCG update"),
+        _frame(12, rkey="other-post"),
+    )
+    first = BlueskyJetstreamCollector(
+        transport=RecordingTransport(messages),
+        keywords=_registry(),
+    ).collect()
+
+    assert first.end_cursor == 10
+    assert first.events_seen == 1
+    assert [item.cursor for item in first.candidates] == [10]
+    assert first.deletions == ()
+
+    resumed = BlueskyJetstreamCollector(
+        transport=RecordingTransport(messages),
+        keywords=_registry(),
+    ).collect(start_cursor=10)
+
+    assert resumed.end_cursor == 12
+    assert resumed.events_seen == 3
+    if second_operation == "delete":
+        assert [item.cursor for item in resumed.candidates] == [12]
+        assert [item.cursor for item in resumed.deletions] == [11]
+    else:
+        assert [item.cursor for item in resumed.candidates] == [11, 12]
+        assert resumed.deletions == ()
+
+
+def test_collector_rejects_a_conflicting_duplicate_sequence() -> None:
+    collector = BlueskyJetstreamCollector(
+        transport=RecordingTransport((_frame(7, rkey="post1"), _frame(7, rkey="post2"))),
+        keywords=_registry(),
+    )
+
+    with pytest.raises(BlueskyInvalidMessage, match="bluesky_sequence_conflict"):
+        collector.collect()
 
 
 @pytest.mark.parametrize(

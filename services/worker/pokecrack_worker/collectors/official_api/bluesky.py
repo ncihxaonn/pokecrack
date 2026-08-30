@@ -529,7 +529,7 @@ class BlueskyJetstreamCollector:
         events_seen = 0
         bytes_seen = 0
         end_cursor = start_cursor
-        seen_sequences: set[Cursor] = set()
+        seen_events: dict[Cursor, BlueskyCommitEvent] = {}
         candidates: dict[str, BlueskyCandidate] = {}
         deletions: dict[str, BlueskyDeletion] = {}
         for raw in messages:
@@ -547,12 +547,15 @@ class BlueskyJetstreamCollector:
                 events_seen += 1
                 bytes_seen = next_bytes_seen
                 continue
-            if event.seq in seen_sequences:
+            previous_event = seen_events.get(event.seq)
+            if previous_event is not None:
+                if event != previous_event:
+                    raise BlueskyInvalidMessage("bluesky_sequence_conflict")
                 events_seen += 1
                 bytes_seen = next_bytes_seen
                 continue
+            seen_events[event.seq] = event
             if start_cursor is not None and event.seq <= start_cursor:
-                seen_sequences.add(event.seq)
                 events_seen += 1
                 bytes_seen = next_bytes_seen
                 continue
@@ -563,7 +566,14 @@ class BlueskyJetstreamCollector:
                 raise BlueskyInvalidMessage("bluesky_at_uri_invalid")
             candidate: BlueskyCandidate | None = None
             if event.operation == "delete":
-                if at_uri not in deletions and len(deletions) >= BLUESKY_MAX_DELETIONS:
+                if at_uri in candidates or at_uri in deletions:
+                    # The database stores one immutable observation per
+                    # sequence while its bounded completion contract permits
+                    # each identity only once per list. Return the fully
+                    # processed prefix so a later inclusive slice persists
+                    # this event rather than collapsing it into prior state.
+                    break
+                if len(deletions) >= BLUESKY_MAX_DELETIONS:
                     # Return the fully processed prefix. The checkpoint remains
                     # before this event so the inclusive next slice retries it.
                     break
@@ -581,22 +591,24 @@ class BlueskyJetstreamCollector:
                         record_sha256=_record_sha256(event.record),
                         published_at=_published_at(event.record),
                     )
-                    if at_uri not in candidates and len(candidates) >= BLUESKY_MAX_CANDIDATES:
+                    if at_uri in candidates or at_uri in deletions:
+                        # Preserve every matching event across bounded slices;
+                        # never advance the checkpoint past an event omitted
+                        # from the exact completion payload.
+                        break
+                    if len(candidates) >= BLUESKY_MAX_CANDIDATES:
                         # Do not advance beyond an event omitted from the exact
                         # completion payload; the next inclusive slice resumes it.
                         break
 
-            seen_sequences.add(event.seq)
             events_seen += 1
             bytes_seen = next_bytes_seen
             end_cursor = event.seq if end_cursor is None else max(end_cursor, event.seq)
             if event.operation == "delete":
-                candidates.pop(at_uri, None)
                 deletions[at_uri] = BlueskyDeletion(at_uri=at_uri, cursor=event.seq)
                 continue
             if candidate is None:
                 continue
-            deletions.pop(at_uri, None)
             candidates[at_uri] = candidate
         return BlueskyJetstreamResult(
             start_cursor=start_cursor,
