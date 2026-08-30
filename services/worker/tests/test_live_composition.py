@@ -1113,8 +1113,7 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
     assert all(params["kind"] == YOUTUBE_DISCOVERY_JOB_TYPE for _sql, params in executor.calls)
     assert all(params["max_attempts"] == 3 for _sql, params in executor.calls)
     assert all(
-        entry.cron == "0 */2 * * *"
-        and entry.catch_up_within == timedelta(hours=4)
+        entry.cron == "0 */2 * * *" and entry.catch_up_within == timedelta(hours=4)
         for entry in live_schedule_entries(settings)
         if entry.job_type == YOUTUBE_DISCOVERY_JOB_TYPE
     )

@@ -192,9 +192,7 @@ def test_keyword_registry_is_frozen_global_and_requires_both_groups() -> None:
                 "default_enabled": False,
                 "collection": BLUESKY_POST_COLLECTION,
                 "operations": list(BLUESKY_FILTER_OPERATIONS),
-                "keywords": [
-                    {"name": "pokemon", "keyword": "Pokemon", "group": "identity"}
-                ],
+                "keywords": [{"name": "pokemon", "keyword": "Pokemon", "group": "identity"}],
             }
         )
 

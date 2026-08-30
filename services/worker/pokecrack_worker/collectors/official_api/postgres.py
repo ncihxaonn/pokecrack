@@ -319,9 +319,6 @@ class PostgresBlueskyJetstreamGate:
             if raw_cursor != "0" and raw_cursor.startswith("0"):
                 raise ValueError("Bluesky checkpoint cursor must use canonical decimal text")
             raw_cursor = int(raw_cursor)
-        if (
-            not isinstance(raw_cursor, int)
-            or not 0 <= raw_cursor <= 9_223_372_036_854_775_807
-        ):
+        if not isinstance(raw_cursor, int) or not 0 <= raw_cursor <= 9_223_372_036_854_775_807:
             raise ValueError("Bluesky checkpoint cursor is outside the approved range")
         return BlueskyJetstreamCheckpoint(start_cursor=raw_cursor)

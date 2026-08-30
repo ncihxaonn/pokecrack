@@ -353,9 +353,7 @@ TCGTALK_EVIDENCE_EXCERPT = (
     "Out of 54 packs opened, the community pull rate held roughly true: 1 SIR per 54 packs "
     "in this particular opening, with the Meowth EX SIR being the pull."
 )
-TCGTALK_EVIDENCE_SHA256 = (
-    "217f21e0de947139a96b6466563c1d005300598b1dde933264255627c8f0b096"
-)
+TCGTALK_EVIDENCE_SHA256 = "217f21e0de947139a96b6466563c1d005300598b1dde933264255627c8f0b096"
 
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:

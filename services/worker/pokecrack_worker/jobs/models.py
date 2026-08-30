@@ -356,8 +356,7 @@ class BlueskySourceItemWrite:
                 not isinstance(self.text_excerpt, str)
                 or not 1 <= len(self.text_excerpt) <= _BLUESKY_MAX_EXCERPT_CHARS
                 or any(
-                    unicodedata.category(character) == "Cc"
-                    and character not in "\n\t"
+                    unicodedata.category(character) == "Cc" and character not in "\n\t"
                     for character in self.text_excerpt
                 )
             ):
