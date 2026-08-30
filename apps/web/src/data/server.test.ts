@@ -37,12 +37,14 @@ describe("public live-data client", () => {
     const snapshot = { mode: "live", marker: "valid-v3" };
     mocks.rpc
       .mockResolvedValueOnce({ data: snapshot, error: null })
-      .mockRejectedValueOnce(new Error("coverage transport failed"));
+      .mockRejectedValueOnce(new Error("coverage transport failed"))
+      .mockRejectedValueOnce(new Error("social transport failed"));
 
     await expect(getDashboardData()).resolves.toBe(snapshot);
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
       "get_public_study_coverage_v1",
+      "get_public_social_discovery_v1",
     ]);
   });
 });
