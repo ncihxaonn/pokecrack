@@ -6,6 +6,7 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from pokecrack_worker.collectors.official_api import PostgresPublicStudyGate
 from pokecrack_worker.db import PsycopgQueryExecutor
 from pokecrack_worker.deduplication.fingerprints import content_sha256
 from pokecrack_worker.jobs import (
@@ -860,6 +861,79 @@ def test_postgres_scheduled_enqueue_uses_the_durable_slot_rpc() -> None:
     }
 
 
+def test_new_reviewed_study_uses_the_exact_scheduled_coverage_rpc() -> None:
+    row: dict[str, object] = {
+        "id": "job-coverage",
+        "job_type": "source.public_study.opening",
+        "payload": {"study_key": "cardchill-ascended-heroes-gb-90-v1"},
+        "status": "pending",
+        "available_at": NOW,
+        "lease_generation": 0,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+    class Executor:
+        def __init__(self) -> None:
+            self.sql = ""
+            self.params: dict[str, object] = {}
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            self.sql = sql
+            self.params = params
+            return [row]
+
+    executor = Executor()
+    PostgresJobRepository(executor).enqueue_scheduled(
+        "source.public_study.opening",
+        {"study_key": "cardchill-ascended-heroes-gb-90-v1"},
+        schedule_name="public_study_cardchill-ascended-heroes-gb-90-v1",
+        scheduled_for=NOW,
+        priority=14,
+        now=NOW,
+        max_attempts=3,
+    )
+
+    assert "ingest.enqueue_scheduled_public_study_coverage_job_v1" in executor.sql
+    assert executor.params == {
+        "schedule_name": "public_study_cardchill-ascended-heroes-gb-90-v1",
+        "scheduled_for": NOW,
+        "study_key": "cardchill-ascended-heroes-gb-90-v1",
+        "priority": 14,
+        "max_attempts": 3,
+    }
+
+
+def test_public_study_gate_routes_only_new_studies_to_denominator_coverage() -> None:
+    class Executor:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, dict[str, object]]] = []
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            self.calls.append((sql, params))
+            return [{"acquired": True, "retry_at": None}]
+
+    executor = Executor()
+    gate = PostgresPublicStudyGate(executor)
+    gate.begin(
+        job_id="job-old",
+        worker_id="collector-1",
+        lease_generation=1,
+        study_key="comicbook-perfect-order-us-55-v1",
+    )
+    gate.begin(
+        job_id="job-coverage",
+        worker_id="collector-1",
+        lease_generation=2,
+        study_key="cardchill-ascended-heroes-gb-90-v1",
+    )
+
+    assert "ingest.begin_public_study_job(" in executor.calls[0][0]
+    assert "ingest.begin_public_study_job_v2(" not in executor.calls[0][0]
+    assert "ingest.begin_public_study_job_v2(" in executor.calls[1][0]
+    assert executor.calls[1][1]["study_key"] == "cardchill-ascended-heroes-gb-90-v1"
+
+
 def test_postgres_tcgdex_completion_uses_one_data_bearing_atomic_rpc() -> None:
     completed_row: dict[str, object] = {
         "id": "job-1",
@@ -1138,6 +1212,73 @@ def test_postgres_public_study_completion_uses_evidence_only_finalizer() -> None
         "product_scope",
     ):
         assert forbidden not in serialized
+
+
+def test_new_reviewed_study_completion_uses_denominator_only_finalizer() -> None:
+    completed_row: dict[str, object] = {
+        "id": "job-coverage",
+        "job_type": "source.public_study.opening",
+        "payload": {"study_key": "cardchill-ascended-heroes-gb-90-v1"},
+        "status": "completed",
+        "available_at": NOW,
+        "lease_generation": 2,
+        "completed_at": NOW,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+    class Executor:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, dict[str, object]]] = []
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            self.calls.append((sql, params))
+            return [completed_row]
+
+    evidence = (
+        "I finally sat down with a stack of 10 Ascended Heroes Elite Trainer Boxes.\n"
+        "Out of 90 packs, I pulled 19 Double Rare (ex) cards.\n"
+        "Across 10 ETBs, I pulled exactly one SIR."
+    )
+    completion = PublicStudyCompletion(
+        study_key="cardchill-ascended-heroes-gb-90-v1",
+        source_url=(
+            "https://cardchill.com/article/"
+            "ripping-10-ascended-heroes-etbs-is-the-mega-attack-pull-rate-real"
+        ),
+        title="Ripping 10 Ascended Heroes ETBs: Is the Mega Attack Pull Rate Real?",
+        evidence_excerpt=evidence,
+        evidence_sha256=content_sha256(evidence),
+        collector_version="public-study-cardchill-ascended-heroes-v1",
+        parser_version="cardchill-ascended-heroes-evidence-v1",
+        source_policy_version="public-study-cardchill-ascended-heroes-v1",
+    )
+
+    executor = Executor()
+    PostgresJobRepository(executor).complete(
+        "job-coverage",
+        worker_id="collector-1",
+        lease_generation=2,
+        now=NOW,
+        effect=completion,
+    )
+    sql, params = executor.calls[0]
+    assert "ingest.finalize_public_study_coverage_job_v1" in sql
+    assert params["study_key"] == "cardchill-ascended-heroes-gb-90-v1"
+    persisted = json.loads(str(params["result"]))
+    assert set(persisted) == {
+        "version",
+        "study_key",
+        "source_url",
+        "title",
+        "evidence_excerpt",
+        "evidence_sha256",
+        "collector_version",
+        "parser_version",
+        "source_policy_version",
+    }
+    assert "pack_count" not in persisted
+    assert "qualifying_hit_pack_count" not in persisted
 
 
 def test_public_study_completion_rejects_identity_or_version_drift() -> None:

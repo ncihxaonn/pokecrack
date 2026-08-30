@@ -7,6 +7,8 @@ from collections.abc import Mapping, Sequence
 from datetime import datetime, timedelta
 from typing import Any, Protocol
 
+from pokecrack_worker.config.public_studies import PUBLIC_STUDY_COVERAGE_KEYS
+
 from .models import (
     CompletionEffect,
     Job,
@@ -53,6 +55,28 @@ FROM ingest.enqueue_scheduled_job_v1(
     %(scheduled_for)s,
     %(kind)s,
     %(payload)s::jsonb,
+    %(priority)s,
+    %(max_attempts)s
+)
+""".strip()
+
+ENQUEUE_PUBLIC_STUDY_COVERAGE_SQL = """
+SELECT *
+FROM ingest.enqueue_public_study_coverage_job_v1(
+    %(study_key)s,
+    %(priority)s,
+    %(dedupe_key)s,
+    %(available_at)s,
+    %(max_attempts)s
+)
+""".strip()
+
+ENQUEUE_SCHEDULED_PUBLIC_STUDY_COVERAGE_SQL = """
+SELECT *
+FROM ingest.enqueue_scheduled_public_study_coverage_job_v1(
+    %(schedule_name)s,
+    %(scheduled_for)s,
+    %(study_key)s,
     %(priority)s,
     %(max_attempts)s
 )
@@ -125,6 +149,17 @@ FROM ingest.finalize_public_study_job(
     job_id => %(job_id)s::uuid,
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint,
+    result => %(result)s::jsonb
+)
+""".strip()
+
+FINALIZE_PUBLIC_STUDY_COVERAGE_SQL = """
+SELECT *
+FROM ingest.finalize_public_study_coverage_job_v1(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    study_key => %(study_key)s,
     result => %(result)s::jsonb
 )
 """.strip()
@@ -203,17 +238,34 @@ class PostgresJobRepository:
         dedupe_key: str | None = None,
         available_at: datetime | None = None,
     ) -> Job:
-        rows = self._executor.query(
-            ENQUEUE_SQL,
-            {
-                "kind": kind,
-                "payload": json.dumps(dict(payload or {}), separators=(",", ":")),
+        job_payload = dict(payload or {})
+        coverage_study_key = job_payload.get("study_key")
+        coverage_enqueue = (
+            kind == "source.public_study.opening"
+            and set(job_payload) == {"study_key"}
+            and isinstance(coverage_study_key, str)
+            and coverage_study_key in PUBLIC_STUDY_COVERAGE_KEYS
+        )
+        if coverage_enqueue:
+            sql = ENQUEUE_PUBLIC_STUDY_COVERAGE_SQL
+            params: dict[str, object] = {
+                "study_key": coverage_study_key,
                 "priority": priority,
                 "dedupe_key": dedupe_key,
                 "available_at": available_at or now,
                 "max_attempts": max_attempts,
-            },
-        )
+            }
+        else:
+            sql = ENQUEUE_SQL
+            params = {
+                "kind": kind,
+                "payload": json.dumps(job_payload, separators=(",", ":")),
+                "priority": priority,
+                "dedupe_key": dedupe_key,
+                "available_at": available_at or now,
+                "max_attempts": max_attempts,
+            }
+        rows = self._executor.query(sql, params)
         if not rows:
             raise RuntimeError("job enqueue returned no row")
         return job_from_row(rows[0])
@@ -230,17 +282,34 @@ class PostgresJobRepository:
         max_attempts: int = 5,
     ) -> Job:
         del now
-        rows = self._executor.query(
-            ENQUEUE_SCHEDULED_SQL,
-            {
+        job_payload = dict(payload or {})
+        coverage_study_key = job_payload.get("study_key")
+        coverage_enqueue = (
+            kind == "source.public_study.opening"
+            and set(job_payload) == {"study_key"}
+            and isinstance(coverage_study_key, str)
+            and coverage_study_key in PUBLIC_STUDY_COVERAGE_KEYS
+        )
+        if coverage_enqueue:
+            sql = ENQUEUE_SCHEDULED_PUBLIC_STUDY_COVERAGE_SQL
+            params = {
+                "schedule_name": schedule_name,
+                "scheduled_for": scheduled_for,
+                "study_key": coverage_study_key,
+                "priority": priority,
+                "max_attempts": max_attempts,
+            }
+        else:
+            sql = ENQUEUE_SCHEDULED_SQL
+            params = {
                 "schedule_name": schedule_name,
                 "scheduled_for": scheduled_for,
                 "kind": kind,
-                "payload": json.dumps(dict(payload or {}), separators=(",", ":")),
+                "payload": json.dumps(job_payload, separators=(",", ":")),
                 "priority": priority,
                 "max_attempts": max_attempts,
-            },
-        )
+            }
+        rows = self._executor.query(sql, params)
         if not rows:
             raise RuntimeError("scheduled job enqueue returned no row")
         return job_from_row(rows[0])
@@ -326,7 +395,12 @@ class PostgresJobRepository:
                 effect.as_payload(), separators=(",", ":"), sort_keys=True
             )
         elif isinstance(effect, PublicStudyCompletion):
-            sql = FINALIZE_PUBLIC_STUDY_SQL
+            sql = (
+                FINALIZE_PUBLIC_STUDY_COVERAGE_SQL
+                if effect.study_key in PUBLIC_STUDY_COVERAGE_KEYS
+                else FINALIZE_PUBLIC_STUDY_SQL
+            )
+            params["study_key"] = effect.study_key
             params["result"] = json.dumps(
                 effect.as_payload(), separators=(",", ":"), sort_keys=True
             )

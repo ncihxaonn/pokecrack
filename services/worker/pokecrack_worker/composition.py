@@ -166,9 +166,16 @@ WITH youtube_dependencies AS (
 public_study_dependencies AS (
   SELECT COALESCE(
     to_regclass('ingest.public_study_observations') IS NOT NULL
+    AND to_regclass('ingest.public_study_coverage_observations') IS NOT NULL
     AND to_regprocedure('ingest.begin_public_study_job(uuid,text,bigint)') IS NOT NULL
     AND to_regprocedure(
+      'ingest.begin_public_study_job_v2(uuid,text,bigint,text)'
+    ) IS NOT NULL
+    AND to_regprocedure(
       'ingest.finalize_public_study_job(uuid,text,bigint,jsonb)'
+    ) IS NOT NULL
+    AND to_regprocedure(
+      'ingest.finalize_public_study_coverage_job_v1(uuid,text,bigint,text,jsonb)'
     ) IS NOT NULL
     AND has_function_privilege(
       current_user,
@@ -178,6 +185,18 @@ public_study_dependencies AS (
     AND has_function_privilege(
       current_user,
       to_regprocedure('ingest.finalize_public_study_job(uuid,text,bigint,jsonb)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.begin_public_study_job_v2(uuid,text,bigint,text)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.finalize_public_study_coverage_job_v1(uuid,text,bigint,text,jsonb)'
+      ),
       'EXECUTE'
     )
     AND has_table_privilege(
@@ -200,9 +219,29 @@ public_study_dependencies AS (
       'ingest.public_study_observations',
       'DELETE'
     )
+    AND has_table_privilege(
+      current_user,
+      'ingest.public_study_coverage_observations',
+      'SELECT'
+    )
+    AND NOT has_table_privilege(
+      current_user,
+      'ingest.public_study_coverage_observations',
+      'INSERT'
+    )
+    AND NOT has_table_privilege(
+      current_user,
+      'ingest.public_study_coverage_observations',
+      'UPDATE'
+    )
+    AND NOT has_table_privilege(
+      current_user,
+      'ingest.public_study_coverage_observations',
+      'DELETE'
+    )
     AND (
       SELECT
-        count(*) = 2
+        count(*) = 4
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -243,10 +282,34 @@ public_study_dependencies AS (
             AND policies.config ->> 'pack_count' = '17'
             AND policies.config ->> 'qualifying_hit_pack_count' = '0'
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_cardchill_gb_90'
+            AND policies.domain = 'cardchill.com'
+            AND policies.base_url = 'https://cardchill.com/article/ripping-10-ascended-heroes-etbs-is-the-mega-attack-pull-rate-real'
+            AND policies.version = 'public-study-cardchill-ascended-heroes-v1'
+            AND policies.config ->> 'study_key' = 'cardchill-ascended-heroes-gb-90-v1'
+            AND policies.config ->> 'set_external_id' = 'me02.5'
+            AND policies.config ->> 'country_code' = 'GB'
+            AND policies.config ->> 'pack_count' = '90'
+            AND policies.config ->> 'qualifying_hit_pack_count' = '1'
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_bleedingcool_us_36'
+            AND policies.domain = 'bleedingcool.com'
+            AND policies.base_url = 'https://bleedingcool.com/games/opening-pokemon-tcg-mega-evolution-phantasmal-flames-products'
+            AND policies.version = 'public-study-bleedingcool-phantasmal-flames-v1'
+            AND policies.config ->> 'study_key' = 'bleedingcool-phantasmal-flames-us-36-v1'
+            AND policies.config ->> 'set_external_id' = 'me02'
+            AND policies.config ->> 'country_code' = 'US'
+            AND policies.config ->> 'pack_count' = '36'
+            AND policies.config ->> 'qualifying_hit_pack_count' = '1'
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
-        'public_study_wargamer_gb_17'
+        'public_study_wargamer_gb_17',
+        'public_study_cardchill_gb_90',
+        'public_study_bleedingcool_us_36'
       )
     ),
     false
@@ -352,6 +415,21 @@ SELECT
         'ingest.enqueue_scheduled_job_v1(text,timestamptz,text,jsonb,integer,integer)'
       ),
       'EXECUTE'
+    )
+    AND (
+      NOT %(public_study_enabled)s::boolean
+      OR (
+        to_regprocedure(
+          'ingest.enqueue_scheduled_public_study_coverage_job_v1(text,timestamptz,text,integer,integer)'
+        ) IS NOT NULL
+        AND has_function_privilege(
+          current_user,
+          to_regprocedure(
+            'ingest.enqueue_scheduled_public_study_coverage_job_v1(text,timestamptz,text,integer,integer)'
+          ),
+          'EXECUTE'
+        )
+      )
     )
     AND (
       NOT %(youtube_enabled)s::boolean
@@ -757,6 +835,7 @@ def _public_study_handler(
                 job_id=job.id,
                 worker_id=worker_id,
                 lease_generation=job.lease_generation,
+                study_key=study_key,
             )
         except PublicStudyRequestDeferred as deferred:
             raise JobDeferred(

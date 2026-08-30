@@ -33,6 +33,8 @@ YOUTUBE_SOURCE_KEY = b"youtube_discovery"
 PUBLIC_STUDY_SOURCE_KEYS = (
     b"public_study_comicbook_us_55",
     b"public_study_wargamer_gb_17",
+    b"public_study_cardchill_gb_90",
+    b"public_study_bleedingcool_us_36",
 )
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)

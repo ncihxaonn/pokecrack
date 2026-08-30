@@ -198,6 +198,82 @@ sources:
     cache_ttl_seconds: 86400
     retain_raw_html: false
     terms_url: https://www.wargamer.com/robots.txt
+  cardchill.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-cardchill-ascended-heroes-v1
+    config:
+      study_key: cardchill-ascended-heroes-gb-90-v1
+      canonical_url: https://cardchill.com/article/ripping-10-ascended-heroes-etbs-is-the-mega-attack-pull-rate-real
+      collector_version: public-study-cardchill-ascended-heroes-v1
+      parser_version: cardchill-ascended-heroes-evidence-v1
+      country_code: GB
+      country_name: United Kingdom
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      set_external_id: me02.5
+      product_scope: etb
+      pack_count: 90
+      qualifying_hit_pack_count: 1
+      qualifying_metric: sir_pack
+      metric_version: global-sir-v1
+      observed_at: "2026-03-03T11:26:21Z"
+      denominator_complete: true
+    reason: Exact 2026 first-person 10-ETB study covering 90 packs and one SIR; GB is Tier B publisher-country evidence.
+    routes: [static]
+    adapter: cardchill_ascended_heroes_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://cardchill.com/robots.txt
+  bleedingcool.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-bleedingcool-phantasmal-flames-v1
+    config:
+      study_key: bleedingcool-phantasmal-flames-us-36-v1
+      canonical_url: https://bleedingcool.com/games/opening-pokemon-tcg-mega-evolution-phantasmal-flames-products
+      collector_version: public-study-bleedingcool-phantasmal-flames-v1
+      parser_version: bleedingcool-phantasmal-flames-evidence-v1
+      country_code: US
+      country_name: United States
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      set_external_id: me02
+      product_scope: booster_box
+      pack_count: 36
+      qualifying_hit_pack_count: 1
+      qualifying_metric: sir_pack
+      metric_version: global-sir-v1
+      observed_at: "2026-01-03T16:12:04Z"
+      denominator_complete: true
+    reason: Exact 2026 first-person booster-box subsection covering 36 packs and one SIR; US is Tier B publisher-country evidence.
+    routes: [static]
+    adapter: bleedingcool_phantasmal_flames_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://bleedingcool.com/robots.txt
   dynamic.example:
     enabled: true
     collector: scrapling_dynamic
