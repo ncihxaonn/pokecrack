@@ -56,11 +56,13 @@ PUBLIC_STUDY_SOURCE_KEYS = (
     b"public_study_wargamer_gb_17",
     b"public_study_cardchill_gb_90",
     b"public_study_bleedingcool_us_36",
+    b"public_study_tcgtalk_sg_54",
 )
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
 CARDCHILL_POLICY = "77777777-7777-4777-8777-777777777770"
 BLEEDINGCOOL_POLICY = "88888888-8888-4888-8888-888888888880"
+TCGTALK_POLICY = "99999999-9999-4999-8999-999999999990"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
     "country_code, country_name, geography_basis, geography_confidence, "
@@ -275,6 +277,7 @@ class BackupSanitizerTests(unittest.TestCase):
             f"{WARGAMER_POLICY}\tpublic_study_wargamer_gb_17\tpolicy\n"
             f"{CARDCHILL_POLICY}\tpublic_study_cardchill_gb_90\tpolicy\n"
             f"{BLEEDINGCOOL_POLICY}\tpublic_study_bleedingcool_us_36\tpolicy\n"
+            f"{TCGTALK_POLICY}\tpublic_study_tcgtalk_sg_54\tpolicy\n"
         ).encode()
         ledger = ddl + copy_block(
             "ingest.public_study_observations",

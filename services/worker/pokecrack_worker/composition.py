@@ -318,7 +318,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 4
+        count(*) = 5
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -381,12 +381,37 @@ public_study_dependencies AS (
             AND policies.config ->> 'pack_count' = '36'
             AND policies.config ->> 'qualifying_hit_pack_count' = '1'
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_tcgtalk_sg_54'
+            AND policies.domain = 'tcgtalk.com'
+            AND policies.base_url = 'https://tcgtalk.com/blog/perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232'
+            AND policies.version = 'public-study-tcgtalk-perfect-order-v1'
+            AND policies.config = '{
+              "study_key":"tcgtalk-perfect-order-sg-54-v1",
+              "canonical_url":"https://tcgtalk.com/blog/perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232",
+              "collector_version":"public-study-tcgtalk-perfect-order-v1",
+              "parser_version":"tcgtalk-perfect-order-evidence-v1",
+              "country_code":"SG",
+              "country_name":"Singapore",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "set_external_id":"me03",
+              "product_scope":"booster_bundle",
+              "pack_count":54,
+              "qualifying_hit_pack_count":1,
+              "qualifying_metric":"sir_pack",
+              "metric_version":"global-sir-v1",
+              "observed_at":"2026-03-25T12:40:00Z",
+              "denominator_complete":true
+            }'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
         'public_study_wargamer_gb_17',
         'public_study_cardchill_gb_90',
-        'public_study_bleedingcool_us_36'
+        'public_study_bleedingcool_us_36',
+        'public_study_tcgtalk_sg_54'
       )
     ),
     false

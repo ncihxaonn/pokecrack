@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
+from pokecrack_worker.collectors.scrapling.adapters.public_studies import TCGTALK_POLICY_CONFIG
 from pokecrack_worker.config.registries import (
     REQUIRED_YOUTUBE_QUERIES,
     RarityTaxonomy,
@@ -336,6 +337,11 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
         "opening-pokemon-tcg-mega-evolution-phantasmal-flames-products/",
         "static",
     )
+    tcgtalk = sources.require(
+        "https://tcgtalk.com/blog/"
+        "perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232",
+        "static",
+    )
     assert comicbook.config["study_key"] == "comicbook-perfect-order-us-55-v1"
     assert comicbook.config["pack_count"] == 55
     assert comicbook.config["qualifying_hit_pack_count"] == 1
@@ -350,6 +356,17 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
     assert bleedingcool.config["pack_count"] == 36
     assert bleedingcool.config["qualifying_hit_pack_count"] == 1
     assert bleedingcool.config["product_scope"] == "booster_box"
+    assert tcgtalk.config["study_key"] == "tcgtalk-perfect-order-sg-54-v1"
+    assert tcgtalk.config["country_code"] == "SG"
+    assert tcgtalk.config["country_name"] == "Singapore"
+    assert tcgtalk.config["geography_basis"] == "publisher_country"
+    assert tcgtalk.config["geography_confidence"] == "tier_b"
+    assert tcgtalk.config["set_external_id"] == "me03"
+    assert tcgtalk.config["product_scope"] == "booster_bundle"
+    assert tcgtalk.config["pack_count"] == 54
+    assert tcgtalk.config["qualifying_hit_pack_count"] == 1
+    assert tcgtalk.config["observed_at"] == "2026-03-25T12:40:00Z"
+    assert tcgtalk.config == TCGTALK_POLICY_CONFIG
     assert all(
         policy.statistics_eligible_default
         and policy.metadata_only is False
@@ -357,7 +374,7 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
         and policy.min_delay_seconds == 30
         and policy.max_pages_per_run == 2
         and policy.max_concurrency == 1
-        for policy in (comicbook, wargamer, cardchill, bleedingcool)
+        for policy in (comicbook, wargamer, cardchill, bleedingcool, tcgtalk)
     )
     youtube_api = sources.require("https://youtube.googleapis.com/youtube/v3/search", "youtube")
     assert youtube_api.metadata_only

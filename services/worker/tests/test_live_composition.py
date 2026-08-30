@@ -1137,7 +1137,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_only_the_four_reviewed_daily_jobs() -> None:
+def test_public_study_flag_registers_only_the_five_reviewed_daily_jobs() -> None:
     entries = live_schedule_entries(_public_study_settings("scheduler"))
     studies = [entry for entry in entries if entry.job_type == PUBLIC_STUDY_JOB_TYPE]
 
@@ -1146,6 +1146,7 @@ def test_public_study_flag_registers_only_the_four_reviewed_daily_jobs() -> None
         {"study_key": "wargamer-chaos-rising-gb-17-v1"},
         {"study_key": "cardchill-ascended-heroes-gb-90-v1"},
         {"study_key": "bleedingcool-phantasmal-flames-us-36-v1"},
+        {"study_key": "tcgtalk-perfect-order-sg-54-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1171,6 +1172,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert "public_study_wargamer_gb_17" in sql
     assert "public_study_cardchill_gb_90" in sql
     assert "public_study_bleedingcool_us_36" in sql
+    assert "public_study_tcgtalk_sg_54" in sql
     assert "NOT has_table_privilege" in sql
 
 

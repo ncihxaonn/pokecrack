@@ -77,13 +77,14 @@ estimate of representative demand. It never relaxes the inference thresholds:
 rate and delta layers still withhold insufficient or pending inference, while
 countries without a reviewed observation remain neutral.
 
-The first reviewed public-study inputs use publisher country as a coarse Tier-B
-geography basis. They do not assert the physical opening location and must not
-be shown as city/store evidence. The current US sample has 55 packs and one
-qualifying SIR pack; the current GB sample has 17 packs and zero qualifying SIR
-packs. Each country has only one independent source, so all observed-rate,
-baseline, posterior, interval, delta, and numerator fields remain private or
-null in the public response. Counts may be shown only as collecting evidence.
+Reviewed public-study inputs use publisher country as a coarse Tier-B geography
+basis. They do not assert the physical opening location and must not be shown
+as city/store evidence. The current reviewed denominator set includes US, GB,
+and SG publisher-country observations, with the Singapore study covering 54
+packs from nine booster bundles. Each country has only one independent source,
+so all observed-rate, baseline, posterior, interval, delta, and numerator
+fields remain private or null in the public response. Counts may be shown only
+as collecting evidence.
 
 ## Reproducibility
 

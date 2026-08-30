@@ -22,6 +22,7 @@ const publicHttpUrl = z.string().url().refine((value) => {
 const coverageSourceIds = [
   "cardchill_ascended_heroes_study",
   "bleedingcool_phantasmal_flames_study",
+  "tcgtalk_perfect_order_study",
 ] as const;
 const coverageSourceIdentity: Record<
   (typeof coverageSourceIds)[number],
@@ -34,6 +35,10 @@ const coverageSourceIdentity: Record<
   bleedingcool_phantasmal_flames_study: {
     name: "Bleeding Cool Phantasmal Flames study",
     url: "https://bleedingcool.com/games/opening-pokemon-tcg-mega-evolution-phantasmal-flames-products",
+  },
+  tcgtalk_perfect_order_study: {
+    name: "tcgTalk Perfect Order study",
+    url: "https://tcgtalk.com/blog/perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232",
   },
 };
 
@@ -99,7 +104,7 @@ export const publicStudyCoverageSchema = z
     period: z.object({ start: isoDate, end: isoDate }).strict(),
     countries: z.array(coverageCountry).max(249),
     sets: z.array(coverageSet).max(100),
-    sources: z.array(coverageSource).length(2),
+    sources: z.array(coverageSource).length(3),
   })
   .strict()
   .superRefine((value, context) => {

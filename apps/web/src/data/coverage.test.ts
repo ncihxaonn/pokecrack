@@ -26,6 +26,16 @@ const sources = [
     url: "https://bleedingcool.com/games/opening-pokemon-tcg-mega-evolution-phantasmal-flames-products",
     note: "Reviewed denominator-only coverage attributed to the United States.",
   },
+  {
+    id: "tcgtalk_perfect_order_study",
+    name: "tcgTalk Perfect Order study",
+    kind: "community" as const,
+    access: "public" as const,
+    status: "operational" as const,
+    lastCollectedAt: collectedAt,
+    url: "https://tcgtalk.com/blog/perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232",
+    note: "Reviewed denominator-only coverage attributed to Singapore's publisher country.",
+  },
 ];
 
 function validCoveragePayload() {
@@ -116,6 +126,7 @@ describe("reviewed public-study coverage merge", () => {
     invalidSource.sources = [
       { ...sources[0]!, id: "unreviewed_source", url: "ftp://example.com/evidence" },
       sources[1]!,
+      sources[2]!,
     ];
     expect(mergePublicStudyCoverage(DEMO_PUBLIC_DATA, invalidSource)).toBe(
       DEMO_PUBLIC_DATA,
