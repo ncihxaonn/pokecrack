@@ -25,11 +25,21 @@ SOURCE_POLICIES = ("ingest", "source_policies")
 YOUTUBE_DISCOVERIES = ("ingest", "youtube_discoveries")
 PUBLIC_STUDY_OBSERVATIONS = ("ingest", "public_study_observations")
 SOURCE_REQUEST_GATES = ("ingest", "source_request_gates")
+BLUESKY_CANDIDATES = ("ingest", "bluesky_jetstream_candidates")
+BLUESKY_OBSERVATIONS = ("ingest", "bluesky_jetstream_observations")
+BLUESKY_CHECKPOINTS = ("ingest", "bluesky_jetstream_checkpoints")
+BLUESKY_EPHEMERAL_TABLES = frozenset({BLUESKY_CANDIDATES, BLUESKY_OBSERVATIONS})
 RETENTION_CONTROL_TABLES = frozenset(
-    {SOURCE_POLICIES, YOUTUBE_DISCOVERIES, PUBLIC_STUDY_OBSERVATIONS}
+    {
+        SOURCE_POLICIES,
+        YOUTUBE_DISCOVERIES,
+        PUBLIC_STUDY_OBSERVATIONS,
+        BLUESKY_CHECKPOINTS,
+    }
 )
 TCGDEX_SOURCE_KEY = b"tcgdex_catalog"
 YOUTUBE_SOURCE_KEY = b"youtube_discovery"
+BLUESKY_SOURCE_KEY = b"bluesky_jetstream"
 PUBLIC_STUDY_SOURCE_KEYS = (
     b"public_study_comicbook_us_55",
     b"public_study_wargamer_gb_17",
@@ -44,6 +54,9 @@ TARGET_INSERT = re.compile(
     r'(?:source_policies|"source_policies"|'
     r'youtube_discoveries|"youtube_discoveries"|'
     r'public_study_observations|"public_study_observations"|'
+    r'bluesky_jetstream_candidates|"bluesky_jetstream_candidates"|'
+    r'bluesky_jetstream_observations|"bluesky_jetstream_observations"|'
+    r'bluesky_jetstream_checkpoints|"bluesky_jetstream_checkpoints"|'
     r'source_request_gates|"source_request_gates")(?:\s|\()',
     re.IGNORECASE,
 )
@@ -110,6 +123,21 @@ PUBLIC_STUDY_COPY_COLUMNS = (
     "first_verified_at",
     "last_verified_at",
     "is_demo",
+)
+BLUESKY_CHECKPOINT_COPY_COLUMNS = (
+    "source_policy_id",
+    "endpoint",
+    "protocol",
+    "collection",
+    "last_cursor",
+    "last_collected_at",
+    "events_seen_total",
+    "bytes_seen_total",
+    "candidates_seen_total",
+    "deletions_seen_total",
+    "is_demo",
+    "created_at",
+    "updated_at",
 )
 PUBLIC_STUDY_COLUMN_DECLARATIONS = (
     "study_key text not null",
@@ -727,6 +755,20 @@ def _utc_copy_timestamp(value: bytes, *, field: str) -> datetime:
     return parsed
 
 
+def _copy_nonnegative_bigint(
+    value: bytes, *, field: str, nullable: bool = False
+) -> int | None:
+    if nullable and value == b"\\N":
+        return None
+    text = _plain_copy_text(value, field=field)
+    if re.fullmatch(r"0|[1-9][0-9]*", text) is None:
+        raise SanitizationError(f"{field} is not a canonical non-negative integer")
+    parsed = int(text)
+    if parsed > 9223372036854775807:
+        raise SanitizationError(f"{field} exceeds PostgreSQL bigint")
+    return parsed
+
+
 def _column_indexes(header: CopyHeader) -> dict[str, int]:
     return {column: index for index, column in enumerate(header.columns)}
 
@@ -738,11 +780,17 @@ class PlainBackupSanitizer:
         source_policies_present: bool,
         youtube_discoveries_present: bool,
         public_studies_present: bool,
+        bluesky_jetstream_present: bool,
         youtube_policy_id: str | None,
+        bluesky_policy_id: str | None,
     ) -> None:
         if youtube_policy_id is not None:
             youtube_policy_id = _canonical_uuid(
                 youtube_policy_id.encode("ascii"), field="YouTube policy id"
+            )
+        if bluesky_policy_id is not None:
+            bluesky_policy_id = _canonical_uuid(
+                bluesky_policy_id.encode("ascii"), field="Bluesky policy id"
             )
         if youtube_discoveries_present and not (
             source_policies_present and youtube_policy_id is not None
@@ -760,16 +808,33 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "public-study observations require the policy registry and YouTube-era gate schema"
             )
+        if bluesky_jetstream_present and not (
+            source_policies_present
+            and youtube_discoveries_present
+            and bluesky_policy_id is not None
+        ):
+            raise SanitizationError(
+                "Bluesky state requires the policy registry and YouTube-era gate schema"
+            )
+        if bluesky_policy_id is not None and not bluesky_jetstream_present:
+            raise SanitizationError(
+                "Bluesky policy exists without the exact private table set"
+            )
 
         self.expected = {
             SOURCE_POLICIES: source_policies_present,
             YOUTUBE_DISCOVERIES: youtube_discoveries_present,
             PUBLIC_STUDY_OBSERVATIONS: public_studies_present,
+            BLUESKY_CHECKPOINTS: bluesky_jetstream_present,
         }
         self.preflight_youtube_policy_id = youtube_policy_id
+        self.preflight_bluesky_policy_id = bluesky_policy_id
+        self.bluesky_jetstream_present = bluesky_jetstream_present
         self.seen = {table: 0 for table in RETENTION_CONTROL_TABLES}
         self.youtube_policy_rows: list[str] = []
         self.tcgdex_policy_rows = 0
+        self.bluesky_policy_ids: list[str] = []
+        self.bluesky_checkpoint_rows = 0
         self.public_study_policy_ids = {
             source_key: [] for source_key in PUBLIC_STUDY_SOURCE_KEYS
         }
@@ -861,6 +926,13 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "public_study_observations COPY columns do not match the exact retained schema"
             )
+        elif (
+            header.table == BLUESKY_CHECKPOINTS
+            and header.columns != BLUESKY_CHECKPOINT_COPY_COLUMNS
+        ):
+            raise SanitizationError(
+                "bluesky_jetstream_checkpoints COPY columns do not match the exact retained schema"
+            )
         return CopyBlock(header=header, column_indexes=indexes)
 
     def _target_fields(self, block: CopyBlock, line: bytes) -> list[bytes]:
@@ -887,6 +959,13 @@ class PlainBackupSanitizer:
                 )
             elif source_key == TCGDEX_SOURCE_KEY:
                 self.tcgdex_policy_rows += 1
+            elif source_key == BLUESKY_SOURCE_KEY:
+                self.bluesky_policy_ids.append(
+                    _canonical_uuid(
+                        fields[block.column_indexes["id"]],
+                        field="Bluesky source policy id",
+                    )
+                )
             elif source_key in self.public_study_policy_ids:
                 self.public_study_policy_ids[source_key].append(
                     _canonical_uuid(
@@ -898,6 +977,9 @@ class PlainBackupSanitizer:
         if block.header.table == PUBLIC_STUDY_OBSERVATIONS:
             self._inspect_public_study_row(block, fields)
             return
+        if block.header.table == BLUESKY_CHECKPOINTS:
+            self._inspect_bluesky_checkpoint_row(block, fields)
+            return
         policy_id = _canonical_uuid(
             fields[block.column_indexes["source_policy_id"]],
             field="YouTube discovery policy id",
@@ -906,6 +988,58 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "youtube_discoveries row does not use the exact YouTube policy"
             )
+
+    def _inspect_bluesky_checkpoint_row(
+        self, block: CopyBlock, fields: list[bytes]
+    ) -> None:
+        self.bluesky_checkpoint_rows += 1
+        if self.bluesky_checkpoint_rows != 1:
+            raise SanitizationError("Bluesky checkpoint must contain exactly one row")
+        indexes = block.column_indexes
+        policy_id = _canonical_uuid(
+            fields[indexes["source_policy_id"]], field="Bluesky checkpoint policy id"
+        )
+        if policy_id != self.preflight_bluesky_policy_id:
+            raise SanitizationError(
+                "Bluesky checkpoint does not use the exact preflight policy"
+            )
+        exact_text = {
+            "endpoint": (
+                "wss://jetstream.us-west.bsky.network/"
+                "xrpc/network.bsky.jetstream.subscribeEvents"
+            ),
+            "protocol": "xrpc.v1.json",
+            "collection": "app.bsky.feed.post",
+            "is_demo": "f",
+        }
+        for column, expected in exact_text.items():
+            if _plain_copy_text(fields[indexes[column]], field=f"Bluesky {column}") != expected:
+                raise SanitizationError(f"Bluesky checkpoint {column} drifted")
+        _copy_nonnegative_bigint(
+            fields[indexes["last_cursor"]],
+            field="Bluesky checkpoint last_cursor",
+            nullable=True,
+        )
+        for column in (
+            "events_seen_total",
+            "bytes_seen_total",
+            "candidates_seen_total",
+            "deletions_seen_total",
+        ):
+            _copy_nonnegative_bigint(
+                fields[indexes[column]], field=f"Bluesky checkpoint {column}"
+            )
+        last_collected = fields[indexes["last_collected_at"]]
+        if last_collected != b"\\N":
+            _utc_copy_timestamp(last_collected, field="Bluesky last_collected_at")
+        created_at = _utc_copy_timestamp(
+            fields[indexes["created_at"]], field="Bluesky checkpoint created_at"
+        )
+        updated_at = _utc_copy_timestamp(
+            fields[indexes["updated_at"]], field="Bluesky checkpoint updated_at"
+        )
+        if updated_at < created_at:
+            raise SanitizationError("Bluesky checkpoint timestamps are out of order")
 
     def _inspect_public_study_row(
         self, block: CopyBlock, fields: list[bytes]
@@ -1023,6 +1157,19 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "dump must contain one exact TCGdex catalog source policy"
             )
+        expected_bluesky_policy_ids = (
+            [self.preflight_bluesky_policy_id]
+            if self.bluesky_jetstream_present
+            else []
+        )
+        if self.bluesky_policy_ids != expected_bluesky_policy_ids:
+            raise SanitizationError(
+                "dump Bluesky policy does not match the database preflight"
+            )
+        if self.bluesky_checkpoint_rows != int(self.bluesky_jetstream_present):
+            raise SanitizationError(
+                "dump Bluesky checkpoint does not match the database preflight"
+            )
         expected_public_policy_rows = int(self.expected[PUBLIC_STUDY_OBSERVATIONS])
         if any(
             len(policy_ids) != expected_public_policy_rows
@@ -1096,6 +1243,10 @@ class PlainBackupSanitizer:
                 if header.table == SOURCE_REQUEST_GATES:
                     raise SanitizationError(
                         "source_request_gates data must be excluded by pg_dump"
+                    )
+                if header.table in BLUESKY_EPHEMERAL_TABLES:
+                    raise SanitizationError(
+                        "Bluesky private activity data must be excluded by pg_dump"
                     )
                 block = self._start_block(header)
                 continue
@@ -1191,6 +1342,8 @@ class PlainBackupSanitizer:
                 )
                 if self.expected[YOUTUBE_DISCOVERIES]:
                     destination.write(b"youtube_discovery\n")
+                if self.bluesky_jetstream_present:
+                    destination.write(b"bluesky_jetstream\n")
                 if self.expected[PUBLIC_STUDY_OBSERVATIONS]:
                     destination.writelines(
                         source_key + b"\n"
@@ -1222,13 +1375,17 @@ class PlainBackupSanitizer:
 
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="Remove disposable YouTube discovery rows from a plain dump."
+        description=(
+            "Remove disposable YouTube and private Bluesky activity rows from a plain dump."
+        )
     )
     presence = ("present", "absent")
     parser.add_argument("--source-policies", required=True, choices=presence)
     parser.add_argument("--youtube-discoveries", required=True, choices=presence)
     parser.add_argument("--public-studies", required=True, choices=presence)
+    parser.add_argument("--bluesky-jetstream", required=True, choices=presence)
     parser.add_argument("--youtube-policy-id")
+    parser.add_argument("--bluesky-policy-id")
     return parser.parse_args(argv)
 
 
@@ -1239,7 +1396,9 @@ def main(argv: list[str] | None = None) -> int:
             source_policies_present=args.source_policies == "present",
             youtube_discoveries_present=args.youtube_discoveries == "present",
             public_studies_present=args.public_studies == "present",
+            bluesky_jetstream_present=args.bluesky_jetstream == "present",
             youtube_policy_id=args.youtube_policy_id,
+            bluesky_policy_id=args.bluesky_policy_id,
         )
         sanitizer.sanitize(sys.stdin.buffer, sys.stdout.buffer)
     except (SanitizationError, UnicodeEncodeError) as exc:

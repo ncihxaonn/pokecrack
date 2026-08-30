@@ -12,6 +12,7 @@ SANITIZER = REPOSITORY_ROOT / "deploy" / "lib" / "sanitize_plain_backup.py"
 YOUTUBE_POLICY = "11111111-1111-4111-8111-111111111111"
 OTHER_POLICY = "22222222-2222-4222-8222-222222222222"
 TCGDEX_POLICY = "44444444-4444-4444-8444-444444444444"
+BLUESKY_POLICY = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb"
 WRONG_POLICY = "33333333-3333-4333-8333-333333333333"
 YOUTUBE_ITEM = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"
 OTHER_ITEM = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
@@ -111,6 +112,21 @@ POST_PUBLIC_STUDY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
     b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS) + b"\n",
 )
+POST_BLUESKY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
+    b"youtube_discovery\n",
+    b"youtube_discovery\nbluesky_jetstream\n",
+)
+BLUESKY_CHECKPOINT_COLUMNS = (
+    "source_policy_id, endpoint, protocol, collection, last_cursor, "
+    "last_collected_at, events_seen_total, bytes_seen_total, "
+    "candidates_seen_total, deletions_seen_total, is_demo, created_at, updated_at"
+)
+BLUESKY_CHECKPOINT_ROW = (
+    f"{BLUESKY_POLICY}\t"
+    "wss://jetstream.us-west.bsky.network/xrpc/network.bsky.jetstream.subscribeEvents\t"
+    "xrpc.v1.json\tapp.bsky.feed.post\t123\t2026-08-30 00:00:00+00\t"
+    "10\t2048\t2\t1\tf\t2026-08-29 00:00:00+00\t2026-08-30 00:00:00+00"
+).encode()
 
 
 def comicbook_ledger_row(**overrides: bytes) -> bytes:
@@ -157,7 +173,9 @@ class BackupSanitizerTests(unittest.TestCase):
         source_policies: str = "present",
         youtube_discoveries: str = "present",
         public_studies: str = "absent",
+        bluesky_jetstream: str = "absent",
         policy_id: str | None = YOUTUBE_POLICY,
+        bluesky_policy_id: str | None = None,
         environment: dict[str, str] | None = None,
     ) -> subprocess.CompletedProcess[bytes]:
         command = [
@@ -169,9 +187,13 @@ class BackupSanitizerTests(unittest.TestCase):
             youtube_discoveries,
             "--public-studies",
             public_studies,
+            "--bluesky-jetstream",
+            bluesky_jetstream,
         ]
         if policy_id is not None:
             command.extend(("--youtube-policy-id", policy_id))
+        if bluesky_policy_id is not None:
+            command.extend(("--bluesky-policy-id", bluesky_policy_id))
         return subprocess.run(
             command,
             input=dump,
@@ -285,6 +307,16 @@ class BackupSanitizerTests(unittest.TestCase):
             *rows,
         )
         return dump.replace(youtube_row, youtube_row + policy_rows) + ledger
+
+    def with_bluesky_checkpoint(self, dump: bytes) -> bytes:
+        youtube_row = f"{YOUTUBE_POLICY}\tyoutube_discovery\tpolicy\n".encode()
+        bluesky_row = f"{BLUESKY_POLICY}\tbluesky_jetstream\tpolicy\n".encode()
+        checkpoint = copy_block(
+            "ingest.bluesky_jetstream_checkpoints",
+            BLUESKY_CHECKPOINT_COLUMNS,
+            BLUESKY_CHECKPOINT_ROW,
+        )
+        return dump.replace(youtube_row, youtube_row + bluesky_row) + checkpoint
 
     def assert_only_cache_rows_removed(
         self, result: subprocess.CompletedProcess[bytes]
@@ -457,6 +489,67 @@ class BackupSanitizerTests(unittest.TestCase):
 
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, b"")
+
+    def test_bluesky_checkpoint_is_retained_but_private_activity_is_not(self) -> None:
+        base = self.with_bluesky_checkpoint(self.complete_dump())
+        result = self.run_sanitizer(
+            base,
+            bluesky_jetstream="present",
+            bluesky_policy_id=BLUESKY_POLICY,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(BLUESKY_CHECKPOINT_ROW, result.stdout)
+        self.assertIn(POST_BLUESKY_GATE_SEED, result.stdout)
+
+        private_rows = (
+            copy_block(
+                "ingest.bluesky_jetstream_candidates",
+                "at_uri, text_excerpt",
+                b"at://did:plc:private/app.bsky.feed.post/one\tprivate marker",
+            )
+            + copy_block(
+                "ingest.bluesky_jetstream_observations",
+                "cursor, at_uri, text_excerpt",
+                b"124\tat://did:plc:private/app.bsky.feed.post/one\tprivate marker",
+            )
+        )
+        rejected = self.run_sanitizer(
+            base + private_rows,
+            bluesky_jetstream="present",
+            bluesky_policy_id=BLUESKY_POLICY,
+        )
+        self.assertNotEqual(rejected.returncode, 0)
+        self.assertEqual(rejected.stdout, b"")
+        self.assertNotIn(b"private marker", rejected.stderr)
+
+    def test_bluesky_preflight_policy_and_checkpoint_must_match(self) -> None:
+        base = self.with_bluesky_checkpoint(self.complete_dump())
+        cases = {
+            "missing-checkpoint": base.replace(
+                copy_block(
+                    "ingest.bluesky_jetstream_checkpoints",
+                    BLUESKY_CHECKPOINT_COLUMNS,
+                    BLUESKY_CHECKPOINT_ROW,
+                ),
+                b"",
+            ),
+            "wrong-checkpoint-policy": base.replace(
+                BLUESKY_POLICY.encode(), WRONG_POLICY.encode(), 1
+            ),
+            "drifted-endpoint": base.replace(
+                b"jetstream.us-west.bsky.network", b"jetstream.example.invalid", 1
+            ),
+        }
+        for name, dump in cases.items():
+            with self.subTest(name=name):
+                result = self.run_sanitizer(
+                    dump,
+                    bluesky_jetstream="present",
+                    bluesky_policy_id=BLUESKY_POLICY,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
 
     def test_policy_snapshot_missing_different_or_duplicate_fails_before_output(
         self,

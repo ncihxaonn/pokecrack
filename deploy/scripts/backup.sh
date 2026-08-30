@@ -78,6 +78,21 @@ select concat_ws(E'\\t',
     from pg_catalog.pg_class
     where oid = to_regclass('ingest.public_study_observations')
   ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.bluesky_jetstream_candidates')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.bluesky_jetstream_observations')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.bluesky_jetstream_checkpoints')
+  ), '0'),
   coalesce(has_table_privilege(
     'service_role',
     to_regclass('ingest.source_request_gates'),
@@ -90,21 +105,29 @@ if ! table_state=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-o
 fi
 
 case "$table_state" in
-  $'rp\tru\trp\trp\ttrue')
+  $'rp\tru\trp\trp\trp\trp\trp\ttrue')
     youtube_discoveries=present
     public_studies=present
+    bluesky_jetstream=present
     ;;
-  $'rp\tru\trp\t0\ttrue')
+  $'rp\tru\trp\trp\t0\t0\t0\ttrue')
+    youtube_discoveries=present
+    public_studies=present
+    bluesky_jetstream=absent
+    ;;
+  $'rp\tru\trp\t0\t0\t0\t0\ttrue')
     youtube_discoveries=present
     public_studies=absent
+    bluesky_jetstream=absent
     ;;
-  $'rp\t0\trp\t0\ttrue')
+  $'rp\t0\trp\t0\t0\t0\t0\ttrue')
     youtube_discoveries=absent
     public_studies=absent
+    bluesky_jetstream=absent
     ;;
   *)
     unset database_url
-    die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, the public-study ledger either absent or logged, and youtube_discoveries either absent or UNLOGGED"
+    die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, coherent Bluesky logged tables, the public-study ledger either absent or logged, and youtube_discoveries either absent or UNLOGGED"
     ;;
 esac
 
@@ -113,6 +136,17 @@ select id::text from ingest.source_policies where source_key = 'youtube_discover
 if ! youtube_policy_id=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$policy_query" 2>/dev/null); then
   unset database_url
   die "database retention policy lookup failed"
+fi
+
+bluesky_policy_query="set role service_role;
+select id::text from ingest.source_policies where source_key = 'bluesky_jetstream' order by id::text;"
+if ! bluesky_policy_id=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$bluesky_policy_query" 2>/dev/null); then
+  unset database_url
+  die "database Bluesky retention policy lookup failed"
+fi
+if [[ $bluesky_policy_id == *$'\n'* ]]; then
+  unset database_url
+  die "database Bluesky retention policy lookup was ambiguous"
 fi
 if [[ $youtube_policy_id == *$'\n'* ]]; then
   unset database_url
@@ -123,6 +157,7 @@ sanitizer_arguments=(
   --source-policies present
   --youtube-discoveries "$youtube_discoveries"
   --public-studies "$public_studies"
+  --bluesky-jetstream "$bluesky_jetstream"
 )
 if [[ $youtube_discoveries == present ]]; then
   if [[ -z $youtube_policy_id ]]; then
@@ -137,6 +172,20 @@ if [[ $youtube_discoveries == present ]]; then
 elif [[ -n $youtube_policy_id ]]; then
   unset database_url
   die "database retention policy exists without youtube_discoveries"
+fi
+if [[ $bluesky_jetstream == present ]]; then
+  if [[ -z $bluesky_policy_id ]]; then
+    unset database_url
+    die "database retention policy lookup returned no Bluesky policy"
+  fi
+  if [[ ! $bluesky_policy_id =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+    unset database_url
+    die "database Bluesky retention policy id was malformed"
+  fi
+  sanitizer_arguments+=(--bluesky-policy-id "$bluesky_policy_id")
+elif [[ -n $bluesky_policy_id ]]; then
+  unset database_url
+  die "database Bluesky retention policy exists without the exact private table set"
 fi
 
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
@@ -167,6 +216,8 @@ if ! run_database_command pg_dump \
   --no-privileges \
   --encoding=UTF8 \
   --exclude-table-data=ingest.source_request_gates \
+  --exclude-table-data=ingest.bluesky_jetstream_candidates \
+  --exclude-table-data=ingest.bluesky_jetstream_observations \
   | python3 "$SCRIPT_DIR/../lib/sanitize_plain_backup.py" \
       "${sanitizer_arguments[@]}" \
   | gzip -9 > "$temporary"; then

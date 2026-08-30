@@ -105,6 +105,16 @@
       "migration": "20260831000000_public_study_pipeline.sql",
       "statement_sha256": "2b227b752ead5cac9e8f92fa20600573aee2881c336bb9415f3057aa4077394d",
       "reason": "The public-study finalizer removes only its exact methodology-owned insufficient cell when the cohort crosses the display threshold pending a separately reviewed inference publisher."
+    },
+    {
+      "migration": "20260903000000_bluesky_jetstream_discovery.sql",
+      "statement_sha256": "e472dd3dcf1e0929dfc6837d7661571c7c512cde3a96020333f8e1a131c6612e",
+      "reason": "Fenced bounded cleanup deletes only expired private Bluesky activity candidates selected by an ordered SKIP LOCKED CTE; the checkpoint is retained."
+    },
+    {
+      "migration": "20260903000000_bluesky_jetstream_discovery.sql",
+      "statement_sha256": "c63779c4cc2f0be6bcdff67a29b3a70ce73fc2e7bdbff6980b06451f6c216d10",
+      "reason": "Fenced bounded cleanup deletes only expired private Bluesky event observations selected by an ordered SKIP LOCKED CTE; the checkpoint is retained."
     }
   ]
 }

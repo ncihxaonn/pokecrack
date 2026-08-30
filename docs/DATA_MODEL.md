@@ -129,9 +129,10 @@ passed; collection enablement fails if either the six-hour discovery schedule or
 daily cleanup schedule drifts. No discovery row can be promoted
 or referenced as an extraction, opening, batch, duplicate, analytic, Admin, or
 public record because no such schema relationship or code path exists. Managed
-logical backups independently remove every YouTube cache data row, retain the
-reviewed-study ledger, and replace request-gate state with the exact canonical
-idle TCGdex, YouTube, and public-study rows, while
+logical backups independently remove every YouTube cache row and every Bluesky
+candidate/observation row, retain the reviewed-study ledger and exact Bluesky
+checkpoint, and replace request-gate state with the exact canonical idle
+TCGdex, YouTube, Bluesky, and public-study rows, while
 provider-managed snapshot retention must be revalidated before collection is
 enabled. Cleanup/watchdog health and stale-success alerts are also enablement
 requirements because a prolonged outage can exceed the supported catch-up

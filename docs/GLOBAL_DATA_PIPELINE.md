@@ -119,11 +119,13 @@ without watchdog, stale-cleanup, and queue-delay alerts.
 
 Managed logical backups apply the same boundary. A fail-closed two-pass filter
 accepts only one internally consistent pre-YouTube, YouTube-only, or
-post-public-study schema. It removes every disposable
-`ingest.youtube_discoveries` row but retains the immutable public-study ledgers.
+post-public-study/Bluesky schema. It removes every disposable
+`ingest.youtube_discoveries` row and every private Bluesky
+candidate/observation row, while retaining the immutable public-study ledgers
+and exact Bluesky checkpoint.
 Request-gate data is excluded by `pg_dump`, independently rejected by the
-sanitizer, and replaced with the exact idle TCGdex, YouTube, and (when present)
-five public-study source keys immediately before RLS is enabled; live lease
+sanitizer, and replaced with the exact idle TCGdex, YouTube, Bluesky, and (when
+present) five public-study source keys immediately before RLS is enabled; live lease
 ownership is never restored. The exact gate columns, constraints, primary key,
 forced/enabled RLS, policy identities, and ledger presence must match the
 preflight. Partial or ambiguous structure aborts without advancing the success
