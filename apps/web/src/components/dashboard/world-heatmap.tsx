@@ -74,6 +74,7 @@ export function buildWorldHeatRows(
 
 function stateLabel(cell: CountryMapCell) {
   if (cell.state === "insufficient") return "Withheld";
+  if (cell.state === "pending") return "Publication pending";
   if (cell.state === "anomaly") return "Possible anomaly";
   if (cell.state === "watch") return "Watch";
   return "Published";
@@ -98,6 +99,7 @@ export function WorldHeatmap({
   const withheldPatternId = `world-withheld-${instanceId}`;
   const publishedCount = rows.filter((row) => row.status === "published").length;
   const withheldCount = rows.length - publishedCount;
+  const pendingCount = rows.filter((row) => row.cell.state === "pending").length;
   const metricLabel = metric === "delta" ? "Baseline delta" : "Observed rate";
   const period = observations.period
     ? `${formatDate(observations.period.start)} - ${formatDate(observations.period.end)}`
@@ -109,7 +111,7 @@ export function WorldHeatmap({
       : "Published";
   const mapDescription = rows.length === 0
     ? "No verified country-level pack-opening observations are published. Every country is shown in the neutral no-data colour."
-    : `${rows.length} countries have verified observations: ${publishedCount} publish a rate and ${withheldCount} withhold the rate below the evidence threshold.`;
+    : `${rows.length} countries have verified observations: ${publishedCount} publish a rate, ${pendingCount} await reviewed publication, and ${withheldCount - pendingCount} remain below the evidence threshold.`;
 
   const countryFill = (countryCode: string | null) => {
     if (!countryCode) return "#dfe7e1";
@@ -204,7 +206,9 @@ export function WorldHeatmap({
                 <strong>No country-level rates published yet</strong>
                 <span>{rows.length === 0
                   ? "The map stays neutral until verified samples meet the publication threshold."
-                  : `${rows.length} ${rows.length === 1 ? "country is" : "countries are"} observed; all remain below the publication threshold.`}</span>
+                  : pendingCount > 0
+                    ? `${rows.length} ${rows.length === 1 ? "country is" : "countries are"} observed; ${pendingCount} ${pendingCount === 1 ? "has" : "have"} met the evidence threshold and await reviewed publication.`
+                    : `${rows.length} ${rows.length === 1 ? "country is" : "countries are"} observed; all remain below the publication threshold.`}</span>
               </div>
             ) : null}
           </div>

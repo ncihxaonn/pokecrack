@@ -61,6 +61,12 @@ windows are never mixed. A missing cell means no public country observation; a
 present insufficient cell uses a withheld pattern and exposes counts but no rate,
 baseline, posterior, interval, delta, or hit numerator.
 
+A threshold-sufficient denominator does not become a published inference merely
+because its count gates are met. If the versioned baseline, posterior, and
+interval publisher has not completed, v3 keeps the row visible as **Publication
+pending** and continues to return every inference field as null. The pending
+state is an operational publication state, not a fifth statistical signal.
+
 Map colours use fixed absolute scales rather than the minimum and maximum of the
 current snapshot. The exact table remains authoritative. TCGdex catalog rows and
 global discovery activity never create a denominator or colour a country.

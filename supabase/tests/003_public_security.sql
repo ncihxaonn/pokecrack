@@ -245,7 +245,8 @@ select ok(
     where n.nspname = 'public'
       and p.proname not in (
         'get_public_dashboard_snapshot_v1',
-        'get_public_dashboard_snapshot_v2'
+        'get_public_dashboard_snapshot_v2',
+        'get_public_dashboard_snapshot_v3'
       )
       and has_function_privilege('anon', p.oid, 'execute')
   ),

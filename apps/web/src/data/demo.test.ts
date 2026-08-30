@@ -123,13 +123,20 @@ describe("DEMO_DATA", () => {
       ),
     };
     expect(publicDashboardDataSchema.safeParse(invalid).success).toBe(false);
-    const nonAustralian = {
+    const globalRegion = {
       ...publicData,
       regions: publicData.regions.map((item, index) =>
         index === 0 ? { ...item, countryCode: "US" } : item,
       ),
     };
-    expect(publicDashboardDataSchema.safeParse(nonAustralian).success).toBe(false);
+    expect(publicDashboardDataSchema.safeParse(globalRegion).success).toBe(true);
+    const invalidRegionCode = {
+      ...publicData,
+      regions: publicData.regions.map((item, index) =>
+        index === 0 ? { ...item, countryCode: "UK" } : item,
+      ),
+    };
+    expect(publicDashboardDataSchema.safeParse(invalidRegionCode).success).toBe(false);
   });
 
   it("rejects independent-source counts above complete openings", () => {
@@ -205,6 +212,36 @@ describe("DEMO_DATA", () => {
       ),
     };
     expect(publicDashboardDataSchema.safeParse(withheld).success).toBe(true);
+  });
+
+  it("keeps threshold-sufficient evidence visible while publication is pending", () => {
+    const { admin, ...publicData } = DEMO_DATA;
+    expect(admin).toBeDefined();
+    const pending = {
+      ...publicData,
+      sets: publicData.sets.map((item, index) =>
+        index === 0
+          ? {
+              ...item,
+              baselineRate: null,
+              hitRate: null,
+              posteriorMean: null,
+              credibleInterval: null,
+              deltaFromBaseline: null,
+              state: "pending" as const,
+            }
+          : item,
+      ),
+    };
+    expect(publicDashboardDataSchema.safeParse(pending).success).toBe(true);
+
+    const leakingInference = {
+      ...pending,
+      sets: pending.sets.map((item, index) =>
+        index === 0 ? { ...item, hitRate: 0.2 } : item,
+      ),
+    };
+    expect(publicDashboardDataSchema.safeParse(leakingInference).success).toBe(false);
   });
 
   it("rejects a posterior mean when the observed rate is withheld", () => {

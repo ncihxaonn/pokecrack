@@ -24,6 +24,9 @@ GLOBAL_DASHBOARD = (ROOT / "migrations/20260830000000_global_live_dashboard.sql"
 PUBLIC_STUDY_PIPELINE = (
     ROOT / "migrations/20260831000000_public_study_pipeline.sql"
 ).read_text()
+PUBLIC_PIPELINE_SNAPSHOT = (
+    ROOT / "migrations/20260901000000_public_pipeline_snapshot.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -160,6 +163,82 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("'period', case", snapshot)
         self.assertIn("'mapcells', values.map_cells", snapshot)
         self.assertIn("get_public_dashboard_snapshot_v2:", DATABASE_TYPES)
+
+    def test_public_pipeline_snapshot_is_bounded_and_redacted(self) -> None:
+        lowered = PUBLIC_PIPELINE_SNAPSHOT.casefold()
+        compact = " ".join(lowered.split())
+        snapshot = lowered.split(
+            "create or replace function public.get_public_dashboard_snapshot_v3()", 1
+        )[1].split(
+            "alter function public.get_public_dashboard_snapshot_v3() owner to postgres", 1
+        )[0]
+        self.assertIn("security definer", snapshot)
+        self.assertIn("set search_path = pg_catalog", snapshot)
+        self.assertIn("public.get_public_dashboard_snapshot_v2()", snapshot)
+        for relation in (
+            "ingest.source_policies",
+            "ingest.youtube_discoveries",
+            "ingest.public_study_observations",
+            "ingest.worker_heartbeats",
+            "catalog.sets",
+        ):
+            self.assertIn(relation, snapshot)
+        for forbidden in (
+            "discoveries.video_id",
+            "discoveries.title",
+            "source_items",
+            "extraction_runs",
+            "opening_hits",
+            "qualifying_hit_pack_count",
+            "jobs.payload",
+            "last_error_message",
+            "heartbeats.worker_id",
+        ):
+            self.assertNotIn(forbidden, snapshot)
+        self.assertIn("limit 100", snapshot)
+        self.assertIn("limit 249", GLOBAL_DASHBOARD.casefold())
+        self.assertIn("reviewed_country_metrics", snapshot)
+        self.assertIn("'pending'", snapshot)
+        for policy_field in (
+            "expected_display_name",
+            "expected_source_kind",
+            "expected_base_url",
+            "expected_robots_policy",
+            "expected_routes",
+            "expected_include_subdomains",
+            "expected_min_delay_seconds",
+            "expected_max_pages_per_run",
+            "expected_max_items_per_run",
+            "expected_max_concurrency",
+            "expected_browser_profile",
+            "expected_statistics_eligible_default",
+            "expected_retention_days",
+            "expected_config_sha256",
+        ):
+            self.assertIn(policy_field, snapshot)
+        self.assertIn("extensions.digest(policies.config::text, 'sha256')", snapshot)
+        self.assertIn(
+            "policies.browser_profile is not distinct from definitions.expected_browser_profile",
+            snapshot,
+        )
+        self.assertIn("join policy_state as policies", snapshot)
+        self.assertIn("and policies.policy_contract_valid", snapshot)
+        self.assertEqual(lowered.count("'youtube_discovery'::text"), 2)
+        self.assertIn("'public_study_comicbook_us_55'", snapshot)
+        self.assertIn("'public_study_wargamer_gb_17'", snapshot)
+        self.assertIn(
+            "revoke all on function public.get_public_dashboard_snapshot_v3() from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_dashboard_snapshot_v3() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_dashboard_snapshot_v3() to service_role",
+            compact,
+        )
+        self.assertIn("get_public_dashboard_snapshot_v3:", DATABASE_TYPES)
 
     def test_global_catalog_projection_is_narrow_current_and_trigger_owned(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()
