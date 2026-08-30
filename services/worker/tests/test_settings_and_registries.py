@@ -185,6 +185,20 @@ def test_youtube_enablement_rejects_collection_or_retention_schedule_drift(
         )
 
 
+@pytest.mark.parametrize(
+    "schedule",
+    ("30 3 * * 0", " 30 3 * * *", "30 3 * * * "),
+)
+def test_bluesky_enablement_rejects_retention_schedule_drift(schedule: str) -> None:
+    with pytest.raises(ValidationError, match="BLUESKY_COLLECTION_ENABLED.*SCHEDULE_CLEANUP"):
+        Settings(
+            _env_file=None,
+            bluesky_collection_enabled=True,
+            worker_role="scheduler",
+            schedule_cleanup=schedule,
+        )
+
+
 def test_worker_concurrency_above_one_is_rejected_until_pooling_is_implemented() -> None:
     with pytest.raises(ValidationError, match="worker_max_concurrency"):
         Settings(_env_file=None, worker_max_concurrency=2)

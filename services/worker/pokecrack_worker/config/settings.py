@@ -216,10 +216,15 @@ class Settings(BaseSettings):
                     "YOUTUBE_COLLECTION_ENABLED requires "
                     f"SCHEDULE_OFFICIAL_API={YOUTUBE_DISCOVERY_SCHEDULE!r}"
                 )
+        if self.youtube_collection_enabled or self.bluesky_collection_enabled:
             if self.schedule_cleanup != YOUTUBE_CLEANUP_SCHEDULE:
+                enabled_source = (
+                    "YOUTUBE_COLLECTION_ENABLED"
+                    if self.youtube_collection_enabled
+                    else "BLUESKY_COLLECTION_ENABLED"
+                )
                 raise ValueError(
-                    "YOUTUBE_COLLECTION_ENABLED requires "
-                    f"SCHEDULE_CLEANUP={YOUTUBE_CLEANUP_SCHEDULE!r}"
+                    f"{enabled_source} requires SCHEDULE_CLEANUP={YOUTUBE_CLEANUP_SCHEDULE!r}"
                 )
         if (
             self.public_study_collection_enabled
