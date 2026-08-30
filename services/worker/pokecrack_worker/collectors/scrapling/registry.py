@@ -11,6 +11,8 @@ from pokecrack_worker.collectors.base import (
 from .adapters.dynamic_fixture import DynamicFixtureAdapter
 from .adapters.example_public import ExamplePublicAdapter
 from .adapters.public_studies import (
+    bleedingcool_phantasmal_flames_adapter,
+    cardchill_ascended_heroes_adapter,
     comicbook_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
@@ -39,6 +41,14 @@ def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistr
     static_registry.register(
         "wargamer_chaos_rising_study",
         wargamer_chaos_rising_adapter(client=http_client),
+    )
+    static_registry.register(
+        "cardchill_ascended_heroes_study",
+        cardchill_ascended_heroes_adapter(client=http_client),
+    )
+    static_registry.register(
+        "bleedingcool_phantasmal_flames_study",
+        bleedingcool_phantasmal_flames_adapter(client=http_client),
     )
     return static_registry
 

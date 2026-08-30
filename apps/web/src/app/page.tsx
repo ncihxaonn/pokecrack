@@ -5,11 +5,14 @@ import { HomeView } from "@/components/dashboard/home-view";
 import { PublicUnavailable } from "@/components/ui/dashboard-ui";
 import { JsonLd } from "./_components/json-ld";
 import { loadDashboard } from "./_lib/dashboard";
+import { defaultWorldHeatMetric, normalizeWorldHeatMetric } from "./_lib/world-map-query";
 
 export const revalidate = 900;
 
-export default async function HomePage() {
-  const result = await loadDashboard();
+type SearchParams = Promise<{ metric?: string | string[] }>;
+
+export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
+  const [result, queryParams] = await Promise.all([loadDashboard(), searchParams]);
   if (result.status === "unavailable") {
     return <PublicUnavailable title="Dashboard data is unavailable" message={result.message} code={result.code} />;
   }
@@ -19,5 +22,8 @@ export default async function HomePage() {
   const catalog = { "@context": "https://schema.org", "@type": "DataCatalog", name: `${BRAND.name} global observed activity catalog`, description: BRAND.description, url: siteUrl, spatialCoverage: "Worldwide", dataset: { "@id": `${siteUrl}/#dataset` } };
   const dataset = { "@context": "https://schema.org", "@type": "Dataset", "@id": `${siteUrl}/#dataset`, name: "Worldwide observed Pokémon TCG pack-opening activity", description: BRAND.observationDisclaimer, spatialCoverage: "Worldwide", temporalCoverage: `../${result.data.generatedAt.slice(0, 10)}`, isAccessibleForFree: true, creator: { "@type": "Organization", name: BRAND.name }, url: siteUrl };
 
-  return <><JsonLd data={website} /><JsonLd data={catalog} /><JsonLd data={dataset} /><HomeView data={result.data} synthetic={result.synthetic} /></>;
+  const worldMetric = normalizeWorldHeatMetric(queryParams.metric)
+    ?? defaultWorldHeatMetric(result.data.observations.countriesWithPublishedRate);
+
+  return <><JsonLd data={website} /><JsonLd data={catalog} /><JsonLd data={dataset} /><HomeView data={result.data} synthetic={result.synthetic} worldMetric={worldMetric} /></>;
 }

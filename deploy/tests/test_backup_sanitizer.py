@@ -54,9 +54,13 @@ POST_YOUTUBE_GATE_SEED = (
 PUBLIC_STUDY_SOURCE_KEYS = (
     b"public_study_comicbook_us_55",
     b"public_study_wargamer_gb_17",
+    b"public_study_cardchill_gb_90",
+    b"public_study_bleedingcool_us_36",
 )
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
+CARDCHILL_POLICY = "77777777-7777-4777-8777-777777777770"
+BLEEDINGCOOL_POLICY = "88888888-8888-4888-8888-888888888880"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
     "country_code, country_name, geography_basis, geography_confidence, "
@@ -269,6 +273,8 @@ class BackupSanitizerTests(unittest.TestCase):
         policy_rows = (
             f"{COMICBOOK_POLICY}\tpublic_study_comicbook_us_55\tpolicy\n"
             f"{WARGAMER_POLICY}\tpublic_study_wargamer_gb_17\tpolicy\n"
+            f"{CARDCHILL_POLICY}\tpublic_study_cardchill_gb_90\tpolicy\n"
+            f"{BLEEDINGCOOL_POLICY}\tpublic_study_bleedingcool_us_36\tpolicy\n"
         ).encode()
         ledger = ddl + copy_block(
             "ingest.public_study_observations",
@@ -410,6 +416,10 @@ class BackupSanitizerTests(unittest.TestCase):
             "wrong-reviewed-count": base.replace(
                 comicbook_ledger_row() + b"\n",
                 comicbook_ledger_row(pack_count=b"56") + b"\n",
+            ),
+            "coverage-not-promoted-to-statistical-ledger": base.replace(
+                b"comicbook-perfect-order-us-55-v1",
+                b"cardchill-ascended-heroes-gb-90-v1",
             ),
             "wrong-source-policy": base.replace(
                 comicbook_ledger_row() + b"\n",

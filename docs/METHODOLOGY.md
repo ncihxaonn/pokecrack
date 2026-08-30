@@ -71,6 +71,12 @@ Map colours use fixed absolute scales rather than the minimum and maximum of the
 current snapshot. The exact table remains authoritative. TCGdex catalog rows and
 global discovery activity never create a denominator or colour a country.
 
+The **Pack coverage** layer uses a fixed absolute 0–1,500 pack scale to show
+verified sample volume by country. It is not a hit-rate comparison or an
+estimate of representative demand. It never relaxes the inference thresholds:
+rate and delta layers still withhold insufficient or pending inference, while
+countries without a reviewed observation remain neutral.
+
 The first reviewed public-study inputs use publisher country as a coarse Tier-B
 geography basis. They do not assert the physical opening location and must not
 be shown as city/store evidence. The current US sample has 55 packs and one

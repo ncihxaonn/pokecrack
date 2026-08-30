@@ -6,6 +6,7 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 
+from pokecrack_worker.config.public_studies import PUBLIC_STUDY_COVERAGE_KEYS
 from pokecrack_worker.jobs import LeaseLostError, QueryExecutor
 
 BEGIN_TCGDEX_SETS_SQL = """
@@ -32,6 +33,16 @@ FROM ingest.begin_public_study_job(
     job_id => %(job_id)s::uuid,
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint
+)
+""".strip()
+
+BEGIN_PUBLIC_STUDY_COVERAGE_SQL = """
+SELECT *
+FROM ingest.begin_public_study_job_v2(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    study_key => %(study_key)s
 )
 """.strip()
 
@@ -207,15 +218,21 @@ class PostgresPublicStudyGate:
         job_id: str,
         worker_id: str,
         lease_generation: int,
+        study_key: str,
     ) -> None:
         """Authorize one exact reviewed public page request under the lease."""
 
         rows = self._executor.query(
-            BEGIN_PUBLIC_STUDY_SQL,
+            (
+                BEGIN_PUBLIC_STUDY_COVERAGE_SQL
+                if study_key in PUBLIC_STUDY_COVERAGE_KEYS
+                else BEGIN_PUBLIC_STUDY_SQL
+            ),
             {
                 "job_id": job_id,
                 "worker_id": worker_id,
                 "lease_generation": lease_generation,
+                "study_key": study_key,
             },
         )
         if not rows:

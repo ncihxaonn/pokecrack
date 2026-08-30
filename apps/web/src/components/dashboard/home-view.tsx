@@ -3,6 +3,7 @@ import type { Route } from "next";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
+import type { WorldHeatMetric } from "@/app/_lib/world-map-query";
 import { BRAND } from "@/config/brand";
 import type { PublicDashboardData } from "@/data/types";
 import { formatDate, formatDateTime, formatProbability } from "@/lib/format";
@@ -12,7 +13,7 @@ import { DataModeNotice, MetricDisclaimer, Panel, SectionHeading, SignalBadge, T
 
 const integer = new Intl.NumberFormat("en-AU");
 
-export function HomeView({ data, synthetic }: { data: PublicDashboardData; synthetic: boolean }) {
+export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboardData; synthetic: boolean; worldMetric?: WorldHeatMetric }) {
   const trending = [...data.sets]
     .sort((left, right) => right.packsObserved - left.packsObserved)
     .slice(0, 4);
@@ -60,6 +61,7 @@ export function HomeView({ data, synthetic }: { data: PublicDashboardData; synth
         cells={data.mapCells}
         coverageSummary={data.summary.globalCoverage}
         observations={data.observations}
+        initialMetric={worldMetric}
       />
 
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">

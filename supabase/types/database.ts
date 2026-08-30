@@ -773,6 +773,7 @@ export type Database = {
       get_public_dashboard_snapshot_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_dashboard_snapshot_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_dashboard_snapshot_v3: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_public_study_coverage_v1: { Args: Record<PropertyKey, never>; Returns: Json };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
@@ -1785,6 +1786,68 @@ export type Database = {
           },
         ];
       };
+      public_study_coverage_observations: {
+        Row: {
+          study_key: string;
+          source_policy_id: string;
+          country_code: string;
+          country_name: string;
+          source_observed_at: string;
+          pack_count: number;
+          set_external_id: string;
+          product_scope: string;
+          collector_version: string;
+          parser_version: string;
+          source_policy_version: string;
+          evidence_sha256: string;
+          first_verified_at: string;
+          last_verified_at: string;
+          is_demo: boolean;
+        };
+        Insert: {
+          study_key: string;
+          source_policy_id: string;
+          country_code: string;
+          country_name: string;
+          source_observed_at: string;
+          pack_count: number;
+          set_external_id: string;
+          product_scope: string;
+          collector_version: string;
+          parser_version: string;
+          source_policy_version: string;
+          evidence_sha256: string;
+          first_verified_at: string;
+          last_verified_at: string;
+          is_demo?: boolean;
+        };
+        Update: {
+          study_key?: string;
+          source_policy_id?: string;
+          country_code?: string;
+          country_name?: string;
+          source_observed_at?: string;
+          pack_count?: number;
+          set_external_id?: string;
+          product_scope?: string;
+          collector_version?: string;
+          parser_version?: string;
+          source_policy_version?: string;
+          evidence_sha256?: string;
+          first_verified_at?: string;
+          last_verified_at?: string;
+          is_demo?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'public_study_coverage_observations_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: true;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       public_study_observations: {
         Row: {
           study_key: string;
@@ -2285,6 +2348,10 @@ export type Database = {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null }[];
       };
+      begin_public_study_job_v2: {
+        Args: { job_id: string; worker_id: string; lease_generation: number; study_key: string };
+        Returns: { acquired: boolean; retry_at: string | null }[];
+      };
       begin_tcgdex_sets_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null; etag: string | null; content_sha256: string | null; item_count: number; revision: number }[];
@@ -2306,6 +2373,16 @@ export type Database = {
         };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
+      enqueue_public_study_coverage_job_v1: {
+        Args: {
+          p_study_key: string;
+          p_priority?: number;
+          p_dedupe_key?: string | null;
+          p_available_at?: string | null;
+          p_max_attempts?: number;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       enqueue_scheduled_job_v1: {
         Args: {
           schedule_name: string;
@@ -2314,6 +2391,16 @@ export type Database = {
           payload?: Json;
           priority?: number;
           max_attempts?: number;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      enqueue_scheduled_public_study_coverage_job_v1: {
+        Args: {
+          p_schedule_name: string;
+          p_scheduled_for: string;
+          p_study_key: string;
+          p_priority?: number;
+          p_max_attempts?: number;
         };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
@@ -2328,6 +2415,16 @@ export type Database = {
       };
       finalize_public_study_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      finalize_public_study_coverage_job_v1: {
+        Args: {
+          job_id: string;
+          worker_id: string;
+          lease_generation: number;
+          study_key: string;
+          result: Json;
+        };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
       fail_job_v2: {
@@ -2351,6 +2448,24 @@ export type Database = {
       };
       prune_expired_ephemera: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
       prune_expired_ephemera_v2: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
+      reviewed_public_study_contracts: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          ordinal: number;
+          study_key: string;
+          policy_key: string;
+          public_id: string;
+          public_name: string;
+          public_note: string;
+          display_name: string;
+          domain: string;
+          canonical_url: string;
+          policy_version: string;
+          config: Json;
+          evidence_excerpt: string;
+          title_fragments: string[];
+        }[];
+      };
       upsert_worker_heartbeat_v1: {
         Args: { p_worker_id: string; p_worker_type: string; p_version: string; p_metadata: Json };
         Returns: { last_seen_at: string }[];

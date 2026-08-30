@@ -49,6 +49,54 @@ describe("WorldHeatmap", () => {
     expect(getWorldMapFill(1, "rate")).toBe(getWorldMapFill(0.3, "rate"));
   });
 
+  it("uses a fixed pack-volume scale for coverage without publishing a rate", () => {
+    const withheld = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "BR")!;
+    const rows = buildWorldHeatRows([withheld], "coverage");
+
+    expect(rows[0]).toMatchObject({
+      metricValue: withheld.packsObserved,
+      status: "observed",
+    });
+    expect(rows[0]?.fill).not.toBe("withheld");
+    expect(getWorldMapFill(-1, "coverage")).toBe(getWorldMapFill(0, "coverage"));
+    expect(getWorldMapFill(5_000, "coverage")).toBe(getWorldMapFill(1_500, "coverage"));
+
+    render(
+      <WorldHeatmap
+        cells={[withheld]}
+        coverageSummary="One reviewed country sample."
+        initialMetric="coverage"
+        observations={{
+          ...DEMO_PUBLIC_DATA.observations,
+          countriesObserved: 1,
+          countriesWithPublishedRate: 0,
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("heading", { name: "Worldwide evidence coverage" })).toBeVisible();
+    expect(screen.getByRole("img", { name: "Observed pack coverage across the world" })).toHaveAccessibleDescription(
+      /not a hit rate or representative demand/i,
+    );
+    expect(screen.getByText("Observed pack sample")).toBeVisible();
+    expect(screen.queryByText("No country-level rates published yet")).not.toBeInTheDocument();
+  });
+
+  it("records the selected metric in the URL", () => {
+    window.history.replaceState(null, "", "/?source=qa#map");
+    render(
+      <WorldHeatmap
+        cells={DEMO_PUBLIC_DATA.mapCells}
+        coverageSummary={DEMO_PUBLIC_DATA.summary.globalCoverage}
+        observations={DEMO_PUBLIC_DATA.observations}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Pack coverage" }));
+    expect(window.location.search).toBe("?source=qa&metric=coverage");
+    expect(window.location.hash).toBe("#map");
+  });
+
   it("sorts exact rows alphabetically and preserves withheld countries", () => {
     const rows = buildWorldHeatRows(DEMO_PUBLIC_DATA.mapCells, "delta");
     expect(rows.map((row) => row.cell.countryName)).toEqual([
@@ -73,6 +121,7 @@ describe("WorldHeatmap", () => {
       <WorldHeatmap
         cells={[pending]}
         coverageSummary="One country awaits reviewed publication."
+        initialMetric="delta"
         observations={{
           ...DEMO_PUBLIC_DATA.observations,
           status: "collecting",
@@ -109,9 +158,9 @@ describe("WorldHeatmap", () => {
       />,
     );
     expect(screen.getByText("Awaiting observations")).toBeVisible();
-    expect(screen.getByText("No country-level rates published yet")).toBeVisible();
+    expect(screen.getByText("No verified pack coverage yet")).toBeVisible();
     expect(screen.getByText("No verified country observations are published yet.")).toBeVisible();
-    expect(screen.getByRole("img", { name: "Baseline delta across the world" })).toHaveAccessibleDescription(
+    expect(screen.getByRole("img", { name: "Observed pack coverage across the world" })).toHaveAccessibleDescription(
       /every country is shown in the neutral no-data colour/i,
     );
   });

@@ -12,6 +12,8 @@ from pokecrack_worker.collectors.base import (
 )
 from pokecrack_worker.collectors.scrapling.adapters.public_studies import (
     RobotsTxtChecker,
+    bleedingcool_phantasmal_flames_adapter,
+    cardchill_ascended_heroes_adapter,
     comicbook_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
@@ -23,6 +25,10 @@ COMICBOOK_SOURCE_URL = PUBLIC_STUDIES[0].source_url
 COMICBOOK_FETCH_URL = PUBLIC_STUDIES[0].fetch_url
 WARGAMER_SOURCE_URL = PUBLIC_STUDIES[1].source_url
 WARGAMER_FETCH_URL = PUBLIC_STUDIES[1].fetch_url
+CARDCHILL_SOURCE_URL = PUBLIC_STUDIES[2].source_url
+CARDCHILL_FETCH_URL = PUBLIC_STUDIES[2].fetch_url
+BLEEDINGCOOL_SOURCE_URL = PUBLIC_STUDIES[3].source_url
+BLEEDINGCOOL_FETCH_URL = PUBLIC_STUDIES[3].fetch_url
 
 
 class FixtureHTTPClient:
@@ -90,6 +96,46 @@ def _html(url: str, body: str) -> FetchResponse:
                 "missing out on any SIR mega hits.",
             ),
         ),
+        (
+            CARDCHILL_FETCH_URL,
+            CARDCHILL_SOURCE_URL,
+            "cardchill.com",
+            cardchill_ascended_heroes_adapter,
+            """
+            <html><body><main><article>
+              <h1>Ripping 10 Ascended Heroes ETBs: Is the “Mega Attack” Pull Rate Real?</h1>
+              <p>I finally sat down with a stack of 10 Ascended Heroes Elite Trainer Boxes.</p>
+              <p>Out of 90 packs, I pulled 19 Double Rare (ex) cards.</p>
+              <p>Across 10 ETBs, I pulled exactly one SIR.</p>
+            </article></main></body></html>
+            """,
+            (
+                "I finally sat down with a stack of 10 Ascended Heroes Elite Trainer Boxes.",
+                "Out of 90 packs, I pulled 19 Double Rare (ex) cards.",
+                "Across 10 ETBs, I pulled exactly one SIR.",
+            ),
+        ),
+        (
+            BLEEDINGCOOL_FETCH_URL,
+            BLEEDINGCOOL_SOURCE_URL,
+            "bleedingcool.com",
+            bleedingcool_phantasmal_flames_adapter,
+            """
+            <html><body><main><article>
+              <h1>Opening Pokémon TCG: Mega Evolution – Phantasmal Flames Products</h1>
+              <p>Now, the meat and potatoes: the booster box.</p>
+              <p>A booster box contains 36 packs, which essentially guarantees some fire.</p>
+              <p>My Secret Rare count here is a whopping eight, made up of five Illustration
+              Rares, two Full Art Trainer Supporters, and, the biggest hit, a Special
+              Illustration Rare ex.</p>
+            </article></main></body></html>
+            """,
+            (
+                "Now, the meat and potatoes: the booster box.",
+                "A booster box contains 36 packs, which essentially guarantees some fire.",
+                "My Secret Rare count here is a whopping eight, made up of five Illustration Rares, two Full Art Trainer Supporters, and, the biggest hit, a Special Illustration Rare ex.",
+            ),
+        ),
     ),
 )
 def test_reviewed_public_study_parsers_emit_only_bounded_provenance(
@@ -98,7 +144,7 @@ def test_reviewed_public_study_parsers_emit_only_bounded_provenance(
     domain: str,
     adapter_factory: object,
     body: str,
-    expected_lines: tuple[str, str],
+    expected_lines: tuple[str, ...],
 ) -> None:
     client = FixtureHTTPClient({fetch_url: _html(fetch_url, body)})
     policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(fetch_url)

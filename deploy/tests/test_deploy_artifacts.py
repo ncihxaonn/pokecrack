@@ -593,6 +593,8 @@ ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
         public_rows = (
             b"public_study_comicbook_us_55\n"
             b"public_study_wargamer_gb_17\n"
+            b"public_study_cardchill_gb_90\n"
+            b"public_study_bleedingcool_us_36\n"
             if public_studies
             else b""
         )
@@ -684,6 +686,8 @@ COPY ingest.source_policies (id, source_key) FROM stdin;
 33333333-3333-4333-8333-333333333333\ttcgdex_catalog
 44444444-4444-4444-8444-444444444444\tpublic_study_comicbook_us_55
 55555555-5555-4555-8555-555555555555\tpublic_study_wargamer_gb_17
+99999999-9999-4999-8999-999999999990\tpublic_study_cardchill_gb_90
+aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa0\tpublic_study_bleedingcool_us_36
 \\.
 COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
 \\.

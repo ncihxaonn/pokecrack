@@ -42,11 +42,13 @@
 .legendScale { height: 8px; border-radius: 99px; }
 .deltaScale { background: linear-gradient(90deg, #789388, #edf2ee, #148a54); }
 .rateScale { background: linear-gradient(90deg, #e7f2eb, #43a475, #075f39); }
+.coverageScale { background: linear-gradient(90deg, #e7f2eb, #43a475, #075f39); }
 .legendTicks { display: flex; justify-content: space-between; gap: .35rem; }
 .legendKeys { display: grid; gap: .28rem; margin-top: .15rem; }
-.noDataKey, .withheldKey, .publishedKey { display: flex; align-items: center; gap: .4rem; }
-.noDataKey i, .withheldKey i, .publishedKey i { width: 19px; height: 12px; border: 1px solid #99a79e; border-radius: 3px; }
+.noDataKey, .observedKey, .withheldKey, .publishedKey { display: flex; align-items: center; gap: .4rem; }
+.noDataKey i, .observedKey i, .withheldKey i, .publishedKey i { width: 19px; height: 12px; border: 1px solid #99a79e; border-radius: 3px; }
 .noDataKey i { border-color: #cad4cc; background: #dfe7e1; }
+.observedKey i { border-color: rgba(20, 138, 84, .55); background: #43a475; }
 .withheldKey i { background: repeating-linear-gradient(125deg, #dbe4dd 0 3px, #88978e 3px 5px); }
 .publishedKey i { border-color: rgba(20, 138, 84, .55); background: #148a54; }
 

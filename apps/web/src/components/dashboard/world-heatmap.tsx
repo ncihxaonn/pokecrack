@@ -2,6 +2,7 @@
 
 import React, { useId, useMemo, useState } from "react";
 
+import { defaultWorldHeatMetric, type WorldHeatMetric } from "@/app/_lib/world-map-query";
 import mapData from "@/data/world-map-110m.json";
 import type { CountryMapCell, ObservationReadiness } from "@/data/types";
 import {
@@ -11,17 +12,18 @@ import {
 } from "@/lib/format";
 import styles from "./world-heatmap.module.css";
 
-export type WorldHeatMetric = "delta" | "rate";
+export type { WorldHeatMetric } from "@/app/_lib/world-map-query";
 
 export interface WorldHeatRow {
   readonly cell: CountryMapCell;
   readonly metricValue: number | null;
   readonly fill: string;
-  readonly status: "published" | "withheld";
+  readonly status: "observed" | "published" | "withheld";
 }
 
 const integer = new Intl.NumberFormat("en-US");
 const metricOptions: readonly { value: WorldHeatMetric; label: string }[] = [
+  { value: "coverage", label: "Pack coverage" },
   { value: "delta", label: "Baseline delta" },
   { value: "rate", label: "Observed rate" },
 ];
@@ -40,6 +42,14 @@ function interpolateHex(start: string, end: string, amount: number) {
 }
 
 export function getWorldMapFill(value: number, metric: WorldHeatMetric): string {
+  if (metric === "coverage") {
+    const bounded = clamp(value, 0, 1_500);
+    if (bounded <= 750) {
+      return interpolateHex("#e7f2eb", "#43a475", bounded / 750);
+    }
+    return interpolateHex("#43a475", "#075f39", (bounded - 750) / 750);
+  }
+
   if (metric === "delta") {
     const bounded = clamp(value, -0.05, 0.05);
     if (bounded <= 0) {
@@ -62,12 +72,21 @@ export function buildWorldHeatRows(
   return [...cells]
     .sort((left, right) => left.countryName.localeCompare(right.countryName))
     .map((cell) => {
-      const metricValue = metric === "delta" ? cell.deltaFromBaseline : cell.hitRate;
+      const metricValue = metric === "coverage"
+        ? cell.packsObserved
+        : metric === "delta"
+          ? cell.deltaFromBaseline
+          : cell.hitRate;
+      const status = metric === "coverage"
+        ? "observed"
+        : metricValue === null
+          ? "withheld"
+          : "published";
       return {
         cell,
         metricValue,
         fill: metricValue === null ? "withheld" : getWorldMapFill(metricValue, metric),
-        status: metricValue === null ? "withheld" : "published",
+        status,
       } satisfies WorldHeatRow;
     });
 }
@@ -84,12 +103,16 @@ export function WorldHeatmap({
   cells,
   coverageSummary,
   observations,
+  initialMetric,
 }: {
   readonly cells: readonly CountryMapCell[];
   readonly coverageSummary: string;
   readonly observations: ObservationReadiness;
+  readonly initialMetric?: WorldHeatMetric;
 }) {
-  const [metric, setMetric] = useState<WorldHeatMetric>("delta");
+  const [metric, setMetric] = useState<WorldHeatMetric>(
+    initialMetric ?? defaultWorldHeatMetric(observations.countriesWithPublishedRate),
+  );
   const rows = useMemo(() => buildWorldHeatRows(cells, metric), [cells, metric]);
   const cellsByCountry = useMemo(
     () => new Map(rows.map((row) => [row.cell.countryCode, row])),
@@ -97,10 +120,14 @@ export function WorldHeatmap({
   );
   const instanceId = useId().replaceAll(":", "");
   const withheldPatternId = `world-withheld-${instanceId}`;
-  const publishedCount = rows.filter((row) => row.status === "published").length;
-  const withheldCount = rows.length - publishedCount;
+  const publishedRateCount = cells.filter((cell) => cell.hitRate !== null).length;
+  const withheldCount = rows.length - publishedRateCount;
   const pendingCount = rows.filter((row) => row.cell.state === "pending").length;
-  const metricLabel = metric === "delta" ? "Baseline delta" : "Observed rate";
+  const metricLabel = metric === "coverage"
+    ? "Observed pack coverage"
+    : metric === "delta"
+      ? "Baseline delta"
+      : "Observed rate";
   const period = observations.period
     ? `${formatDate(observations.period.start)} - ${formatDate(observations.period.end)}`
     : "No verified period yet";
@@ -111,7 +138,16 @@ export function WorldHeatmap({
       : "Published";
   const mapDescription = rows.length === 0
     ? "No verified country-level pack-opening observations are published. Every country is shown in the neutral no-data colour."
-    : `${rows.length} countries have verified observations: ${publishedCount} publish a rate, ${pendingCount} await reviewed publication, and ${withheldCount - pendingCount} remain below the evidence threshold.`;
+    : metric === "coverage"
+      ? `${rows.length} countries have verified pack-opening observations. Colour shows fixed-scale sample volume only, not a hit rate or representative demand.`
+      : `${rows.length} countries have verified observations: ${publishedRateCount} publish a rate, ${pendingCount} await reviewed publication, and ${withheldCount - pendingCount} remain below the evidence threshold.`;
+
+  const selectMetric = (nextMetric: WorldHeatMetric) => {
+    setMetric(nextMetric);
+    const url = new URL(window.location.href);
+    url.searchParams.set("metric", nextMetric);
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  };
 
   const countryFill = (countryCode: string | null) => {
     if (!countryCode) return "#dfe7e1";
@@ -125,9 +161,13 @@ export function WorldHeatmap({
       <header className={styles.header}>
         <div>
           <span className={styles.kicker}>Global evidence map</span>
-          <h2 id="world-coverage-title">Worldwide qualifying-hit map</h2>
+          <h2 id="world-coverage-title">
+            {metric === "coverage" ? "Worldwide evidence coverage" : "Worldwide qualifying-hit map"}
+          </h2>
           <p>
-            Country-level qualifying-hit rates from verified pack-opening samples. Catalog records and discovery activity never enter the denominator.
+            {metric === "coverage"
+              ? "Verified pack-opening sample volume by country. This coverage view is not a hit-rate comparison."
+              : "Country-level qualifying-hit rates from verified pack-opening samples. Catalog records and discovery activity never enter the denominator."}
           </p>
         </div>
         <div className={styles.toggle} role="group" aria-label="World heat map metric">
@@ -136,7 +176,7 @@ export function WorldHeatmap({
               type="button"
               key={option.value}
               aria-pressed={metric === option.value}
-              onClick={() => setMetric(option.value)}
+              onClick={() => selectMetric(option.value)}
             >
               {option.label}
             </button>
@@ -183,11 +223,11 @@ export function WorldHeatmap({
                   const row = country.countryCode
                     ? cellsByCountry.get(country.countryCode)
                     : undefined;
-                  const fill = row?.status === "published"
-                    ? row.fill
-                    : row?.status === "withheld"
+                  const fill = row?.status === "withheld"
                       ? `url(#${withheldPatternId})`
-                      : "#dfe7e1";
+                      : row
+                        ? row.fill
+                        : "#dfe7e1";
                   return (
                     <circle
                       className={styles.tinyCountry}
@@ -201,9 +241,11 @@ export function WorldHeatmap({
                 })}
               </g>
             </svg>
-            {publishedCount === 0 ? (
+            {(metric === "coverage" ? rows.length === 0 : publishedRateCount === 0) ? (
               <div className={styles.emptyMapMessage} role="note">
-                <strong>No country-level rates published yet</strong>
+                <strong>{metric === "coverage"
+                  ? "No verified pack coverage yet"
+                  : "No country-level rates published yet"}</strong>
                 <span>{rows.length === 0
                   ? "The map stays neutral until verified samples meet the publication threshold."
                   : pendingCount > 0
@@ -216,11 +258,13 @@ export function WorldHeatmap({
           <figcaption className={styles.caption}>
             <div className={styles.legend}>
               <span
-                className={`${styles.legendScale} ${metric === "delta" ? styles.deltaScale : styles.rateScale}`}
+                className={`${styles.legendScale} ${metric === "coverage" ? styles.coverageScale : metric === "delta" ? styles.deltaScale : styles.rateScale}`}
                 aria-hidden="true"
               />
               <span className={styles.legendTicks} aria-hidden="true">
-                {metric === "delta" ? (
+                {metric === "coverage" ? (
+                  <><span>0 packs</span><span>750</span><span>≥ 1,500</span></>
+                ) : metric === "delta" ? (
                   <><span>≤ −5 pp</span><span>0 pp</span><span>≥ +5 pp</span></>
                 ) : (
                   <><span>0%</span><span>15%</span><span>≥ 30%</span></>
@@ -228,12 +272,20 @@ export function WorldHeatmap({
               </span>
               <span className={styles.legendKeys}>
                 <span className={styles.noDataKey}><i aria-hidden="true" />Not observed</span>
-                <span className={styles.withheldKey}><i aria-hidden="true" />Observed, rate withheld</span>
-                <span className={styles.publishedKey}><i aria-hidden="true" />Published rate</span>
+                {metric === "coverage" ? (
+                  <span className={styles.observedKey}><i aria-hidden="true" />Observed pack sample</span>
+                ) : (
+                  <>
+                    <span className={styles.withheldKey}><i aria-hidden="true" />Observed, rate withheld</span>
+                    <span className={styles.publishedKey}><i aria-hidden="true" />Published rate</span>
+                  </>
+                )}
               </span>
             </div>
             <p id={`world-map-caveat-${instanceId}`}>
-              Fixed absolute colour scale; values are never rescaled to the current snapshot. Higher historical observations do not predict future packs, products, stores or countries.
+              {metric === "coverage"
+                ? "Fixed absolute 0–1,500 pack colour scale; this shows sample volume, not a hit rate or representative demand. Unobserved countries remain neutral."
+                : "Fixed absolute colour scale; values are never rescaled to the current snapshot. Higher historical observations do not predict future packs, products, stores or countries."}
             </p>
           </figcaption>
         </figure>
