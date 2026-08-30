@@ -300,9 +300,7 @@ CARDCHILL_POLICY_CONFIG: dict[str, object] = {
     "denominator_complete": True,
 }
 
-BLEEDINGCOOL_IDENTITY = PUBLIC_STUDIES_BY_KEY[
-    "bleedingcool-phantasmal-flames-us-36-v1"
-]
+BLEEDINGCOOL_IDENTITY = PUBLIC_STUDIES_BY_KEY["bleedingcool-phantasmal-flames-us-36-v1"]
 BLEEDINGCOOL_POLICY_CONFIG: dict[str, object] = {
     "study_key": BLEEDINGCOOL_IDENTITY.study_key,
     "canonical_url": BLEEDINGCOOL_IDENTITY.source_url,
@@ -368,9 +366,7 @@ def cardchill_ascended_heroes_adapter(*, client: HTTPClient) -> ReviewedPublicSt
     )
 
 
-def bleedingcool_phantasmal_flames_adapter(
-    *, client: HTTPClient
-) -> ReviewedPublicStudyAdapter:
+def bleedingcool_phantasmal_flames_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
         client=client,
         identity=BLEEDINGCOOL_IDENTITY,
