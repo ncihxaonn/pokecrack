@@ -54,7 +54,7 @@ queries, URLs, regions, or endpoints. The adapter may make exactly one bounded
 `search.list` request. It must not call `channels.list` or download video, audio,
 captions, thumbnails, descriptions, channel metadata, or raw channel identifiers.
 
-The five exact global-English queries run on one fixed two-hour schedule when
+The five exact global-English queries run on one fixed six-hour schedule when
 the feature is enabled. Both the registry and network adapter independently
 verify the frozen query text, `order=date`, 25-result cap, 30-day publication
 window, metadata-only flag, and absence of `regionCode` before network I/O. The
@@ -86,7 +86,7 @@ no route to a country, store, purchase, batch, opening, denominator, or rate.
 The live path is:
 
 1. The UTC scheduler sees only the explicit collection flag and, when enabled,
-   enqueues one job per exact query every two hours. Any schedule drift is a
+   enqueues one job per exact query every six hours. Any schedule drift is a
    startup error. The same flag freezes cleanup to its exact daily schedule.
    Operators must not enable the flag until the collector has exactly one
    approved YouTube transport credential; the scheduler never receives or
@@ -174,7 +174,7 @@ rate”, “guaranteed”, or imply a causal regional/store advantage.
   rotated.
 - Store production credentials outside Git in a mode `0600` environment file.
 - Keep the database source policy as the independent runtime kill switch.
-- Keep the exact two-hour discovery cron and daily cleanup cron. Require healthy
+- Keep the exact six-hour discovery cron and daily cleanup cron. Require healthy
   scheduler/watchdog heartbeats plus stale-cleanup and queue-delay alerts; the
   12-hour catch-up is a bounded recovery path, not an unlimited outage guarantee.
 - Before enabling collection, create and verify a dedicated `NOINHERIT` worker
