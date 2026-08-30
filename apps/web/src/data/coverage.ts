@@ -161,6 +161,10 @@ function mergeCountry(
   coverage: PublicStudyCoverage["countries"][number],
   period: PublicStudyCoverage["period"],
 ): CountryMapCell {
+  // The aggregate publisher owns every inference field and its matching
+  // denominator. Coverage-only evidence may populate a missing/withheld row,
+  // but it must never rewrite an already-published aggregate.
+  if (current !== undefined && current.hitRate !== null) return current;
   const packsObserved = (current?.packsObserved ?? 0) + coverage.packsObserved;
   const openings = (current?.openings ?? 0) + coverage.openings;
   const independentSources =
@@ -193,6 +197,7 @@ function mergeSet(
   current: SetMetric | undefined,
   coverage: PublicStudyCoverage["sets"][number],
 ): SetMetric {
+  if (current !== undefined && current.hitRate !== null) return current;
   const packsObserved = (current?.packsObserved ?? 0) + coverage.packsObserved;
   const openings = (current?.openings ?? 0) + coverage.openings;
   const independentSources =
