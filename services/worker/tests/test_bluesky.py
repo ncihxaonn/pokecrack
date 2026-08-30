@@ -463,6 +463,10 @@ def test_live_composition_flag_schedule_priority_and_runtime_dispatch() -> None:
     assert bluesky_entries[0].cron == "* * * * *"
     assert bluesky_entries[0].payload == {}
     assert bluesky_entries[0].priority == -50
+    cleanup = next(entry for entry in entries if entry.name == "cleanup")
+    assert cleanup.catch_up_within == timedelta(hours=36)
+    assert cleanup.catch_up_check_interval == timedelta(hours=1)
+    assert cleanup.slot(NOW) == NOW.replace(hour=3, minute=30)
 
     collector_settings = settings.model_copy(update={"worker_role": "collector"})
     executor = RecordingExecutor(

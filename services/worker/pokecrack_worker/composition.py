@@ -1207,6 +1207,13 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
         if settings.bluesky_collection_enabled
         else ()
     )
+    cleanup_catch_up = (
+        timedelta(hours=36)
+        if settings.bluesky_collection_enabled
+        else timedelta(hours=12)
+        if settings.youtube_collection_enabled
+        else None
+    )
     cleanup = (
         ScheduleEntry(
             name="cleanup",
@@ -1214,13 +1221,11 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
             cron=settings.schedule_cleanup,
             priority=10,
             max_attempts=settings.worker_max_attempts,
-            # The YouTube cache expires at 28 days. Daily cleanup plus a
-            # bounded 12-hour restart catch-up keeps the supported retention
-            # path below 30 days with a 12-hour operational margin.
-            catch_up_within=(timedelta(hours=12) if settings.youtube_collection_enabled else None),
-            catch_up_check_interval=(
-                timedelta(hours=1) if settings.youtube_collection_enabled else None
-            ),
+            # YouTube has a two-day expiry margin; Bluesky uses the full
+            # reviewed retention window, so a restart must catch a missed
+            # daily cleanup independently of whether YouTube is enabled.
+            catch_up_within=cleanup_catch_up,
+            catch_up_check_interval=(timedelta(hours=1) if cleanup_catch_up else None),
         ),
     )
     return catalog + youtube + public_studies + bluesky + cleanup

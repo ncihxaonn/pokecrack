@@ -1430,6 +1430,9 @@ alter table ingest.jobs
     )
     or (
       job_type = 'source.public_study.opening'
+      -- Coverage-only studies use the separately fenced
+      -- reviewed-coverage-schedule prefix and constraint; this schedule:
+      -- boundary intentionally retains only the two statistical-ledger keys.
       and payload ?& array['study_key']
       and payload - array['study_key'] = '{}'::jsonb
       and jsonb_typeof(payload -> 'study_key') = 'string'
