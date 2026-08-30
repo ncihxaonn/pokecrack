@@ -172,7 +172,7 @@ WITH youtube_dependencies AS (
           ]
         }'::jsonb
         AND policies.version = 'youtube-global-discovery-v1'
-        AND policies.expected_interval_seconds = 7200
+        AND policies.expected_interval_seconds = 21600
     ),
     false
   ) AS ready
@@ -1168,7 +1168,7 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
                 payload={"query_name": query.name},
                 priority=15,
                 max_attempts=min(3, settings.worker_max_attempts),
-                catch_up_within=timedelta(hours=4),
+                catch_up_within=timedelta(hours=12),
                 catch_up_check_interval=timedelta(hours=1),
             )
             for query in YouTubeQueryRegistry.from_yaml(YOUTUBE_QUERIES_CONFIG).queries

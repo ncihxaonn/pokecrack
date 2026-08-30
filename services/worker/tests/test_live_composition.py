@@ -225,7 +225,7 @@ def test_enabled_youtube_scheduler_requires_the_shared_exact_dependencies() -> N
     assert "policies.base_url = 'https://youtube.googleapis.com/youtube/v3'" in sql
     assert "policies.max_pages_per_run = 1" in sql
     assert "policies.max_items_per_run = 25" in sql
-    assert "policies.expected_interval_seconds = 7200" in sql
+    assert "policies.expected_interval_seconds = 21600" in sql
     assert "youtube-global-discovery-v1" in sql
     assert "INSERT INTO ingest.worker_heartbeats" not in sql
     assert "YOUTUBE_API_KEY" not in repr(executor.calls)
@@ -1103,7 +1103,7 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
     result = build_live_scheduler(settings, executor=executor).run_due(now=youtube_slot)
 
     assert settings.youtube_api_key is None
-    assert settings.schedule_official_api == "0 */2 * * *"
+    assert settings.schedule_official_api == "0 */6 * * *"
     assert result.created == 5
     assert result.due_names == tuple(f"youtube_{name}" for name in expected_names)
     assert len(executor.calls) == 5
@@ -1113,7 +1113,7 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
     assert all(params["kind"] == YOUTUBE_DISCOVERY_JOB_TYPE for _sql, params in executor.calls)
     assert all(params["max_attempts"] == 3 for _sql, params in executor.calls)
     assert all(
-        entry.cron == "0 */2 * * *" and entry.catch_up_within == timedelta(hours=4)
+        entry.cron == "0 */6 * * *" and entry.catch_up_within == timedelta(hours=12)
         for entry in live_schedule_entries(settings)
         if entry.job_type == YOUTUBE_DISCOVERY_JOB_TYPE
     )

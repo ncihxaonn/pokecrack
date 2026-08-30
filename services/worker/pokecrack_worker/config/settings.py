@@ -27,7 +27,7 @@ class AIProviderName(StrEnum):
     OPENAI_COMPATIBLE = "openai_compatible"
 
 
-YOUTUBE_DISCOVERY_SCHEDULE = "0 */2 * * *"
+YOUTUBE_DISCOVERY_SCHEDULE = "0 */6 * * *"
 YOUTUBE_CLEANUP_SCHEDULE = "30 3 * * *"
 PUBLIC_STUDY_SCHEDULE = "15 4 * * *"
 BLUESKY_DISCOVERY_SCHEDULE = "* * * * *"
