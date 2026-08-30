@@ -1555,12 +1555,16 @@ begin
 end;
 $migration$;
 
--- Cleanup is bounded across both private activity tables. The checkpoint is
--- deliberately never selected or deleted, so restarts cannot silently replay
--- an unbounded stream window.
+-- Cleanup gives each private activity table an independent 500,000-row budget.
+-- The collector can persist at most 216,000 candidates and 432,000 observations
+-- during the scheduler's reviewed 36-hour recovery window. Ten-thousand-row
+-- sub-batches bound each locking query while the larger per-table budget keeps
+-- the 30-day retention path ahead of the maximum accepted ingestion rate. The
+-- checkpoint is deliberately never selected or deleted, so restarts cannot
+-- silently replay an unbounded stream window.
 create or replace function ingest.prune_bluesky_jetstream_v1(
   cutoff timestamptz,
-  max_rows integer default 10000
+  max_rows integer default 500000
 )
 returns table(candidates_deleted integer, observations_deleted integer)
 language plpgsql
@@ -1572,49 +1576,59 @@ as $$
 declare
   deleted_candidates integer := 0;
   deleted_observations integer := 0;
-  remaining_rows integer;
+  batch_deleted integer := 0;
+  batch_limit integer := 0;
 begin
   if cutoff is null then
     raise exception using errcode = '22023', message = 'cutoff must not be null';
   end if;
-  if max_rows is null or max_rows < 1 or max_rows > 10000 then
+  if max_rows is null or max_rows < 1 or max_rows > 500000 then
     raise exception using
       errcode = '22023',
-      message = 'max_rows must be between 1 and 10000';
+      message = 'max_rows must be between 1 and 500000 per table';
   end if;
 
-  with locked_candidates as (
-    select candidates.at_uri
-    from ingest.bluesky_jetstream_candidates as candidates
-    where candidates.expires_at <= cutoff
-    order by candidates.expires_at, candidates.at_uri
-    for update of candidates skip locked
-    limit max_rows
-  ), deleted as (
-    delete from ingest.bluesky_jetstream_candidates as candidates
-    using locked_candidates
-    where candidates.at_uri = locked_candidates.at_uri
-    returning 1
-  )
-  select count(*)::integer into deleted_candidates from deleted;
+  loop
+    batch_limit := least(10000, max_rows - deleted_candidates);
+    exit when batch_limit <= 0;
+    with locked_candidates as (
+      select candidates.at_uri
+      from ingest.bluesky_jetstream_candidates as candidates
+      where candidates.expires_at <= cutoff
+      order by candidates.expires_at, candidates.at_uri
+      for update of candidates skip locked
+      limit batch_limit
+    ), deleted as (
+      delete from ingest.bluesky_jetstream_candidates as candidates
+      using locked_candidates
+      where candidates.at_uri = locked_candidates.at_uri
+      returning 1
+    )
+    select count(*)::integer into batch_deleted from deleted;
+    deleted_candidates := deleted_candidates + batch_deleted;
+    exit when batch_deleted < batch_limit;
+  end loop;
 
-  remaining_rows := max_rows - deleted_candidates;
-  if remaining_rows > 0 then
+  loop
+    batch_limit := least(10000, max_rows - deleted_observations);
+    exit when batch_limit <= 0;
     with locked_observations as (
       select observations.id
       from ingest.bluesky_jetstream_observations as observations
       where observations.expires_at <= cutoff
       order by observations.expires_at, observations.id
       for update of observations skip locked
-      limit remaining_rows
+      limit batch_limit
     ), deleted as (
       delete from ingest.bluesky_jetstream_observations as observations
       using locked_observations
       where observations.id = locked_observations.id
       returning 1
     )
-    select count(*)::integer into deleted_observations from deleted;
-  end if;
+    select count(*)::integer into batch_deleted from deleted;
+    deleted_observations := deleted_observations + batch_deleted;
+    exit when batch_deleted < batch_limit;
+  end loop;
 
   return query select deleted_candidates, deleted_observations;
 end;
@@ -1625,7 +1639,7 @@ alter function ingest.prune_bluesky_jetstream_v1(timestamptz, integer)
 revoke all on function ingest.prune_bluesky_jetstream_v1(timestamptz, integer)
   from public, anon, authenticated, service_role;
 comment on function ingest.prune_bluesky_jetstream_v1(timestamptz, integer) is
-  'Owner-only ordered bounded cleanup for private Bluesky candidates and event observations. Checkpoints are retained.';
+  'Owner-only ordered cleanup for private Bluesky candidates and observations, independently bounded to 500000 rows per table in 10000-row sub-batches. Checkpoints are retained.';
 
 do $migration$
 declare
@@ -1646,7 +1660,7 @@ begin
 
   perform ingest.prune_bluesky_jetstream_v1(
     cutoff => lease_checked_at,
-    max_rows => 10000
+    max_rows => 500000
   );$call$
   );
   if updated_definition = definition

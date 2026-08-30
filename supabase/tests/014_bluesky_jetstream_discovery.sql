@@ -242,6 +242,20 @@ select ok(
   'worker roles cannot invoke private retention independently of a cleanup lease'
 );
 select ok(
+  (select position('max_rows > 500000' in pg_get_functiondef(oid)) > 0
+      and position('limit batch_limit' in pg_get_functiondef(oid)) > 0
+   from pg_proc
+   where oid = 'ingest.prune_bluesky_jetstream_v1(timestamptz,integer)'::regprocedure),
+  'private retention has the reviewed high-water budget and bounded sub-batches'
+);
+select ok(
+  position(
+    'max_rows => 500000'
+    in pg_get_functiondef('ingest.finalize_cleanup_job(uuid,text,bigint)'::regprocedure)
+  ) > 0,
+  'the fenced cleanup uses the full reviewed Bluesky recovery-window budget'
+);
+select ok(
   (select prosecdef and proowner::regrole::text = 'postgres'
       and coalesce(proconfig, '{}'::text[]) @> array['search_path=pg_catalog']
    from pg_proc where oid = 'public.get_public_social_discovery_v1()'::regprocedure)
@@ -680,6 +694,64 @@ select id, 1001,
 from ingest.source_policies
 cross join stale_time
 where source_key = 'bluesky_jetstream';
+with stale_time as materialized (
+  select clock_timestamp() - interval '31 days' as value
+)
+insert into ingest.bluesky_jetstream_candidates (
+  at_uri, public_url, text_excerpt, record_sha256, published_at,
+  source_policy_id, source_policy_version, collector_version,
+  first_seen_at, last_seen_at, last_cursor, deleted_at, expires_at,
+  is_demo, created_at, updated_at
+)
+select
+  'at://did:plc:mnbvcxzlkjhgfdsaqwertyui/app.bsky.feed.post/3expired2',
+  'https://bsky.app/profile/did:plc:mnbvcxzlkjhgfdsaqwertyui/post/3expired2',
+  'Second expired bounded activity', repeat('f', 64), null,
+  id, 'bluesky-jetstream-v1', 'bluesky-jetstream-v1',
+  stale_time.value - interval '1 day',
+  stale_time.value, 1002, null,
+  stale_time.value + interval '30 days', false,
+  stale_time.value - interval '1 day', stale_time.value
+from ingest.source_policies
+cross join stale_time
+where source_key = 'bluesky_jetstream';
+with stale_time as materialized (
+  select clock_timestamp() - interval '31 days' as value
+)
+insert into ingest.bluesky_jetstream_observations (
+  source_policy_id, cursor, at_uri, operation, observed_at, expires_at, is_demo
+)
+select id, 1003,
+  'at://did:plc:mnbvcxzlkjhgfdsaqwertyui/app.bsky.feed.post/3expired-delete2',
+  'delete', stale_time.value,
+  stale_time.value + interval '30 days', false
+from ingest.source_policies
+cross join stale_time
+where source_key = 'bluesky_jetstream';
+create temporary table bluesky_single_row_prune on commit drop as
+select * from ingest.prune_bluesky_jetstream_v1(clock_timestamp(), 1);
+select is(
+  (select candidates_deleted from bluesky_single_row_prune),
+  1,
+  'one-row retention budget deletes one candidate independently'
+);
+select is(
+  (select observations_deleted from bluesky_single_row_prune),
+  1,
+  'one-row retention budget also deletes one observation independently'
+);
+select is(
+  (select count(*)::integer from ingest.bluesky_jetstream_candidates
+   where expires_at <= clock_timestamp()),
+  1,
+  'one expired candidate remains for the fenced cleanup hook'
+);
+select is(
+  (select count(*)::integer from ingest.bluesky_jetstream_observations
+   where expires_at <= clock_timestamp()),
+  1,
+  'one expired observation remains for the fenced cleanup hook'
+);
 insert into ingest.jobs (
   id, job_type, payload, status, attempts, locked_at, lock_expires_at,
   locked_by, lease_generation, is_demo
@@ -704,6 +776,17 @@ select ok(
       select 1 from ingest.bluesky_jetstream_observations where cursor = 1001
     ),
   'cleanup deletes both selected expired private row classes'
+);
+select ok(
+  not exists (
+    select 1 from ingest.bluesky_jetstream_candidates
+    where expires_at <= clock_timestamp()
+  )
+    and not exists (
+      select 1 from ingest.bluesky_jetstream_observations
+      where expires_at <= clock_timestamp()
+    ),
+  'fenced cleanup drains both expired private tables after independent batching'
 );
 select is(
   (select count(*)::integer from ingest.bluesky_jetstream_checkpoints),

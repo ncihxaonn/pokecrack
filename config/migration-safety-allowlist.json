@@ -108,13 +108,13 @@
     },
     {
       "migration": "20260903000000_bluesky_jetstream_discovery.sql",
-      "statement_sha256": "e472dd3dcf1e0929dfc6837d7661571c7c512cde3a96020333f8e1a131c6612e",
-      "reason": "Fenced bounded cleanup deletes only expired private Bluesky activity candidates selected by an ordered SKIP LOCKED CTE; the checkpoint is retained."
+      "statement_sha256": "7cd49f0481140ef17b5fb1655c4befb0e802a8d47590b58c62998b49f6996957",
+      "reason": "Fenced cleanup deletes only expired private Bluesky activity candidates selected by ordered 10000-row SKIP LOCKED sub-batches inside the reviewed independent 500000-row recovery-window budget; the checkpoint is retained."
     },
     {
       "migration": "20260903000000_bluesky_jetstream_discovery.sql",
-      "statement_sha256": "c63779c4cc2f0be6bcdff67a29b3a70ce73fc2e7bdbff6980b06451f6c216d10",
-      "reason": "Fenced bounded cleanup deletes only expired private Bluesky event observations selected by an ordered SKIP LOCKED CTE; the checkpoint is retained."
+      "statement_sha256": "083fea6665daec198e6b231b374a304be8cb2865e38988d476789c86d9868a9d",
+      "reason": "Fenced cleanup deletes only expired private Bluesky event observations selected by ordered 10000-row SKIP LOCKED sub-batches inside the reviewed independent 500000-row recovery-window budget; the checkpoint is retained."
     }
   ]
 }
