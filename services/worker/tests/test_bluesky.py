@@ -14,6 +14,8 @@ from pydantic import ValidationError
 
 from pokecrack_worker.collectors.official_api.bluesky import (
     BLUESKY_JETSTREAM_URL,
+    BLUESKY_MAX_CANDIDATES,
+    BLUESKY_MAX_DELETIONS,
     BLUESKY_MAX_EVENTS,
     BLUESKY_MAX_MESSAGE_BYTES,
     BLUESKY_MAX_STREAM_BYTES,
@@ -292,6 +294,71 @@ def test_collector_is_bounded_idempotent_and_advances_cursor_for_nonmatches() ->
     assert resumed.end_cursor == 6
     assert resumed.events_seen == 2
     assert resumed.candidates[0].cursor == 6
+
+
+@pytest.mark.parametrize(
+    ("operation", "result_field", "output_cap"),
+    (
+        ("create", "candidates", BLUESKY_MAX_CANDIDATES),
+        ("delete", "deletions", BLUESKY_MAX_DELETIONS),
+    ),
+)
+def test_collector_resumes_before_an_output_cap_would_drop_an_event(
+    operation: str,
+    result_field: str,
+    output_cap: int,
+) -> None:
+    capped_messages = tuple(
+        _frame(
+            seq,
+            operation=operation,
+            rkey=f"post{seq}",
+        )
+        for seq in range(1, output_cap + 1)
+    )
+    messages = (
+        *capped_messages,
+        _frame(output_cap + 1, rkey="nonmatch", text="just opening"),
+        _frame(
+            output_cap + 2,
+            operation=operation,
+            rkey=f"post{output_cap + 2}",
+        ),
+    )
+    collector = BlueskyJetstreamCollector(
+        transport=RecordingTransport(messages),
+        keywords=_registry(),
+    )
+
+    first = collector.collect()
+
+    first_items = getattr(first, result_field)
+    assert len(first_items) == output_cap
+    assert [item.cursor for item in first_items] == list(range(1, output_cap + 1))
+    assert first.end_cursor == output_cap + 1
+    assert first.events_seen == output_cap + 1
+    assert first.bytes_seen == sum(map(len, messages[: output_cap + 1]))
+
+    resumed = BlueskyJetstreamCollector(
+        transport=RecordingTransport(messages[output_cap:]),
+        keywords=_registry(),
+    ).collect(start_cursor=output_cap + 1)
+
+    resumed_items = getattr(resumed, result_field)
+    assert [item.cursor for item in resumed_items] == [output_cap + 2]
+    assert resumed.end_cursor == output_cap + 2
+    assert resumed.events_seen == 2
+    assert resumed.bytes_seen == sum(map(len, messages[output_cap:]))
+
+
+def test_collector_rejects_a_non_monotonic_unique_sequence() -> None:
+    collector = BlueskyJetstreamCollector(
+        transport=RecordingTransport((_frame(2), _frame(1, rkey="post2"))),
+        keywords=_registry(),
+    )
+
+    with pytest.raises(BlueskyInvalidMessage, match="bluesky_sequence_non_monotonic"):
+        collector.collect()
 
 
 def test_completion_dto_has_exact_bounded_result_contract() -> None:

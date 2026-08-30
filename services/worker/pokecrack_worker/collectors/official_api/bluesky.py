@@ -511,46 +511,65 @@ class BlueskyJetstreamCollector:
                 raise BlueskyTransportError("bluesky_message_invalid")
             if not 1 <= len(raw) <= BLUESKY_MAX_MESSAGE_BYTES:
                 raise BlueskyTransportError("bluesky_message_too_large")
-            bytes_seen += len(raw)
-            if bytes_seen > BLUESKY_MAX_STREAM_BYTES:
+            next_bytes_seen = bytes_seen + len(raw)
+            if next_bytes_seen > BLUESKY_MAX_STREAM_BYTES:
                 raise BlueskyTransportError("bluesky_stream_too_large")
-            events_seen += 1
             event = parse_jetstream_message(raw)
             if event is None:
+                events_seen += 1
+                bytes_seen = next_bytes_seen
                 continue
             if event.seq in seen_sequences:
+                events_seen += 1
+                bytes_seen = next_bytes_seen
                 continue
-            seen_sequences.add(event.seq)
             if start_cursor is not None and event.seq <= start_cursor:
+                seen_sequences.add(event.seq)
+                events_seen += 1
+                bytes_seen = next_bytes_seen
                 continue
-            end_cursor = event.seq if end_cursor is None else max(end_cursor, event.seq)
+            if end_cursor is not None and event.seq < end_cursor:
+                raise BlueskyInvalidMessage("bluesky_sequence_non_monotonic")
             at_uri = f"at://{event.did}/{BLUESKY_POST_COLLECTION}/{event.rkey}"
             if _AT_URI_PATTERN.fullmatch(at_uri) is None:
                 raise BlueskyInvalidMessage("bluesky_at_uri_invalid")
+            candidate: BlueskyCandidate | None = None
+            if event.operation == "delete":
+                if at_uri not in deletions and len(deletions) >= BLUESKY_MAX_DELETIONS:
+                    # Return the fully processed prefix. The checkpoint remains
+                    # before this event so the inclusive next slice retries it.
+                    break
+            else:
+                assert event.record is not None
+                text_value = event.record.get("text")
+                if not isinstance(text_value, str) or len(text_value) > 10_000:
+                    raise BlueskyInvalidMessage("bluesky_record_text_invalid")
+                if self.keywords.matches(text_value):
+                    candidate = BlueskyCandidate(
+                        cursor=event.seq,
+                        at_uri=at_uri,
+                        public_url=f"https://bsky.app/profile/{event.did}/post/{event.rkey}",
+                        text_excerpt=_bounded_excerpt(text_value),
+                        record_sha256=_record_sha256(event.record),
+                        published_at=_published_at(event.record),
+                    )
+                    if at_uri not in candidates and len(candidates) >= BLUESKY_MAX_CANDIDATES:
+                        # Do not advance beyond an event omitted from the exact
+                        # completion payload; the next inclusive slice resumes it.
+                        break
+
+            seen_sequences.add(event.seq)
+            events_seen += 1
+            bytes_seen = next_bytes_seen
+            end_cursor = event.seq if end_cursor is None else max(end_cursor, event.seq)
             if event.operation == "delete":
                 candidates.pop(at_uri, None)
-                if len(deletions) < BLUESKY_MAX_DELETIONS or at_uri in deletions:
-                    deletions[at_uri] = BlueskyDeletion(at_uri=at_uri, cursor=event.seq)
+                deletions[at_uri] = BlueskyDeletion(at_uri=at_uri, cursor=event.seq)
                 continue
-            assert event.record is not None
-            text_value = event.record.get("text")
-            if not isinstance(text_value, str) or len(text_value) > 10_000:
-                raise BlueskyInvalidMessage("bluesky_record_text_invalid")
-            if not self.keywords.matches(text_value):
+            if candidate is None:
                 continue
-            text_excerpt = _bounded_excerpt(text_value)
-            published_at = _published_at(event.record)
-            candidate = BlueskyCandidate(
-                cursor=event.seq,
-                at_uri=at_uri,
-                public_url=f"https://bsky.app/profile/{event.did}/post/{event.rkey}",
-                text_excerpt=text_excerpt,
-                record_sha256=_record_sha256(event.record),
-                published_at=published_at,
-            )
             deletions.pop(at_uri, None)
-            if len(candidates) < BLUESKY_MAX_CANDIDATES or at_uri in candidates:
-                candidates[at_uri] = candidate
+            candidates[at_uri] = candidate
         return BlueskyJetstreamResult(
             start_cursor=start_cursor,
             end_cursor=end_cursor,
