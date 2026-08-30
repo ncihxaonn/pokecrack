@@ -25,6 +25,20 @@ _YOUTUBE_QUERY_NAMES = frozenset(
         "pokemon-tcg-opening-batch-code",
     }
 )
+_BLUESKY_AT_URI_PATTERN = re.compile(
+    r"^at://did:[a-z0-9]+:[A-Za-z0-9._:%-]{1,240}/app\.bsky\.feed\.post/"
+    r"[A-Za-z0-9._:%~-]{1,240}$"
+)
+_BLUESKY_PUBLIC_URL_PATTERN = re.compile(
+    r"^https://bsky\.app/profile/did:[a-z0-9]+:[A-Za-z0-9._:%-]{1,240}/post/"
+    r"[A-Za-z0-9._:%~-]{1,240}$"
+)
+_BLUESKY_MAX_CURSOR = 9_223_372_036_854_775_807
+_BLUESKY_MAX_CANDIDATES = 100
+_BLUESKY_MAX_DELETIONS = 100
+_BLUESKY_MAX_EVENTS = 10_000
+_BLUESKY_MAX_STREAM_BYTES = 2 * 1024 * 1024
+_BLUESKY_MAX_EXCERPT_CHARS = 500
 
 
 class JobStatus(StrEnum):
@@ -297,6 +311,179 @@ class PublicStudyCompletion:
             "parser_version": self.parser_version,
             "source_policy_version": self.source_policy_version,
         }
+
+
+def _bluesky_cursor(value: object, *, field: str) -> int:
+    if isinstance(value, bool):
+        raise TypeError(f"Bluesky {field} must be a nonnegative integer")
+    if isinstance(value, int):
+        parsed = value
+    elif isinstance(value, str) and value and value.isascii() and value.isdecimal():
+        if value != "0" and value.startswith("0"):
+            raise ValueError(f"Bluesky {field} must use canonical decimal text")
+        parsed = int(value)
+    else:
+        raise TypeError(f"Bluesky {field} must be a nonnegative integer")
+    if not 0 <= parsed <= _BLUESKY_MAX_CURSOR:
+        raise ValueError(f"Bluesky {field} is outside the approved range")
+    return parsed
+
+
+@dataclass(frozen=True, slots=True)
+class BlueskySourceItemWrite:
+    """Minimal activity fields accepted by the isolated Jetstream finalizer."""
+
+    cursor: int | str
+    at_uri: str
+    public_url: str
+    text_excerpt: str | None
+    record_sha256: str
+    published_at: datetime | None
+
+    def __post_init__(self) -> None:
+        parsed_cursor = _bluesky_cursor(self.cursor, field="candidate cursor")
+        object.__setattr__(self, "cursor", parsed_cursor)
+        if _BLUESKY_AT_URI_PATTERN.fullmatch(self.at_uri) is None:
+            raise ValueError("Bluesky AT URI is invalid")
+        if _BLUESKY_PUBLIC_URL_PATTERN.fullmatch(self.public_url) is None:
+            raise ValueError("Bluesky public URL is invalid")
+        at_parts = self.at_uri.removeprefix("at://").split("/", 2)
+        expected_url = f"https://bsky.app/profile/{at_parts[0]}/post/{at_parts[2].split('/')[-1]}"
+        if self.public_url != expected_url:
+            raise ValueError("Bluesky public URL does not match the AT URI")
+        if self.text_excerpt is not None:
+            if (
+                not isinstance(self.text_excerpt, str)
+                or not 1 <= len(self.text_excerpt) <= _BLUESKY_MAX_EXCERPT_CHARS
+                or any(
+                    unicodedata.category(character) == "Cc"
+                    and character not in "\n\t"
+                    for character in self.text_excerpt
+                )
+            ):
+                raise ValueError("Bluesky text excerpt is invalid")
+        if (
+            not isinstance(self.record_sha256, str)
+            or len(self.record_sha256) != 64
+            or any(character not in "0123456789abcdef" for character in self.record_sha256)
+        ):
+            raise ValueError("Bluesky record SHA-256 must be lowercase hexadecimal")
+        if self.published_at is not None and (
+            not isinstance(self.published_at, datetime)
+            or self.published_at.tzinfo is None
+            or self.published_at.utcoffset() is None
+        ):
+            raise ValueError("Bluesky published_at must be timezone-aware or null")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        published_at = (
+            self.published_at.astimezone(UTC).isoformat().replace("+00:00", "Z")
+            if self.published_at is not None
+            else None
+        )
+        return {
+            "cursor": self.cursor,
+            "at_uri": self.at_uri,
+            "public_url": self.public_url,
+            "text_excerpt": self.text_excerpt,
+            "record_sha256": self.record_sha256,
+            "published_at": published_at,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class BlueskyDeletionWrite:
+    at_uri: str
+    cursor: int | str
+
+    def __post_init__(self) -> None:
+        if _BLUESKY_AT_URI_PATTERN.fullmatch(self.at_uri) is None:
+            raise ValueError("Bluesky deletion AT URI is invalid")
+        parsed = _bluesky_cursor(self.cursor, field="deletion cursor")
+        object.__setattr__(self, "cursor", parsed)
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        return {"at_uri": self.at_uri, "cursor": self.cursor}
+
+
+@dataclass(frozen=True, slots=True)
+class BlueskyJetstreamCompletion:
+    """Bounded atomic persistence input for one Jetstream stream slice."""
+
+    start_cursor: int | str | None
+    end_cursor: int | str | None
+    events_seen: int
+    bytes_seen: int
+    candidates: tuple[BlueskySourceItemWrite, ...] = ()
+    deletions: tuple[BlueskyDeletionWrite, ...] = ()
+
+    def __post_init__(self) -> None:
+        start = (
+            _bluesky_cursor(self.start_cursor, field="start_cursor")
+            if self.start_cursor is not None
+            else None
+        )
+        end = (
+            _bluesky_cursor(self.end_cursor, field="end_cursor")
+            if self.end_cursor is not None
+            else None
+        )
+        if start is not None:
+            object.__setattr__(self, "start_cursor", start)
+        if end is not None:
+            object.__setattr__(self, "end_cursor", end)
+        if start is not None and end is not None and end < start:
+            raise ValueError("Bluesky end cursor must not precede start cursor")
+        if (
+            isinstance(self.events_seen, bool)
+            or not isinstance(self.events_seen, int)
+            or not 0 <= self.events_seen <= _BLUESKY_MAX_EVENTS
+        ):
+            raise ValueError("Bluesky events_seen is outside the approved range")
+        if (
+            isinstance(self.bytes_seen, bool)
+            or not isinstance(self.bytes_seen, int)
+            or not 0 <= self.bytes_seen <= _BLUESKY_MAX_STREAM_BYTES
+        ):
+            raise ValueError("Bluesky bytes_seen is outside the approved range")
+        if (
+            not isinstance(self.candidates, tuple)
+            or len(self.candidates) > _BLUESKY_MAX_CANDIDATES
+            or any(not isinstance(item, BlueskySourceItemWrite) for item in self.candidates)
+        ):
+            raise ValueError("Bluesky completion requires 0 to 100 typed candidates")
+        if (
+            not isinstance(self.deletions, tuple)
+            or len(self.deletions) > _BLUESKY_MAX_DELETIONS
+            or any(not isinstance(item, BlueskyDeletionWrite) for item in self.deletions)
+        ):
+            raise ValueError("Bluesky completion requires 0 to 100 typed deletions")
+        candidate_ids = [item.at_uri for item in self.candidates]
+        deletion_ids = [item.at_uri for item in self.deletions]
+        if len(candidate_ids) != len(set(candidate_ids)):
+            raise ValueError("Bluesky candidate AT URIs must be unique")
+        if len(deletion_ids) != len(set(deletion_ids)):
+            raise ValueError("Bluesky deletion AT URIs must be unique")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        return {
+            "version": "1.0.0",
+            "start_cursor": self.start_cursor,
+            "end_cursor": self.end_cursor,
+            "events_seen": self.events_seen,
+            "bytes_seen": self.bytes_seen,
+            "candidates": [item.as_payload() for item in self.candidates],
+            "deletions": [item.as_payload() for item in self.deletions],
+        }
+
+
+# Short aliases keep collector and repository call sites readable while the
+# persisted DTO names remain explicit about their source boundary.
+BlueskyCandidateWrite = BlueskySourceItemWrite
+BlueskyDeletion = BlueskyDeletionWrite
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,6 +1,11 @@
 """PostgreSQL-backed and fixture-safe background job queue."""
 
 from .models import (
+    BlueskyCandidateWrite,
+    BlueskyDeletion,
+    BlueskyDeletionWrite,
+    BlueskyJetstreamCompletion,
+    BlueskySourceItemWrite,
     CompletionEffect,
     Job,
     JobStatus,
@@ -21,6 +26,11 @@ from .repository import (
 
 __all__ = [
     "CLAIM_SQL",
+    "BlueskyCandidateWrite",
+    "BlueskyDeletion",
+    "BlueskyDeletionWrite",
+    "BlueskyJetstreamCompletion",
+    "BlueskySourceItemWrite",
     "CompletionEffect",
     "InMemoryJobRepository",
     "Job",

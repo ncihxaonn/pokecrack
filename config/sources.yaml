@@ -65,6 +65,43 @@ sources:
     cache_ttl_seconds: 86400
     retain_raw_html: false
     terms_url: https://tcgdex.dev/
+  jetstream.us-west.bsky.network:
+    enabled: true
+    collector: bluesky_jetstream
+    access_mode: official_api
+    robots_policy: not_applicable
+    min_delay_seconds: 1
+    max_pages_per_run: 1
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 30
+    version: bluesky-jetstream-v1
+    config:
+      endpoint: wss://jetstream.us-west.bsky.network/xrpc/network.bsky.jetstream.subscribeEvents
+      kinds: [commit]
+      collection: app.bsky.feed.post
+      operations: [create, update, delete]
+      subprotocol: xrpc.v1.json
+      stream_window_seconds: 40
+      max_events: 10000
+      max_message_bytes: 262144
+      max_stream_bytes: 2097152
+      max_candidates: 100
+      max_deletions: 100
+      max_excerpt_chars: 500
+      keyword_registry: bluesky-keywords-v1
+      statistics_eligible: false
+    reason: Official public Jetstream v2 activity discovery only; bounded excerpts never create openings, rates, or geography.
+    routes: [bluesky_jetstream]
+    adapter: bluesky_jetstream
+    metadata_only: true
+    requests_per_minute: 60
+    cache_ttl_seconds: 3600
+    credentials_required: false
+    retain_raw_html: false
+    terms_url: https://docs.bsky.app/blog/jetstream
   youtube.googleapis.com:
     enabled: true
     collector: official_api

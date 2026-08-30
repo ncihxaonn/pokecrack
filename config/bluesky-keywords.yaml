@@ -1,0 +1,109 @@
+version: 1
+default_enabled: false
+collection: app.bsky.feed.post
+operations: [create, update, delete]
+keywords:
+  - name: pokemon
+    keyword: Pokemon
+    group: identity
+    enabled: true
+  - name: pokemon-accented
+    keyword: Pokémon
+    group: identity
+    enabled: true
+  - name: pokemon-ja
+    keyword: ポケモン
+    group: identity
+    enabled: true
+  - name: pokemon-ko
+    keyword: 포켓몬
+    group: identity
+    enabled: true
+  - name: pokemon-zh-simplified
+    keyword: 宝可梦
+    group: identity
+    enabled: true
+  - name: pokemon-zh-traditional
+    keyword: 寶可夢
+    group: identity
+    enabled: true
+  - name: tcg
+    keyword: TCG
+    group: activity
+    enabled: true
+  - name: trading-card
+    keyword: trading card
+    group: activity
+    enabled: true
+  - name: card
+    keyword: card
+    group: activity
+    enabled: true
+  - name: pack
+    keyword: pack
+    group: activity
+    enabled: true
+  - name: opening
+    keyword: opening
+    group: activity
+    enabled: true
+  - name: pulls
+    keyword: pulls
+    group: activity
+    enabled: true
+  - name: booster
+    keyword: booster
+    group: activity
+    enabled: true
+  - name: sobres
+    keyword: sobres
+    group: activity
+    enabled: true
+  - name: apertura
+    keyword: apertura
+    group: activity
+    enabled: true
+  - name: ouverture
+    keyword: ouverture
+    group: activity
+    enabled: true
+  - name: karten
+    keyword: Karten
+    group: activity
+    enabled: true
+  - name: pacotes
+    keyword: pacotes
+    group: activity
+    enabled: true
+  - name: abrindo
+    keyword: abrindo
+    group: activity
+    enabled: true
+  - name: pack-ja
+    keyword: パック
+    group: activity
+    enabled: true
+  - name: opening-ja
+    keyword: 開封
+    group: activity
+    enabled: true
+  - name: pack-ko
+    keyword: 팩
+    group: activity
+    enabled: true
+  - name: opening-ko
+    keyword: 개봉
+    group: activity
+    enabled: true
+  - name: pack-zh-simplified
+    keyword: 卡包
+    group: activity
+    enabled: true
+  - name: opening-zh-simplified
+    keyword: 开箱
+    group: activity
+    enabled: true
+  - name: opening-zh-traditional
+    keyword: 開箱
+    group: activity
+    enabled: true

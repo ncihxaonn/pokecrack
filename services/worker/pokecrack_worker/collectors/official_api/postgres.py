@@ -9,6 +9,15 @@ from datetime import datetime
 from pokecrack_worker.config.public_studies import PUBLIC_STUDY_COVERAGE_KEYS
 from pokecrack_worker.jobs import LeaseLostError, QueryExecutor
 
+BEGIN_BLUESKY_JETSTREAM_SQL = """
+SELECT *
+FROM ingest.begin_bluesky_jetstream_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint
+)
+""".strip()
+
 BEGIN_TCGDEX_SETS_SQL = """
 SELECT *
 FROM ingest.begin_tcgdex_sets_job(
@@ -77,6 +86,16 @@ class PublicStudyRequestDeferred(RuntimeError):
             raise ValueError("public-study retry timestamp must be timezone-aware")
         self.retry_at = retry_at
         super().__init__("public-study request gate deferred")
+
+
+class BlueskyRequestDeferred(RuntimeError):
+    """The shared Bluesky request gate is busy; retry without burning an attempt."""
+
+    def __init__(self, retry_at: datetime) -> None:
+        if retry_at.tzinfo is None or retry_at.utcoffset() is None:
+            raise ValueError("Bluesky retry timestamp must be timezone-aware")
+        self.retry_at = retry_at
+        super().__init__("Bluesky request gate deferred")
 
 
 @dataclass(frozen=True, slots=True)
@@ -248,3 +267,61 @@ class PostgresPublicStudyGate:
             raise TypeError("public-study preflight acquired flag must be boolean")
         if retry_at is not None:
             raise ValueError("acquired public-study preflight cannot include a retry timestamp")
+
+
+@dataclass(frozen=True, slots=True)
+class BlueskyJetstreamCheckpoint:
+    """Cursor returned by the fenced Bluesky request gate."""
+
+    start_cursor: int | None
+
+
+class PostgresBlueskyJetstreamGate:
+    def __init__(self, executor: QueryExecutor) -> None:
+        self._executor = executor
+
+    def begin(
+        self,
+        *,
+        job_id: str,
+        worker_id: str,
+        lease_generation: int,
+    ) -> BlueskyJetstreamCheckpoint:
+        rows = self._executor.query(
+            BEGIN_BLUESKY_JETSTREAM_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        row = rows[0]
+        acquired = row.get("acquired")
+        retry_at = row.get("retry_at")
+        if acquired is False:
+            if not isinstance(retry_at, datetime):
+                raise TypeError("deferred Bluesky preflight requires a retry timestamp")
+            raise BlueskyRequestDeferred(retry_at)
+        if acquired is not True:
+            raise TypeError("Bluesky preflight acquired flag must be boolean")
+        if retry_at is not None:
+            raise ValueError("acquired Bluesky preflight cannot include a retry timestamp")
+        raw_cursor = row.get("start_cursor", row.get("cursor", row.get("last_cursor")))
+        if raw_cursor is None:
+            return BlueskyJetstreamCheckpoint(start_cursor=None)
+        if isinstance(raw_cursor, bool):
+            raise TypeError("Bluesky checkpoint cursor must be a nonnegative integer")
+        if isinstance(raw_cursor, str):
+            if not raw_cursor or not raw_cursor.isascii() or not raw_cursor.isdecimal():
+                raise TypeError("Bluesky checkpoint cursor must be a nonnegative integer")
+            if raw_cursor != "0" and raw_cursor.startswith("0"):
+                raise ValueError("Bluesky checkpoint cursor must use canonical decimal text")
+            raw_cursor = int(raw_cursor)
+        if (
+            not isinstance(raw_cursor, int)
+            or not 0 <= raw_cursor <= 9_223_372_036_854_775_807
+        ):
+            raise ValueError("Bluesky checkpoint cursor is outside the approved range")
+        return BlueskyJetstreamCheckpoint(start_cursor=raw_cursor)
