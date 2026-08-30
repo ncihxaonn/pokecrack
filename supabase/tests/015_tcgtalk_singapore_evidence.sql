@@ -50,7 +50,7 @@ select is(
     "robots_policy":"respect",
     "routes":["scrapling_http"],
     "include_subdomains":false,
-    "min_delay_seconds":30,
+    "min_delay_seconds":30.000,
     "max_pages_per_run":2,
     "max_items_per_run":1,
     "max_concurrency":1,
