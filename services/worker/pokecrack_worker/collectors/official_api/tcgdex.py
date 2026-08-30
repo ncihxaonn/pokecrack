@@ -38,8 +38,12 @@ class TCGdexResponseTooLarge(TCGdexError):
     """The response exceeded the fixed two-MiB production ceiling."""
 
 
-class TCGdexRequestError(TCGdexError):
-    """A transient network or absolute-deadline failure."""
+class TCGdexTimeoutError(TCGdexError):
+    """A transient connect/read or absolute-deadline timeout."""
+
+
+class TCGdexNetworkError(TCGdexError):
+    """A transient non-timeout transport failure."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -125,10 +129,10 @@ class HTTPXTCGdexTransport:
                         )
         except TCGdexError:
             raise
-        except TimeoutError:
-            raise TCGdexRequestError("TCGdex request exceeded the absolute deadline") from None
+        except (TimeoutError, httpx.TimeoutException):
+            raise TCGdexTimeoutError("TCGdex request exceeded its deadline") from None
         except httpx.HTTPError:
-            raise TCGdexRequestError("TCGdex request failed") from None
+            raise TCGdexNetworkError("TCGdex request failed") from None
 
 
 @dataclass(frozen=True, slots=True)
@@ -324,13 +328,19 @@ class TCGdexSetsClient:
         except TCGdexHTTPError as error:
             return TCGdexSetsSyncAttempt(
                 result=None,
-                error_code="http_error",
+                error_code=f"http_{error.status_code}",
                 retryable=error.status_code in {408, 429} or error.status_code >= 500,
             )
-        except TCGdexRequestError:
+        except TCGdexTimeoutError:
             return TCGdexSetsSyncAttempt(
                 result=None,
-                error_code="request_failed",
+                error_code="request_timeout",
+                retryable=True,
+            )
+        except TCGdexNetworkError:
+            return TCGdexSetsSyncAttempt(
+                result=None,
+                error_code="network_error",
                 retryable=True,
             )
         except TCGdexResponseTooLarge:

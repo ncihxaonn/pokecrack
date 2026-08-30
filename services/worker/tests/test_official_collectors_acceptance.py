@@ -11,8 +11,10 @@ from pokecrack_worker.collectors.official_api.tcgdex import (
     APIResponse,
     InMemoryTCGdexSetsCache,
     TCGdexError,
+    TCGdexNetworkError,
     TCGdexSetsClient,
     TCGdexSetsSyncOutcome,
+    TCGdexTimeoutError,
     parse_tcgdex_sets,
 )
 from pokecrack_worker.collectors.official_api.youtube import YouTubeDataClient, YouTubeError
@@ -31,6 +33,15 @@ class SequenceTCGDexTransport:
 
     def get(self, url: str, *, headers: dict[str, str], timeout_seconds: float) -> APIResponse:
         return self.responses.pop(0)
+
+
+@dataclass
+class FailingTCGDexTransport:
+    error: TCGdexError
+
+    def get(self, url: str, *, headers: dict[str, str], timeout_seconds: float) -> APIResponse:
+        del url, headers, timeout_seconds
+        raise self.error
 
 
 def tcgdex_client(
@@ -76,7 +87,32 @@ def test_tcgdex_safe_sync_retries_transient_http_failures(status_code: int) -> N
     attempt = client.sync_safe()
 
     assert attempt.result is None
-    assert attempt.error_code == "http_error"
+    assert attempt.error_code == f"http_{status_code}"
+    assert attempt.retryable is True
+
+
+@pytest.mark.parametrize(
+    ("error", "expected_code"),
+    (
+        (TCGdexTimeoutError("synthetic timeout"), "request_timeout"),
+        (TCGdexNetworkError("synthetic network failure"), "network_error"),
+    ),
+)
+def test_tcgdex_safe_sync_preserves_sanitized_transport_failure_class(
+    error: TCGdexError,
+    expected_code: str,
+) -> None:
+    cache = InMemoryTCGdexSetsCache()
+    client = TCGdexSetsClient(
+        transport=FailingTCGDexTransport(error),
+        cache=cache,
+        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+    )
+
+    attempt = client.sync_safe()
+
+    assert attempt.result is None
+    assert attempt.error_code == expected_code
     assert attempt.retryable is True
 
 
@@ -228,7 +264,7 @@ def test_youtube_queries_are_independent_single_request_jobs() -> None:
         client.discover(queries[0])
     items = client.discover(queries[1])
 
-    assert raised.value.code == "http_error"
+    assert raised.value.code == "http_503"
     assert raised.value.retryable is True
     assert len(items) == 1
     assert items[0].external_id == "dQw4w9WgXcQ"

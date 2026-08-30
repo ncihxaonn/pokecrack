@@ -627,7 +627,7 @@ def test_busy_youtube_request_gate_defers_before_network_access() -> None:
     ("response", "error_code", "retryable"),
     (
         (APIResponse(200, {}, b"not-json"), "invalid_response", False),
-        (APIResponse(429, {}, b"quota"), "http_error", True),
+        (APIResponse(429, {}, b"quota"), "http_429", True),
     ),
 )
 def test_youtube_response_failures_keep_typed_retry_disposition(

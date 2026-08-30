@@ -15,8 +15,8 @@ from pokecrack_worker.collectors.official_api.tcgdex import (
     TCGDEX_TIMEOUT_SECONDS,
     HTTPXTCGdexTransport,
     TCGdexHTTPError,
-    TCGdexRequestError,
     TCGdexResponseTooLarge,
+    TCGdexTimeoutError,
 )
 
 
@@ -203,7 +203,7 @@ def test_httpx_tcgdex_transport_enforces_one_absolute_deadline(
     upstream = StubResponse(200, {}, (b"[", b"]"), delay_seconds=0.02)
     install_stream(monkeypatch, upstream)
 
-    with pytest.raises(TCGdexRequestError, match="absolute deadline"):
+    with pytest.raises(TCGdexTimeoutError, match="deadline"):
         HTTPXTCGdexTransport(total_timeout_seconds=0.01).get(
             TCGDEX_SETS_URL,
             headers={},
