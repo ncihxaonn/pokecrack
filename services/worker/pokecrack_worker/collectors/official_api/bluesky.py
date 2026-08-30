@@ -21,6 +21,7 @@ from time import monotonic
 from typing import Any, Final, Protocol
 from urllib.parse import urlencode, urlsplit, urlunsplit
 
+from websockets.exceptions import InvalidStatus
 from websockets.typing import Subprotocol
 
 from pokecrack_worker.config.bluesky import (
@@ -207,6 +208,29 @@ def _error_from_payload(payload: Mapping[str, Any]) -> None:
         raise BlueskyConsumerTooSlowError()
     if error == "CursorTooOld":
         raise BlueskyCursorTooOldError()
+
+
+def _is_cursor_too_old_handshake(error: InvalidStatus) -> bool:
+    """Recognize only Jetstream's structured stale-cursor HTTP rejection.
+
+    Jetstream v2 rejects a cursor below its replay floor before upgrading the
+    WebSocket.  websockets 14 and 15 expose that response as ``InvalidStatus``
+    with a ``Response`` containing the HTTP status and body.  Treating every
+    HTTP 400 (or an error message's text) as stale would hide unrelated
+    outages, so require the exact documented status and XRPC error name.
+    """
+
+    response = error.response
+    if response.status_code != 400:
+        return False
+    body = response.body
+    if not isinstance(body, bytes) or not 1 <= len(body) <= BLUESKY_MAX_MESSAGE_BYTES:
+        return False
+    try:
+        decoded: object = json.loads(body.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return False
+    return isinstance(decoded, Mapping) and decoded.get("error") == "CursorTooOld"
 
 
 @dataclass(frozen=True, slots=True)
@@ -460,6 +484,10 @@ class WebsocketsBlueskyJetstreamTransport:
                     bytes_seen += len(encoded)
         except BlueskyError:
             raise
+        except InvalidStatus as error:
+            if _is_cursor_too_old_handshake(error):
+                raise BlueskyCursorTooOldError() from None
+            raise BlueskyTransportError() from None
         except TimeoutError:
             raise BlueskyTransportError("bluesky_request_timeout") from None
         except asyncio.CancelledError:

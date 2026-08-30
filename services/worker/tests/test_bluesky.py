@@ -11,6 +11,9 @@ from urllib.parse import parse_qs, urlsplit
 
 import pytest
 from pydantic import ValidationError
+from websockets.datastructures import Headers
+from websockets.exceptions import InvalidStatus
+from websockets.http11 import Response
 
 from pokecrack_worker.collectors.official_api.bluesky import (
     BLUESKY_JETSTREAM_URL,
@@ -26,6 +29,7 @@ from pokecrack_worker.collectors.official_api.bluesky import (
     BlueskyCursorTooOldError,
     BlueskyInvalidMessage,
     BlueskyJetstreamCollector,
+    BlueskyTransportError,
     WebsocketsBlueskyJetstreamTransport,
     parse_jetstream_message,
 )
@@ -513,6 +517,72 @@ def test_websocket_transport_pins_protocol_query_and_proxy_boundary(
     assert connection.kwargs["subprotocols"] == [BLUESKY_SUBPROTOCOL]
     assert connection.kwargs["proxy"] is None
     assert messages == (_frame(99),)
+
+
+def test_websocket_transport_classifies_structured_stale_cursor_handshake(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    response = Response(
+        400,
+        "Bad Request",
+        Headers({"Content-Type": "application/json"}),
+        b' {"error":"CursorTooOld","message":"floor is 123","extra":true} ',
+    )
+
+    def connect(_uri: str, **_kwargs: object) -> object:
+        raise InvalidStatus(response)
+
+    monkeypatch.setitem(sys.modules, "websockets", SimpleNamespace(connect=connect))
+    transport = WebsocketsBlueskyJetstreamTransport()
+
+    with pytest.raises(BlueskyCursorTooOldError) as raised:
+        transport.iter_messages(
+            start_cursor=1,
+            max_events=BLUESKY_MAX_EVENTS,
+            max_bytes=BLUESKY_MAX_STREAM_BYTES,
+            window_seconds=BLUESKY_STREAM_WINDOW_SECONDS,
+        )
+
+    assert raised.value.code == "bluesky_cursor_too_old"
+    assert raised.value.retryable is False
+
+
+@pytest.mark.parametrize(
+    ("status_code", "body"),
+    (
+        (500, b'{"error":"CursorTooOld"}'),
+        (400, b'{"error":"InvalidRequest"}'),
+        (400, b'{"error":"cursortooold"}'),
+        (400, b'{"message":"CursorTooOld"}'),
+        (400, b'["CursorTooOld"]'),
+        (400, b"{not-json"),
+        (400, b"\xff"),
+        (400, b""),
+    ),
+)
+def test_websocket_transport_keeps_other_handshake_failures_retryable(
+    monkeypatch: pytest.MonkeyPatch,
+    status_code: int,
+    body: bytes,
+) -> None:
+    response = Response(status_code, "Rejected", Headers(), body)
+
+    def connect(_uri: str, **_kwargs: object) -> object:
+        raise InvalidStatus(response)
+
+    monkeypatch.setitem(sys.modules, "websockets", SimpleNamespace(connect=connect))
+    transport = WebsocketsBlueskyJetstreamTransport()
+
+    with pytest.raises(BlueskyTransportError) as raised:
+        transport.iter_messages(
+            start_cursor=1,
+            max_events=BLUESKY_MAX_EVENTS,
+            max_bytes=BLUESKY_MAX_STREAM_BYTES,
+            window_seconds=BLUESKY_STREAM_WINDOW_SECONDS,
+        )
+
+    assert raised.value.code == "bluesky_transport_error"
+    assert raised.value.retryable is True
 
 
 def test_live_composition_flag_schedule_priority_and_runtime_dispatch() -> None:
