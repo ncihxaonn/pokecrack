@@ -619,9 +619,7 @@ def test_websocket_transport_returns_a_complete_prefix_at_the_byte_cap(
 
 def test_websocket_transport_rejects_window_override_and_byte_cap_above_two_mib() -> None:
     with pytest.raises(ValueError, match="fixed stream window"):
-        WebsocketsBlueskyJetstreamTransport(
-            stream_window_seconds=BLUESKY_STREAM_WINDOW_SECONDS + 1
-        )
+        WebsocketsBlueskyJetstreamTransport(stream_window_seconds=BLUESKY_STREAM_WINDOW_SECONDS + 1)
 
     transport = WebsocketsBlueskyJetstreamTransport()
     with pytest.raises(ValueError, match="stream byte cap"):
