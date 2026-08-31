@@ -28,18 +28,51 @@ SOURCE_REQUEST_GATES = ("ingest", "source_request_gates")
 BLUESKY_CANDIDATES = ("ingest", "bluesky_jetstream_candidates")
 BLUESKY_OBSERVATIONS = ("ingest", "bluesky_jetstream_observations")
 BLUESKY_CHECKPOINTS = ("ingest", "bluesky_jetstream_checkpoints")
+NOSTR_CANDIDATES = ("ingest", "nostr_relay_candidates")
+NOSTR_OBSERVATIONS = ("ingest", "nostr_relay_observations")
+NOSTR_CHECKPOINTS = ("ingest", "nostr_relay_checkpoints")
 BLUESKY_EPHEMERAL_TABLES = frozenset({BLUESKY_CANDIDATES, BLUESKY_OBSERVATIONS})
+NOSTR_EPHEMERAL_TABLES = frozenset({NOSTR_CANDIDATES, NOSTR_OBSERVATIONS})
+EPHEMERAL_ACTIVITY_TABLES = BLUESKY_EPHEMERAL_TABLES | NOSTR_EPHEMERAL_TABLES
 RETENTION_CONTROL_TABLES = frozenset(
     {
         SOURCE_POLICIES,
         YOUTUBE_DISCOVERIES,
         PUBLIC_STUDY_OBSERVATIONS,
         BLUESKY_CHECKPOINTS,
+        NOSTR_CHECKPOINTS,
     }
 )
 TCGDEX_SOURCE_KEY = b"tcgdex_catalog"
 YOUTUBE_SOURCE_KEY = b"youtube_discovery"
 BLUESKY_SOURCE_KEY = b"bluesky_jetstream"
+NOSTR_SOURCE_KEYS = (
+    b"nostr_relay_primal",
+    b"nostr_relay_nos_lol",
+    b"nostr_relay_nostr_net",
+)
+NOSTR_RELAY_KEYS = (b"primal", b"nos_lol", b"nostr_net")
+NOSTR_ENDPOINTS = (
+    b"wss://relay.primal.net/",
+    b"wss://nos.lol/",
+    b"wss://relay.nostr.net/",
+)
+NOSTR_NIP11_URLS = (
+    b"https://relay.primal.net/",
+    b"https://nos.lol/",
+    b"https://relay.nostr.net/",
+)
+NOSTR_APPROVED_TAGS_COPY = (
+    b"{"
+    b"pokemontcg,PokemonTCG,pokemoncards,PokemonCards,"
+    b"\xe3\x83\x9d\xe3\x82\xb1\xe3\x82\xab,"
+    b"\xe3\x83\x9d\xe3\x82\xb1\xe3\x83\xa2\xe3\x83\xb3\xe3\x82\xab\xe3\x83\xbc\xe3\x83\x89,"
+    b"\xed\x8f\xac\xec\xbc\x93\xeb\xaa\xac\xec\xb9\xb4\xeb\x93\x9c,"
+    b"\xe5\xae\x9d\xe5\x8f\xaf\xe6\xa2\xa6\xe5\x8d\xa1\xe7\x89\x8c,"
+    b"\xe5\xaf\xb6\xe5\x8f\xaf\xe5\xa4\xa2\xe5\x8d\xa1\xe7\x89\x8c"
+    b"}"
+)
+NOSTR_PROTOCOL = b"nip01"
 PUBLIC_STUDY_SOURCE_KEYS = (
     b"public_study_comicbook_us_55",
     b"public_study_wargamer_gb_17",
@@ -57,6 +90,9 @@ TARGET_INSERT = re.compile(
     r'bluesky_jetstream_candidates|"bluesky_jetstream_candidates"|'
     r'bluesky_jetstream_observations|"bluesky_jetstream_observations"|'
     r'bluesky_jetstream_checkpoints|"bluesky_jetstream_checkpoints"|'
+    r'nostr_relay_candidates|"nostr_relay_candidates"|'
+    r'nostr_relay_observations|"nostr_relay_observations"|'
+    r'nostr_relay_checkpoints|"nostr_relay_checkpoints"|'
     r'source_request_gates|"source_request_gates")(?:\s|\()',
     re.IGNORECASE,
 )
@@ -131,6 +167,25 @@ BLUESKY_CHECKPOINT_COPY_COLUMNS = (
     "collection",
     "last_cursor",
     "last_collected_at",
+    "events_seen_total",
+    "bytes_seen_total",
+    "candidates_seen_total",
+    "deletions_seen_total",
+    "is_demo",
+    "created_at",
+    "updated_at",
+)
+# The Nostr migration deliberately retains only one checkpoint row per relay.
+# Candidate/observation rows are excluded from logical backups.  Keep this
+# inventory exact so a future schema cannot accidentally retain raw activity.
+NOSTR_CHECKPOINT_COPY_COLUMNS = (
+    "source_policy_id",
+    "relay_key",
+    "endpoint",
+    "nip11_url",
+    "protocol",
+    "approved_tags",
+    "last_checkpoint",
     "events_seen_total",
     "bytes_seen_total",
     "candidates_seen_total",
@@ -783,6 +838,8 @@ class PlainBackupSanitizer:
         bluesky_jetstream_present: bool,
         youtube_policy_id: str | None,
         bluesky_policy_id: str | None,
+        nostr_relay_present: bool = False,
+        nostr_policy_ids: tuple[str, ...] | list[str] = (),
     ) -> None:
         if youtube_policy_id is not None:
             youtube_policy_id = _canonical_uuid(
@@ -792,6 +849,28 @@ class PlainBackupSanitizer:
             bluesky_policy_id = _canonical_uuid(
                 bluesky_policy_id.encode("ascii"), field="Bluesky policy id"
             )
+        normalized_nostr_policy_ids: list[str] = []
+        for index, policy_id in enumerate(nostr_policy_ids):
+            if not isinstance(policy_id, str):
+                raise SanitizationError(
+                    f"Nostr policy id {index + 1} must be text"
+                )
+            normalized_nostr_policy_ids.append(
+                _canonical_uuid(
+                    policy_id.encode("ascii"),
+                    field=f"Nostr policy id {index + 1}",
+                )
+            )
+        if nostr_relay_present and len(normalized_nostr_policy_ids) != len(NOSTR_SOURCE_KEYS):
+            raise SanitizationError(
+                "Nostr retention requires exactly three policy identifiers"
+            )
+        if not nostr_relay_present and normalized_nostr_policy_ids:
+            raise SanitizationError(
+                "Nostr policy identifiers require the exact private table set"
+            )
+        if len(set(normalized_nostr_policy_ids)) != len(normalized_nostr_policy_ids):
+            raise SanitizationError("Nostr policy identifiers must be distinct")
         if youtube_discoveries_present and not (
             source_policies_present and youtube_policy_id is not None
         ):
@@ -820,21 +899,33 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "Bluesky policy exists without the exact private table set"
             )
+        if nostr_relay_present and not source_policies_present:
+            raise SanitizationError(
+                "Nostr state requires the source policy registry"
+            )
 
         self.expected = {
             SOURCE_POLICIES: source_policies_present,
             YOUTUBE_DISCOVERIES: youtube_discoveries_present,
             PUBLIC_STUDY_OBSERVATIONS: public_studies_present,
             BLUESKY_CHECKPOINTS: bluesky_jetstream_present,
+            NOSTR_CHECKPOINTS: nostr_relay_present,
         }
         self.preflight_youtube_policy_id = youtube_policy_id
         self.preflight_bluesky_policy_id = bluesky_policy_id
+        self.preflight_nostr_policy_ids = tuple(normalized_nostr_policy_ids)
         self.bluesky_jetstream_present = bluesky_jetstream_present
+        self.nostr_relay_present = nostr_relay_present
         self.seen = {table: 0 for table in RETENTION_CONTROL_TABLES}
         self.youtube_policy_rows: list[str] = []
         self.tcgdex_policy_rows = 0
         self.bluesky_policy_ids: list[str] = []
+        self.nostr_policy_ids: dict[bytes, list[str]] = {
+            source_key: [] for source_key in NOSTR_SOURCE_KEYS
+        }
         self.bluesky_checkpoint_rows = 0
+        self.nostr_checkpoint_rows = 0
+        self.nostr_checkpoint_policy_ids: dict[bytes, str] = {}
         self.public_study_policy_ids = {
             source_key: [] for source_key in PUBLIC_STUDY_SOURCE_KEYS
         }
@@ -933,6 +1024,13 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "bluesky_jetstream_checkpoints COPY columns do not match the exact retained schema"
             )
+        elif (
+            header.table == NOSTR_CHECKPOINTS
+            and header.columns != NOSTR_CHECKPOINT_COPY_COLUMNS
+        ):
+            raise SanitizationError(
+                "nostr_relay_checkpoints COPY columns do not match the exact retained schema"
+            )
         return CopyBlock(header=header, column_indexes=indexes)
 
     def _target_fields(self, block: CopyBlock, line: bytes) -> list[bytes]:
@@ -966,6 +1064,13 @@ class PlainBackupSanitizer:
                         field="Bluesky source policy id",
                     )
                 )
+            elif source_key in self.nostr_policy_ids:
+                self.nostr_policy_ids[source_key].append(
+                    _canonical_uuid(
+                        fields[block.column_indexes["id"]],
+                        field="Nostr source policy id",
+                    )
+                )
             elif source_key in self.public_study_policy_ids:
                 self.public_study_policy_ids[source_key].append(
                     _canonical_uuid(
@@ -979,6 +1084,9 @@ class PlainBackupSanitizer:
             return
         if block.header.table == BLUESKY_CHECKPOINTS:
             self._inspect_bluesky_checkpoint_row(block, fields)
+            return
+        if block.header.table == NOSTR_CHECKPOINTS:
+            self._inspect_nostr_checkpoint_row(block, fields)
             return
         policy_id = _canonical_uuid(
             fields[block.column_indexes["source_policy_id"]],
@@ -1040,6 +1148,77 @@ class PlainBackupSanitizer:
         )
         if updated_at < created_at:
             raise SanitizationError("Bluesky checkpoint timestamps are out of order")
+
+    def _inspect_nostr_checkpoint_row(
+        self, block: CopyBlock, fields: list[bytes]
+    ) -> None:
+        if not self.nostr_relay_present:
+            raise SanitizationError(
+                "dump contains Nostr checkpoints without the exact private table set"
+            )
+        self.nostr_checkpoint_rows += 1
+        if self.nostr_checkpoint_rows > len(NOSTR_SOURCE_KEYS):
+            raise SanitizationError("Nostr checkpoints must contain exactly three rows")
+        indexes = block.column_indexes
+        policy_id = _canonical_uuid(
+            fields[indexes["source_policy_id"]], field="Nostr checkpoint policy id"
+        )
+        relay_key = _plain_copy_text(
+            fields[indexes["relay_key"]], field="Nostr checkpoint relay key"
+        ).encode("utf-8")
+        try:
+            relay_index = NOSTR_RELAY_KEYS.index(relay_key)
+        except ValueError as error:
+            raise SanitizationError("Nostr checkpoint relay key is not approved") from error
+        if relay_key in self.nostr_checkpoint_policy_ids:
+            raise SanitizationError("Nostr checkpoint relay keys must be unique")
+        expected_policy_id = self.preflight_nostr_policy_ids[relay_index]
+        if policy_id != expected_policy_id:
+            raise SanitizationError(
+                "Nostr checkpoint does not use the exact preflight policy"
+            )
+        endpoint = _plain_copy_text(
+            fields[indexes["endpoint"]], field="Nostr checkpoint endpoint"
+        ).encode("utf-8")
+        if endpoint != NOSTR_ENDPOINTS[relay_index]:
+            raise SanitizationError("Nostr checkpoint endpoint drifted")
+        nip11_url = _plain_copy_text(
+            fields[indexes["nip11_url"]], field="Nostr checkpoint NIP-11 URL"
+        ).encode("utf-8")
+        if nip11_url != NOSTR_NIP11_URLS[relay_index]:
+            raise SanitizationError("Nostr checkpoint NIP-11 URL drifted")
+        protocol = _plain_copy_text(
+            fields[indexes["protocol"]], field="Nostr checkpoint protocol"
+        ).encode("utf-8")
+        if protocol != NOSTR_PROTOCOL:
+            raise SanitizationError("Nostr checkpoint protocol drifted")
+        if fields[indexes["approved_tags"]] != NOSTR_APPROVED_TAGS_COPY:
+            raise SanitizationError(
+                "Nostr checkpoint approved tags drifted"
+            )
+        last_checkpoint = fields[indexes["last_checkpoint"]]
+        if last_checkpoint != b"\\N":
+            _utc_copy_timestamp(last_checkpoint, field="Nostr checkpoint last_checkpoint")
+        for column in (
+            "events_seen_total",
+            "bytes_seen_total",
+            "candidates_seen_total",
+            "deletions_seen_total",
+        ):
+            _copy_nonnegative_bigint(
+                fields[indexes[column]], field=f"Nostr checkpoint {column}"
+            )
+        if fields[indexes["is_demo"]] != b"f":
+            raise SanitizationError("Nostr checkpoint is_demo must be false")
+        created_at = _utc_copy_timestamp(
+            fields[indexes["created_at"]], field="Nostr checkpoint created_at"
+        )
+        updated_at = _utc_copy_timestamp(
+            fields[indexes["updated_at"]], field="Nostr checkpoint updated_at"
+        )
+        if updated_at < created_at:
+            raise SanitizationError("Nostr checkpoint timestamps are out of order")
+        self.nostr_checkpoint_policy_ids[relay_key] = policy_id
 
     def _inspect_public_study_row(
         self, block: CopyBlock, fields: list[bytes]
@@ -1170,6 +1349,31 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "dump Bluesky checkpoint does not match the database preflight"
             )
+        if any(
+            len(policy_ids) != int(self.nostr_relay_present)
+            for policy_ids in self.nostr_policy_ids.values()
+        ):
+            raise SanitizationError(
+                "dump Nostr policies do not match the database preflight"
+            )
+        if self.nostr_relay_present:
+            for index, source_key in enumerate(NOSTR_SOURCE_KEYS):
+                if self.nostr_policy_ids[source_key][0] != self.preflight_nostr_policy_ids[index]:
+                    raise SanitizationError(
+                        "dump Nostr policies do not match the database preflight"
+                    )
+        if self.nostr_checkpoint_rows != (
+            len(NOSTR_SOURCE_KEYS) if self.nostr_relay_present else 0
+        ):
+            raise SanitizationError(
+                "dump Nostr checkpoint does not match the database preflight"
+            )
+        if self.nostr_relay_present and set(self.nostr_checkpoint_policy_ids) != set(
+            NOSTR_RELAY_KEYS
+        ):
+            raise SanitizationError(
+                "dump Nostr checkpoint does not contain every approved relay"
+            )
         expected_public_policy_rows = int(self.expected[PUBLIC_STUDY_OBSERVATIONS])
         if any(
             len(policy_ids) != expected_public_policy_rows
@@ -1244,9 +1448,9 @@ class PlainBackupSanitizer:
                     raise SanitizationError(
                         "source_request_gates data must be excluded by pg_dump"
                     )
-                if header.table in BLUESKY_EPHEMERAL_TABLES:
+                if header.table in EPHEMERAL_ACTIVITY_TABLES:
                     raise SanitizationError(
-                        "Bluesky private activity data must be excluded by pg_dump"
+                        "private activity data must be excluded by pg_dump"
                     )
                 block = self._start_block(header)
                 continue
@@ -1344,6 +1548,10 @@ class PlainBackupSanitizer:
                     destination.write(b"youtube_discovery\n")
                 if self.bluesky_jetstream_present:
                     destination.write(b"bluesky_jetstream\n")
+                if self.nostr_relay_present:
+                    destination.writelines(
+                        source_key + b"\n" for source_key in NOSTR_SOURCE_KEYS
+                    )
                 if self.expected[PUBLIC_STUDY_OBSERVATIONS]:
                     destination.writelines(
                         source_key + b"\n"
@@ -1376,7 +1584,7 @@ class PlainBackupSanitizer:
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Remove disposable YouTube and private Bluesky activity rows from a plain dump."
+            "Remove disposable YouTube and private Bluesky/Nostr activity rows from a plain dump."
         )
     )
     presence = ("present", "absent")
@@ -1384,8 +1592,18 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--youtube-discoveries", required=True, choices=presence)
     parser.add_argument("--public-studies", required=True, choices=presence)
     parser.add_argument("--bluesky-jetstream", required=True, choices=presence)
+    # Kept optional for compatibility with pre-Nostr backup invocations.  The
+    # current backup script always supplies this state explicitly.
+    parser.add_argument("--nostr-relay", choices=presence, default="absent")
     parser.add_argument("--youtube-policy-id")
     parser.add_argument("--bluesky-policy-id")
+    parser.add_argument(
+        "--nostr-policy-id",
+        action="append",
+        dest="nostr_policy_ids",
+        default=[],
+        metavar="UUID",
+    )
     return parser.parse_args(argv)
 
 
@@ -1399,6 +1617,8 @@ def main(argv: list[str] | None = None) -> int:
             bluesky_jetstream_present=args.bluesky_jetstream == "present",
             youtube_policy_id=args.youtube_policy_id,
             bluesky_policy_id=args.bluesky_policy_id,
+            nostr_relay_present=args.nostr_relay == "present",
+            nostr_policy_ids=tuple(args.nostr_policy_ids),
         )
         sanitizer.sanitize(sys.stdin.buffer, sys.stdout.buffer)
     except (SanitizationError, UnicodeEncodeError) as exc:
