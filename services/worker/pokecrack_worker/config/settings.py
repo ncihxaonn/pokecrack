@@ -31,6 +31,7 @@ YOUTUBE_DISCOVERY_SCHEDULE = "0 */6 * * *"
 YOUTUBE_CLEANUP_SCHEDULE = "30 3 * * *"
 PUBLIC_STUDY_SCHEDULE = "15 4 * * *"
 BLUESKY_DISCOVERY_SCHEDULE = "* * * * *"
+NOSTR_DISCOVERY_SCHEDULE = "* * * * *"
 
 
 class Settings(BaseSettings):
@@ -75,6 +76,7 @@ class Settings(BaseSettings):
     youtube_collection_enabled: bool = False
     public_study_collection_enabled: bool = False
     bluesky_collection_enabled: bool = False
+    nostr_collection_enabled: bool = False
 
     scrapling_enabled: bool = True
     scrapling_http_concurrency: int = Field(default=4, ge=1, le=32)
@@ -118,6 +120,7 @@ class Settings(BaseSettings):
     schedule_official_api: str = YOUTUBE_DISCOVERY_SCHEDULE
     schedule_public_collection: str = PUBLIC_STUDY_SCHEDULE
     schedule_bluesky_collection: str = BLUESKY_DISCOVERY_SCHEDULE
+    schedule_nostr_collection: str = NOSTR_DISCOVERY_SCHEDULE
     schedule_auth_collection: str = "30 */12 * * *"
     schedule_catalog_sync: str = "0 2 * * *"
     schedule_aggregates: str = "5 * * * *"
@@ -216,12 +219,18 @@ class Settings(BaseSettings):
                     "YOUTUBE_COLLECTION_ENABLED requires "
                     f"SCHEDULE_OFFICIAL_API={YOUTUBE_DISCOVERY_SCHEDULE!r}"
                 )
-        if self.youtube_collection_enabled or self.bluesky_collection_enabled:
+        if (
+            self.youtube_collection_enabled
+            or self.bluesky_collection_enabled
+            or self.nostr_collection_enabled
+        ):
             if self.schedule_cleanup != YOUTUBE_CLEANUP_SCHEDULE:
                 enabled_source = (
                     "YOUTUBE_COLLECTION_ENABLED"
                     if self.youtube_collection_enabled
                     else "BLUESKY_COLLECTION_ENABLED"
+                    if self.bluesky_collection_enabled
+                    else "NOSTR_COLLECTION_ENABLED"
                 )
                 raise ValueError(
                     f"{enabled_source} requires SCHEDULE_CLEANUP={YOUTUBE_CLEANUP_SCHEDULE!r}"
@@ -247,6 +256,14 @@ class Settings(BaseSettings):
             raise ValueError(
                 "BLUESKY_COLLECTION_ENABLED requires "
                 f"SCHEDULE_BLUESKY_COLLECTION={BLUESKY_DISCOVERY_SCHEDULE!r}"
+            )
+        if (
+            self.nostr_collection_enabled
+            and self.schedule_nostr_collection != NOSTR_DISCOVERY_SCHEDULE
+        ):
+            raise ValueError(
+                "NOSTR_COLLECTION_ENABLED requires "
+                f"SCHEDULE_NOSTR_COLLECTION={NOSTR_DISCOVERY_SCHEDULE!r}"
             )
         if self.scrapling_save_raw_html:
             raise ValueError("SCRAPLING_SAVE_RAW_HTML must remain false")

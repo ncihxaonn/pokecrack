@@ -6,7 +6,7 @@ import { PublicUnavailable } from "@/components/ui/dashboard-ui";
 import { loadDashboard } from "../_lib/dashboard";
 import { createPageMetadata } from "../_lib/metadata";
 
-export const revalidate = 900;
+export const revalidate = 60;
 
 export const metadata: Metadata = createPageMetadata("System status", "Public aggregate service availability and snapshot freshness.", "/status");
 

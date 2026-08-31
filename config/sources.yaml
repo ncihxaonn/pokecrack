@@ -102,6 +102,122 @@ sources:
     credentials_required: false
     retain_raw_html: false
     terms_url: https://docs.bsky.app/blog/jetstream
+  relay.primal.net:
+    enabled: true
+    collector: nostr_relay
+    access_mode: public
+    robots_policy: not_applicable
+    min_delay_seconds: 1
+    max_pages_per_run: 1
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 30
+    version: nostr-multi-relay-v1
+    config:
+      relay_key: primal
+      endpoint: wss://relay.primal.net/
+      nip11_url: https://relay.primal.net/
+      protocol: nip01
+      required_nips: [1, 9, 11]
+      approved_tags: [pokemontcg, PokemonTCG, pokemoncards, PokemonCards, ポケカ, ポケモンカード, 포켓몬카드, 宝可梦卡牌, 寶可夢卡牌]
+      replay_overlap_seconds: 300
+      stream_window_seconds: 15
+      max_events: 100
+      max_message_bytes: 262144
+      max_stream_bytes: 2097152
+      max_candidates: 100
+      max_deletions: 100
+      max_delete_targets: 16
+      statistics_eligible: false
+      policy_state: degraded_missing_relay_specific_terms
+    reason: Read-only NIP-01 hashtag discovery; best-effort relay activity is incomplete and never opening evidence, geography, or a rate denominator.
+    routes: [nostr_relay]
+    adapter: nostr_relay
+    metadata_only: true
+    requests_per_minute: 60
+    cache_ttl_seconds: 3600
+    credentials_required: false
+    retain_raw_html: false
+    terms_url: https://primal.net/terms
+  nos.lol:
+    enabled: true
+    collector: nostr_relay
+    access_mode: public
+    robots_policy: not_applicable
+    min_delay_seconds: 1
+    max_pages_per_run: 1
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 30
+    version: nostr-multi-relay-v1
+    config:
+      relay_key: nos_lol
+      endpoint: wss://nos.lol/
+      nip11_url: https://nos.lol/
+      protocol: nip01
+      required_nips: [1, 9, 11]
+      approved_tags: [pokemontcg, PokemonTCG, pokemoncards, PokemonCards, ポケカ, ポケモンカード, 포켓몬카드, 宝可梦卡牌, 寶可夢卡牌]
+      replay_overlap_seconds: 300
+      stream_window_seconds: 15
+      max_events: 100
+      max_message_bytes: 262144
+      max_stream_bytes: 2097152
+      max_candidates: 100
+      max_deletions: 100
+      max_delete_targets: 16
+      statistics_eligible: false
+      policy_state: degraded_missing_relay_specific_terms
+    reason: Read-only NIP-01 hashtag discovery; best-effort relay activity is incomplete and never opening evidence, geography, or a rate denominator.
+    routes: [nostr_relay]
+    adapter: nostr_relay
+    metadata_only: true
+    requests_per_minute: 60
+    cache_ttl_seconds: 3600
+    credentials_required: false
+    retain_raw_html: false
+    terms_url: https://wikifreedia.xyz/nos.lol/
+  relay.nostr.net:
+    enabled: true
+    collector: nostr_relay
+    access_mode: public
+    robots_policy: not_applicable
+    min_delay_seconds: 1
+    max_pages_per_run: 1
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 30
+    version: nostr-multi-relay-v1
+    config:
+      relay_key: nostr_net
+      endpoint: wss://relay.nostr.net/
+      nip11_url: https://relay.nostr.net/
+      protocol: nip01
+      required_nips: [1, 9, 11]
+      approved_tags: [pokemontcg, PokemonTCG, pokemoncards, PokemonCards, ポケカ, ポケモンカード, 포켓몬카드, 宝可梦卡牌, 寶可夢卡牌]
+      replay_overlap_seconds: 300
+      stream_window_seconds: 15
+      max_events: 100
+      max_message_bytes: 262144
+      max_stream_bytes: 2097152
+      max_candidates: 100
+      max_deletions: 100
+      max_delete_targets: 16
+      statistics_eligible: false
+      policy_state: degraded_missing_relay_specific_terms
+    reason: Read-only NIP-01 hashtag discovery; best-effort relay activity is incomplete and never opening evidence, geography, or a rate denominator.
+    routes: [nostr_relay]
+    adapter: nostr_relay
+    metadata_only: true
+    requests_per_minute: 60
+    cache_ttl_seconds: 3600
+    credentials_required: false
+    retain_raw_html: false
   youtube.googleapis.com:
     enabled: true
     collector: official_api

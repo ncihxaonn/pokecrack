@@ -18,6 +18,16 @@ FROM ingest.begin_bluesky_jetstream_job(
 )
 """.strip()
 
+BEGIN_NOSTR_RELAY_SQL = """
+SELECT *
+FROM ingest.begin_nostr_relay_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    relay_key => %(relay_key)s
+)
+""".strip()
+
 BEGIN_TCGDEX_SETS_SQL = """
 SELECT *
 FROM ingest.begin_tcgdex_sets_job(
@@ -96,6 +106,14 @@ class BlueskyRequestDeferred(RuntimeError):
             raise ValueError("Bluesky retry timestamp must be timezone-aware")
         self.retry_at = retry_at
         super().__init__("Bluesky request gate deferred")
+
+
+class NostrRequestDeferred(RuntimeError):
+    def __init__(self, retry_at: datetime) -> None:
+        if retry_at.tzinfo is None or retry_at.utcoffset() is None:
+            raise ValueError("Nostr retry timestamp must be timezone-aware")
+        self.retry_at = retry_at
+        super().__init__("Nostr request gate deferred")
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,3 +340,79 @@ class PostgresBlueskyJetstreamGate:
         if not isinstance(raw_cursor, int) or not 0 <= raw_cursor <= 9_223_372_036_854_775_807:
             raise ValueError("Bluesky checkpoint cursor is outside the approved range")
         return BlueskyJetstreamCheckpoint(start_cursor=raw_cursor)
+
+
+@dataclass(frozen=True, slots=True)
+class NostrRelayCheckpoint:
+    since: datetime
+    until: datetime
+    checkpoint: datetime | None
+    recent_candidate_ids: tuple[str, ...]
+
+
+class PostgresNostrRelayGate:
+    def __init__(self, executor: QueryExecutor) -> None:
+        self._executor = executor
+
+    def begin(
+        self,
+        *,
+        job_id: str,
+        worker_id: str,
+        lease_generation: int,
+        relay_key: str,
+    ) -> NostrRelayCheckpoint:
+        rows = self._executor.query(
+            BEGIN_NOSTR_RELAY_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+                "relay_key": relay_key,
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        row = rows[0]
+        acquired = row.get("acquired")
+        retry_at = row.get("retry_at")
+        if acquired is False:
+            if not isinstance(retry_at, datetime):
+                raise TypeError("deferred Nostr preflight requires a retry timestamp")
+            raise NostrRequestDeferred(retry_at)
+        if acquired is not True or retry_at is not None:
+            raise TypeError("Nostr preflight returned an invalid acquisition state")
+        since = row.get("since")
+        until = row.get("until")
+        checkpoint = row.get("checkpoint")
+        for name, value in (("since", since), ("until", until)):
+            if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
+                raise TypeError(f"Nostr {name} must be a timezone-aware timestamp")
+        if checkpoint is not None and (
+            not isinstance(checkpoint, datetime)
+            or checkpoint.tzinfo is None
+            or checkpoint.utcoffset() is None
+        ):
+            raise TypeError("Nostr checkpoint must be a timezone-aware timestamp or null")
+        raw_ids = row.get("recent_candidate_ids")
+        if not isinstance(raw_ids, list) or len(raw_ids) > 100:
+            raise TypeError("Nostr recent candidate IDs must be a bounded JSON array")
+        candidate_ids: list[str] = []
+        for value in raw_ids:
+            if (
+                not isinstance(value, str)
+                or len(value) != 64
+                or any(character not in "0123456789abcdef" for character in value)
+            ):
+                raise TypeError("Nostr recent candidate ID is invalid")
+            candidate_ids.append(value)
+        if len(candidate_ids) != len(set(candidate_ids)):
+            raise ValueError("Nostr recent candidate IDs must be unique")
+        assert isinstance(since, datetime)
+        assert isinstance(until, datetime)
+        return NostrRelayCheckpoint(
+            since=since,
+            until=until,
+            checkpoint=checkpoint,
+            recent_candidate_ids=tuple(candidate_ids),
+        )

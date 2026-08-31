@@ -774,6 +774,7 @@ export type Database = {
       get_public_dashboard_snapshot_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_dashboard_snapshot_v3: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_social_discovery_v1: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_public_social_discovery_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_study_coverage_v1: { Args: Record<PropertyKey, never>; Returns: Json };
     };
     Enums: { [_ in never]: never };
@@ -1582,6 +1583,192 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: 'bluesky_jetstream_checkpoints_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: true;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      nostr_relay_candidates: {
+        Row: {
+          event_id: string;
+          source_policy_id: string;
+          relay_key: string;
+          author_sha256: string;
+          content_sha256: string;
+          matched_tags: string[];
+          published_at: string;
+          first_seen_at: string;
+          last_seen_at: string;
+          deleted_at: string | null;
+          expires_at: string;
+          activity_only: boolean;
+          statistics_eligible: boolean;
+          is_demo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          event_id: string;
+          source_policy_id: string;
+          relay_key: string;
+          author_sha256: string;
+          content_sha256: string;
+          matched_tags: string[];
+          published_at: string;
+          first_seen_at: string;
+          last_seen_at: string;
+          deleted_at?: string | null;
+          expires_at: string;
+          activity_only?: boolean;
+          statistics_eligible?: boolean;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          event_id?: string;
+          source_policy_id?: string;
+          relay_key?: string;
+          author_sha256?: string;
+          content_sha256?: string;
+          matched_tags?: string[];
+          published_at?: string;
+          first_seen_at?: string;
+          last_seen_at?: string;
+          deleted_at?: string | null;
+          expires_at?: string;
+          activity_only?: boolean;
+          statistics_eligible?: boolean;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'nostr_relay_candidates_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: false;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      nostr_relay_observations: {
+        Row: {
+          id: number;
+          relay_key: string;
+          source_policy_id: string;
+          event_id: string;
+          operation: string;
+          author_sha256: string;
+          content_sha256: string | null;
+          matched_tags: string[] | null;
+          published_at: string;
+          target_event_ids: string[];
+          observed_at: string;
+          expires_at: string;
+          activity_only: boolean;
+          statistics_eligible: boolean;
+          is_demo: boolean;
+        };
+        Insert: {
+          id?: number;
+          relay_key: string;
+          source_policy_id: string;
+          event_id: string;
+          operation: string;
+          author_sha256: string;
+          content_sha256?: string | null;
+          matched_tags?: string[] | null;
+          published_at: string;
+          target_event_ids?: string[];
+          observed_at: string;
+          expires_at: string;
+          activity_only?: boolean;
+          statistics_eligible?: boolean;
+          is_demo?: boolean;
+        };
+        Update: {
+          id?: number;
+          relay_key?: string;
+          source_policy_id?: string;
+          event_id?: string;
+          operation?: string;
+          author_sha256?: string;
+          content_sha256?: string | null;
+          matched_tags?: string[] | null;
+          published_at?: string;
+          target_event_ids?: string[];
+          observed_at?: string;
+          expires_at?: string;
+          activity_only?: boolean;
+          statistics_eligible?: boolean;
+          is_demo?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'nostr_relay_observations_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: false;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      nostr_relay_checkpoints: {
+        Row: {
+          source_policy_id: string;
+          relay_key: string;
+          endpoint: string;
+          nip11_url: string;
+          protocol: string;
+          approved_tags: string[];
+          last_checkpoint: string | null;
+          events_seen_total: number;
+          bytes_seen_total: number;
+          candidates_seen_total: number;
+          deletions_seen_total: number;
+          is_demo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          source_policy_id: string;
+          relay_key: string;
+          endpoint: string;
+          nip11_url: string;
+          protocol: string;
+          approved_tags: string[];
+          last_checkpoint?: string | null;
+          events_seen_total?: number;
+          bytes_seen_total?: number;
+          candidates_seen_total?: number;
+          deletions_seen_total?: number;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          source_policy_id?: string;
+          relay_key?: string;
+          endpoint?: string;
+          nip11_url?: string;
+          protocol?: string;
+          approved_tags?: string[];
+          last_checkpoint?: string | null;
+          events_seen_total?: number;
+          bytes_seen_total?: number;
+          candidates_seen_total?: number;
+          deletions_seen_total?: number;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'nostr_relay_checkpoints_source_policy_id_fkey';
             columns: ['source_policy_id'];
             isOneToOne: true;
             referencedRelation: 'source_policies';
@@ -2523,6 +2710,17 @@ export type Database = {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null; start_cursor: number | null }[];
       };
+      begin_nostr_relay_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number; relay_key: string };
+        Returns: {
+          acquired: boolean;
+          retry_at: string | null;
+          since: string;
+          until: string;
+          checkpoint: string | null;
+          recent_candidate_ids: string[];
+        }[];
+      };
       bluesky_cursor_v1: { Args: { value: string }; Returns: number };
       bluesky_timestamp_v1: {
         Args: { value: string; upper_bound: string };
@@ -2545,6 +2743,23 @@ export type Database = {
       complete_job_v2: {
         Args: { p_job_id: string; p_worker_id: string; p_lease_generation: number };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      finalize_nostr_relay_job: {
+        Args: {
+          job_id: string;
+          worker_id: string;
+          lease_generation: number;
+          result: Json;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      nostr_timestamp_v1: {
+        Args: { value: string; lower_bound: string; upper_bound: string };
+        Returns: string;
+      };
+      prune_nostr_relay_v1: {
+        Args: { cutoff: string; max_rows?: number };
+        Returns: { candidates_deleted: number; observations_deleted: number }[];
       };
       enqueue_job_v1: {
         Args: {

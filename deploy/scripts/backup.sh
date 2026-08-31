@@ -93,6 +93,21 @@ select concat_ws(E'\\t',
     from pg_catalog.pg_class
     where oid = to_regclass('ingest.bluesky_jetstream_checkpoints')
   ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.nostr_relay_candidates')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.nostr_relay_observations')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.nostr_relay_checkpoints')
+  ), '0'),
   coalesce(has_table_privilege(
     'service_role',
     to_regclass('ingest.source_request_gates'),
@@ -105,29 +120,83 @@ if ! table_state=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-o
 fi
 
 case "$table_state" in
+  # Pre-Nostr hosts return the original seven-table state.  Keep the
+  # transition compatible while the new 10-table query rolls out.
   $'rp\tru\trp\trp\trp\trp\trp\ttrue')
     youtube_discoveries=present
     public_studies=present
     bluesky_jetstream=present
+    nostr_relay=absent
     ;;
   $'rp\tru\trp\trp\t0\t0\t0\ttrue')
     youtube_discoveries=present
     public_studies=present
     bluesky_jetstream=absent
+    nostr_relay=absent
     ;;
   $'rp\tru\trp\t0\t0\t0\t0\ttrue')
     youtube_discoveries=present
     public_studies=absent
     bluesky_jetstream=absent
+    nostr_relay=absent
     ;;
   $'rp\t0\trp\t0\t0\t0\t0\ttrue')
     youtube_discoveries=absent
     public_studies=absent
     bluesky_jetstream=absent
+    nostr_relay=absent
+    ;;
+  $'rp\tru\trp\trp\trp\trp\trp\t0\t0\t0\ttrue')
+    youtube_discoveries=present
+    public_studies=present
+    bluesky_jetstream=present
+    nostr_relay=absent
+    ;;
+  $'rp\tru\trp\trp\t0\t0\t0\t0\t0\t0\ttrue')
+    youtube_discoveries=present
+    public_studies=present
+    bluesky_jetstream=absent
+    nostr_relay=absent
+    ;;
+  $'rp\tru\trp\t0\t0\t0\t0\t0\t0\t0\ttrue')
+    youtube_discoveries=present
+    public_studies=absent
+    bluesky_jetstream=absent
+    nostr_relay=absent
+    ;;
+  $'rp\t0\trp\t0\t0\t0\t0\t0\t0\t0\ttrue')
+    youtube_discoveries=absent
+    public_studies=absent
+    bluesky_jetstream=absent
+    nostr_relay=absent
+    ;;
+  $'rp\tru\trp\trp\trp\trp\trp\trp\trp\trp\ttrue')
+    youtube_discoveries=present
+    public_studies=present
+    bluesky_jetstream=present
+    nostr_relay=present
+    ;;
+  $'rp\tru\trp\trp\t0\t0\t0\trp\trp\trp\ttrue')
+    youtube_discoveries=present
+    public_studies=present
+    bluesky_jetstream=absent
+    nostr_relay=present
+    ;;
+  $'rp\tru\trp\t0\t0\t0\t0\trp\trp\trp\ttrue')
+    youtube_discoveries=present
+    public_studies=absent
+    bluesky_jetstream=absent
+    nostr_relay=present
+    ;;
+  $'rp\t0\trp\t0\t0\t0\t0\trp\trp\trp\ttrue')
+    youtube_discoveries=absent
+    public_studies=absent
+    bluesky_jetstream=absent
+    nostr_relay=present
     ;;
   *)
     unset database_url
-    die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, coherent Bluesky logged tables, the public-study ledger either absent or logged, and youtube_discoveries either absent or UNLOGGED"
+    die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, coherent Bluesky/Nostr logged tables, the public-study ledger either absent or logged, and youtube_discoveries either absent or UNLOGGED"
     ;;
 esac
 
@@ -148,6 +217,50 @@ if [[ $bluesky_policy_id == *$'\n'* ]]; then
   unset database_url
   die "database Bluesky retention policy lookup was ambiguous"
 fi
+
+nostr_policy_ids=()
+nostr_policy_query="set role service_role;
+select source_key || E'\\t' || id::text from ingest.source_policies
+where source_key in ('nostr_relay_primal', 'nostr_relay_nos_lol', 'nostr_relay_nostr_net')
+order by case source_key
+  when 'nostr_relay_primal' then 1
+  when 'nostr_relay_nos_lol' then 2
+  when 'nostr_relay_nostr_net' then 3
+end;"
+if ! nostr_policy_output=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$nostr_policy_query" 2>/dev/null); then
+  unset database_url
+  die "database Nostr retention policy lookup failed"
+fi
+if [[ $nostr_policy_output == *$'\n\n'* ]]; then
+  unset database_url
+  die "database Nostr retention policy lookup was ambiguous"
+fi
+if [[ -n $nostr_policy_output ]]; then
+  expected_nostr_source_keys=(
+    nostr_relay_primal
+    nostr_relay_nos_lol
+    nostr_relay_nostr_net
+  )
+  nostr_policy_index=0
+  while IFS= read -r nostr_policy_id; do
+    if [[ $nostr_policy_id != *$'\t'* ]]; then
+      unset database_url
+      die "database Nostr retention policy lookup was ambiguous"
+    fi
+    nostr_source_key=${nostr_policy_id%%$'\t'*}
+    nostr_id=${nostr_policy_id#*$'\t'}
+    if [[ -z $nostr_source_key || -z $nostr_id || $nostr_id == *$'\t'* ]]; then
+      unset database_url
+      die "database Nostr retention policy lookup was ambiguous"
+    fi
+    if [[ $nostr_policy_index -ge ${#expected_nostr_source_keys[@]} || $nostr_source_key != "${expected_nostr_source_keys[$nostr_policy_index]}" ]]; then
+      unset database_url
+      die "database Nostr retention policy lookup was ambiguous"
+    fi
+    nostr_policy_ids+=("$nostr_id")
+    nostr_policy_index=$((nostr_policy_index + 1))
+  done <<< "$nostr_policy_output"
+fi
 if [[ $youtube_policy_id == *$'\n'* ]]; then
   unset database_url
   die "database retention policy lookup was ambiguous"
@@ -158,6 +271,7 @@ sanitizer_arguments=(
   --youtube-discoveries "$youtube_discoveries"
   --public-studies "$public_studies"
   --bluesky-jetstream "$bluesky_jetstream"
+  --nostr-relay "$nostr_relay"
 )
 if [[ $youtube_discoveries == present ]]; then
   if [[ -z $youtube_policy_id ]]; then
@@ -186,6 +300,22 @@ if [[ $bluesky_jetstream == present ]]; then
 elif [[ -n $bluesky_policy_id ]]; then
   unset database_url
   die "database Bluesky retention policy exists without the exact private table set"
+fi
+if [[ $nostr_relay == present ]]; then
+  if [[ ${#nostr_policy_ids[@]} != 3 ]]; then
+    unset database_url
+    die "database Nostr retention policy lookup must return exactly three policies"
+  fi
+  for nostr_policy_id in "${nostr_policy_ids[@]}"; do
+    if [[ ! $nostr_policy_id =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+      unset database_url
+      die "database Nostr retention policy id was malformed"
+    fi
+    sanitizer_arguments+=(--nostr-policy-id "$nostr_policy_id")
+  done
+elif [[ ${#nostr_policy_ids[@]} != 0 ]]; then
+  unset database_url
+  die "database Nostr retention policy exists without the exact private table set"
 fi
 
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
@@ -218,6 +348,8 @@ if ! run_database_command pg_dump \
   --exclude-table-data=ingest.source_request_gates \
   --exclude-table-data=ingest.bluesky_jetstream_candidates \
   --exclude-table-data=ingest.bluesky_jetstream_observations \
+  --exclude-table-data=ingest.nostr_relay_candidates \
+  --exclude-table-data=ingest.nostr_relay_observations \
   | python3 "$SCRIPT_DIR/../lib/sanitize_plain_backup.py" \
       "${sanitizer_arguments[@]}" \
   | gzip -9 > "$temporary"; then

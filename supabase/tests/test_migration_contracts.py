@@ -36,6 +36,9 @@ BLUESKY_JETSTREAM = (
 BLUESKY_RUNTIME_BOUNDS = (
     ROOT / "migrations/20260905000000_bluesky_runtime_bounds.sql"
 ).read_text()
+NOSTR_MULTI_RELAY = (
+    ROOT / "migrations/20260906000000_nostr_multi_relay_discovery.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -203,6 +206,120 @@ class IngestMigrationContractTests(unittest.TestCase):
             "begin_bluesky_jetstream_job:",
             "finalize_bluesky_jetstream_job:",
             "get_public_social_discovery_v1:",
+        ):
+            self.assertIn(type_name, DATABASE_TYPES)
+
+    def test_nostr_multi_relay_is_bounded_private_hashed_and_public_safe(self) -> None:
+        lowered = NOSTR_MULTI_RELAY.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for relay in (
+            "wss://relay.primal.net/",
+            "wss://nos.lol/",
+            "wss://relay.nostr.net/",
+        ):
+            self.assertIn(relay, lowered)
+        self.assertIn("'nostr_relay'", lowered)
+        self.assertIn("'source.nostr.relay'", lowered)
+        self.assertIn("'nip01'", lowered)
+        self.assertIn("last_checkpoint timestamptz", lowered)
+        self.assertIn("policy_state", lowered)
+        self.assertIn("degraded_missing_relay_specific_terms", lowered)
+        for table in (
+            "nostr_relay_candidates",
+            "nostr_relay_observations",
+            "nostr_relay_checkpoints",
+        ):
+            self.assertIn(f"alter table ingest.{table} force row level security", compact)
+            self.assertIn(f"grant select on table ingest.{table} to service_role", compact)
+            for mutation in ("insert", "update", "delete"):
+                self.assertNotIn(f"grant {mutation} on table ingest.{table}", compact)
+
+        candidate_table = lowered.split(
+            "create table ingest.nostr_relay_candidates", 1
+        )[1].split("create index nostr_candidates_active_idx", 1)[0]
+        observation_table = lowered.split(
+            "create table ingest.nostr_relay_observations", 1
+        )[1].split("create index nostr_observations_expiry_idx", 1)[0]
+        for table in (candidate_table, observation_table):
+            self.assertIn("author_sha256", table)
+            self.assertNotIn("pubkey", table)
+            self.assertNotIn("signature", table)
+            self.assertNotIn("public_url", table)
+        finalizer = lowered.split(
+            "create or replace function ingest.finalize_nostr_relay_job", 1
+        )[1].split(
+            "alter function ingest.finalize_nostr_relay_job", 1
+        )[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "for update of jobs",
+            "result ->> 'version' <> '1.0.0'",
+            "result_events_seen > 100",
+            "result_bytes_seen > 2097152",
+            "candidate_count > 100",
+            "deletion_count > 100",
+            "author_sha256",
+            "request_gate.acquired_at",
+            "result_until <> request_gate.acquired_at",
+            "result_until <= checkpoint_row.last_checkpoint",
+            "result_checkpoint is distinct from checkpoint_row.last_checkpoint",
+            "deletion_published_at >= existing_candidate.published_at",
+            "existing_candidate.author_sha256 = deletion_author_sha256",
+            "jobs.lease_generation = $3",
+            "gates.owner_lease_generation = $3",
+            "insert into ingest.nostr_relay_observations",
+            "update ingest.nostr_relay_candidates",
+        ):
+            self.assertIn(fragment, finalizer)
+        self.assertNotIn("pubkey", finalizer)
+        self.assertNotIn("signature", finalizer)
+        self.assertIn("prune_nostr_relay_v1", lowered)
+        self.assertNotIn("delete from ingest.nostr_relay_checkpoints", lowered)
+        self.assertIn("payload ->> 'relay_key'", lowered)
+        self.assertIn("complete_job_v2", lowered)
+        self.assertIn("window_until <= checkpoint_row.last_checkpoint", lowered)
+        self.assertIn(
+            "checkpoint_row.last_checkpoint + interval '1 second'", lowered
+        )
+        self.assertIn("lease_checked_at + interval '1 second'", lowered)
+        self.assertIn(
+            "schedule_name <> ('nostr_' || (payload ->> 'relay_key'))", lowered
+        )
+        self.assertIn(
+            "if p_job_type = 'source.bluesky.jetstream' and p_payload <> '{}'::jsonb then",
+            lowered,
+        )
+        public_rpc = lowered.split(
+            "create or replace function public.get_public_social_discovery_v2()", 1
+        )[1].split("alter function public.get_public_social_discovery_v2()", 1)[0]
+        for public_key in (
+            "'schemaversion'",
+            "'sources'",
+            "'nostr_multi_relay'",
+            "'https://bsky.network/docs/jetstream/'",
+            "'https://github.com/nostr-protocol/nips/blob/master/01.md'",
+            "'lastcollectedat'",
+        ):
+            self.assertIn(public_key, public_rpc)
+        self.assertIn("get_public_social_discovery_v1()", public_rpc)
+        self.assertIn(
+            "grant execute on function public.get_public_social_discovery_v2() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_social_discovery_v2() to service_role",
+            compact,
+        )
+        for type_name in (
+            "nostr_relay_candidates:",
+            "nostr_relay_observations:",
+            "nostr_relay_checkpoints:",
+            "begin_nostr_relay_job:",
+            "finalize_nostr_relay_job:",
+            "get_public_social_discovery_v2:",
         ):
             self.assertIn(type_name, DATABASE_TYPES)
 
