@@ -1142,8 +1142,7 @@ def _nostr_relay_handler(
             candidates=tuple(
                 NostrCandidateWrite(
                     event_id=item.event_id,
-                    pubkey=item.pubkey,
-                    signature=item.signature,
+                    author_sha256=item.author_sha256,
                     published_at=item.published_at,
                     content_sha256=item.content_sha256,
                     matched_tags=item.matched_tags,
@@ -1154,8 +1153,7 @@ def _nostr_relay_handler(
             deletions=tuple(
                 NostrDeletionWrite(
                     event_id=item.event_id,
-                    pubkey=item.pubkey,
-                    signature=item.signature,
+                    author_sha256=item.author_sha256,
                     published_at=item.published_at,
                     relay_key=item.relay_key,
                     target_event_ids=item.target_event_ids,

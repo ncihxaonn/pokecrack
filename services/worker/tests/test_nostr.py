@@ -14,6 +14,7 @@ from pydantic import ValidationError
 from pokecrack_worker.collectors.official_api.nostr import (
     NostrInvalidEvent,
     NostrRelayCollector,
+    _NoRedirectWebSocketConnect,
     parse_nostr_event,
 )
 from pokecrack_worker.composition import (
@@ -138,6 +139,10 @@ def test_event_id_and_bip340_signature_are_verified() -> None:
     with pytest.raises(NostrInvalidEvent, match="nostr_signature_invalid"):
         parse_nostr_event(invalid_signature, completion_time=NOW)
 
+    extreme_timestamp = _signed_event(created_at=10**30)
+    with pytest.raises(NostrInvalidEvent, match="nostr_created_at_invalid"):
+        parse_nostr_event(extreme_timestamp, completion_time=NOW)
+
 
 def test_collector_emits_minimal_candidate_and_known_target_deletion() -> None:
     candidate_event = _signed_event(tags=[["t", "ポケモンカード"]], content="private raw body")
@@ -166,6 +171,8 @@ def test_collector_emits_minimal_candidate_and_known_target_deletion() -> None:
     assert result.candidates[0].matched_tags == ("ポケモンカード",)
     assert not hasattr(result.candidates[0], "content")
     assert not hasattr(result.candidates[0], "public_url")
+    assert not hasattr(result.candidates[0], "pubkey")
+    assert not hasattr(result.candidates[0], "signature")
     assert result.deletions[0].target_event_ids == (candidate_event["id"],)
     assert transport.calls[0]["tags"] == NOSTR_APPROVED_TAGS
 
@@ -232,12 +239,18 @@ def test_registry_rejects_dynamic_relays_and_filters() -> None:
         NostrRelayRegistry.from_mapping(configured)
 
 
+def test_websocket_connector_rejects_every_redirect() -> None:
+    connector = _NoRedirectWebSocketConnect("wss://relay.primal.net/")
+    redirect = RuntimeError("redirect")
+
+    assert connector.process_redirect(redirect) is redirect
+
+
 def test_completion_payload_is_exact_and_never_contains_raw_content() -> None:
     event = _signed_event()
     candidate = NostrCandidateWrite(
         event_id=str(event["id"]),
-        pubkey=str(event["pubkey"]),
-        signature=str(event["sig"]),
+        author_sha256=hashlib.sha256(bytes.fromhex(str(event["pubkey"]))).hexdigest(),
         published_at=NOW,
         content_sha256=hashlib.sha256(b"private raw body").hexdigest(),
         matched_tags=("pokemontcg",),
@@ -268,8 +281,7 @@ def test_completion_payload_is_exact_and_never_contains_raw_content() -> None:
     }
     assert set(payload["candidates"][0]) == {
         "event_id",
-        "pubkey",
-        "signature",
+        "author_sha256",
         "published_at",
         "content_sha256",
         "matched_tags",
@@ -278,6 +290,8 @@ def test_completion_payload_is_exact_and_never_contains_raw_content() -> None:
         "statistics_eligible",
     }
     assert '"content":' not in json.dumps(payload)
+    assert str(event["pubkey"]) not in json.dumps(payload)
+    assert str(event["sig"]) not in json.dumps(payload)
     assert payload["candidates"][0]["statistics_eligible"] is False
 
 

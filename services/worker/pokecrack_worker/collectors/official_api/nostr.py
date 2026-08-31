@@ -16,6 +16,8 @@ from datetime import UTC, datetime, timedelta
 from time import monotonic
 from typing import Any, Final, Protocol
 
+from websockets.asyncio.client import connect as WebSocketConnect
+
 from pokecrack_worker.config.nostr import NostrRelay, NostrRelayRegistry
 
 NOSTR_COLLECTOR_VERSION: Final = "nostr-multi-relay-v1"
@@ -33,6 +35,13 @@ NOSTR_MAX_CONTENT_BYTES: Final = 64 * 1024
 NOSTR_CONNECT_TIMEOUT_SECONDS: Final = 10.0
 NOSTR_MIN_PUBLISHED_AT: Final = datetime(2000, 1, 1, tzinfo=UTC)
 _LOWER_HEX = frozenset("0123456789abcdef")
+
+
+class _NoRedirectWebSocketConnect(WebSocketConnect):
+    """Keep every stream on the immutable, reviewed relay origin."""
+
+    def process_redirect(self, exc: Exception) -> Exception | str:
+        return exc
 
 
 class NostrError(RuntimeError):
@@ -121,8 +130,7 @@ def _verify_signature(*, pubkey: str, signature: str, event_id: str) -> None:
 @dataclass(frozen=True, slots=True)
 class NostrEvent:
     event_id: str
-    pubkey: str
-    signature: str
+    author_sha256: str
     published_at: datetime
     kind: int
     tags: tuple[tuple[str, ...], ...]
@@ -169,7 +177,10 @@ def parse_nostr_event(raw_event: object, *, completion_time: datetime) -> NostrE
         ):
             raise NostrInvalidEvent("nostr_tags_invalid")
         tags.append(tuple(raw_tag))
-    published_at = datetime.fromtimestamp(created_at, UTC)
+    try:
+        published_at = datetime.fromtimestamp(created_at, UTC)
+    except (OverflowError, OSError, ValueError):
+        raise NostrInvalidEvent("nostr_created_at_invalid") from None
     if not NOSTR_MIN_PUBLISHED_AT <= published_at <= completion_time + timedelta(days=1):
         raise NostrInvalidEvent("nostr_created_at_out_of_range")
     canonical = _canonical_event_bytes(raw_event)
@@ -178,8 +189,7 @@ def parse_nostr_event(raw_event: object, *, completion_time: datetime) -> NostrE
     _verify_signature(pubkey=pubkey, signature=signature, event_id=event_id)
     return NostrEvent(
         event_id=event_id,
-        pubkey=pubkey,
-        signature=signature,
+        author_sha256=hashlib.sha256(bytes.fromhex(pubkey)).hexdigest(),
         published_at=published_at,
         kind=kind,
         tags=tuple(tags),
@@ -190,8 +200,7 @@ def parse_nostr_event(raw_event: object, *, completion_time: datetime) -> NostrE
 @dataclass(frozen=True, slots=True)
 class NostrCandidate:
     event_id: str
-    pubkey: str
-    signature: str
+    author_sha256: str
     published_at: datetime
     content_sha256: str
     matched_tags: tuple[str, ...]
@@ -201,8 +210,7 @@ class NostrCandidate:
 @dataclass(frozen=True, slots=True)
 class NostrDeletion:
     event_id: str
-    pubkey: str
-    signature: str
+    author_sha256: str
     published_at: datetime
     relay_key: str
     target_event_ids: tuple[str, ...]
@@ -265,6 +273,8 @@ class WebsocketsNostrRelayTransport:
                 headers={"Accept": "application/nostr+json"},
             ) as client:
                 with client.stream("GET", relay.nip11_url) as response:
+                    if response.status_code in {401, 402, 403}:
+                        raise NostrAccessDenied("nostr_relay_denied")
                     if response.status_code != 200:
                         raise NostrTransportError("nostr_nip11_unavailable")
                     body = bytearray()
@@ -287,9 +297,15 @@ class WebsocketsNostrRelayTransport:
         limitation = document.get("limitation", {})
         if not isinstance(limitation, Mapping):
             raise NostrTransportError("nostr_nip11_invalid")
-        if limitation.get("auth_required") is True:
+        auth_required = limitation.get("auth_required")
+        payment_required = limitation.get("payment_required")
+        if auth_required is not None and not isinstance(auth_required, bool):
+            raise NostrAccessDenied("nostr_nip11_capability_drift")
+        if payment_required is not None and not isinstance(payment_required, bool):
+            raise NostrAccessDenied("nostr_nip11_capability_drift")
+        if auth_required is True:
             raise NostrAccessDenied("nostr_auth_required")
-        if limitation.get("payment_required") is True:
+        if payment_required is True:
             raise NostrAccessDenied("nostr_payment_required")
         advertised = limitation.get("max_message_length", NOSTR_MAX_MESSAGE_BYTES)
         if isinstance(advertised, bool) or not isinstance(advertised, int) or advertised < 1024:
@@ -305,10 +321,6 @@ class WebsocketsNostrRelayTransport:
         tags: Sequence[str],
         known_event_ids: Sequence[str],
     ) -> tuple[bytes, ...]:
-        try:
-            import websockets
-        except ImportError:
-            raise NostrTransportError("nostr_transport_unavailable") from None
         max_message_bytes = await asyncio.to_thread(self._nip11, relay)
         subscription_id = hashlib.sha256(
             f"{relay.key}:{int(since.timestamp())}:{int(until.timestamp())}".encode()
@@ -339,7 +351,7 @@ class WebsocketsNostrRelayTransport:
         bytes_seen = 0
         started = monotonic()
         try:
-            async with websockets.connect(
+            async with _NoRedirectWebSocketConnect(
                 relay.endpoint,
                 proxy=None,
                 open_timeout=NOSTR_CONNECT_TIMEOUT_SECONDS,
@@ -453,8 +465,7 @@ class NostrRelayCollector:
                     raise NostrInvalidEvent("nostr_tag_filter_mismatch")
                 candidate_item = NostrCandidate(
                     event_id=event.event_id,
-                    pubkey=event.pubkey,
-                    signature=event.signature,
+                    author_sha256=event.author_sha256,
                     published_at=event.published_at,
                     content_sha256=event.content_sha256,
                     matched_tags=matched,
@@ -481,8 +492,7 @@ class NostrRelayCollector:
                 raise NostrInvalidEvent("nostr_delete_targets_exceeded")
             deletion_item = NostrDeletion(
                 event_id=event.event_id,
-                pubkey=event.pubkey,
-                signature=event.signature,
+                author_sha256=event.author_sha256,
                 published_at=event.published_at,
                 relay_key=relay.key,
                 target_event_ids=targets,

@@ -509,8 +509,7 @@ BlueskyDeletion = BlueskyDeletionWrite
 @dataclass(frozen=True, slots=True)
 class NostrCandidateWrite:
     event_id: str
-    pubkey: str
-    signature: str
+    author_sha256: str
     published_at: datetime
     content_sha256: str
     matched_tags: tuple[str, ...]
@@ -518,8 +517,7 @@ class NostrCandidateWrite:
 
     def __post_init__(self) -> None:
         _lower_hex(self.event_id, length=64, field="Nostr event ID")
-        _lower_hex(self.pubkey, length=64, field="Nostr pubkey")
-        _lower_hex(self.signature, length=128, field="Nostr signature")
+        _lower_hex(self.author_sha256, length=64, field="Nostr author hash")
         _lower_hex(self.content_sha256, length=64, field="Nostr content hash")
         if self.relay_key not in _NOSTR_RELAY_KEYS:
             raise ValueError("Nostr relay key is not approved")
@@ -541,8 +539,7 @@ class NostrCandidateWrite:
         self.__post_init__()
         return {
             "event_id": self.event_id,
-            "pubkey": self.pubkey,
-            "signature": self.signature,
+            "author_sha256": self.author_sha256,
             "published_at": _utc_text(self.published_at),
             "content_sha256": self.content_sha256,
             "matched_tags": list(self.matched_tags),
@@ -555,16 +552,14 @@ class NostrCandidateWrite:
 @dataclass(frozen=True, slots=True)
 class NostrDeletionWrite:
     event_id: str
-    pubkey: str
-    signature: str
+    author_sha256: str
     published_at: datetime
     relay_key: str
     target_event_ids: tuple[str, ...]
 
     def __post_init__(self) -> None:
         _lower_hex(self.event_id, length=64, field="Nostr deletion event ID")
-        _lower_hex(self.pubkey, length=64, field="Nostr deletion pubkey")
-        _lower_hex(self.signature, length=128, field="Nostr deletion signature")
+        _lower_hex(self.author_sha256, length=64, field="Nostr deletion author hash")
         if self.relay_key not in _NOSTR_RELAY_KEYS:
             raise ValueError("Nostr relay key is not approved")
         if (
@@ -586,8 +581,7 @@ class NostrDeletionWrite:
         self.__post_init__()
         return {
             "event_id": self.event_id,
-            "pubkey": self.pubkey,
-            "signature": self.signature,
+            "author_sha256": self.author_sha256,
             "published_at": _utc_text(self.published_at),
             "kind": 5,
             "relay_key": self.relay_key,
