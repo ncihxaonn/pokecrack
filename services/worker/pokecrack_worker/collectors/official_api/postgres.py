@@ -386,11 +386,7 @@ class PostgresNostrRelayGate:
         until = row.get("until")
         checkpoint = row.get("checkpoint")
         for name, value in (("since", since), ("until", until)):
-            if (
-                not isinstance(value, datetime)
-                or value.tzinfo is None
-                or value.utcoffset() is None
-            ):
+            if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
                 raise TypeError(f"Nostr {name} must be a timezone-aware timestamp")
         if checkpoint is not None and (
             not isinstance(checkpoint, datetime)

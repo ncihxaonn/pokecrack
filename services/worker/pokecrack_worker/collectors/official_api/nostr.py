@@ -386,11 +386,7 @@ class WebsocketsNostrRelayTransport:
                         return tuple(messages)
                     if decoded[0] in {"AUTH", "NOTICE", "CLOSED"}:
                         raise NostrAccessDenied("nostr_relay_denied")
-                    if (
-                        len(decoded) != 3
-                        or decoded[0] != "EVENT"
-                        or decoded[1] != subscription_id
-                    ):
+                    if len(decoded) != 3 or decoded[0] != "EVENT" or decoded[1] != subscription_id:
                         raise NostrTransportError("nostr_message_invalid")
                     messages.append(encoded)
                     bytes_seen += len(encoded)
@@ -423,7 +419,9 @@ class NostrRelayCollector:
         if since.tzinfo is None or until.tzinfo is None or since >= until:
             raise ValueError("Nostr collection window must be ordered and timezone-aware")
         relay = self.registry.require(relay_key)
-        known = tuple(_hex(item, length=64, code="nostr_known_event_id_invalid") for item in known_event_ids)
+        known = tuple(
+            _hex(item, length=64, code="nostr_known_event_id_invalid") for item in known_event_ids
+        )
         if len(known) > NOSTR_MAX_CANDIDATES or len(known) != len(set(known)):
             raise ValueError("Nostr known event IDs are invalid")
         raw_messages = self.transport.iter_messages(

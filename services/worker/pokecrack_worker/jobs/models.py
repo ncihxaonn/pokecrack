@@ -613,11 +613,7 @@ class NostrRelayCompletion:
         if self.relay_key not in _NOSTR_RELAY_KEYS:
             raise ValueError("Nostr relay key is not approved")
         for name, value in (("since", self.since), ("until", self.until)):
-            if (
-                not isinstance(value, datetime)
-                or value.tzinfo is None
-                or value.utcoffset() is None
-            ):
+            if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
                 raise ValueError(f"Nostr {name} must be timezone-aware")
         if self.since >= self.until:
             raise ValueError("Nostr collection window must be ordered")

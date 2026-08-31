@@ -68,7 +68,9 @@ def _signed_event(
 
 
 def _envelope(event: dict[str, object]) -> bytes:
-    return json.dumps(["EVENT", "fixture", event], ensure_ascii=False, separators=(",", ":")).encode()
+    return json.dumps(
+        ["EVENT", "fixture", event], ensure_ascii=False, separators=(",", ":")
+    ).encode()
 
 
 class FixtureTransport:

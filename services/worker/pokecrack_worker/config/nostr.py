@@ -91,8 +91,7 @@ class NostrRelayDocument(BaseModel):
     @model_validator(mode="after")
     def validate_exact_inventory(self) -> Self:
         rows = tuple(
-            (relay.key, relay.source_key, relay.endpoint, relay.nip11_url)
-            for relay in self.relays
+            (relay.key, relay.source_key, relay.endpoint, relay.nip11_url) for relay in self.relays
         )
         if rows != NOSTR_RELAY_ROWS:
             raise ValueError("Nostr registry must contain the exact reviewed relay inventory")
