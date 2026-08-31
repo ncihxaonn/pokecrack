@@ -155,7 +155,7 @@ def _record_sha256(record: Mapping[str, Any]) -> str:
 def _published_at(record: Mapping[str, Any]) -> datetime | None:
     value = record.get("createdAt")
     if value is None:
-        return None
+        raise BlueskyInvalidMessage("bluesky_created_at_invalid")
     candidate = _required_text(value, code="bluesky_created_at_invalid", maximum=80)
     try:
         parsed = datetime.fromisoformat(candidate.replace("Z", "+00:00"))
@@ -163,7 +163,10 @@ def _published_at(record: Mapping[str, Any]) -> datetime | None:
         raise BlueskyInvalidMessage("bluesky_created_at_invalid") from None
     if parsed.tzinfo is None or parsed.utcoffset() is None:
         raise BlueskyInvalidMessage("bluesky_created_at_invalid")
-    normalized = parsed.astimezone(UTC)
+    try:
+        normalized = parsed.astimezone(UTC)
+    except (OverflowError, ValueError):
+        raise BlueskyInvalidMessage("bluesky_created_at_out_of_range") from None
     if not datetime(2000, 1, 1, tzinfo=UTC) <= normalized <= datetime.now(UTC) + timedelta(days=1):
         raise BlueskyInvalidMessage("bluesky_created_at_out_of_range")
     return normalized
@@ -247,6 +250,8 @@ class BlueskyCommitEvent:
     collection: str
     rkey: str
     record: Mapping[str, Any] | None
+    published_at: datetime | None
+    candidate_timestamp_valid: bool
 
 
 def parse_jetstream_message(raw: bytes | str | Mapping[str, Any]) -> BlueskyCommitEvent | None:
@@ -254,7 +259,12 @@ def parse_jetstream_message(raw: bytes | str | Mapping[str, Any]) -> BlueskyComm
 
     Frames for other collections are ignored after their small structural
     envelope is validated.  Relevant malformed frames fail closed, while an
-    in-band upstream error receives a typed retry disposition.
+    in-band upstream error receives a typed retry disposition.  The sole
+    candidate-level exception is an untrusted record ``createdAt`` with invalid
+    syntax or range: its otherwise validated commit is returned so the
+    collector can advance the cursor, but the record is marked ineligible for
+    candidate retention.  Every other relevant envelope or record error still
+    fails closed.
     """
 
     if isinstance(raw, bytes):
@@ -321,6 +331,8 @@ def parse_jetstream_message(raw: bytes | str | Mapping[str, Any]) -> BlueskyComm
     if collection != BLUESKY_POST_COLLECTION:
         return None
     record: Mapping[str, Any] | None
+    published_at: datetime | None = None
+    candidate_timestamp_valid = True
     if operation == "delete":
         if "record" in envelope or "cid" in envelope:
             raise BlueskyInvalidMessage("bluesky_delete_payload_invalid")
@@ -335,7 +347,18 @@ def parse_jetstream_message(raw: bytes | str | Mapping[str, Any]) -> BlueskyComm
             raise BlueskyInvalidMessage("bluesky_cid_invalid")
         record = dict(envelope["record"])
         _record_sha256(record)
-        _published_at(record)
+        try:
+            published_at = _published_at(record)
+        except BlueskyInvalidMessage as error:
+            if error.code not in {
+                "bluesky_created_at_invalid",
+                "bluesky_created_at_out_of_range",
+            }:
+                raise
+            # A post controls its own createdAt value.  Keep the validated
+            # commit cursor moving, but suppress this record from the retained
+            # candidate set instead of letting one poison value replay forever.
+            candidate_timestamp_valid = False
     return BlueskyCommitEvent(
         seq=seq,
         did=did,
@@ -345,6 +368,8 @@ def parse_jetstream_message(raw: bytes | str | Mapping[str, Any]) -> BlueskyComm
         collection=collection,
         rkey=rkey,
         record=record,
+        published_at=published_at,
+        candidate_timestamp_valid=candidate_timestamp_valid,
     )
 
 
@@ -591,14 +616,14 @@ class BlueskyJetstreamCollector:
                 text_value = event.record.get("text")
                 if not isinstance(text_value, str) or len(text_value) > 10_000:
                     raise BlueskyInvalidMessage("bluesky_record_text_invalid")
-                if self.keywords.matches(text_value):
+                if event.candidate_timestamp_valid and self.keywords.matches(text_value):
                     candidate = BlueskyCandidate(
                         cursor=event.seq,
                         at_uri=at_uri,
                         public_url=f"https://bsky.app/profile/{event.did}/post/{event.rkey}",
                         text_excerpt=_bounded_excerpt(text_value),
                         record_sha256=_record_sha256(event.record),
-                        published_at=_published_at(event.record),
+                        published_at=event.published_at,
                     )
                     if at_uri in candidates or at_uri in deletions:
                         # Preserve every matching event across bounded slices;
