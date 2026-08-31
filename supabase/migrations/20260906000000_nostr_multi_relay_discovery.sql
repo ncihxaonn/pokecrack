@@ -1722,7 +1722,7 @@ begin
   );
   updated_definition := replace(
     updated_definition,
-    $old$  if p_job_type = 'source.bluesky.jetstream' and ($old$,
+    $old$  if p_job_type = 'source.bluesky.jetstream' and p_payload <> '{}'::jsonb then$old$,
     $new$  if p_job_type = 'source.nostr.relay' and (
     not (p_payload ?& array['relay_key'])
     or p_payload - array['relay_key'] <> '{}'::jsonb
@@ -1748,12 +1748,13 @@ begin
       errcode = '55000',
       message = 'reviewed Nostr relay source policy is unavailable';
   end if;
-  if p_job_type = 'source.bluesky.jetstream' and ($new$
+  if p_job_type = 'source.bluesky.jetstream' and p_payload <> '{}'::jsonb then$new$
   );
   if updated_definition = definition
     or position($needle$    'source.nostr.relay'
   ) then$needle$ in updated_definition) = 0
     or position($needle$  if p_job_type = 'source.nostr.relay' and ($needle$ in updated_definition) = 0
+    or position($needle$  if p_job_type = 'source.bluesky.jetstream' and p_payload <> '{}'::jsonb then$needle$ in updated_definition) = 0
   then
     raise exception using
       errcode = '55000',

@@ -283,6 +283,10 @@ class IngestMigrationContractTests(unittest.TestCase):
             "checkpoint_row.last_checkpoint + interval '1 second'", lowered
         )
         self.assertIn("lease_checked_at + interval '1 second'", lowered)
+        self.assertIn(
+            "if p_job_type = 'source.bluesky.jetstream' and p_payload <> '{}'::jsonb then",
+            lowered,
+        )
         public_rpc = lowered.split(
             "create or replace function public.get_public_social_discovery_v2()", 1
         )[1].split("alter function public.get_public_social_discovery_v2()", 1)[0]
