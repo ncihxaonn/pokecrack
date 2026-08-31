@@ -4,7 +4,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(79);
+select plan(80);
 
 select has_table('public', 'dashboard_overview', 'public.dashboard_overview exists');
 select has_table('public', 'set_summaries', 'public.set_summaries exists');
@@ -248,11 +248,18 @@ select ok(
         'get_public_dashboard_snapshot_v2',
         'get_public_dashboard_snapshot_v3',
         'get_public_study_coverage_v1',
-        'get_public_social_discovery_v1'
+        'get_public_social_discovery_v1',
+        'get_public_social_discovery_v2'
       )
       and has_function_privilege('anon', p.oid, 'execute')
   ),
   'anon can execute no other public-schema function'
+);
+select has_function(
+  'public',
+  'get_public_social_discovery_v2',
+  array[]::text[],
+  'strict Bluesky-first and Nostr-second public social tuple RPC exists'
 );
 
 select has_function(
