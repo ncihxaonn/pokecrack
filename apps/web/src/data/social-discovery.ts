@@ -10,6 +10,10 @@ const NOSTR_SOURCE_ID = "nostr_multi_relay" as const;
 const NOSTR_SOURCE_NAME = "Nostr multi-relay discovery" as const;
 const NOSTR_SOURCE_URL =
   "https://github.com/nostr-protocol/nips/blob/master/01.md" as const;
+const MASTODON_SOURCE_ID = "mastodon_public_hashtag" as const;
+const MASTODON_SOURCE_NAME = "Mastodon public hashtag discovery" as const;
+const MASTODON_SOURCE_URL =
+  "https://docs.joinmastodon.org/methods/timelines/" as const;
 
 const isoDateTime = z.string().datetime({ offset: true });
 
@@ -39,10 +43,23 @@ const nostrSource = z
   })
   .strict();
 
+const mastodonSource = z
+  .object({
+    id: z.literal(MASTODON_SOURCE_ID),
+    name: z.literal(MASTODON_SOURCE_NAME),
+    kind: z.literal("social"),
+    access: z.literal("public"),
+    status: z.enum(["operational", "delayed", "attention", "paused"]),
+    lastCollectedAt: isoDateTime.nullable(),
+    url: z.literal(MASTODON_SOURCE_URL),
+    note: z.string().min(1).max(500),
+  })
+  .strict();
+
 export const publicSocialDiscoverySchema = z
   .object({
-    schemaVersion: z.literal("2.0.0"),
-    sources: z.tuple([blueskySource, nostrSource]),
+    schemaVersion: z.literal("3.0.0"),
+    sources: z.tuple([blueskySource, nostrSource, mastodonSource]),
   })
   .strict();
 
