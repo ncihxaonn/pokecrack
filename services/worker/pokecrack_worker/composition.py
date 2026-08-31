@@ -23,9 +23,17 @@ from pokecrack_worker.collectors.official_api.bluesky import (
     BlueskyJetstreamTransport,
     WebsocketsBlueskyJetstreamTransport,
 )
+from pokecrack_worker.collectors.official_api.nostr import (
+    NostrError,
+    NostrRelayCollector,
+    NostrRelayTransport,
+    WebsocketsNostrRelayTransport,
+)
 from pokecrack_worker.collectors.official_api.postgres import (
     BlueskyRequestDeferred,
+    NostrRequestDeferred,
     PostgresBlueskyJetstreamGate,
+    PostgresNostrRelayGate,
     PostgresPublicStudyGate,
     PostgresTCGdexCheckpointRepository,
     PostgresYouTubeDiscoveryGate,
@@ -52,6 +60,7 @@ from pokecrack_worker.collectors.scrapling.adapters.public_studies import Robots
 from pokecrack_worker.collectors.scrapling.http import ScraplingHTTPClient
 from pokecrack_worker.collectors.scrapling.registry import build_live_static_registry
 from pokecrack_worker.config.bluesky import BlueskyKeywordRegistry
+from pokecrack_worker.config.nostr import NostrRelayRegistry
 from pokecrack_worker.config.public_studies import PUBLIC_STUDIES, PUBLIC_STUDIES_BY_KEY
 from pokecrack_worker.config.registries import YouTubeQueryRegistry
 from pokecrack_worker.config.settings import DataMode, Settings
@@ -63,6 +72,9 @@ from pokecrack_worker.jobs import (
     BlueskySourceItemWrite,
     CompletionEffect,
     Job,
+    NostrCandidateWrite,
+    NostrDeletionWrite,
+    NostrRelayCompletion,
     PostgresJobRepository,
     PublicStudyCompletion,
     QueryExecutor,
@@ -105,10 +117,12 @@ TCGDEX_SETS_JOB_TYPE = "catalog.tcgdex.sets.sync"
 YOUTUBE_DISCOVERY_JOB_TYPE = "source.youtube.discovery"
 PUBLIC_STUDY_JOB_TYPE = "source.public_study.opening"
 BLUESKY_JETSTREAM_JOB_TYPE = "source.bluesky.jetstream"
+NOSTR_RELAY_JOB_TYPE = "source.nostr.relay"
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SOURCES_CONFIG = PROJECT_ROOT / "config" / "sources.yaml"
 YOUTUBE_QUERIES_CONFIG = PROJECT_ROOT / "config" / "youtube-queries.yaml"
 BLUESKY_KEYWORDS_CONFIG = PROJECT_ROOT / "config" / "bluesky-keywords.yaml"
+NOSTR_RELAYS_CONFIG = PROJECT_ROOT / "config" / "nostr-relays.yaml"
 
 WORKER_HEARTBEAT_SQL = """
 SELECT last_seen_at
@@ -236,6 +250,96 @@ bluesky_dependencies AS (
         }'::jsonb
         AND policies.version = 'bluesky-jetstream-v1'
         AND policies.expected_interval_seconds = 60
+    ),
+    false
+  ) AS ready
+),
+nostr_dependencies AS (
+  SELECT COALESCE(
+    to_regprocedure('ingest.begin_nostr_relay_job(uuid,text,bigint,text)') IS NOT NULL
+    AND to_regprocedure(
+      'ingest.finalize_nostr_relay_job(uuid,text,bigint,jsonb)'
+    ) IS NOT NULL
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.begin_nostr_relay_job(uuid,text,bigint,text)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.finalize_nostr_relay_job(uuid,text,bigint,jsonb)'),
+      'EXECUTE'
+    )
+    AND (
+      SELECT
+        count(*) = 3
+        AND bool_and(
+          policies.enabled
+          AND NOT policies.is_demo
+          AND policies.source_kind = 'public_web'
+          AND policies.collector_type = 'nostr_relay'
+          AND policies.access_mode = 'public'
+          AND policies.robots_policy = 'not_applicable'
+          AND policies.routes = ARRAY['nostr_relay']::text[]
+          AND NOT policies.include_subdomains
+          AND policies.min_delay_seconds = 1
+          AND policies.max_pages_per_run = 1
+          AND policies.max_items_per_run = 100
+          AND policies.max_concurrency = 1
+          AND policies.browser_profile IS NULL
+          AND NOT policies.statistics_eligible_default
+          AND policies.retention_days = 30
+          AND policies.version = 'nostr-multi-relay-v1'
+          AND policies.expected_interval_seconds = 60
+          AND policies.config - 'relay_key' - 'endpoint' - 'nip11_url' = '{
+            "protocol":"nip01",
+            "required_nips":[1,9,11],
+            "approved_tags":[
+              "pokemontcg","PokemonTCG","pokemoncards","PokemonCards",
+              "ポケカ","ポケモンカード","포켓몬카드","宝可梦卡牌","寶可夢卡牌"
+            ],
+            "replay_overlap_seconds":300,
+            "stream_window_seconds":15,
+            "max_events":100,
+            "max_message_bytes":262144,
+            "max_stream_bytes":2097152,
+            "max_candidates":100,
+            "max_deletions":100,
+            "max_delete_targets":16,
+            "statistics_eligible":false,
+            "policy_state":"degraded_missing_relay_specific_terms"
+          }'::jsonb
+        )
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'nostr_relay_primal'
+            AND policies.domain = 'relay.primal.net'
+            AND policies.base_url = 'wss://relay.primal.net/'
+            AND policies.config ->> 'relay_key' = 'primal'
+            AND policies.config ->> 'endpoint' = 'wss://relay.primal.net/'
+            AND policies.config ->> 'nip11_url' = 'https://relay.primal.net/'
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'nostr_relay_nos_lol'
+            AND policies.domain = 'nos.lol'
+            AND policies.base_url = 'wss://nos.lol/'
+            AND policies.config ->> 'relay_key' = 'nos_lol'
+            AND policies.config ->> 'endpoint' = 'wss://nos.lol/'
+            AND policies.config ->> 'nip11_url' = 'https://nos.lol/'
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'nostr_relay_nostr_net'
+            AND policies.domain = 'relay.nostr.net'
+            AND policies.base_url = 'wss://relay.nostr.net/'
+            AND policies.config ->> 'relay_key' = 'nostr_net'
+            AND policies.config ->> 'endpoint' = 'wss://relay.nostr.net/'
+            AND policies.config ->> 'nip11_url' = 'https://relay.nostr.net/'
+        ) = 1
+      FROM ingest.source_policies AS policies
+      WHERE policies.source_key IN (
+        'nostr_relay_primal',
+        'nostr_relay_nos_lol',
+        'nostr_relay_nostr_net'
+      )
     ),
     false
   ) AS ready
@@ -508,6 +612,10 @@ SELECT
       OR (SELECT ready FROM bluesky_dependencies)
     )
     AND (
+      NOT %(nostr_enabled)s::boolean
+      OR (SELECT ready FROM nostr_dependencies)
+    )
+    AND (
       NOT %(public_study_enabled)s::boolean
       OR (SELECT ready FROM public_study_dependencies)
     )
@@ -544,6 +652,10 @@ SELECT
     AND (
       NOT %(bluesky_enabled)s::boolean
       OR (SELECT ready FROM bluesky_dependencies)
+    )
+    AND (
+      NOT %(nostr_enabled)s::boolean
+      OR (SELECT ready FROM nostr_dependencies)
     )
     AND (
       NOT %(public_study_enabled)s::boolean
@@ -588,6 +700,7 @@ _SCHEDULE_FIELDS: tuple[tuple[str, str], ...] = (
     ("official_api", "schedule_official_api"),
     ("public_collection", "schedule_public_collection"),
     ("bluesky_collection", "schedule_bluesky_collection"),
+    ("nostr_collection", "schedule_nostr_collection"),
     ("auth_collection", "schedule_auth_collection"),
     ("catalog_sync", "schedule_catalog_sync"),
     ("aggregates", "schedule_aggregates"),
@@ -604,6 +717,7 @@ UNWIRED_SCHEDULE_NAMES = tuple(
         "official_api",
         "public_collection",
         "bluesky_collection",
+        "nostr_collection",
         "catalog_sync",
         "cleanup",
     }
@@ -665,6 +779,8 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
         enabled.append(PUBLIC_STUDY_JOB_TYPE)
     if settings.bluesky_collection_enabled:
         enabled.append(BLUESKY_JETSTREAM_JOB_TYPE)
+    if settings.nostr_collection_enabled:
+        enabled.append(NOSTR_RELAY_JOB_TYPE)
     return tuple(enabled)
 
 
@@ -710,6 +826,7 @@ def write_health_heartbeat(
             "worker_type": role.value,
             "youtube_enabled": settings.youtube_collection_enabled,
             "bluesky_enabled": settings.bluesky_collection_enabled,
+            "nostr_enabled": settings.nostr_collection_enabled,
             "public_study_enabled": settings.public_study_collection_enabled,
         },
     )
@@ -969,6 +1086,87 @@ def _bluesky_jetstream_handler(
     return discover
 
 
+def _nostr_relay_handler(
+    *,
+    settings: Settings,
+    executor: QueryExecutor,
+    worker_id: str,
+    transport: NostrRelayTransport | None,
+) -> JobHandler:
+    if not settings.nostr_collection_enabled:
+        raise RuntimeError("Nostr relay handler requires explicit enablement")
+    registry = NostrRelayRegistry.from_yaml(NOSTR_RELAYS_CONFIG)
+    collector = NostrRelayCollector(
+        transport=transport or WebsocketsNostrRelayTransport(),
+        registry=registry,
+    )
+    gates = PostgresNostrRelayGate(executor)
+
+    def discover(job: Job) -> NostrRelayCompletion:
+        if job.kind != NOSTR_RELAY_JOB_TYPE or set(job.payload) != {"relay_key"}:
+            raise ValueError("Nostr jobs require the exact relay_key payload")
+        relay_key = job.payload.get("relay_key")
+        if not isinstance(relay_key, str):
+            raise ValueError("Nostr relay_key must be text")
+        registry.require(relay_key)
+        try:
+            checkpoint = gates.begin(
+                job_id=job.id,
+                worker_id=worker_id,
+                lease_generation=job.lease_generation,
+                relay_key=relay_key,
+            )
+        except NostrRequestDeferred as deferred:
+            raise JobDeferred(
+                retry_at=deferred.retry_at,
+                code="nostr_request_deferred",
+            ) from None
+        try:
+            result = collector.collect(
+                relay_key=relay_key,
+                since=checkpoint.since,
+                until=checkpoint.until,
+                checkpoint=checkpoint.checkpoint,
+                known_event_ids=checkpoint.recent_candidate_ids,
+            )
+        except NostrError as error:
+            raise JobExecutionError(code=error.code, retryable=error.retryable) from None
+        return NostrRelayCompletion(
+            relay_key=result.relay_key,
+            since=result.since,
+            until=result.until,
+            checkpoint=result.checkpoint,
+            incomplete=result.incomplete,
+            events_seen=result.events_seen,
+            bytes_seen=result.bytes_seen,
+            candidates=tuple(
+                NostrCandidateWrite(
+                    event_id=item.event_id,
+                    pubkey=item.pubkey,
+                    signature=item.signature,
+                    published_at=item.published_at,
+                    content_sha256=item.content_sha256,
+                    matched_tags=item.matched_tags,
+                    relay_key=item.relay_key,
+                )
+                for item in result.candidates
+            ),
+            deletions=tuple(
+                NostrDeletionWrite(
+                    event_id=item.event_id,
+                    pubkey=item.pubkey,
+                    signature=item.signature,
+                    published_at=item.published_at,
+                    relay_key=item.relay_key,
+                    target_event_ids=item.target_event_ids,
+                )
+                for item in result.deletions
+            ),
+        )
+
+    return discover
+
+
 def _public_study_handler(
     *,
     settings: Settings,
@@ -1066,6 +1264,7 @@ def _handlers_for_role(
     tcgdex_transport: TCGdexTransport | None,
     youtube_transport: YouTubeTransport | None,
     bluesky_transport: BlueskyJetstreamTransport | None,
+    nostr_transport: NostrRelayTransport | None,
     public_study_http_client: HTTPClient | None,
     public_study_robots_sleeper: Callable[[float], None] | None,
     clock: Callable[[], datetime] | None,
@@ -1102,6 +1301,13 @@ def _handlers_for_role(
                 worker_id=worker_id,
                 transport=bluesky_transport,
             )
+        if settings.nostr_collection_enabled:
+            handlers[NOSTR_RELAY_JOB_TYPE] = _nostr_relay_handler(
+                settings=settings,
+                executor=executor,
+                worker_id=worker_id,
+                transport=nostr_transport,
+            )
         return handlers
     if role is WorkerRole.WATCHDOG:
         return {CLEANUP_JOB_TYPE: _cleanup_handler()}
@@ -1116,6 +1322,7 @@ def build_live_worker_runtime(
     tcgdex_transport: TCGdexTransport | None = None,
     youtube_transport: YouTubeTransport | None = None,
     bluesky_transport: BlueskyJetstreamTransport | None = None,
+    nostr_transport: NostrRelayTransport | None = None,
     public_study_http_client: HTTPClient | None = None,
     public_study_robots_sleeper: Callable[[float], None] | None = None,
 ) -> WorkerRuntime:
@@ -1132,6 +1339,7 @@ def build_live_worker_runtime(
         tcgdex_transport=tcgdex_transport,
         youtube_transport=youtube_transport,
         bluesky_transport=bluesky_transport,
+        nostr_transport=nostr_transport,
         public_study_http_client=public_study_http_client,
         public_study_robots_sleeper=public_study_robots_sleeper,
         clock=clock,
@@ -1214,9 +1422,24 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
         if settings.bluesky_collection_enabled
         else ()
     )
+    nostr = (
+        tuple(
+            ScheduleEntry(
+                name=f"nostr_{relay.key}",
+                job_type=NOSTR_RELAY_JOB_TYPE,
+                cron=settings.schedule_nostr_collection,
+                payload={"relay_key": relay.key},
+                priority=-49,
+                max_attempts=min(3, settings.worker_max_attempts),
+            )
+            for relay in NostrRelayRegistry.from_yaml(NOSTR_RELAYS_CONFIG).relays
+        )
+        if settings.nostr_collection_enabled
+        else ()
+    )
     cleanup_catch_up = (
         timedelta(hours=36)
-        if settings.bluesky_collection_enabled
+        if settings.bluesky_collection_enabled or settings.nostr_collection_enabled
         else timedelta(hours=12)
         if settings.youtube_collection_enabled
         else None
@@ -1235,7 +1458,7 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
             catch_up_check_interval=(timedelta(hours=1) if cleanup_catch_up else None),
         ),
     )
-    return catalog + youtube + public_studies + bluesky + cleanup
+    return catalog + youtube + public_studies + bluesky + nostr + cleanup
 
 
 def build_live_scheduler(

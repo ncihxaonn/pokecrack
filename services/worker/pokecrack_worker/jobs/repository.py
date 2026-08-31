@@ -14,6 +14,7 @@ from .models import (
     CompletionEffect,
     Job,
     JobStatus,
+    NostrRelayCompletion,
     PublicStudyCompletion,
     TCGdexSetsSyncCompletion,
     YouTubeDiscoveryCompletion,
@@ -245,6 +246,7 @@ class InMemoryJobRepository:
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
         | BlueskyJetstreamCompletion
+        | NostrRelayCompletion
         | None = None,
     ) -> Job:
         with self._lock:

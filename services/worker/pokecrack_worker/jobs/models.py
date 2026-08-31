@@ -39,6 +39,27 @@ _BLUESKY_MAX_DELETIONS = 100
 _BLUESKY_MAX_EVENTS = 10_000
 _BLUESKY_MAX_STREAM_BYTES = 2 * 1024 * 1024
 _BLUESKY_MAX_EXCERPT_CHARS = 500
+_NOSTR_RELAY_KEYS = frozenset({"primal", "nos_lol", "nostr_net"})
+_NOSTR_MATCHED_TAGS = frozenset(
+    {"pokemontcg", "pokemoncards", "ポケカ", "ポケモンカード", "포켓몬카드", "宝可梦卡牌", "寶可夢卡牌"}
+)
+_NOSTR_MAX_EVENTS = 100
+_NOSTR_MAX_STREAM_BYTES = 2 * 1024 * 1024
+_NOSTR_MAX_ITEMS = 100
+
+
+def _lower_hex(value: object, *, length: int, field: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != length
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise ValueError(f"{field} must be {length} lowercase hexadecimal characters")
+    return value
+
+
+def _utc_text(value: datetime) -> str:
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
 
 
 class JobStatus(StrEnum):
@@ -483,6 +504,179 @@ class BlueskyJetstreamCompletion:
 # persisted DTO names remain explicit about their source boundary.
 BlueskyCandidateWrite = BlueskySourceItemWrite
 BlueskyDeletion = BlueskyDeletionWrite
+
+
+@dataclass(frozen=True, slots=True)
+class NostrCandidateWrite:
+    event_id: str
+    pubkey: str
+    signature: str
+    published_at: datetime
+    content_sha256: str
+    matched_tags: tuple[str, ...]
+    relay_key: str
+
+    def __post_init__(self) -> None:
+        _lower_hex(self.event_id, length=64, field="Nostr event ID")
+        _lower_hex(self.pubkey, length=64, field="Nostr pubkey")
+        _lower_hex(self.signature, length=128, field="Nostr signature")
+        _lower_hex(self.content_sha256, length=64, field="Nostr content hash")
+        if self.relay_key not in _NOSTR_RELAY_KEYS:
+            raise ValueError("Nostr relay key is not approved")
+        if (
+            not isinstance(self.published_at, datetime)
+            or self.published_at.tzinfo is None
+            or self.published_at.utcoffset() is None
+        ):
+            raise ValueError("Nostr published_at must be timezone-aware")
+        if (
+            not isinstance(self.matched_tags, tuple)
+            or not 1 <= len(self.matched_tags) <= len(_NOSTR_MATCHED_TAGS)
+            or len(self.matched_tags) != len(set(self.matched_tags))
+            or any(tag not in _NOSTR_MATCHED_TAGS for tag in self.matched_tags)
+        ):
+            raise ValueError("Nostr matched tags are invalid")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        return {
+            "event_id": self.event_id,
+            "pubkey": self.pubkey,
+            "signature": self.signature,
+            "published_at": _utc_text(self.published_at),
+            "content_sha256": self.content_sha256,
+            "matched_tags": list(self.matched_tags),
+            "relay_key": self.relay_key,
+            "activity_only": True,
+            "statistics_eligible": False,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class NostrDeletionWrite:
+    event_id: str
+    pubkey: str
+    signature: str
+    published_at: datetime
+    relay_key: str
+    target_event_ids: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        _lower_hex(self.event_id, length=64, field="Nostr deletion event ID")
+        _lower_hex(self.pubkey, length=64, field="Nostr deletion pubkey")
+        _lower_hex(self.signature, length=128, field="Nostr deletion signature")
+        if self.relay_key not in _NOSTR_RELAY_KEYS:
+            raise ValueError("Nostr relay key is not approved")
+        if (
+            not isinstance(self.published_at, datetime)
+            or self.published_at.tzinfo is None
+            or self.published_at.utcoffset() is None
+        ):
+            raise ValueError("Nostr deletion published_at must be timezone-aware")
+        if (
+            not isinstance(self.target_event_ids, tuple)
+            or not 1 <= len(self.target_event_ids) <= 16
+            or len(self.target_event_ids) != len(set(self.target_event_ids))
+        ):
+            raise ValueError("Nostr deletion targets are invalid")
+        for target in self.target_event_ids:
+            _lower_hex(target, length=64, field="Nostr deletion target")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        return {
+            "event_id": self.event_id,
+            "pubkey": self.pubkey,
+            "signature": self.signature,
+            "published_at": _utc_text(self.published_at),
+            "kind": 5,
+            "relay_key": self.relay_key,
+            "target_event_ids": list(self.target_event_ids),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class NostrRelayCompletion:
+    relay_key: str
+    since: datetime
+    until: datetime
+    checkpoint: datetime | None
+    incomplete: bool
+    events_seen: int
+    bytes_seen: int
+    candidates: tuple[NostrCandidateWrite, ...] = ()
+    deletions: tuple[NostrDeletionWrite, ...] = ()
+
+    def __post_init__(self) -> None:
+        if self.relay_key not in _NOSTR_RELAY_KEYS:
+            raise ValueError("Nostr relay key is not approved")
+        for name, value in (("since", self.since), ("until", self.until)):
+            if (
+                not isinstance(value, datetime)
+                or value.tzinfo is None
+                or value.utcoffset() is None
+            ):
+                raise ValueError(f"Nostr {name} must be timezone-aware")
+        if self.since >= self.until:
+            raise ValueError("Nostr collection window must be ordered")
+        if self.checkpoint is not None and (
+            not isinstance(self.checkpoint, datetime)
+            or self.checkpoint.tzinfo is None
+            or self.checkpoint.utcoffset() is None
+        ):
+            raise ValueError("Nostr checkpoint must be timezone-aware or null")
+        if self.incomplete is not False:
+            raise ValueError("Nostr completion cannot advance an incomplete slice")
+        if (
+            isinstance(self.events_seen, bool)
+            or not isinstance(self.events_seen, int)
+            or not 0 <= self.events_seen <= _NOSTR_MAX_EVENTS
+        ):
+            raise ValueError("Nostr events_seen is outside the approved range")
+        if (
+            isinstance(self.bytes_seen, bool)
+            or not isinstance(self.bytes_seen, int)
+            or not 0 <= self.bytes_seen <= _NOSTR_MAX_STREAM_BYTES
+        ):
+            raise ValueError("Nostr bytes_seen is outside the approved range")
+        if (
+            not isinstance(self.candidates, tuple)
+            or len(self.candidates) > _NOSTR_MAX_ITEMS
+            or any(not isinstance(item, NostrCandidateWrite) for item in self.candidates)
+        ):
+            raise ValueError("Nostr candidates are invalid")
+        if (
+            not isinstance(self.deletions, tuple)
+            or len(self.deletions) > _NOSTR_MAX_ITEMS
+            or any(not isinstance(item, NostrDeletionWrite) for item in self.deletions)
+        ):
+            raise ValueError("Nostr deletions are invalid")
+        if any(item.relay_key != self.relay_key for item in self.candidates) or any(
+            item.relay_key != self.relay_key for item in self.deletions
+        ):
+            raise ValueError("Nostr item relay key must match its completion")
+        event_ids = [item.event_id for item in self.candidates] + [
+            item.event_id for item in self.deletions
+        ]
+        if len(event_ids) != len(set(event_ids)):
+            raise ValueError("Nostr completion event IDs must be unique")
+        if len(event_ids) > self.events_seen:
+            raise ValueError("Nostr completion items cannot exceed events_seen")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        return {
+            "version": "1.0.0",
+            "relay_key": self.relay_key,
+            "since": _utc_text(self.since),
+            "until": _utc_text(self.until),
+            "checkpoint": _utc_text(self.checkpoint) if self.checkpoint is not None else None,
+            "incomplete": self.incomplete,
+            "events_seen": self.events_seen,
+            "bytes_seen": self.bytes_seen,
+            "candidates": [item.as_payload() for item in self.candidates],
+            "deletions": [item.as_payload() for item in self.deletions],
+        }
 
 
 @dataclass(frozen=True, slots=True)

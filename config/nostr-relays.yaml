@@ -1,0 +1,31 @@
+version: 1
+default_enabled: false
+protocol: nip01
+replay_overlap_seconds: 300
+stream_window_seconds: 15
+max_events: 100
+max_message_bytes: 262144
+max_stream_bytes: 2097152
+relays:
+  - key: primal
+    source_key: nostr_relay_primal
+    endpoint: wss://relay.primal.net/
+    nip11_url: https://relay.primal.net/
+  - key: nos_lol
+    source_key: nostr_relay_nos_lol
+    endpoint: wss://nos.lol/
+    nip11_url: https://nos.lol/
+  - key: nostr_net
+    source_key: nostr_relay_nostr_net
+    endpoint: wss://relay.nostr.net/
+    nip11_url: https://relay.nostr.net/
+tags:
+  - pokemontcg
+  - PokemonTCG
+  - pokemoncards
+  - PokemonCards
+  - ポケカ
+  - ポケモンカード
+  - 포켓몬카드
+  - 宝可梦卡牌
+  - 寶可夢卡牌

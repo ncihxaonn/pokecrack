@@ -18,6 +18,7 @@ from pokecrack_worker.deduplication.urls import canonicalize_url, extract_platfo
 class CollectorType(StrEnum):
     OFFICIAL_API = "official_api"
     BLUESKY_JETSTREAM = "bluesky_jetstream"
+    NOSTR_RELAY = "nostr_relay"
     SCRAPLING_HTTP = "scrapling_http"
     SCRAPLING_DYNAMIC = "scrapling_dynamic"
     OPENCLI_AUTHENTICATED = "opencli_authenticated"

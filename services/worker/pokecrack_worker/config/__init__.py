@@ -9,6 +9,7 @@ from .bluesky import (
     BlueskyKeywordRegistry,
     normalize_keyword,
 )
+from .nostr import NOSTR_APPROVED_TAGS, NOSTR_RELAY_ROWS, NostrRelayRegistry
 from .registries import RarityTaxonomy, YouTubeQueryRegistry
 from .settings import AIProviderName, DataMode, Settings
 from .source_policy import (
@@ -26,6 +27,9 @@ __all__ = [
     "CollectorRoute",
     "DataMode",
     "InMemoryPolicyAuditSink",
+    "NOSTR_APPROVED_TAGS",
+    "NOSTR_RELAY_ROWS",
+    "NostrRelayRegistry",
     "PolicyDeniedError",
     "RarityTaxonomy",
     "REQUIRED_BLUESKY_KEYWORDS",
