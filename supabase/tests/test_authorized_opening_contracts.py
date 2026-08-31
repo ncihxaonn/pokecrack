@@ -92,6 +92,8 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         self.assertIn("authorized_opening_retractions_immutable", lowered)
         self.assertIn("discovery_platform is not null", lowered)
         self.assertIn("reviewer_reference_sha256 is not null", lowered)
+        self.assertIn("<<submit_block>>", lowered)
+        self.assertNotIn("submit_authorized_opening_v1.", lowered)
         retract_header = re.search(
             r"create or replace function ingest\.retract_authorized_opening_v1\((.*?)\)\s*returns table",
             lowered,

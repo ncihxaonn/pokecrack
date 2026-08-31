@@ -755,6 +755,7 @@ volatile
 parallel unsafe
 set search_path = pg_catalog
 as $submit$
+<<submit_block>>
 declare
   expected_keys constant text[] := array[
     'schemaVersion', 'submissionKey', 'discoveryPlatform',
@@ -1032,7 +1033,7 @@ begin
     select submissions.*
     into existing_row
     from ingest.authorized_opening_submissions as submissions
-    where submissions.submission_key = submit_authorized_opening_v1.submission_key
+    where submissions.submission_key = submit_block.submission_key
     for update;
 
     if found then
@@ -1066,7 +1067,7 @@ begin
 
     if exists (
       select 1 from ingest.authorized_opening_submissions as submissions
-      where submissions.provenance_dedupe_sha256 = submit_authorized_opening_v1.provenance_dedupe_sha256
+      where submissions.provenance_dedupe_sha256 = submit_block.provenance_dedupe_sha256
     ) then
       raise exception using
         errcode = '23505',
@@ -1074,7 +1075,7 @@ begin
     end if;
     if exists (
       select 1 from ingest.authorized_opening_submissions as submissions
-      where submissions.evidence_sha256 = submit_authorized_opening_v1.evidence_sha256
+      where submissions.evidence_sha256 = submit_block.evidence_sha256
     ) then
       raise exception using
         errcode = '23505',
@@ -1082,7 +1083,7 @@ begin
     end if;
     if discovery_candidate_sha256 is not null and exists (
       select 1 from ingest.authorized_opening_submissions as submissions
-      where submissions.discovery_candidate_sha256 = submit_authorized_opening_v1.discovery_candidate_sha256
+      where submissions.discovery_candidate_sha256 = submit_block.discovery_candidate_sha256
     ) then
       raise exception using
         errcode = '23505',
