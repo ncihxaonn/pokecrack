@@ -577,7 +577,7 @@ insert into ingest.jobs (
 ) values (
   'a7000000-0000-4000-8000-000000000005',
   'source.mastodon.public_hashtag',
-  '{"instance_key":"mastodon_social","tag_key":"pokemon_tcg"}'::jsonb,
+  '{"instance_key":"mastodon_social","tag_key":"pokemon_card_ko"}'::jsonb,
   'running', 1, clock_timestamp(), clock_timestamp() + interval '10 minutes',
   'mastodon-worker-5', 1, false
 );
@@ -585,7 +585,7 @@ select ok(
   (select acquired and retry_at is null
    from ingest.begin_mastodon_public_hashtag_job(
      'a7000000-0000-4000-8000-000000000005',
-     'mastodon-worker-5', 1, 'mastodon_social', 'pokemon_tcg'
+     'mastodon-worker-5', 1, 'mastodon_social', 'pokemon_card_ko'
    )),
   'transport-level rate-limit fixture acquires the shared Mastodon gate'
 );
