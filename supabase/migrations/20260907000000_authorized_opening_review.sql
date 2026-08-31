@@ -4,6 +4,8 @@ begin;
 -- deliberately NOLOGIN: deployment must provision a dedicated login and make
 -- it a member. Generic service_role workers can submit, but cannot review.
 do $role$
+declare
+  reviewer_role_is_safe boolean;
 begin
   if not exists (
     select 1 from pg_catalog.pg_roles
@@ -12,8 +14,30 @@ begin
     create role pokecrack_authorized_opening_reviewer
       nosuperuser nologin noinherit nocreatedb nocreaterole noreplication nobypassrls;
   end if;
-  alter role pokecrack_authorized_opening_reviewer
-    nosuperuser nologin noinherit nocreatedb nocreaterole noreplication nobypassrls;
+
+  -- The migration connection is intentionally a non-superuser in local and
+  -- hosted Supabase.  Re-applying ALTER ROLE here would require superuser
+  -- authority when a pre-provisioned role is marked SUPERUSER.  Creation above
+  -- establishes the exact least-privilege defaults; an existing role must
+  -- already match them or the migration fails closed for the operator to fix.
+  select (
+    not rolsuper
+    and not rolcanlogin
+    and not rolinherit
+    and not rolcreatedb
+    and not rolcreaterole
+    and not rolreplication
+    and not rolbypassrls
+  )
+  into reviewer_role_is_safe
+  from pg_catalog.pg_roles
+  where rolname = 'pokecrack_authorized_opening_reviewer';
+
+  if not coalesce(reviewer_role_is_safe, false) then
+    raise exception
+      'pokecrack_authorized_opening_reviewer must be pre-provisioned as NOLOGIN, NOINHERIT, NOSUPERUSER, NOCREATEDB, NOCREATEROLE, NOREPLICATION, NOBYPASSRLS'
+      using errcode = '42501';
+  end if;
 end;
 $role$;
 

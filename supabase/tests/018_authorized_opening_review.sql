@@ -105,10 +105,12 @@ select is(
 );
 
 select ok(
-  (select not rolsuper and not rolcanlogin and not rolinherit and not rolbypassrls
+  (select not rolsuper and not rolcanlogin and not rolinherit
+           and not rolcreatedb and not rolcreaterole
+           and not rolreplication and not rolbypassrls
    from pg_roles
    where rolname = 'pokecrack_authorized_opening_reviewer'),
-  'reviewer role is NOLOGIN, NOINHERIT and cannot bypass RLS'
+  'reviewer role is least privilege and cannot bypass RLS'
 );
 select ok(
   has_schema_privilege(
