@@ -157,7 +157,7 @@ select ok(
   'Mastodon policy has the exact official API and fixed registry contract'
 );
 select is(
-  (select cardinality(config -> 'approved_tags')::integer from ingest.source_policies
+  (select jsonb_object_length(config -> 'approved_tags')::integer from ingest.source_policies
    where source_key = 'mastodon_social'),
   7,
   'the approved registry contains exactly seven raw hashtags'
