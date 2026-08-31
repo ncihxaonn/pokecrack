@@ -15,7 +15,7 @@ import json
 import re
 import unicodedata
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from time import monotonic
 from typing import Any, Final, Protocol
@@ -136,7 +136,7 @@ def _rkey(value: object) -> str:
     return candidate
 
 
-def _record_sha256(record: Mapping[str, Any]) -> str:
+def _record_bytes(record: Mapping[str, Any]) -> bytes:
     try:
         encoded = json.dumps(
             record,
@@ -147,9 +147,9 @@ def _record_sha256(record: Mapping[str, Any]) -> str:
         ).encode("utf-8")
     except (TypeError, ValueError, UnicodeError):
         raise BlueskyInvalidMessage("bluesky_record_invalid") from None
-    if not 1 <= len(encoded) <= BLUESKY_MAX_RECORD_BYTES:
+    if not encoded:
         raise BlueskyInvalidMessage("bluesky_record_invalid")
-    return hashlib.sha256(encoded).hexdigest()
+    return encoded
 
 
 def _published_at(record: Mapping[str, Any]) -> datetime | None:
@@ -250,7 +250,9 @@ class BlueskyCommitEvent:
     collection: str
     rkey: str
     record: Mapping[str, Any] | None
+    record_fingerprint: bytes | None = field(repr=False)
     published_at: datetime | None
+    candidate_record_within_bound: bool
     candidate_timestamp_valid: bool
 
 
@@ -259,12 +261,12 @@ def parse_jetstream_message(raw: bytes | str | Mapping[str, Any]) -> BlueskyComm
 
     Frames for other collections are ignored after their small structural
     envelope is validated.  Relevant malformed frames fail closed, while an
-    in-band upstream error receives a typed retry disposition.  The sole
-    candidate-level exception is an untrusted record ``createdAt`` with invalid
-    syntax or range: its otherwise validated commit is returned so the
-    collector can advance the cursor, but the record is marked ineligible for
-    candidate retention.  Every other relevant envelope or record error still
-    fails closed.
+    in-band upstream error receives a typed retry disposition. Candidate-level
+    exceptions are an oversized but otherwise valid record and
+    an untrusted record ``createdAt`` with invalid syntax or range.  Their
+    otherwise validated commits are returned so the collector can advance the
+    cursor, but the records are marked ineligible for candidate retention.
+    Every other relevant envelope or record error still fails closed.
     """
 
     if isinstance(raw, bytes):
@@ -331,7 +333,9 @@ def parse_jetstream_message(raw: bytes | str | Mapping[str, Any]) -> BlueskyComm
     if collection != BLUESKY_POST_COLLECTION:
         return None
     record: Mapping[str, Any] | None
+    record_fingerprint: bytes | None = None
     published_at: datetime | None = None
+    candidate_record_within_bound = True
     candidate_timestamp_valid = True
     if operation == "delete":
         if "record" in envelope or "cid" in envelope:
@@ -345,10 +349,15 @@ def parse_jetstream_message(raw: bytes | str | Mapping[str, Any]) -> BlueskyComm
         cid = envelope.get("cid")
         if not isinstance(cid, str) or _CID_PATTERN.fullmatch(cid) is None:
             raise BlueskyInvalidMessage("bluesky_cid_invalid")
-        record = dict(envelope["record"])
-        _record_sha256(record)
+        parsed_record = dict(envelope["record"])
+        record_bytes = _record_bytes(parsed_record)
+        record_fingerprint = hashlib.sha256(record_bytes).digest()
+        candidate_record_within_bound = len(record_bytes) <= BLUESKY_MAX_RECORD_BYTES
+        text_value = parsed_record.get("text")
+        if not isinstance(text_value, str) or len(text_value) > 10_000:
+            raise BlueskyInvalidMessage("bluesky_record_text_invalid")
         try:
-            published_at = _published_at(record)
+            published_at = _published_at(parsed_record)
         except BlueskyInvalidMessage as error:
             if error.code not in {
                 "bluesky_created_at_invalid",
@@ -359,6 +368,11 @@ def parse_jetstream_message(raw: bytes | str | Mapping[str, Any]) -> BlueskyComm
             # commit cursor moving, but suppress this record from the retained
             # candidate set instead of letting one poison value replay forever.
             candidate_timestamp_valid = False
+        # Oversized record material remains only in the already bounded raw
+        # transport frame while this iteration is active. The event/cache keeps
+        # a fixed-size fingerprint for duplicate-sequence conflict detection,
+        # never the decoded record or a persistable candidate hash.
+        record = parsed_record if candidate_record_within_bound else None
     return BlueskyCommitEvent(
         seq=seq,
         did=did,
@@ -368,7 +382,9 @@ def parse_jetstream_message(raw: bytes | str | Mapping[str, Any]) -> BlueskyComm
         collection=collection,
         rkey=rkey,
         record=record,
+        record_fingerprint=record_fingerprint,
         published_at=published_at,
+        candidate_record_within_bound=candidate_record_within_bound,
         candidate_timestamp_valid=candidate_timestamp_valid,
     )
 
@@ -612,28 +628,29 @@ class BlueskyJetstreamCollector:
                     # before this event so the inclusive next slice retries it.
                     break
             else:
-                assert event.record is not None
-                text_value = event.record.get("text")
-                if not isinstance(text_value, str) or len(text_value) > 10_000:
-                    raise BlueskyInvalidMessage("bluesky_record_text_invalid")
-                if event.candidate_timestamp_valid and self.keywords.matches(text_value):
-                    candidate = BlueskyCandidate(
-                        cursor=event.seq,
-                        at_uri=at_uri,
-                        public_url=f"https://bsky.app/profile/{event.did}/post/{event.rkey}",
-                        text_excerpt=_bounded_excerpt(text_value),
-                        record_sha256=_record_sha256(event.record),
-                        published_at=event.published_at,
-                    )
-                    if at_uri in candidates or at_uri in deletions:
-                        # Preserve every matching event across bounded slices;
-                        # never advance the checkpoint past an event omitted
-                        # from the exact completion payload.
-                        break
-                    if len(candidates) >= BLUESKY_MAX_CANDIDATES:
-                        # Do not advance beyond an event omitted from the exact
-                        # completion payload; the next inclusive slice resumes it.
-                        break
+                if event.candidate_record_within_bound:
+                    assert event.record is not None
+                    assert event.record_fingerprint is not None
+                    text_value = event.record.get("text")
+                    assert isinstance(text_value, str)
+                    if event.candidate_timestamp_valid and self.keywords.matches(text_value):
+                        candidate = BlueskyCandidate(
+                            cursor=event.seq,
+                            at_uri=at_uri,
+                            public_url=f"https://bsky.app/profile/{event.did}/post/{event.rkey}",
+                            text_excerpt=_bounded_excerpt(text_value),
+                            record_sha256=event.record_fingerprint.hex(),
+                            published_at=event.published_at,
+                        )
+                        if at_uri in candidates or at_uri in deletions:
+                            # Preserve every matching event across bounded slices;
+                            # never advance the checkpoint past an event omitted
+                            # from the exact completion payload.
+                            break
+                        if len(candidates) >= BLUESKY_MAX_CANDIDATES:
+                            # Do not advance beyond an event omitted from the exact
+                            # completion payload; the next inclusive slice resumes it.
+                            break
 
             events_seen += 1
             bytes_seen = next_bytes_seen
