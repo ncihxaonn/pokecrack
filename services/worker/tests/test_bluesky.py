@@ -22,6 +22,7 @@ from pokecrack_worker.collectors.official_api.bluesky import (
     BLUESKY_MAX_DELETIONS,
     BLUESKY_MAX_EVENTS,
     BLUESKY_MAX_MESSAGE_BYTES,
+    BLUESKY_MAX_RECORD_BYTES,
     BLUESKY_MAX_STREAM_BYTES,
     BLUESKY_POLICY_URL,
     BLUESKY_STREAM_WINDOW_SECONDS,
@@ -254,15 +255,19 @@ def test_parser_validates_v2_envelope_time_and_operations() -> None:
     assert event.operation == "update"
     assert event.time == datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
     assert event.record is not None
+    assert event.record_fingerprint is not None
     assert event.record["text"] == "Pokemon TCG opening"
     assert event.published_at == datetime(2026, 8, 30, 11, 59, tzinfo=UTC)
+    assert event.candidate_record_within_bound is True
     assert event.candidate_timestamp_valid is True
 
     deletion = parse_jetstream_message(_frame(43, operation="delete", rkey="post2"))
     assert deletion is not None
     assert deletion.record is None
+    assert deletion.record_fingerprint is None
     assert deletion.operation == "delete"
     assert deletion.published_at is None
+    assert deletion.candidate_record_within_bound is True
     assert deletion.candidate_timestamp_valid is True
 
     assert parse_jetstream_message(_frame(44, collection="app.bsky.feed.like")) is None
@@ -374,6 +379,92 @@ def test_collector_suppresses_missing_created_at_without_stalling() -> None:
     assert result.bytes_seen == len(raw) + len(valid_after)
     assert [item.cursor for item in result.candidates] == [31]
     assert "missing-created-at" not in repr(result)
+
+
+def test_collector_skips_oversized_record_and_advances_checkpoint() -> None:
+    oversized = json.loads(_frame(41, rkey="oversized-record"))
+    oversized["payload"]["record"]["embed"] = "OVERSIZED-SENTINEL" + (
+        "x" * BLUESKY_MAX_RECORD_BYTES
+    )
+    raw = json.dumps(oversized, separators=(",", ":")).encode()
+    assert BLUESKY_MAX_RECORD_BYTES < len(raw) <= BLUESKY_MAX_MESSAGE_BYTES
+
+    parsed = parse_jetstream_message(raw)
+    assert parsed is not None
+    assert parsed.seq == 41
+    assert parsed.candidate_record_within_bound is False
+    assert parsed.record is None
+    assert "OVERSIZED-SENTINEL" not in repr(parsed)
+
+    messages = (
+        _frame(40, rkey="before-oversized"),
+        raw,
+        _frame(42, rkey="after-oversized"),
+    )
+    result = BlueskyJetstreamCollector(
+        transport=RecordingTransport(messages),
+        keywords=_registry(),
+    ).collect(start_cursor=39)
+
+    assert result.end_cursor == 42
+    assert result.events_seen == 3
+    assert result.bytes_seen == sum(map(len, messages))
+    assert [item.cursor for item in result.candidates] == [40, 42]
+    assert "OVERSIZED-SENTINEL" not in repr(result)
+    assert "oversized-record" not in repr(result)
+
+    replay = BlueskyJetstreamCollector(
+        transport=RecordingTransport((raw, raw)),
+        keywords=_registry(),
+    ).collect(start_cursor=40)
+    assert replay.end_cursor == 41
+    assert replay.events_seen == 2
+    assert replay.candidates == ()
+
+    conflict = json.loads(raw)
+    conflict["payload"]["record"]["embed"] += "different"
+    conflicting_raw = json.dumps(conflict, separators=(",", ":")).encode()
+    with pytest.raises(BlueskyInvalidMessage, match="bluesky_sequence_conflict"):
+        BlueskyJetstreamCollector(
+            transport=RecordingTransport((raw, conflicting_raw)),
+            keywords=_registry(),
+        ).collect(start_cursor=40)
+
+
+@pytest.mark.parametrize("invalid_text", ({"not": "text"}, "x" * 10_001))
+def test_oversized_record_does_not_bypass_text_validation(invalid_text: object) -> None:
+    oversized = json.loads(_frame(50, rkey="oversized-invalid-text"))
+    oversized["payload"]["record"]["text"] = invalid_text
+    oversized["payload"]["record"]["embed"] = "x" * BLUESKY_MAX_RECORD_BYTES
+    raw = json.dumps(oversized, separators=(",", ":")).encode()
+    assert len(raw) <= BLUESKY_MAX_MESSAGE_BYTES
+
+    with pytest.raises(BlueskyInvalidMessage, match="bluesky_record_text_invalid"):
+        BlueskyJetstreamCollector(
+            transport=RecordingTransport((raw,)),
+            keywords=_registry(),
+        ).collect(start_cursor=49)
+
+
+def test_oversized_record_with_poison_timestamp_still_advances() -> None:
+    oversized = json.loads(_frame(60, rkey="oversized-poison-time"))
+    oversized["payload"]["record"]["embed"] = "x" * BLUESKY_MAX_RECORD_BYTES
+    oversized["payload"]["record"]["createdAt"] = "not-a-timestamp"
+    raw = json.dumps(oversized, separators=(",", ":")).encode()
+
+    event = parse_jetstream_message(raw)
+    assert event is not None
+    assert event.record is None
+    assert event.candidate_record_within_bound is False
+    assert event.candidate_timestamp_valid is False
+
+    result = BlueskyJetstreamCollector(
+        transport=RecordingTransport((raw,)),
+        keywords=_registry(),
+    ).collect(start_cursor=59)
+    assert result.end_cursor == 60
+    assert result.events_seen == 1
+    assert result.candidates == ()
 
 
 def test_invalid_created_at_does_not_bypass_structural_record_validation() -> None:
