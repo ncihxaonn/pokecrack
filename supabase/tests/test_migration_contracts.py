@@ -455,9 +455,30 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("prune_nostr_relay_v1", lowered)
         self.assertNotIn("delete from ingest.mastodon_public_hashtag_checkpoints", lowered)
         self.assertNotIn("delete from ingest.mastodon_rate_cooldowns", lowered)
-        self.assertIn("schedule_name = ((payload ->> 'instance_key') || '_' || (payload ->> 'tag_key'))", compact)
         self.assertIn("payload - array['instance_key', 'tag_key'] = '{}'::jsonb", compact)
         self.assertIn("if p_job_type = 'source.mastodon.public_hashtag'", lowered)
+
+        scheduled_allowlist = lowered.split(
+            "add constraint jobs_live_scheduled_enqueue_allowlist_check", 1
+        )[1].split("do $migration$", 1)[0]
+        self.assertIn("job_type = 'source.mastodon.public_hashtag'", scheduled_allowlist)
+        self.assertIn("payload - array['instance_key', 'tag_key'] = '{}'::jsonb", scheduled_allowlist)
+        self.assertIn("payload ->> 'instance_key' = 'mastodon_social'", scheduled_allowlist)
+        self.assertNotIn("schedule_name", scheduled_allowlist)
+
+        scheduled_extension = lowered.split(
+            "select pg_get_functiondef(\n    'ingest.enqueue_scheduled_job_v1", 1
+        )[1].split(
+            "select pg_get_functiondef(\n    'ingest.enqueue_job_v1", 1
+        )[0]
+        self.assertIn(
+            "schedule_name <> ((payload ->> 'instance_key') || '_' || (payload ->> 'tag_key'))",
+            scheduled_extension,
+        )
+        self.assertIn(
+            "mastodon jobs require one exact instance_key, tag_key, and canonical schedule name",
+            scheduled_extension,
+        )
 
         public_rpc = lowered.split(
             "create or replace function public.get_public_social_discovery_v3()", 1

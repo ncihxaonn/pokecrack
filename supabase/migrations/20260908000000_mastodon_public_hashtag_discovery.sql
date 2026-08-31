@@ -1495,7 +1495,6 @@ alter table ingest.jobs
         'pokemontcg', 'pokemoncards', 'pokeca_ja', 'pokemon_card_ja',
         'pokemon_card_ko', 'pokemon_card_zh_hans', 'pokemon_card_zh_hant'
       )
-      and schedule_name = ((payload ->> 'instance_key') || '_' || (payload ->> 'tag_key'))
     )
   );
 

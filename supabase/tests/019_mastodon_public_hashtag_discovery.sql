@@ -531,6 +531,17 @@ select throws_ok(
   'Mastodon jobs require one exact instance_key, tag_key, and canonical schedule name',
   'scheduled Mastodon enqueue requires canonical schedule identity'
 );
+select throws_ok(
+  $$select * from ingest.enqueue_scheduled_job_v1(
+    'mastodon_social_pokemoncards', date_trunc('minute', clock_timestamp()),
+    'source.mastodon.public_hashtag',
+    '{"instance_key":"mastodon_social","tag_key":"pokemontcg"}'::jsonb,
+    0, 5
+  )$$,
+  '22023',
+  'Mastodon jobs require one exact instance_key, tag_key, and canonical schedule name',
+  'scheduled Mastodon enqueue rejects a schedule name for a different approved tag'
+);
 create temporary table mastodon_scheduled_job on commit drop as
 select * from ingest.enqueue_scheduled_job_v1(
   'mastodon_social_pokemon_card_zh_hant', date_trunc('minute', clock_timestamp()),
