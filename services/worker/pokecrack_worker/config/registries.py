@@ -11,6 +11,13 @@ from typing import Any, Literal, Self
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from .bluesky import (
+    REQUIRED_BLUESKY_KEYWORDS,
+    BlueskyKeyword,
+    BlueskyKeywordDocument,
+    BlueskyKeywordRegistry,
+)
+
 REQUIRED_YOUTUBE_QUERIES: tuple[tuple[str, str], ...] = (
     ("pokemon-tcg-booster-box-opening", "Pokemon TCG booster box opening"),
     ("pokemon-tcg-etb-opening", "Pokemon TCG ETB opening"),
@@ -169,3 +176,19 @@ class RarityTaxonomy:
         if label is None:
             return self._unknown
         return self._aliases.get(normalize_rarity(label), self._unknown)
+
+
+__all__ = [
+    "BlueskyKeyword",
+    "BlueskyKeywordDocument",
+    "BlueskyKeywordRegistry",
+    "REQUIRED_BLUESKY_KEYWORDS",
+    "RarityClass",
+    "RarityTaxonomy",
+    "RarityTaxonomyDocument",
+    "YouTubeQuery",
+    "YouTubeQueryDocument",
+    "YouTubeQueryRegistry",
+    "REQUIRED_YOUTUBE_QUERIES",
+    "normalize_rarity",
+]

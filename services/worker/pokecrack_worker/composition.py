@@ -17,7 +17,15 @@ from pathlib import Path
 
 from pokecrack_worker import __version__
 from pokecrack_worker.collectors.base import CollectionService, CollectorError, HTTPClient
+from pokecrack_worker.collectors.official_api.bluesky import (
+    BlueskyError,
+    BlueskyJetstreamCollector,
+    BlueskyJetstreamTransport,
+    WebsocketsBlueskyJetstreamTransport,
+)
 from pokecrack_worker.collectors.official_api.postgres import (
+    BlueskyRequestDeferred,
+    PostgresBlueskyJetstreamGate,
     PostgresPublicStudyGate,
     PostgresTCGdexCheckpointRepository,
     PostgresYouTubeDiscoveryGate,
@@ -43,12 +51,16 @@ from pokecrack_worker.collectors.official_api.youtube import (
 from pokecrack_worker.collectors.scrapling.adapters.public_studies import RobotsTxtChecker
 from pokecrack_worker.collectors.scrapling.http import ScraplingHTTPClient
 from pokecrack_worker.collectors.scrapling.registry import build_live_static_registry
+from pokecrack_worker.config.bluesky import BlueskyKeywordRegistry
 from pokecrack_worker.config.public_studies import PUBLIC_STUDIES, PUBLIC_STUDIES_BY_KEY
 from pokecrack_worker.config.registries import YouTubeQueryRegistry
 from pokecrack_worker.config.settings import DataMode, Settings
 from pokecrack_worker.config.source_policy import SourcePolicyRegistry
 from pokecrack_worker.db import PsycopgQueryExecutor
 from pokecrack_worker.jobs import (
+    BlueskyDeletionWrite,
+    BlueskyJetstreamCompletion,
+    BlueskySourceItemWrite,
     CompletionEffect,
     Job,
     PostgresJobRepository,
@@ -92,9 +104,11 @@ CLEANUP_JOB_TYPE = "maintenance.cleanup"
 TCGDEX_SETS_JOB_TYPE = "catalog.tcgdex.sets.sync"
 YOUTUBE_DISCOVERY_JOB_TYPE = "source.youtube.discovery"
 PUBLIC_STUDY_JOB_TYPE = "source.public_study.opening"
+BLUESKY_JETSTREAM_JOB_TYPE = "source.bluesky.jetstream"
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SOURCES_CONFIG = PROJECT_ROOT / "config" / "sources.yaml"
 YOUTUBE_QUERIES_CONFIG = PROJECT_ROOT / "config" / "youtube-queries.yaml"
+BLUESKY_KEYWORDS_CONFIG = PROJECT_ROOT / "config" / "bluesky-keywords.yaml"
 
 WORKER_HEARTBEAT_SQL = """
 SELECT last_seen_at
@@ -159,6 +173,69 @@ WITH youtube_dependencies AS (
         }'::jsonb
         AND policies.version = 'youtube-global-discovery-v1'
         AND policies.expected_interval_seconds = 21600
+    ),
+    false
+  ) AS ready
+),
+bluesky_dependencies AS (
+  SELECT COALESCE(
+    to_regprocedure('ingest.begin_bluesky_jetstream_job(uuid,text,bigint)') IS NOT NULL
+    AND to_regprocedure(
+      'ingest.finalize_bluesky_jetstream_job(uuid,text,bigint,jsonb)'
+    ) IS NOT NULL
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.begin_bluesky_jetstream_job(uuid,text,bigint)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.finalize_bluesky_jetstream_job(uuid,text,bigint,jsonb)'
+      ),
+      'EXECUTE'
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM ingest.source_policies AS policies
+      WHERE policies.source_key = 'bluesky_jetstream'
+        AND policies.domain = 'jetstream.us-west.bsky.network'
+        AND policies.enabled
+        AND NOT policies.is_demo
+        AND policies.source_kind = 'official_api'
+        AND policies.collector_type = 'bluesky_jetstream'
+        AND policies.access_mode = 'official_api'
+        AND policies.robots_policy = 'not_applicable'
+        AND (
+          policies.routes = ARRAY['bluesky']::text[]
+          OR policies.routes = ARRAY['bluesky_jetstream']::text[]
+        )
+        AND NOT policies.include_subdomains
+        AND policies.min_delay_seconds = 1
+        AND policies.max_pages_per_run = 1
+        AND policies.max_items_per_run = 100
+        AND policies.max_concurrency = 1
+        AND policies.browser_profile IS NULL
+        AND NOT policies.statistics_eligible_default
+        AND policies.retention_days = 30
+        AND policies.config = '{
+          "collection":"app.bsky.feed.post",
+          "endpoint":"wss://jetstream.us-west.bsky.network/xrpc/network.bsky.jetstream.subscribeEvents",
+          "kinds":["commit"],
+          "keyword_registry":"bluesky-keywords-v1",
+          "max_candidates":100,
+          "max_deletions":100,
+          "max_events":10000,
+          "max_excerpt_chars":500,
+          "max_message_bytes":262144,
+          "max_stream_bytes":2097152,
+          "operations":["create","update","delete"],
+          "statistics_eligible":false,
+          "stream_window_seconds":40,
+          "subprotocol":"xrpc.v1.json"
+        }'::jsonb
+        AND policies.version = 'bluesky-jetstream-v1'
+        AND policies.expected_interval_seconds = 60
     ),
     false
   ) AS ready
@@ -241,7 +318,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 4
+        count(*) = 5
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -304,12 +381,37 @@ public_study_dependencies AS (
             AND policies.config ->> 'pack_count' = '36'
             AND policies.config ->> 'qualifying_hit_pack_count' = '1'
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_tcgtalk_sg_54'
+            AND policies.domain = 'tcgtalk.com'
+            AND policies.base_url = 'https://tcgtalk.com/blog/perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232'
+            AND policies.version = 'public-study-tcgtalk-perfect-order-v1'
+            AND policies.config = '{
+              "study_key":"tcgtalk-perfect-order-sg-54-v1",
+              "canonical_url":"https://tcgtalk.com/blog/perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232",
+              "collector_version":"public-study-tcgtalk-perfect-order-v1",
+              "parser_version":"tcgtalk-perfect-order-evidence-v1",
+              "country_code":"SG",
+              "country_name":"Singapore",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "set_external_id":"me03",
+              "product_scope":"booster_bundle",
+              "pack_count":54,
+              "qualifying_hit_pack_count":1,
+              "qualifying_metric":"sir_pack",
+              "metric_version":"global-sir-v1",
+              "observed_at":"2026-03-25T12:40:00Z",
+              "denominator_complete":true
+            }'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
         'public_study_wargamer_gb_17',
         'public_study_cardchill_gb_90',
-        'public_study_bleedingcool_us_36'
+        'public_study_bleedingcool_us_36',
+        'public_study_tcgtalk_sg_54'
       )
     ),
     false
@@ -402,6 +504,10 @@ SELECT
       OR (SELECT ready FROM youtube_dependencies)
     )
     AND (
+      NOT %(bluesky_enabled)s::boolean
+      OR (SELECT ready FROM bluesky_dependencies)
+    )
+    AND (
       NOT %(public_study_enabled)s::boolean
       OR (SELECT ready FROM public_study_dependencies)
     )
@@ -434,6 +540,10 @@ SELECT
     AND (
       NOT %(youtube_enabled)s::boolean
       OR (SELECT ready FROM youtube_dependencies)
+    )
+    AND (
+      NOT %(bluesky_enabled)s::boolean
+      OR (SELECT ready FROM bluesky_dependencies)
     )
     AND (
       NOT %(public_study_enabled)s::boolean
@@ -477,6 +587,7 @@ _WORKER_JOB_TYPES: Mapping[WorkerRole, tuple[str, ...]] = {
 _SCHEDULE_FIELDS: tuple[tuple[str, str], ...] = (
     ("official_api", "schedule_official_api"),
     ("public_collection", "schedule_public_collection"),
+    ("bluesky_collection", "schedule_bluesky_collection"),
     ("auth_collection", "schedule_auth_collection"),
     ("catalog_sync", "schedule_catalog_sync"),
     ("aggregates", "schedule_aggregates"),
@@ -488,7 +599,14 @@ _SCHEDULE_FIELDS: tuple[tuple[str, str], ...] = (
 UNWIRED_SCHEDULE_NAMES = tuple(
     name
     for name, _field_name in _SCHEDULE_FIELDS
-    if name not in {"official_api", "public_collection", "catalog_sync", "cleanup"}
+    if name
+    not in {
+        "official_api",
+        "public_collection",
+        "bluesky_collection",
+        "catalog_sync",
+        "cleanup",
+    }
 )
 
 
@@ -545,6 +663,8 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
         enabled.append(YOUTUBE_DISCOVERY_JOB_TYPE)
     if settings.public_study_collection_enabled:
         enabled.append(PUBLIC_STUDY_JOB_TYPE)
+    if settings.bluesky_collection_enabled:
+        enabled.append(BLUESKY_JETSTREAM_JOB_TYPE)
     return tuple(enabled)
 
 
@@ -589,6 +709,7 @@ def write_health_heartbeat(
         {
             "worker_type": role.value,
             "youtube_enabled": settings.youtube_collection_enabled,
+            "bluesky_enabled": settings.bluesky_collection_enabled,
             "public_study_enabled": settings.public_study_collection_enabled,
         },
     )
@@ -787,6 +908,67 @@ def _youtube_discovery_handler(
     return discover
 
 
+def _bluesky_jetstream_handler(
+    *,
+    settings: Settings,
+    executor: QueryExecutor,
+    worker_id: str,
+    transport: BlueskyJetstreamTransport | None,
+) -> JobHandler:
+    if not settings.bluesky_collection_enabled:
+        raise RuntimeError("Bluesky Jetstream handler requires explicit enablement")
+    registry = BlueskyKeywordRegistry.from_yaml(BLUESKY_KEYWORDS_CONFIG)
+    gates = PostgresBlueskyJetstreamGate(executor)
+    resolved_transport = transport or WebsocketsBlueskyJetstreamTransport()
+    collector = BlueskyJetstreamCollector(
+        transport=resolved_transport,
+        keywords=registry,
+        policies=SourcePolicyRegistry.from_yaml(SOURCES_CONFIG),
+    )
+
+    def discover(job: Job) -> BlueskyJetstreamCompletion:
+        if job.kind != BLUESKY_JETSTREAM_JOB_TYPE or job.payload:
+            raise ValueError("Bluesky Jetstream jobs require an empty payload")
+        try:
+            checkpoint = gates.begin(
+                job_id=job.id,
+                worker_id=worker_id,
+                lease_generation=job.lease_generation,
+            )
+        except BlueskyRequestDeferred as deferred:
+            raise JobDeferred(
+                retry_at=deferred.retry_at,
+                code="bluesky_request_deferred",
+            ) from None
+        try:
+            result = collector.collect(start_cursor=checkpoint.start_cursor)
+        except BlueskyError as error:
+            raise JobExecutionError(code=error.code, retryable=error.retryable) from None
+        return BlueskyJetstreamCompletion(
+            start_cursor=result.start_cursor,
+            end_cursor=result.end_cursor,
+            events_seen=result.events_seen,
+            bytes_seen=result.bytes_seen,
+            candidates=tuple(
+                BlueskySourceItemWrite(
+                    cursor=item.cursor,
+                    at_uri=item.at_uri,
+                    public_url=item.public_url,
+                    text_excerpt=item.text_excerpt,
+                    record_sha256=item.record_sha256,
+                    published_at=item.published_at,
+                )
+                for item in result.candidates
+            ),
+            deletions=tuple(
+                BlueskyDeletionWrite(at_uri=item.at_uri, cursor=item.cursor)
+                for item in result.deletions
+            ),
+        )
+
+    return discover
+
+
 def _public_study_handler(
     *,
     settings: Settings,
@@ -883,6 +1065,7 @@ def _handlers_for_role(
     worker_id: str,
     tcgdex_transport: TCGdexTransport | None,
     youtube_transport: YouTubeTransport | None,
+    bluesky_transport: BlueskyJetstreamTransport | None,
     public_study_http_client: HTTPClient | None,
     public_study_robots_sleeper: Callable[[float], None] | None,
     clock: Callable[[], datetime] | None,
@@ -912,6 +1095,13 @@ def _handlers_for_role(
                 http_client=public_study_http_client,
                 robots_sleeper=public_study_robots_sleeper,
             )
+        if settings.bluesky_collection_enabled:
+            handlers[BLUESKY_JETSTREAM_JOB_TYPE] = _bluesky_jetstream_handler(
+                settings=settings,
+                executor=executor,
+                worker_id=worker_id,
+                transport=bluesky_transport,
+            )
         return handlers
     if role is WorkerRole.WATCHDOG:
         return {CLEANUP_JOB_TYPE: _cleanup_handler()}
@@ -925,6 +1115,7 @@ def build_live_worker_runtime(
     clock: Callable[[], datetime] | None = None,
     tcgdex_transport: TCGdexTransport | None = None,
     youtube_transport: YouTubeTransport | None = None,
+    bluesky_transport: BlueskyJetstreamTransport | None = None,
     public_study_http_client: HTTPClient | None = None,
     public_study_robots_sleeper: Callable[[float], None] | None = None,
 ) -> WorkerRuntime:
@@ -940,6 +1131,7 @@ def build_live_worker_runtime(
         worker_id=settings.worker_id,
         tcgdex_transport=tcgdex_transport,
         youtube_transport=youtube_transport,
+        bluesky_transport=bluesky_transport,
         public_study_http_client=public_study_http_client,
         public_study_robots_sleeper=public_study_robots_sleeper,
         clock=clock,
@@ -1008,6 +1200,27 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
         if settings.public_study_collection_enabled
         else ()
     )
+    bluesky = (
+        (
+            ScheduleEntry(
+                name="bluesky_jetstream",
+                job_type=BLUESKY_JETSTREAM_JOB_TYPE,
+                cron=settings.schedule_bluesky_collection,
+                payload={},
+                priority=-50,
+                max_attempts=min(3, settings.worker_max_attempts),
+            ),
+        )
+        if settings.bluesky_collection_enabled
+        else ()
+    )
+    cleanup_catch_up = (
+        timedelta(hours=36)
+        if settings.bluesky_collection_enabled
+        else timedelta(hours=12)
+        if settings.youtube_collection_enabled
+        else None
+    )
     cleanup = (
         ScheduleEntry(
             name="cleanup",
@@ -1015,16 +1228,14 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
             cron=settings.schedule_cleanup,
             priority=10,
             max_attempts=settings.worker_max_attempts,
-            # The YouTube cache expires at 28 days. Daily cleanup plus a
-            # bounded 12-hour restart catch-up keeps the supported retention
-            # path below 30 days with a 12-hour operational margin.
-            catch_up_within=(timedelta(hours=12) if settings.youtube_collection_enabled else None),
-            catch_up_check_interval=(
-                timedelta(hours=1) if settings.youtube_collection_enabled else None
-            ),
+            # YouTube has a two-day expiry margin; Bluesky uses the full
+            # reviewed retention window, so a restart must catch a missed
+            # daily cleanup independently of whether YouTube is enabled.
+            catch_up_within=cleanup_catch_up,
+            catch_up_check_interval=(timedelta(hours=1) if cleanup_catch_up else None),
         ),
     )
-    return catalog + youtube + public_studies + cleanup
+    return catalog + youtube + public_studies + bluesky + cleanup
 
 
 def build_live_scheduler(

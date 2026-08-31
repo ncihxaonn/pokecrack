@@ -30,6 +30,9 @@ PUBLIC_PIPELINE_SNAPSHOT = (
 REVIEWED_GLOBAL_EVIDENCE = (
     ROOT / "migrations/20260902000000_reviewed_global_evidence.sql"
 ).read_text()
+BLUESKY_JETSTREAM = (
+    ROOT / "migrations/20260903000000_bluesky_jetstream_discovery.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -107,6 +110,99 @@ def _sql_text(value: str) -> str:
 
 
 class IngestMigrationContractTests(unittest.TestCase):
+    def test_bluesky_jetstream_is_bounded_private_and_public_safe(self) -> None:
+        lowered = BLUESKY_JETSTREAM.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn("'bluesky_jetstream'", lowered)
+        self.assertIn("'source.bluesky.jetstream'", lowered)
+        self.assertIn("jetstream.us-west.bsky.network", lowered)
+        self.assertIn("'xrpc.v1.json'", lowered)
+        self.assertIn('"stream_window_seconds":40', lowered)
+        self.assertIn('"max_events":10000', lowered)
+        self.assertIn('"max_stream_bytes":2097152', lowered)
+        self.assertIn('"keyword_registry":"bluesky-keywords-v1"', lowered)
+
+        for table in (
+            "bluesky_jetstream_candidates",
+            "bluesky_jetstream_observations",
+            "bluesky_jetstream_checkpoints",
+        ):
+            self.assertIn(f"alter table ingest.{table} force row level security", compact)
+            self.assertIn(f"grant select on table ingest.{table} to service_role", compact)
+            for mutation in ("insert", "update", "delete"):
+                self.assertNotIn(f"grant {mutation} on table ingest.{table}", compact)
+
+        finalizer = lowered.split(
+            "create or replace function ingest.finalize_bluesky_jetstream_job", 1
+        )[1].split(
+            "alter function ingest.finalize_bluesky_jetstream_job", 1
+        )[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "for update of jobs",
+            "result ->> 'version' <> '1.0.0'",
+            "result_events_seen > 10000",
+            "result_bytes_seen > 2097152",
+            "candidate_count > 100",
+            "deletion_count > 100",
+            "result_start_cursor is distinct from checkpoint.last_cursor",
+            "checkpoints.last_cursor is not distinct from result_start_cursor",
+            "candidate_cursor <= result_start_cursor",
+            "deletion_cursor <= result_start_cursor",
+            "completion_time + interval '1 day'",
+            "deleted_at = null",
+        ):
+            self.assertIn(fragment, finalizer)
+        deletion_loop = finalizer.split(
+            "for deletion_record in", 2
+        )[-1]
+        self.assertIn("insert into ingest.bluesky_jetstream_observations", deletion_loop)
+        self.assertIn("update ingest.bluesky_jetstream_candidates", deletion_loop)
+        self.assertNotIn("insert into ingest.bluesky_jetstream_candidates", deletion_loop)
+
+        self.assertIn("prune_bluesky_jetstream_v1", lowered)
+        self.assertIn("for update of candidates skip locked", lowered)
+        self.assertIn("for update of observations skip locked", lowered)
+        self.assertNotIn("delete from ingest.bluesky_jetstream_checkpoints", lowered)
+
+        public_rpc = lowered.split(
+            "create or replace function public.get_public_social_discovery_v1()", 1
+        )[1].split(
+            "alter function public.get_public_social_discovery_v1()", 1
+        )[0]
+        for public_key in (
+            "'schemaversion'",
+            "'sources'",
+            "'lastcollectedat'",
+            "'bluesky_jetstream'",
+            "'https://bsky.network/docs/jetstream/'",
+        ):
+            self.assertIn(public_key, public_rpc)
+        self.assertIn(
+            "revoke all on function public.get_public_social_discovery_v1() from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_social_discovery_v1() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_social_discovery_v1() to service_role",
+            compact,
+        )
+        for type_name in (
+            "bluesky_jetstream_candidates:",
+            "bluesky_jetstream_observations:",
+            "bluesky_jetstream_checkpoints:",
+            "begin_bluesky_jetstream_job:",
+            "finalize_bluesky_jetstream_job:",
+            "get_public_social_discovery_v1:",
+        ):
+            self.assertIn(type_name, DATABASE_TYPES)
+
     def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()
         compact = " ".join(lowered.split())

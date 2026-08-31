@@ -16,6 +16,7 @@ dependencies = [
   "structlog>=24.2,<26",
   "tenacity>=8.5,<10",
   "typer>=0.12,<1",
+  "websockets>=14,<16",
 ]
 
 [project.optional-dependencies]

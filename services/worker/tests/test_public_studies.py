@@ -11,10 +11,13 @@ from pokecrack_worker.collectors.base import (
     FetchResponse,
 )
 from pokecrack_worker.collectors.scrapling.adapters.public_studies import (
+    TCGTALK_EVIDENCE_EXCERPT,
+    TCGTALK_EVIDENCE_SHA256,
     RobotsTxtChecker,
     bleedingcool_phantasmal_flames_adapter,
     cardchill_ascended_heroes_adapter,
     comicbook_perfect_order_adapter,
+    tcgtalk_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
 from pokecrack_worker.config.public_studies import PUBLIC_STUDIES
@@ -29,6 +32,8 @@ CARDCHILL_SOURCE_URL = PUBLIC_STUDIES[2].source_url
 CARDCHILL_FETCH_URL = PUBLIC_STUDIES[2].fetch_url
 BLEEDINGCOOL_SOURCE_URL = PUBLIC_STUDIES[3].source_url
 BLEEDINGCOOL_FETCH_URL = PUBLIC_STUDIES[3].fetch_url
+TCGTALK_SOURCE_URL = PUBLIC_STUDIES[4].source_url
+TCGTALK_FETCH_URL = PUBLIC_STUDIES[4].fetch_url
 
 
 class FixtureHTTPClient:
@@ -136,6 +141,27 @@ def _html(url: str, body: str) -> FetchResponse:
                 "My Secret Rare count here is a whopping eight, made up of five Illustration Rares, two Full Art Trainer Supporters, and, the biggest hit, a Special Illustration Rare ex.",
             ),
         ),
+        (
+            TCGTALK_FETCH_URL,
+            TCGTALK_SOURCE_URL,
+            "tcgtalk.com",
+            tcgtalk_perfect_order_adapter,
+            """
+            <html><body><main><article>
+              <h1>Perfect Order Pull Rates: What Singapore Collectors Can Expect</h1>
+              <p>By Marcus Tan</p>
+              <p>Based on community opening of 9 booster bundles (54 packs total) plus
+              pre-release stream data from 420+ packs.</p>
+              <p>Out of 54 packs opened, the community pull rate held roughly true: 1 SIR per
+              54 packs in this particular opening, with the Meowth EX SIR being the pull.</p>
+              <script>invented 999 packs</script>
+            </article></main></body></html>
+            """,
+            (
+                "Based on community opening of 9 booster bundles (54 packs total)",
+                "Out of 54 packs opened, the community pull rate held roughly true: 1 SIR per 54 packs in this particular opening, with the Meowth EX SIR being the pull.",
+            ),
+        ),
     ),
 )
 def test_reviewed_public_study_parsers_emit_only_bounded_provenance(
@@ -163,6 +189,8 @@ def test_reviewed_public_study_parsers_emit_only_bounded_provenance(
     assert candidate.media_urls == ()
     assert candidate.content_sha256 is not None
     assert len(candidate.content_sha256) == 64
+    if domain == "tcgtalk.com":
+        assert candidate.content_sha256 == TCGTALK_EVIDENCE_SHA256
     assert candidate.metadata == {
         "study_key": policy.config["study_key"],
         "parser_version": policy.config["parser_version"],
@@ -193,6 +221,50 @@ def test_public_study_adapter_rejects_policy_or_evidence_drift() -> None:
         adapter.collect(f"{COMICBOOK_FETCH_URL}?page=2", policy)
     with pytest.raises(CollectorError, match="exact reviewed URL"):
         adapter.collect(COMICBOOK_SOURCE_URL, policy)
+
+
+def test_tcgtalk_hash_pin_is_strict_without_binding_bleedingcool() -> None:
+    tcgtalk_policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        TCGTALK_FETCH_URL
+    )
+    tcgtalk_body = _html(
+        TCGTALK_FETCH_URL,
+        "<article><h1>Perfect Order Pull Rates: What Singapore Collectors Can Expect</h1>"
+        "<p>Based on community opening of 9 booster bundles (54 packs total) plus unrelated text.</p>"
+        "<p>Out of 54 packs opened, the community pull rate held roughly true: 1 SIR per 54 packs "
+        "in this particular opening, with the Meowth EX SIR being the pull.</p></article>",
+    )
+    adapter = tcgtalk_perfect_order_adapter(
+        client=FixtureHTTPClient({TCGTALK_FETCH_URL: tcgtalk_body})
+    )
+    candidate = adapter.collect(TCGTALK_FETCH_URL, tcgtalk_policy)[0]
+    assert candidate.content_sha256 == TCGTALK_EVIDENCE_SHA256
+    assert candidate.text == TCGTALK_EVIDENCE_EXCERPT
+
+    adapter.expected_evidence_sha256 = "0" * 64
+    with pytest.raises(CollectorError, match="hash"):
+        adapter.collect(TCGTALK_FETCH_URL, tcgtalk_policy)
+
+    bleedingcool_policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        BLEEDINGCOOL_FETCH_URL
+    )
+    bleedingcool = bleedingcool_phantasmal_flames_adapter(
+        client=FixtureHTTPClient(
+            {
+                BLEEDINGCOOL_FETCH_URL: _html(
+                    BLEEDINGCOOL_FETCH_URL,
+                    "<article><h1>Opening Pokémon TCG: Mega Evolution – Phantasmal Flames Products</h1>"
+                    "<p>Now, the meat and potatoes: the booster box.</p>"
+                    "<p>A booster box contains 36 packs, which essentially guarantees some fire.</p>"
+                    "<p>My Secret Rare count here is a whopping eight, made up of five Illustration Rares, "
+                    "two Full Art Trainer Supporters, and, the biggest hit, a Special Illustration Rare ex.</p>"
+                    "</article>",
+                )
+            }
+        )
+    )
+    assert bleedingcool.expected_evidence_sha256 is None
+    assert bleedingcool.collect(BLEEDINGCOOL_FETCH_URL, bleedingcool_policy)
 
 
 def test_public_study_evidence_must_be_inside_the_article() -> None:

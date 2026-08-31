@@ -12,6 +12,7 @@ from time import sleep
 from typing import Protocol
 
 from pokecrack_worker.jobs import (
+    BlueskyJetstreamCompletion,
     CompletionEffect,
     Job,
     LeaseLostError,
@@ -52,6 +53,7 @@ class RuntimeRepository(Protocol):
         | PublicStudyCompletion
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
+        | BlueskyJetstreamCompletion
         | None = None,
     ) -> Job: ...
 
@@ -79,7 +81,11 @@ class RuntimeRepository(Protocol):
 
 
 Completion = (
-    CompletionEffect | PublicStudyCompletion | TCGdexSetsSyncCompletion | YouTubeDiscoveryCompletion
+    CompletionEffect
+    | PublicStudyCompletion
+    | TCGdexSetsSyncCompletion
+    | YouTubeDiscoveryCompletion
+    | BlueskyJetstreamCompletion
 )
 JobHandler = Callable[[Job], Completion | None]
 
@@ -190,6 +196,7 @@ class WorkerRuntime:
                             PublicStudyCompletion,
                             TCGdexSetsSyncCompletion,
                             YouTubeDiscoveryCompletion,
+                            BlueskyJetstreamCompletion,
                         ),
                     ):
                         raise TypeError(

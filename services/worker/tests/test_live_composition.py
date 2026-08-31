@@ -123,6 +123,7 @@ def test_live_health_probes_postgres_and_upserts_a_role_heartbeat() -> None:
     assert dependency_params == {
         "worker_type": "watchdog",
         "youtube_enabled": False,
+        "bluesky_enabled": False,
         "public_study_enabled": False,
     }
     sql, params = executor.calls[1]
@@ -164,6 +165,7 @@ def test_collector_health_fails_before_heartbeat_when_policy_or_rpcs_are_unavail
     assert params == {
         "worker_type": "collector",
         "youtube_enabled": False,
+        "bluesky_enabled": False,
         "public_study_enabled": False,
     }
     assert "INSERT INTO ingest.worker_heartbeats" not in sql
@@ -180,6 +182,7 @@ def test_enabled_youtube_health_requires_exact_rpc_policy_and_permissions() -> N
     assert params == {
         "worker_type": "collector",
         "youtube_enabled": True,
+        "bluesky_enabled": False,
         "public_study_enabled": False,
     }
     assert "ingest.begin_youtube_discovery_job" in sql
@@ -210,6 +213,7 @@ def test_enabled_youtube_scheduler_requires_the_shared_exact_dependencies() -> N
     assert params == {
         "worker_type": "scheduler",
         "youtube_enabled": True,
+        "bluesky_enabled": False,
         "public_study_enabled": False,
     }
     assert sql.startswith("WITH youtube_dependencies AS")
@@ -243,6 +247,7 @@ def test_flag_off_scheduler_health_only_requires_enqueue_readiness() -> None:
     assert dependency_params == {
         "worker_type": "scheduler",
         "youtube_enabled": False,
+        "bluesky_enabled": False,
         "public_study_enabled": False,
     }
     assert "ingest.enqueue_scheduled_job_v1" in scheduler_branch
@@ -627,7 +632,7 @@ def test_busy_youtube_request_gate_defers_before_network_access() -> None:
     ("response", "error_code", "retryable"),
     (
         (APIResponse(200, {}, b"not-json"), "invalid_response", False),
-        (APIResponse(429, {}, b"quota"), "http_error", True),
+        (APIResponse(429, {}, b"quota"), "http_429", True),
     ),
 )
 def test_youtube_response_failures_keep_typed_retry_disposition(
@@ -1098,6 +1103,7 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
     result = build_live_scheduler(settings, executor=executor).run_due(now=youtube_slot)
 
     assert settings.youtube_api_key is None
+    assert settings.schedule_official_api == "0 */6 * * *"
     assert result.created == 5
     assert result.due_names == tuple(f"youtube_{name}" for name in expected_names)
     assert len(executor.calls) == 5
@@ -1106,6 +1112,11 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
     ]
     assert all(params["kind"] == YOUTUBE_DISCOVERY_JOB_TYPE for _sql, params in executor.calls)
     assert all(params["max_attempts"] == 3 for _sql, params in executor.calls)
+    assert all(
+        entry.cron == "0 */6 * * *" and entry.catch_up_within == timedelta(hours=12)
+        for entry in live_schedule_entries(settings)
+        if entry.job_type == YOUTUBE_DISCOVERY_JOB_TYPE
+    )
 
 
 def test_enabled_youtube_cleanup_has_a_bounded_restart_catch_up_margin() -> None:
@@ -1125,7 +1136,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_only_the_four_reviewed_daily_jobs() -> None:
+def test_public_study_flag_registers_only_the_five_reviewed_daily_jobs() -> None:
     entries = live_schedule_entries(_public_study_settings("scheduler"))
     studies = [entry for entry in entries if entry.job_type == PUBLIC_STUDY_JOB_TYPE]
 
@@ -1134,6 +1145,7 @@ def test_public_study_flag_registers_only_the_four_reviewed_daily_jobs() -> None
         {"study_key": "wargamer-chaos-rising-gb-17-v1"},
         {"study_key": "cardchill-ascended-heroes-gb-90-v1"},
         {"study_key": "bleedingcool-phantasmal-flames-us-36-v1"},
+        {"study_key": "tcgtalk-perfect-order-sg-54-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1149,6 +1161,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert params == {
         "worker_type": "collector",
         "youtube_enabled": False,
+        "bluesky_enabled": False,
         "public_study_enabled": True,
     }
     assert "ingest.public_study_observations" in sql
@@ -1158,6 +1171,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert "public_study_wargamer_gb_17" in sql
     assert "public_study_cardchill_gb_90" in sql
     assert "public_study_bleedingcool_us_36" in sql
+    assert "public_study_tcgtalk_sg_54" in sql
     assert "NOT has_table_privilege" in sql
 
 

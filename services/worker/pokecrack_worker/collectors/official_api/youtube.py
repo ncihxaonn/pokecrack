@@ -80,7 +80,7 @@ class YouTubeHTTPError(YouTubeError):
     def __init__(self, status_code: int) -> None:
         self.status_code = status_code
         super().__init__(
-            "http_error",
+            f"http_{status_code}",
             retryable=status_code in {408, 425, 429} or status_code >= 500,
         )
 

@@ -19,6 +19,8 @@ class CollectorRoute(StrEnum):
     """Operation routes are separate from the public collector vocabulary."""
 
     YOUTUBE = "youtube"
+    BLUESKY = "bluesky"
+    BLUESKY_JETSTREAM = "bluesky_jetstream"
     STATIC = "static"
     DYNAMIC = "dynamic"
     MANUAL = "manual"
@@ -36,6 +38,9 @@ AccessMode = Literal["public", "official_api", "authenticated", "manual", "disab
 
 _COLLECTOR_ROUTE_DEFAULTS: dict[CollectorType, frozenset[CollectorRoute]] = {
     CollectorType.OFFICIAL_API: frozenset({CollectorRoute.YOUTUBE, CollectorRoute.CATALOG}),
+    CollectorType.BLUESKY_JETSTREAM: frozenset(
+        {CollectorRoute.BLUESKY, CollectorRoute.BLUESKY_JETSTREAM}
+    ),
     CollectorType.SCRAPLING_HTTP: frozenset({CollectorRoute.STATIC}),
     CollectorType.SCRAPLING_DYNAMIC: frozenset({CollectorRoute.DYNAMIC}),
     CollectorType.OPENCLI_AUTHENTICATED: frozenset({CollectorRoute.OPENCLI}),
@@ -44,6 +49,7 @@ _COLLECTOR_ROUTE_DEFAULTS: dict[CollectorType, frozenset[CollectorRoute]] = {
 }
 _ACCESS_MODE_DEFAULTS: dict[CollectorType, AccessMode] = {
     CollectorType.OFFICIAL_API: "official_api",
+    CollectorType.BLUESKY_JETSTREAM: "official_api",
     CollectorType.SCRAPLING_HTTP: "public",
     CollectorType.SCRAPLING_DYNAMIC: "public",
     CollectorType.OPENCLI_AUTHENTICATED: "authenticated",
@@ -53,6 +59,8 @@ _ACCESS_MODE_DEFAULTS: dict[CollectorType, AccessMode] = {
 _LEGACY_ROUTE_COLLECTORS = {
     CollectorRoute.YOUTUBE.value: CollectorType.OFFICIAL_API,
     CollectorRoute.CATALOG.value: CollectorType.OFFICIAL_API,
+    CollectorRoute.BLUESKY.value: CollectorType.BLUESKY_JETSTREAM,
+    CollectorRoute.BLUESKY_JETSTREAM.value: CollectorType.BLUESKY_JETSTREAM,
     CollectorRoute.STATIC.value: CollectorType.SCRAPLING_HTTP,
     CollectorRoute.DYNAMIC.value: CollectorType.SCRAPLING_DYNAMIC,
     CollectorRoute.OPENCLI.value: CollectorType.OPENCLI_AUTHENTICATED,
@@ -298,8 +306,8 @@ class SourcePolicyRegistry:
         if parsed.username is not None or parsed.password is not None:
             raise ValueError("source URLs containing credentials are not accepted")
         scheme = parsed.scheme.casefold()
-        if scheme != "https":
-            raise ValueError("source URLs must use HTTPS")
+        if scheme not in {"https", "wss"}:
+            raise ValueError("source URLs must use HTTPS or secure WebSocket transport")
         domain = (parsed.hostname or "").casefold().rstrip(".")
         if not domain:
             raise ValueError("source must contain a hostname")

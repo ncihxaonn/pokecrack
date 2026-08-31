@@ -2,10 +2,11 @@
 
 PokeCrack's global collection contract can discover and normalize eligible
 evidence without restricting discovery to one country. The reviewed web-study
-path currently contains exactly two denominator-backed Tier-B studies: 55 packs
-for the United States and 17 packs for the United Kingdom. One source per
-country is still far below the three-source publication gate, so this does
-**not** establish representative worldwide coverage or a global pull-rate claim.
+path currently contains five denominator-backed Tier-B studies: 55 packs for
+the United States, 17 and 90 packs for the United Kingdom, 36 packs for the
+United States, and 54 packs attributed to Singapore's publisher country. Each
+country remains below the three-source publication gate, so this does **not**
+establish representative worldwide coverage or a global pull-rate claim.
 
 ## Data classes
 
@@ -23,7 +24,7 @@ a listing, or a channel country is not evidence that a region has better packs.
 
 ## Reviewed public-study boundary
 
-The statistics path accepts only two immutable study identities, URLs, policy
+The statistics path accepts only five immutable study identities, URLs, policy
 versions, article-title tokens, and exact evidence excerpts. The worker reads
 `robots.txt`, waits the policy's 30-second follow-up delay, requests one HTML
 page, and parses only text inside the page's `<article>` element. A redirect,
@@ -39,11 +40,11 @@ typed finalizer atomically creates one source item, deterministic extraction
 audit, complete opening denominator, and immutable private ledger row.
 Aggregate studies never fabricate card-level `opening_hits`.
 
-Both current countries use `geography_basis=publisher_country` and
+All current countries use `geography_basis=publisher_country` and
 `geography_confidence=tier_b`. This is coarse provenance, not proof of the room
-in which packs were opened. The private ledger retains the qualifying numerator
-for audit, while the public cell exposes only pack/opening/source counts until
-all publication thresholds are met.
+in which packs were opened. The private reviewed ledgers retain any qualifying
+numerator for audit, while the public cell exposes only pack/opening/source
+counts until all publication thresholds are met.
 
 ## YouTube discovery boundary
 
@@ -118,11 +119,13 @@ without watchdog, stale-cleanup, and queue-delay alerts.
 
 Managed logical backups apply the same boundary. A fail-closed two-pass filter
 accepts only one internally consistent pre-YouTube, YouTube-only, or
-post-public-study schema. It removes every disposable
-`ingest.youtube_discoveries` row but retains the immutable public-study ledger.
+post-public-study/Bluesky schema. It removes every disposable
+`ingest.youtube_discoveries` row and every private Bluesky
+candidate/observation row, while retaining the immutable public-study ledgers
+and exact Bluesky checkpoint.
 Request-gate data is excluded by `pg_dump`, independently rejected by the
-sanitizer, and replaced with the exact idle TCGdex, YouTube, and (when present)
-two public-study source keys immediately before RLS is enabled; live lease
+sanitizer, and replaced with the exact idle TCGdex, YouTube, Bluesky, and (when
+present) five public-study source keys immediately before RLS is enabled; live lease
 ownership is never restored. The exact gate columns, constraints, primary key,
 forced/enabled RLS, policy identities, and ledger presence must match the
 preflight. Partial or ambiguous structure aborts without advancing the success

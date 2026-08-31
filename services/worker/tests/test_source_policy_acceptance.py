@@ -11,6 +11,7 @@ from pokecrack_worker.models import CollectorType
 
 EXACT_COLLECTORS = (
     "official_api",
+    "bluesky_jetstream",
     "scrapling_http",
     "scrapling_dynamic",
     "opencli_authenticated",

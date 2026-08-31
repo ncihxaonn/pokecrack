@@ -8,6 +8,7 @@ from .public_studies import (
     bleedingcool_phantasmal_flames_adapter,
     cardchill_ascended_heroes_adapter,
     comicbook_perfect_order_adapter,
+    tcgtalk_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
 
@@ -19,5 +20,6 @@ __all__ = [
     "bleedingcool_phantasmal_flames_adapter",
     "cardchill_ascended_heroes_adapter",
     "comicbook_perfect_order_adapter",
+    "tcgtalk_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",
 ]

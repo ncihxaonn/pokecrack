@@ -10,6 +10,7 @@ from typing import Any
 from uuid import uuid4
 
 from .models import (
+    BlueskyJetstreamCompletion,
     CompletionEffect,
     Job,
     JobStatus,
@@ -243,6 +244,7 @@ class InMemoryJobRepository:
         | PublicStudyCompletion
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
+        | BlueskyJetstreamCompletion
         | None = None,
     ) -> Job:
         with self._lock:
