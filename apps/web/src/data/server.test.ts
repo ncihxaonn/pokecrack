@@ -44,7 +44,7 @@ describe("public live-data client", () => {
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
       "get_public_study_coverage_v1",
-      "get_public_social_discovery_v1",
+      "get_public_social_discovery_v2",
     ]);
   });
 });
