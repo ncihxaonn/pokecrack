@@ -1563,7 +1563,7 @@ begin
   where jobs.id = job_id
     and jobs.status = 'running'
     and jobs.locked_by = worker_id
-    and jobs.lease_generation = lease_generation
+    and jobs.lease_generation = $3
     and jobs.lock_expires_at > completion_time
     and not jobs.is_demo
   returning jobs.* into completed_job;
@@ -1579,7 +1579,7 @@ begin
       active_until = null
   where gates.source_key = policy_source_key
     and gates.owner_job_id = job_id
-    and gates.owner_lease_generation = lease_generation;
+    and gates.owner_lease_generation = $3;
   if not found then
     raise exception using
       errcode = 'P0002', message = 'Nostr completion lost its request gate ownership';
@@ -1674,7 +1674,7 @@ begin
     or payload - array['relay_key'] <> '{}'::jsonb
     or jsonb_typeof(payload -> 'relay_key') is distinct from 'string'
     or payload ->> 'relay_key' not in ('primal', 'nos_lol', 'nostr_net')
-    or schedule_name <> 'nostr_' || payload ->> 'relay_key'
+    or schedule_name <> ('nostr_' || (payload ->> 'relay_key'))
   ) then
     raise exception using
       errcode = '22023',

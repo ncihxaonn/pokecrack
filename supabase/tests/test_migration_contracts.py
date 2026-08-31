@@ -268,6 +268,8 @@ class IngestMigrationContractTests(unittest.TestCase):
             "result_checkpoint is distinct from checkpoint_row.last_checkpoint",
             "deletion_published_at >= existing_candidate.published_at",
             "existing_candidate.author_sha256 = deletion_author_sha256",
+            "jobs.lease_generation = $3",
+            "gates.owner_lease_generation = $3",
             "insert into ingest.nostr_relay_observations",
             "update ingest.nostr_relay_candidates",
         ):
@@ -283,6 +285,9 @@ class IngestMigrationContractTests(unittest.TestCase):
             "checkpoint_row.last_checkpoint + interval '1 second'", lowered
         )
         self.assertIn("lease_checked_at + interval '1 second'", lowered)
+        self.assertIn(
+            "schedule_name <> ('nostr_' || (payload ->> 'relay_key'))", lowered
+        )
         self.assertIn(
             "if p_job_type = 'source.bluesky.jetstream' and p_payload <> '{}'::jsonb then",
             lowered,
