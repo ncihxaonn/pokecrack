@@ -710,9 +710,7 @@ class MastodonPublicHashtagCollector:
         preflight = self._request(instance.instance_url)
         preflight_received_at = self._response_time()
         if preflight.status_code == 429:
-            raise MastodonRateLimited(
-                _safe_retry_at(preflight.headers, now=preflight_received_at)
-            )
+            raise MastodonRateLimited(_safe_retry_at(preflight.headers, now=preflight_received_at))
         if preflight.status_code != 200:
             raise MastodonHTTPError(preflight.status_code)
         _validate_instance_payload(
