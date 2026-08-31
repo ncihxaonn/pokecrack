@@ -6,6 +6,10 @@ import type { PublicDashboardData } from "./types";
 const BLUESKY_SOURCE_ID = "bluesky_jetstream" as const;
 const BLUESKY_SOURCE_NAME = "Bluesky Jetstream discovery" as const;
 const BLUESKY_SOURCE_URL = "https://bsky.network/docs/jetstream/" as const;
+const NOSTR_SOURCE_ID = "nostr_multi_relay" as const;
+const NOSTR_SOURCE_NAME = "Nostr multi-relay discovery" as const;
+const NOSTR_SOURCE_URL =
+  "https://github.com/nostr-protocol/nips/blob/master/01.md" as const;
 
 const isoDateTime = z.string().datetime({ offset: true });
 
@@ -22,10 +26,23 @@ const blueskySource = z
   })
   .strict();
 
+const nostrSource = z
+  .object({
+    id: z.literal(NOSTR_SOURCE_ID),
+    name: z.literal(NOSTR_SOURCE_NAME),
+    kind: z.literal("social"),
+    access: z.literal("public"),
+    status: z.enum(["operational", "delayed", "attention", "paused"]),
+    lastCollectedAt: isoDateTime.nullable(),
+    url: z.literal(NOSTR_SOURCE_URL),
+    note: z.string().min(1).max(500),
+  })
+  .strict();
+
 export const publicSocialDiscoverySchema = z
   .object({
-    schemaVersion: z.literal("1.0.0"),
-    sources: z.tuple([blueskySource]),
+    schemaVersion: z.literal("2.0.0"),
+    sources: z.tuple([blueskySource, nostrSource]),
   })
   .strict();
 

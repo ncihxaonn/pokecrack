@@ -19,6 +19,7 @@ Catalog rows carry `is_demo`; synthetic and live rows must not be conflated.
 - `ingest.source_policies`: exact domain, source kind, enabled routes, limits and freshness.
 - `ingest.source_items`: canonical discovery identity, bounded private excerpt/payload, hashes and retention.
 - `ingest.youtube_discoveries`: dedicated `UNLOGGED`, forced-RLS cache containing only exact YouTube video identity, canonical URL, title, publication time, source-policy reference, first/last seen and per-row expiry. The fenced finalizer validates exact collector/policy versions but does not retain those version strings. The cache has no query/rank, channel, description, hash, inferred classification, product/batch hint, geography, evidence, or generic-source relationship.
+- `ingest.nostr_relay_candidates` and `ingest.nostr_relay_observations`: disposable, private NIP-01 activity ledgers. They are excluded from logical backups and never enter the generic source/evidence/opening/statistics path. A Nostr backup retains only the three relay checkpoints (`ingest.nostr_relay_checkpoints`) and their exact policy/relay/endpoint/protocol binding; raw event content, public keys, signatures, and event IDs are not backup material.
 - `ingest.public_study_observations`: immutable, forced-RLS ledger for the
   exact reviewed public studies. It links one bounded source item,
   deterministic extraction, and complete opening while retaining the

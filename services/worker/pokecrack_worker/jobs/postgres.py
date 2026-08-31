@@ -14,6 +14,7 @@ from .models import (
     CompletionEffect,
     Job,
     JobStatus,
+    NostrRelayCompletion,
     PublicStudyCompletion,
     TCGdexSetsSyncCompletion,
     YouTubeDiscoveryCompletion,
@@ -168,6 +169,16 @@ FROM ingest.finalize_public_study_coverage_job_v1(
 FINALIZE_BLUESKY_JETSTREAM_SQL = """
 SELECT *
 FROM ingest.finalize_bluesky_jetstream_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    result => %(result)s::jsonb
+)
+""".strip()
+
+FINALIZE_NOSTR_RELAY_SQL = """
+SELECT *
+FROM ingest.finalize_nostr_relay_job(
     job_id => %(job_id)s::uuid,
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint,
@@ -385,6 +396,7 @@ class PostgresJobRepository:
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
         | BlueskyJetstreamCompletion
+        | NostrRelayCompletion
         | None = None,
     ) -> Job:
         del now
@@ -418,6 +430,11 @@ class PostgresJobRepository:
             )
         elif isinstance(effect, BlueskyJetstreamCompletion):
             sql = FINALIZE_BLUESKY_JETSTREAM_SQL
+            params["result"] = json.dumps(
+                effect.as_payload(), separators=(",", ":"), sort_keys=True
+            )
+        elif isinstance(effect, NostrRelayCompletion):
+            sql = FINALIZE_NOSTR_RELAY_SQL
             params["result"] = json.dumps(
                 effect.as_payload(), separators=(",", ":"), sort_keys=True
             )

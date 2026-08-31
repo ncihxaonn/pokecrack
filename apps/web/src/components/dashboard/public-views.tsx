@@ -208,6 +208,7 @@ export function SourcesView({ data, synthetic }: { data: PublicDashboardData; sy
     ["RSS", "Bounded feed discovery when the policy explicitly enables the feed."],
     ["Sitemaps", "Discovery URLs only, within reviewed route and page limits."],
     ["Public JSON", "Documented or policy-approved public structured endpoints."],
+    ["Public relay streams", "Bounded, read-only event discovery from exact reviewed relay endpoints; activity only, never pull-rate evidence."],
     ["Policy-approved public pages", "Static or dynamic metadata fields explicitly permitted by the source registry."],
     ["Authenticated OpenCLI adapters", "Owner-authorized accounts for permitted metadata; login never expands collection rights."],
     ["Admin CSV/JSONL imports", "Schema-validated, synthetic or owner-authorized bounded imports with audit context."],

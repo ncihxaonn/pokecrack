@@ -12,7 +12,16 @@ def test_worker_manifest_container_and_required_package_layout_exist() -> None:
     dependencies = " ".join(manifest["project"]["dependencies"]).casefold()
     dev = " ".join(manifest["project"]["optional-dependencies"]["dev"]).casefold()
 
-    for runtime in ("httpx", "psycopg", "pydantic-settings", "pyyaml", "structlog", "typer"):
+    for runtime in (
+        "coincurve",
+        "httpx",
+        "psycopg",
+        "pydantic-settings",
+        "pyyaml",
+        "structlog",
+        "typer",
+        "websockets",
+    ):
         assert runtime in dependencies
     for tool in ("pytest", "ruff", "mypy", "types-pyyaml"):
         assert tool in dev
