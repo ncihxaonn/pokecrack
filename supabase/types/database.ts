@@ -773,6 +773,7 @@ export type Database = {
       get_public_dashboard_snapshot_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_dashboard_snapshot_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_dashboard_snapshot_v3: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_public_dashboard_snapshot_v4: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_social_discovery_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_social_discovery_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_study_coverage_v1: { Args: Record<PropertyKey, never>; Returns: Json };
@@ -785,12 +786,15 @@ export type Database = {
       iso_alpha2_codes: {
         Row: {
           code: string;
+          country_name: string;
         };
         Insert: {
           code: string;
+          country_name: string;
         };
         Update: {
           code?: string;
+          country_name?: string;
         };
         Relationships: [
         ];
@@ -2688,6 +2692,264 @@ export type Database = {
           },
         ];
       };
+      authorized_opening_submissions: {
+        Row: {
+          id: string;
+          submission_key: string;
+          discovery_platform: string | null;
+          discovery_candidate_sha256: string | null;
+          source_identity_sha256: string;
+          authorization_reference_sha256: string;
+          evidence_sha256: string;
+          provenance_dedupe_sha256: string;
+          country_code: string;
+          country_name: string;
+          geography_basis: string;
+          geography_confidence: string;
+          language: string;
+          tcgdex_set_id: string;
+          product_scope: string;
+          observed_at: string;
+          pack_count: number;
+          qualifying_hit_pack_count: number;
+          denominator_complete: boolean;
+          statistics_eligible_requested: boolean;
+          state: string;
+          revision: number;
+          created_at: string;
+          updated_at: string;
+          expires_at: string;
+        };
+        Insert: {
+          id?: string;
+          submission_key: string;
+          discovery_platform?: string | null;
+          discovery_candidate_sha256?: string | null;
+          source_identity_sha256: string;
+          authorization_reference_sha256: string;
+          evidence_sha256: string;
+          provenance_dedupe_sha256: string;
+          country_code: string;
+          country_name: string;
+          geography_basis: string;
+          geography_confidence: string;
+          language: string;
+          tcgdex_set_id: string;
+          product_scope: string;
+          observed_at: string;
+          pack_count: number;
+          qualifying_hit_pack_count: number;
+          denominator_complete: boolean;
+          statistics_eligible_requested: boolean;
+          state?: string;
+          revision?: number;
+          created_at?: string;
+          updated_at?: string;
+          expires_at?: string;
+        };
+        Update: {
+          id?: string;
+          submission_key?: string;
+          discovery_platform?: string | null;
+          discovery_candidate_sha256?: string | null;
+          source_identity_sha256?: string;
+          authorization_reference_sha256?: string;
+          evidence_sha256?: string;
+          provenance_dedupe_sha256?: string;
+          country_code?: string;
+          country_name?: string;
+          geography_basis?: string;
+          geography_confidence?: string;
+          language?: string;
+          tcgdex_set_id?: string;
+          product_scope?: string;
+          observed_at?: string;
+          pack_count?: number;
+          qualifying_hit_pack_count?: number;
+          denominator_complete?: boolean;
+          statistics_eligible_requested?: boolean;
+          state?: string;
+          revision?: number;
+          created_at?: string;
+          updated_at?: string;
+          expires_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'authorized_opening_submissions_country_code_fkey';
+            columns: ['country_code'];
+            isOneToOne: false;
+            referencedRelation: 'iso_alpha2_codes';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
+      authorized_opening_review_events: {
+        Row: {
+          id: string;
+          submission_id: string;
+          revision: number;
+          from_state: string | null;
+          to_state: string;
+          reviewer_reference_sha256: string | null;
+          reason_code: string;
+          reviewed_at: string;
+        };
+        Insert: {
+          id?: string;
+          submission_id: string;
+          revision: number;
+          from_state?: string | null;
+          to_state: string;
+          reviewer_reference_sha256?: string | null;
+          reason_code: string;
+          reviewed_at?: string;
+        };
+        Update: {
+          id?: string;
+          submission_id?: string;
+          revision?: number;
+          from_state?: string | null;
+          to_state?: string;
+          reviewer_reference_sha256?: string | null;
+          reason_code?: string;
+          reviewed_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'authorized_opening_review_events_submission_id_fkey';
+            columns: ['submission_id'];
+            isOneToOne: false;
+            referencedRelation: 'authorized_opening_submissions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      authorized_opening_observations: {
+        Row: {
+          id: string;
+          submission_id: string;
+          submission_key: string;
+          discovery_platform: string | null;
+          discovery_candidate_sha256: string | null;
+          source_identity_sha256: string;
+          authorization_reference_sha256: string;
+          evidence_sha256: string;
+          provenance_dedupe_sha256: string;
+          country_code: string;
+          country_name: string;
+          geography_basis: string;
+          geography_confidence: string;
+          language: string;
+          tcgdex_set_id: string;
+          product_scope: string;
+          observed_at: string;
+          pack_count: number;
+          qualifying_hit_pack_count: number;
+          denominator_complete: boolean;
+          statistics_eligible: boolean;
+          methodology_version: string;
+          accepted_at: string;
+        };
+        Insert: {
+          id?: string;
+          submission_id: string;
+          submission_key: string;
+          discovery_platform?: string | null;
+          discovery_candidate_sha256?: string | null;
+          source_identity_sha256: string;
+          authorization_reference_sha256: string;
+          evidence_sha256: string;
+          provenance_dedupe_sha256: string;
+          country_code: string;
+          country_name: string;
+          geography_basis: string;
+          geography_confidence: string;
+          language: string;
+          tcgdex_set_id: string;
+          product_scope: string;
+          observed_at: string;
+          pack_count: number;
+          qualifying_hit_pack_count: number;
+          denominator_complete: boolean;
+          statistics_eligible: boolean;
+          methodology_version?: string;
+          accepted_at?: string;
+        };
+        Update: {
+          id?: string;
+          submission_id?: string;
+          submission_key?: string;
+          discovery_platform?: string | null;
+          discovery_candidate_sha256?: string | null;
+          source_identity_sha256?: string;
+          authorization_reference_sha256?: string;
+          evidence_sha256?: string;
+          provenance_dedupe_sha256?: string;
+          country_code?: string;
+          country_name?: string;
+          geography_basis?: string;
+          geography_confidence?: string;
+          language?: string;
+          tcgdex_set_id?: string;
+          product_scope?: string;
+          observed_at?: string;
+          pack_count?: number;
+          qualifying_hit_pack_count?: number;
+          denominator_complete?: boolean;
+          statistics_eligible?: boolean;
+          methodology_version?: string;
+          accepted_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'authorized_opening_observations_country_code_fkey';
+            columns: ['country_code'];
+            isOneToOne: false;
+            referencedRelation: 'iso_alpha2_codes';
+            referencedColumns: ['code'];
+          },
+          {
+            foreignKeyName: 'authorized_opening_observations_submission_id_fkey';
+            columns: ['submission_id'];
+            isOneToOne: true;
+            referencedRelation: 'authorized_opening_submissions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      authorized_opening_retractions: {
+        Row: {
+          id: string;
+          accepted_observation_id: string;
+          reviewer_reference_sha256: string;
+          reason_code: string;
+          retracted_at: string;
+        };
+        Insert: {
+          id?: string;
+          accepted_observation_id: string;
+          reviewer_reference_sha256: string;
+          reason_code: string;
+          retracted_at?: string;
+        };
+        Update: {
+          id?: string;
+          accepted_observation_id?: string;
+          reviewer_reference_sha256?: string;
+          reason_code?: string;
+          retracted_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'authorized_opening_retractions_accepted_observation_id_fkey';
+            columns: ['accepted_observation_id'];
+            isOneToOne: true;
+            referencedRelation: 'authorized_opening_observations';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
     };
     Views: { [_ in never]: never };
     Functions: {
@@ -2871,6 +3133,60 @@ export type Database = {
           config: Json;
           evidence_excerpt: string;
           title_fragments: string[];
+        }[];
+      };
+      submit_authorized_opening_v1: {
+        Args: { payload: Json };
+        Returns: { submission_id: string; revision: number; state: string }[];
+      };
+      list_authorized_opening_reviews_v1: {
+        Args: { requested_state: string; requested_limit: number };
+        Returns: {
+          submission_id: string;
+          revision: number;
+          state: string;
+          discovery_platform: string | null;
+          country_code: string;
+          geography_basis: string;
+          geography_confidence: string;
+          language: string;
+          tcgdex_set_id: string;
+          product_scope: string;
+          observed_at: string;
+          pack_count: number;
+          qualifying_hit_pack_count: number;
+          denominator_complete: boolean;
+          statistics_eligible_requested: boolean;
+          created_at: string;
+          updated_at: string;
+          expires_at: string;
+        }[];
+      };
+      review_authorized_opening_v1: {
+        Args: {
+          requested_submission_id: string;
+          expected_revision: number;
+          target_state: string;
+          reviewer_reference_sha256: string;
+          reason_code: string;
+        };
+        Returns: {
+          submission_id: string;
+          revision: number;
+          state: string;
+          accepted_observation_id: string | null;
+        }[];
+      };
+      retract_authorized_opening_v1: {
+        Args: {
+          requested_observation_id: string;
+          reviewer_reference_sha256: string;
+          reason_code: string;
+        };
+        Returns: {
+          accepted_observation_id: string;
+          reason_code: string;
+          retracted_at: string;
         }[];
       };
       upsert_worker_heartbeat_v1: {
