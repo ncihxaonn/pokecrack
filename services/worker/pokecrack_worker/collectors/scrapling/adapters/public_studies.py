@@ -60,14 +60,18 @@ class _VisibleTextParser(HTMLParser):
         self.hidden_depth = 0
         self.article_depth = 0
         self.heading_depth = 0
+        self.document_title_depth = 0
         self.text_parts: list[str] = []
         self.heading_parts: list[str] = []
+        self.document_title_parts: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         del attrs
         normalized = tag.casefold()
         if normalized in {"script", "style", "noscript", "template"}:
             self.hidden_depth += 1
+        elif not self.hidden_depth and normalized == "title":
+            self.document_title_depth += 1
         elif not self.hidden_depth and normalized == "article":
             self.article_depth += 1
         elif not self.hidden_depth and self.article_depth and normalized == "h1":
@@ -82,6 +86,10 @@ class _VisibleTextParser(HTMLParser):
             return
         if self.hidden_depth:
             return
+        if normalized == "title" and self.document_title_depth:
+            self.document_title_depth -= 1
+            self.document_title_parts.append("\n")
+            return
         if normalized == "article" and self.article_depth:
             self.text_parts.append("\n")
             self.article_depth -= 1
@@ -93,7 +101,11 @@ class _VisibleTextParser(HTMLParser):
             self.text_parts.append("\n")
 
     def handle_data(self, data: str) -> None:
-        if self.hidden_depth or not self.article_depth or not data.strip():
+        if self.hidden_depth or not data.strip():
+            return
+        if self.document_title_depth:
+            self.document_title_parts.append(data)
+        if not self.article_depth:
             return
         self.text_parts.append(data)
         if self.heading_depth:
@@ -102,6 +114,10 @@ class _VisibleTextParser(HTMLParser):
     @property
     def title(self) -> str:
         return " ".join("".join(self.heading_parts).split())
+
+    @property
+    def document_title(self) -> str:
+        return " ".join("".join(self.document_title_parts).split())
 
     @property
     def text(self) -> str:
@@ -175,6 +191,7 @@ class ReviewedPublicStudyAdapter:
         title_tokens: Sequence[str],
         evidence_patterns: Sequence[re.Pattern[str]],
         expected_evidence_sha256: str | None = None,
+        allow_document_title: bool = False,
         timeout_seconds: float = 30.0,
         max_response_bytes: int = 1_000_000,
     ) -> None:
@@ -184,6 +201,7 @@ class ReviewedPublicStudyAdapter:
         self.title_tokens = tuple(title_tokens)
         self.evidence_patterns = tuple(evidence_patterns)
         self.expected_evidence_sha256 = expected_evidence_sha256
+        self.allow_document_title = allow_document_title
         self.timeout_seconds = timeout_seconds
         self.max_response_bytes = max_response_bytes
 
@@ -218,6 +236,8 @@ class ReviewedPublicStudyAdapter:
         parser.feed(document)
         parser.close()
         title = parser.title
+        if not title and self.allow_document_title:
+            title = parser.document_title
         if not title or not all(token in title for token in self.title_tokens):
             raise CollectorError("public study title no longer proves the reviewed scope")
         matches = [pattern.search(parser.text) for pattern in self.evidence_patterns]
@@ -435,6 +455,7 @@ def tcgtalk_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyA
             ),
         ),
         expected_evidence_sha256=TCGTALK_EVIDENCE_SHA256,
+        allow_document_title=True,
     )
 
 

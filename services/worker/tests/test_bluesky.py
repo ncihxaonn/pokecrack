@@ -222,11 +222,25 @@ def test_bluesky_source_policy_pins_endpoint_transport_and_bounds() -> None:
         "max_stream_bytes": BLUESKY_MAX_STREAM_BYTES,
         "operations": list(BLUESKY_FILTER_OPERATIONS),
         "statistics_eligible": False,
-        "stream_window_seconds": 40,
+        "stream_window_seconds": 10,
         "subprotocol": BLUESKY_SUBPROTOCOL,
     }
     assert "policies.config = '{" in LIVE_ROLE_DEPENDENCIES_SQL
+    assert '"stream_window_seconds":10' in LIVE_ROLE_DEPENDENCIES_SQL
+    assert '"stream_window_seconds":40' not in LIVE_ROLE_DEPENDENCIES_SQL
     assert '"subprotocol":"xrpc.v1.json"' in LIVE_ROLE_DEPENDENCIES_SQL
+
+
+def test_fixed_window_preserves_two_mib_cap_with_production_throughput_margin() -> None:
+    observed_bytes = 1_139_364
+    observed_window_seconds = 40
+    projected_bytes = observed_bytes * BLUESKY_STREAM_WINDOW_SECONDS / observed_window_seconds
+
+    assert BLUESKY_STREAM_WINDOW_SECONDS == 10.0
+    assert projected_bytes == pytest.approx(284_841, abs=1)
+    assert projected_bytes < BLUESKY_MAX_STREAM_BYTES
+    assert BLUESKY_MAX_STREAM_BYTES == 2 * 1024 * 1024
+    assert BLUESKY_MAX_STREAM_BYTES / projected_bytes > 7
 
 
 def test_parser_validates_v2_envelope_time_and_operations() -> None:
@@ -563,6 +577,58 @@ def test_websocket_transport_pins_protocol_query_and_proxy_boundary(
     assert connection.kwargs["subprotocols"] == [BLUESKY_SUBPROTOCOL]
     assert connection.kwargs["proxy"] is None
     assert messages == (_frame(99),)
+
+
+def test_websocket_transport_returns_a_complete_prefix_at_the_byte_cap(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    first = _frame(100)
+    second = _frame(101, rkey="post101")
+
+    class PrefixConnection:
+        async def __aenter__(self) -> PrefixConnection:
+            return self
+
+        async def __aexit__(self, *_args: object) -> None:
+            return None
+
+        def __init__(self) -> None:
+            self.messages = iter((first, second))
+
+        async def recv(self) -> bytes:
+            return next(self.messages)
+
+    connection = PrefixConnection()
+
+    def connect(_uri: str, **_kwargs: object) -> PrefixConnection:
+        return connection
+
+    monkeypatch.setitem(sys.modules, "websockets", SimpleNamespace(connect=connect))
+    transport = WebsocketsBlueskyJetstreamTransport()
+
+    messages = transport.iter_messages(
+        start_cursor=99,
+        max_events=BLUESKY_MAX_EVENTS,
+        max_bytes=len(first),
+        window_seconds=BLUESKY_STREAM_WINDOW_SECONDS,
+    )
+
+    assert messages == (first,)
+    assert sum(map(len, messages)) <= BLUESKY_MAX_STREAM_BYTES
+
+
+def test_websocket_transport_rejects_window_override_and_byte_cap_above_two_mib() -> None:
+    with pytest.raises(ValueError, match="fixed stream window"):
+        WebsocketsBlueskyJetstreamTransport(stream_window_seconds=BLUESKY_STREAM_WINDOW_SECONDS + 1)
+
+    transport = WebsocketsBlueskyJetstreamTransport()
+    with pytest.raises(ValueError, match="stream byte cap"):
+        transport.iter_messages(
+            start_cursor=None,
+            max_events=BLUESKY_MAX_EVENTS,
+            max_bytes=BLUESKY_MAX_STREAM_BYTES + 1,
+            window_seconds=BLUESKY_STREAM_WINDOW_SECONDS,
+        )
 
 
 def test_websocket_transport_classifies_structured_stale_cursor_handshake(

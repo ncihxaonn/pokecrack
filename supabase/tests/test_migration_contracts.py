@@ -33,6 +33,9 @@ REVIEWED_GLOBAL_EVIDENCE = (
 BLUESKY_JETSTREAM = (
     ROOT / "migrations/20260903000000_bluesky_jetstream_discovery.sql"
 ).read_text()
+BLUESKY_RUNTIME_BOUNDS = (
+    ROOT / "migrations/20260905000000_bluesky_runtime_bounds.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -202,6 +205,35 @@ class IngestMigrationContractTests(unittest.TestCase):
             "get_public_social_discovery_v1:",
         ):
             self.assertIn(type_name, DATABASE_TYPES)
+
+    def test_bluesky_runtime_bounds_are_forward_only_and_fail_closed(self) -> None:
+        lowered = BLUESKY_RUNTIME_BOUNDS.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn('"stream_window_seconds":40', lowered)
+        self.assertIn('"stream_window_seconds":10', lowered)
+        self.assertIn('"max_stream_bytes":2097152', lowered)
+        self.assertIn("pg_get_functiondef", lowered)
+        self.assertIn("occurrence_count <> 1", lowered)
+        self.assertIn("changed_rows <> 1", lowered)
+        self.assertIn("get diagnostics changed_rows = row_count", compact)
+        self.assertIn("did not match the reviewed 40-second predecessor", lowered)
+        self.assertIn("function contract drifted before bounds update", lowered)
+        self.assertIn(
+            "grant execute on function ingest.begin_bluesky_jetstream_job(uuid, text, bigint) to service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function ingest.finalize_bluesky_jetstream_job(uuid, text, bigint, jsonb) to service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_social_discovery_v1() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn("drop table", lowered)
+        self.assertNotIn("truncate", lowered)
 
     def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()
