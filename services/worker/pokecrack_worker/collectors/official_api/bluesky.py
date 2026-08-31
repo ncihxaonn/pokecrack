@@ -38,9 +38,11 @@ BLUESKY_SUBPROTOCOL: Final = "xrpc.v1.json"
 BLUESKY_COLLECTOR_VERSION: Final = "bluesky-jetstream-v1"
 BLUESKY_PARSER_VERSION: Final = "bluesky-jetstream-parser-v1"
 
-# A one-minute scheduler slot has enough room for a bounded stream and normal
-# close/retry handling.  The setting is intentionally not operator-adjustable.
-BLUESKY_STREAM_WINDOW_SECONDS: Final = 40.0
+# Production observed 1,139,364 bytes over 40 seconds (28,484 B/s).  A fixed
+# 10-second slice projects to about 285 KiB at that rate, leaving roughly 7.36x
+# headroom below the unchanged 2 MiB stream ceiling for high-volume bursts.
+# The setting is intentionally not operator-adjustable.
+BLUESKY_STREAM_WINDOW_SECONDS: Final = 10.0
 BLUESKY_MAX_MESSAGE_BYTES: Final = 256 * 1024
 BLUESKY_MAX_STREAM_BYTES: Final = 2 * 1024 * 1024
 BLUESKY_MAX_EVENTS: Final = 10_000
@@ -392,8 +394,8 @@ class WebsocketsBlueskyJetstreamTransport:
         stream_window_seconds: float = BLUESKY_STREAM_WINDOW_SECONDS,
         max_message_bytes: int = BLUESKY_MAX_MESSAGE_BYTES,
     ) -> None:
-        if not 0 < stream_window_seconds <= 45:
-            raise ValueError("Bluesky stream window must be greater than zero and at most 45s")
+        if stream_window_seconds != BLUESKY_STREAM_WINDOW_SECONDS:
+            raise ValueError("Bluesky transport requires the reviewed fixed stream window")
         if not 1 <= max_message_bytes <= BLUESKY_MAX_MESSAGE_BYTES:
             raise ValueError("Bluesky message cap is outside the approved bound")
         self.stream_window_seconds = stream_window_seconds
@@ -479,7 +481,11 @@ class WebsocketsBlueskyJetstreamTransport:
                     if not 1 <= len(encoded) <= self.max_message_bytes:
                         raise BlueskyTransportError("bluesky_message_too_large")
                     if len(encoded) > max_bytes - bytes_seen:
-                        raise BlueskyTransportError("bluesky_stream_too_large")
+                        # Preserve the complete prefix.  The next scheduled
+                        # slice resumes inclusively from its checkpoint, so
+                        # the first event that would exceed the byte budget is
+                        # replayed rather than silently skipped.
+                        break
                     messages.append(encoded)
                     bytes_seen += len(encoded)
         except BlueskyError:
@@ -541,7 +547,10 @@ class BlueskyJetstreamCollector:
                 raise BlueskyTransportError("bluesky_message_too_large")
             next_bytes_seen = bytes_seen + len(raw)
             if next_bytes_seen > BLUESKY_MAX_STREAM_BYTES:
-                raise BlueskyTransportError("bluesky_stream_too_large")
+                # A transport implementation may return a prefix larger than
+                # its advertised budget. Keep the already validated prefix so
+                # the checkpoint can advance without exceeding the cap.
+                break
             event = parse_jetstream_message(raw)
             if event is None:
                 events_seen += 1

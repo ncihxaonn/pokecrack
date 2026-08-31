@@ -267,6 +267,50 @@ def test_tcgtalk_hash_pin_is_strict_without_binding_bleedingcool() -> None:
     assert bleedingcool.collect(BLEEDINGCOOL_FETCH_URL, bleedingcool_policy)
 
 
+def test_tcgtalk_accepts_reviewed_document_title_when_article_heading_is_absent() -> None:
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        TCGTALK_FETCH_URL
+    )
+    body = _html(
+        TCGTALK_FETCH_URL,
+        "<html><head><title>Perfect Order Pull Rates: What Singapore Collectors Can Expect | "
+        "tcgTalk</title></head><body><h1>tcgTalk</h1><article>"
+        "<p>Based on community opening of 9 booster bundles (54 packs total)</p>"
+        "<p>Out of 54 packs opened, the community pull rate held roughly true: 1 SIR per "
+        "54 packs in this particular opening, with the Meowth EX SIR being the pull.</p>"
+        "</article></body></html>",
+    )
+
+    candidate = tcgtalk_perfect_order_adapter(
+        client=FixtureHTTPClient({TCGTALK_FETCH_URL: body})
+    ).collect(TCGTALK_FETCH_URL, policy)[0]
+
+    assert candidate.title == (
+        "Perfect Order Pull Rates: What Singapore Collectors Can Expect | tcgTalk"
+    )
+    assert candidate.text == TCGTALK_EVIDENCE_EXCERPT
+    assert candidate.content_sha256 == TCGTALK_EVIDENCE_SHA256
+
+
+def test_document_title_fallback_remains_disabled_for_other_studies() -> None:
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        COMICBOOK_FETCH_URL
+    )
+    body = _html(
+        COMICBOOK_FETCH_URL,
+        "<html><head><title>I Opened 55 Packs from Pokémon TCG's Perfect Order — Pull Rates"
+        "</title></head><body><article>"
+        "<p>In total, I opened 55 boosters from the upcoming Perfect Order lineup.</p>"
+        "<p>1 Special Illustration Rare</p>"
+        "</article></body></html>",
+    )
+
+    with pytest.raises(CollectorError, match="title"):
+        comicbook_perfect_order_adapter(
+            client=FixtureHTTPClient({COMICBOOK_FETCH_URL: body})
+        ).collect(COMICBOOK_FETCH_URL, policy)
+
+
 def test_public_study_evidence_must_be_inside_the_article() -> None:
     policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
         COMICBOOK_FETCH_URL
