@@ -8,6 +8,12 @@ United States, and 54 packs attributed to Singapore's publisher country. Each
 country remains below the three-source publication gate, so this does **not**
 establish representative worldwide coverage or a global pull-rate claim.
 
+An owner-authorized, fingerprint-only opening bundle may enter the separate
+human review queue described in [AUTHORIZED_OPENINGS.md](AUTHORIZED_OPENINGS.md).
+Social discovery never promotes itself: raw URLs, text, handles, and authors are
+not accepted by that operator boundary, and map rates remain withheld until all
+reviewed evidence and aggregate-publication thresholds are independently met.
+
 ## Data classes
 
 | Class | Examples | Allowed use |

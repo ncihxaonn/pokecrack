@@ -7,12 +7,28 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NoReturn
 from urllib.parse import urlsplit, urlunsplit
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import typer
 from pydantic import ValidationError
 
 from pokecrack_worker import composition
+from pokecrack_worker.authorized_openings import (
+    AuthorizedOpeningBundleError,
+    AuthorizedOpeningRepository,
+    PostgresAuthorizedOpeningRepository,
+    RetractionReason,
+    ReviewOperatorSettings,
+    ReviewQueueItem,
+    ReviewState,
+    SubmitOperatorSettings,
+    load_authorized_opening_bundle,
+    reviewer_reference_hmac,
+)
+from pokecrack_worker.authorized_openings.models import (
+    validate_actor,
+    validate_review_transition,
+)
 from pokecrack_worker.collectors.manual_import import (
     ImportFormatError,
     import_csv_candidates,
@@ -41,9 +57,14 @@ app = typer.Typer(
 aggregate_app = typer.Typer(no_args_is_help=True, help="Build aggregate statistics.")
 collect_app = typer.Typer(no_args_is_help=True, help="Run official metadata collectors.")
 sync_catalog_app = typer.Typer(no_args_is_help=True, help="Synchronize card catalogs.")
+authorized_opening_app = typer.Typer(
+    no_args_is_help=True,
+    help="Submit and review owner-authorized, fingerprint-only opening evidence.",
+)
 app.add_typer(aggregate_app, name="aggregate")
 app.add_typer(collect_app, name="collect")
 app.add_typer(sync_catalog_app, name="sync-catalog")
+app.add_typer(authorized_opening_app, name="authorized-opening")
 
 _QUEUE: list[dict[str, Any]] = []
 
@@ -115,6 +136,94 @@ def _mutation(event: str, dry_run: bool, **values: Any) -> None:
 def _safe_url(url: str) -> str:
     parsed = urlsplit(url)
     return urlunsplit((parsed.scheme, parsed.netloc, parsed.path, "", ""))
+
+
+def _operator_repository(dsn: str) -> AuthorizedOpeningRepository:
+    return PostgresAuthorizedOpeningRepository.from_dsn(dsn)
+
+
+def _require_live_submit_operator() -> AuthorizedOpeningRepository:
+    try:
+        settings = SubmitOperatorSettings()
+    except ValidationError:
+        _json({"error": "invalid_submit_operator_configuration"}, err=True)
+        raise typer.Exit(code=78) from None
+    if settings.data_mode is not DataMode.LIVE:
+        _json(
+            {
+                "error": "live_operator_required",
+                "message": "authorized opening database operations require DATA_MODE=live",
+            },
+            err=True,
+        )
+        raise typer.Exit(code=78)
+    if settings.supabase_db_url is None:
+        _json(
+            {
+                "error": "submit_database_unavailable",
+                "message": "SUPABASE_DB_URL is required for authorized opening submit",
+            },
+            err=True,
+        )
+        raise typer.Exit(code=78)
+    return _operator_repository(settings.supabase_db_url.get_secret_value())
+
+
+def _require_live_review_operator() -> tuple[ReviewOperatorSettings, AuthorizedOpeningRepository]:
+    try:
+        settings = ReviewOperatorSettings()
+    except ValidationError:
+        _json({"error": "invalid_review_operator_configuration"}, err=True)
+        raise typer.Exit(code=78) from None
+    if settings.data_mode is not DataMode.LIVE:
+        _json(
+            {
+                "error": "live_operator_required",
+                "message": "authorized opening database operations require DATA_MODE=live",
+            },
+            err=True,
+        )
+        raise typer.Exit(code=78)
+    if settings.authorized_opening_review_db_url is None:
+        _json(
+            {
+                "error": "review_database_unavailable",
+                "message": "AUTHORIZED_OPENING_REVIEW_DB_URL is required for list and review",
+            },
+            err=True,
+        )
+        raise typer.Exit(code=78)
+    return settings, _operator_repository(
+        settings.authorized_opening_review_db_url.get_secret_value()
+    )
+
+
+def _canonical_utc(value: datetime) -> str:
+    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
+
+
+def _safe_review_item(item: ReviewQueueItem) -> dict[str, object]:
+    return {
+        "submissionId": str(item.submission_id),
+        "revision": item.revision,
+        "state": item.state.value,
+        "discoveryPlatform": item.discovery_platform,
+        "countryCode": item.country_code,
+        "countryName": item.country_name,
+        "geographyBasis": item.geography_basis,
+        "geographyConfidence": item.geography_confidence,
+        "language": item.language,
+        "tcgdexSetId": item.tcgdex_set_id,
+        "productScope": item.product_scope,
+        "observedAt": _canonical_utc(item.observed_at),
+        "packCount": item.pack_count,
+        "qualifyingHitPackCount": item.qualifying_hit_pack_count,
+        "denominatorComplete": item.denominator_complete,
+        "statisticsEligibleRequested": item.statistics_eligible_requested,
+        "createdAt": _canonical_utc(item.created_at),
+        "updatedAt": _canonical_utc(item.updated_at),
+        "expiresAt": _canonical_utc(item.expires_at),
+    }
 
 
 def _deny(error: PolicyDeniedError) -> None:
@@ -423,6 +532,224 @@ def import_opencli(
     """Import a bounded OpenCLI JSON export; no browser/login is started."""
 
     _import_command("import_opencli", path, dry_run)
+
+
+@authorized_opening_app.command("submit")
+def authorized_opening_submit(
+    path: Path = typer.Argument(..., help="Strict schemaVersion 1.0.0 JSONL bundle."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Validate only; do not connect."),
+) -> None:
+    """Validate and atomically submit owner-authorized opening evidence."""
+
+    try:
+        submissions = load_authorized_opening_bundle(path)
+    except AuthorizedOpeningBundleError as error:
+        _json(
+            {
+                "error": "invalid_authorized_opening_bundle",
+                "code": error.code,
+                "line": error.line,
+            },
+            err=True,
+        )
+        raise typer.Exit(code=2) from None
+    counts = {
+        "validated": len(submissions),
+        "statisticsEligibleRequested": sum(
+            submission.statistics_eligible for submission in submissions
+        ),
+        "activityOnlyRequested": sum(
+            not submission.statistics_eligible for submission in submissions
+        ),
+    }
+    if dry_run:
+        _json(
+            {
+                "event": "authorized_opening_submit",
+                "dryRun": True,
+                "mutated": False,
+                "counts": counts,
+            }
+        )
+        return
+    repository = _require_live_submit_operator()
+    try:
+        results = repository.submit_many(submissions)
+    except Exception:
+        _fail_database("authorized opening submit")
+    _json(
+        {
+            "event": "authorized_opening_submit",
+            "dryRun": False,
+            "mutated": True,
+            "counts": {**counts, "submitted": len(results)},
+            "results": [
+                {
+                    "submissionId": str(result.submission_id),
+                    "revision": result.revision,
+                    "state": result.state.value,
+                }
+                for result in results
+            ],
+        }
+    )
+
+
+@authorized_opening_app.command("list")
+def authorized_opening_list(
+    state: str = typer.Option("queued", "--state", help="Exact review state or all."),
+    limit: int = typer.Option(50, "--limit", min=1, max=100),
+) -> None:
+    """List bounded review facts while suppressing every private fingerprint."""
+
+    if state != "all":
+        try:
+            ReviewState(state)
+        except ValueError:
+            _json({"error": "invalid_review_state"}, err=True)
+            raise typer.Exit(code=2) from None
+    _, repository = _require_live_review_operator()
+    try:
+        items = repository.list_reviews(state, limit)
+    except Exception:
+        _fail_database("authorized opening list")
+    _json(
+        {
+            "event": "authorized_opening_list",
+            "count": len(items),
+            "items": [_safe_review_item(item) for item in items],
+        }
+    )
+
+
+@authorized_opening_app.command("review")
+def authorized_opening_review(
+    submission_id: UUID = typer.Argument(..., help="Canonical submission UUID."),
+    expected_revision: int = typer.Option(..., "--expected-revision", min=1),
+    decision: str = typer.Option(..., "--decision", help="Exact target review state."),
+    actor: str = typer.Option(..., "--actor", help="Owner-controlled reviewer identifier."),
+    reason: str = typer.Option(..., "--reason", help="Exact machine-readable reason code."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Validate only; do not connect."),
+) -> None:
+    """Apply one revision-fenced human review decision."""
+
+    try:
+        target = ReviewState(decision)
+        validate_review_transition(target, reason)
+        validate_actor(actor)
+    except ValueError:
+        _json({"error": "invalid_review_request"}, err=True)
+        raise typer.Exit(code=2) from None
+    if dry_run:
+        _json(
+            {
+                "event": "authorized_opening_review",
+                "dryRun": True,
+                "mutated": False,
+                "counts": {"validated": 1},
+            }
+        )
+        return
+    settings, repository = _require_live_review_operator()
+    hmac_key = settings.authorized_opening_review_hmac_key
+    if hmac_key is None:
+        _json(
+            {
+                "error": "reviewer_hmac_unavailable",
+                "message": "AUTHORIZED_OPENING_REVIEW_HMAC_KEY is required for live review",
+            },
+            err=True,
+        )
+        raise typer.Exit(code=78)
+    try:
+        reviewer_reference = reviewer_reference_hmac(actor, hmac_key.get_secret_value())
+    except ValueError:
+        _json({"error": "invalid_reviewer_hmac_configuration"}, err=True)
+        raise typer.Exit(code=78) from None
+    try:
+        result = repository.review(
+            submission_id,
+            expected_revision,
+            target,
+            reviewer_reference,
+            reason,
+        )
+    except Exception:
+        _fail_database("authorized opening review")
+    _json(
+        {
+            "event": "authorized_opening_review",
+            "dryRun": False,
+            "mutated": True,
+            "submissionId": str(result.submission_id),
+            "revision": result.revision,
+            "state": result.state.value,
+            "acceptedObservationId": (
+                str(result.accepted_observation_id)
+                if result.accepted_observation_id is not None
+                else None
+            ),
+        }
+    )
+
+
+@authorized_opening_app.command("retract")
+def authorized_opening_retract(
+    accepted_observation_id: UUID = typer.Argument(
+        ..., help="Canonical accepted observation UUID."
+    ),
+    actor: str = typer.Option(..., "--actor", help="Owner-controlled reviewer identifier."),
+    reason: str = typer.Option(..., "--reason", help="Exact retraction reason code."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Validate only; do not connect."),
+) -> None:
+    """Append a reviewer-authenticated retraction without mutating evidence history."""
+
+    try:
+        retraction_reason = RetractionReason(reason)
+        validate_actor(actor)
+    except ValueError:
+        _json({"error": "invalid_retraction_request"}, err=True)
+        raise typer.Exit(code=2) from None
+    if dry_run:
+        _json(
+            {
+                "event": "authorized_opening_retract",
+                "dryRun": True,
+                "mutated": False,
+                "counts": {"validated": 1},
+            }
+        )
+        return
+    settings, repository = _require_live_review_operator()
+    hmac_key = settings.authorized_opening_review_hmac_key
+    if hmac_key is None:
+        _json(
+            {
+                "error": "reviewer_hmac_unavailable",
+                "message": "AUTHORIZED_OPENING_REVIEW_HMAC_KEY is required for live retract",
+            },
+            err=True,
+        )
+        raise typer.Exit(code=78)
+    try:
+        reviewer_reference = reviewer_reference_hmac(actor, hmac_key.get_secret_value())
+    except ValueError:
+        _json({"error": "invalid_reviewer_hmac_configuration"}, err=True)
+        raise typer.Exit(code=78) from None
+    try:
+        result = repository.retract(
+            accepted_observation_id,
+            reviewer_reference,
+            retraction_reason,
+        )
+    except Exception:
+        _fail_database("authorized opening retract")
+    _json(
+        {
+            "observationId": str(result.accepted_observation_id),
+            "status": "retracted",
+        }
+    )
 
 
 @sync_catalog_app.command("tcgdex")

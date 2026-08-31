@@ -134,6 +134,7 @@ Exact account-owner steps are in:
 - [`docs/BACKUP_AND_RESTORE.md`](docs/BACKUP_AND_RESTORE.md)
 - [`docs/SECURITY.md`](docs/SECURITY.md)
 - [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
+- [`docs/AUTHORIZED_OPENINGS.md`](docs/AUTHORIZED_OPENINGS.md)
 
 ## Methodology summary
 
