@@ -695,7 +695,7 @@ select is(
   'accepted observations reject direct update mutation'
 );
 select ok(
-  (select count(*) = 1
+  (select count(*) = 3
    and bool_and(reviewed_at is not null)
    from ingest.authorized_opening_review_events
    where submission_id = (select submission_id from authorized_opening_submit_result limit 1)),
