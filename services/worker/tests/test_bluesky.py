@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import sys
 from collections.abc import Mapping, Sequence
@@ -73,11 +74,13 @@ def _frame(
     text: str = "Pokemon TCG opening",
     collection: str = BLUESKY_POST_COLLECTION,
     time: str = "2026-08-30T12:00:00Z",
+    created_at: object = "2026-08-30T11:59:00Z",
+    did: str = DID,
 ) -> bytes:
     payload: dict[str, object] = {
         "$type": "network.bsky.jetstream.subscribeEvents#commit",
         "seq": seq,
-        "did": DID,
+        "did": did,
         "time": time,
         "rev": f"rev{seq}",
         "operation": operation,
@@ -89,7 +92,7 @@ def _frame(
         payload["record"] = {
             "$type": BLUESKY_POST_COLLECTION,
             "text": text,
-            "createdAt": "2026-08-30T11:59:00Z",
+            "createdAt": created_at,
         }
     return json.dumps(
         {"$type": "message", "payload": payload},
@@ -252,11 +255,15 @@ def test_parser_validates_v2_envelope_time_and_operations() -> None:
     assert event.time == datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
     assert event.record is not None
     assert event.record["text"] == "Pokemon TCG opening"
+    assert event.published_at == datetime(2026, 8, 30, 11, 59, tzinfo=UTC)
+    assert event.candidate_timestamp_valid is True
 
     deletion = parse_jetstream_message(_frame(43, operation="delete", rkey="post2"))
     assert deletion is not None
     assert deletion.record is None
     assert deletion.operation == "delete"
+    assert deletion.published_at is None
+    assert deletion.candidate_timestamp_valid is True
 
     assert parse_jetstream_message(_frame(44, collection="app.bsky.feed.like")) is None
     with pytest.raises(BlueskyInvalidMessage):
@@ -267,6 +274,125 @@ def test_parser_validates_v2_envelope_time_and_operations() -> None:
         parse_jetstream_message(_error_frame("ConsumerTooSlow"))
     with pytest.raises(BlueskyCursorTooOldError):
         parse_jetstream_message(_error_frame("CursorTooOld"))
+
+
+@pytest.mark.parametrize(
+    "poison_created_at",
+    (
+        "not-an-rfc3339-timestamp",
+        {"not": "a string"},
+        "2026-08-30T11:59:00",
+        "0001-01-01T00:00:00+23:59",
+        "1999-12-31T23:59:59Z",
+        "2999-01-01T00:00:00Z",
+        None,
+    ),
+    ids=(
+        "malformed",
+        "non-string",
+        "naive",
+        "normalization-overflow",
+        "too-old",
+        "too-new",
+        "null",
+    ),
+)
+def test_collector_skips_poison_created_at_and_advances_checkpoint(
+    poison_created_at: object,
+) -> None:
+    poison_text = "POISON-TIMESTAMP Pokemon TCG opening"
+    poison_did = "did:plc:poison123"
+    poison = _frame(
+        11,
+        rkey="poison-timestamp",
+        text=poison_text,
+        created_at=poison_created_at,
+        did=poison_did,
+    )
+    messages = (
+        _frame(10, rkey="before-poison", text="Pokemon TCG before"),
+        poison,
+        _frame(12, rkey="after-poison", text="Pokemon TCG after"),
+    )
+    collector = BlueskyJetstreamCollector(
+        transport=RecordingTransport(messages),
+        keywords=_registry(),
+    )
+
+    first = collector.collect(start_cursor=9)
+
+    assert first.start_cursor == 9
+    assert first.end_cursor == 12
+    assert first.events_seen == len(messages)
+    assert first.events_seen <= BLUESKY_MAX_EVENTS
+    assert first.bytes_seen == sum(map(len, messages))
+    assert first.bytes_seen <= BLUESKY_MAX_STREAM_BYTES
+    assert [item.cursor for item in first.candidates] == [10, 12]
+    assert len(first.candidates) <= BLUESKY_MAX_CANDIDATES
+    assert first.deletions == ()
+    poison_record = json.loads(poison)["payload"]["record"]
+    poison_hash = hashlib.sha256(
+        json.dumps(
+            poison_record,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    ).hexdigest()
+    assert poison_hash not in {item.record_sha256 for item in first.candidates}
+    assert poison_text not in repr(first)
+    assert poison_did not in repr(first)
+    assert "poison-timestamp" not in repr(first)
+
+    replay = BlueskyJetstreamCollector(
+        transport=RecordingTransport(messages),
+        keywords=_registry(),
+    ).collect(start_cursor=first.end_cursor)
+
+    assert replay.start_cursor == 12
+    assert replay.end_cursor == 12
+    assert replay.events_seen == len(messages)
+    assert replay.bytes_seen == sum(map(len, messages))
+    assert replay.candidates == ()
+    assert replay.deletions == ()
+
+
+def test_collector_suppresses_missing_created_at_without_stalling() -> None:
+    missing_created_at = json.loads(_frame(30, rkey="missing-created-at"))
+    del missing_created_at["payload"]["record"]["createdAt"]
+    raw = json.dumps(missing_created_at, separators=(",", ":")).encode()
+    valid_after = _frame(31, rkey="valid-after-missing")
+
+    result = BlueskyJetstreamCollector(
+        transport=RecordingTransport((raw, valid_after)),
+        keywords=_registry(),
+    ).collect(start_cursor=29)
+
+    assert result.end_cursor == 31
+    assert result.events_seen == 2
+    assert result.bytes_seen == len(raw) + len(valid_after)
+    assert [item.cursor for item in result.candidates] == [31]
+    assert "missing-created-at" not in repr(result)
+
+
+def test_invalid_created_at_does_not_bypass_structural_record_validation() -> None:
+    malformed = json.loads(_frame(20, created_at="not-a-timestamp"))
+    malformed["payload"]["record"]["$type"] = "app.bsky.feed.like"
+
+    with pytest.raises(BlueskyInvalidMessage, match="bluesky_record_invalid"):
+        parse_jetstream_message(malformed)
+
+    invalid_text = json.loads(_frame(21, created_at="not-a-timestamp"))
+    invalid_text["payload"]["record"]["text"] = {"unsafe": "Pokemon TCG"}
+    raw_invalid_text = json.dumps(invalid_text, separators=(",", ":")).encode()
+    collector = BlueskyJetstreamCollector(
+        transport=RecordingTransport((raw_invalid_text,)),
+        keywords=_registry(),
+    )
+
+    with pytest.raises(BlueskyInvalidMessage, match="bluesky_record_text_invalid"):
+        collector.collect()
 
 
 def test_collector_is_bounded_idempotent_and_advances_cursor_for_nonmatches() -> None:
