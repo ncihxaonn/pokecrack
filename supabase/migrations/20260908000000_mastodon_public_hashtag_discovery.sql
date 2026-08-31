@@ -76,7 +76,7 @@ insert into ingest.source_policies (
   'not_applicable',
   array['mastodon_rest']::text[],
   false,
-  1,
+  2,
   2,
   80,
   1,
@@ -85,12 +85,27 @@ insert into ingest.source_policies (
   '{
     "instance_key":"mastodon_social",
     "instance_url":"https://mastodon.social/api/v2/instance",
+    "about_url":"https://mastodon.social/about",
+    "privacy_url":"https://mastodon.social/api/v1/instance/privacy_policy",
+    "robots_url":"https://mastodon.social/robots.txt",
     "rules_url":"https://mastodon.social/api/v1/instance/rules",
     "terms_url":"https://mastodon.social/api/v1/instance/terms_of_service",
     "hashtag_base_url":"https://mastodon.social/api/v1/timelines/tag/",
     "official_docs_url":"https://docs.joinmastodon.org/methods/timelines/",
     "policy_state":"reviewed_public_api_2026-08-31",
     "terms_effective_date":"2026-08-31",
+    "terms_checked_at":"2026-08-31",
+    "privacy_checked_at":"2026-08-31",
+    "rules_checked_at":"2026-08-31",
+    "robots_checked_at":"2026-08-31",
+    "public_access_checked_at":"2026-08-31",
+    "robots_decision":"api_route_not_disallowed",
+    "rate_limit_basis":"live_x_ratelimit_headers",
+    "rate_limit_default_per_5m":300,
+    "effective_max_requests_per_5m":150,
+    "operator_acknowledgment":"recommended_before_production",
+    "checkpoint_retention":"opaque_cursor_persists_beyond_activity_ttl",
+    "user_agent":"PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)",
     "required_hashtag_access":{"local":"public","remote":"public"},
     "tag_registry":"mastodon-tags-v1",
     "approved_tags":{
@@ -485,12 +500,27 @@ declare
   expected_config jsonb := '{
     "instance_key":"mastodon_social",
     "instance_url":"https://mastodon.social/api/v2/instance",
+    "about_url":"https://mastodon.social/about",
+    "privacy_url":"https://mastodon.social/api/v1/instance/privacy_policy",
+    "robots_url":"https://mastodon.social/robots.txt",
     "rules_url":"https://mastodon.social/api/v1/instance/rules",
     "terms_url":"https://mastodon.social/api/v1/instance/terms_of_service",
     "hashtag_base_url":"https://mastodon.social/api/v1/timelines/tag/",
     "official_docs_url":"https://docs.joinmastodon.org/methods/timelines/",
     "policy_state":"reviewed_public_api_2026-08-31",
     "terms_effective_date":"2026-08-31",
+    "terms_checked_at":"2026-08-31",
+    "privacy_checked_at":"2026-08-31",
+    "rules_checked_at":"2026-08-31",
+    "robots_checked_at":"2026-08-31",
+    "public_access_checked_at":"2026-08-31",
+    "robots_decision":"api_route_not_disallowed",
+    "rate_limit_basis":"live_x_ratelimit_headers",
+    "rate_limit_default_per_5m":300,
+    "effective_max_requests_per_5m":150,
+    "operator_acknowledgment":"recommended_before_production",
+    "checkpoint_retention":"opaque_cursor_persists_beyond_activity_ttl",
+    "user_agent":"PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)",
     "required_hashtag_access":{"local":"public","remote":"public"},
     "tag_registry":"mastodon-tags-v1",
     "approved_tags":{
@@ -590,7 +620,7 @@ begin
     and policies.robots_policy = 'not_applicable'
     and policies.routes = array['mastodon_rest']::text[]
     and not policies.include_subdomains
-    and policies.min_delay_seconds = 1
+    and policies.min_delay_seconds = 2
     and policies.max_pages_per_run = 2
     and policies.max_items_per_run = 80
     and policies.max_concurrency = 1
@@ -672,12 +702,12 @@ begin
     request_retry_at := cooldown_row.cooldown_until;
   end if;
   if policy_last_attempt_at is not null
-    and lease_checked_at < policy_last_attempt_at + interval '1 second'
+    and lease_checked_at < policy_last_attempt_at + interval '2 seconds'
   then
     if request_retry_at is null
-      or request_retry_at < policy_last_attempt_at + interval '1 second'
+      or request_retry_at < policy_last_attempt_at + interval '2 seconds'
     then
-      request_retry_at := policy_last_attempt_at + interval '1 second';
+      request_retry_at := policy_last_attempt_at + interval '2 seconds';
     end if;
   end if;
 
@@ -719,8 +749,12 @@ begin
       message = 'live Mastodon request gate is unavailable';
   end if;
 
+  -- Reserve the full bounded request window in the shared source policy. The
+  -- worker's process-wide limiter starts preflight and at most two timeline
+  -- requests at 2s spacing; reserving the final slot here prevents another
+  -- worker from starting a Mastodon request during that window.
   update ingest.source_policies as policies
-  set last_attempt_at = lease_checked_at,
+  set last_attempt_at = lease_checked_at + interval '4 seconds',
       updated_at = lease_checked_at
   where policies.id = policy_id;
 
@@ -741,6 +775,155 @@ grant execute on function ingest.begin_mastodon_public_hashtag_job(uuid, text, b
 
 comment on function ingest.begin_mastodon_public_hashtag_job(uuid, text, bigint, text, text) is
   'Generation-fenced preflight for one fixed mastodon.social public hashtag activity slice; all seven tags share one durable request gate and cooldown.';
+
+-- A 429 retry boundary must outlive the paused job and the request-gate lease.
+-- Record it before the generic budget-pause RPC releases the job lease so a
+-- different tag cannot resume the shared instance before Retry-After.
+create or replace function ingest.record_mastodon_rate_limit(
+  job_id uuid,
+  worker_id text,
+  lease_generation bigint,
+  retry_at timestamptz
+)
+returns table(recorded boolean)
+language plpgsql
+security definer
+volatile
+parallel unsafe
+set search_path = pg_catalog
+as $$
+declare
+  leased_job ingest.jobs%rowtype;
+  request_gate ingest.source_request_gates%rowtype;
+  cooldown_row ingest.mastodon_rate_cooldowns%rowtype;
+  recorded_at timestamptz;
+begin
+  if job_id is null then
+    raise exception using errcode = '22023', message = 'job_id must not be null';
+  end if;
+  if worker_id is null
+    or btrim(worker_id) = ''
+    or char_length(worker_id) > 160
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'worker_id must contain 1 to 160 characters';
+  end if;
+  if lease_generation is null or lease_generation < 1 then
+    raise exception using
+      errcode = '22023',
+      message = 'lease_generation must be positive';
+  end if;
+
+  recorded_at := clock_timestamp();
+  if retry_at is null
+    or retry_at <= recorded_at
+    or retry_at > recorded_at + interval '31 days'
+  then
+    raise exception using
+      errcode = '22023',
+      message = 'Mastodon retry_at must be a bounded future timestamp';
+  end if;
+
+  select jobs.*
+  into leased_job
+  from ingest.jobs as jobs
+  where jobs.id = record_mastodon_rate_limit.job_id
+  for update of jobs;
+  if not found then
+    return query select false;
+    return;
+  end if;
+  if leased_job.is_demo
+    or leased_job.status <> 'running'
+    or leased_job.locked_by is distinct from worker_id
+    or leased_job.lease_generation <> lease_generation
+    or leased_job.lock_expires_at is null
+    or leased_job.lock_expires_at <= recorded_at
+    or leased_job.job_type <> 'source.mastodon.public_hashtag'
+  then
+    return query select false;
+    return;
+  end if;
+
+  perform pg_advisory_xact_lock(
+    hashtextextended('pokecrack:source:mastodon:public_hashtag:live', 0)
+  );
+
+  select gates.*
+  into request_gate
+  from ingest.source_request_gates as gates
+  where gates.source_key = 'mastodon_social'
+  for update of gates;
+  if not found
+    or request_gate.owner_job_id is distinct from job_id
+    or request_gate.owner_lease_generation is distinct from lease_generation
+  then
+    raise exception using
+      errcode = '55000',
+      message = 'live Mastodon request gate is not owned by this lease';
+  end if;
+
+  select cooldowns.*
+  into cooldown_row
+  from ingest.mastodon_rate_cooldowns as cooldowns
+  join ingest.source_policies as policies
+    on policies.id = cooldowns.source_policy_id
+  where policies.source_key = 'mastodon_social'
+    and policies.enabled
+    and policies.collector_type = 'mastodon_rest'
+    and not policies.is_demo
+    and cooldowns.instance_key = 'mastodon_social'
+    and not cooldowns.is_demo
+  for update of cooldowns;
+  if not found then
+    raise exception using
+      errcode = '55000',
+      message = 'live Mastodon rate cooldown is unavailable';
+  end if;
+
+  update ingest.mastodon_rate_cooldowns as cooldowns
+  set cooldown_until = greatest(cooldowns.cooldown_until, retry_at),
+      updated_at = recorded_at
+  where cooldowns.source_policy_id = cooldown_row.source_policy_id
+    and cooldowns.instance_key = 'mastodon_social'
+    and not cooldowns.is_demo;
+  if not found then
+    raise exception using
+      errcode = '55000',
+      message = 'live Mastodon rate cooldown changed while recording Retry-After';
+  end if;
+
+  -- The durable cooldown is now the stronger shared boundary. Release the
+  -- request gate in the same transaction before the generic job deferral
+  -- clears its lease; otherwise the stale gate can outlive a shorter
+  -- Retry-After and repeatedly defer every tag until the old lease expires.
+  update ingest.source_request_gates as gates
+  set owner_job_id = null,
+      owner_lease_generation = null,
+      acquired_at = null,
+      active_until = null
+  where gates.source_key = 'mastodon_social'
+    and gates.owner_job_id = job_id
+    and gates.owner_lease_generation = record_mastodon_rate_limit.lease_generation;
+  if not found then
+    raise exception using
+      errcode = '55000',
+      message = 'live Mastodon request gate changed while recording Retry-After';
+  end if;
+
+  return query select true;
+end;
+$$;
+
+alter function ingest.record_mastodon_rate_limit(uuid, text, bigint, timestamptz)
+  owner to postgres;
+revoke all on function ingest.record_mastodon_rate_limit(uuid, text, bigint, timestamptz)
+  from public, anon, authenticated, service_role;
+grant execute on function ingest.record_mastodon_rate_limit(uuid, text, bigint, timestamptz)
+  to service_role;
+comment on function ingest.record_mastodon_rate_limit(uuid, text, bigint, timestamptz) is
+  'Generation-fenced durable Mastodon Retry-After cooldown and atomic request-gate release for the shared public hashtag instance.';
 
 -- Persist only the exact, bounded completion DTO.  The transient status_id is
 -- used to bind the identity hash and is never written to a durable table.
@@ -773,12 +956,27 @@ declare
   expected_config jsonb := '{
     "instance_key":"mastodon_social",
     "instance_url":"https://mastodon.social/api/v2/instance",
+    "about_url":"https://mastodon.social/about",
+    "privacy_url":"https://mastodon.social/api/v1/instance/privacy_policy",
+    "robots_url":"https://mastodon.social/robots.txt",
     "rules_url":"https://mastodon.social/api/v1/instance/rules",
     "terms_url":"https://mastodon.social/api/v1/instance/terms_of_service",
     "hashtag_base_url":"https://mastodon.social/api/v1/timelines/tag/",
     "official_docs_url":"https://docs.joinmastodon.org/methods/timelines/",
     "policy_state":"reviewed_public_api_2026-08-31",
     "terms_effective_date":"2026-08-31",
+    "terms_checked_at":"2026-08-31",
+    "privacy_checked_at":"2026-08-31",
+    "rules_checked_at":"2026-08-31",
+    "robots_checked_at":"2026-08-31",
+    "public_access_checked_at":"2026-08-31",
+    "robots_decision":"api_route_not_disallowed",
+    "rate_limit_basis":"live_x_ratelimit_headers",
+    "rate_limit_default_per_5m":300,
+    "effective_max_requests_per_5m":150,
+    "operator_acknowledgment":"recommended_before_production",
+    "checkpoint_retention":"opaque_cursor_persists_beyond_activity_ttl",
+    "user_agent":"PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)",
     "required_hashtag_access":{"local":"public","remote":"public"},
     "tag_registry":"mastodon-tags-v1",
     "approved_tags":{
@@ -1029,7 +1227,7 @@ begin
     and policies.robots_policy = 'not_applicable'
     and policies.routes = array['mastodon_rest']::text[]
     and not policies.include_subdomains
-    and policies.min_delay_seconds = 1
+    and policies.min_delay_seconds = 2
     and policies.max_pages_per_run = 2
     and policies.max_items_per_run = 80
     and policies.max_concurrency = 1
@@ -1840,7 +2038,7 @@ as $$
         and policies.robots_policy = 'not_applicable'
         and policies.routes = array['mastodon_rest']::text[]
         and not policies.include_subdomains
-        and policies.min_delay_seconds = 1
+        and policies.min_delay_seconds = 2
         and policies.max_pages_per_run = 2
         and policies.max_items_per_run = 80
         and policies.max_concurrency = 1
@@ -1853,12 +2051,27 @@ as $$
         and policies.config = jsonb_build_object(
           'instance_key', 'mastodon_social',
           'instance_url', 'https://mastodon.social/api/v2/instance',
+          'about_url', 'https://mastodon.social/about',
+          'privacy_url', 'https://mastodon.social/api/v1/instance/privacy_policy',
+          'robots_url', 'https://mastodon.social/robots.txt',
           'rules_url', 'https://mastodon.social/api/v1/instance/rules',
           'terms_url', 'https://mastodon.social/api/v1/instance/terms_of_service',
           'hashtag_base_url', 'https://mastodon.social/api/v1/timelines/tag/',
           'official_docs_url', 'https://docs.joinmastodon.org/methods/timelines/',
           'policy_state', 'reviewed_public_api_2026-08-31',
           'terms_effective_date', '2026-08-31',
+          'terms_checked_at', '2026-08-31',
+          'privacy_checked_at', '2026-08-31',
+          'rules_checked_at', '2026-08-31',
+          'robots_checked_at', '2026-08-31',
+          'public_access_checked_at', '2026-08-31',
+          'robots_decision', 'api_route_not_disallowed',
+          'rate_limit_basis', 'live_x_ratelimit_headers',
+          'rate_limit_default_per_5m', 300,
+          'effective_max_requests_per_5m', 150,
+          'operator_acknowledgment', 'recommended_before_production',
+          'checkpoint_retention', 'opaque_cursor_persists_beyond_activity_ttl',
+          'user_agent', 'PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)',
           'required_hashtag_access', jsonb_build_object('local', 'public', 'remote', 'public'),
           'tag_registry', 'mastodon-tags-v1',
           'approved_tags', jsonb_build_object(
@@ -1936,7 +2149,7 @@ as $$
       end,
       'url', 'https://docs.joinmastodon.org/methods/timelines/',
       'note', format(
-        '%s of 7 reviewed public hashtags collected recently; %s retained activity-only rows. Coverage may be incomplete and is never opening evidence or a pull-rate denominator.',
+        '%s of 7 reviewed mastodon.social public hashtag activity-only feeds collected recently; %s retained activity-only rows. Coverage may be incomplete and is never opening evidence, a denominator, or rate evidence.',
         mastodon_health.recent_count,
         mastodon_health.active_candidate_count
       )

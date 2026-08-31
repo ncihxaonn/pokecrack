@@ -14,10 +14,13 @@ import asyncio
 import hashlib
 import json
 import re
+import time
 import unicodedata
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
+from email.utils import parsedate_to_datetime
+from threading import RLock
 from typing import Any, Final, Protocol
 from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
 
@@ -41,7 +44,10 @@ MASTODON_MAX_STATUSES_PER_PAGE: Final = 40
 MASTODON_MAX_RESPONSE_BYTES: Final = 2 * 1024 * 1024
 MASTODON_CONNECT_TIMEOUT_SECONDS: Final = 10.0
 MASTODON_READ_TIMEOUT_SECONDS: Final = 15.0
-MASTODON_SOURCE_GATE_SECONDS: Final = 1.0
+MASTODON_USER_AGENT: Final = "PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)"
+MASTODON_MIN_REQUEST_INTERVAL_SECONDS: Final = 2.0
+# Kept as a source-gate alias for callers that already import the old name.
+MASTODON_SOURCE_GATE_SECONDS: Final = MASTODON_MIN_REQUEST_INTERVAL_SECONDS
 MASTODON_MAX_STATUS_ID_LENGTH: Final = 160
 MASTODON_MAX_TAGS_PER_STATUS: Final = 40
 MASTODON_MAX_LINK_HEADER_BYTES: Final = 16 * 1024
@@ -93,6 +99,41 @@ class MastodonInvalidResponse(MastodonError):
 class MastodonPreflightError(MastodonInvalidResponse):
     def __init__(self, code: str = "mastodon_preflight_failed") -> None:
         super().__init__(code)
+
+
+class MastodonRequestLimiter:
+    """Serialize every Mastodon request in a process at the fixed 2s spacing."""
+
+    __slots__ = ("_clock", "_last_started", "_lock", "_sleeper")
+
+    def __init__(
+        self,
+        *,
+        clock: Callable[[], float] | None = None,
+        sleeper: Callable[[float], None] | None = None,
+    ) -> None:
+        self._clock = clock or time.monotonic
+        self._sleeper = sleeper or time.sleep
+        self._lock = RLock()
+        self._last_started: float | None = None
+
+    def wait(self) -> None:
+        """Wait before a request starts; callers cannot lower this interval."""
+
+        with self._lock:
+            now = self._clock()
+            if self._last_started is not None:
+                next_start = self._last_started + MASTODON_MIN_REQUEST_INTERVAL_SECONDS
+                delay = next_start - now
+                if delay > 0:
+                    self._sleeper(delay)
+                    # A test clock or interrupted sleeper may not advance. Keep
+                    # the reservation monotonic so the next call remains safe.
+                    now = max(self._clock(), next_start)
+            self._last_started = now
+
+
+_DEFAULT_MASTODON_REQUEST_LIMITER = MastodonRequestLimiter()
 
 
 @dataclass(frozen=True, slots=True)
@@ -337,6 +378,44 @@ def parse_rate_limit_headers(headers: Mapping[str, str], *, now: datetime) -> Ma
     return MastodonRateLimit(limit=limit, remaining=remaining, reset_at=reset_at)
 
 
+def _retry_after(value: str | None, *, now: datetime) -> datetime | None:
+    """Parse a bounded Retry-After value without silently weakening a 429."""
+
+    if value is None:
+        return None
+    if (
+        not isinstance(value, str)
+        or not 1 <= len(value) <= 80
+        or _CONTROL_CHARACTER_PATTERN.search(value) is not None
+    ):
+        raise MastodonInvalidResponse("mastodon_retry_after_invalid")
+    now_utc = now.astimezone(UTC)
+    if value.isascii() and value.isdecimal():
+        if len(value) > 7:
+            raise MastodonInvalidResponse("mastodon_retry_after_invalid")
+        try:
+            seconds = int(value)
+        except ValueError:
+            raise MastodonInvalidResponse("mastodon_retry_after_invalid") from None
+        if seconds > MASTODON_MAX_RATE_RESET_SECONDS:
+            raise MastodonInvalidResponse("mastodon_retry_after_out_of_range")
+        retry_at = now_utc + timedelta(seconds=seconds)
+    else:
+        try:
+            parsed = parsedate_to_datetime(value)
+        except (TypeError, ValueError, OverflowError):
+            raise MastodonInvalidResponse("mastodon_retry_after_invalid") from None
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise MastodonInvalidResponse("mastodon_retry_after_invalid")
+        try:
+            retry_at = parsed.astimezone(UTC)
+        except (OverflowError, ValueError):
+            raise MastodonInvalidResponse("mastodon_retry_after_invalid") from None
+    if retry_at > now_utc + timedelta(seconds=MASTODON_MAX_RATE_RESET_SECONDS):
+        raise MastodonInvalidResponse("mastodon_retry_after_out_of_range")
+    return retry_at
+
+
 def _validate_instance_payload(payload: object, *, instance: MastodonInstance) -> None:
     if not isinstance(payload, Mapping) or payload.get("domain") != instance.domain:
         raise MastodonPreflightError("mastodon_instance_domain_mismatch")
@@ -488,23 +567,33 @@ class HTTPXMastodonTransport:
         return asyncio.run(self._get(url, headers=headers))
 
     async def _get(self, url: str, *, headers: Mapping[str, str]) -> APIResponse:
-        wire_headers = dict(headers)
-        allowed_headers = {"accept", "accept-encoding"}
-        if any(name.casefold() not in allowed_headers for name in wire_headers):
-            raise ValueError("Mastodon transport does not accept authentication or proxy headers")
-        accept = next(
-            (value for name, value in wire_headers.items() if name.casefold() == "accept"),
-            None,
-        )
+        allowed_headers = {"accept", "accept-encoding", "user-agent"}
+        normalized_headers: dict[str, str] = {}
+        for name, value in headers.items():
+            if not isinstance(name, str) or not isinstance(value, str):
+                raise ValueError("Mastodon transport headers must be text")
+            normalized_name = name.casefold()
+            if normalized_name not in allowed_headers:
+                raise ValueError(
+                    "Mastodon transport does not accept authentication or proxy headers"
+                )
+            if normalized_name in normalized_headers:
+                raise ValueError("Mastodon transport received duplicate headers")
+            normalized_headers[normalized_name] = value
+        configured_user_agent = normalized_headers.get("user-agent")
+        if configured_user_agent is not None and configured_user_agent != MASTODON_USER_AGENT:
+            raise ValueError("Mastodon transport requires the fixed User-Agent")
+        wire_headers = {
+            "Accept": normalized_headers.get("accept", "application/json"),
+            "Accept-Encoding": "identity",
+            "User-Agent": MASTODON_USER_AGENT,
+        }
+        accept = normalized_headers.get("accept")
         if accept is not None and accept.casefold().strip() != "application/json":
             raise ValueError("Mastodon transport requires an application/json response")
-        configured_encoding = next(
-            (value for name, value in wire_headers.items() if name.casefold() == "accept-encoding"),
-            None,
-        )
+        configured_encoding = normalized_headers.get("accept-encoding")
         if configured_encoding is not None and configured_encoding.casefold().strip() != "identity":
             raise ValueError("Mastodon transport requires identity response encoding")
-        wire_headers["Accept-Encoding"] = "identity"
         timeout = httpx.Timeout(
             timeout=MASTODON_READ_TIMEOUT_SECONDS,
             connect=MASTODON_CONNECT_TIMEOUT_SECONDS,
@@ -588,9 +677,18 @@ def _validate_transport_url(url: str) -> None:
 class MastodonPublicHashtagCollector:
     """Collect two bounded forward pages after a strict instance preflight."""
 
-    def __init__(self, *, transport: MastodonTransport, registry: MastodonRegistry) -> None:
+    def __init__(
+        self,
+        *,
+        transport: MastodonTransport,
+        registry: MastodonRegistry,
+        limiter: MastodonRequestLimiter | None = None,
+        clock: Callable[[], datetime] | None = None,
+    ) -> None:
         self.transport = transport
         self.registry = registry
+        self.limiter = limiter or _DEFAULT_MASTODON_REQUEST_LIMITER
+        self.clock = clock or (lambda: datetime.now(UTC))
 
     def collect(
         self,
@@ -610,8 +708,11 @@ class MastodonPublicHashtagCollector:
             raise ValueError("Mastodon collection clock must be timezone-aware")
 
         preflight = self._request(instance.instance_url)
+        preflight_received_at = self._response_time()
         if preflight.status_code == 429:
-            raise MastodonRateLimited(_safe_retry_at(preflight.headers, now=now))
+            raise MastodonRateLimited(
+                _safe_retry_at(preflight.headers, now=preflight_received_at)
+            )
         if preflight.status_code != 200:
             raise MastodonHTTPError(preflight.status_code)
         _validate_instance_payload(
@@ -627,7 +728,7 @@ class MastodonPublicHashtagCollector:
         bytes_seen = 0
         end_status_id: str | None = start_status_id
         incomplete = False
-        rate_limit = parse_rate_limit_headers(preflight.headers, now=now)
+        rate_limit = parse_rate_limit_headers(preflight.headers, now=preflight_received_at)
 
         if rate_limit.remaining == 0:
             return MastodonPublicHashtagResult(
@@ -649,10 +750,16 @@ class MastodonPublicHashtagCollector:
                 break
             seen_urls.add(current_url)
             response = self._request(current_url)
+            response_received_at = self._response_time()
             requests_made += 1
             if response.status_code == 429:
-                raise MastodonRateLimited(_safe_retry_at(response.headers, now=now))
-            rate_limit = parse_rate_limit_headers(response.headers, now=now)
+                raise MastodonRateLimited(
+                    _safe_retry_at(response.headers, now=response_received_at)
+                )
+            rate_limit = parse_rate_limit_headers(
+                response.headers,
+                now=response_received_at,
+            )
             if response.status_code != 200:
                 raise MastodonHTTPError(response.status_code)
             if len(response.body) > MASTODON_MAX_RESPONSE_BYTES - bytes_seen:
@@ -681,7 +788,7 @@ class MastodonPublicHashtagCollector:
                         raw_status,
                         instance_key=instance_key,
                         registry=self.registry,
-                        now=now,
+                        now=response_received_at,
                     )
                 except MastodonInvalidResponse:
                     invalid_status = True
@@ -740,23 +847,38 @@ class MastodonPublicHashtagCollector:
             rate_limit=rate_limit,
         )
 
+    def _response_time(self) -> datetime:
+        received_at = self.clock()
+        if received_at.tzinfo is None or received_at.utcoffset() is None:
+            raise ValueError("Mastodon response clock must be timezone-aware")
+        return received_at.astimezone(UTC)
+
     def _request(self, url: str) -> APIResponse:
+        self.limiter.wait()
         return self.transport.get(
             url,
-            headers={"Accept": "application/json", "Accept-Encoding": "identity"},
+            headers={
+                "Accept": "application/json",
+                "Accept-Encoding": "identity",
+                "User-Agent": MASTODON_USER_AGENT,
+            },
             connect_timeout_seconds=MASTODON_CONNECT_TIMEOUT_SECONDS,
             read_timeout_seconds=MASTODON_READ_TIMEOUT_SECONDS,
         )
 
 
-def _safe_retry_at(headers: Mapping[str, str], *, now: datetime) -> datetime | None:
-    try:
-        rate = parse_rate_limit_headers(headers, now=now)
-    except MastodonInvalidResponse:
-        return None
-    if rate.reset_at is None or rate.reset_at <= now.astimezone(UTC):
-        return None
-    return rate.reset_at
+def _safe_retry_at(headers: Mapping[str, str], *, now: datetime) -> datetime:
+    """Return the strongest server retry boundary or fail closed."""
+
+    retry_after = _retry_after(_header(headers, "retry-after"), now=now)
+    rate = parse_rate_limit_headers(headers, now=now)
+    now_utc = now.astimezone(UTC)
+    candidates = [
+        value for value in (retry_after, rate.reset_at) if value is not None and value > now_utc
+    ]
+    if not candidates:
+        raise MastodonInvalidResponse("mastodon_retry_after_missing")
+    return max(candidates)
 
 
 # Short aliases mirror the source-specific collector naming used elsewhere.
@@ -773,8 +895,10 @@ __all__ = [
     "MASTODON_MAX_RESPONSE_BYTES",
     "MASTODON_MAX_STATUSES",
     "MASTODON_MAX_STATUSES_PER_PAGE",
+    "MASTODON_MIN_REQUEST_INTERVAL_SECONDS",
     "MASTODON_READ_TIMEOUT_SECONDS",
     "MASTODON_SOURCE_GATE_SECONDS",
+    "MASTODON_USER_AGENT",
     "MastodonAPIResponse",
     "MastodonCollector",
     "MastodonError",
@@ -783,6 +907,7 @@ __all__ = [
     "MastodonPreflightError",
     "MastodonPublicHashtagCollector",
     "MastodonPublicHashtagResult",
+    "MastodonRequestLimiter",
     "MastodonRateLimit",
     "MastodonRateLimited",
     "MastodonStatus",

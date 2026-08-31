@@ -43,6 +43,16 @@ FROM ingest.begin_mastodon_public_hashtag_job(
 )
 """.strip()
 
+RECORD_MASTODON_RATE_LIMIT_SQL = """
+SELECT *
+FROM ingest.record_mastodon_rate_limit(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    retry_at => %(retry_at)s::timestamptz
+)
+""".strip()
+
 BEGIN_TCGDEX_SETS_SQL = """
 SELECT *
 FROM ingest.begin_tcgdex_sets_job(
@@ -509,3 +519,25 @@ class PostgresMastodonPublicHashtagGate:
         if raw_id is None:
             return MastodonPublicHashtagCheckpoint(last_status_id=None)
         return MastodonPublicHashtagCheckpoint(last_status_id=_mastodon_checkpoint_id(raw_id))
+
+    def record_rate_limit(
+        self,
+        *,
+        job_id: str,
+        worker_id: str,
+        lease_generation: int,
+        retry_at: datetime,
+    ) -> None:
+        if retry_at.tzinfo is None or retry_at.utcoffset() is None:
+            raise ValueError("Mastodon retry timestamp must be timezone-aware")
+        rows = self._executor.query(
+            RECORD_MASTODON_RATE_LIMIT_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+                "retry_at": retry_at,
+            },
+        )
+        if not rows or rows[0].get("recorded") is not True:
+            raise LeaseLostError(job_id)

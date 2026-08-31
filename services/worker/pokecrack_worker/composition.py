@@ -367,6 +367,9 @@ mastodon_dependencies AS (
     AND to_regprocedure(
       'ingest.finalize_mastodon_public_hashtag_job(uuid,text,bigint,jsonb)'
     ) IS NOT NULL
+    AND to_regprocedure(
+      'ingest.record_mastodon_rate_limit(uuid,text,bigint,timestamptz)'
+    ) IS NOT NULL
     AND has_function_privilege(
       current_user,
       to_regprocedure(
@@ -378,6 +381,13 @@ mastodon_dependencies AS (
       current_user,
       to_regprocedure(
         'ingest.finalize_mastodon_public_hashtag_job(uuid,text,bigint,jsonb)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.record_mastodon_rate_limit(uuid,text,bigint,timestamptz)'
       ),
       'EXECUTE'
     )
@@ -393,7 +403,7 @@ mastodon_dependencies AS (
           AND policies.robots_policy = 'not_applicable'
           AND policies.routes = ARRAY['mastodon_rest']::text[]
           AND NOT policies.include_subdomains
-          AND policies.min_delay_seconds = 1
+          AND policies.min_delay_seconds = 2
           AND policies.max_pages_per_run = 2
           AND policies.max_items_per_run = 80
           AND policies.max_concurrency = 1
@@ -408,6 +418,7 @@ mastodon_dependencies AS (
           AND policies.base_url = 'https://mastodon.social/'
           AND policies.config = '{
             "allow_redirects":false,
+            "about_url":"https://mastodon.social/about",
             "approved_tags":{
               "pokeca_ja":"ポケカ",
               "pokemon_card_ja":"ポケモンカード",
@@ -426,14 +437,28 @@ mastodon_dependencies AS (
             "max_pages_per_run":2,
             "max_response_bytes":2097152,
             "official_docs_url":"https://docs.joinmastodon.org/methods/timelines/",
+            "operator_acknowledgment":"recommended_before_production",
+            "privacy_checked_at":"2026-08-31",
+            "privacy_url":"https://mastodon.social/api/v1/instance/privacy_policy",
             "policy_state":"reviewed_public_api_2026-08-31",
             "read_timeout_seconds":15,
+            "rate_limit_basis":"live_x_ratelimit_headers",
+            "rate_limit_default_per_5m":300,
             "required_hashtag_access":{"local":"public","remote":"public"},
+            "robots_checked_at":"2026-08-31",
+            "robots_decision":"api_route_not_disallowed",
+            "robots_url":"https://mastodon.social/robots.txt",
             "rules_url":"https://mastodon.social/api/v1/instance/rules",
+            "rules_checked_at":"2026-08-31",
             "statistics_eligible":false,
             "tag_registry":"mastodon-tags-v1",
+            "terms_checked_at":"2026-08-31",
             "terms_effective_date":"2026-08-31",
-            "terms_url":"https://mastodon.social/api/v1/instance/terms_of_service"
+            "terms_url":"https://mastodon.social/api/v1/instance/terms_of_service",
+            "checkpoint_retention":"opaque_cursor_persists_beyond_activity_ttl",
+            "effective_max_requests_per_5m":150,
+            "public_access_checked_at":"2026-08-31",
+            "user_agent":"PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)"
           }'::jsonb
         )
       FROM ingest.source_policies AS policies
@@ -1325,6 +1350,12 @@ def _mastodon_public_hashtag_handler(
             )
         except MastodonRateLimited as error:
             if error.retry_at is not None:
+                gates.record_rate_limit(
+                    job_id=job.id,
+                    worker_id=worker_id,
+                    lease_generation=job.lease_generation,
+                    retry_at=error.retry_at,
+                )
                 raise JobDeferred(
                     retry_at=error.retry_at,
                     code="mastodon_rate_limited",

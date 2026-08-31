@@ -337,7 +337,28 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("'mastodon_rest'", lowered)
         self.assertIn("https://mastodon.social/", lowered)
         self.assertIn("https://mastodon.social/api/v2/instance", lowered)
+        self.assertIn("https://mastodon.social/about", lowered)
+        self.assertIn("https://mastodon.social/api/v1/instance/privacy_policy", lowered)
+        self.assertIn("https://mastodon.social/robots.txt", lowered)
         self.assertIn("https://docs.joinmastodon.org/methods/timelines/", lowered)
+        self.assertIn("terms_checked_at", lowered)
+        self.assertIn("privacy_checked_at", lowered)
+        self.assertIn("rules_checked_at", lowered)
+        self.assertIn("robots_checked_at", lowered)
+        self.assertIn("public_access_checked_at", lowered)
+        self.assertIn("api_route_not_disallowed", lowered)
+        self.assertIn("live_x_ratelimit_headers", lowered)
+        self.assertIn('"rate_limit_default_per_5m":300', lowered)
+        self.assertIn('"effective_max_requests_per_5m":150', lowered)
+        self.assertIn("recommended_before_production", lowered)
+        self.assertIn("opaque_cursor_persists_beyond_activity_ttl", lowered)
+        self.assertIn(
+            "PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)".casefold(),
+            lowered,
+        )
+        self.assertIn("min_delay_seconds = 2", lowered)
+        self.assertIn("interval '2 seconds'", lowered)
+        self.assertIn("reserve the full bounded request window", lowered)
         self.assertIn('"max_pages_per_run":2', lowered)
         self.assertIn('"max_items_per_run":80', lowered)
         self.assertIn('"max_response_bytes":2097152', lowered)
@@ -420,6 +441,25 @@ class IngestMigrationContractTests(unittest.TestCase):
             "cooldown_until timestamptz",
         ):
             self.assertIn(fragment, begin)
+        self.assertIn(
+            "create or replace function ingest.record_mastodon_rate_limit",
+            lowered,
+        )
+        self.assertIn("retry-after", lowered)
+        rate_recorder = lowered.split(
+            "create or replace function ingest.record_mastodon_rate_limit", 1
+        )[1].split("alter function ingest.record_mastodon_rate_limit", 1)[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "for update of jobs",
+            "for update of gates",
+            "for update of cooldowns",
+            "cooldown_until = greatest",
+            "owner_job_id = null",
+            "active_until = null",
+        ):
+            self.assertIn(fragment, rate_recorder)
         finalizer = lowered.split(
             "create or replace function ingest.finalize_mastodon_public_hashtag_job", 1
         )[1].split(
@@ -510,7 +550,8 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("coverage may be incomplete", public_rpc)
         self.assertIn("activity-only", public_rpc)
         self.assertIn("opening evidence", public_rpc)
-        self.assertIn("pull-rate denominator", public_rpc)
+        self.assertIn("a denominator", public_rpc)
+        self.assertIn("rate evidence", public_rpc)
         self.assertIn(
             "revoke all on function public.get_public_social_discovery_v3() from public, anon, authenticated, service_role",
             compact,
@@ -530,6 +571,7 @@ class IngestMigrationContractTests(unittest.TestCase):
             "mastodon_rate_cooldowns:",
             "begin_mastodon_public_hashtag_job:",
             "finalize_mastodon_public_hashtag_job:",
+            "record_mastodon_rate_limit:",
             "prune_mastodon_public_hashtag_v1:",
             "get_public_social_discovery_v3:",
         ):

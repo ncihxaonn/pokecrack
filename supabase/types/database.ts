@@ -2969,6 +2969,15 @@ export type Database = {
         };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
+      record_mastodon_rate_limit: {
+        Args: {
+          job_id: string;
+          worker_id: string;
+          lease_generation: number;
+          retry_at: string;
+        };
+        Returns: { recorded: boolean }[];
+      };
       mastodon_tag_keys_v1: { Args: { value: string[] }; Returns: boolean };
       mastodon_status_id_v1: { Args: { value: string }; Returns: string };
       mastodon_timestamp_v1: {

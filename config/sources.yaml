@@ -223,7 +223,7 @@ sources:
     collector: mastodon_rest
     access_mode: official_api
     robots_policy: not_applicable
-    min_delay_seconds: 1
+    min_delay_seconds: 2
     max_pages_per_run: 2
     max_concurrency: 1
     dynamic_allowed: false
@@ -234,12 +234,27 @@ sources:
     config:
       instance_key: mastodon_social
       instance_url: https://mastodon.social/api/v2/instance
+      about_url: https://mastodon.social/about
+      privacy_url: https://mastodon.social/api/v1/instance/privacy_policy
+      robots_url: https://mastodon.social/robots.txt
       rules_url: https://mastodon.social/api/v1/instance/rules
       terms_url: https://mastodon.social/api/v1/instance/terms_of_service
       hashtag_base_url: https://mastodon.social/api/v1/timelines/tag/
       official_docs_url: https://docs.joinmastodon.org/methods/timelines/
       policy_state: reviewed_public_api_2026-08-31
       terms_effective_date: "2026-08-31"
+      terms_checked_at: "2026-08-31"
+      privacy_checked_at: "2026-08-31"
+      rules_checked_at: "2026-08-31"
+      robots_checked_at: "2026-08-31"
+      public_access_checked_at: "2026-08-31"
+      robots_decision: api_route_not_disallowed
+      rate_limit_basis: live_x_ratelimit_headers
+      rate_limit_default_per_5m: 300
+      effective_max_requests_per_5m: 150
+      operator_acknowledgment: recommended_before_production
+      checkpoint_retention: opaque_cursor_persists_beyond_activity_ttl
+      user_agent: PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)
       required_hashtag_access: {local: public, remote: public}
       tag_registry: mastodon-tags-v1
       approved_tags:
@@ -258,11 +273,11 @@ sources:
       read_timeout_seconds: 15
       allow_redirects: false
       statistics_eligible: false
-    reason: Official public Mastodon REST hashtag activity only; no content, accounts, media, links, opening evidence, or statistics are retained.
+    reason: Official public Mastodon REST hashtag activity only; no raw payload, body, accounts, profiles, media, links, or location is retained, and this is never opening, denominator, rate evidence, or statistics.
     routes: [mastodon_rest]
     adapter: mastodon_public_hashtag
     metadata_only: true
-    requests_per_minute: 60
+    requests_per_minute: 30
     cache_ttl_seconds: 300
     credentials_required: false
     retain_raw_html: false

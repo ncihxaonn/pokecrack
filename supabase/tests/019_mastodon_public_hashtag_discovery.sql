@@ -117,7 +117,7 @@ select ok(
       and robots_policy = 'not_applicable'
       and routes = array['mastodon_rest']::text[]
       and not include_subdomains
-      and min_delay_seconds = 1
+      and min_delay_seconds = 2
       and max_pages_per_run = 2
       and max_items_per_run = 80
       and max_concurrency = 1
@@ -128,12 +128,27 @@ select ok(
       and not is_demo
       and config ->> 'instance_key' = 'mastodon_social'
       and config ->> 'instance_url' = 'https://mastodon.social/api/v2/instance'
+      and config ->> 'about_url' = 'https://mastodon.social/about'
+      and config ->> 'privacy_url' = 'https://mastodon.social/api/v1/instance/privacy_policy'
+      and config ->> 'robots_url' = 'https://mastodon.social/robots.txt'
       and config ->> 'rules_url' = 'https://mastodon.social/api/v1/instance/rules'
       and config ->> 'terms_url' = 'https://mastodon.social/api/v1/instance/terms_of_service'
       and config ->> 'hashtag_base_url' = 'https://mastodon.social/api/v1/timelines/tag/'
       and config ->> 'official_docs_url' = 'https://docs.joinmastodon.org/methods/timelines/'
       and config ->> 'policy_state' = 'reviewed_public_api_2026-08-31'
       and config ->> 'terms_effective_date' = '2026-08-31'
+      and config ->> 'terms_checked_at' = '2026-08-31'
+      and config ->> 'privacy_checked_at' = '2026-08-31'
+      and config ->> 'rules_checked_at' = '2026-08-31'
+      and config ->> 'robots_checked_at' = '2026-08-31'
+      and config ->> 'public_access_checked_at' = '2026-08-31'
+      and config ->> 'robots_decision' = 'api_route_not_disallowed'
+      and config ->> 'rate_limit_basis' = 'live_x_ratelimit_headers'
+      and config ->> 'rate_limit_default_per_5m' = '300'
+      and config ->> 'effective_max_requests_per_5m' = '150'
+      and config ->> 'operator_acknowledgment' = 'recommended_before_production'
+      and config ->> 'checkpoint_retention' = 'opaque_cursor_persists_beyond_activity_ttl'
+      and config ->> 'user_agent' = 'PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)'
       and config -> 'required_hashtag_access' = '{"local":"public","remote":"public"}'::jsonb
       and config ->> 'tag_registry' = 'mastodon-tags-v1'
       and config ->> 'limit' = '40'
@@ -194,6 +209,9 @@ select has_function('ingest', 'begin_mastodon_public_hashtag_job',
 select has_function('ingest', 'finalize_mastodon_public_hashtag_job',
   array['uuid', 'text', 'bigint', 'jsonb'],
   'typed Mastodon finalizer exists');
+select has_function('ingest', 'record_mastodon_rate_limit',
+  array['uuid', 'text', 'bigint', 'timestamptz'],
+  'typed Mastodon Retry-After recorder exists');
 select has_function('ingest', 'prune_mastodon_public_hashtag_v1',
   array['timestamptz', 'integer'],
   'bounded Mastodon cleanup exists');
@@ -232,6 +250,27 @@ select ok(
   'only service_role receives the fenced Mastodon finalizer'
 );
 select ok(
+  (select prosecdef and coalesce(proconfig, '{}'::text[]) @> array['search_path=pg_catalog']
+   from pg_proc where oid =
+     'ingest.record_mastodon_rate_limit(uuid,text,bigint,timestamptz)'::regprocedure)
+    and has_function_privilege(
+      'service_role',
+      'ingest.record_mastodon_rate_limit(uuid,text,bigint,timestamptz)',
+      'execute'
+    )
+    and not has_function_privilege(
+      'anon',
+      'ingest.record_mastodon_rate_limit(uuid,text,bigint,timestamptz)',
+      'execute'
+    )
+    and not has_function_privilege(
+      'authenticated',
+      'ingest.record_mastodon_rate_limit(uuid,text,bigint,timestamptz)',
+      'execute'
+    ),
+  'only service_role receives the fenced Mastodon Retry-After recorder'
+);
+select ok(
   not has_function_privilege(
     'service_role',
     'ingest.prune_mastodon_public_hashtag_v1(timestamptz,integer)',
@@ -265,13 +304,13 @@ select set_eq(
 );
 select doesnt_match(
   public.get_public_social_discovery_v3()::text,
-  '(?i)(mastodon\.social|api/v[0-9]|"(instance_url|endpoint|status_id|sha256|hash|tag_key|cursor|rate_limit|error|raw|profile|handle|media|location|source_policy|gate|payload)"[[:space:]]*:)',
-  'public social v3 exposes no Mastodon instance, identity, cursor, rate, or raw fields'
+  '(?i)(api/v[0-9]|"(instance_url|endpoint|status_id|sha256|hash|tag_key|cursor|rate_limit|error|raw|profile|handle|media|location|source_policy|gate|payload)"[[:space:]]*:)',
+  'public social v3 exposes no Mastodon endpoint, identity, cursor, rate, or raw fields'
 );
 select matches(
   public.get_public_social_discovery_v3() #>> '{sources,2,note}',
-  '^[0-9]+ of 7 reviewed public hashtags collected recently; [0-9]+ retained activity-only rows[.] Coverage may be incomplete and is never opening evidence or a pull-rate denominator[.]$',
-  'Mastodon note uses the exact incomplete activity-only non-evidence contract'
+  '^[0-9]+ of 7 reviewed mastodon[.]social public hashtag activity-only feeds collected recently; [0-9]+ retained activity-only rows[.] Coverage may be incomplete and is never opening evidence, a denominator, or rate evidence[.]$',
+  'Mastodon note uses the exact public activity-only non-evidence contract'
 );
 select ok(
   has_function_privilege('anon', 'public.get_public_social_discovery_v3()', 'execute')
@@ -520,6 +559,76 @@ select ok(
      'mastodon-worker-4', 1, 'mastodon_social', 'pokeca_ja'
    )),
   'the shared cooldown defers a different tag job'
+);
+
+-- A transport-level 429 uses the dedicated fenced recorder before the runtime
+-- returns the job to pending. The shared cooldown must survive that lease
+-- transition and block every other tag on the same instance.
+update ingest.mastodon_rate_cooldowns
+set cooldown_until = clock_timestamp(),
+    updated_at = clock_timestamp()
+where instance_key = 'mastodon_social';
+update ingest.source_policies
+set last_attempt_at = clock_timestamp() - interval '10 seconds'
+where source_key = 'mastodon_social';
+insert into ingest.jobs (
+  id, job_type, payload, status, attempts, locked_at, lock_expires_at,
+  locked_by, lease_generation, is_demo
+) values (
+  'a7000000-0000-4000-8000-000000000005',
+  'source.mastodon.public_hashtag',
+  '{"instance_key":"mastodon_social","tag_key":"pokemon_tcg"}'::jsonb,
+  'running', 1, clock_timestamp(), clock_timestamp() + interval '10 minutes',
+  'mastodon-worker-5', 1, false
+);
+select ok(
+  (select acquired and retry_at is null
+   from ingest.begin_mastodon_public_hashtag_job(
+     'a7000000-0000-4000-8000-000000000005',
+     'mastodon-worker-5', 1, 'mastodon_social', 'pokemon_tcg'
+   )),
+  'transport-level rate-limit fixture acquires the shared Mastodon gate'
+);
+select is(
+  (select recorded from ingest.record_mastodon_rate_limit(
+    'a7000000-0000-4000-8000-000000000005',
+    'mastodon-worker-5', 2, clock_timestamp() + interval '30 minutes'
+  )),
+  false,
+  'stale lease generation cannot persist a Mastodon Retry-After boundary'
+);
+select lives_ok(
+  $$select * from ingest.record_mastodon_rate_limit(
+    'a7000000-0000-4000-8000-000000000005',
+    'mastodon-worker-5', 1, clock_timestamp() + interval '30 minutes'
+  )$$,
+  'the owning Mastodon lease persists a bounded Retry-After boundary'
+);
+select ok(
+  (select cooldown_until > clock_timestamp() + interval '29 minutes'
+   from ingest.mastodon_rate_cooldowns where instance_key = 'mastodon_social')
+    and (select owner_job_id is null and active_until is null
+         from ingest.source_request_gates where source_key = 'mastodon_social'),
+  'transport-level Retry-After is durable and atomically replaces the request gate'
+);
+select lives_ok(
+  $$select * from ingest.pause_job_for_budget_v2(
+    'a7000000-0000-4000-8000-000000000005',
+    'mastodon-worker-5', 1,
+    (select cooldown_until from ingest.mastodon_rate_cooldowns
+     where instance_key = 'mastodon_social')
+  )$$,
+  'runtime deferral returns the rate-limited Mastodon job to pending'
+);
+select ok(
+  (select status = 'pending' and locked_by is null
+   from ingest.jobs where id = 'a7000000-0000-4000-8000-000000000005')
+    and (select not acquired and retry_at > clock_timestamp() + interval '29 minutes'
+         from ingest.begin_mastodon_public_hashtag_job(
+           'a7000000-0000-4000-8000-000000000004',
+           'mastodon-worker-4', 1, 'mastodon_social', 'pokeca_ja'
+         )),
+  'durable 429 cooldown continues blocking another tag after lease deferral'
 );
 
 select throws_ok(

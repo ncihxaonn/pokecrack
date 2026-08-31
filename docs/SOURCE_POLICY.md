@@ -36,6 +36,31 @@ channel metadata, cards, rarity, openings, or probability evidence. The
 disabled fixture proves fail-closed behavior. Real retailer domains are not
 enabled by default.
 
+### Mastodon public hashtag activity
+
+The Mastodon path is LOCAL ONLY and, when explicitly enabled, uses only the
+reviewed public hashtag activity routes on `mastodon.social`. It sends the
+fixed `PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)` User-Agent
+and applies a process-wide and database-fenced two-second minimum interval,
+targeting no more than 150 requests per five minutes against the instance's
+default 300-request budget. Live `X-RateLimit-*` headers and `Retry-After` are
+binding; a missing, malformed, expired, or conflicting boundary fails closed.
+No login, token, redirect, proxy, arbitrary endpoint, or arbitrary hashtag is
+allowed. The policy records the reviewed about, privacy, rules, robots, and
+terms URLs and the 2026-08-31 review checkpoints; production enablement still
+requires the recommended operator acknowledgment.
+
+Only bounded activity metadata is retained: an opaque status hash, timestamp,
+and approved tag keys. The path never stores or displays raw payloads, post
+body/text, account identity or handles, profiles, media, URLs/links, or
+location. Activity candidates and observations expire after 30 days. The only
+exception is one opaque per-tag cursor checkpoint, which persists beyond the
+activity TTL solely to resume collection and is not evidence. Mastodon rows
+have `statistics_eligible=false` and are never opening evidence, a pack
+denominator, rate evidence, or a basis for a statistical claim. The public
+source note may safely describe this as `mastodon.social public hashtag
+activity only`.
+
 ## Required review before enabling a source
 
 Record owner, purpose/fields, terms/API policy URL and review date, robots behavior, rate/concurrency/page caps, cache policy, authentication basis, regional/privacy concerns, statistics eligibility default, retention and kill switch. Test the exact adapter against a fixture. Re-review on terms, DOM/API or ownership change.

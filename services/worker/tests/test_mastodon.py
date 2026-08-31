@@ -17,6 +17,7 @@ from pokecrack_worker.collectors.official_api.mastodon import (
     MastodonPreflightError,
     MastodonPublicHashtagCollector,
     MastodonRateLimited,
+    MastodonRequestLimiter,
     MastodonStatus,
     _hashtag_url,
     _validate_transport_url,
@@ -24,6 +25,7 @@ from pokecrack_worker.collectors.official_api.mastodon import (
 )
 from pokecrack_worker.collectors.official_api.postgres import (
     BEGIN_MASTODON_PUBLIC_HASHTAG_SQL,
+    RECORD_MASTODON_RATE_LIMIT_SQL,
     MastodonRequestDeferred,
     PostgresMastodonPublicHashtagGate,
 )
@@ -43,7 +45,11 @@ from pokecrack_worker.config.mastodon import (
     MastodonRegistry,
 )
 from pokecrack_worker.config.settings import Settings
-from pokecrack_worker.jobs import MastodonPublicHashtagCompletion, MastodonStatusWrite
+from pokecrack_worker.jobs import (
+    LeaseLostError,
+    MastodonPublicHashtagCompletion,
+    MastodonStatusWrite,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 NOW = datetime(2026, 8, 31, 4, 0, tzinfo=UTC)
@@ -137,10 +143,15 @@ def _response(
 
 def _collector(*responses: APIResponse) -> tuple[MastodonPublicHashtagCollector, FixtureTransport]:
     transport = FixtureTransport(*responses)
+    # Keep fixture tests instant while still exercising the limiter call on
+    # every request. Production collectors use the process-wide real limiter.
+    limiter = MastodonRequestLimiter(clock=lambda: 0.0, sleeper=lambda _seconds: None)
     return (
         MastodonPublicHashtagCollector(
             transport=transport,
             registry=MastodonRegistry.from_yaml(ROOT / "config" / "mastodon.yaml"),
+            limiter=limiter,
+            clock=lambda: NOW,
         ),
         transport,
     )
@@ -244,6 +255,50 @@ def test_transport_rejects_auth_proxy_and_non_identity_controls_before_network()
             connect_timeout_seconds=10,
             read_timeout_seconds=15,
         )
+
+
+def test_transport_rejects_user_agent_override_and_collector_sends_fixed_identity() -> None:
+    transport = HTTPXMastodonTransport()
+    fixed = "https://mastodon.social/api/v2/instance"
+    with pytest.raises(ValueError, match="fixed User-Agent"):
+        transport.get(
+            fixed,
+            headers={"User-Agent": "caller-controlled"},
+            connect_timeout_seconds=10,
+            read_timeout_seconds=15,
+        )
+
+    collector, fixture = _collector(
+        _response(_preflight_payload()),
+        APIResponse(302, {"location": "https://other.invalid/"}, b"redirect"),
+    )
+    with pytest.raises(MastodonHTTPError):
+        collector.collect(
+            instance_key="mastodon_social", tag_key="pokemontcg", start_status_id=None, now=NOW
+        )
+    assert fixture.calls[0][1]["User-Agent"] == (
+        "PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)"
+    )
+
+
+def test_request_limiter_enforces_two_second_spacing_for_the_full_instance() -> None:
+    clock_value = 0.0
+    sleeps: list[float] = []
+
+    def clock() -> float:
+        return clock_value
+
+    def sleep(seconds: float) -> None:
+        nonlocal clock_value
+        sleeps.append(seconds)
+        clock_value += seconds
+
+    limiter = MastodonRequestLimiter(clock=clock, sleeper=sleep)
+    limiter.wait()
+    limiter.wait()
+    limiter.wait()
+
+    assert sleeps == [2.0, 2.0]
 
 
 @pytest.mark.parametrize(
@@ -400,6 +455,34 @@ def test_rate_limit_zero_stops_without_a_third_request_and_429_is_retryable() ->
 
     collector, _transport = _collector(
         _response(_preflight_payload()),
+        APIResponse(429, {"retry-after": "120"}, b"rate limited"),
+    )
+    with pytest.raises(MastodonRateLimited) as raised:
+        collector.collect(
+            instance_key="mastodon_social", tag_key="pokemontcg", start_status_id=None, now=NOW
+        )
+    assert raised.value.retry_at == NOW + timedelta(seconds=120)
+
+    collector, _transport = _collector(
+        _response(_preflight_payload()),
+        APIResponse(429, {"retry-after": "not-a-date"}, b"rate limited"),
+    )
+    with pytest.raises(MastodonInvalidResponse, match="retry_after_invalid"):
+        collector.collect(
+            instance_key="mastodon_social", tag_key="pokemontcg", start_status_id=None, now=NOW
+        )
+
+    collector, _transport = _collector(
+        _response(_preflight_payload()),
+        APIResponse(429, {}, b"rate limited"),
+    )
+    with pytest.raises(MastodonInvalidResponse, match="retry_after_missing"):
+        collector.collect(
+            instance_key="mastodon_social", tag_key="pokemontcg", start_status_id=None, now=NOW
+        )
+
+    collector, _transport = _collector(
+        _response(_preflight_payload()),
         _response(
             [_status("opaque-first")],
             headers={
@@ -412,6 +495,30 @@ def test_rate_limit_zero_stops_without_a_third_request_and_429_is_retryable() ->
         collector.collect(
             instance_key="mastodon_social", tag_key="pokemontcg", start_status_id=None, now=NOW
         )
+
+
+def test_numeric_retry_after_starts_when_the_slow_response_is_received() -> None:
+    transport = FixtureTransport(
+        _response(_preflight_payload()),
+        APIResponse(429, {"retry-after": "120"}, b"rate limited"),
+    )
+    response_times = iter((NOW, NOW + timedelta(seconds=20)))
+    collector = MastodonPublicHashtagCollector(
+        transport=transport,
+        registry=MastodonRegistry.from_yaml(ROOT / "config" / "mastodon.yaml"),
+        limiter=MastodonRequestLimiter(clock=lambda: 0.0, sleeper=lambda _seconds: None),
+        clock=lambda: next(response_times),
+    )
+
+    with pytest.raises(MastodonRateLimited) as raised:
+        collector.collect(
+            instance_key="mastodon_social",
+            tag_key="pokemontcg",
+            start_status_id=None,
+            now=NOW,
+        )
+
+    assert raised.value.retry_at == NOW + timedelta(seconds=140)
 
 
 def test_completion_payload_is_exact_replay_safe_and_activity_only() -> None:
@@ -559,6 +666,26 @@ def test_postgres_gate_signature_and_opaque_checkpoint_are_exact() -> None:
             tag_key="pokemontcg",
         )
 
+    recorder = RecordingExecutor([[{"recorded": True}]])
+    PostgresMastodonPublicHashtagGate(recorder).record_rate_limit(
+        job_id="00000000-0000-0000-0000-000000000001",
+        worker_id="worker-1",
+        lease_generation=1,
+        retry_at=NOW + timedelta(minutes=2),
+    )
+    sql, params = recorder.calls[0]
+    assert sql == RECORD_MASTODON_RATE_LIMIT_SQL
+    assert params["retry_at"] == NOW + timedelta(minutes=2)
+
+    not_recorded = RecordingExecutor([[{"recorded": False}]])
+    with pytest.raises(LeaseLostError):
+        PostgresMastodonPublicHashtagGate(not_recorded).record_rate_limit(
+            job_id="00000000-0000-0000-0000-000000000001",
+            worker_id="worker-1",
+            lease_generation=1,
+            retry_at=NOW + timedelta(minutes=2),
+        )
+
 
 def test_toggle_schedule_and_readiness_contracts_are_fail_closed() -> None:
     disabled = Settings(
@@ -598,6 +725,7 @@ def test_toggle_schedule_and_readiness_contracts_are_fail_closed() -> None:
     assert params["mastodon_enabled"] is True
     assert "begin_mastodon_public_hashtag_job(uuid,text,bigint,text,text)" in sql
     assert "finalize_mastodon_public_hashtag_job(uuid,text,bigint,jsonb)" in sql
+    assert "record_mastodon_rate_limit(uuid,text,bigint,timestamptz)" in sql
 
     with pytest.raises(ValueError, match="SCHEDULE_MASTODON_COLLECTION"):
         Settings(
