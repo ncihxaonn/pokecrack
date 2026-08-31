@@ -265,13 +265,13 @@ select set_eq(
 );
 select doesnt_match(
   public.get_public_social_discovery_v3()::text,
-  '(?i)(mastodon\.social|api/v[0-9]|instance_url|endpoint|status_id|sha256|hash|tag_key|cursor|rate_limit|error|raw|profile|handle|media|location|source_policy|gate|payload)',
+  '(?i)(mastodon\.social|api/v[0-9]|"(instance_url|endpoint|status_id|sha256|hash|tag_key|cursor|rate_limit|error|raw|profile|handle|media|location|source_policy|gate|payload)"[[:space:]]*:)',
   'public social v3 exposes no Mastodon instance, identity, cursor, rate, or raw fields'
 );
 select matches(
   public.get_public_social_discovery_v3() #>> '{sources,2,note}',
-  '(?i)incomplete.*activity-only.*opening evidence.*denominator',
-  'Mastodon note states incomplete activity-only non-evidence semantics'
+  '^[0-9]+ of 7 reviewed public hashtags collected recently; [0-9]+ retained activity-only rows[.] Coverage may be incomplete and is never opening evidence or a pull-rate denominator[.]$',
+  'Mastodon note uses the exact incomplete activity-only non-evidence contract'
 );
 select ok(
   has_function_privilege('anon', 'public.get_public_social_discovery_v3()', 'execute')

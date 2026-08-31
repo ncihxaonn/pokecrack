@@ -1396,7 +1396,7 @@ begin
   where jobs.id = job_id
     and jobs.status = 'running'
     and jobs.locked_by = worker_id
-    and jobs.lease_generation = lease_generation
+    and jobs.lease_generation = finalize_mastodon_public_hashtag_job.lease_generation
     and jobs.lock_expires_at > completion_time
     and not jobs.is_demo
   returning jobs.* into completed_job;
@@ -1413,7 +1413,7 @@ begin
       active_until = null
   where gates.source_key = 'mastodon_social'
     and gates.owner_job_id = job_id
-    and gates.owner_lease_generation = lease_generation;
+    and gates.owner_lease_generation = finalize_mastodon_public_hashtag_job.lease_generation;
   if not found then
     raise exception using
       errcode = 'P0002',

@@ -447,8 +447,8 @@ class IngestMigrationContractTests(unittest.TestCase):
             "existing_candidate.matched_tags <> candidate_tags",
             "update ingest.mastodon_public_hashtag_checkpoints",
             "result_rate_limit_remaining = 0",
-            "jobs.lease_generation = lease_generation",
-            "gates.owner_lease_generation = lease_generation",
+            "jobs.lease_generation = finalize_mastodon_public_hashtag_job.lease_generation",
+            "gates.owner_lease_generation = finalize_mastodon_public_hashtag_job.lease_generation",
         ):
             self.assertIn(fragment, finalizer)
         self.assertIn("prune_mastodon_public_hashtag_v1", lowered)
