@@ -278,6 +278,11 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertNotIn("delete from ingest.nostr_relay_checkpoints", lowered)
         self.assertIn("payload ->> 'relay_key'", lowered)
         self.assertIn("complete_job_v2", lowered)
+        self.assertIn("window_until <= checkpoint_row.last_checkpoint", lowered)
+        self.assertIn(
+            "checkpoint_row.last_checkpoint + interval '1 second'", lowered
+        )
+        self.assertIn("lease_checked_at + interval '1 second'", lowered)
         public_rpc = lowered.split(
             "create or replace function public.get_public_social_discovery_v2()", 1
         )[1].split("alter function public.get_public_social_discovery_v2()", 1)[0]

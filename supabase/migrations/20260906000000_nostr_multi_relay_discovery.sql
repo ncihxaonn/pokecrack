@@ -752,6 +752,25 @@ begin
     '2000-01-01 00:00:00+00'::timestamptz
   ));
 
+  -- A second collection attempt can be claimed before the wall clock has
+  -- crossed the whole-second NIP-01 checkpoint. Defer before owning the
+  -- request gate; otherwise no valid result could advance monotonically.
+  if checkpoint_row.last_checkpoint is not null
+    and window_until <= checkpoint_row.last_checkpoint
+  then
+    return query select
+      false,
+      greatest(
+        checkpoint_row.last_checkpoint + interval '1 second',
+        lease_checked_at + interval '1 second'
+      ),
+      window_since,
+      window_until,
+      checkpoint_row.last_checkpoint,
+      '{}'::text[];
+    return;
+  end if;
+
   request_retry_at := null;
   if request_gate.owner_job_id is not null
     and request_gate.active_until > lease_checked_at
@@ -2042,8 +2061,11 @@ as $$
       count(checkpoints.source_policy_id) filter (
         where checkpoints.last_checkpoint is not null
           and checkpoints.last_checkpoint >= statement_timestamp() - interval '3 minutes'
+          and checkpoints.last_checkpoint <= statement_timestamp()
       )::integer as recent_count,
-      min(checkpoints.last_checkpoint) as last_checkpoint,
+      min(checkpoints.last_checkpoint) filter (
+        where checkpoints.last_checkpoint <= statement_timestamp()
+      ) as last_checkpoint,
       (
         select count(*)::integer
         from ingest.nostr_relay_candidates as candidates

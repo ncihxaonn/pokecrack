@@ -35,7 +35,7 @@ NOW = datetime(2026, 8, 31, 4, 0, tzinfo=UTC)
 
 def _signed_event(
     *,
-    kind: int = 1,
+    kind: int | float = 1,
     tags: list[list[str]] | None = None,
     content: str = "bounded test note",
     created_at: int | None = None,
@@ -143,6 +143,10 @@ def test_event_id_and_bip340_signature_are_verified() -> None:
     with pytest.raises(NostrInvalidEvent, match="nostr_created_at_invalid"):
         parse_nostr_event(extreme_timestamp, completion_time=NOW)
 
+    non_integer_kind = _signed_event(kind=1.0)
+    with pytest.raises(NostrInvalidEvent, match="nostr_kind_invalid"):
+        parse_nostr_event(non_integer_kind, completion_time=NOW)
+
 
 def test_collector_emits_minimal_candidate_and_known_target_deletion() -> None:
     candidate_event = _signed_event(tags=[["t", "ポケモンカード"]], content="private raw body")
@@ -217,20 +221,24 @@ def test_unknown_delete_and_unreviewed_tag_do_not_become_candidates() -> None:
     assert invalid_result.candidates == ()
 
 
-def test_relay_cannot_widen_the_database_authorized_window() -> None:
+def test_relay_events_outside_the_database_authorized_window_are_ignored() -> None:
     registry = NostrRelayRegistry.from_yaml(REPO_ROOT / "config/nostr-relays.yaml")
     outside = FixtureTransport(
-        _envelope(_signed_event(created_at=int((NOW - timedelta(minutes=6)).timestamp())))
+        _envelope(_signed_event(created_at=int((NOW - timedelta(minutes=6)).timestamp()))),
+        _envelope(_signed_event(created_at=int((NOW + timedelta(seconds=1)).timestamp()))),
     )
 
-    with pytest.raises(NostrInvalidEvent, match="nostr_event_outside_window"):
-        NostrRelayCollector(transport=outside, registry=registry).collect(
-            relay_key="primal",
-            since=NOW - timedelta(minutes=5),
-            until=NOW,
-            checkpoint=NOW,
-            known_event_ids=(),
-        )
+    result = NostrRelayCollector(transport=outside, registry=registry).collect(
+        relay_key="primal",
+        since=NOW - timedelta(minutes=5),
+        until=NOW,
+        checkpoint=NOW,
+        known_event_ids=(),
+    )
+
+    assert result.events_seen == 2
+    assert result.candidates == ()
+    assert result.deletions == ()
 
 
 def test_registry_rejects_dynamic_relays_and_filters() -> None:

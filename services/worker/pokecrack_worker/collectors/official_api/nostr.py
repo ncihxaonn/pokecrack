@@ -157,7 +157,7 @@ def parse_nostr_event(raw_event: object, *, completion_time: datetime) -> NostrE
     raw_tags = raw_event.get("tags")
     if isinstance(created_at, bool) or not isinstance(created_at, int):
         raise NostrInvalidEvent("nostr_created_at_invalid")
-    if isinstance(kind, bool) or kind not in {1, 5}:
+    if isinstance(kind, bool) or not isinstance(kind, int) or kind not in {1, 5}:
         raise NostrInvalidEvent("nostr_kind_invalid")
     if not isinstance(content, str) or len(content.encode("utf-8")) > NOSTR_MAX_CONTENT_BYTES:
         raise NostrInvalidEvent("nostr_content_invalid")
@@ -462,9 +462,11 @@ class NostrRelayCollector:
                 # poison advancement of the otherwise bounded time slice.
                 continue
             # ``since`` already includes the reviewed replay overlap selected by
-            # the database.  A relay must not widen that authorised window.
+            # the database. A valid signed event outside that authorised window
+            # is ignored; untrusted relay ordering must not dead-letter the job
+            # or prevent the fenced checkpoint from advancing.
             if not since <= event.published_at <= until:
-                raise NostrInvalidEvent("nostr_event_outside_window")
+                continue
             if event.kind == 1:
                 matched = self.registry.matched_tags([list(tag) for tag in event.tags])
                 if not matched:

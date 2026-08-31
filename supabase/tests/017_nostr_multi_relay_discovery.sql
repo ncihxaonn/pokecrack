@@ -358,6 +358,48 @@ select is(
   'the candidate observation is idempotently recorded per relay'
 );
 
+-- A duplicate trigger inside the same whole NIP-01 second must defer before
+-- taking the request gate. Seed a future whole-second checkpoint to make the
+-- edge deterministic without depending on test-runner speed.
+create temporary table nostr_checkpoint_before_defer on commit drop as
+select last_checkpoint
+from ingest.nostr_relay_checkpoints
+where relay_key = 'primal';
+update ingest.nostr_relay_checkpoints
+set last_checkpoint = date_trunc('second', clock_timestamp()) + interval '10 seconds'
+where relay_key = 'primal';
+update ingest.source_policies
+set last_attempt_at = clock_timestamp() - interval '2 seconds'
+where source_key = 'nostr_relay_primal';
+insert into ingest.jobs (
+  id, job_type, payload, status, attempts, locked_at, lock_expires_at,
+  locked_by, lease_generation, is_demo
+) values (
+  'a6000000-0000-4000-8000-000000000005', 'source.nostr.relay',
+  '{"relay_key":"primal"}'::jsonb, 'running', 1, clock_timestamp(),
+  clock_timestamp() + interval '10 minutes', 'nostr-worker-5', 1, false
+);
+create temporary table nostr_begin_same_second on commit drop as
+select * from ingest.begin_nostr_relay_job(
+  'a6000000-0000-4000-8000-000000000005', 'nostr-worker-5', 1, 'primal'
+);
+select ok(
+  (select not acquired
+      and retry_at = checkpoint + interval '1 second'
+      and recent_candidate_ids = '{}'::text[]
+   from nostr_begin_same_second)
+    and (select owner_job_id is null
+         from ingest.source_request_gates
+         where source_key = 'nostr_relay_primal')
+    and (public.get_public_social_discovery_v2()
+         #>> '{sources,1,lastCollectedAt}') is null,
+  'same-second Nostr re-entry defers before taking the request gate'
+);
+update ingest.nostr_relay_checkpoints
+set last_checkpoint = saved.last_checkpoint
+from nostr_checkpoint_before_defer as saved
+where relay_key = 'primal';
+
 select throws_ok(
   $$select * from ingest.enqueue_scheduled_job_v1(
     'wrong_nostr_name', date_trunc('minute', clock_timestamp()),
@@ -384,6 +426,11 @@ select throws_ok(
 
 -- Same-author, non-older tombstones mutate the candidate; unknown, older, and
 -- cross-author references remain harmless while their private observations stay.
+do $$
+begin
+  perform pg_sleep(1.05);
+end;
+$$;
 update ingest.source_policies
 set last_attempt_at = clock_timestamp() - interval '2 seconds'
 where source_key = 'nostr_relay_primal';
@@ -427,6 +474,11 @@ select is(
   'unknown delete targets do not create candidates'
 );
 
+do $$
+begin
+  perform pg_sleep(1.05);
+end;
+$$;
 update ingest.source_policies
 set last_attempt_at = clock_timestamp() - interval '2 seconds'
 where source_key = 'nostr_relay_primal';
@@ -463,6 +515,11 @@ select ok(
   'cross-author delete leaves the original candidate tombstone unchanged'
 );
 
+do $$
+begin
+  perform pg_sleep(1.05);
+end;
+$$;
 update ingest.source_policies
 set last_attempt_at = clock_timestamp() - interval '2 seconds'
 where source_key = 'nostr_relay_primal';
