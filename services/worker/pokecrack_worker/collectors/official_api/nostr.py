@@ -451,10 +451,16 @@ class NostrRelayCollector:
                 or not isinstance(envelope[1], str)
             ):
                 raise NostrInvalidEvent("nostr_message_invalid")
-            event = parse_nostr_event(envelope[2], completion_time=until)
             events_seen += 1
             if events_seen > NOSTR_MAX_EVENTS:
                 raise NostrTransportError("nostr_event_limit_exceeded")
+            try:
+                event = parse_nostr_event(envelope[2], completion_time=until)
+            except NostrInvalidEvent:
+                # An untrusted relay event may be malformed, oversized, or
+                # incorrectly signed. It cannot become activity and must not
+                # poison advancement of the otherwise bounded time slice.
+                continue
             # ``since`` already includes the reviewed replay overlap selected by
             # the database.  A relay must not widen that authorised window.
             if not since <= event.published_at <= until:
@@ -462,7 +468,7 @@ class NostrRelayCollector:
             if event.kind == 1:
                 matched = self.registry.matched_tags([list(tag) for tag in event.tags])
                 if not matched:
-                    raise NostrInvalidEvent("nostr_tag_filter_mismatch")
+                    continue
                 candidate_item = NostrCandidate(
                     event_id=event.event_id,
                     author_sha256=event.author_sha256,

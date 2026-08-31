@@ -192,14 +192,29 @@ def test_unknown_delete_and_unreviewed_tag_do_not_become_candidates() -> None:
     assert result.deletions == ()
 
     unmatched = FixtureTransport(_envelope(_signed_event(tags=[["t", "pokemon"]])))
-    with pytest.raises(NostrInvalidEvent, match="nostr_tag_filter_mismatch"):
-        NostrRelayCollector(transport=unmatched, registry=registry).collect(
-            relay_key="nostr_net",
-            since=NOW - timedelta(minutes=5),
-            until=NOW + timedelta(minutes=1),
-            checkpoint=None,
-            known_event_ids=(),
-        )
+    unmatched_result = NostrRelayCollector(transport=unmatched, registry=registry).collect(
+        relay_key="nostr_net",
+        since=NOW - timedelta(minutes=5),
+        until=NOW + timedelta(minutes=1),
+        checkpoint=None,
+        known_event_ids=(),
+    )
+    assert unmatched_result.events_seen == 1
+    assert unmatched_result.candidates == ()
+
+    tampered = _signed_event(tags=[["t", "PokemonTCG"]])
+    tampered["content"] = "changed after signing"
+    invalid_result = NostrRelayCollector(
+        transport=FixtureTransport(_envelope(tampered)), registry=registry
+    ).collect(
+        relay_key="nostr_net",
+        since=NOW - timedelta(minutes=5),
+        until=NOW + timedelta(minutes=1),
+        checkpoint=None,
+        known_event_ids=(),
+    )
+    assert invalid_result.events_seen == 1
+    assert invalid_result.candidates == ()
 
 
 def test_relay_cannot_widen_the_database_authorized_window() -> None:

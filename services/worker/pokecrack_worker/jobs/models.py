@@ -41,7 +41,15 @@ _BLUESKY_MAX_STREAM_BYTES = 2 * 1024 * 1024
 _BLUESKY_MAX_EXCERPT_CHARS = 500
 _NOSTR_RELAY_KEYS = frozenset({"primal", "nos_lol", "nostr_net"})
 _NOSTR_MATCHED_TAGS = frozenset(
-    {"pokemontcg", "pokemoncards", "ポケカ", "ポケモンカード", "포켓몬카드", "宝可梦卡牌", "寶可夢卡牌"}
+    {
+        "pokemontcg",
+        "pokemoncards",
+        "ポケカ",
+        "ポケモンカード",
+        "포켓몬카드",
+        "宝可梦卡牌",
+        "寶可夢卡牌",
+    }
 )
 _NOSTR_MAX_EVENTS = 100
 _NOSTR_MAX_STREAM_BYTES = 2 * 1024 * 1024
