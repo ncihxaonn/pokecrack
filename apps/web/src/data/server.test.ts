@@ -33,8 +33,8 @@ describe("public live-data client", () => {
     expect(source).not.toContain("createServerClient");
   });
 
-  it("keeps the valid v3 snapshot when supplemental coverage rejects", async () => {
-    const snapshot = { mode: "live", marker: "valid-v3" };
+  it("keeps the valid v4 snapshot when supplemental coverage rejects", async () => {
+    const snapshot = { mode: "live", marker: "valid-v4" };
     mocks.rpc
       .mockResolvedValueOnce({ data: snapshot, error: null })
       .mockRejectedValueOnce(new Error("coverage transport failed"))
@@ -42,7 +42,7 @@ describe("public live-data client", () => {
 
     await expect(getDashboardData()).resolves.toBe(snapshot);
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
-      "get_public_dashboard_snapshot_v3",
+      "get_public_dashboard_snapshot_v4",
       "get_public_study_coverage_v1",
       "get_public_social_discovery_v2",
     ]);
