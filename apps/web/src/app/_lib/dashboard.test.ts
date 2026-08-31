@@ -7,7 +7,7 @@ const source = readFileSync(resolve(process.cwd(), "src/app/_lib/dashboard.ts"),
 describe("public dashboard cache", () => {
   it("uses a one-minute shared ISR cache for the live public snapshot", () => {
     expect(source).toContain("unstable_cache");
-    expect(source).toContain('"public-dashboard-v3-coverage-v2-social-v3-live60"');
+    expect(source).toContain('"public-dashboard-v3-coverage-v2-social-v4-live60"');
     expect(source).toContain("revalidate: 60");
   });
 });
