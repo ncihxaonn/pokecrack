@@ -87,6 +87,11 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         self.assertIn("expires_at", lowered)
         self.assertIn("create unique index authorized_opening_submissions_provenance_uidx", lowered)
         self.assertIn("create unique index authorized_opening_observations_source_fact_uidx", lowered)
+        self.assertIn("constraint authorized_opening_retraction_observation_uidx", lowered)
+        self.assertIn(
+            "on conflict on constraint authorized_opening_retraction_observation_uidx do nothing",
+            lowered,
+        )
         self.assertIn("authorized_opening_review_events_immutable", lowered)
         self.assertIn("authorized_opening_observations_immutable", lowered)
         self.assertIn("authorized_opening_retractions_immutable", lowered)

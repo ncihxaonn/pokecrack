@@ -631,12 +631,14 @@ create unique index authorized_opening_observations_source_fact_uidx
 
 create table ingest.authorized_opening_retractions (
   id uuid primary key default gen_random_uuid(),
-  accepted_observation_id uuid not null unique
+  accepted_observation_id uuid not null
     references ingest.authorized_opening_observations(id)
     on update restrict on delete restrict,
   reviewer_reference_sha256 text not null,
   reason_code text not null,
   retracted_at timestamptz not null default statement_timestamp(),
+  constraint authorized_opening_retraction_observation_uidx
+    unique (accepted_observation_id),
   constraint authorized_opening_retraction_reviewer_check check (
     reviewer_reference_sha256 ~ '^[0-9a-f]{64}$'
   ),
@@ -1508,7 +1510,7 @@ begin
     requested_reason_code,
     retraction_time
   )
-  on conflict (accepted_observation_id) do nothing
+  on conflict on constraint authorized_opening_retraction_observation_uidx do nothing
   returning * into inserted_retraction;
 
   if found then

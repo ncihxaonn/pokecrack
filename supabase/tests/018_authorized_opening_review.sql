@@ -577,6 +577,23 @@ select is(
   null,
   'an exact retraction replay is idempotent'
 );
+create temp table authorized_opening_retraction_replay on commit drop as
+select *
+from ingest.retract_authorized_opening_v1(
+  (select accepted_observation_id from authorized_opening_accepted),
+  repeat('e', 64),
+  'privacy_request'
+);
+select is(
+  (select count(*)::integer from authorized_opening_retraction_replay),
+  1,
+  'an exact retraction replay returns the existing ledger row'
+);
+select is(
+  (select reason_code from authorized_opening_retraction_replay),
+  'privacy_request',
+  'an exact retraction replay preserves the original reason'
+);
 create temp table authorized_opening_snapshot_after_retraction on commit drop as
 select public.get_public_dashboard_snapshot_v4() as value;
 select is(
