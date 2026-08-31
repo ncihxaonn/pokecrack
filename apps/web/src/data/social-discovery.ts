@@ -39,19 +39,33 @@ const nostrSource = z
   })
   .strict();
 
-export const publicSocialDiscoverySchema = z
+export const publicSocialDiscoveryV1Schema = z
+  .object({
+    schemaVersion: z.literal("1.0.0"),
+    sources: z.tuple([blueskySource]),
+  })
+  .strict();
+
+export const publicSocialDiscoveryV2Schema = z
   .object({
     schemaVersion: z.literal("2.0.0"),
     sources: z.tuple([blueskySource, nostrSource]),
   })
   .strict();
 
+// Keep the original export as the current (v2) contract for callers that do
+// not need to distinguish the compatibility path.
+export const publicSocialDiscoverySchema = publicSocialDiscoveryV2Schema;
+
 export function mergePublicSocialDiscovery(
   snapshot: unknown,
   discoveryPayload: unknown,
 ): unknown {
   const snapshotResult = publicDashboardDataSchema.safeParse(snapshot);
-  const discoveryResult = publicSocialDiscoverySchema.safeParse(discoveryPayload);
+  const v2Result = publicSocialDiscoveryV2Schema.safeParse(discoveryPayload);
+  const discoveryResult = v2Result.success
+    ? v2Result
+    : publicSocialDiscoveryV1Schema.safeParse(discoveryPayload);
   if (!snapshotResult.success || !discoveryResult.success) return snapshot;
 
   const base = snapshotResult.data;

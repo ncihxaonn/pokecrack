@@ -4,6 +4,8 @@ import { DEMO_PUBLIC_DATA } from "./demo";
 import {
   mergePublicSocialDiscovery,
   publicSocialDiscoverySchema,
+  publicSocialDiscoveryV1Schema,
+  publicSocialDiscoveryV2Schema,
 } from "./social-discovery";
 
 const blueskySource = {
@@ -36,11 +38,33 @@ describe("public social discovery supplement", () => {
     };
 
     expect(publicSocialDiscoverySchema.parse(payload)).toEqual(payload);
+    expect(publicSocialDiscoveryV2Schema.parse(payload)).toEqual(payload);
     const merged = mergePublicSocialDiscovery(DEMO_PUBLIC_DATA, payload);
 
     expect(merged).toMatchObject({
       sources: expect.arrayContaining([blueskySource, nostrSource]),
     });
+  });
+
+  it("accepts the v1 Bluesky-only tuple without inventing a Nostr source", () => {
+    const payload = {
+      schemaVersion: "1.0.0",
+      sources: [blueskySource],
+    };
+
+    expect(publicSocialDiscoveryV1Schema.parse(payload)).toEqual(payload);
+    expect(() =>
+      publicSocialDiscoveryV1Schema.parse({
+        schemaVersion: "1.0.0",
+        sources: [blueskySource, nostrSource],
+      }),
+    ).toThrow();
+
+    const merged = mergePublicSocialDiscovery(DEMO_PUBLIC_DATA, payload);
+    expect(merged).toMatchObject({ sources: expect.arrayContaining([blueskySource]) });
+    expect((merged as typeof DEMO_PUBLIC_DATA).sources).not.toEqual(
+      expect.arrayContaining([nostrSource]),
+    );
   });
 
   it("fails closed on identity drift, private fields, and source collisions", () => {
