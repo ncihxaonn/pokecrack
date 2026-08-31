@@ -218,6 +218,55 @@ sources:
     cache_ttl_seconds: 3600
     credentials_required: false
     retain_raw_html: false
+  mastodon.social:
+    enabled: true
+    collector: mastodon_rest
+    access_mode: official_api
+    robots_policy: not_applicable
+    min_delay_seconds: 1
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: false
+    retention_days: 30
+    version: mastodon-public-hashtag-v1
+    config:
+      instance_key: mastodon_social
+      instance_url: https://mastodon.social/api/v2/instance
+      rules_url: https://mastodon.social/api/v1/instance/rules
+      terms_url: https://mastodon.social/api/v1/instance/terms_of_service
+      hashtag_base_url: https://mastodon.social/api/v1/timelines/tag/
+      official_docs_url: https://docs.joinmastodon.org/methods/timelines/
+      policy_state: reviewed_public_api_2026-08-31
+      terms_effective_date: "2026-08-31"
+      required_hashtag_access: {local: public, remote: public}
+      tag_registry: mastodon-tags-v1
+      approved_tags:
+        pokemontcg: pokemontcg
+        pokemoncards: pokemoncards
+        pokeca_ja: ポケカ
+        pokemon_card_ja: ポケモンカード
+        pokemon_card_ko: 포켓몬카드
+        pokemon_card_zh_hans: 宝可梦卡牌
+        pokemon_card_zh_hant: 寶可夢卡牌
+      limit: 40
+      max_pages_per_run: 2
+      max_items_per_run: 80
+      max_response_bytes: 2097152
+      connect_timeout_seconds: 10
+      read_timeout_seconds: 15
+      allow_redirects: false
+      statistics_eligible: false
+    reason: Official public Mastodon REST hashtag activity only; no content, accounts, media, links, opening evidence, or statistics are retained.
+    routes: [mastodon_rest]
+    adapter: mastodon_public_hashtag
+    metadata_only: true
+    requests_per_minute: 60
+    cache_ttl_seconds: 300
+    credentials_required: false
+    retain_raw_html: false
+    terms_url: https://mastodon.social/api/v1/instance/terms_of_service
   youtube.googleapis.com:
     enabled: true
     collector: official_api

@@ -6,6 +6,10 @@ import re
 from dataclasses import dataclass
 from datetime import datetime
 
+from pokecrack_worker.collectors.official_api.mastodon import (
+    MASTODON_MAX_STATUS_ID_LENGTH,
+)
+from pokecrack_worker.config.mastodon import MASTODON_INSTANCE_KEY, MASTODON_TAG_KEYS
 from pokecrack_worker.config.public_studies import PUBLIC_STUDY_COVERAGE_KEYS
 from pokecrack_worker.jobs import LeaseLostError, QueryExecutor
 
@@ -25,6 +29,17 @@ FROM ingest.begin_nostr_relay_job(
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint,
     relay_key => %(relay_key)s
+)
+""".strip()
+
+BEGIN_MASTODON_PUBLIC_HASHTAG_SQL = """
+SELECT *
+FROM ingest.begin_mastodon_public_hashtag_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    instance_key => %(instance_key)s,
+    tag_key => %(tag_key)s
 )
 """.strip()
 
@@ -114,6 +129,16 @@ class NostrRequestDeferred(RuntimeError):
             raise ValueError("Nostr retry timestamp must be timezone-aware")
         self.retry_at = retry_at
         super().__init__("Nostr request gate deferred")
+
+
+class MastodonRequestDeferred(RuntimeError):
+    """The shared Mastodon source gate is busy; retry without burning an attempt."""
+
+    def __init__(self, retry_at: datetime) -> None:
+        if retry_at.tzinfo is None or retry_at.utcoffset() is None:
+            raise ValueError("Mastodon retry timestamp must be timezone-aware")
+        self.retry_at = retry_at
+        super().__init__("Mastodon request gate deferred")
 
 
 @dataclass(frozen=True, slots=True)
@@ -416,3 +441,71 @@ class PostgresNostrRelayGate:
             checkpoint=checkpoint,
             recent_candidate_ids=tuple(candidate_ids),
         )
+
+
+@dataclass(frozen=True, slots=True)
+class MastodonPublicHashtagCheckpoint:
+    last_status_id: str | None
+
+
+def _mastodon_checkpoint_id(value: object) -> str:
+    if (
+        not isinstance(value, str)
+        or not 1 <= len(value) <= MASTODON_MAX_STATUS_ID_LENGTH
+        or value != value.strip()
+        or any(ord(character) < 32 or ord(character) == 127 for character in value)
+    ):
+        raise TypeError("Mastodon checkpoint status ID must be a bounded opaque string")
+    return value
+
+
+class PostgresMastodonPublicHashtagGate:
+    def __init__(self, executor: QueryExecutor) -> None:
+        self._executor = executor
+
+    def begin(
+        self,
+        *,
+        job_id: str,
+        worker_id: str,
+        lease_generation: int,
+        instance_key: str,
+        tag_key: str,
+    ) -> MastodonPublicHashtagCheckpoint:
+        if instance_key != MASTODON_INSTANCE_KEY:
+            raise ValueError("Mastodon instance key is not approved")
+        if tag_key not in MASTODON_TAG_KEYS:
+            raise ValueError("Mastodon tag key is not approved")
+        rows = self._executor.query(
+            BEGIN_MASTODON_PUBLIC_HASHTAG_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+                "instance_key": instance_key,
+                "tag_key": tag_key,
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        row = rows[0]
+        acquired = row.get("acquired")
+        retry_at = row.get("retry_at")
+        if acquired is False:
+            if not isinstance(retry_at, datetime):
+                raise TypeError("deferred Mastodon preflight requires a retry timestamp")
+            raise MastodonRequestDeferred(retry_at)
+        if acquired is not True:
+            raise TypeError("Mastodon preflight acquired flag must be boolean")
+        if retry_at is not None:
+            raise ValueError("acquired Mastodon preflight cannot include a retry timestamp")
+        for field, expected in (
+            ("instance_key", instance_key),
+            ("tag_key", tag_key),
+        ):
+            if field in row and row[field] != expected:
+                raise ValueError(f"Mastodon preflight {field} does not match the job")
+        raw_id = row.get("last_status_id", row.get("start_status_id"))
+        if raw_id is None:
+            return MastodonPublicHashtagCheckpoint(last_status_id=None)
+        return MastodonPublicHashtagCheckpoint(last_status_id=_mastodon_checkpoint_id(raw_id))

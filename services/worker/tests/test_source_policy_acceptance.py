@@ -13,6 +13,7 @@ EXACT_COLLECTORS = (
     "official_api",
     "bluesky_jetstream",
     "nostr_relay",
+    "mastodon_rest",
     "scrapling_http",
     "scrapling_dynamic",
     "opencli_authenticated",

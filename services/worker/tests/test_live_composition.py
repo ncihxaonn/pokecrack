@@ -125,6 +125,7 @@ def test_live_health_probes_postgres_and_upserts_a_role_heartbeat() -> None:
         "youtube_enabled": False,
         "bluesky_enabled": False,
         "nostr_enabled": False,
+        "mastodon_enabled": False,
         "public_study_enabled": False,
     }
     sql, params = executor.calls[1]
@@ -168,6 +169,7 @@ def test_collector_health_fails_before_heartbeat_when_policy_or_rpcs_are_unavail
         "youtube_enabled": False,
         "bluesky_enabled": False,
         "nostr_enabled": False,
+        "mastodon_enabled": False,
         "public_study_enabled": False,
     }
     assert "INSERT INTO ingest.worker_heartbeats" not in sql
@@ -186,6 +188,7 @@ def test_enabled_youtube_health_requires_exact_rpc_policy_and_permissions() -> N
         "youtube_enabled": True,
         "bluesky_enabled": False,
         "nostr_enabled": False,
+        "mastodon_enabled": False,
         "public_study_enabled": False,
     }
     assert "ingest.begin_youtube_discovery_job" in sql
@@ -218,6 +221,7 @@ def test_enabled_youtube_scheduler_requires_the_shared_exact_dependencies() -> N
         "youtube_enabled": True,
         "bluesky_enabled": False,
         "nostr_enabled": False,
+        "mastodon_enabled": False,
         "public_study_enabled": False,
     }
     assert sql.startswith("WITH youtube_dependencies AS")
@@ -253,6 +257,7 @@ def test_flag_off_scheduler_health_only_requires_enqueue_readiness() -> None:
         "youtube_enabled": False,
         "bluesky_enabled": False,
         "nostr_enabled": False,
+        "mastodon_enabled": False,
         "public_study_enabled": False,
     }
     assert "ingest.enqueue_scheduled_job_v1" in scheduler_branch
@@ -1168,6 +1173,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "youtube_enabled": False,
         "bluesky_enabled": False,
         "nostr_enabled": False,
+        "mastodon_enabled": False,
         "public_study_enabled": True,
     }
     assert "ingest.public_study_observations" in sql

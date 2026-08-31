@@ -14,6 +14,7 @@ from .models import (
     CompletionEffect,
     Job,
     JobStatus,
+    MastodonPublicHashtagCompletion,
     NostrRelayCompletion,
     PublicStudyCompletion,
     TCGdexSetsSyncCompletion,
@@ -179,6 +180,16 @@ FROM ingest.finalize_bluesky_jetstream_job(
 FINALIZE_NOSTR_RELAY_SQL = """
 SELECT *
 FROM ingest.finalize_nostr_relay_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    result => %(result)s::jsonb
+)
+""".strip()
+
+FINALIZE_MASTODON_PUBLIC_HASHTAG_SQL = """
+SELECT *
+FROM ingest.finalize_mastodon_public_hashtag_job(
     job_id => %(job_id)s::uuid,
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint,
@@ -397,6 +408,7 @@ class PostgresJobRepository:
         | YouTubeDiscoveryCompletion
         | BlueskyJetstreamCompletion
         | NostrRelayCompletion
+        | MastodonPublicHashtagCompletion
         | None = None,
     ) -> Job:
         del now
@@ -435,6 +447,11 @@ class PostgresJobRepository:
             )
         elif isinstance(effect, NostrRelayCompletion):
             sql = FINALIZE_NOSTR_RELAY_SQL
+            params["result"] = json.dumps(
+                effect.as_payload(), separators=(",", ":"), sort_keys=True
+            )
+        elif isinstance(effect, MastodonPublicHashtagCompletion):
+            sql = FINALIZE_MASTODON_PUBLIC_HASHTAG_SQL
             params["result"] = json.dumps(
                 effect.as_payload(), separators=(",", ":"), sort_keys=True
             )

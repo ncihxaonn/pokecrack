@@ -16,6 +16,7 @@ from pokecrack_worker.jobs import (
     CompletionEffect,
     Job,
     LeaseLostError,
+    MastodonPublicHashtagCompletion,
     NostrRelayCompletion,
     PublicStudyCompletion,
     TCGdexSetsSyncCompletion,
@@ -56,6 +57,7 @@ class RuntimeRepository(Protocol):
         | YouTubeDiscoveryCompletion
         | BlueskyJetstreamCompletion
         | NostrRelayCompletion
+        | MastodonPublicHashtagCompletion
         | None = None,
     ) -> Job: ...
 
@@ -89,6 +91,7 @@ Completion = (
     | YouTubeDiscoveryCompletion
     | BlueskyJetstreamCompletion
     | NostrRelayCompletion
+    | MastodonPublicHashtagCompletion
 )
 JobHandler = Callable[[Job], Completion | None]
 
@@ -201,6 +204,7 @@ class WorkerRuntime:
                             YouTubeDiscoveryCompletion,
                             BlueskyJetstreamCompletion,
                             NostrRelayCompletion,
+                            MastodonPublicHashtagCompletion,
                         ),
                     ):
                         raise TypeError(

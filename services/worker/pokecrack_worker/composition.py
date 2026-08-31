@@ -23,6 +23,13 @@ from pokecrack_worker.collectors.official_api.bluesky import (
     BlueskyJetstreamTransport,
     WebsocketsBlueskyJetstreamTransport,
 )
+from pokecrack_worker.collectors.official_api.mastodon import (
+    HTTPXMastodonTransport,
+    MastodonError,
+    MastodonPublicHashtagCollector,
+    MastodonRateLimited,
+    MastodonTransport,
+)
 from pokecrack_worker.collectors.official_api.nostr import (
     NostrError,
     NostrRelayCollector,
@@ -31,8 +38,10 @@ from pokecrack_worker.collectors.official_api.nostr import (
 )
 from pokecrack_worker.collectors.official_api.postgres import (
     BlueskyRequestDeferred,
+    MastodonRequestDeferred,
     NostrRequestDeferred,
     PostgresBlueskyJetstreamGate,
+    PostgresMastodonPublicHashtagGate,
     PostgresNostrRelayGate,
     PostgresPublicStudyGate,
     PostgresTCGdexCheckpointRepository,
@@ -60,6 +69,7 @@ from pokecrack_worker.collectors.scrapling.adapters.public_studies import Robots
 from pokecrack_worker.collectors.scrapling.http import ScraplingHTTPClient
 from pokecrack_worker.collectors.scrapling.registry import build_live_static_registry
 from pokecrack_worker.config.bluesky import BlueskyKeywordRegistry
+from pokecrack_worker.config.mastodon import MastodonRegistry
 from pokecrack_worker.config.nostr import NostrRelayRegistry
 from pokecrack_worker.config.public_studies import PUBLIC_STUDIES, PUBLIC_STUDIES_BY_KEY
 from pokecrack_worker.config.registries import YouTubeQueryRegistry
@@ -72,6 +82,8 @@ from pokecrack_worker.jobs import (
     BlueskySourceItemWrite,
     CompletionEffect,
     Job,
+    MastodonPublicHashtagCompletion,
+    MastodonStatusWrite,
     NostrCandidateWrite,
     NostrDeletionWrite,
     NostrRelayCompletion,
@@ -118,11 +130,14 @@ YOUTUBE_DISCOVERY_JOB_TYPE = "source.youtube.discovery"
 PUBLIC_STUDY_JOB_TYPE = "source.public_study.opening"
 BLUESKY_JETSTREAM_JOB_TYPE = "source.bluesky.jetstream"
 NOSTR_RELAY_JOB_TYPE = "source.nostr.relay"
+MASTODON_PUBLIC_HASHTAG_JOB_TYPE = "source.mastodon.public_hashtag"
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 SOURCES_CONFIG = PROJECT_ROOT / "config" / "sources.yaml"
 YOUTUBE_QUERIES_CONFIG = PROJECT_ROOT / "config" / "youtube-queries.yaml"
 BLUESKY_KEYWORDS_CONFIG = PROJECT_ROOT / "config" / "bluesky-keywords.yaml"
 NOSTR_RELAYS_CONFIG = PROJECT_ROOT / "config" / "nostr-relays.yaml"
+MASTODON_CONFIG = PROJECT_ROOT / "config" / "mastodon.yaml"
+MASTODON_INSTANCES_CONFIG = MASTODON_CONFIG
 
 WORKER_HEARTBEAT_SQL = """
 SELECT last_seen_at
@@ -340,6 +355,89 @@ nostr_dependencies AS (
         'nostr_relay_nos_lol',
         'nostr_relay_nostr_net'
       )
+    ),
+    false
+  ) AS ready
+),
+mastodon_dependencies AS (
+  SELECT COALESCE(
+    to_regprocedure(
+      'ingest.begin_mastodon_public_hashtag_job(uuid,text,bigint,text,text)'
+    ) IS NOT NULL
+    AND to_regprocedure(
+      'ingest.finalize_mastodon_public_hashtag_job(uuid,text,bigint,jsonb)'
+    ) IS NOT NULL
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.begin_mastodon_public_hashtag_job(uuid,text,bigint,text,text)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.finalize_mastodon_public_hashtag_job(uuid,text,bigint,jsonb)'
+      ),
+      'EXECUTE'
+    )
+    AND (
+      SELECT
+        count(*) = 1
+        AND bool_and(
+          policies.enabled
+          AND NOT policies.is_demo
+          AND policies.source_kind = 'official_api'
+          AND policies.collector_type = 'mastodon_rest'
+          AND policies.access_mode = 'official_api'
+          AND policies.robots_policy = 'not_applicable'
+          AND policies.routes = ARRAY['mastodon_rest']::text[]
+          AND NOT policies.include_subdomains
+          AND policies.min_delay_seconds = 1
+          AND policies.max_pages_per_run = 2
+          AND policies.max_items_per_run = 80
+          AND policies.max_concurrency = 1
+          AND policies.browser_profile IS NULL
+          AND NOT policies.statistics_eligible_default
+          AND policies.retention_days = 30
+          AND policies.version = 'mastodon-public-hashtag-v1'
+          AND policies.expected_interval_seconds = 300
+          AND policies.source_key = 'mastodon_social'
+          AND policies.display_name = 'Mastodon public hashtag discovery'
+          AND policies.domain = 'mastodon.social'
+          AND policies.base_url = 'https://mastodon.social/'
+          AND policies.config = '{
+            "allow_redirects":false,
+            "approved_tags":{
+              "pokeca_ja":"ポケカ",
+              "pokemon_card_ja":"ポケモンカード",
+              "pokemon_card_ko":"포켓몬카드",
+              "pokemon_card_zh_hans":"宝可梦卡牌",
+              "pokemon_card_zh_hant":"寶可夢卡牌",
+              "pokemoncards":"pokemoncards",
+              "pokemontcg":"pokemontcg"
+            },
+            "connect_timeout_seconds":10,
+            "hashtag_base_url":"https://mastodon.social/api/v1/timelines/tag/",
+            "instance_key":"mastodon_social",
+            "instance_url":"https://mastodon.social/api/v2/instance",
+            "limit":40,
+            "max_items_per_run":80,
+            "max_pages_per_run":2,
+            "max_response_bytes":2097152,
+            "official_docs_url":"https://docs.joinmastodon.org/methods/timelines/",
+            "policy_state":"reviewed_public_api_2026-08-31",
+            "read_timeout_seconds":15,
+            "required_hashtag_access":{"local":"public","remote":"public"},
+            "rules_url":"https://mastodon.social/api/v1/instance/rules",
+            "statistics_eligible":false,
+            "tag_registry":"mastodon-tags-v1",
+            "terms_effective_date":"2026-08-31",
+            "terms_url":"https://mastodon.social/api/v1/instance/terms_of_service"
+          }'::jsonb
+        )
+      FROM ingest.source_policies AS policies
+      WHERE policies.source_key = 'mastodon_social'
     ),
     false
   ) AS ready
@@ -616,6 +714,10 @@ SELECT
       OR (SELECT ready FROM nostr_dependencies)
     )
     AND (
+      NOT %(mastodon_enabled)s::boolean
+      OR (SELECT ready FROM mastodon_dependencies)
+    )
+    AND (
       NOT %(public_study_enabled)s::boolean
       OR (SELECT ready FROM public_study_dependencies)
     )
@@ -656,6 +758,10 @@ SELECT
     AND (
       NOT %(nostr_enabled)s::boolean
       OR (SELECT ready FROM nostr_dependencies)
+    )
+    AND (
+      NOT %(mastodon_enabled)s::boolean
+      OR (SELECT ready FROM mastodon_dependencies)
     )
     AND (
       NOT %(public_study_enabled)s::boolean
@@ -701,6 +807,7 @@ _SCHEDULE_FIELDS: tuple[tuple[str, str], ...] = (
     ("public_collection", "schedule_public_collection"),
     ("bluesky_collection", "schedule_bluesky_collection"),
     ("nostr_collection", "schedule_nostr_collection"),
+    ("mastodon_collection", "schedule_mastodon_collection"),
     ("auth_collection", "schedule_auth_collection"),
     ("catalog_sync", "schedule_catalog_sync"),
     ("aggregates", "schedule_aggregates"),
@@ -718,6 +825,7 @@ UNWIRED_SCHEDULE_NAMES = tuple(
         "public_collection",
         "bluesky_collection",
         "nostr_collection",
+        "mastodon_collection",
         "catalog_sync",
         "cleanup",
     }
@@ -781,6 +889,8 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
         enabled.append(BLUESKY_JETSTREAM_JOB_TYPE)
     if settings.nostr_collection_enabled:
         enabled.append(NOSTR_RELAY_JOB_TYPE)
+    if settings.mastodon_collection_enabled:
+        enabled.append(MASTODON_PUBLIC_HASHTAG_JOB_TYPE)
     return tuple(enabled)
 
 
@@ -827,6 +937,7 @@ def write_health_heartbeat(
             "youtube_enabled": settings.youtube_collection_enabled,
             "bluesky_enabled": settings.bluesky_collection_enabled,
             "nostr_enabled": settings.nostr_collection_enabled,
+            "mastodon_enabled": settings.mastodon_collection_enabled,
             "public_study_enabled": settings.public_study_collection_enabled,
         },
     )
@@ -1165,6 +1276,88 @@ def _nostr_relay_handler(
     return discover
 
 
+def _mastodon_public_hashtag_handler(
+    *,
+    settings: Settings,
+    executor: QueryExecutor,
+    worker_id: str,
+    transport: MastodonTransport | None,
+) -> JobHandler:
+    if not settings.mastodon_collection_enabled:
+        raise RuntimeError("Mastodon handler requires explicit enablement")
+    registry = MastodonRegistry.from_yaml(MASTODON_CONFIG)
+    collector = MastodonPublicHashtagCollector(
+        transport=transport or HTTPXMastodonTransport(),
+        registry=registry,
+    )
+    gates = PostgresMastodonPublicHashtagGate(executor)
+
+    def discover(job: Job) -> MastodonPublicHashtagCompletion:
+        if job.kind != MASTODON_PUBLIC_HASHTAG_JOB_TYPE or set(job.payload) != {
+            "instance_key",
+            "tag_key",
+        }:
+            raise ValueError("Mastodon jobs require the exact instance_key/tag_key payload")
+        instance_key = job.payload.get("instance_key")
+        tag_key = job.payload.get("tag_key")
+        if not isinstance(instance_key, str) or not isinstance(tag_key, str):
+            raise ValueError("Mastodon instance_key and tag_key must be text")
+        registry.require_instance(instance_key)
+        registry.require_tag(tag_key)
+        try:
+            checkpoint = gates.begin(
+                job_id=job.id,
+                worker_id=worker_id,
+                lease_generation=job.lease_generation,
+                instance_key=instance_key,
+                tag_key=tag_key,
+            )
+        except MastodonRequestDeferred as deferred:
+            raise JobDeferred(
+                retry_at=deferred.retry_at,
+                code="mastodon_request_deferred",
+            ) from None
+        try:
+            result = collector.collect(
+                instance_key=instance_key,
+                tag_key=tag_key,
+                start_status_id=checkpoint.last_status_id,
+            )
+        except MastodonRateLimited as error:
+            if error.retry_at is not None:
+                raise JobDeferred(
+                    retry_at=error.retry_at,
+                    code="mastodon_rate_limited",
+                ) from None
+            raise JobExecutionError(code=error.code, retryable=True) from None
+        except MastodonError as error:
+            raise JobExecutionError(code=error.code, retryable=error.retryable) from None
+        return MastodonPublicHashtagCompletion(
+            instance_key=result.instance_key,
+            tag_key=result.tag_key,
+            start_status_id=result.start_status_id,
+            end_status_id=result.end_status_id,
+            incomplete=result.incomplete,
+            requests_made=result.requests_made,
+            statuses_seen=result.statuses_seen,
+            bytes_seen=result.bytes_seen,
+            candidates=tuple(
+                MastodonStatusWrite(
+                    status_id=item.status_id,
+                    status_key_sha256=item.status_key_sha256,
+                    published_at=item.published_at,
+                    matched_tags=item.matched_tags,
+                )
+                for item in result.candidates
+            ),
+            rate_limit_limit=result.rate_limit_limit,
+            rate_limit_remaining=result.rate_limit_remaining,
+            rate_limit_reset_at=result.rate_limit_reset_at,
+        )
+
+    return discover
+
+
 def _public_study_handler(
     *,
     settings: Settings,
@@ -1263,6 +1456,7 @@ def _handlers_for_role(
     youtube_transport: YouTubeTransport | None,
     bluesky_transport: BlueskyJetstreamTransport | None,
     nostr_transport: NostrRelayTransport | None,
+    mastodon_transport: MastodonTransport | None,
     public_study_http_client: HTTPClient | None,
     public_study_robots_sleeper: Callable[[float], None] | None,
     clock: Callable[[], datetime] | None,
@@ -1306,6 +1500,13 @@ def _handlers_for_role(
                 worker_id=worker_id,
                 transport=nostr_transport,
             )
+        if settings.mastodon_collection_enabled:
+            handlers[MASTODON_PUBLIC_HASHTAG_JOB_TYPE] = _mastodon_public_hashtag_handler(
+                settings=settings,
+                executor=executor,
+                worker_id=worker_id,
+                transport=mastodon_transport,
+            )
         return handlers
     if role is WorkerRole.WATCHDOG:
         return {CLEANUP_JOB_TYPE: _cleanup_handler()}
@@ -1321,6 +1522,7 @@ def build_live_worker_runtime(
     youtube_transport: YouTubeTransport | None = None,
     bluesky_transport: BlueskyJetstreamTransport | None = None,
     nostr_transport: NostrRelayTransport | None = None,
+    mastodon_transport: MastodonTransport | None = None,
     public_study_http_client: HTTPClient | None = None,
     public_study_robots_sleeper: Callable[[float], None] | None = None,
 ) -> WorkerRuntime:
@@ -1338,6 +1540,7 @@ def build_live_worker_runtime(
         youtube_transport=youtube_transport,
         bluesky_transport=bluesky_transport,
         nostr_transport=nostr_transport,
+        mastodon_transport=mastodon_transport,
         public_study_http_client=public_study_http_client,
         public_study_robots_sleeper=public_study_robots_sleeper,
         clock=clock,
@@ -1435,9 +1638,34 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
         if settings.nostr_collection_enabled
         else ()
     )
+    mastodon_registry = (
+        MastodonRegistry.from_yaml(MASTODON_CONFIG)
+        if settings.mastodon_collection_enabled
+        else None
+    )
+    mastodon = (
+        tuple(
+            ScheduleEntry(
+                name=f"{instance.key}_{tag.key}",
+                job_type=MASTODON_PUBLIC_HASHTAG_JOB_TYPE,
+                cron=settings.schedule_mastodon_collection,
+                payload={"instance_key": instance.key, "tag_key": tag.key},
+                priority=-48,
+                max_attempts=min(3, settings.worker_max_attempts),
+            )
+            for instance in mastodon_registry.instances
+            for tag in mastodon_registry.tags
+        )
+        if mastodon_registry is not None
+        else ()
+    )
     cleanup_catch_up = (
         timedelta(hours=36)
-        if settings.bluesky_collection_enabled or settings.nostr_collection_enabled
+        if (
+            settings.bluesky_collection_enabled
+            or settings.nostr_collection_enabled
+            or settings.mastodon_collection_enabled
+        )
         else timedelta(hours=12)
         if settings.youtube_collection_enabled
         else None
@@ -1456,7 +1684,7 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
             catch_up_check_interval=(timedelta(hours=1) if cleanup_catch_up else None),
         ),
     )
-    return catalog + youtube + public_studies + bluesky + nostr + cleanup
+    return catalog + youtube + public_studies + bluesky + nostr + mastodon + cleanup
 
 
 def build_live_scheduler(
