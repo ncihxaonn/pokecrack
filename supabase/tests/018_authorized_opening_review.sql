@@ -206,10 +206,12 @@ select has_function(
 
 select set_eq(
   $$select parameter_name::text
-    from information_schema.parameters
-    where specific_schema = 'ingest'
-      and routine_name = 'list_authorized_opening_reviews_v1'
-      and parameter_mode = 'OUT'$$,
+    from information_schema.parameters as parameters
+    join information_schema.routines as routines
+      using (specific_catalog, specific_schema, specific_name)
+    where parameters.specific_schema = 'ingest'
+      and routines.routine_name = 'list_authorized_opening_reviews_v1'
+      and parameters.parameter_mode = 'OUT'$$,
   $$values
     ('submission_id'::text), ('revision'), ('state'), ('discovery_platform'),
     ('country_code'), ('geography_basis'), ('geography_confidence'),
@@ -221,10 +223,12 @@ select set_eq(
 );
 select set_eq(
   $$select parameter_name::text
-    from information_schema.parameters
-    where specific_schema = 'ingest'
-      and routine_name = 'review_authorized_opening_v1'
-      and parameter_mode = 'OUT'$$,
+    from information_schema.parameters as parameters
+    join information_schema.routines as routines
+      using (specific_catalog, specific_schema, specific_name)
+    where parameters.specific_schema = 'ingest'
+      and routines.routine_name = 'review_authorized_opening_v1'
+      and parameters.parameter_mode = 'OUT'$$,
   $$values
     ('submission_id'::text), ('revision'), ('state'),
     ('accepted_observation_id')$$,
