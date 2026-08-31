@@ -775,6 +775,7 @@ export type Database = {
       get_public_dashboard_snapshot_v3: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_social_discovery_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_social_discovery_v2: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_public_social_discovery_v3: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_study_coverage_v1: { Args: Record<PropertyKey, never>; Returns: Json };
     };
     Enums: { [_ in never]: never };
@@ -1776,6 +1777,197 @@ export type Database = {
           },
         ];
       };
+      mastodon_public_hashtag_candidates: {
+        Row: {
+          source_policy_id: string;
+          status_key_sha256: string;
+          matched_tags: string[];
+          published_at: string;
+          first_seen_at: string;
+          last_seen_at: string;
+          expires_at: string;
+          activity_only: boolean;
+          statistics_eligible: boolean;
+          is_demo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          source_policy_id: string;
+          status_key_sha256: string;
+          matched_tags: string[];
+          published_at: string;
+          first_seen_at: string;
+          last_seen_at: string;
+          expires_at: string;
+          activity_only?: boolean;
+          statistics_eligible?: boolean;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          source_policy_id?: string;
+          status_key_sha256?: string;
+          matched_tags?: string[];
+          published_at?: string;
+          first_seen_at?: string;
+          last_seen_at?: string;
+          expires_at?: string;
+          activity_only?: boolean;
+          statistics_eligible?: boolean;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'mastodon_public_hashtag_candidates_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: false;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      mastodon_public_hashtag_observations: {
+        Row: {
+          source_policy_id: string;
+          tag_key: string;
+          status_key_sha256: string;
+          matched_tags: string[];
+          published_at: string;
+          observed_at: string;
+          expires_at: string;
+          activity_only: boolean;
+          statistics_eligible: boolean;
+          is_demo: boolean;
+        };
+        Insert: {
+          source_policy_id: string;
+          tag_key: string;
+          status_key_sha256: string;
+          matched_tags: string[];
+          published_at: string;
+          observed_at: string;
+          expires_at: string;
+          activity_only?: boolean;
+          statistics_eligible?: boolean;
+          is_demo?: boolean;
+        };
+        Update: {
+          source_policy_id?: string;
+          tag_key?: string;
+          status_key_sha256?: string;
+          matched_tags?: string[];
+          published_at?: string;
+          observed_at?: string;
+          expires_at?: string;
+          activity_only?: boolean;
+          statistics_eligible?: boolean;
+          is_demo?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'mastodon_public_hashtag_observations_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: false;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      mastodon_public_hashtag_checkpoints: {
+        Row: {
+          source_policy_id: string;
+          instance_key: string;
+          tag_key: string;
+          last_status_id: string | null;
+          last_collected_at: string | null;
+          incomplete: boolean;
+          requests_seen_total: number;
+          statuses_seen_total: number;
+          bytes_seen_total: number;
+          candidates_seen_total: number;
+          is_demo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          source_policy_id: string;
+          instance_key: string;
+          tag_key: string;
+          last_status_id?: string | null;
+          last_collected_at?: string | null;
+          incomplete?: boolean;
+          requests_seen_total?: number;
+          statuses_seen_total?: number;
+          bytes_seen_total?: number;
+          candidates_seen_total?: number;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          source_policy_id?: string;
+          instance_key?: string;
+          tag_key?: string;
+          last_status_id?: string | null;
+          last_collected_at?: string | null;
+          incomplete?: boolean;
+          requests_seen_total?: number;
+          statuses_seen_total?: number;
+          bytes_seen_total?: number;
+          candidates_seen_total?: number;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'mastodon_public_hashtag_checkpoints_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: false;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      mastodon_rate_cooldowns: {
+        Row: {
+          source_policy_id: string;
+          instance_key: string;
+          cooldown_until: string;
+          is_demo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          source_policy_id: string;
+          instance_key: string;
+          cooldown_until?: string;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          source_policy_id?: string;
+          instance_key?: string;
+          cooldown_until?: string;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'mastodon_rate_cooldowns_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: true;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       extraction_runs: {
         Row: {
           id: string;
@@ -2721,6 +2913,21 @@ export type Database = {
           recent_candidate_ids: string[];
         }[];
       };
+      begin_mastodon_public_hashtag_job: {
+        Args: {
+          job_id: string;
+          worker_id: string;
+          lease_generation: number;
+          instance_key: string;
+          tag_key: string;
+        };
+        Returns: {
+          acquired: boolean;
+          retry_at: string | null;
+          start_status_id: string | null;
+          cooldown_until: string | null;
+        }[];
+      };
       bluesky_cursor_v1: { Args: { value: string }; Returns: number };
       bluesky_timestamp_v1: {
         Args: { value: string; upper_bound: string };
@@ -2753,11 +2960,30 @@ export type Database = {
         };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
+      finalize_mastodon_public_hashtag_job: {
+        Args: {
+          job_id: string;
+          worker_id: string;
+          lease_generation: number;
+          result: Json;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      mastodon_tag_keys_v1: { Args: { value: string[] }; Returns: boolean };
+      mastodon_status_id_v1: { Args: { value: string }; Returns: string };
+      mastodon_timestamp_v1: {
+        Args: { value: string; lower_bound: string; upper_bound: string };
+        Returns: string;
+      };
       nostr_timestamp_v1: {
         Args: { value: string; lower_bound: string; upper_bound: string };
         Returns: string;
       };
       prune_nostr_relay_v1: {
+        Args: { cutoff: string; max_rows?: number };
+        Returns: { candidates_deleted: number; observations_deleted: number }[];
+      };
+      prune_mastodon_public_hashtag_v1: {
         Args: { cutoff: string; max_rows?: number };
         Returns: { candidates_deleted: number; observations_deleted: number }[];
       };

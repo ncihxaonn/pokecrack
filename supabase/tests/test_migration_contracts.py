@@ -39,6 +39,9 @@ BLUESKY_RUNTIME_BOUNDS = (
 NOSTR_MULTI_RELAY = (
     ROOT / "migrations/20260906000000_nostr_multi_relay_discovery.sql"
 ).read_text()
+MASTODON_PUBLIC_HASHTAG = (
+    ROOT / "migrations/20260908000000_mastodon_public_hashtag_discovery.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -320,6 +323,194 @@ class IngestMigrationContractTests(unittest.TestCase):
             "begin_nostr_relay_job:",
             "finalize_nostr_relay_job:",
             "get_public_social_discovery_v2:",
+        ):
+            self.assertIn(type_name, DATABASE_TYPES)
+
+    def test_mastodon_public_hashtag_is_fixed_private_hashed_and_public_safe(self) -> None:
+        migration = MASTODON_PUBLIC_HASHTAG
+        lowered = migration.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn("'source.mastodon.public_hashtag'", lowered)
+        self.assertIn("'mastodon_social'", lowered)
+        self.assertIn("'mastodon_rest'", lowered)
+        self.assertIn("https://mastodon.social/", lowered)
+        self.assertIn("https://mastodon.social/api/v2/instance", lowered)
+        self.assertIn("https://docs.joinmastodon.org/methods/timelines/", lowered)
+        self.assertIn('"max_pages_per_run":2', lowered)
+        self.assertIn('"max_items_per_run":80', lowered)
+        self.assertIn('"max_response_bytes":2097152', lowered)
+        self.assertIn('"allow_redirects":false', lowered)
+        self.assertIn('"pokemon_card_zh_hant":"寶可夢卡牌"', compact)
+        for raw_tag in (
+            "pokemontcg",
+            "pokemoncards",
+            "ポケカ",
+            "ポケモンカード",
+            "포켓몬카드",
+            "宝可梦卡牌",
+            "寶可夢卡牌",
+        ):
+            self.assertIn(raw_tag.casefold(), lowered)
+        for table in (
+            "mastodon_public_hashtag_candidates",
+            "mastodon_public_hashtag_observations",
+            "mastodon_public_hashtag_checkpoints",
+            "mastodon_rate_cooldowns",
+        ):
+            self.assertIn(f"alter table ingest.{table} force row level security", compact)
+        self.assertIn("grant select on table ingest.mastodon_public_hashtag_candidates to service_role", compact)
+        self.assertIn("grant select on table ingest.mastodon_public_hashtag_observations to service_role", compact)
+        self.assertNotIn("grant insert on table ingest.mastodon_public_hashtag_candidates", compact)
+        self.assertNotIn("grant update on table ingest.mastodon_public_hashtag_observations", compact)
+        self.assertNotIn("grant delete on table ingest.mastodon_public_hashtag_checkpoints", compact)
+
+        candidate_table = lowered.split(
+            "create table ingest.mastodon_public_hashtag_candidates", 1
+        )[1].split("create index mastodon_candidates_active_idx", 1)[0]
+        observation_table = lowered.split(
+            "create table ingest.mastodon_public_hashtag_observations", 1
+        )[1].split("create index mastodon_observations_expiry_idx", 1)[0]
+        for table in (candidate_table, observation_table):
+            self.assertIn("status_key_sha256", table)
+            self.assertIn("activity_only", table)
+            self.assertIn("statistics_eligible", table)
+            self.assertNotIn("status_id", table)
+            for forbidden in (
+                "content",
+                "account",
+                "handle",
+                "profile",
+                "media",
+                "url",
+                "uri",
+                "location",
+                "raw_payload",
+            ):
+                self.assertNotIn(forbidden, table)
+        checkpoint_table = lowered.split(
+            "create table ingest.mastodon_public_hashtag_checkpoints", 1
+        )[1].split("create index mastodon_checkpoints_collected_idx", 1)[0]
+        self.assertIn("last_status_id text", checkpoint_table)
+        self.assertNotIn("account", checkpoint_table)
+        self.assertNotIn("raw_payload", checkpoint_table)
+        self.assertIn("mastodon_tag_keys_v1", lowered)
+        self.assertIn("array_position(value, null) is null", lowered)
+        self.assertIn("order by approved.ordinal", lowered)
+
+        begin = lowered.split(
+            "create or replace function ingest.begin_mastodon_public_hashtag_job", 1
+        )[1].split(
+            "alter function ingest.begin_mastodon_public_hashtag_job", 1
+        )[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "for update of jobs",
+            "for update of gates",
+            "for update of checkpoints",
+            "for update of cooldowns",
+            "pg_advisory_xact_lock",
+            "jobs.lease_generation = $3",
+            "payload <> jsonb_build_object",
+            "collector_type = 'mastodon_rest'",
+            "policies.config = expected_config",
+            "start_status_id text",
+            "cooldown_until timestamptz",
+        ):
+            self.assertIn(fragment, begin)
+        finalizer = lowered.split(
+            "create or replace function ingest.finalize_mastodon_public_hashtag_job", 1
+        )[1].split(
+            "alter function ingest.finalize_mastodon_public_hashtag_job", 1
+        )[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "for update of jobs",
+            "result - array",
+            "result ->> 'version' <> '1.0.0'",
+            "result_requests_made > 2",
+            "result_statuses_seen > 80",
+            "result_bytes_seen > 2097152",
+            "candidate_count > 80",
+            "request_gate.acquired_at",
+            "result_start_status_id is distinct from checkpoint_row.last_status_id",
+            "checkpoints.last_status_id is not distinct from result_start_status_id",
+            "extensions.digest",
+            "convert_to(result_instance_key || e'\\n' || candidate_status_id, 'utf8')",
+            "insert into ingest.mastodon_public_hashtag_observations",
+            "insert into ingest.mastodon_public_hashtag_candidates",
+            "on conflict (source_policy_id, tag_key, status_key_sha256) do nothing",
+            "existing_observation.matched_tags <> candidate_tags",
+            "existing_candidate.matched_tags <> candidate_tags",
+            "update ingest.mastodon_public_hashtag_checkpoints",
+            "result_rate_limit_remaining = 0",
+            "jobs.lease_generation = lease_generation",
+            "gates.owner_lease_generation = lease_generation",
+        ):
+            self.assertIn(fragment, finalizer)
+        self.assertIn("prune_mastodon_public_hashtag_v1", lowered)
+        self.assertIn("prune_nostr_relay_v1", lowered)
+        self.assertNotIn("delete from ingest.mastodon_public_hashtag_checkpoints", lowered)
+        self.assertNotIn("delete from ingest.mastodon_rate_cooldowns", lowered)
+        self.assertIn("schedule_name = ((payload ->> 'instance_key') || '_' || (payload ->> 'tag_key'))", compact)
+        self.assertIn("payload - array['instance_key', 'tag_key'] = '{}'::jsonb", compact)
+        self.assertIn("if p_job_type = 'source.mastodon.public_hashtag'", lowered)
+
+        public_rpc = lowered.split(
+            "create or replace function public.get_public_social_discovery_v3()", 1
+        )[1].split("alter function public.get_public_social_discovery_v3()", 1)[0]
+        self.assertIn("public.get_public_social_discovery_v2()", public_rpc)
+        self.assertIn("'schemaversion', '3.0.0'", public_rpc)
+        for safe_key in (
+            "'id'",
+            "'name'",
+            "'kind'",
+            "'access'",
+            "'status'",
+            "'lastcollectedat'",
+            "'url'",
+            "'note'",
+        ):
+            self.assertIn(safe_key, public_rpc)
+        public_builder = public_rpc.split("mastodon_source as", 1)[1].split(
+            "all_sources as", 1
+        )[0]
+        for forbidden in (
+            "'instance_key'",
+            "'tag_key'",
+            "'status_id'",
+            "'rate_limit_reset_at'",
+            "'raw_payload'",
+        ):
+            self.assertNotIn(forbidden, public_builder)
+        self.assertIn("coverage may be incomplete", public_rpc)
+        self.assertIn("activity-only", public_rpc)
+        self.assertIn("opening evidence", public_rpc)
+        self.assertIn("pull-rate denominator", public_rpc)
+        self.assertIn(
+            "revoke all on function public.get_public_social_discovery_v3() from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_social_discovery_v3() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_social_discovery_v3() to service_role",
+            compact,
+        )
+        for type_name in (
+            "mastodon_public_hashtag_candidates:",
+            "mastodon_public_hashtag_observations:",
+            "mastodon_public_hashtag_checkpoints:",
+            "mastodon_rate_cooldowns:",
+            "begin_mastodon_public_hashtag_job:",
+            "finalize_mastodon_public_hashtag_job:",
+            "prune_mastodon_public_hashtag_v1:",
+            "get_public_social_discovery_v3:",
         ):
             self.assertIn(type_name, DATABASE_TYPES)
 
