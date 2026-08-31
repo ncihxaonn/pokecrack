@@ -10,6 +10,7 @@ from typing import Any, Protocol
 from pokecrack_worker.config.public_studies import PUBLIC_STUDY_COVERAGE_KEYS
 
 from .models import (
+    BlueskyJetstreamCompletion,
     CompletionEffect,
     Job,
     JobStatus,
@@ -160,6 +161,16 @@ FROM ingest.finalize_public_study_coverage_job_v1(
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint,
     study_key => %(study_key)s,
+    result => %(result)s::jsonb
+)
+""".strip()
+
+FINALIZE_BLUESKY_JETSTREAM_SQL = """
+SELECT *
+FROM ingest.finalize_bluesky_jetstream_job(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
     result => %(result)s::jsonb
 )
 """.strip()
@@ -373,6 +384,7 @@ class PostgresJobRepository:
         | PublicStudyCompletion
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
+        | BlueskyJetstreamCompletion
         | None = None,
     ) -> Job:
         del now
@@ -401,6 +413,11 @@ class PostgresJobRepository:
                 else FINALIZE_PUBLIC_STUDY_SQL
             )
             params["study_key"] = effect.study_key
+            params["result"] = json.dumps(
+                effect.as_payload(), separators=(",", ":"), sort_keys=True
+            )
+        elif isinstance(effect, BlueskyJetstreamCompletion):
+            sql = FINALIZE_BLUESKY_JETSTREAM_SQL
             params["result"] = json.dumps(
                 effect.as_payload(), separators=(",", ":"), sort_keys=True
             )

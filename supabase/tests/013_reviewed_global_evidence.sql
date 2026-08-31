@@ -91,8 +91,8 @@ select matches(
   pg_get_functiondef(
     'ingest.begin_public_study_job_v2(uuid,text,bigint,text)'::regprocedure
   ),
-  'contracts\.ordinal in \(3, 4\)',
-  'coverage preflight accepts only the two newly reviewed study contracts'
+  'contracts\.ordinal in \(3, 4, 5\)',
+  'coverage preflight accepts the three reviewed study contracts'
 );
 select has_function(
   'ingest',
@@ -181,8 +181,8 @@ select is(
 );
 select is(
   jsonb_array_length(public.get_public_study_coverage_v1() -> 'sources'),
-  2,
-  'coverage RPC exposes exactly the two newly reviewed safe source rows'
+  3,
+  'coverage RPC exposes exactly the three reviewed safe source rows'
 );
 select doesnt_match(
   public.get_public_study_coverage_v1()::text,

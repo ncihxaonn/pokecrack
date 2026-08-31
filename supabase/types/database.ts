@@ -773,6 +773,7 @@ export type Database = {
       get_public_dashboard_snapshot_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_dashboard_snapshot_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_dashboard_snapshot_v3: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_public_social_discovery_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_study_coverage_v1: { Args: Record<PropertyKey, never>; Returns: Json };
     };
     Enums: { [_ in never]: never };
@@ -1412,6 +1413,180 @@ export type Database = {
           is_demo?: boolean;
         };
         Relationships: [
+        ];
+      };
+      bluesky_jetstream_candidates: {
+        Row: {
+          at_uri: string;
+          public_url: string;
+          text_excerpt: string | null;
+          record_sha256: string;
+          published_at: string | null;
+          source_policy_id: string;
+          source_policy_version: string;
+          collector_version: string;
+          first_seen_at: string;
+          last_seen_at: string;
+          last_cursor: number;
+          deleted_at: string | null;
+          expires_at: string;
+          is_demo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          at_uri: string;
+          public_url: string;
+          text_excerpt?: string | null;
+          record_sha256: string;
+          published_at?: string | null;
+          source_policy_id: string;
+          source_policy_version: string;
+          collector_version: string;
+          first_seen_at: string;
+          last_seen_at: string;
+          last_cursor: number;
+          deleted_at?: string | null;
+          expires_at: string;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          at_uri?: string;
+          public_url?: string;
+          text_excerpt?: string | null;
+          record_sha256?: string;
+          published_at?: string | null;
+          source_policy_id?: string;
+          source_policy_version?: string;
+          collector_version?: string;
+          first_seen_at?: string;
+          last_seen_at?: string;
+          last_cursor?: number;
+          deleted_at?: string | null;
+          expires_at?: string;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'bluesky_jetstream_candidates_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: false;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      bluesky_jetstream_observations: {
+        Row: {
+          id: number;
+          source_policy_id: string;
+          cursor: number;
+          at_uri: string;
+          operation: string;
+          public_url: string | null;
+          text_excerpt: string | null;
+          record_sha256: string | null;
+          published_at: string | null;
+          observed_at: string;
+          expires_at: string;
+          is_demo: boolean;
+        };
+        Insert: {
+          id?: number;
+          source_policy_id: string;
+          cursor: number;
+          at_uri: string;
+          operation: string;
+          public_url?: string | null;
+          text_excerpt?: string | null;
+          record_sha256?: string | null;
+          published_at?: string | null;
+          observed_at: string;
+          expires_at: string;
+          is_demo?: boolean;
+        };
+        Update: {
+          id?: number;
+          source_policy_id?: string;
+          cursor?: number;
+          at_uri?: string;
+          operation?: string;
+          public_url?: string | null;
+          text_excerpt?: string | null;
+          record_sha256?: string | null;
+          published_at?: string | null;
+          observed_at?: string;
+          expires_at?: string;
+          is_demo?: boolean;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'bluesky_jetstream_observations_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: false;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      bluesky_jetstream_checkpoints: {
+        Row: {
+          source_policy_id: string;
+          endpoint: string;
+          protocol: string;
+          collection: string;
+          last_cursor: number | null;
+          last_collected_at: string | null;
+          events_seen_total: number;
+          bytes_seen_total: number;
+          candidates_seen_total: number;
+          deletions_seen_total: number;
+          is_demo: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          source_policy_id: string;
+          endpoint: string;
+          protocol: string;
+          collection: string;
+          last_cursor?: number | null;
+          last_collected_at?: string | null;
+          events_seen_total?: number;
+          bytes_seen_total?: number;
+          candidates_seen_total?: number;
+          deletions_seen_total?: number;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          source_policy_id?: string;
+          endpoint?: string;
+          protocol?: string;
+          collection?: string;
+          last_cursor?: number | null;
+          last_collected_at?: string | null;
+          events_seen_total?: number;
+          bytes_seen_total?: number;
+          candidates_seen_total?: number;
+          deletions_seen_total?: number;
+          is_demo?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'bluesky_jetstream_checkpoints_source_policy_id_fkey';
+            columns: ['source_policy_id'];
+            isOneToOne: true;
+            referencedRelation: 'source_policies';
+            referencedColumns: ['id'];
+          },
         ];
       };
       extraction_runs: {
@@ -2344,6 +2519,15 @@ export type Database = {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null }[];
       };
+      begin_bluesky_jetstream_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number };
+        Returns: { acquired: boolean; retry_at: string | null; start_cursor: number | null }[];
+      };
+      bluesky_cursor_v1: { Args: { value: string }; Returns: number };
+      bluesky_timestamp_v1: {
+        Args: { value: string; upper_bound: string };
+        Returns: string;
+      };
       begin_public_study_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null }[];
@@ -2413,6 +2597,10 @@ export type Database = {
         Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
+      finalize_bluesky_jetstream_job: {
+        Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       finalize_public_study_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
@@ -2448,6 +2636,10 @@ export type Database = {
       };
       prune_expired_ephemera: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
       prune_expired_ephemera_v2: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
+      prune_bluesky_jetstream_v1: {
+        Args: { cutoff: string; max_rows?: number };
+        Returns: { candidates_deleted: number; observations_deleted: number }[];
+      };
       reviewed_public_study_contracts: {
         Args: Record<PropertyKey, never>;
         Returns: {

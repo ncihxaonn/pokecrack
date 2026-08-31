@@ -12,6 +12,7 @@ from urllib.robotparser import RobotFileParser
 from pokecrack_worker.collectors.base import CollectorError, HTTPClient
 from pokecrack_worker.config.public_studies import PUBLIC_STUDIES_BY_KEY, PublicStudyIdentity
 from pokecrack_worker.config.source_policy import SourcePolicy
+from pokecrack_worker.deduplication.fingerprints import content_sha256
 from pokecrack_worker.deduplication.urls import canonicalize_url
 from pokecrack_worker.models import CollectorType, SourceItemCandidate
 
@@ -173,6 +174,7 @@ class ReviewedPublicStudyAdapter:
         expected_policy_config: Mapping[str, object],
         title_tokens: Sequence[str],
         evidence_patterns: Sequence[re.Pattern[str]],
+        expected_evidence_sha256: str | None = None,
         timeout_seconds: float = 30.0,
         max_response_bytes: int = 1_000_000,
     ) -> None:
@@ -181,6 +183,7 @@ class ReviewedPublicStudyAdapter:
         self.expected_policy_config = dict(expected_policy_config)
         self.title_tokens = tuple(title_tokens)
         self.evidence_patterns = tuple(evidence_patterns)
+        self.expected_evidence_sha256 = expected_evidence_sha256
         self.timeout_seconds = timeout_seconds
         self.max_response_bytes = max_response_bytes
 
@@ -221,6 +224,12 @@ class ReviewedPublicStudyAdapter:
         if any(match is None for match in matches):
             raise CollectorError("public study evidence no longer matches the reviewed facts")
         evidence_excerpt = "\n".join(match.group(0) for match in matches if match is not None)
+        evidence_sha256 = content_sha256(evidence_excerpt)
+        if (
+            self.expected_evidence_sha256 is not None
+            and evidence_sha256 != self.expected_evidence_sha256
+        ):
+            raise CollectorError("public study evidence hash no longer matches the reviewed facts")
 
         return (
             SourceItemCandidate(
@@ -320,6 +329,32 @@ BLEEDINGCOOL_POLICY_CONFIG: dict[str, object] = {
     "denominator_complete": True,
 }
 
+TCGTALK_IDENTITY = PUBLIC_STUDIES_BY_KEY["tcgtalk-perfect-order-sg-54-v1"]
+TCGTALK_POLICY_CONFIG: dict[str, object] = {
+    "study_key": TCGTALK_IDENTITY.study_key,
+    "canonical_url": TCGTALK_IDENTITY.source_url,
+    "collector_version": TCGTALK_IDENTITY.collector_version,
+    "parser_version": TCGTALK_IDENTITY.parser_version,
+    "country_code": "SG",
+    "country_name": "Singapore",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "set_external_id": "me03",
+    "product_scope": "booster_bundle",
+    "pack_count": 54,
+    "qualifying_hit_pack_count": 1,
+    "qualifying_metric": "sir_pack",
+    "metric_version": "global-sir-v1",
+    "observed_at": "2026-03-25T12:40:00Z",
+    "denominator_complete": True,
+}
+TCGTALK_EVIDENCE_EXCERPT = (
+    "Based on community opening of 9 booster bundles (54 packs total)\n"
+    "Out of 54 packs opened, the community pull rate held roughly true: 1 SIR per 54 packs "
+    "in this particular opening, with the Meowth EX SIR being the pull."
+)
+TCGTALK_EVIDENCE_SHA256 = "217f21e0de947139a96b6466563c1d005300598b1dde933264255627c8f0b096"
+
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
@@ -386,6 +421,23 @@ def bleedingcool_phantasmal_flames_adapter(*, client: HTTPClient) -> ReviewedPub
     )
 
 
+def tcgtalk_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
+    return ReviewedPublicStudyAdapter(
+        client=client,
+        identity=TCGTALK_IDENTITY,
+        expected_policy_config=TCGTALK_POLICY_CONFIG,
+        title_tokens=("Perfect Order Pull Rates", "Singapore Collectors Can Expect"),
+        evidence_patterns=(
+            re.compile(r"Based on community opening of 9 booster bundles \(54 packs total\)"),
+            re.compile(
+                r"Out of 54 packs opened, the community pull rate held roughly true: 1 SIR per "
+                r"54 packs in this particular opening, with the Meowth EX SIR being the pull\."
+            ),
+        ),
+        expected_evidence_sha256=TCGTALK_EVIDENCE_SHA256,
+    )
+
+
 __all__ = [
     "BLEEDINGCOOL_IDENTITY",
     "BLEEDINGCOOL_POLICY_CONFIG",
@@ -395,10 +447,15 @@ __all__ = [
     "COMICBOOK_POLICY_CONFIG",
     "ReviewedPublicStudyAdapter",
     "RobotsTxtChecker",
+    "TCGTALK_EVIDENCE_EXCERPT",
+    "TCGTALK_EVIDENCE_SHA256",
+    "TCGTALK_IDENTITY",
+    "TCGTALK_POLICY_CONFIG",
     "WARGAMER_IDENTITY",
     "WARGAMER_POLICY_CONFIG",
     "bleedingcool_phantasmal_flames_adapter",
     "cardchill_ascended_heroes_adapter",
     "comicbook_perfect_order_adapter",
+    "tcgtalk_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",
 ]

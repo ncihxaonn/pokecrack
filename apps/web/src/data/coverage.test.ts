@@ -26,6 +26,16 @@ const sources = [
     url: "https://bleedingcool.com/games/opening-pokemon-tcg-mega-evolution-phantasmal-flames-products",
     note: "Reviewed denominator-only coverage attributed to the United States.",
   },
+  {
+    id: "tcgtalk_perfect_order_study",
+    name: "tcgTalk Perfect Order study",
+    kind: "community" as const,
+    access: "public" as const,
+    status: "operational" as const,
+    lastCollectedAt: collectedAt,
+    url: "https://tcgtalk.com/blog/perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232",
+    note: "Reviewed denominator-only coverage attributed to Singapore's publisher country.",
+  },
 ];
 
 function validCoveragePayload() {
@@ -59,7 +69,7 @@ function validCoveragePayload() {
 }
 
 describe("reviewed public-study coverage merge", () => {
-  it("adds real pack coverage while forcing every affected inference field null", () => {
+  it("keeps a published country aggregate while adding a coverage-only set", () => {
     const originalGb = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "GB");
     expect(originalGb).toBeDefined();
 
@@ -67,16 +77,15 @@ describe("reviewed public-study coverage merge", () => {
     const parsed = publicDashboardDataSchema.parse(merged);
     const gb = parsed.mapCells.find((cell) => cell.countryCode === "GB");
 
-    expect(gb?.packsObserved).toBe((originalGb?.packsObserved ?? 0) + 90);
-    expect(gb).toMatchObject({
+    expect(gb).toEqual(originalGb);
+    expect(parsed.sets.find((set) => set.slug === "ascended-heroes")).toMatchObject({
       hitRate: null,
       baselineRate: null,
       posteriorMean: null,
       credibleInterval: null,
       deltaFromBaseline: null,
-      state: "pending",
+      state: "insufficient",
     });
-    expect(parsed.sets.some((set) => set.slug === "ascended-heroes")).toBe(true);
     expect(
       parsed.sources.some(
         (source) => source.id === "cardchill_ascended_heroes_study",
@@ -85,6 +94,49 @@ describe("reviewed public-study coverage merge", () => {
     expect(parsed.summary.observedPacks).toBe(
       parsed.mapCells.reduce((total, cell) => total + cell.packsObserved, 0),
     );
+  });
+
+  it("keeps a published set aggregate authoritative on an overlapping supplement", () => {
+    const original = DEMO_PUBLIC_DATA.sets.find((set) => set.slug === "surging-sparks");
+    expect(original).toBeDefined();
+    const payload = validCoveragePayload();
+    payload.sets[0] = {
+      ...payload.sets[0]!,
+      slug: "surging-sparks",
+      name: "Surging Sparks",
+      series: "Scarlet & Violet",
+      releaseDate: "2024-11-08",
+    };
+
+    const parsed = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(DEMO_PUBLIC_DATA, payload),
+    );
+    expect(parsed.sets.find((set) => set.slug === "surging-sparks")).toEqual(original);
+  });
+
+  it("adds denominator-only coverage to an existing withheld country", () => {
+    const original = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "BR");
+    expect(original?.hitRate).toBeNull();
+    const payload = validCoveragePayload();
+    payload.countries[0] = {
+      ...payload.countries[0]!,
+      countryCode: "BR",
+      countryName: "Brazil",
+    };
+
+    const parsed = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(DEMO_PUBLIC_DATA, payload),
+    );
+    expect(parsed.mapCells.find((cell) => cell.countryCode === "BR")).toMatchObject({
+      packsObserved: (original?.packsObserved ?? 0) + 90,
+      independentSources: (original?.independentSources ?? 0) + 1,
+      hitRate: null,
+      baselineRate: null,
+      posteriorMean: null,
+      credibleInterval: null,
+      deltaFromBaseline: null,
+      state: "pending",
+    });
   });
 
   it("ignores malformed or mismatched-period coverage without destabilizing v3", () => {
@@ -116,6 +168,7 @@ describe("reviewed public-study coverage merge", () => {
     invalidSource.sources = [
       { ...sources[0]!, id: "unreviewed_source", url: "ftp://example.com/evidence" },
       sources[1]!,
+      sources[2]!,
     ];
     expect(mergePublicStudyCoverage(DEMO_PUBLIC_DATA, invalidSource)).toBe(
       DEMO_PUBLIC_DATA,

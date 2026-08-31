@@ -71,6 +71,21 @@ PUBLIC_STUDIES: tuple[PublicStudyIdentity, ...] = (
         collector_version="public-study-bleedingcool-phantasmal-flames-v1",
         parser_version="bleedingcool-phantasmal-flames-evidence-v1",
     ),
+    PublicStudyIdentity(
+        study_key="tcgtalk-perfect-order-sg-54-v1",
+        source_url=(
+            "https://tcgtalk.com/blog/"
+            "perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232"
+        ),
+        fetch_url=(
+            "https://tcgtalk.com/blog/"
+            "perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232"
+        ),
+        domain="tcgtalk.com",
+        adapter="tcgtalk_perfect_order_study",
+        collector_version="public-study-tcgtalk-perfect-order-v1",
+        parser_version="tcgtalk-perfect-order-evidence-v1",
+    ),
 )
 
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
@@ -80,6 +95,7 @@ PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
     {
         "cardchill-ascended-heroes-gb-90-v1",
         "bleedingcool-phantasmal-flames-us-36-v1",
+        "tcgtalk-perfect-order-sg-54-v1",
     }
 )
 

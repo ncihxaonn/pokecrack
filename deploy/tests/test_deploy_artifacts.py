@@ -587,21 +587,27 @@ ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
 
     @staticmethod
     def canonical_gate_seed(
-        *, youtube: bool, public_studies: bool = False
+        *, youtube: bool, public_studies: bool = False, bluesky: bool = False
     ) -> bytes:
         youtube_row = b"youtube_discovery\n" if youtube else b""
+        bluesky_row = b"bluesky_jetstream\n" if bluesky else b""
         public_rows = (
             b"public_study_comicbook_us_55\n"
             b"public_study_wargamer_gb_17\n"
             b"public_study_cardchill_gb_90\n"
             b"public_study_bleedingcool_us_36\n"
+            b"public_study_tcgtalk_sg_54\n"
             if public_studies
             else b""
         )
         return (
             b"\n-- Canonical idle request gates; live lease ownership is not retained.\n"
             b"COPY ingest.source_request_gates (source_key) FROM stdin;\n"
-            b"tcgdex_catalog\n" + youtube_row + public_rows + b"\\.\n\n"
+            b"tcgdex_catalog\n"
+            + youtube_row
+            + bluesky_row
+            + public_rows
+            + b"\\.\n\n"
         )
 
     @classmethod
@@ -688,6 +694,7 @@ COPY ingest.source_policies (id, source_key) FROM stdin;
 55555555-5555-4555-8555-555555555555\tpublic_study_wargamer_gb_17
 99999999-9999-4999-8999-999999999990\tpublic_study_cardchill_gb_90
 aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa0\tpublic_study_bleedingcool_us_36
+bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb0\tpublic_study_tcgtalk_sg_54
 \\.
 COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
 \\.
@@ -695,6 +702,27 @@ COPY ingest.public_study_observations (study_key, source_policy_id, source_item_
 comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666-6666-4666-8666-666666666666\t77777777-7777-4777-8777-777777777777\t88888888-8888-4888-8888-888888888888\tUS\tUnited States\tpublisher_country\ttier_b\t2026-03-19 21:00:00+00\t55\t1\tme03\tall\tqualifying_hit_pack_rate\tglobal-sir-v1\tpublic-study-comicbook-perfect-order-v1\tcomicbook-perfect-order-evidence-v1\tpublic-study-comicbook-perfect-order-v1\taaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\t2026-08-29 01:02:03+00\t2026-08-29 01:02:03+00\tf
 \\.
 """
+        )
+
+    @classmethod
+    def post_bluesky_dump(cls) -> bytes:
+        bluesky_policy = b"cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+        base = cls.post_public_study_dump()
+        policy_end = (
+            b"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb0\tpublic_study_tcgtalk_sg_54\n"
+        )
+        checkpoint = (
+            b"COPY ingest.bluesky_jetstream_checkpoints (source_policy_id, endpoint, protocol, collection, last_cursor, last_collected_at, events_seen_total, bytes_seen_total, candidates_seen_total, deletions_seen_total, is_demo, created_at, updated_at) FROM stdin;\n"
+            + bluesky_policy
+            + b"\twss://jetstream.us-west.bsky.network/xrpc/network.bsky.jetstream.subscribeEvents\txrpc.v1.json\tapp.bsky.feed.post\t123\t2026-08-30 00:00:00+00\t10\t2048\t2\t1\tf\t2026-08-29 00:00:00+00\t2026-08-30 00:00:00+00\n\\.\n"
+        )
+        return (
+            base.replace(
+                policy_end,
+                policy_end + bluesky_policy + b"\tbluesky_jetstream\n",
+                1,
+            )
+            + checkpoint
         )
 
     def make_fake_commands(self, base: Path) -> Path:
@@ -722,6 +750,8 @@ set -Eeuo pipefail
 [[ ${PGAPPNAME:-} == 'pokecrack-backup' ]]
 role_argument_count=0
 gate_exclusion_count=0
+bluesky_candidate_exclusion_count=0
+bluesky_observation_exclusion_count=0
 for argument in "$@"; do
   [[ $argument != *'very-secret'* ]]
   if [[ $argument == '--role=service_role' ]]; then
@@ -730,9 +760,17 @@ for argument in "$@"; do
   if [[ $argument == '--exclude-table-data=ingest.source_request_gates' ]]; then
     gate_exclusion_count=$((gate_exclusion_count + 1))
   fi
+  if [[ $argument == '--exclude-table-data=ingest.bluesky_jetstream_candidates' ]]; then
+    bluesky_candidate_exclusion_count=$((bluesky_candidate_exclusion_count + 1))
+  fi
+  if [[ $argument == '--exclude-table-data=ingest.bluesky_jetstream_observations' ]]; then
+    bluesky_observation_exclusion_count=$((bluesky_observation_exclusion_count + 1))
+  fi
 done
 [[ $role_argument_count == 1 ]]
 [[ $gate_exclusion_count == 1 ]]
+[[ $bluesky_candidate_exclusion_count == 1 ]]
+[[ $bluesky_observation_exclusion_count == 1 ]]
 if [[ ${FAKE_EMPTY_DUMP:-0} == 1 ]]; then
   exit 0
 fi
@@ -772,7 +810,12 @@ fi
 arguments="$*"
 if [[ $arguments == *to_regclass* ]]; then
   [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'table-state:set-role' >> "$FAKE_PSQL_LOG"
-  printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru\\trp\\t0\\ttrue}"
+  printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru\\trp\\t0\\t0\\t0\\t0\\ttrue}"
+elif [[ $arguments == *bluesky_jetstream* ]]; then
+  [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'bluesky-policy-lookup:set-role' >> "$FAKE_PSQL_LOG"
+  if [[ -n ${FAKE_BLUESKY_POLICY_OUTPUT:-} ]]; then
+    printf '%s\n' "$FAKE_BLUESKY_POLICY_OUTPUT"
+  fi
 elif [[ $arguments == *youtube_discovery* ]]; then
   [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'policy-lookup:set-role' >> "$FAKE_PSQL_LOG"
   if [[ -n ${FAKE_POLICY_OUTPUT:-} ]]; then
@@ -793,8 +836,9 @@ fi
         timestamp: str,
         empty: bool = False,
         dump: bytes | None = None,
-        table_state: str = "rp\tru\trp\t0\ttrue",
+        table_state: str = "rp\tru\trp\t0\t0\t0\t0\ttrue",
         policy_output: str = "11111111-1111-4111-8111-111111111111",
+        bluesky_policy_output: str = "",
         psql_fail: bool = False,
     ) -> subprocess.CompletedProcess[str]:
         environment = os.environ.copy()
@@ -809,6 +853,7 @@ fi
         environment["BACKUP_RETENTION_WEEKLY"] = "4"
         environment["FAKE_TABLE_STATE"] = table_state
         environment["FAKE_POLICY_OUTPUT"] = policy_output
+        environment["FAKE_BLUESKY_POLICY_OUTPUT"] = bluesky_policy_output
         environment["FAKE_PSQL_LOG"] = str(fake_bin.parent / "psql-preflight.log")
         if empty:
             environment["FAKE_EMPTY_DUMP"] = "1"
@@ -842,7 +887,11 @@ fi
             self.assertNotIn("very-secret", result.stdout + result.stderr)
             self.assertEqual(
                 (base / "psql-preflight.log").read_text(encoding="utf-8").splitlines(),
-                ["table-state:set-role", "policy-lookup:set-role"],
+                [
+                    "table-state:set-role",
+                    "policy-lookup:set-role",
+                    "bluesky-policy-lookup:set-role",
+                ],
             )
 
     def test_coherent_pre_youtube_schema_is_backed_up_without_policy_id(self) -> None:
@@ -856,7 +905,7 @@ fi
                 backup_dir=backup_dir,
                 timestamp="20260729T020000Z",
                 dump=dump,
-                table_state="rp\t0\trp\t0\ttrue",
+                table_state="rp\t0\trp\t0\t0\t0\t0\ttrue",
                 policy_output="",
             )
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -878,19 +927,19 @@ fi
         policy = "11111111-1111-4111-8111-111111111111"
         cases = {
             "table-without-policy": {
-                "table_state": "rp\tru\trp\t0\ttrue",
+                "table_state": "rp\tru\trp\t0\t0\t0\t0\ttrue",
                 "policy_output": "",
             },
             "policy-without-table": {
-                "table_state": "rp\t0\trp\t0\ttrue",
+                "table_state": "rp\t0\trp\t0\t0\t0\t0\ttrue",
                 "policy_output": policy,
             },
             "old-preflight-with-new-dump": {
-                "table_state": "rp\t0\trp\t0\ttrue",
+                "table_state": "rp\t0\trp\t0\t0\t0\t0\ttrue",
                 "policy_output": "",
             },
             "new-preflight-with-old-dump": {
-                "table_state": "rp\tru\trp\t0\ttrue",
+                "table_state": "rp\tru\trp\t0\t0\t0\t0\ttrue",
                 "policy_output": policy,
                 "dump": self.pre_youtube_dump(),
             },
@@ -1111,7 +1160,7 @@ cache-second\t{youtube_policy}\t{second_video}
                 backup_dir=backup_dir,
                 timestamp="20260729T020000Z",
                 dump=self.post_public_study_dump(),
-                table_state="rp\tru\trp\trp\ttrue",
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
             )
 
             self.assertEqual(result.returncode, 0, result.stderr)
@@ -1123,6 +1172,37 @@ cache-second\t{youtube_policy}\t{second_video}
                 self.canonical_gate_seed(youtube=True, public_studies=True),
                 sanitized,
             )
+
+    def test_backup_retains_bluesky_checkpoint_but_no_private_activity(self) -> None:
+        bluesky_policy = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20260729T020000Z",
+                dump=self.post_bluesky_dump(),
+                table_state="rp\tru\trp\trp\trp\trp\trp\ttrue",
+                bluesky_policy_output=bluesky_policy,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20260729T020000Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            self.assertIn(b"bluesky_jetstream_checkpoints", sanitized)
+            self.assertIn(
+                self.canonical_gate_seed(
+                    youtube=True,
+                    public_studies=True,
+                    bluesky=True,
+                ),
+                sanitized,
+            )
+            self.assertNotIn(b"bluesky_jetstream_candidates (", sanitized)
+            self.assertNotIn(b"bluesky_jetstream_observations (", sanitized)
 
     def test_psql_failure_is_atomic_and_does_not_expose_database_url(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
@@ -1165,20 +1245,49 @@ cache-second\t{youtube_policy}\t{second_video}
                 self.assertNotIn("very-secret", result.stdout + result.stderr)
                 self.assertEqual(list(backup_dir.iterdir()), [])
 
+    def test_bluesky_policy_preflight_is_exact_and_atomic(self) -> None:
+        valid = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
+        cases = {
+            "missing": "",
+            "ambiguous": valid + "\ndddddddd-dddd-4ddd-8ddd-dddddddddddd",
+            "malformed": "not-a-uuid",
+        }
+        for name, policy_output in cases.items():
+            with (
+                self.subTest(name=name),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
+                base = Path(temporary)
+                fake_bin = self.make_fake_commands(base)
+                backup_dir = base / "backups"
+                result = self.run_backup(
+                    fake_bin=fake_bin,
+                    backup_dir=backup_dir,
+                    timestamp="20260729T020000Z",
+                    dump=self.post_bluesky_dump(),
+                    table_state="rp\tru\trp\trp\trp\trp\trp\ttrue",
+                    bluesky_policy_output=policy_output,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("very-secret", result.stdout + result.stderr)
+                self.assertEqual(list(backup_dir.iterdir()), [])
+
     def test_malformed_or_inconsistent_table_preflight_is_atomic(self) -> None:
         cases = {
             "malformed": "unexpected",
-            "missing-policies": "0\tru\trp\t0\ttrue",
-            "unlogged-policies": "ru\tru\trp\t0\ttrue",
-            "missing-youtube-table": "rp\t0\trp\t0\ttrue",
-            "logged-youtube-table": "rp\trp\trp\t0\ttrue",
-            "temporary-youtube-table": "rp\trt\trp\t0\ttrue",
-            "youtube-view": "rp\tvp\trp\t0\ttrue",
-            "missing-request-gate": "rp\tru\t0\t0\tfalse",
-            "unlogged-request-gate": "rp\tru\tru\t0\ttrue",
-            "request-gate-without-maintain": "rp\tru\trp\t0\tfalse",
-            "unlogged-public-ledger": "rp\tru\trp\tru\ttrue",
-            "public-ledger-without-youtube": "rp\t0\trp\trp\ttrue",
+            "missing-policies": "0\tru\trp\t0\t0\t0\t0\ttrue",
+            "unlogged-policies": "ru\tru\trp\t0\t0\t0\t0\ttrue",
+            "missing-youtube-table": "rp\t0\trp\t0\t0\t0\t0\ttrue",
+            "logged-youtube-table": "rp\trp\trp\t0\t0\t0\t0\ttrue",
+            "temporary-youtube-table": "rp\trt\trp\t0\t0\t0\t0\ttrue",
+            "youtube-view": "rp\tvp\trp\t0\t0\t0\t0\ttrue",
+            "missing-request-gate": "rp\tru\t0\t0\t0\t0\t0\tfalse",
+            "unlogged-request-gate": "rp\tru\tru\t0\t0\t0\t0\ttrue",
+            "request-gate-without-maintain": "rp\tru\trp\t0\t0\t0\t0\tfalse",
+            "unlogged-public-ledger": "rp\tru\trp\tru\t0\t0\t0\ttrue",
+            "public-ledger-without-youtube": "rp\t0\trp\trp\t0\t0\t0\ttrue",
+            "partial-bluesky-tables": "rp\tru\trp\trp\trp\t0\t0\ttrue",
+            "unlogged-bluesky-checkpoint": "rp\tru\trp\trp\trp\trp\tru\ttrue",
         }
         for name, table_state in cases.items():
             with (

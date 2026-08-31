@@ -25,6 +25,10 @@ Catalog rows carry `is_demo`; synthetic and live rows must not be conflated.
   policy-owned country, denominator, private qualifying numerator, evidence
   hash, and version identities. `service_role` can read but cannot mutate it
   directly.
+- `ingest.public_study_coverage_observations`: immutable, forced-RLS
+  denominator-only ledger for reviewed public studies that are not yet part of
+  the statistical ledger. It retains bounded provenance and pack coverage but
+  no qualifying-hit numerator or inference fields.
 - `ingest.extraction_runs`: model/prompt versions, structured outputs, confidence, status and errors.
 - `ingest.openings`: normalized observed opening and the statistical eligibility decision.
 - `ingest.opening_hits`: card/rarity quantities within an opening.
@@ -95,7 +99,7 @@ projection for data that already exists behind the browser boundary:
   denominator row, while exact reviewed rows keep the atlas and country detail
   routes populated before the aggregate publisher is ready;
 - an exact public source allowlist for TCGdex, YouTube metadata discovery, and
-  the two reviewed studies, exposing only status, freshness, a safe reference,
+  the five reviewed studies, exposing only status, freshness, a safe reference,
   and bounded notes;
 - aggregate heartbeat status for the ready `collector`, `scheduler`, and
   `watchdog` roles, without host, worker, version, job, payload, or error detail.
@@ -125,9 +129,10 @@ passed; collection enablement fails if either the six-hour discovery schedule or
 daily cleanup schedule drifts. No discovery row can be promoted
 or referenced as an extraction, opening, batch, duplicate, analytic, Admin, or
 public record because no such schema relationship or code path exists. Managed
-logical backups independently remove every YouTube cache data row, retain the
-reviewed-study ledger, and replace request-gate state with the exact canonical
-idle TCGdex, YouTube, and public-study rows, while
+logical backups independently remove every YouTube cache row and every Bluesky
+candidate/observation row, retain the reviewed-study ledger and exact Bluesky
+checkpoint, and replace request-gate state with the exact canonical idle
+TCGdex, YouTube, Bluesky, and public-study rows, while
 provider-managed snapshot retention must be revalidated before collection is
 enabled. Cleanup/watchdog health and stale-success alerts are also enablement
 requirements because a prolonged outage can exceed the supported catch-up
