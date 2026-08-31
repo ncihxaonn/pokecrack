@@ -92,6 +92,15 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         self.assertIn("authorized_opening_retractions_immutable", lowered)
         self.assertIn("discovery_platform is not null", lowered)
         self.assertIn("reviewer_reference_sha256 is not null", lowered)
+        retract_header = re.search(
+            r"create or replace function ingest\.retract_authorized_opening_v1\((.*?)\)\s*returns table",
+            lowered,
+            flags=re.DOTALL,
+        )
+        self.assertIsNotNone(retract_header)
+        assert retract_header is not None
+        self.assertIn("requested_reason_code text", retract_header.group(1))
+        self.assertNotRegex(retract_header.group(1), r"(?m)^\s*reason_code text\s*$")
 
         expected_functions = (
             (
