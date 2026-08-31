@@ -231,7 +231,7 @@ bluesky_dependencies AS (
           "max_stream_bytes":2097152,
           "operations":["create","update","delete"],
           "statistics_eligible":false,
-          "stream_window_seconds":40,
+          "stream_window_seconds":10,
           "subprotocol":"xrpc.v1.json"
         }'::jsonb
         AND policies.version = 'bluesky-jetstream-v1'
