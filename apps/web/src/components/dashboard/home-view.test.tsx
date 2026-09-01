@@ -73,4 +73,24 @@ describe("HomeView", () => {
     expect(screen.getByText("No verified pack coverage yet")).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Trending sets" })).not.toBeInTheDocument();
   });
+
+  it("labels collecting observations as live coverage while withholding rates", () => {
+    const liveCollecting = {
+      ...DEMO_PUBLIC_DATA,
+      mode: "live" as const,
+      observations: {
+        ...DEMO_PUBLIC_DATA.observations,
+        status: "collecting" as const,
+        observedPacks: 252,
+        countriesObserved: 3,
+        countriesWithPublishedRate: 0,
+      },
+    } satisfies PublicDashboardData;
+
+    render(<HomeView data={liveCollecting} synthetic={false} />);
+
+    expect(screen.getByText("Live observations")).toBeVisible();
+    expect(screen.getByText("Verified observations cover 3 countries and 252 packs; country-level rates remain withheld pending reviewed publication.")).toBeVisible();
+    expect(screen.queryByText(/Verified country observations are not published yet/)).not.toBeInTheDocument();
+  });
 });
