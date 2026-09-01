@@ -135,6 +135,16 @@
       "migration": "20260909000000_nostr_cleanup_capacity.sql",
       "statement_sha256": "cd62a3a019a6d742afbdd5b8d71070ec9af07c8c2894109a445f8c647d0e7421",
       "reason": "Forward-only cleanup capacity update deletes only expired private Nostr event observations selected by ordered 10000-row SKIP LOCKED sub-batches; the independent 750000-row per-table budget strictly covers the 648000-row 36-hour bound with headroom and retains all per-relay checkpoints."
+      },
+      {
+      "migration": "20260912000000_mastodon_public_hashtag_discovery.sql",
+      "statement_sha256": "465522649e76c3c3b2db728efcc9e4e85cb39231eaff0464b65c0e995a4a7f0b",
+      "reason": "Fenced cleanup deletes only expired private Mastodon activity candidates selected by ordered 10000-row SKIP LOCKED sub-batches inside the reviewed independent 500000-row recovery-window budget; all per-tag opaque checkpoints are retained."
+    },
+    {
+      "migration": "20260912000000_mastodon_public_hashtag_discovery.sql",
+      "statement_sha256": "792e2df7f01d58bfcad6467e66417b30f66f3abd1ccde1baa42248ac0697bbdf",
+      "reason": "Fenced cleanup deletes only expired private Mastodon event observations selected by ordered 10000-row SKIP LOCKED sub-batches inside the reviewed independent 500000-row recovery-window budget; all per-tag opaque checkpoints are retained."
     }
   ]
 }

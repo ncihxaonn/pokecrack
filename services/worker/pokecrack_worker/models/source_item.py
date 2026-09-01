@@ -19,6 +19,7 @@ class CollectorType(StrEnum):
     OFFICIAL_API = "official_api"
     BLUESKY_JETSTREAM = "bluesky_jetstream"
     NOSTR_RELAY = "nostr_relay"
+    MASTODON_REST = "mastodon_rest"
     SCRAPLING_HTTP = "scrapling_http"
     SCRAPLING_DYNAMIC = "scrapling_dynamic"
     OPENCLI_AUTHENTICATED = "opencli_authenticated"

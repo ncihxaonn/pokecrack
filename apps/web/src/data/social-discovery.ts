@@ -10,6 +10,10 @@ const NOSTR_SOURCE_ID = "nostr_multi_relay" as const;
 const NOSTR_SOURCE_NAME = "Nostr multi-relay discovery" as const;
 const NOSTR_SOURCE_URL =
   "https://github.com/nostr-protocol/nips/blob/master/01.md" as const;
+const MASTODON_SOURCE_ID = "mastodon_public_hashtag" as const;
+const MASTODON_SOURCE_NAME = "Mastodon public hashtag discovery" as const;
+const MASTODON_SOURCE_URL =
+  "https://docs.joinmastodon.org/methods/timelines/" as const;
 
 const isoDateTime = z.string().datetime({ offset: true });
 
@@ -39,6 +43,19 @@ const nostrSource = z
   })
   .strict();
 
+const mastodonSource = z
+  .object({
+    id: z.literal(MASTODON_SOURCE_ID),
+    name: z.literal(MASTODON_SOURCE_NAME),
+    kind: z.literal("social"),
+    access: z.literal("public"),
+    status: z.enum(["operational", "delayed", "attention", "paused"]),
+    lastCollectedAt: isoDateTime.nullable(),
+    url: z.literal(MASTODON_SOURCE_URL),
+    note: z.string().min(1).max(500),
+  })
+  .strict();
+
 export const publicSocialDiscoveryV1Schema = z
   .object({
     schemaVersion: z.literal("1.0.0"),
@@ -53,18 +70,26 @@ export const publicSocialDiscoveryV2Schema = z
   })
   .strict();
 
-// Keep the original export as the current (v2) contract for callers that do
-// not need to distinguish the compatibility path.
-export const publicSocialDiscoverySchema = publicSocialDiscoveryV2Schema;
+export const publicSocialDiscoveryV3Schema = z
+  .object({
+    schemaVersion: z.literal("3.0.0"),
+    sources: z.tuple([blueskySource, nostrSource, mastodonSource]),
+  })
+  .strict();
+
+// The v3 tuple is the current contract. V1 remains a read-only compatibility
+// path for installations that have not yet applied the Nostr/Mastodon RPCs;
+// v2 is intentionally rejected because it is a stale two-source projection.
+export const publicSocialDiscoverySchema = publicSocialDiscoveryV3Schema;
 
 export function mergePublicSocialDiscovery(
   snapshot: unknown,
   discoveryPayload: unknown,
 ): unknown {
   const snapshotResult = publicDashboardDataSchema.safeParse(snapshot);
-  const v2Result = publicSocialDiscoveryV2Schema.safeParse(discoveryPayload);
-  const discoveryResult = v2Result.success
-    ? v2Result
+  const v3Result = publicSocialDiscoveryV3Schema.safeParse(discoveryPayload);
+  const discoveryResult = v3Result.success
+    ? v3Result
     : publicSocialDiscoveryV1Schema.safeParse(discoveryPayload);
   if (!snapshotResult.success || !discoveryResult.success) return snapshot;
 
