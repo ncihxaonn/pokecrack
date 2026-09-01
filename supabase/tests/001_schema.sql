@@ -238,8 +238,8 @@ select is(
    from pg_constraint c
    cross join lateral regexp_matches(pg_get_constraintdef(c.oid), '''([^'']+)''', 'g') as matched(value)
    where c.conrelid = 'ingest.source_policies'::regclass and c.conname = 'source_policies_collector_type_check'),
-  array['bluesky_jetstream', 'disabled', 'manual_import', 'nostr_relay', 'official_api', 'opencli_authenticated', 'scrapling_dynamic', 'scrapling_http']::text[],
-  'source policies use exactly the eight collector registry values'
+  array['bluesky_jetstream', 'disabled', 'manual_import', 'mastodon_rest', 'nostr_relay', 'official_api', 'opencli_authenticated', 'scrapling_dynamic', 'scrapling_http']::text[],
+  'source policies use exactly the nine collector registry values'
 );
 select is(
   (select array_agg(matched.value[1] order by matched.value[1])

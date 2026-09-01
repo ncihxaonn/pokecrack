@@ -816,6 +816,7 @@ ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
         public_studies: bool = False,
         bluesky: bool = False,
         nostr: bool = False,
+        mastodon: bool = False,
     ) -> bytes:
         youtube_row = b"youtube_discovery\n" if youtube else b""
         bluesky_row = b"bluesky_jetstream\n" if bluesky else b""
@@ -826,6 +827,7 @@ ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
             if nostr
             else b""
         )
+        mastodon_row = b"mastodon_social\n" if mastodon else b""
         public_rows = (
             b"public_study_comicbook_us_55\n"
             b"public_study_wargamer_gb_17\n"
@@ -842,6 +844,7 @@ ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
             + youtube_row
             + bluesky_row
             + nostr_rows
+            + mastodon_row
             + public_rows
             + b"\\.\n\n"
         )
@@ -1015,6 +1018,51 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
             + nostr_dump
         )
 
+    @classmethod
+    def post_mastodon_dump(cls) -> bytes:
+        mastodon_policy = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+        base = cls.post_public_study_dump()
+        policy_end = (
+            b"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb0\tpublic_study_tcgtalk_sg_54\n"
+        )
+        policy_row = mastodon_policy.encode() + b"\tmastodon_social\n"
+        tags = (
+            "pokemontcg",
+            "pokemoncards",
+            "pokeca_ja",
+            "pokemon_card_ja",
+            "pokemon_card_ko",
+            "pokemon_card_zh_hans",
+            "pokemon_card_zh_hant",
+        )
+        checkpoint_rows = b"".join(
+            (
+                f"{mastodon_policy}\tmastodon_social\t{tag}\topaque-001\t"
+                "2026-08-30 00:00:00+00\tf\t1\t2\t2048\t1\tf\t"
+                "2026-08-29 00:00:00+00\t2026-08-30 00:00:00+00\n"
+            ).encode()
+            for tag in tags
+        )
+        mastodon_dump = (
+            b"CREATE TABLE ingest.mastodon_public_hashtag_candidates (\n);\n"
+            b"CREATE TABLE ingest.mastodon_public_hashtag_observations (\n);\n"
+            b"CREATE TABLE ingest.mastodon_public_hashtag_checkpoints (\n);\n"
+            b"COPY ingest.mastodon_public_hashtag_checkpoints ("
+            b"source_policy_id, instance_key, tag_key, last_status_id, "
+            b"last_collected_at, incomplete, requests_seen_total, statuses_seen_total, "
+            b"bytes_seen_total, candidates_seen_total, is_demo, created_at, updated_at"
+            b") FROM stdin;\n"
+            + checkpoint_rows
+            + b"\\.\n"
+            b"CREATE TABLE ingest.mastodon_rate_cooldowns (\n);\n"
+            b"COPY ingest.mastodon_rate_cooldowns (source_policy_id, instance_key, "
+            b"cooldown_until, is_demo, created_at, updated_at) FROM stdin;\n"
+            + mastodon_policy.encode()
+            + b"\tmastodon_social\t2000-01-01 00:00:00+00\tf\t"
+            b"2026-08-29 00:00:00+00\t2026-08-30 00:00:00+00\n\\.\n"
+        )
+        return base.replace(policy_end, policy_end + policy_row, 1) + mastodon_dump
+
     def make_fake_commands(self, base: Path) -> Path:
         fake_bin = base / "bin"
         fake_bin.mkdir()
@@ -1044,6 +1092,8 @@ bluesky_candidate_exclusion_count=0
 bluesky_observation_exclusion_count=0
 nostr_candidate_exclusion_count=0
 nostr_observation_exclusion_count=0
+mastodon_candidate_exclusion_count=0
+mastodon_observation_exclusion_count=0
 for argument in "$@"; do
   [[ $argument != *'very-secret'* ]]
   if [[ $argument == '--role=service_role' ]]; then
@@ -1064,6 +1114,12 @@ for argument in "$@"; do
   if [[ $argument == '--exclude-table-data=ingest.nostr_relay_observations' ]]; then
     nostr_observation_exclusion_count=$((nostr_observation_exclusion_count + 1))
   fi
+  if [[ $argument == '--exclude-table-data=ingest.mastodon_public_hashtag_candidates' ]]; then
+    mastodon_candidate_exclusion_count=$((mastodon_candidate_exclusion_count + 1))
+  fi
+  if [[ $argument == '--exclude-table-data=ingest.mastodon_public_hashtag_observations' ]]; then
+    mastodon_observation_exclusion_count=$((mastodon_observation_exclusion_count + 1))
+  fi
 done
 [[ $role_argument_count == 1 ]]
 [[ $gate_exclusion_count == 1 ]]
@@ -1071,6 +1127,8 @@ done
 [[ $bluesky_observation_exclusion_count == 1 ]]
 [[ $nostr_candidate_exclusion_count == 1 ]]
 [[ $nostr_observation_exclusion_count == 1 ]]
+[[ $mastodon_candidate_exclusion_count == 1 ]]
+[[ $mastodon_observation_exclusion_count == 1 ]]
 if [[ ${FAKE_EMPTY_DUMP:-0} == 1 ]]; then
   exit 0
 fi
@@ -1108,7 +1166,10 @@ if [[ ${FAKE_PSQL_FAIL:-0} == 1 ]]; then
   exit 17
 fi
 arguments="$*"
-if [[ $arguments == *to_regclass* ]]; then
+if [[ $arguments == *mastodon_public_hashtag_candidates* && $arguments == *has_table_privilege* ]]; then
+  [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'table-state:set-role' >> "$FAKE_PSQL_LOG"
+  printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru\\trp\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\ttrue}"
+elif [[ $arguments == *to_regclass* ]]; then
   [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'table-state:set-role' >> "$FAKE_PSQL_LOG"
   printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru\\trp\\t0\\t0\\t0\\t0\\ttrue}"
 elif [[ $arguments == *bluesky_jetstream* ]]; then
@@ -1120,6 +1181,11 @@ elif [[ $arguments == *nostr_relay_primal* ]]; then
   [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'nostr-policy-lookup:set-role' >> "$FAKE_PSQL_LOG"
   if [[ -n ${FAKE_NOSTR_POLICY_OUTPUT:-} ]]; then
     printf '%s\n' "$FAKE_NOSTR_POLICY_OUTPUT"
+  fi
+elif [[ $arguments == *mastodon_social* ]]; then
+  [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'mastodon-policy-lookup:set-role' >> "$FAKE_PSQL_LOG"
+  if [[ -n ${FAKE_MASTODON_POLICY_OUTPUT:-} ]]; then
+    printf '%s\n' "$FAKE_MASTODON_POLICY_OUTPUT"
   fi
 elif [[ $arguments == *youtube_discovery* ]]; then
   [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'policy-lookup:set-role' >> "$FAKE_PSQL_LOG"
@@ -1145,6 +1211,7 @@ fi
         policy_output: str = "11111111-1111-4111-8111-111111111111",
         bluesky_policy_output: str = "",
         nostr_policy_output: str = "",
+        mastodon_policy_output: str = "",
         psql_fail: bool = False,
     ) -> subprocess.CompletedProcess[str]:
         environment = os.environ.copy()
@@ -1161,6 +1228,7 @@ fi
         environment["FAKE_POLICY_OUTPUT"] = policy_output
         environment["FAKE_BLUESKY_POLICY_OUTPUT"] = bluesky_policy_output
         environment["FAKE_NOSTR_POLICY_OUTPUT"] = nostr_policy_output
+        environment["FAKE_MASTODON_POLICY_OUTPUT"] = mastodon_policy_output
         environment["FAKE_PSQL_LOG"] = str(fake_bin.parent / "psql-preflight.log")
         if empty:
             environment["FAKE_EMPTY_DUMP"] = "1"
@@ -1547,6 +1615,76 @@ cache-second\t{youtube_policy}\t{second_video}
             self.assertNotIn(b"COPY ingest.nostr_relay_candidates (", sanitized)
             self.assertNotIn(b"COPY ingest.nostr_relay_observations (", sanitized)
 
+    def test_backup_retains_mastodon_checkpoints_but_no_private_activity(self) -> None:
+        mastodon_policy_output = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20260729T020000Z",
+                dump=self.post_mastodon_dump(),
+                table_state=(
+                    "rp\tru\trp\trp\t0\t0\t0\t0\t0\t0\t"
+                    "rp\trp\trp\trp\ttrue"
+                ),
+                mastodon_policy_output=mastodon_policy_output,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20260729T020000Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            self.assertIn(b"mastodon_public_hashtag_checkpoints", sanitized)
+            self.assertIn(b"mastodon_rate_cooldowns", sanitized)
+            self.assertIn(
+                self.canonical_gate_seed(
+                    youtube=True,
+                    public_studies=True,
+                    mastodon=True,
+                ),
+                sanitized,
+            )
+            self.assertNotIn(
+                b"COPY ingest.mastodon_public_hashtag_candidates (", sanitized
+            )
+            self.assertNotIn(
+                b"COPY ingest.mastodon_public_hashtag_observations (", sanitized
+            )
+
+    def test_mastodon_policy_preflight_is_exact_and_atomic(self) -> None:
+        valid = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+        table_state = (
+            "rp\tru\trp\trp\t0\t0\t0\t0\t0\t0\t"
+            "rp\trp\trp\trp\ttrue"
+        )
+        cases = {
+            "missing": "",
+            "ambiguous": valid + "\neeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+            "malformed": "not-a-uuid",
+        }
+        for name, policy_output in cases.items():
+            with (
+                self.subTest(name=name),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
+                base = Path(temporary)
+                fake_bin = self.make_fake_commands(base)
+                backup_dir = base / "backups"
+                result = self.run_backup(
+                    fake_bin=fake_bin,
+                    backup_dir=backup_dir,
+                    timestamp="20260729T020000Z",
+                    dump=self.post_mastodon_dump(),
+                    table_state=table_state,
+                    mastodon_policy_output=policy_output,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("very-secret", result.stdout + result.stderr)
+                self.assertEqual(list(backup_dir.iterdir()), [])
+
     def test_nostr_policy_rows_without_private_tables_fail_closed(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
             base = Path(temporary)
@@ -1680,6 +1818,14 @@ cache-second\t{youtube_policy}\t{second_video}
             "public-ledger-without-youtube": "rp\t0\trp\trp\t0\t0\t0\ttrue",
             "partial-bluesky-tables": "rp\tru\trp\trp\trp\t0\t0\ttrue",
             "unlogged-bluesky-checkpoint": "rp\tru\trp\trp\trp\trp\tru\ttrue",
+            "partial-mastodon-tables": (
+                "rp\tru\trp\trp\t0\t0\t0\t0\t0\t0\t"
+                "rp\t0\trp\trp\ttrue"
+            ),
+            "unlogged-mastodon-checkpoint": (
+                "rp\tru\trp\trp\t0\t0\t0\t0\t0\t0\t"
+                "rp\trp\tru\trp\ttrue"
+            ),
         }
         for name, table_state in cases.items():
             with (
