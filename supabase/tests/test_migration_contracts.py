@@ -502,7 +502,7 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertNotIn("record_mastodon_rate_limit", historical.casefold())
         self.assertEqual(
             hashlib.sha256(historical.encode("utf-8")).hexdigest(),
-            "bdf39370988b0b7417b302aeeaa87ee4ec554a4cb2ea994ec03d2b74f6620e9e",
+            "7d42db766e1b8bfeb87547600c01883f987715d751963ea11da033d5a2fd165e",
             "the historical Mastodon predecessor remains byte-identical",
         )
         self.assertIn("20260912010000_mastodon_compliance_hardening", hardening_lowered)
@@ -677,6 +677,15 @@ class IngestMigrationContractTests(unittest.TestCase):
             self.assertIn(fragment, finalizer)
         self.assertIn("prune_mastodon_public_hashtag_v1", migration.casefold())
         self.assertIn("prune_nostr_relay_v1", migration.casefold())
+        cleanup_extension = migration.casefold().split(
+            "finalize_cleanup_job no longer matches the reviewed mastodon cleanup extension point",
+            1,
+        )[0].rsplit("do $migration$", 1)[1]
+        nostr_old_needle = cleanup_extension.split("$old$", 2)[1]
+        nostr_new_needle = cleanup_extension.split("$new$", 2)[1]
+        for nostr_needle in (nostr_old_needle, nostr_new_needle):
+            self.assertIn("max_rows => 750000", nostr_needle)
+            self.assertNotIn("max_rows => 500000", nostr_needle)
         self.assertNotIn("delete from ingest.mastodon_public_hashtag_checkpoints", migration.casefold())
         self.assertNotIn("delete from ingest.mastodon_rate_cooldowns", migration.casefold())
         self.assertIn("payload - array['instance_key', 'tag_key'] = '{}'::jsonb", compact)

@@ -1780,11 +1780,11 @@ begin
     definition,
     $old$  perform ingest.prune_nostr_relay_v1(
     cutoff => lease_checked_at,
-    max_rows => 500000
+    max_rows => 750000
   );$old$,
     $new$  perform ingest.prune_nostr_relay_v1(
     cutoff => lease_checked_at,
-    max_rows => 500000
+    max_rows => 750000
   );
 
 $new$ || cleanup_call
