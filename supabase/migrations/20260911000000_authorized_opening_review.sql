@@ -1507,7 +1507,7 @@ comment on function ingest.review_authorized_opening_v1(uuid, bigint, text, text
 create or replace function ingest.retract_authorized_opening_v1(
   requested_observation_id uuid,
   reviewer_reference_sha256 text,
-  reason_code text
+  requested_reason_code text
 )
 returns table(
   accepted_observation_id uuid,
@@ -1529,11 +1529,11 @@ begin
   if requested_observation_id is null
     or reviewer_reference_sha256 is null
     or reviewer_reference_sha256 !~ '^[0-9a-f]{64}$'
-    or reason_code is null
-    or reason_code <> btrim(reason_code)
-    or reason_code <> normalize(reason_code, NFKC)
-    or reason_code ~ '[[:cntrl:]]'
-    or reason_code not in (
+    or requested_reason_code is null
+    or requested_reason_code <> btrim(requested_reason_code)
+    or requested_reason_code <> normalize(requested_reason_code, NFKC)
+    or requested_reason_code ~ '[[:cntrl:]]'
+    or requested_reason_code not in (
       'authorization_revoked', 'evidence_corrected',
       'privacy_request', 'policy_takedown'
     )
@@ -1558,7 +1558,7 @@ begin
   ) values (
     existing_observation.id,
     reviewer_reference_sha256,
-    reason_code,
+    requested_reason_code,
     retraction_time
   )
   on conflict (accepted_observation_id) do nothing
@@ -1580,7 +1580,7 @@ begin
   if not found then
     raise exception using errcode = '40001', message = 'authorized opening retraction was concurrently changed';
   end if;
-  if existing_retraction.reason_code <> reason_code then
+  if existing_retraction.reason_code <> requested_reason_code then
     raise exception using
       errcode = '23505',
       message = 'accepted authorized observation already has a different retraction';

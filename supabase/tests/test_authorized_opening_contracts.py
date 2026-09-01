@@ -176,6 +176,8 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         ):
             self.assertIn(type_name, DATABASE_TYPES)
         self.assertIn("country_name: string;", DATABASE_TYPES)
+        self.assertIn("requested_reason_code: string;", DATABASE_TYPES)
+        self.assertIn("requested_reason_code text", MIGRATION)
 
     def test_public_projection_keeps_rates_and_private_fields_withheld(self) -> None:
         public_start = MIGRATION.index(

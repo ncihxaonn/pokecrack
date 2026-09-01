@@ -3255,7 +3255,7 @@ export type Database = {
         Args: {
           requested_observation_id: string;
           reviewer_reference_sha256: string;
-          reason_code: string;
+          requested_reason_code: string;
         };
         Returns: {
           accepted_observation_id: string;
