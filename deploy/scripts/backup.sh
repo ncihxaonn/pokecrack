@@ -432,14 +432,28 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 
 # The URL runner translates stdin into libpq environment fields, keeping the
-# credential out of process arguments and command output. Gate rows are live
-# lease state; retain the schema under MAINTAIN but never request their data.
+# credential out of process arguments and command output. Dump only the four
+# Pokecrack application schemas plus the Supabase migration ledger. In
+# particular, do not ask pg_dump to inspect provider-owned auth, storage,
+# realtime, extensions, or other managed schemas.
+#
+# The independent preflights above still SET ROLE service_role so the retained
+# data contract is checked through the reviewed application capability. The
+# dump itself deliberately remains on the owner-capable login: Nostr isolation
+# denies service_role direct relation access, and the migration ledger is not a
+# worker capability. Exact schema inclusion keeps that owner authority bounded
+# to the reviewed backup surface without broadening service_role grants.
 if ! run_database_command pg_dump \
   --format=plain \
-  --role=service_role \
   --no-owner \
   --no-privileges \
   --encoding=UTF8 \
+  --strict-names \
+  --schema=catalog \
+  --schema=ingest \
+  --schema=analytics \
+  --schema=public \
+  --schema=supabase_migrations \
   --exclude-table-data=ingest.source_request_gates \
   --exclude-table-data=ingest.bluesky_jetstream_candidates \
   --exclude-table-data=ingest.bluesky_jetstream_observations \
