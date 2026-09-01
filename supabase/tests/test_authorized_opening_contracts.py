@@ -75,6 +75,11 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         self.assertEqual(lowered.count("begin;"), 1)
         self.assertEqual(lowered.count("commit;"), 1)
         self.assertIn("create role pokecrack_authorized_opening_reviewer", lowered)
+        self.assertIn(
+            "grant pokecrack_authorized_opening_reviewer\n        to postgres\n"
+            "        with admin true, inherit false, set false",
+            lowered,
+        )
         self.assertIn("<<submit_contract>>", lowered)
         self.assertIn("nologin noinherit", lowered)
         self.assertIn("role_is_exact", lowered)
@@ -104,6 +109,14 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         self.assertIn("authorized_opening_observations_immutable", lowered)
         self.assertIn("authorized_opening_retractions_immutable", lowered)
         self.assertIn("discovery_platform is not null", lowered)
+        self.assertIn(
+            "'youtube', 'bluesky', 'nostr', 'mastodon', 'direct'",
+            lowered,
+        )
+        self.assertIn(
+            "'youtube', 'bluesky', 'nostr', 'mastodon'",
+            lowered,
+        )
         self.assertIn("reviewer_reference_sha256 is not null", lowered)
 
         expected_functions = (
@@ -123,7 +136,6 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
                 "ingest.retract_authorized_opening_v1(",
                 "ingest.retract_authorized_opening_v1(uuid, text, text)",
             ),
-            ("public.get_public_dashboard_snapshot_v4()", "public.get_public_dashboard_snapshot_v4()"),
         )
         for creation_name, function_name in expected_functions:
             function_start = lowered.find(f"create or replace function {creation_name}")
@@ -141,18 +153,11 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         )
         for _, function_name in expected_functions[1:4]:
             self.assertIn(f"grant execute on function {function_name}\n  to pokecrack_authorized_opening_reviewer", lowered)
-        self.assertIn(
-            "grant execute on function public.get_public_dashboard_snapshot_v4()\n  to anon, authenticated",
-            lowered,
-        )
         self.assertNotIn(
             "grant execute on function ingest.submit_authorized_opening_v1(jsonb)\n  to pokecrack_authorized_opening_reviewer",
             lowered,
         )
-        self.assertNotIn(
-            "grant execute on function public.get_public_dashboard_snapshot_v4()\n  to service_role",
-            lowered,
-        )
+        self.assertNotIn("get_public_dashboard_snapshot_v4", lowered)
         self.assertIn("has_schema_privilege(", lowered)
         self.assertIn("'ingest', 'usage'", lowered)
         self.assertIn("'ingest', 'create'", lowered)
@@ -179,42 +184,11 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
             "list_authorized_opening_reviews_v1:",
             "review_authorized_opening_v1:",
             "retract_authorized_opening_v1:",
-            "get_public_dashboard_snapshot_v4:",
         ):
             self.assertIn(type_name, DATABASE_TYPES)
         self.assertIn("country_name: string;", DATABASE_TYPES)
         self.assertIn("requested_reason_code: string;", DATABASE_TYPES)
         self.assertIn("requested_reason_code text", MIGRATION)
-
-    def test_public_projection_keeps_rates_and_private_fields_withheld(self) -> None:
-        public_start = MIGRATION.index(
-            "create or replace function public.get_public_dashboard_snapshot_v4()"
-        )
-        public_end = MIGRATION.index(
-            "alter function public.get_public_dashboard_snapshot_v4()"
-        )
-        public_body = MIGRATION[public_start:public_end].casefold()
-        for key in (
-            "'packsobserved'",
-            "'openings'",
-            "'independentsources'",
-            "'state'",
-            "'samplenote'",
-        ):
-            self.assertIn(key, public_body)
-        self.assertNotIn("'source_identity_sha256'", public_body)
-        self.assertNotIn("'authorization_reference_sha256'", public_body)
-        self.assertNotIn("'evidence_sha256'", public_body)
-        self.assertNotIn("'provenance_dedupe_sha256'", public_body)
-        self.assertNotIn("'reviewer_reference_sha256'", public_body)
-        self.assertNotIn("'qualifying_hit_pack_count'", public_body)
-        snapshot_start = public_body.index("\nsnapshot as (")
-        snapshot_body = public_body[snapshot_start:]
-        self.assertIn("jsonb_build_object(", snapshot_body)
-        self.assertIn("'schemaversion', '2.0.0'", snapshot_body)
-        self.assertIn("'catalog', catalog.value", snapshot_body)
-        self.assertNotIn("base.value", snapshot_body)
-        self.assertNotIn("'admin'", public_body)
 
 
 if __name__ == "__main__":

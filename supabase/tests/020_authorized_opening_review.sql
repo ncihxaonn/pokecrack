@@ -421,13 +421,12 @@ select has_function(
   array['uuid', 'text', 'text'],
   'retraction RPC has the exact append-only signature'
 );
-select has_function(
+select hasnt_function(
   'public',
   'get_public_dashboard_snapshot_v4',
   array[]::text[],
-  'public dashboard v4 RPC exists'
+  'review boundary does not define a public aggregate projection'
 );
-
 select set_eq(
   $$select parameters.parameter_name::text
     from information_schema.parameters as parameters
@@ -536,30 +535,6 @@ select ok(
   ),
   'retract is postgres-owned SECURITY DEFINER and reviewer-only'
 );
-select ok(
-  (select p.prosecdef
-      and pg_get_userbyid(p.proowner) = 'postgres'
-      and coalesce(p.proconfig, '{}'::text[]) @> array['search_path=pg_catalog']
-   from pg_proc as p
-   where p.oid = 'public.get_public_dashboard_snapshot_v4()'::regprocedure)
-  and has_function_privilege(
-    'anon',
-    'public.get_public_dashboard_snapshot_v4()',
-    'execute'
-  )
-  and has_function_privilege(
-    'authenticated',
-    'public.get_public_dashboard_snapshot_v4()',
-    'execute'
-  )
-  and not has_function_privilege(
-    'service_role',
-    'public.get_public_dashboard_snapshot_v4()',
-    'execute'
-  ),
-  'public v4 is postgres-owned SECURITY DEFINER and anon/auth-only'
-);
-
 create temp table authorized_opening_fixture_set(set_id uuid primary key)
 on commit drop;
 with inserted as (
@@ -684,6 +659,32 @@ select ok(
   'queue projection returns safe operational fields and omits private identifiers'
 );
 
+create temp table authorized_opening_mastodon_submit on commit drop as
+select *
+from ingest.submit_authorized_opening_v1(
+  pg_temp.authorized_opening_payload(
+    'opening-pgtap-mastodon',
+    'mastodon'
+  ) || jsonb_build_object(
+    'discoveryPlatform', 'mastodon',
+    'discoveryCandidateSha256', repeat('7', 64)
+  )
+);
+select is(
+  (select state from authorized_opening_mastodon_submit),
+  'queued',
+  'Mastodon-discovered authorized evidence enters the review queue'
+);
+select is(
+  (select submissions.discovery_platform
+   from ingest.authorized_opening_submissions as submissions
+   where submissions.id = (
+     select submission_id from authorized_opening_mastodon_submit
+   )),
+  'mastodon',
+  'Mastodon discovery provenance is retained behind the private review boundary'
+);
+
 create temp table authorized_opening_in_review on commit drop as
 select *
 from ingest.review_authorized_opening_v1(
@@ -740,80 +741,6 @@ select is(
   'accepted statistics produce exactly one observation ledger row'
 );
 
-create temp table authorized_opening_snapshot on commit drop as
-select public.get_public_dashboard_snapshot_v4() as value;
-select is(
-  (select value ->> 'schemaVersion' from authorized_opening_snapshot),
-  '2.0.0',
-  'v4 keeps the existing public dashboard wire schema stable'
-);
-select ok(
-  (select count(*) = 1
-   and bool_and(
-     item ->> 'state' = 'insufficient'
-     and item ->> 'countryCode' = 'JP'
-     and item -> 'hitRate' = 'null'::jsonb
-     and item -> 'posteriorMean' = 'null'::jsonb
-     and item -> 'credibleInterval' = 'null'::jsonb
-     and item ->> 'packsObserved' = '10'
-   )
-   from authorized_opening_snapshot,
-     jsonb_array_elements(value -> 'mapCells') as cells(item)
-   where item ->> 'countryCode' = 'JP'),
-  'v4 publishes a counts-only withheld country cell below the threshold'
-);
-select doesnt_match(
-  (select value::text from authorized_opening_snapshot),
-  '(?i)(submission_key|source_identity_sha256|authorization_reference_sha256|evidence_sha256|provenance_dedupe_sha256|discovery_candidate_sha256|reviewer_reference_sha256|qualifying_hit_pack_count)',
-  'v4 contains no private identifiers, hashes, numerator or reviewer field'
-);
-set local role anon;
-select set_config(
-  'pokecrack.authorized_opening_snapshot_anon',
-  public.get_public_dashboard_snapshot_v4()::text,
-  true
-);
-reset role;
-set local role authenticated;
-select set_config(
-  'pokecrack.authorized_opening_snapshot_authenticated',
-  public.get_public_dashboard_snapshot_v4()::text,
-  true
-);
-reset role;
-select set_eq(
-  $$select jsonb_object_keys(
-      current_setting('pokecrack.authorized_opening_snapshot_anon')::jsonb
-    )::text$$,
-  $$values
-    ('schemaVersion'::text), ('mode'), ('generatedAt'), ('summary'),
-    ('catalog'), ('observations'), ('mapCells'), ('sets'), ('regions'),
-    ('retailers'), ('batches'), ('trend'), ('sources'), ('services'),
-    ('recentActivity')$$,
-  'v4 anon output is an explicit narrow public projection'
-);
-select doesnt_match(
-  current_setting('pokecrack.authorized_opening_snapshot_anon'),
-  '(?i)(submission_key|source_identity_sha256|authorization_reference_sha256|evidence_sha256|provenance_dedupe_sha256|discovery_candidate_sha256|reviewer_reference_sha256|qualifying_hit_pack_count|opening-pgtap-)',
-  'anon v4 output never exposes private review identifiers or numerator fields'
-);
-select set_eq(
-  $$select jsonb_object_keys(
-      current_setting('pokecrack.authorized_opening_snapshot_authenticated')::jsonb
-    )::text$$,
-  $$values
-    ('schemaVersion'::text), ('mode'), ('generatedAt'), ('summary'),
-    ('catalog'), ('observations'), ('mapCells'), ('sets'), ('regions'),
-    ('retailers'), ('batches'), ('trend'), ('sources'), ('services'),
-    ('recentActivity')$$,
-  'v4 authenticated output is the same explicit narrow public projection'
-);
-select doesnt_match(
-  current_setting('pokecrack.authorized_opening_snapshot_authenticated'),
-  '(?i)(submission_key|source_identity_sha256|authorization_reference_sha256|evidence_sha256|provenance_dedupe_sha256|discovery_candidate_sha256|reviewer_reference_sha256|qualifying_hit_pack_count|opening-pgtap-)',
-  'authenticated v4 output never exposes private review identifiers or numerator fields'
-);
-
 create temp table authorized_opening_retraction on commit drop as
 select *
 from ingest.retract_authorized_opening_v1(
@@ -846,16 +773,6 @@ select is(
     )),
   null,
   'an exact retraction replay is idempotent'
-);
-create temp table authorized_opening_snapshot_after_retraction on commit drop as
-select public.get_public_dashboard_snapshot_v4() as value;
-select is(
-  (select count(*)::integer
-   from authorized_opening_snapshot_after_retraction,
-     jsonb_array_elements(value -> 'mapCells') as cells(item)
-   where item ->> 'countryCode' = 'JP'),
-  0,
-  'v4 excludes retracted authorized observations'
 );
 select is(
   (select count(*)::integer from ingest.authorized_opening_observations),

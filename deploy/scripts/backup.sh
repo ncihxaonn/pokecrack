@@ -108,6 +108,26 @@ select concat_ws(E'\\t',
     from pg_catalog.pg_class
     where oid = to_regclass('ingest.nostr_relay_checkpoints')
   ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.mastodon_public_hashtag_candidates')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.mastodon_public_hashtag_observations')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.mastodon_public_hashtag_checkpoints')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('ingest.mastodon_rate_cooldowns')
+  ), '0'),
   coalesce(has_table_privilege(
     'service_role',
     to_regclass('ingest.source_request_gates'),
@@ -119,6 +139,51 @@ if ! table_state=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-o
   die "database retention preflight failed"
 fi
 
+mastodon_public_hashtag=absent
+table_state_fields=()
+if [[ $table_state == *$'\t'* ]]; then
+  IFS=$'\t' read -r -a table_state_fields <<< "$table_state"
+fi
+if [[ ${#table_state_fields[@]} == 15 ]]; then
+  if [[ ${table_state_fields[0]} != rp || ${table_state_fields[2]} != rp || ${table_state_fields[14]} != true ]]; then
+    unset database_url
+    die "database retention preflight has an invalid policy/gate state"
+  fi
+  case "${table_state_fields[1]}" in
+    ru) youtube_discoveries=present ;;
+    0) youtube_discoveries=absent ;;
+    *) unset database_url; die "database retention preflight has an invalid YouTube table state" ;;
+  esac
+  case "${table_state_fields[3]}" in
+    rp) public_studies=present ;;
+    0) public_studies=absent ;;
+    *) unset database_url; die "database retention preflight has an invalid public-study table state" ;;
+  esac
+  if [[ ${table_state_fields[4]} == rp && ${table_state_fields[5]} == rp && ${table_state_fields[6]} == rp ]]; then
+    bluesky_jetstream=present
+  elif [[ ${table_state_fields[4]} == 0 && ${table_state_fields[5]} == 0 && ${table_state_fields[6]} == 0 ]]; then
+    bluesky_jetstream=absent
+  else
+    unset database_url
+    die "database retention preflight requires a coherent Bluesky table set"
+  fi
+  if [[ ${table_state_fields[7]} == rp && ${table_state_fields[8]} == rp && ${table_state_fields[9]} == rp ]]; then
+    nostr_relay=present
+  elif [[ ${table_state_fields[7]} == 0 && ${table_state_fields[8]} == 0 && ${table_state_fields[9]} == 0 ]]; then
+    nostr_relay=absent
+  else
+    unset database_url
+    die "database retention preflight requires a coherent Nostr table set"
+  fi
+  if [[ ${table_state_fields[10]} == rp && ${table_state_fields[11]} == rp && ${table_state_fields[12]} == rp && ${table_state_fields[13]} == rp ]]; then
+    mastodon_public_hashtag=present
+  elif [[ ${table_state_fields[10]} == 0 && ${table_state_fields[11]} == 0 && ${table_state_fields[12]} == 0 && ${table_state_fields[13]} == 0 ]]; then
+    mastodon_public_hashtag=absent
+  else
+    unset database_url
+    die "database retention preflight requires a coherent Mastodon table set"
+  fi
+else
 case "$table_state" in
   # Pre-Nostr hosts return the original seven-table state.  Keep the
   # transition compatible while the new 10-table query rolls out.
@@ -199,6 +264,7 @@ case "$table_state" in
     die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, coherent Bluesky/Nostr logged tables, the public-study ledger either absent or logged, and youtube_discoveries either absent or UNLOGGED"
     ;;
 esac
+fi
 
 policy_query="set role service_role;
 select id::text from ingest.source_policies where source_key = 'youtube_discovery' order by id::text;"
@@ -266,12 +332,27 @@ if [[ $youtube_policy_id == *$'\n'* ]]; then
   die "database retention policy lookup was ambiguous"
 fi
 
+mastodon_policy_id=''
+if [[ $mastodon_public_hashtag == present ]]; then
+  mastodon_policy_query="set role service_role;
+select id::text from ingest.source_policies where source_key = 'mastodon_social' order by id::text;"
+  if ! mastodon_policy_id=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$mastodon_policy_query" 2>/dev/null); then
+    unset database_url
+    die "database Mastodon retention policy lookup failed"
+  fi
+  if [[ $mastodon_policy_id == *$'\n'* ]]; then
+    unset database_url
+    die "database Mastodon retention policy lookup was ambiguous"
+  fi
+fi
+
 sanitizer_arguments=(
   --source-policies present
   --youtube-discoveries "$youtube_discoveries"
   --public-studies "$public_studies"
   --bluesky-jetstream "$bluesky_jetstream"
   --nostr-relay "$nostr_relay"
+  --mastodon-public-hashtag "$mastodon_public_hashtag"
 )
 if [[ $youtube_discoveries == present ]]; then
   if [[ -z $youtube_policy_id ]]; then
@@ -317,6 +398,20 @@ elif [[ ${#nostr_policy_ids[@]} != 0 ]]; then
   unset database_url
   die "database Nostr retention policy exists without the exact private table set"
 fi
+if [[ $mastodon_public_hashtag == present ]]; then
+  if [[ -z $mastodon_policy_id ]]; then
+    unset database_url
+    die "database Mastodon retention policy lookup returned no policy"
+  fi
+  if [[ ! $mastodon_policy_id =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; then
+    unset database_url
+    die "database Mastodon retention policy id was malformed"
+  fi
+  sanitizer_arguments+=(--mastodon-policy-id "$mastodon_policy_id")
+elif [[ -n $mastodon_policy_id ]]; then
+  unset database_url
+  die "database Mastodon retention policy exists without the exact Mastodon table set"
+fi
 
 timestamp=$(date -u +%Y%m%dT%H%M%SZ)
 [[ $timestamp =~ ^[0-9]{8}T[0-9]{6}Z$ ]] || die "date returned an invalid UTC timestamp"
@@ -337,19 +432,35 @@ cleanup() {
 trap cleanup EXIT HUP INT TERM
 
 # The URL runner translates stdin into libpq environment fields, keeping the
-# credential out of process arguments and command output. Gate rows are live
-# lease state; retain the schema under MAINTAIN but never request their data.
+# credential out of process arguments and command output. Dump only the four
+# Pokecrack application schemas plus the Supabase migration ledger. In
+# particular, do not ask pg_dump to inspect provider-owned auth, storage,
+# realtime, extensions, or other managed schemas.
+#
+# The independent preflights above still SET ROLE service_role so the retained
+# data contract is checked through the reviewed application capability. The
+# dump itself deliberately remains on the owner-capable login: Nostr isolation
+# denies service_role direct relation access, and the migration ledger is not a
+# worker capability. Exact schema inclusion keeps that owner authority bounded
+# to the reviewed backup surface without broadening service_role grants.
 if ! run_database_command pg_dump \
   --format=plain \
-  --role=service_role \
   --no-owner \
   --no-privileges \
   --encoding=UTF8 \
+  --strict-names \
+  --schema=catalog \
+  --schema=ingest \
+  --schema=analytics \
+  --schema=public \
+  --schema=supabase_migrations \
   --exclude-table-data=ingest.source_request_gates \
   --exclude-table-data=ingest.bluesky_jetstream_candidates \
   --exclude-table-data=ingest.bluesky_jetstream_observations \
   --exclude-table-data=ingest.nostr_relay_candidates \
   --exclude-table-data=ingest.nostr_relay_observations \
+  --exclude-table-data=ingest.mastodon_public_hashtag_candidates \
+  --exclude-table-data=ingest.mastodon_public_hashtag_observations \
   | python3 "$SCRIPT_DIR/../lib/sanitize_plain_backup.py" \
       "${sanitizer_arguments[@]}" \
   | gzip -9 > "$temporary"; then

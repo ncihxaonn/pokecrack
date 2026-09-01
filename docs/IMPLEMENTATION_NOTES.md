@@ -25,11 +25,11 @@ itself evidence of a live collection run.
   in this branch. It must pass clean PostgreSQL 17 migration/pgTAP replay, merge,
   apply to Personal Supabase project `wohnphsxlquhhknuthrj`, and receive live
   browser verification before that claim changes.
-- The local-only authorized-opening reviewer migration also defines a v4
-  counts-only projection, but it is intentionally dormant: `apps/web` remains
-  wired to v3 and no production reviewer login or v4 rollout is implied. The
-  v4 function is assembled from an explicit public allowlist and must receive a
-  separate integration review before any client or hosted migration adopts it.
+- The local-only authorized-opening migration is intentionally limited to the
+  private submit/list/review/retract boundary. It does not publish accepted
+  evidence, create a login, alter the web RPC, or imply a hosted rollout. A
+  separate aggregate contract must reconcile accepted evidence with the
+  reviewed-study ledger before any public projection is introduced.
 - The MAM VPS runtime was not re-audited in this branch because the current
   session had not yet received exact authorization for that boundary. YouTube
   collection and the hosted worker revision therefore remain unverified here.

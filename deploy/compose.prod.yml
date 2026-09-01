@@ -62,6 +62,7 @@ services:
       BLUESKY_COLLECTION_ENABLED: "${BLUESKY_COLLECTION_ENABLED:-false}"
       # Nostr is intentionally absent from the broad collector credential.
       NOSTR_COLLECTION_ENABLED: "false"
+      MASTODON_COLLECTION_ENABLED: "${MASTODON_COLLECTION_ENABLED:-false}"
       SCRAPLING_ENABLED: "${SCRAPLING_ENABLED:-true}"
       SCRAPLING_HTTP_CONCURRENCY: "${SCRAPLING_HTTP_CONCURRENCY:-4}"
       SCRAPLING_PER_DOMAIN_CONCURRENCY: "${SCRAPLING_PER_DOMAIN_CONCURRENCY:-2}"
@@ -79,6 +80,14 @@ services:
     profiles: ["nostr"]
     <<: *worker-base
     command: ["nostr-collector"]
+    # The reviewed NOINHERIT login uses the project's direct PostgreSQL
+    # endpoint so libpq can apply the fixed startup SET ROLE option. Supabase's
+    # pooler strips that option, and the direct endpoint is IPv6-only for this
+    # project. Keep that reachability on a dedicated bridge instead of giving
+    # the collector host networking or widening the shared worker network.
+    networks:
+      - internal
+      - nostr-egress
     environment:
       DATA_MODE: "${DATA_MODE:-demo}"
       LOG_LEVEL: "${LOG_LEVEL:-INFO}"
@@ -246,6 +255,8 @@ services:
       SCHEDULE_OFFICIAL_API: "${SCHEDULE_OFFICIAL_API:-0 */6 * * *}"
       SCHEDULE_PUBLIC_COLLECTION: "${SCHEDULE_PUBLIC_COLLECTION:-15 4 * * *}"
       SCHEDULE_BLUESKY_COLLECTION: "${SCHEDULE_BLUESKY_COLLECTION:-* * * * *}"
+      MASTODON_COLLECTION_ENABLED: "${MASTODON_COLLECTION_ENABLED:-false}"
+      SCHEDULE_MASTODON_COLLECTION: "${SCHEDULE_MASTODON_COLLECTION:-*/5 * * * *}"
       SCHEDULE_AUTH_COLLECTION: "${SCHEDULE_AUTH_COLLECTION:-30 */12 * * *}"
       SCHEDULE_CATALOG_SYNC: "${SCHEDULE_CATALOG_SYNC:-0 2 * * *}"
       SCHEDULE_AGGREGATES: "${SCHEDULE_AGGREGATES:-5 * * * *}"
@@ -286,6 +297,12 @@ networks:
     internal: true
   egress:
     driver: bridge
+  nostr-egress:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd12:706f:6b65::/64
 
 volumes:
   browser_profiles:

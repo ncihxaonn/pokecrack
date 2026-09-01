@@ -16,7 +16,7 @@ import re
 import stat
 import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import BinaryIO
 from uuid import UUID
@@ -31,9 +31,16 @@ BLUESKY_CHECKPOINTS = ("ingest", "bluesky_jetstream_checkpoints")
 NOSTR_CANDIDATES = ("ingest", "nostr_relay_candidates")
 NOSTR_OBSERVATIONS = ("ingest", "nostr_relay_observations")
 NOSTR_CHECKPOINTS = ("ingest", "nostr_relay_checkpoints")
+MASTODON_CANDIDATES = ("ingest", "mastodon_public_hashtag_candidates")
+MASTODON_OBSERVATIONS = ("ingest", "mastodon_public_hashtag_observations")
+MASTODON_CHECKPOINTS = ("ingest", "mastodon_public_hashtag_checkpoints")
+MASTODON_COOLDOWNS = ("ingest", "mastodon_rate_cooldowns")
 BLUESKY_EPHEMERAL_TABLES = frozenset({BLUESKY_CANDIDATES, BLUESKY_OBSERVATIONS})
 NOSTR_EPHEMERAL_TABLES = frozenset({NOSTR_CANDIDATES, NOSTR_OBSERVATIONS})
-EPHEMERAL_ACTIVITY_TABLES = BLUESKY_EPHEMERAL_TABLES | NOSTR_EPHEMERAL_TABLES
+MASTODON_EPHEMERAL_TABLES = frozenset({MASTODON_CANDIDATES, MASTODON_OBSERVATIONS})
+EPHEMERAL_ACTIVITY_TABLES = (
+    BLUESKY_EPHEMERAL_TABLES | NOSTR_EPHEMERAL_TABLES | MASTODON_EPHEMERAL_TABLES
+)
 RETENTION_CONTROL_TABLES = frozenset(
     {
         SOURCE_POLICIES,
@@ -41,11 +48,14 @@ RETENTION_CONTROL_TABLES = frozenset(
         PUBLIC_STUDY_OBSERVATIONS,
         BLUESKY_CHECKPOINTS,
         NOSTR_CHECKPOINTS,
+        MASTODON_CHECKPOINTS,
+        MASTODON_COOLDOWNS,
     }
 )
 TCGDEX_SOURCE_KEY = b"tcgdex_catalog"
 YOUTUBE_SOURCE_KEY = b"youtube_discovery"
 BLUESKY_SOURCE_KEY = b"bluesky_jetstream"
+MASTODON_SOURCE_KEY = b"mastodon_social"
 NOSTR_SOURCE_KEYS = (
     b"nostr_relay_primal",
     b"nostr_relay_nos_lol",
@@ -61,6 +71,15 @@ NOSTR_NIP11_URLS = (
     b"https://relay.primal.net/",
     b"https://nos.lol/",
     b"https://relay.nostr.net/",
+)
+MASTODON_TAG_KEYS = (
+    b"pokemontcg",
+    b"pokemoncards",
+    b"pokeca_ja",
+    b"pokemon_card_ja",
+    b"pokemon_card_ko",
+    b"pokemon_card_zh_hans",
+    b"pokemon_card_zh_hant",
 )
 NOSTR_APPROVED_TAGS_COPY = (
     b"{"
@@ -82,55 +101,251 @@ PUBLIC_STUDY_SOURCE_KEYS = (
 )
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
+DOLLAR_QUOTE_TAG = re.compile(
+    rb"\$(?:[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)?\$"
+)
+TARGET_TABLE_NAMES = tuple(
+    sorted(
+        table[1]
+        for table in (
+            RETENTION_CONTROL_TABLES
+            | EPHEMERAL_ACTIVITY_TABLES
+            | {SOURCE_REQUEST_GATES}
+        )
+    )
+)
+TARGET_UNQUOTED_TABLE_REFERENCE = (
+    r"(?:"
+    + "|".join(re.escape(name) for name in TARGET_TABLE_NAMES)
+    + r")(?![A-Za-z0-9_$\x80-\xff])"
+)
+TARGET_QUOTED_TABLE_REFERENCE = (
+    r'(?:"' + r'"|"'.join(re.escape(name) for name in TARGET_TABLE_NAMES) + r'")'
+)
+TARGET_TABLE_REFERENCE = (
+    rf"(?:{TARGET_UNQUOTED_TABLE_REFERENCE}|{TARGET_QUOTED_TABLE_REFERENCE})"
+)
 TARGET_INSERT = re.compile(
-    r'^\s*INSERT\s+INTO\s+(?:ingest|"ingest")\.'
-    r'(?:source_policies|"source_policies"|'
-    r'youtube_discoveries|"youtube_discoveries"|'
-    r'public_study_observations|"public_study_observations"|'
-    r'bluesky_jetstream_candidates|"bluesky_jetstream_candidates"|'
-    r'bluesky_jetstream_observations|"bluesky_jetstream_observations"|'
-    r'bluesky_jetstream_checkpoints|"bluesky_jetstream_checkpoints"|'
-    r'nostr_relay_candidates|"nostr_relay_candidates"|'
-    r'nostr_relay_observations|"nostr_relay_observations"|'
-    r'nostr_relay_checkpoints|"nostr_relay_checkpoints"|'
-    r'source_request_gates|"source_request_gates")(?:\s|\()',
+    r'^\s*INSERT\s+INTO\s+(?:(?:ingest|"ingest")\s*\.\s*)?'
+    + TARGET_TABLE_REFERENCE,
     re.IGNORECASE,
 )
+TARGET_DATA_STATEMENT = re.compile(
+    rb'(?:^|[\s;)])(?:INSERT\s+INTO\s+(?:ONLY\s+)?|'
+    rb'COPY\s+(?:BINARY\s+)?)'
+    rb'(?:(?:ingest|"ingest")\s*\.\s*)?'
+    + TARGET_TABLE_REFERENCE.encode("ascii"),
+    re.IGNORECASE,
+)
+ANY_COPY_STATEMENT_PREFIX = re.compile(rb"^\s*COPY\b", re.IGNORECASE)
+DO_STATEMENT_PREFIX = re.compile(rb"^\s*DO(?:\s|$)", re.IGNORECASE)
+MAX_SQL_STATEMENT_PREFIX_BYTES = 65_536
+UNQUALIFIED_TARGET_TABLES = frozenset(TARGET_TABLE_NAMES)
+
+
+@dataclass
+class SqlLexState:
+    mode: str = "normal"
+    dollar_tag: bytes | None = None
+    block_comment_depth: int = 0
+    single_quote_backslash_escapes: bool = False
+    statement_sql: bytearray = field(default_factory=bytearray)
+
+
+def _is_identifier_byte(value: int) -> bool:
+    return (
+        ord("0") <= value <= ord("9")
+        or ord("A") <= value <= ord("Z")
+        or ord("a") <= value <= ord("z")
+        or value in (ord("_"), ord("$"))
+        or value >= 0x80
+    )
+
+
+def _append_statement_bytes(state: SqlLexState, value: bytes) -> None:
+    if len(state.statement_sql) + len(value) > MAX_SQL_STATEMENT_PREFIX_BYTES:
+        raise SanitizationError("SQL statement prefix exceeds the safety limit")
+    state.statement_sql.extend(value)
+
+
+def _append_statement_space(state: SqlLexState) -> None:
+    if not state.statement_sql or state.statement_sql[-1] != ord(" "):
+        _append_statement_bytes(state, b" ")
+
+
+def _reject_target_statement_prefix(state: SqlLexState) -> None:
+    statement = bytes(state.statement_sql)
+    if DO_STATEMENT_PREFIX.match(statement):
+        raise SanitizationError(
+            "executable DO bodies are not supported in managed backups"
+        )
+    if TARGET_DATA_STATEMENT.search(statement):
+        raise SanitizationError(
+            "retention-control table data must use COPY FROM stdin"
+        )
+    if ANY_COPY_STATEMENT_PREFIX.match(statement):
+        raise SanitizationError(
+            "COPY headers must use the supported line-oriented pg_dump shape"
+        )
+
+
+def _finish_sql_statement(state: SqlLexState) -> None:
+    _reject_target_statement_prefix(state)
+    state.statement_sql.clear()
+
+
+def _advance_sql_lex_state(line: bytes, state: SqlLexState) -> None:
+    """Track SQL lexical context around PostgreSQL dollar-quoted bodies.
+
+    The scanner recognizes dollar delimiters only in normal SQL, never inside
+    ordinary strings, quoted identifiers, or comments. It retains only the
+    normal-context statement prefix so comments and line breaks cannot split a
+    protected ``INSERT INTO`` or ``COPY`` target across scanner boundaries.
+    """
+
+    index = 0
+    while index < len(line):
+        if state.mode == "dollar":
+            assert state.dollar_tag is not None
+            closing_at = line.find(state.dollar_tag, index)
+            if closing_at < 0:
+                return
+            index = closing_at + len(state.dollar_tag)
+            state.mode = "normal"
+            state.dollar_tag = None
+            continue
+
+        if state.mode == "single_quote":
+            if (
+                state.single_quote_backslash_escapes
+                and line[index] == ord("\\")
+                and index + 1 < len(line)
+            ):
+                index += 2
+            elif line[index] == ord("'"):
+                if index + 1 < len(line) and line[index + 1] == ord("'"):
+                    index += 2
+                else:
+                    state.mode = "normal"
+                    state.single_quote_backslash_escapes = False
+                    index += 1
+            else:
+                index += 1
+            continue
+
+        if state.mode == "double_quote":
+            if line[index] == ord('"'):
+                if index + 1 < len(line) and line[index + 1] == ord('"'):
+                    _append_statement_bytes(state, b'""')
+                    index += 2
+                else:
+                    _append_statement_bytes(state, b'"')
+                    state.mode = "normal"
+                    index += 1
+            else:
+                _append_statement_bytes(state, line[index : index + 1])
+                index += 1
+            continue
+
+        if state.mode == "block_comment":
+            if line[index : index + 2] == b"/*":
+                state.block_comment_depth += 1
+                index += 2
+            elif line[index : index + 2] == b"*/":
+                state.block_comment_depth -= 1
+                index += 2
+                if state.block_comment_depth == 0:
+                    state.mode = "normal"
+            else:
+                index += 1
+            continue
+
+        if line[index : index + 2] == b"--":
+            _append_statement_space(state)
+            _reject_target_statement_prefix(state)
+            return
+        if line[index : index + 2] == b"/*":
+            _append_statement_space(state)
+            state.mode = "block_comment"
+            state.block_comment_depth = 1
+            index += 2
+            continue
+        if line[index] == ord("'"):
+            _append_statement_space(state)
+            state.mode = "single_quote"
+            state.single_quote_backslash_escapes = (
+                index > 0
+                and line[index - 1] in (ord("E"), ord("e"))
+                and (index < 2 or not _is_identifier_byte(line[index - 2]))
+            )
+            index += 1
+            continue
+        if line[index] == ord('"'):
+            _append_statement_bytes(state, b'"')
+            state.mode = "double_quote"
+            index += 1
+            continue
+
+        opening = DOLLAR_QUOTE_TAG.match(line, index)
+        if opening is not None and (
+            index == 0 or not _is_identifier_byte(line[index - 1])
+        ):
+            _append_statement_space(state)
+            _reject_target_statement_prefix(state)
+            state.mode = "dollar"
+            state.dollar_tag = opening.group(0)
+            index = opening.end()
+            continue
+
+        if line[index] == ord(";"):
+            _finish_sql_statement(state)
+            index += 1
+            continue
+        if line[index] in b" \t\r\n\f\v":
+            _append_statement_space(state)
+            index += 1
+            continue
+        _append_statement_bytes(state, line[index : index + 1])
+        index += 1
+
+    _reject_target_statement_prefix(state)
+
+
 YOUTUBE_CREATE_REFERENCE = re.compile(
-    r'^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+'
+    r"^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+"
     r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
     r'(?:youtube_discoveries(?![A-Za-z0-9_$])|"youtube_discoveries")'
-    r'(?:\s|\()',
+    r"(?:\s|\()",
     re.IGNORECASE,
 )
 YOUTUBE_CREATE = re.compile(
-    r'^\s*CREATE\s+(?P<unlogged>UNLOGGED\s+)?TABLE\s+'
+    r"^\s*CREATE\s+(?P<unlogged>UNLOGGED\s+)?TABLE\s+"
     r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
     r'(?:youtube_discoveries(?![A-Za-z0-9_$])|"youtube_discoveries")\s*\(',
     re.IGNORECASE,
 )
 REQUEST_GATES_CREATE_REFERENCE = re.compile(
-    r'^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+'
+    r"^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+"
     r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
     r'(?:source_request_gates(?![A-Za-z0-9_$])|"source_request_gates")'
-    r'(?:\s|\()',
+    r"(?:\s|\()",
     re.IGNORECASE,
 )
 REQUEST_GATES_CREATE = re.compile(
-    r'^\s*CREATE\s+TABLE\s+'
+    r"^\s*CREATE\s+TABLE\s+"
     r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
     r'(?:source_request_gates(?![A-Za-z0-9_$])|"source_request_gates")\s*\(',
     re.IGNORECASE,
 )
 PUBLIC_STUDY_CREATE_REFERENCE = re.compile(
-    r'^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+'
+    r"^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+"
     r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
     r'(?:public_study_observations(?![A-Za-z0-9_$])|"public_study_observations")'
-    r'(?:\s|\()',
+    r"(?:\s|\()",
     re.IGNORECASE,
 )
 PUBLIC_STUDY_CREATE = re.compile(
-    r'^\s*CREATE\s+TABLE\s+'
+    r"^\s*CREATE\s+TABLE\s+"
     r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
     r'(?:public_study_observations(?![A-Za-z0-9_$])|"public_study_observations")\s*\(',
     re.IGNORECASE,
@@ -190,6 +405,29 @@ NOSTR_CHECKPOINT_COPY_COLUMNS = (
     "bytes_seen_total",
     "candidates_seen_total",
     "deletions_seen_total",
+    "is_demo",
+    "created_at",
+    "updated_at",
+)
+MASTODON_CHECKPOINT_COPY_COLUMNS = (
+    "source_policy_id",
+    "instance_key",
+    "tag_key",
+    "last_status_id",
+    "last_collected_at",
+    "incomplete",
+    "requests_seen_total",
+    "statuses_seen_total",
+    "bytes_seen_total",
+    "candidates_seen_total",
+    "is_demo",
+    "created_at",
+    "updated_at",
+)
+MASTODON_COOLDOWN_COPY_COLUMNS = (
+    "source_policy_id",
+    "instance_key",
+    "cooldown_until",
     "is_demo",
     "created_at",
     "updated_at",
@@ -422,10 +660,7 @@ def _policy_tokens_if_complete(
                 and text[index - 1] in "Ee"
                 and (
                     index == 1
-                    or not (
-                        text[index - 2].isalnum()
-                        or text[index - 2] in "_$"
-                    )
+                    or not (text[index - 2].isalnum() or text[index - 2] in "_$")
                 )
             )
             index += 1
@@ -475,15 +710,11 @@ def _policy_tokens_if_complete(
                 continue
         if character == ";":
             if not _only_sql_trivia(text, index + 1):
-                raise SanitizationError(
-                    "policy statement has unsupported trailing SQL"
-                )
+                raise SanitizationError("policy statement has unsupported trailing SQL")
             return tokens
         if character.isalpha() or character == "_":
             end = index + 1
-            while end < len(text) and (
-                text[end].isalnum() or text[end] in "_$"
-            ):
+            while end < len(text) and (text[end].isalnum() or text[end] in "_$"):
                 end += 1
             tokens.append(("word", text[index:end].casefold()))
             index = end
@@ -624,8 +855,12 @@ def parse_copy_header(line: bytes) -> CopyHeader | None:
     if not COPY_SUFFIX.fullmatch(suffix):
         raise SanitizationError("COPY must use FROM stdin")
 
-    table = tuple(_parse_identifier(part) for part in _split_outside_quotes(table_text, "."))
-    columns = tuple(_parse_identifier(part) for part in _split_outside_quotes(columns_text, ","))
+    table = tuple(
+        _parse_identifier(part) for part in _split_outside_quotes(table_text, ".")
+    )
+    columns = tuple(
+        _parse_identifier(part) for part in _split_outside_quotes(columns_text, ",")
+    )
     if len(table) not in (1, 2) or not columns:
         raise SanitizationError("unsupported COPY table or column list")
     if len(set(columns)) != len(columns):
@@ -652,13 +887,9 @@ def parse_youtube_create(line: bytes) -> bool | None:
         return None
     match = YOUTUBE_CREATE.match(text)
     if match is None:
-        raise SanitizationError(
-            "unsupported youtube_discoveries CREATE TABLE header"
-        )
+        raise SanitizationError("unsupported youtube_discoveries CREATE TABLE header")
     if match.group("unlogged") is None:
-        raise SanitizationError(
-            "youtube_discoveries CREATE TABLE is not UNLOGGED"
-        )
+        raise SanitizationError("youtube_discoveries CREATE TABLE is not UNLOGGED")
     return True
 
 
@@ -674,9 +905,7 @@ def parse_request_gates_create(line: bytes) -> bool | None:
     if not REQUEST_GATES_CREATE_REFERENCE.match(text):
         return None
     if REQUEST_GATES_CREATE.match(text) is None:
-        raise SanitizationError(
-            "unsupported source_request_gates CREATE TABLE header"
-        )
+        raise SanitizationError("unsupported source_request_gates CREATE TABLE header")
     return True
 
 
@@ -738,7 +967,9 @@ def _split_create_declarations(lines: list[bytes]) -> tuple[str, ...]:
             depth += 1
         elif character == ")":
             if depth == 0:
-                raise SanitizationError("public-study schema has unbalanced parentheses")
+                raise SanitizationError(
+                    "public-study schema has unbalanced parentheses"
+                )
             depth -= 1
         elif character == "," and depth == 0:
             declarations.append(_normalize_sql((body[start:index].encode("utf-8"),)))
@@ -824,6 +1055,20 @@ def _copy_nonnegative_bigint(
     return parsed
 
 
+def _mastodon_status_id_copy(value: bytes, *, field: str) -> None:
+    """Validate the only raw Mastodon value retained: a bounded cursor."""
+
+    if value == b"\\N":
+        return
+    text = _plain_copy_text(value, field=field)
+    if (
+        not 1 <= len(text) <= 160
+        or text != text.strip()
+        or re.search(r"[\x00-\x1f\x7f]", text) is not None
+    ):
+        raise SanitizationError(f"{field} is not bounded opaque text")
+
+
 def _column_indexes(header: CopyHeader) -> dict[str, int]:
     return {column: index for index, column in enumerate(header.columns)}
 
@@ -840,6 +1085,8 @@ class PlainBackupSanitizer:
         bluesky_policy_id: str | None,
         nostr_relay_present: bool = False,
         nostr_policy_ids: tuple[str, ...] | list[str] = (),
+        mastodon_public_hashtag_present: bool = False,
+        mastodon_policy_id: str | None = None,
     ) -> None:
         if youtube_policy_id is not None:
             youtube_policy_id = _canonical_uuid(
@@ -849,19 +1096,23 @@ class PlainBackupSanitizer:
             bluesky_policy_id = _canonical_uuid(
                 bluesky_policy_id.encode("ascii"), field="Bluesky policy id"
             )
+        if mastodon_policy_id is not None:
+            mastodon_policy_id = _canonical_uuid(
+                mastodon_policy_id.encode("ascii"), field="Mastodon policy id"
+            )
         normalized_nostr_policy_ids: list[str] = []
         for index, policy_id in enumerate(nostr_policy_ids):
             if not isinstance(policy_id, str):
-                raise SanitizationError(
-                    f"Nostr policy id {index + 1} must be text"
-                )
+                raise SanitizationError(f"Nostr policy id {index + 1} must be text")
             normalized_nostr_policy_ids.append(
                 _canonical_uuid(
                     policy_id.encode("ascii"),
                     field=f"Nostr policy id {index + 1}",
                 )
             )
-        if nostr_relay_present and len(normalized_nostr_policy_ids) != len(NOSTR_SOURCE_KEYS):
+        if nostr_relay_present and len(normalized_nostr_policy_ids) != len(
+            NOSTR_SOURCE_KEYS
+        ):
             raise SanitizationError(
                 "Nostr retention requires exactly three policy identifiers"
             )
@@ -878,9 +1129,7 @@ class PlainBackupSanitizer:
                 "youtube_discoveries exists without one exact YouTube policy"
             )
         if youtube_policy_id is not None and not youtube_discoveries_present:
-            raise SanitizationError(
-                "YouTube policy exists without youtube_discoveries"
-            )
+            raise SanitizationError("YouTube policy exists without youtube_discoveries")
         if public_studies_present and not (
             source_policies_present and youtube_discoveries_present
         ):
@@ -900,8 +1149,18 @@ class PlainBackupSanitizer:
                 "Bluesky policy exists without the exact private table set"
             )
         if nostr_relay_present and not source_policies_present:
+            raise SanitizationError("Nostr state requires the source policy registry")
+        if mastodon_public_hashtag_present and not source_policies_present:
             raise SanitizationError(
-                "Nostr state requires the source policy registry"
+                "Mastodon state requires the source policy registry"
+            )
+        if mastodon_public_hashtag_present and mastodon_policy_id is None:
+            raise SanitizationError(
+                "Mastodon state requires one exact Mastodon policy identifier"
+            )
+        if mastodon_policy_id is not None and not mastodon_public_hashtag_present:
+            raise SanitizationError(
+                "Mastodon policy exists without the exact Mastodon table set"
             )
 
         self.expected = {
@@ -910,12 +1169,19 @@ class PlainBackupSanitizer:
             PUBLIC_STUDY_OBSERVATIONS: public_studies_present,
             BLUESKY_CHECKPOINTS: bluesky_jetstream_present,
             NOSTR_CHECKPOINTS: nostr_relay_present,
+            MASTODON_CHECKPOINTS: mastodon_public_hashtag_present,
+            MASTODON_COOLDOWNS: mastodon_public_hashtag_present,
         }
         self.preflight_youtube_policy_id = youtube_policy_id
         self.preflight_bluesky_policy_id = bluesky_policy_id
         self.preflight_nostr_policy_ids = tuple(normalized_nostr_policy_ids)
+        self.preflight_mastodon_policy_id = mastodon_policy_id
         self.bluesky_jetstream_present = bluesky_jetstream_present
         self.nostr_relay_present = nostr_relay_present
+        self.mastodon_public_hashtag_present = mastodon_public_hashtag_present
+        self.request_gate_broad = (
+            youtube_discoveries_present or mastodon_public_hashtag_present
+        )
         self.seen = {table: 0 for table in RETENTION_CONTROL_TABLES}
         self.youtube_policy_rows: list[str] = []
         self.tcgdex_policy_rows = 0
@@ -926,6 +1192,10 @@ class PlainBackupSanitizer:
         self.bluesky_checkpoint_rows = 0
         self.nostr_checkpoint_rows = 0
         self.nostr_checkpoint_policy_ids: dict[bytes, str] = {}
+        self.mastodon_policy_ids: list[str] = []
+        self.mastodon_checkpoint_rows = 0
+        self.mastodon_checkpoint_tag_keys: set[bytes] = set()
+        self.mastodon_cooldown_rows = 0
         self.public_study_policy_ids = {
             source_key: [] for source_key in PUBLIC_STUDY_SOURCE_KEYS
         }
@@ -949,9 +1219,7 @@ class PlainBackupSanitizer:
         lines = self.request_gates_create_lines
         if lines is None:
             raise SanitizationError("request-gate CREATE state is missing")
-        expected = REQUEST_GATES_CREATE_EXPECTED[
-            self.expected[YOUTUBE_DISCOVERIES]
-        ]
+        expected = REQUEST_GATES_CREATE_EXPECTED[self.request_gate_broad]
         if _normalize_sql(lines) != expected:
             raise SanitizationError("unsupported source_request_gates schema")
         self.request_gates_create_lines = None
@@ -997,19 +1265,13 @@ class PlainBackupSanitizer:
             self.seen[header.table] += 1
             if self.seen[header.table] != 1:
                 raise SanitizationError(
-                    "duplicate retention-control COPY block: "
-                    f"{'.'.join(header.table)}"
+                    f"duplicate retention-control COPY block: {'.'.join(header.table)}"
                 )
         if header.table == SOURCE_POLICIES:
             if "id" not in indexes or "source_key" not in indexes:
                 raise SanitizationError("source_policies COPY lacks id or source_key")
-        elif (
-            header.table == YOUTUBE_DISCOVERIES
-            and "source_policy_id" not in indexes
-        ):
-            raise SanitizationError(
-                "youtube_discoveries COPY lacks source_policy_id"
-            )
+        elif header.table == YOUTUBE_DISCOVERIES and "source_policy_id" not in indexes:
+            raise SanitizationError("youtube_discoveries COPY lacks source_policy_id")
         elif (
             header.table == PUBLIC_STUDY_OBSERVATIONS
             and header.columns != PUBLIC_STUDY_COPY_COLUMNS
@@ -1031,14 +1293,26 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "nostr_relay_checkpoints COPY columns do not match the exact retained schema"
             )
+        elif (
+            header.table == MASTODON_CHECKPOINTS
+            and header.columns != MASTODON_CHECKPOINT_COPY_COLUMNS
+        ):
+            raise SanitizationError(
+                "mastodon_public_hashtag_checkpoints COPY columns do not match the exact retained schema"
+            )
+        elif (
+            header.table == MASTODON_COOLDOWNS
+            and header.columns != MASTODON_COOLDOWN_COPY_COLUMNS
+        ):
+            raise SanitizationError(
+                "mastodon_rate_cooldowns COPY columns do not match the exact retained schema"
+            )
         return CopyBlock(header=header, column_indexes=indexes)
 
     def _target_fields(self, block: CopyBlock, line: bytes) -> list[bytes]:
         fields = _without_line_ending(line).split(b"\t")
         if len(fields) != len(block.header.columns):
-            raise SanitizationError(
-                "retention-control COPY row has wrong field count"
-            )
+            raise SanitizationError("retention-control COPY row has wrong field count")
         return fields
 
     def _inspect_control_row(self, block: CopyBlock, line: bytes) -> None:
@@ -1064,6 +1338,13 @@ class PlainBackupSanitizer:
                         field="Bluesky source policy id",
                     )
                 )
+            elif source_key == MASTODON_SOURCE_KEY:
+                self.mastodon_policy_ids.append(
+                    _canonical_uuid(
+                        fields[block.column_indexes["id"]],
+                        field="Mastodon source policy id",
+                    )
+                )
             elif source_key in self.nostr_policy_ids:
                 self.nostr_policy_ids[source_key].append(
                     _canonical_uuid(
@@ -1087,6 +1368,12 @@ class PlainBackupSanitizer:
             return
         if block.header.table == NOSTR_CHECKPOINTS:
             self._inspect_nostr_checkpoint_row(block, fields)
+            return
+        if block.header.table == MASTODON_CHECKPOINTS:
+            self._inspect_mastodon_checkpoint_row(block, fields)
+            return
+        if block.header.table == MASTODON_COOLDOWNS:
+            self._inspect_mastodon_cooldown_row(block, fields)
             return
         policy_id = _canonical_uuid(
             fields[block.column_indexes["source_policy_id"]],
@@ -1121,7 +1408,10 @@ class PlainBackupSanitizer:
             "is_demo": "f",
         }
         for column, expected in exact_text.items():
-            if _plain_copy_text(fields[indexes[column]], field=f"Bluesky {column}") != expected:
+            if (
+                _plain_copy_text(fields[indexes[column]], field=f"Bluesky {column}")
+                != expected
+            ):
                 raise SanitizationError(f"Bluesky checkpoint {column} drifted")
         _copy_nonnegative_bigint(
             fields[indexes["last_cursor"]],
@@ -1169,7 +1459,9 @@ class PlainBackupSanitizer:
         try:
             relay_index = NOSTR_RELAY_KEYS.index(relay_key)
         except ValueError as error:
-            raise SanitizationError("Nostr checkpoint relay key is not approved") from error
+            raise SanitizationError(
+                "Nostr checkpoint relay key is not approved"
+            ) from error
         if relay_key in self.nostr_checkpoint_policy_ids:
             raise SanitizationError("Nostr checkpoint relay keys must be unique")
         expected_policy_id = self.preflight_nostr_policy_ids[relay_index]
@@ -1193,12 +1485,12 @@ class PlainBackupSanitizer:
         if protocol != NOSTR_PROTOCOL:
             raise SanitizationError("Nostr checkpoint protocol drifted")
         if fields[indexes["approved_tags"]] != NOSTR_APPROVED_TAGS_COPY:
-            raise SanitizationError(
-                "Nostr checkpoint approved tags drifted"
-            )
+            raise SanitizationError("Nostr checkpoint approved tags drifted")
         last_checkpoint = fields[indexes["last_checkpoint"]]
         if last_checkpoint != b"\\N":
-            _utc_copy_timestamp(last_checkpoint, field="Nostr checkpoint last_checkpoint")
+            _utc_copy_timestamp(
+                last_checkpoint, field="Nostr checkpoint last_checkpoint"
+            )
         for column in (
             "events_seen_total",
             "bytes_seen_total",
@@ -1220,23 +1512,122 @@ class PlainBackupSanitizer:
             raise SanitizationError("Nostr checkpoint timestamps are out of order")
         self.nostr_checkpoint_policy_ids[relay_key] = policy_id
 
-    def _inspect_public_study_row(
+    def _inspect_mastodon_checkpoint_row(
         self, block: CopyBlock, fields: list[bytes]
     ) -> None:
+        if not self.mastodon_public_hashtag_present:
+            raise SanitizationError(
+                "dump contains Mastodon checkpoints without the exact table set"
+            )
+        self.mastodon_checkpoint_rows += 1
+        if self.mastodon_checkpoint_rows > len(MASTODON_TAG_KEYS):
+            raise SanitizationError(
+                "Mastodon checkpoints must contain exactly seven rows"
+            )
+        indexes = block.column_indexes
+        policy_id = _canonical_uuid(
+            fields[indexes["source_policy_id"]], field="Mastodon checkpoint policy id"
+        )
+        if policy_id != self.preflight_mastodon_policy_id:
+            raise SanitizationError(
+                "Mastodon checkpoint does not use the exact preflight policy"
+            )
+        instance_key = _plain_copy_text(
+            fields[indexes["instance_key"]], field="Mastodon checkpoint instance key"
+        ).encode("utf-8")
+        if instance_key != MASTODON_SOURCE_KEY:
+            raise SanitizationError("Mastodon checkpoint instance key drifted")
+        tag_key = _plain_copy_text(
+            fields[indexes["tag_key"]], field="Mastodon checkpoint tag key"
+        ).encode("ascii")
+        if tag_key not in MASTODON_TAG_KEYS:
+            raise SanitizationError("Mastodon checkpoint tag key is not approved")
+        if tag_key in self.mastodon_checkpoint_tag_keys:
+            raise SanitizationError("Mastodon checkpoint tag keys must be unique")
+        self.mastodon_checkpoint_tag_keys.add(tag_key)
+        _mastodon_status_id_copy(
+            fields[indexes["last_status_id"]],
+            field="Mastodon checkpoint last_status_id",
+        )
+        last_collected = fields[indexes["last_collected_at"]]
+        if last_collected != b"\\N":
+            _utc_copy_timestamp(
+                last_collected, field="Mastodon checkpoint last_collected_at"
+            )
+        if fields[indexes["incomplete"]] not in {b"t", b"f"}:
+            raise SanitizationError("Mastodon checkpoint incomplete must be boolean")
+        for column in (
+            "requests_seen_total",
+            "statuses_seen_total",
+            "bytes_seen_total",
+            "candidates_seen_total",
+        ):
+            _copy_nonnegative_bigint(
+                fields[indexes[column]], field=f"Mastodon checkpoint {column}"
+            )
+        if fields[indexes["is_demo"]] != b"f":
+            raise SanitizationError("Mastodon checkpoint is_demo must be false")
+        created_at = _utc_copy_timestamp(
+            fields[indexes["created_at"]], field="Mastodon checkpoint created_at"
+        )
+        updated_at = _utc_copy_timestamp(
+            fields[indexes["updated_at"]], field="Mastodon checkpoint updated_at"
+        )
+        if updated_at < created_at:
+            raise SanitizationError("Mastodon checkpoint timestamps are out of order")
+
+    def _inspect_mastodon_cooldown_row(
+        self, block: CopyBlock, fields: list[bytes]
+    ) -> None:
+        if not self.mastodon_public_hashtag_present:
+            raise SanitizationError(
+                "dump contains Mastodon cooldowns without the exact table set"
+            )
+        self.mastodon_cooldown_rows += 1
+        if self.mastodon_cooldown_rows != 1:
+            raise SanitizationError("Mastodon cooldowns must contain exactly one row")
+        indexes = block.column_indexes
+        policy_id = _canonical_uuid(
+            fields[indexes["source_policy_id"]], field="Mastodon cooldown policy id"
+        )
+        if policy_id != self.preflight_mastodon_policy_id:
+            raise SanitizationError(
+                "Mastodon cooldown does not use the exact preflight policy"
+            )
+        instance_key = _plain_copy_text(
+            fields[indexes["instance_key"]], field="Mastodon cooldown instance key"
+        ).encode("utf-8")
+        if instance_key != MASTODON_SOURCE_KEY:
+            raise SanitizationError("Mastodon cooldown instance key drifted")
+        _utc_copy_timestamp(
+            fields[indexes["cooldown_until"]], field="Mastodon cooldown cooldown_until"
+        )
+        if fields[indexes["is_demo"]] != b"f":
+            raise SanitizationError("Mastodon cooldown is_demo must be false")
+        created_at = _utc_copy_timestamp(
+            fields[indexes["created_at"]], field="Mastodon cooldown created_at"
+        )
+        updated_at = _utc_copy_timestamp(
+            fields[indexes["updated_at"]], field="Mastodon cooldown updated_at"
+        )
+        if updated_at < created_at:
+            raise SanitizationError("Mastodon cooldown timestamps are out of order")
+
+    def _inspect_public_study_row(self, block: CopyBlock, fields: list[bytes]) -> None:
         indexes = block.column_indexes
         study_key_value = fields[indexes["study_key"]]
         _plain_copy_text(study_key_value, field="public-study key")
         exact_fields = PUBLIC_STUDY_EXACT_FIELDS.get(study_key_value)
         source_key = PUBLIC_STUDY_POLICY_SOURCE_KEY.get(study_key_value)
         expected_observed_at = PUBLIC_STUDY_OBSERVED_AT.get(study_key_value)
-        if (
-            exact_fields is None
-            or source_key is None
-            or expected_observed_at is None
-        ):
-            raise SanitizationError("public-study ledger contains an unapproved study key")
+        if exact_fields is None or source_key is None or expected_observed_at is None:
+            raise SanitizationError(
+                "public-study ledger contains an unapproved study key"
+            )
         if study_key_value in self.public_study_rows:
-            raise SanitizationError("public-study ledger contains a duplicate study key")
+            raise SanitizationError(
+                "public-study ledger contains a duplicate study key"
+            )
 
         for column, expected_value in exact_fields.items():
             actual_value = fields[indexes[column]]
@@ -1295,24 +1686,20 @@ class PlainBackupSanitizer:
                 )
             if not expected_present and count != 0:
                 raise SanitizationError(
-                    "unexpected retention-control COPY block: "
-                    f"{'.'.join(table)}"
+                    f"unexpected retention-control COPY block: {'.'.join(table)}"
                 )
 
         expected_create_count = int(self.expected[YOUTUBE_DISCOVERIES])
         if self.youtube_create_count != expected_create_count:
             if expected_create_count:
                 raise SanitizationError(
-                    "expected one UNLOGGED youtube_discoveries CREATE TABLE "
-                    "header"
+                    "expected one UNLOGGED youtube_discoveries CREATE TABLE header"
                 )
             raise SanitizationError(
                 "unexpected youtube_discoveries CREATE TABLE header"
             )
 
-        expected_public_create_count = int(
-            self.expected[PUBLIC_STUDY_OBSERVATIONS]
-        )
+        expected_public_create_count = int(self.expected[PUBLIC_STUDY_OBSERVATIONS])
         if self.public_study_create_count != expected_public_create_count:
             if expected_public_create_count:
                 raise SanitizationError(
@@ -1337,9 +1724,7 @@ class PlainBackupSanitizer:
                 "dump must contain one exact TCGdex catalog source policy"
             )
         expected_bluesky_policy_ids = (
-            [self.preflight_bluesky_policy_id]
-            if self.bluesky_jetstream_present
-            else []
+            [self.preflight_bluesky_policy_id] if self.bluesky_jetstream_present else []
         )
         if self.bluesky_policy_ids != expected_bluesky_policy_ids:
             raise SanitizationError(
@@ -1358,7 +1743,10 @@ class PlainBackupSanitizer:
             )
         if self.nostr_relay_present:
             for index, source_key in enumerate(NOSTR_SOURCE_KEYS):
-                if self.nostr_policy_ids[source_key][0] != self.preflight_nostr_policy_ids[index]:
+                if (
+                    self.nostr_policy_ids[source_key][0]
+                    != self.preflight_nostr_policy_ids[index]
+                ):
                     raise SanitizationError(
                         "dump Nostr policies do not match the database preflight"
                     )
@@ -1373,6 +1761,32 @@ class PlainBackupSanitizer:
         ):
             raise SanitizationError(
                 "dump Nostr checkpoint does not contain every approved relay"
+            )
+        expected_mastodon_policy_ids = (
+            [self.preflight_mastodon_policy_id]
+            if self.mastodon_public_hashtag_present
+            else []
+        )
+        if self.mastodon_policy_ids != expected_mastodon_policy_ids:
+            raise SanitizationError(
+                "dump Mastodon policy does not match the database preflight"
+            )
+        if self.mastodon_checkpoint_rows != (
+            len(MASTODON_TAG_KEYS) if self.mastodon_public_hashtag_present else 0
+        ):
+            raise SanitizationError(
+                "dump Mastodon checkpoint does not match the database preflight"
+            )
+        if self.mastodon_public_hashtag_present and (
+            self.mastodon_checkpoint_tag_keys != set(MASTODON_TAG_KEYS)
+            or self.mastodon_cooldown_rows != 1
+        ):
+            raise SanitizationError(
+                "dump Mastodon checkpoint/cooldown set is not exact"
+            )
+        if not self.mastodon_public_hashtag_present and self.mastodon_cooldown_rows:
+            raise SanitizationError(
+                "dump contains Mastodon cooldown without the exact table set"
             )
         expected_public_policy_rows = int(self.expected[PUBLIC_STUDY_OBSERVATIONS])
         if any(
@@ -1391,7 +1805,7 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "public-study source policies must use distinct UUIDs"
             )
-        for _study_key, (source_key, policy_id) in self.public_study_rows.items():
+        for source_key, policy_id in self.public_study_rows.values():
             if self.public_study_policy_ids[source_key] != [policy_id]:
                 raise SanitizationError(
                     "public-study ledger row does not use its exact source policy"
@@ -1410,6 +1824,7 @@ class PlainBackupSanitizer:
 
     def _scan(self, source: BinaryIO, spool: BinaryIO) -> None:
         block: CopyBlock | None = None
+        sql_lex_state = SqlLexState()
         for line in source:
             spool.write(line)
             if block is not None:
@@ -1417,6 +1832,10 @@ class PlainBackupSanitizer:
                     block = None
                     continue
                 self._inspect_control_row(block, line)
+                continue
+
+            if sql_lex_state.mode != "normal":
+                _advance_sql_lex_state(line, sql_lex_state)
                 continue
 
             if self.request_gates_create_lines is not None:
@@ -1444,6 +1863,13 @@ class PlainBackupSanitizer:
 
             header = parse_copy_header(line)
             if header is not None:
+                if (
+                    len(header.table) == 1
+                    and header.table[0] in UNQUALIFIED_TARGET_TABLES
+                ):
+                    raise SanitizationError(
+                        "retention-control COPY targets must be schema-qualified"
+                    )
                 if header.table == SOURCE_REQUEST_GATES:
                     raise SanitizationError(
                         "source_request_gates data must be excluded by pg_dump"
@@ -1505,9 +1931,12 @@ class PlainBackupSanitizer:
                 raise SanitizationError(
                     "retention-control table data must use COPY FROM stdin"
                 )
+            _advance_sql_lex_state(line, sql_lex_state)
 
         if block is not None:
             raise SanitizationError("unterminated COPY data block")
+        if sql_lex_state.mode != "normal":
+            raise SanitizationError("unterminated SQL quoted body or comment")
         if self.request_gates_create_lines is not None:
             raise SanitizationError("unterminated source_request_gates CREATE TABLE")
         if self.public_study_create_lines is not None:
@@ -1535,9 +1964,7 @@ class PlainBackupSanitizer:
 
             header = parse_copy_header(line)
             if header is not None:
-                block = CopyBlock(
-                    header=header, column_indexes=_column_indexes(header)
-                )
+                block = CopyBlock(header=header, column_indexes=_column_indexes(header))
             if _normalize_sql((line,)) == REQUEST_GATES_ENABLE_RLS:
                 destination.write(
                     b"\n-- Canonical idle request gates; live lease ownership is not retained.\n"
@@ -1552,10 +1979,11 @@ class PlainBackupSanitizer:
                     destination.writelines(
                         source_key + b"\n" for source_key in NOSTR_SOURCE_KEYS
                     )
+                if self.mastodon_public_hashtag_present:
+                    destination.write(MASTODON_SOURCE_KEY + b"\n")
                 if self.expected[PUBLIC_STUDY_OBSERVATIONS]:
                     destination.writelines(
-                        source_key + b"\n"
-                        for source_key in PUBLIC_STUDY_SOURCE_KEYS
+                        source_key + b"\n" for source_key in PUBLIC_STUDY_SOURCE_KEYS
                     )
                 destination.write(b"\\.\n\n")
                 gate_seed_written = True
@@ -1584,7 +2012,7 @@ class PlainBackupSanitizer:
 def parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
-            "Remove disposable YouTube and private Bluesky/Nostr activity rows from a plain dump."
+            "Remove disposable YouTube and private Bluesky/Nostr/Mastodon activity rows from a plain dump."
         )
     )
     presence = ("present", "absent")
@@ -1595,8 +2023,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     # Kept optional for compatibility with pre-Nostr backup invocations.  The
     # current backup script always supplies this state explicitly.
     parser.add_argument("--nostr-relay", choices=presence, default="absent")
+    parser.add_argument("--mastodon-public-hashtag", choices=presence, default="absent")
     parser.add_argument("--youtube-policy-id")
     parser.add_argument("--bluesky-policy-id")
+    parser.add_argument("--mastodon-policy-id")
     parser.add_argument(
         "--nostr-policy-id",
         action="append",
@@ -1619,6 +2049,8 @@ def main(argv: list[str] | None = None) -> int:
             bluesky_policy_id=args.bluesky_policy_id,
             nostr_relay_present=args.nostr_relay == "present",
             nostr_policy_ids=tuple(args.nostr_policy_ids),
+            mastodon_public_hashtag_present=args.mastodon_public_hashtag == "present",
+            mastodon_policy_id=args.mastodon_policy_id,
         )
         sanitizer.sanitize(sys.stdin.buffer, sys.stdout.buffer)
     except (SanitizationError, UnicodeEncodeError) as exc:

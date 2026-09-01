@@ -21,6 +21,42 @@ begin
     create role pokecrack_authorized_opening_reviewer
       nosuperuser nologin noinherit nocreatedb nocreaterole noreplication
       nobypassrls connection limit -1;
+
+    select roles.oid
+    into reviewer_oid
+    from pg_catalog.pg_roles as roles
+    where roles.rolname = 'pokecrack_authorized_opening_reviewer';
+
+    -- PostgreSQL only creates the creator-admin membership automatically for
+    -- a non-superuser CREATEROLE actor. Local reset runners commonly execute
+    -- as a superuser, so provision the same reviewed edge explicitly when it
+    -- is absent instead of making fresh-install behavior actor-dependent.
+    if exists (
+      select 1
+      from pg_catalog.pg_auth_members as memberships
+      where memberships.roleid = reviewer_oid
+        and memberships.member = 'postgres'::regrole
+        and not (
+          memberships.admin_option
+          and not memberships.inherit_option
+          and not memberships.set_option
+        )
+    ) then
+      raise exception using
+        errcode = '55000',
+        message = 'fresh authorized opening reviewer creator edge is not isolated';
+    end if;
+
+    if not exists (
+      select 1
+      from pg_catalog.pg_auth_members as memberships
+      where memberships.roleid = reviewer_oid
+        and memberships.member = 'postgres'::regrole
+    ) then
+      grant pokecrack_authorized_opening_reviewer
+        to postgres
+        with admin true, inherit false, set false;
+    end if;
   else
     select
       roles.oid,
@@ -49,10 +85,11 @@ begin
     from pg_catalog.pg_auth_members as memberships
     where memberships.roleid = reviewer_oid;
 
-    -- PostgreSQL 17 records the creating postgres role as an ADMIN-only edge
-    -- with neither INHERIT nor SET.  That creator edge is required and is not
-    -- a reviewer login.  At most one separate NOINHERIT login may receive the
-    -- capability through SET ROLE, without admin or any second membership.
+    -- The reviewed postgres creator edge is required and is not a reviewer
+    -- login. Fresh installs provision it above when the migration actor does
+    -- not receive it automatically. At most one separate NOINHERIT login may
+    -- receive the capability through SET ROLE, without admin or any second
+    -- membership.
     select count(*)::integer
     into role_creator_membership_count
     from pg_catalog.pg_auth_members as memberships
@@ -466,7 +503,7 @@ create table ingest.authorized_opening_submissions (
   ),
   constraint authorized_opening_discovery_check check (
     discovery_platform is null
-    or discovery_platform in ('youtube', 'bluesky', 'nostr', 'direct')
+    or discovery_platform in ('youtube', 'bluesky', 'nostr', 'mastodon', 'direct')
   ),
   constraint authorized_opening_candidate_check check (
     discovery_candidate_sha256 is null
@@ -474,7 +511,7 @@ create table ingest.authorized_opening_submissions (
       discovery_platform is not null
       and
       discovery_candidate_sha256 ~ '^[0-9a-f]{64}$'
-      and discovery_platform in ('youtube', 'bluesky', 'nostr')
+      and discovery_platform in ('youtube', 'bluesky', 'nostr', 'mastodon')
     )
   ),
   constraint authorized_opening_private_hashes_check check (
@@ -647,7 +684,7 @@ create table ingest.authorized_opening_observations (
   accepted_at timestamptz not null default statement_timestamp(),
   constraint authorized_opening_observation_discovery_check check (
     discovery_platform is null
-    or discovery_platform in ('youtube', 'bluesky', 'nostr', 'direct')
+    or discovery_platform in ('youtube', 'bluesky', 'nostr', 'mastodon', 'direct')
   ),
   constraint authorized_opening_observation_candidate_check check (
     discovery_candidate_sha256 is null
@@ -655,7 +692,7 @@ create table ingest.authorized_opening_observations (
       discovery_platform is not null
       and
       discovery_candidate_sha256 ~ '^[0-9a-f]{64}$'
-      and discovery_platform in ('youtube', 'bluesky', 'nostr')
+      and discovery_platform in ('youtube', 'bluesky', 'nostr', 'mastodon')
     )
   ),
   constraint authorized_opening_observation_hashes_check check (
@@ -843,7 +880,7 @@ create trigger authorized_opening_retractions_immutable
 before update or delete on ingest.authorized_opening_retractions
 for each row execute function ingest.reject_authorized_opening_immutable_mutation_v1();
 
--- Remaining SECURITY DEFINER RPCs and v4 projection are defined below.
+-- Remaining SECURITY DEFINER reviewer RPCs are defined below.
 
 create or replace function ingest.submit_authorized_opening_v1(
   payload jsonb
@@ -961,14 +998,14 @@ begin
   end if;
 
   if discovery_platform is not null
-    and discovery_platform not in ('youtube', 'bluesky', 'nostr', 'direct')
+    and discovery_platform not in ('youtube', 'bluesky', 'nostr', 'mastodon', 'direct')
   then
     raise exception using errcode = '22023', message = 'discoveryPlatform is not allowed';
   end if;
   if discovery_candidate_sha256 is not null
     and (
       discovery_candidate_sha256 !~ '^[0-9a-f]{64}$'
-      or discovery_platform not in ('youtube', 'bluesky', 'nostr')
+      or discovery_platform not in ('youtube', 'bluesky', 'nostr', 'mastodon')
     )
   then
     raise exception using
@@ -1652,481 +1689,12 @@ revoke all on function ingest.retract_authorized_opening_v1(uuid, text, text)
 grant execute on function ingest.retract_authorized_opening_v1(uuid, text, text)
   to pokecrack_authorized_opening_reviewer;
 comment on function ingest.retract_authorized_opening_v1(uuid, text, text) is
-  'Reviewer-only append-only retraction ledger; public projections filter retracted observations without deleting history.';
+  'Reviewer-only append-only retraction ledger; any future projection must filter retracted observations without deleting history.';
 
-create or replace function public.get_public_dashboard_snapshot_v4()
-returns jsonb
-language sql
-stable
-security definer
-parallel restricted
-set search_path = pg_catalog
-as $dashboard$
-with base_snapshot as materialized (
-  select public.get_public_dashboard_snapshot_v3() as value
-),
-selected_period as (
-  select
-    (statement_timestamp() at time zone 'UTC')::date - 364 as period_start,
-    (statement_timestamp() at time zone 'UTC')::date as period_end
-),
-base_catalog_snapshot as (
-  select jsonb_build_object(
-    'source', base.value -> 'catalog' -> 'source',
-    'name', base.value -> 'catalog' -> 'name',
-    'language', base.value -> 'catalog' -> 'language',
-    'status', base.value -> 'catalog' -> 'status',
-    'setCount', base.value -> 'catalog' -> 'setCount',
-    'upstreamSetCount', base.value -> 'catalog' -> 'upstreamSetCount',
-    'lastCheckedAt', base.value -> 'catalog' -> 'lastCheckedAt',
-    'lastChangedAt', base.value -> 'catalog' -> 'lastChangedAt',
-    'revision', base.value -> 'catalog' -> 'revision',
-    'catalogOnly', base.value -> 'catalog' -> 'catalogOnly',
-    'sets', coalesce(
-      (
-        select jsonb_agg(
-          jsonb_build_object(
-            'id', sets.item -> 'id',
-            'slug', sets.item -> 'slug',
-            'name', sets.item -> 'name',
-            'series', sets.item -> 'series',
-            'releaseDate', sets.item -> 'releaseDate',
-            'language', sets.item -> 'language',
-            'current', sets.item -> 'current',
-            'refreshedAt', sets.item -> 'refreshedAt'
-          ) order by sets.ordinality
-        )
-        from jsonb_array_elements(
-          coalesce(base.value -> 'catalog' -> 'sets', '[]'::jsonb)
-        ) with ordinality as sets(item, ordinality)
-      ),
-      '[]'::jsonb
-    )
-  ) as value
-  from base_snapshot as base
-),
-authorized_rows as (
-  -- The unique provenance index already prevents duplicates. DISTINCT ON is
-  -- an additional fail-closed guard for repaired/imported legacy rows.
-  select distinct on (observations.provenance_dedupe_sha256)
-    observations.country_code,
-    observations.observed_at,
-    observations.accepted_at,
-    observations.pack_count,
-    observations.source_identity_sha256,
-    observations.tcgdex_set_id
-  from ingest.authorized_opening_observations as observations
-  join catalog.iso_alpha2_codes as countries
-    on countries.code = observations.country_code
-  join catalog.sets as sets
-    on sets.external_source = 'tcgdex'
-   and sets.external_id = observations.tcgdex_set_id
-   and sets.language = 'en'
-   and sets.is_active
-   and not sets.is_demo
-  join public.tcgdex_set_index as set_index
-    on set_index.set_id = sets.id
-   and set_index.language = 'en'
-   and set_index.is_current
-   and not set_index.is_demo
-  where observations.statistics_eligible
-    and (observations.observed_at at time zone 'UTC')::date
-      between (select period_start from selected_period)
-      and (select period_end from selected_period)
-    and not exists (
-      select 1
-      from ingest.authorized_opening_retractions as retractions
-      where retractions.accepted_observation_id = observations.id
-    )
-  order by observations.provenance_dedupe_sha256, observations.accepted_at desc, observations.id desc
-),
-authorized_country_metrics as (
-  select
-    rows.country_code,
-    countries.country_name,
-    period.period_start,
-    period.period_end,
-    sum(rows.pack_count)::bigint as observed_packs,
-    count(*)::bigint as complete_openings,
-    count(distinct rows.source_identity_sha256)::integer as independent_sources,
-    max(rows.accepted_at) as updated_at
-  from authorized_rows as rows
-  join catalog.iso_alpha2_codes as countries
-    on countries.code = rows.country_code
-  cross join selected_period as period
-  group by rows.country_code, countries.country_name, period.period_start, period.period_end
-),
-authorized_map_rows as (
-  select
-    metrics.country_code,
-    jsonb_build_object(
-      'countryCode', metrics.country_code,
-      'countryName', metrics.country_name,
-      'periodStart', metrics.period_start,
-      'periodEnd', metrics.period_end,
-      'setScope', 'all',
-      'productScope', 'all',
-      'metricKey', 'qualifying_hit_pack_rate',
-      'metricVersion', 'authorized-opening-v1',
-      'packsObserved', metrics.observed_packs,
-      'openings', metrics.complete_openings,
-      'independentSources', metrics.independent_sources,
-      'baselineRate', null,
-      'hitRate', null,
-      'posteriorMean', null,
-      'credibleInterval', null,
-      'deltaFromBaseline', null,
-      'state', case
-        when metrics.observed_packs < 30 or metrics.independent_sources < 3
-          then 'insufficient'
-        else 'pending'
-      end,
-      'sampleNote', case
-        when metrics.observed_packs < 30 or metrics.independent_sources < 3
-          then format(
-            'Rate withheld: %s observed packs across %s independent source%s. Publication requires at least 30 packs and three sources.',
-            metrics.observed_packs,
-            metrics.independent_sources,
-            case when metrics.independent_sources = 1 then '' else 's' end
-          )
-        else 'The evidence threshold is met, but the reviewed baseline and interval publisher has not completed; all inference fields remain withheld.'
-      end,
-      'methodologyVersion', 'authorized-opening-v1',
-      'updatedAt', metrics.updated_at
-    ) as item
-  from authorized_country_metrics as metrics
-),
-base_map_rows as (
-  select
-    cells.item ->> 'countryCode' as country_code,
-    jsonb_build_object(
-      'countryCode', cells.item -> 'countryCode',
-      'countryName', cells.item -> 'countryName',
-      'periodStart', cells.item -> 'periodStart',
-      'periodEnd', cells.item -> 'periodEnd',
-      'setScope', cells.item -> 'setScope',
-      'productScope', cells.item -> 'productScope',
-      'metricKey', cells.item -> 'metricKey',
-      'metricVersion', cells.item -> 'metricVersion',
-      'packsObserved', cells.item -> 'packsObserved',
-      'openings', cells.item -> 'openings',
-      'independentSources', cells.item -> 'independentSources',
-      'baselineRate', cells.item -> 'baselineRate',
-      'hitRate', cells.item -> 'hitRate',
-      'posteriorMean', cells.item -> 'posteriorMean',
-      'credibleInterval', cells.item -> 'credibleInterval',
-      'deltaFromBaseline', cells.item -> 'deltaFromBaseline',
-      'state', cells.item -> 'state',
-      'sampleNote', cells.item -> 'sampleNote',
-      'methodologyVersion', cells.item -> 'methodologyVersion',
-      'updatedAt', cells.item -> 'updatedAt'
-    ) as item,
-    3 as priority
-  from base_snapshot as base
-  cross join lateral jsonb_array_elements(
-    coalesce(base.value -> 'mapCells', '[]'::jsonb)
-  ) as cells(item)
-  where cells.item ->> 'countryCode' is not null
-),
-selected_map_rows as (
-  select distinct on (candidates.country_code)
-    candidates.country_code,
-    candidates.item
-  from (
-    select base.country_code, base.item, base.priority from base_map_rows as base
-    union all
-    select authorized.country_code, authorized.item, 2
-    from authorized_map_rows as authorized
-  ) as candidates
-  order by candidates.country_code, candidates.priority desc
-),
-public_map_snapshot as (
-  select
-    coalesce(
-      jsonb_agg(rows.item order by rows.item ->> 'countryName', rows.country_code),
-      '[]'::jsonb
-    ) as value,
-    count(*)::integer as country_count,
-    count(*) filter (where rows.item -> 'hitRate' <> 'null'::jsonb)::integer
-      as published_rate_count,
-    coalesce(sum((rows.item ->> 'packsObserved')::bigint), 0)::bigint
-      as observed_packs,
-    coalesce(sum((rows.item ->> 'openings')::bigint), 0)::bigint
-      as complete_openings,
-    coalesce(sum((rows.item ->> 'independentSources')::bigint), 0)::bigint
-      as source_country_contributions,
-    max((rows.item ->> 'updatedAt')::timestamptz) as as_of,
-    case
-      when count(distinct rows.item ->> 'methodologyVersion') = 1
-        then min(rows.item ->> 'methodologyVersion')
-      else null
-    end as methodology_version
-  from selected_map_rows as rows
-),
-authorized_set_metrics as (
-  select
-    sets.slug,
-    sets.name,
-    sets.series_name,
-    sets.release_date,
-    sum(rows.pack_count)::bigint as observed_packs,
-    count(*)::bigint as complete_openings,
-    count(distinct rows.source_identity_sha256)::integer as independent_sources,
-    max(rows.accepted_at) as updated_at
-  from authorized_rows as rows
-  join catalog.sets as sets
-    on sets.external_source = 'tcgdex'
-   and sets.external_id = rows.tcgdex_set_id
-   and sets.language = 'en'
-   and sets.is_active
-   and not sets.is_demo
-   and sets.series_name is not null
-   and sets.release_date is not null
-  group by sets.slug, sets.name, sets.series_name, sets.release_date
-  order by sets.release_date desc nulls last, sets.name, sets.slug
-  limit 100
-),
-base_set_rows as (
-  select
-    sets.item ->> 'slug' as slug,
-    jsonb_build_object(
-      'slug', sets.item -> 'slug',
-      'name', sets.item -> 'name',
-      'series', sets.item -> 'series',
-      'releaseDate', sets.item -> 'releaseDate',
-      'signal', sets.item -> 'signal',
-      'packsObserved', sets.item -> 'packsObserved',
-      'openings', sets.item -> 'openings',
-      'independentSources', sets.item -> 'independentSources',
-      'baselineRate', sets.item -> 'baselineRate',
-      'hitRate', sets.item -> 'hitRate',
-      'posteriorMean', sets.item -> 'posteriorMean',
-      'credibleInterval', sets.item -> 'credibleInterval',
-      'deltaFromBaseline', sets.item -> 'deltaFromBaseline',
-      'state', sets.item -> 'state',
-      'sampleNote', sets.item -> 'sampleNote',
-      'updatedAt', sets.item -> 'updatedAt'
-    ) as item,
-    2 as priority
-  from base_snapshot as base
-  cross join lateral jsonb_array_elements(
-    coalesce(base.value -> 'sets', '[]'::jsonb)
-  ) as sets(item)
-  where sets.item ->> 'slug' is not null
-),
-authorized_set_rows as (
-  select
-    metrics.slug,
-    jsonb_build_object(
-      'slug', metrics.slug,
-      'name', metrics.name,
-      'series', metrics.series_name,
-      'releaseDate', metrics.release_date,
-      'signal', case
-        when metrics.observed_packs < 30 or metrics.independent_sources < 3
-          then 'Rate withheld; the publication threshold is not met.'
-        else 'Publication pending; the reviewed baseline and interval are not available yet.'
-      end,
-      'packsObserved', metrics.observed_packs,
-      'openings', metrics.complete_openings,
-      'independentSources', metrics.independent_sources,
-      'baselineRate', null,
-      'hitRate', null,
-      'posteriorMean', null,
-      'credibleInterval', null,
-      'deltaFromBaseline', null,
-      'state', case
-        when metrics.observed_packs < 30 or metrics.independent_sources < 3
-          then 'insufficient'
-        else 'pending'
-      end,
-      'sampleNote', case
-        when metrics.observed_packs < 30 or metrics.independent_sources < 3
-          then format(
-            'Rate withheld: %s observed packs across %s independent source%s. Publication requires at least 30 packs and three sources.',
-            metrics.observed_packs,
-            metrics.independent_sources,
-            case when metrics.independent_sources = 1 then '' else 's' end
-          )
-        else 'The evidence threshold is met, but the reviewed baseline and interval publisher has not completed; all inference fields remain withheld.'
-      end,
-      'updatedAt', metrics.updated_at
-    ) as item,
-    1 as priority
-  from authorized_set_metrics as metrics
-),
-selected_set_rows as (
-  select distinct on (candidates.slug)
-    candidates.slug,
-    candidates.item
-  from (
-    select base.slug, base.item, base.priority from base_set_rows as base
-    union all
-    select authorized.slug, authorized.item, authorized.priority
-    from authorized_set_rows as authorized
-  ) as candidates
-  order by candidates.slug, candidates.priority desc
-),
-public_sets_snapshot as (
-  select coalesce(
-    jsonb_agg(rows.item order by rows.item ->> 'releaseDate' desc nulls last, rows.item ->> 'name', rows.slug),
-    '[]'::jsonb
-  ) as value,
-  count(*)::integer as row_count
-  from selected_set_rows as rows
-),
-public_regions_snapshot as (
-  select coalesce(
-    jsonb_agg(
-      jsonb_build_object(
-        'slug', lower(rows.item ->> 'countryCode'),
-        'name', rows.item ->> 'countryName',
-        'countryCode', rows.item ->> 'countryCode',
-        'coverage', format(
-          '%s observed packs from %s independent source%s in the current global period.',
-          rows.item ->> 'packsObserved',
-          rows.item ->> 'independentSources',
-          case when (rows.item ->> 'independentSources')::integer = 1 then '' else 's' end
-        ),
-        'packsObserved', rows.item -> 'packsObserved',
-        'openings', rows.item -> 'openings',
-        'independentSources', rows.item -> 'independentSources',
-        'baselineRate', rows.item -> 'baselineRate',
-        'hitRate', rows.item -> 'hitRate',
-        'posteriorMean', rows.item -> 'posteriorMean',
-        'credibleInterval', rows.item -> 'credibleInterval',
-        'deltaFromBaseline', rows.item -> 'deltaFromBaseline',
-        'state', rows.item ->> 'state',
-        'sampleNote', rows.item ->> 'sampleNote',
-        'updatedAt', rows.item ->> 'updatedAt'
-      ) order by rows.item ->> 'countryName', rows.country_code
-    ),
-    '[]'::jsonb
-  ) as value
-  from selected_map_rows as rows
-),
-public_sources_snapshot as (
-  select coalesce(
-    jsonb_agg(
-      jsonb_build_object(
-        'id', sources.item -> 'id',
-        'name', sources.item -> 'name',
-        'kind', sources.item -> 'kind',
-        'access', sources.item -> 'access',
-        'status', sources.item -> 'status',
-        'lastCollectedAt', sources.item -> 'lastCollectedAt',
-        'url', sources.item -> 'url',
-        'note', sources.item -> 'note'
-      ) order by sources.ordinality
-    ),
-    '[]'::jsonb
-  ) as value
-  from base_snapshot as base
-  cross join lateral jsonb_array_elements(
-    coalesce(base.value -> 'sources', '[]'::jsonb)
-  ) with ordinality as sources(item, ordinality)
-),
-public_services_snapshot as (
-  select coalesce(
-    jsonb_agg(
-      jsonb_build_object(
-        'id', services.item -> 'id',
-        'name', services.item -> 'name',
-        'status', services.item -> 'status',
-        'detail', services.item -> 'detail',
-        'checkedAt', services.item -> 'checkedAt'
-      ) order by services.ordinality
-    ),
-    '[]'::jsonb
-  ) as value
-  from base_snapshot as base
-  cross join lateral jsonb_array_elements(
-    coalesce(base.value -> 'services', '[]'::jsonb)
-  ) with ordinality as services(item, ordinality)
-),
-snapshot as (
-  select
-    jsonb_build_object(
-      -- v4 is deliberately assembled from this explicit public allowlist;
-      -- no future v3 key can cross the boundary by being copied wholesale.
-      'schemaVersion', '2.0.0',
-      'mode', 'live',
-      'generatedAt', to_jsonb(statement_timestamp()),
-      'summary', jsonb_build_object(
-        'observedPacks', map.observed_packs,
-        'completeOpenings', map.complete_openings,
-        'aiValidatedSources', 0,
-        'trackedSets', sets.row_count,
-        'trackedRegions', map.country_count,
-        'batchSightings', 0,
-        'baselineHitRate', null,
-        'globalCoverage', case
-          when map.country_count = 0
-            then 'No verified current-period country observations are published yet.'
-          else format(
-            '%s countries have verified observations in the current global period; %s publish a rate.',
-            map.country_count,
-            map.published_rate_count
-          )
-        end,
-        'methodologyVersion', coalesce(map.methodology_version, 'global-observation-v1')
-      ),
-      'catalog', catalog.value,
-      'observations', jsonb_build_object(
-        'status', case
-          when map.country_count = 0 then 'empty'
-          when map.published_rate_count = 0 then 'collecting'
-          else 'published'
-        end,
-        'period', case
-          when map.country_count = 0 then null
-          else jsonb_build_object(
-            'start', period.period_start,
-            'end', period.period_end
-          )
-        end,
-        'observedPacks', map.observed_packs,
-        'completeOpenings', map.complete_openings,
-        'independentSources', null,
-        'sourceCountryContributions', map.source_country_contributions,
-        'countriesObserved', map.country_count,
-        'countriesWithPublishedRate', map.published_rate_count,
-        'asOf', map.as_of,
-        'methodologyVersion', map.methodology_version,
-        'minimumPacks', 30,
-        'minimumSources', 3,
-        'watchMinimumPacks', 200,
-        'metricKey', 'qualifying_hit_pack_rate'
-      ),
-      'mapCells', map.value,
-      'sets', sets.value,
-      'regions', regions.value,
-      'retailers', '[]'::jsonb,
-      'batches', '[]'::jsonb,
-      'trend', '[]'::jsonb,
-      'sources', sources.value,
-      'services', services.value,
-      'recentActivity', '[]'::jsonb
-    ) as value
-  from base_catalog_snapshot as catalog
-  cross join selected_period as period
-  cross join public_map_snapshot as map
-  cross join public_sets_snapshot as sets
-  cross join public_regions_snapshot as regions
-  cross join public_sources_snapshot as sources
-  cross join public_services_snapshot as services
-)
-select snapshot.value
-from snapshot;
-$dashboard$;
-
-alter function public.get_public_dashboard_snapshot_v4() owner to postgres;
-revoke all on function public.get_public_dashboard_snapshot_v4()
-  from public, anon, authenticated, service_role;
-grant execute on function public.get_public_dashboard_snapshot_v4()
-  to anon, authenticated;
-comment on function public.get_public_dashboard_snapshot_v4() is
-  'Counts-only public dashboard snapshot that adds non-retracted authorized observations while withholding every private identifier, numerator, reviewer field, rate, and inference value.';
+-- Accepted observations remain private in this boundary migration. Publishing
+-- their counts into the global map requires a separate aggregate contract that
+-- can reconcile identities with the existing reviewed-study ledger without
+-- double-counting sources or invalidating an already-published inference tuple.
 
 -- The reviewer role can reach only its three SECURITY DEFINER entry points.
 -- It deliberately has no table privileges, no submit privilege, and no login.
