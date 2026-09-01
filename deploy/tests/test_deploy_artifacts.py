@@ -781,6 +781,24 @@ class NostrPreflightTests(unittest.TestCase):
 
 
 class BackupScriptTests(unittest.TestCase):
+    def test_pg_dump_scope_is_exactly_the_application_schemas_and_ledger(
+        self,
+    ) -> None:
+        script = (DEPLOY_ROOT / "scripts" / "backup.sh").read_text(
+            encoding="utf-8"
+        )
+        invocation = script.split("if ! run_database_command pg_dump \\\n", 1)[1]
+        invocation = invocation.split("  | python3 ", 1)[0]
+
+        self.assertNotIn("--role=service_role", invocation)
+        self.assertIn("--strict-names", invocation)
+        self.assertEqual(
+            re.findall(r"--schema=([a-z_]+)", invocation),
+            ["catalog", "ingest", "analytics", "public", "supabase_migrations"],
+        )
+        for provider_schema in ("auth", "storage", "realtime", "extensions"):
+            self.assertNotIn(f"--schema={provider_schema}", invocation)
+
     @staticmethod
     def gate_schema_dump(*, youtube: bool = True) -> bytes:
         source_constraint = (
@@ -1087,6 +1105,14 @@ set -Eeuo pipefail
 [[ ${PGCONNECT_TIMEOUT:-} == '7' ]]
 [[ ${PGAPPNAME:-} == 'pokecrack-backup' ]]
 role_argument_count=0
+strict_names_count=0
+schema_argument_count=0
+catalog_schema_count=0
+ingest_schema_count=0
+analytics_schema_count=0
+public_schema_count=0
+migration_schema_count=0
+provider_schema_count=0
 gate_exclusion_count=0
 bluesky_candidate_exclusion_count=0
 bluesky_observation_exclusion_count=0
@@ -1098,6 +1124,22 @@ for argument in "$@"; do
   [[ $argument != *'very-secret'* ]]
   if [[ $argument == '--role=service_role' ]]; then
     role_argument_count=$((role_argument_count + 1))
+  fi
+  if [[ $argument == '--strict-names' ]]; then
+    strict_names_count=$((strict_names_count + 1))
+  fi
+  if [[ $argument == --schema=* ]]; then
+    schema_argument_count=$((schema_argument_count + 1))
+    case "$argument" in
+      --schema=catalog) catalog_schema_count=$((catalog_schema_count + 1)) ;;
+      --schema=ingest) ingest_schema_count=$((ingest_schema_count + 1)) ;;
+      --schema=analytics) analytics_schema_count=$((analytics_schema_count + 1)) ;;
+      --schema=public) public_schema_count=$((public_schema_count + 1)) ;;
+      --schema=supabase_migrations) migration_schema_count=$((migration_schema_count + 1)) ;;
+      --schema=auth|--schema=storage|--schema=realtime|--schema=extensions)
+        provider_schema_count=$((provider_schema_count + 1))
+        ;;
+    esac
   fi
   if [[ $argument == '--exclude-table-data=ingest.source_request_gates' ]]; then
     gate_exclusion_count=$((gate_exclusion_count + 1))
@@ -1121,7 +1163,15 @@ for argument in "$@"; do
     mastodon_observation_exclusion_count=$((mastodon_observation_exclusion_count + 1))
   fi
 done
-[[ $role_argument_count == 1 ]]
+[[ $role_argument_count == 0 ]]
+[[ $strict_names_count == 1 ]]
+[[ $schema_argument_count == 5 ]]
+[[ $catalog_schema_count == 1 ]]
+[[ $ingest_schema_count == 1 ]]
+[[ $analytics_schema_count == 1 ]]
+[[ $public_schema_count == 1 ]]
+[[ $migration_schema_count == 1 ]]
+[[ $provider_schema_count == 0 ]]
 [[ $gate_exclusion_count == 1 ]]
 [[ $bluesky_candidate_exclusion_count == 1 ]]
 [[ $bluesky_observation_exclusion_count == 1 ]]
