@@ -466,7 +466,11 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("grants.is_grantable", attestation)
         self.assertIn("bool_and(grants.grantee = grants.relowner)", attestation)
         self.assertIn("'maintain'", attestation)
-        self.assertIn("memberships.member <> roles.login_oid", attestation)
+        self.assertEqual(
+            attestation.count("memberships.member = 'postgres'::regrole"), 2
+        )
+        self.assertIn("memberships.admin_option", attestation)
+        self.assertIn("not memberships.set_option", attestation)
         self.assertIn("memberships.roleid <> roles.group_oid", attestation)
         self.assertIn(
             "grant execute on function ingest.verify_nostr_release_v2() to pokecrack_nostr_attestor",

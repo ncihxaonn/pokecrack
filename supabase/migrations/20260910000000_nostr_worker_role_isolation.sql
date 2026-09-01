@@ -1440,26 +1440,27 @@ select base_contract.payload || jsonb_build_object(
     (select count(*) = 1
       and count(*) filter (where group_valid and login_valid) = 1
       from attestor_roles)
-    and (select count(*) = 1
-      and bool_and(
-        not memberships.admin_option
+    and (select count(*) = 2
+      and count(*) filter (
+        where memberships.member = roles.login_oid
+          and not memberships.admin_option
           and not memberships.inherit_option
           and memberships.set_option
-      )
+      ) = 1
+      and count(*) filter (
+        where memberships.member = 'postgres'::regrole
+          and memberships.admin_option
+          and not memberships.inherit_option
+          and not memberships.set_option
+      ) = 1
       from pg_catalog.pg_auth_members as memberships
-      join attestor_roles as roles on roles.group_oid = memberships.roleid
-      where memberships.member = roles.login_oid)
+      cross join attestor_roles as roles
+      where memberships.roleid = roles.group_oid)
     and not exists (
       select 1
       from pg_catalog.pg_auth_members as memberships
       join attestor_roles as roles on roles.login_oid = memberships.member
       where memberships.roleid <> roles.group_oid
-    )
-    and not exists (
-      select 1
-      from pg_catalog.pg_auth_members as memberships
-      join attestor_roles as roles on roles.group_oid = memberships.roleid
-      where memberships.member <> roles.login_oid
     )
     and not exists (
       select 1
@@ -1592,26 +1593,27 @@ select base_contract.payload || jsonb_build_object(
     (select count(*) = 1
       and count(*) filter (where group_valid and login_valid) = 1
       from worker_roles)
-    and (select count(*) = 1
-      and bool_and(
-        not memberships.admin_option
+    and (select count(*) = 2
+      and count(*) filter (
+        where memberships.member = roles.login_oid
+          and not memberships.admin_option
           and not memberships.inherit_option
           and memberships.set_option
-      )
+      ) = 1
+      and count(*) filter (
+        where memberships.member = 'postgres'::regrole
+          and memberships.admin_option
+          and not memberships.inherit_option
+          and not memberships.set_option
+      ) = 1
       from pg_catalog.pg_auth_members as memberships
-      join worker_roles as roles on roles.group_oid = memberships.roleid
-      where memberships.member = roles.login_oid)
+      cross join worker_roles as roles
+      where memberships.roleid = roles.group_oid)
     and not exists (
       select 1
       from pg_catalog.pg_auth_members as memberships
       join worker_roles as roles on roles.login_oid = memberships.member
       where memberships.roleid <> roles.group_oid
-    )
-    and not exists (
-      select 1
-      from pg_catalog.pg_auth_members as memberships
-      join worker_roles as roles on roles.group_oid = memberships.roleid
-      where memberships.member <> roles.login_oid
     )
     and not exists (
       select 1
