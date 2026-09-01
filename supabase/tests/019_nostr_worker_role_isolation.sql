@@ -393,9 +393,19 @@ select ok(
   'worker and service roles have no column or identity-sequence capability'
 );
 
-select ok(
-  (select count(*) = 15 and bool_and(value = 'true'::jsonb)
-   from jsonb_each(ingest.verify_nostr_release_v2())),
+select is(
+  jsonb_object_length(ingest.verify_nostr_release_v2()),
+  15,
+  'the hosted release contract exposes the exact readiness-key count'
+);
+select is(
+  (select coalesce(
+     jsonb_object_agg(contract.key, contract.value)
+       filter (where contract.value <> 'true'::jsonb),
+     '{}'::jsonb
+   )
+   from jsonb_each(ingest.verify_nostr_release_v2()) as contract),
+  '{}'::jsonb,
   'the exact hosted release contract is ready with both dedicated logins'
 );
 
@@ -420,7 +430,9 @@ alter role pokecrack_nostr_worker_login reset statement_timeout;
 create table public.nostr_worker_owned_probe(id integer);
 grant pokecrack_nostr_worker_login to current_user
   with inherit true, set true;
+grant create on schema public to pokecrack_nostr_worker_login;
 alter table public.nostr_worker_owned_probe owner to pokecrack_nostr_worker_login;
+revoke create on schema public from pokecrack_nostr_worker_login;
 revoke pokecrack_nostr_worker_login from current_user;
 select is(
   ingest.verify_nostr_release_v2() -> 'nostr_worker_role_exact',
