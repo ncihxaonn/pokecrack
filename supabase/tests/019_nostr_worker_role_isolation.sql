@@ -394,8 +394,9 @@ select ok(
 );
 
 select is(
-  jsonb_object_length(ingest.verify_nostr_release_v2()),
-  15,
+  (select count(*)
+   from jsonb_object_keys(ingest.verify_nostr_release_v2())),
+  15::bigint,
   'the hosted release contract exposes the exact readiness-key count'
 );
 select is(
