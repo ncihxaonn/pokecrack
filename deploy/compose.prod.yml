@@ -79,6 +79,14 @@ services:
     profiles: ["nostr"]
     <<: *worker-base
     command: ["nostr-collector"]
+    # The reviewed NOINHERIT login uses the project's direct PostgreSQL
+    # endpoint so libpq can apply the fixed startup SET ROLE option. Supabase's
+    # pooler strips that option, and the direct endpoint is IPv6-only for this
+    # project. Keep that reachability on a dedicated bridge instead of giving
+    # the collector host networking or widening the shared worker network.
+    networks:
+      - internal
+      - nostr-egress
     environment:
       DATA_MODE: "${DATA_MODE:-demo}"
       LOG_LEVEL: "${LOG_LEVEL:-INFO}"
@@ -286,6 +294,12 @@ networks:
     internal: true
   egress:
     driver: bridge
+  nostr-egress:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: fd12:706f:6b65::/64
 
 volumes:
   browser_profiles:
