@@ -43,7 +43,7 @@ select is(
   (select min_delay_seconds
    from ingest.source_policies
    where source_key = 'mastodon_social'),
-  2,
+  2::numeric,
   'the fixed public health contract retains the two-second Mastodon delay'
 );
 select is(
