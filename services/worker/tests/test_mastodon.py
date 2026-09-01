@@ -398,12 +398,10 @@ def test_link_cursor_requires_same_origin_exact_limit_and_forward_progress() -> 
 
 def test_link_forward_cursor_progresses_across_pages_and_stops_replay() -> None:
     first_url = (
-        "https://mastodon.social/api/v1/timelines/tag/pokemontcg?"
-        "limit=40&min_id=opaque-forward-one"
+        "https://mastodon.social/api/v1/timelines/tag/pokemontcg?limit=40&min_id=opaque-forward-one"
     )
     second_url = (
-        "https://mastodon.social/api/v1/timelines/tag/pokemontcg?"
-        "limit=40&min_id=opaque-forward-two"
+        "https://mastodon.social/api/v1/timelines/tag/pokemontcg?limit=40&min_id=opaque-forward-two"
     )
     collector, transport = _collector(
         _response(_preflight_payload()),
