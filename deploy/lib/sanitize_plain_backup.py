@@ -101,6 +101,7 @@ PUBLIC_STUDY_SOURCE_KEYS = (
 )
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
+DOLLAR_QUOTE_TAG = re.compile(rb"\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$")
 TARGET_INSERT = re.compile(
     r'^\s*INSERT\s+INTO\s+(?:ingest|"ingest")\.'
     r'(?:source_policies|"source_policies"|'
@@ -119,6 +120,36 @@ TARGET_INSERT = re.compile(
     r'source_request_gates|"source_request_gates")(?:\s|\()',
     re.IGNORECASE,
 )
+
+
+def _advance_dollar_quote_state(
+    line: bytes, active_tag: bytes | None
+) -> bytes | None:
+    """Track PostgreSQL dollar-quoted strings without inspecting their body.
+
+    ``pg_dump`` emits function definitions as dollar-quoted SQL. Statements in
+    those bodies are schema text, not row data, so the top-level INSERT guard
+    must not classify them as ``--inserts`` output. An INSERT encountered while
+    no quote is active is still checked before this state advances, including
+    INSERT rows whose values themselves use dollar quoting.
+    """
+
+    offset = 0
+    while True:
+        if active_tag is not None:
+            closing_at = line.find(active_tag, offset)
+            if closing_at < 0:
+                return active_tag
+            offset = closing_at + len(active_tag)
+            active_tag = None
+
+        opening = DOLLAR_QUOTE_TAG.search(line, offset)
+        if opening is None:
+            return None
+        active_tag = opening.group(0)
+        offset = opening.end()
+
+
 YOUTUBE_CREATE_REFERENCE = re.compile(
     r"^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+"
     r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
@@ -1632,6 +1663,7 @@ class PlainBackupSanitizer:
 
     def _scan(self, source: BinaryIO, spool: BinaryIO) -> None:
         block: CopyBlock | None = None
+        dollar_quote_tag: bytes | None = None
         for line in source:
             spool.write(line)
             if block is not None:
@@ -1639,6 +1671,12 @@ class PlainBackupSanitizer:
                     block = None
                     continue
                 self._inspect_control_row(block, line)
+                continue
+
+            if dollar_quote_tag is not None:
+                dollar_quote_tag = _advance_dollar_quote_state(
+                    line, dollar_quote_tag
+                )
                 continue
 
             if self.request_gates_create_lines is not None:
@@ -1727,9 +1765,12 @@ class PlainBackupSanitizer:
                 raise SanitizationError(
                     "retention-control table data must use COPY FROM stdin"
                 )
+            dollar_quote_tag = _advance_dollar_quote_state(line, None)
 
         if block is not None:
             raise SanitizationError("unterminated COPY data block")
+        if dollar_quote_tag is not None:
+            raise SanitizationError("unterminated dollar-quoted SQL body")
         if self.request_gates_create_lines is not None:
             raise SanitizationError("unterminated source_request_gates CREATE TABLE")
         if self.public_study_create_lines is not None:
