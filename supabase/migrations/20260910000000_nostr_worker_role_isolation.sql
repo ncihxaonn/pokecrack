@@ -1160,9 +1160,7 @@ ingest_relation_acl_grants as (
 ingest_column_acl_grants as (
   select columns.attrelid as oid, grants.grantee
   from pg_catalog.pg_attribute as columns
-  cross join lateral aclexplode(coalesce(
-    columns.attacl, '{}'::aclitem[]
-  )) as grants
+  cross join lateral aclexplode(columns.attacl) as grants
   where columns.attrelid in (select oid from ingest_relations)
     and columns.attnum > 0
     and not columns.attisdropped
@@ -1187,9 +1185,7 @@ nostr_column_acl_grants as (
     grants.privilege_type
   from pg_catalog.pg_attribute as columns
   join nostr_relations as relations on relations.oid = columns.attrelid
-  cross join lateral aclexplode(coalesce(
-    columns.attacl, '{}'::aclitem[]
-  )) as grants
+  cross join lateral aclexplode(columns.attacl) as grants
   where columns.attrelid in (select oid from nostr_relations)
     and columns.attnum > 0
     and not columns.attisdropped

@@ -453,6 +453,8 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("worker_function_acl_grants", attestation)
         self.assertIn("attestor_function_acl_grants", attestation)
         self.assertIn("aclexplode", attestation)
+        self.assertEqual(attestation.count("aclexplode(columns.attacl)"), 2)
+        self.assertNotIn("'{}'::aclitem[]", attestation)
         self.assertIn("pg_has_role", attestation)
         self.assertIn("relations.relkind = 's'", attestation)
         self.assertIn("has_sequence_privilege", attestation)
