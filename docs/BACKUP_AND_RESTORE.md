@@ -59,6 +59,14 @@ Bluesky-only maintenance is not blocked. The login and its random password are
 created by a separate account-owner operation after migration; an owner DSN is
 never persisted on the VPS.
 
+For hosted projects whose direct PostgreSQL endpoint is IPv6-only, the Nostr
+collector uses the dedicated Compose `nostr-egress` IPv6 bridge. Do not replace
+the direct endpoint with Supavisor: the pooler does not preserve the reviewed
+startup `SET ROLE` option and may consume the login's two-connection limit.
+The dedicated bridge preserves container isolation and is used only by the
+Nostr collector; the broad worker services remain on the ordinary egress
+bridge.
+
 The logical sanitizer removes all Nostr candidate and observation rows and
 retains only the three checkpoint rows; it cannot sanitize provider-managed
 snapshots or PITR history. This repository has no evidence that the exact
