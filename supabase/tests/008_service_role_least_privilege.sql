@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(21);
+select plan(22);
 
 select is(
   (select count(*)::integer
@@ -22,8 +22,8 @@ select is(
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
      and relations.relkind in ('r', 'p')
      and has_table_privilege('service_role', relations.oid, 'select')),
-  47,
-  'service_role can read every application table except the opaque request gate'
+  44,
+  'service_role can read every non-Nostr application table except the opaque request gate'
 );
 
 select is(
@@ -54,6 +54,22 @@ select ok(
   'service_role can lock the opaque request gate for schema-only backup'
 );
 
+select ok(
+  not exists (
+    select 1
+    from pg_class as relations
+    join pg_namespace as schemas on schemas.oid = relations.relnamespace
+    where schemas.nspname = 'ingest'
+      and relations.relname in (
+        'nostr_relay_candidates',
+        'nostr_relay_observations',
+        'nostr_relay_checkpoints'
+      )
+      and has_table_privilege('service_role', relations.oid, 'select')
+  ),
+  'service_role cannot read the isolated Nostr activity ledgers'
+);
+
 select is(
   (select count(*)::integer
    from pg_policies
@@ -70,8 +86,8 @@ select is(
    where schemaname in ('catalog', 'ingest', 'analytics', 'public')
      and 'service_role' = any(roles)
      and cmd = 'SELECT'),
-  47,
-  'every readable service_role table has one read-only policy'
+  44,
+  'every readable service_role table has one read-only policy; isolated Nostr ledgers have none'
 );
 
 select ok(

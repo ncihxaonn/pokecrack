@@ -205,6 +205,8 @@ select is(
   ingest.nostr_worker_runtime_ready_v1(), true,
   'the reviewed relay policy, gate, and checkpoint contract is runtime-ready'
 );
+grant pokecrack_nostr_worker to current_user
+  with inherit false, set true;
 set local role pokecrack_nostr_worker;
 select set_config(
   'pokecrack_test.runtime_ready_as_worker',
@@ -223,6 +225,7 @@ select throws_ok(
   'the isolated worker can verify the projection but cannot read its source table'
 );
 reset role;
+revoke pokecrack_nostr_worker from current_user;
 select is(
   current_setting('pokecrack_test.runtime_ready_as_worker', true), 'true',
   'the isolated role can execute the boolean runtime proof'
@@ -393,24 +396,36 @@ select is(
 alter role pokecrack_nostr_worker_login reset statement_timeout;
 
 create table public.nostr_worker_owned_probe(id integer);
+grant pokecrack_nostr_worker_login to current_user
+  with inherit true, set true;
 alter table public.nostr_worker_owned_probe owner to pokecrack_nostr_worker_login;
+revoke pokecrack_nostr_worker_login from current_user;
 select is(
   ingest.verify_nostr_release_v2() -> 'nostr_worker_role_exact',
   'false'::jsonb,
   'worker-owned catalog objects fail the release contract closed'
 );
+grant pokecrack_nostr_worker_login to current_user
+  with inherit true, set true;
 alter table public.nostr_worker_owned_probe owner to postgres;
+revoke pokecrack_nostr_worker_login from current_user;
 drop table public.nostr_worker_owned_probe;
 
+grant pokecrack_nostr_worker_login to current_user
+  with inherit true, set true;
 alter default privileges for role pokecrack_nostr_worker_login
   grant select on tables to service_role;
+revoke pokecrack_nostr_worker_login from current_user;
 select is(
   ingest.verify_nostr_release_v2() -> 'nostr_worker_role_exact',
   'false'::jsonb,
   'worker-owned default privileges fail the release contract closed'
 );
+grant pokecrack_nostr_worker_login to current_user
+  with inherit true, set true;
 alter default privileges for role pokecrack_nostr_worker_login
   revoke select on tables from service_role;
+revoke pokecrack_nostr_worker_login from current_user;
 
 create role nostr_function_extra_grantee noinherit nologin;
 grant execute on function ingest.claim_nostr_relay_jobs_v1(text, integer)
@@ -511,6 +526,8 @@ select ok(
 );
 
 select set_config('pokecrack_test.nostr_job_id', '', true);
+grant pokecrack_nostr_worker to current_user
+  with inherit false, set true;
 set local role pokecrack_nostr_worker;
 select throws_ok(
   $$select ingest.enqueue_due_nostr_relay_jobs_v1('generic-worker')$$,
@@ -529,6 +546,7 @@ select set_config(
   true
 );
 reset role;
+revoke pokecrack_nostr_worker from current_user;
 select is(
   current_setting('pokecrack_test.nostr_due_count', true), '3',
   'the isolated scheduler creates the three exact relay jobs'
@@ -578,6 +596,8 @@ select is(
 );
 
 select set_config('pokecrack_test.nostr_claim', '{}'::text, true);
+grant pokecrack_nostr_worker to current_user
+  with inherit false, set true;
 set local role pokecrack_nostr_worker;
 select throws_ok(
   $$select * from ingest.claim_nostr_relay_jobs_v1('generic-worker', 600)$$,
@@ -599,6 +619,7 @@ select set_config(
 )
 from claimed;
 reset role;
+revoke pokecrack_nostr_worker from current_user;
 
 select is(
   current_setting('pokecrack_test.nostr_claim', true)::jsonb ->> 'id',
@@ -638,6 +659,8 @@ select is(current_setting('pokecrack_test.generic_heartbeat_count', true), '0',
 select is(current_setting('pokecrack_test.generic_fail_count', true), '0',
   'generic service_role failure is inert for a Nostr lease');
 
+grant pokecrack_nostr_worker to current_user
+  with inherit false, set true;
 set local role pokecrack_nostr_worker;
 select set_config(
   'pokecrack_test.dedicated_heartbeat_count',
@@ -669,6 +692,7 @@ select set_config(
   true
 );
 reset role;
+revoke pokecrack_nostr_worker from current_user;
 
 select is(current_setting('pokecrack_test.dedicated_heartbeat_count', true), '1',
   'the dedicated heartbeat renews its exact Nostr lease');

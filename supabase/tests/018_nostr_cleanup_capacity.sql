@@ -43,12 +43,12 @@ select ok(
   'Nostr cleanup never deletes the per-relay checkpoints'
 );
 select ok(
-  (select position('max_rows => 750000' in lower(pg_get_functiondef(
+  (select lower(pg_get_functiondef(
       'ingest.finalize_cleanup_job(uuid,text,bigint)'::regprocedure
-    ))) > 0
-    and position('max_rows => 500000' in lower(pg_get_functiondef(
+    )) ~ 'prune_nostr_relay_v1[[:space:]]*\([^)]*max_rows[[:space:]]*=>[[:space:]]*750000'
+    and lower(pg_get_functiondef(
       'ingest.finalize_cleanup_job(uuid,text,bigint)'::regprocedure
-    ))) = 0),
+    )) !~ 'prune_nostr_relay_v1[[:space:]]*\([^)]*max_rows[[:space:]]*=>[[:space:]]*500000'),
   'the fenced maintenance finalizer invokes the new cleanup capacity'
 );
 select ok(

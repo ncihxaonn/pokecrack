@@ -364,6 +364,19 @@ select is(
   1,
   'the candidate observation is idempotently recorded per relay'
 );
+set local role anon;
+select set_config(
+  'pokecrack_test.nostr_public_after_candidate',
+  public.get_public_social_discovery_v2()::text,
+  true
+);
+reset role;
+select like(
+  current_setting('pokecrack_test.nostr_public_after_candidate', true)::jsonb
+    #>> '{sources,1,note}',
+  '1 of 3 reviewed public relays collected recently; 1 retained tag-matched activity candidates.%',
+  'the anon public projection can count retained activity after worker-table policies are removed'
+);
 
 -- A duplicate trigger inside the same whole NIP-01 second must defer before
 -- taking the request gate. Seed a future whole-second checkpoint to make the

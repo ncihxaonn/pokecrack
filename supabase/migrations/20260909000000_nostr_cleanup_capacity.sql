@@ -461,8 +461,8 @@ select jsonb_build_object(
       and prune_definition like '%for update of candidates skip locked%'
       and prune_definition like '%for update of observations skip locked%'
       and position('ingest.nostr_relay_checkpoints' in prune_definition) = 0
-      and finalizer_definition like '%max_rows => 750000%'
-      and finalizer_definition not like '%max_rows => 500000%'
+      and finalizer_definition ~ 'prune_nostr_relay_v1[[:space:]]*\([^)]*max_rows[[:space:]]*=>[[:space:]]*750000'
+      and finalizer_definition !~ 'prune_nostr_relay_v1[[:space:]]*\([^)]*max_rows[[:space:]]*=>[[:space:]]*500000'
       from cleanup_definition)
   ),
   'public_v2_shape_exact', (

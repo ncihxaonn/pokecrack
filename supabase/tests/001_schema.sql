@@ -324,8 +324,16 @@ select ok(
    from pg_class c join pg_namespace n on n.oid = c.relnamespace
    where n.nspname in ('catalog', 'ingest')
      and c.relkind in ('r', 'p')
-     and not (n.nspname = 'ingest' and c.relname = 'source_request_gates')),
-  'service_role can read core state but has no direct table mutation privileges'
+     and not (n.nspname = 'ingest' and c.relname = 'source_request_gates')
+     and not (
+       n.nspname = 'ingest'
+       and c.relname in (
+         'nostr_relay_candidates',
+         'nostr_relay_observations',
+         'nostr_relay_checkpoints'
+       )
+     )),
+  'service_role can read core state except the opaque gate and isolated Nostr ledgers, with no direct table mutation privileges'
 );
 
 select has_function('ingest', 'claim_jobs_v2', array['text', 'text[]', 'integer', 'integer'], 'claim_jobs_v2 has the required signature');
