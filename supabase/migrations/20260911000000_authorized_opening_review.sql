@@ -733,7 +733,7 @@ create unique index authorized_opening_observations_source_fact_uidx
 
 create table ingest.authorized_opening_retractions (
   id uuid primary key default gen_random_uuid(),
-  accepted_observation_id uuid not null unique
+  accepted_observation_id uuid not null
     references ingest.authorized_opening_observations(id)
     on update restrict on delete restrict,
   reviewer_reference_sha256 text not null,
@@ -747,7 +747,9 @@ create table ingest.authorized_opening_retractions (
       'authorization_revoked', 'evidence_corrected',
       'privacy_request', 'policy_takedown'
     )
-  )
+  ),
+  constraint authorized_opening_retractions_observation_unique
+    unique (accepted_observation_id)
 );
 
 alter table ingest.authorized_opening_submissions enable row level security;
@@ -1610,7 +1612,8 @@ begin
     requested_reason_code,
     retraction_time
   )
-  on conflict (accepted_observation_id) do nothing
+  on conflict on constraint authorized_opening_retractions_observation_unique
+    do nothing
   returning * into inserted_retraction;
 
   if found then

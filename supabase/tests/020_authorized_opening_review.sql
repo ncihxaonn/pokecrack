@@ -365,8 +365,12 @@ select ok(
   'reviewer role owns no application schema, relation, function or type'
 );
 select set_eq(
-  $$select namespaces.nspname || '.' || procedures.proname || '('
-      || pg_get_function_identity_arguments(procedures.oid) || ')'
+  $$select format(
+      '%I.%I(%s)',
+      namespaces.nspname,
+      procedures.proname,
+      oidvectortypes(procedures.proargtypes)
+    )
     from pg_proc as procedures
     join pg_namespace as namespaces on namespaces.oid = procedures.pronamespace
     where namespaces.nspname = 'ingest'
@@ -571,9 +575,9 @@ with inserted as (
     is_demo
   ) values (
     'tcgdex',
-    'authorized-opening-pgtap-set',
+    'authorized-review-pgtap-set',
     'Authorized Opening pgTAP Set',
-    'authorized-opening-pgtap-set',
+    'authorized-review-pgtap-set',
     'en',
     (statement_timestamp() at time zone 'UTC')::date,
     'Authorized Opening Tests',
@@ -608,7 +612,7 @@ select jsonb_build_object(
   'geographyBasis', 'opening_location',
   'geographyConfidence', 'tier_a',
   'language', 'en',
-  'tcgdexSetId', 'authorized-opening-pgtap-set',
+  'tcgdexSetId', 'authorized-review-pgtap-set',
   'productScope', 'all',
   'observedAt', to_char(
     statement_timestamp() at time zone 'UTC',
