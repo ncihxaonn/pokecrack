@@ -399,6 +399,100 @@ select is(
   15::bigint,
   'the hosted release contract exposes the exact readiness-key count'
 );
+select diag((
+  select jsonb_agg(jsonb_build_object(
+    'group', inspected.group_name,
+    'login', inspected.login_name,
+    'memberships', (
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'parent', parent.rolname,
+        'member', member.rolname,
+        'admin', memberships.admin_option,
+        'inherit', memberships.inherit_option,
+        'set', memberships.set_option
+      ) order by parent.rolname, member.rolname), '[]'::jsonb)
+      from pg_catalog.pg_auth_members as memberships
+      join pg_catalog.pg_roles as parent on parent.oid = memberships.roleid
+      join pg_catalog.pg_roles as member on member.oid = memberships.member
+      where parent.rolname = inspected.group_name
+        or member.rolname in (inspected.group_name, inspected.login_name)
+    ),
+    'group_schema_usage', has_schema_privilege(
+      inspected.group_name, 'ingest', 'USAGE'
+    ),
+    'login_schema_usage', has_schema_privilege(
+      inspected.login_name, 'ingest', 'USAGE'
+    ),
+    'group_function_count', (
+      select count(*)
+      from pg_catalog.pg_proc as functions
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = functions.pronamespace
+      where namespaces.nspname = 'ingest'
+        and has_function_privilege(
+          inspected.group_name, functions.oid, 'EXECUTE'
+        )
+    ),
+    'login_function_count', (
+      select count(*)
+      from pg_catalog.pg_proc as functions
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = functions.pronamespace
+      where namespaces.nspname = 'ingest'
+        and has_function_privilege(
+          inspected.login_name, functions.oid, 'EXECUTE'
+        )
+    ),
+    'group_relation_count', (
+      select count(*)
+      from pg_catalog.pg_class as relations
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = relations.relnamespace
+      where namespaces.nspname = 'ingest'
+        and relations.relkind in ('r', 'p', 'v', 'm', 'f')
+        and has_table_privilege(
+          inspected.group_name, relations.oid, 'SELECT,INSERT,UPDATE,DELETE'
+        )
+    ),
+    'login_relation_count', (
+      select count(*)
+      from pg_catalog.pg_class as relations
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = relations.relnamespace
+      where namespaces.nspname = 'ingest'
+        and relations.relkind in ('r', 'p', 'v', 'm', 'f')
+        and has_table_privilege(
+          inspected.login_name, relations.oid, 'SELECT,INSERT,UPDATE,DELETE'
+        )
+    ),
+    'role_setting_count', (
+      select count(*)
+      from pg_catalog.pg_db_role_setting as settings
+      join pg_catalog.pg_roles as roles on roles.oid = settings.setrole
+      where roles.rolname in (inspected.group_name, inspected.login_name)
+    ),
+    'owned_object_count', (
+      select count(*)
+      from (
+        select relations.relowner as owner_oid from pg_catalog.pg_class as relations
+        union all
+        select functions.proowner from pg_catalog.pg_proc as functions
+        union all
+        select types.typowner from pg_catalog.pg_type as types
+        union all
+        select namespaces.nspowner from pg_catalog.pg_namespace as namespaces
+        union all
+        select defaults.defaclrole from pg_catalog.pg_default_acl as defaults
+      ) as objects
+      join pg_catalog.pg_roles as owners on owners.oid = objects.owner_oid
+      where owners.rolname in (inspected.group_name, inspected.login_name)
+    )
+  ) order by inspected.group_name)::text
+  from (values
+    ('pokecrack_nostr_attestor', 'pokecrack_nostr_attestor_login'),
+    ('pokecrack_nostr_worker', 'pokecrack_nostr_worker_login')
+  ) as inspected(group_name, login_name)
+));
 select is(
   (select coalesce(
      jsonb_object_agg(contract.key, contract.value)
