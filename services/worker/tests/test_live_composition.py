@@ -1088,6 +1088,27 @@ def test_live_scheduler_registers_the_daily_tcgdex_sets_job() -> None:
     assert params["max_attempts"] == 3
 
 
+def test_live_scheduler_registers_the_second_daily_tcgdex_sets_job() -> None:
+    catalog_time = NOW.replace(hour=14)
+    executor = RecordingExecutor(
+        [[_job_row(status="pending", locked=False, job_type=TCGDEX_SETS_JOB_TYPE)]]
+    )
+    settings = _settings("scheduler", schedule_cleanup="0 0 31 2 *")
+
+    result = build_live_scheduler(settings, executor=executor).run_due(now=catalog_time)
+
+    assert result.due_names == ("catalog_sync",)
+    assert result.created == 1
+    sql, params = executor.calls[0]
+    assert "ingest.enqueue_scheduled_job_v1" in sql
+    assert params["schedule_name"] == "catalog_sync"
+    assert params["scheduled_for"] == catalog_time
+    assert params["kind"] == TCGDEX_SETS_JOB_TYPE
+    assert params["payload"] == "{}"
+    assert params["priority"] == 20
+    assert params["max_attempts"] == 3
+
+
 def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_key() -> None:
     settings = _settings(
         "scheduler",

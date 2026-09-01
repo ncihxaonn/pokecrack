@@ -2185,6 +2185,130 @@ exit 97
                 result.stdout,
             )
 
+    def test_deploy_rejects_retired_catalog_schedule_before_checkout_or_compose(self) -> None:
+        for schedule in (
+            "0 2 * * *",
+            "'0 2 * * *'",
+            '"0 2 * * *"',
+        ):
+            with self.subTest(schedule=schedule), tempfile.TemporaryDirectory(
+                dir=DEPLOY_ROOT / "tests"
+            ) as temporary:
+                base = Path(temporary)
+                repository, sha = self.setUpRepository(base)
+                fake_bin = self.make_fake_docker(base)
+                environment, env_file, docker_log = self.environment(base, fake_bin)
+                env_file.write_text(
+                    f"DATA_MODE=demo\nSCHEDULE_CATALOG_SYNC={schedule}\n",
+                    encoding="utf-8",
+                )
+                env_file.chmod(0o600)
+                state_dir = base / "state"
+
+                result = subprocess.run(
+                    [
+                        str(repository / "deploy" / "scripts" / "deploy.sh"),
+                        sha,
+                        "--env-file",
+                        str(env_file),
+                        "--state-dir",
+                        str(state_dir),
+                        "--health-timeout",
+                        "2",
+                    ],
+                    cwd=repository,
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                    env=environment,
+                )
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("retired once-daily TCGdex schedule", result.stderr)
+                self.assertFalse(docker_log.exists())
+                self.assertFalse(state_dir.exists())
+                self.assertNotIn("SCHEDULE_CATALOG_SYNC=", result.stdout + result.stderr)
+                self.assertEqual(
+                    subprocess.run(
+                        ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                        cwd=repository,
+                        check=True,
+                        text=True,
+                        capture_output=True,
+                    ).stdout.strip(),
+                    "main",
+                )
+
+    def test_deploy_rejects_retired_inherited_catalog_schedule(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            environment["SCHEDULE_CATALOG_SYNC"] = "0 2 * * *"
+            state_dir = base / "state"
+
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--state-dir",
+                    str(state_dir),
+                    "--health-timeout",
+                    "2",
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("inherited environment pins the retired", result.stderr)
+            self.assertFalse(docker_log.exists())
+            self.assertFalse(state_dir.exists())
+
+    def test_deploy_keeps_a_deliberate_catalog_schedule_override(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            env_file.write_text(
+                "DATA_MODE=demo\nSCHEDULE_CATALOG_SYNC=15 6 * * *\n",
+                encoding="utf-8",
+            )
+            env_file.chmod(0o600)
+            state_dir = base / "state"
+
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--state-dir",
+                    str(state_dir),
+                    "--health-timeout",
+                    "2",
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertTrue(docker_log.exists())
+            self.assertEqual(
+                (state_dir / "last-successful-deployment").read_text(),
+                self.deployment_manifest(sha),
+            )
+
     def test_nostr_service_set_uses_two_env_files_and_marks_four_healthy_services(
         self,
     ) -> None:

@@ -18,6 +18,8 @@ SERVICE_SET=tcgdex
 RETIRE_NOSTR=false
 SERVICES=(collector scheduler watchdog)
 SERVICES_CSV=collector,scheduler,watchdog
+EXPECTED_CATALOG_SCHEDULE='0 2,14 * * *'
+LEGACY_CATALOG_SCHEDULE='0 2 * * *'
 
 rollback_marker() {
   local marker marker_mode version_line sha_line service_set_line services_line extra_line
@@ -144,6 +146,36 @@ if [[ $SERVICE_SET == tcgdex-nostr ]]; then
   (( (nostr_env_permissions & 0077) == 0 )) || \
     die "Nostr environment file must not be accessible by group or other users (use mode 0600)"
 fi
+
+validate_catalog_schedule_override() {
+  local line value
+  local seen=false
+  value=''
+  while IFS= read -r line || [[ -n $line ]]; do
+    case $line in
+      SCHEDULE_CATALOG_SYNC=*)
+        [[ $seen == false ]] || \
+          die "environment file contains duplicate SCHEDULE_CATALOG_SYNC entries"
+        seen=true
+        value=${line#SCHEDULE_CATALOG_SYNC=}
+        ;;
+    esac
+  done < "$ENV_FILE"
+  if [[ $seen == true \
+    && ( $value == "$LEGACY_CATALOG_SCHEDULE" \
+      || $value == "'$LEGACY_CATALOG_SCHEDULE'" \
+      || $value == "\"$LEGACY_CATALOG_SCHEDULE\"" ) ]]; then
+    die "environment file pins the retired once-daily TCGdex schedule; update it to ${EXPECTED_CATALOG_SCHEDULE} or choose a deliberate override"
+  fi
+  if [[ ${SCHEDULE_CATALOG_SYNC+x} == x \
+    && ( $SCHEDULE_CATALOG_SYNC == "$LEGACY_CATALOG_SCHEDULE" \
+      || $SCHEDULE_CATALOG_SYNC == "'$LEGACY_CATALOG_SCHEDULE'" \
+      || $SCHEDULE_CATALOG_SYNC == "\"$LEGACY_CATALOG_SCHEDULE\"" ) ]]; then
+    die "inherited environment pins the retired once-daily TCGdex schedule; update it to ${EXPECTED_CATALOG_SCHEDULE} or choose a deliberate override"
+  fi
+}
+
+validate_catalog_schedule_override
 
 [[ ! -L $STATE_DIR ]] || die "state directory must not be a symbolic link"
 install -d -m 0700 "$STATE_DIR"
