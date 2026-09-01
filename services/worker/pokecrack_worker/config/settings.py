@@ -34,6 +34,10 @@ PUBLIC_STUDY_SCHEDULE = "15 4 * * *"
 BLUESKY_DISCOVERY_SCHEDULE = "* * * * *"
 NOSTR_WORKER_ID_PATTERN = re.compile(r"^nostr-collector-[a-z0-9][a-z0-9_.-]{0,63}$")
 MASTODON_DISCOVERY_SCHEDULE = "*/5 * * * *"
+# Keep a second daily UTC window so a transient upstream failure does not
+# leave the catalog stale until the next day. The scheduler's durable slot
+# key still deduplicates concurrent calls for each individual minute.
+TCGDEX_CATALOG_SCHEDULE = "0 2,14 * * *"
 
 
 class Settings(BaseSettings):
@@ -126,7 +130,7 @@ class Settings(BaseSettings):
     schedule_bluesky_collection: str = BLUESKY_DISCOVERY_SCHEDULE
     schedule_mastodon_collection: str = MASTODON_DISCOVERY_SCHEDULE
     schedule_auth_collection: str = "30 */12 * * *"
-    schedule_catalog_sync: str = "0 2 * * *"
+    schedule_catalog_sync: str = TCGDEX_CATALOG_SCHEDULE
     schedule_aggregates: str = "5 * * * *"
     schedule_cleanup: str = YOUTUBE_CLEANUP_SCHEDULE
     schedule_backup: str = "0 4 * * *"

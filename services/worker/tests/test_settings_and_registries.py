@@ -58,6 +58,7 @@ def test_settings_default_to_network_free_demo_fixture_mode(
     assert settings.worker_max_concurrency == 1
     assert settings.ai_max_text_chars == 20_000
     assert settings.scrapling_max_raw_text_chars == 20_000
+    assert settings.schedule_catalog_sync == "0 2,14 * * *"
 
 
 def test_live_and_http_ai_modes_fail_closed_without_required_configuration() -> None:

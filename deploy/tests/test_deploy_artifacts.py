@@ -2975,6 +2975,24 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
             (REPOSITORY_ROOT / ".env.example").read_text(encoding="utf-8"),
         )
 
+    def test_catalog_schedule_has_a_second_daily_recovery_window(self) -> None:
+        compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
+        scheduler = compose[
+            compose.index("  scheduler:") : compose.index("  watchdog:")
+        ]
+        expected = 'SCHEDULE_CATALOG_SYNC: "${SCHEDULE_CATALOG_SYNC:-0 2,14 * * *}"'
+        self.assertIn(expected, scheduler)
+        self.assertIn(
+            "SCHEDULE_CATALOG_SYNC=0 2,14 * * *",
+            (REPOSITORY_ROOT / ".env.example").read_text(encoding="utf-8"),
+        )
+        self.assertIn(
+            "SCHEDULE_CATALOG_SYNC=0 2,14 * * *",
+            (DEPLOY_ROOT / "env" / "production.env.example").read_text(
+                encoding="utf-8"
+            ),
+        )
+
     def test_worker_image_installs_the_bounded_youtube_transport(self) -> None:
         dockerfile = (DEPLOY_ROOT / "Dockerfile.worker").read_text(encoding="utf-8")
         self.assertIn(
