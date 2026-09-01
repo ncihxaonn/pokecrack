@@ -218,7 +218,7 @@ select set_config(
   (select count(*)::text from ingest.get_nostr_worker_policy_snapshot_v1()),
   true
 );
-select throws_ok(
+select extensions.throws_ok(
   $$select count(*) from ingest.source_policies$$,
   '42501',
   'permission denied for table source_policies',
@@ -529,7 +529,7 @@ select set_config('pokecrack_test.nostr_job_id', '', true);
 grant pokecrack_nostr_worker to current_user
   with inherit false, set true;
 set local role pokecrack_nostr_worker;
-select throws_ok(
+select extensions.throws_ok(
   $$select ingest.enqueue_due_nostr_relay_jobs_v1('generic-worker')$$,
   '22023',
   'worker_id must use the dedicated Nostr collector prefix',
@@ -599,7 +599,7 @@ select set_config('pokecrack_test.nostr_claim', '{}'::text, true);
 grant pokecrack_nostr_worker to current_user
   with inherit false, set true;
 set local role pokecrack_nostr_worker;
-select throws_ok(
+select extensions.throws_ok(
   $$select * from ingest.claim_nostr_relay_jobs_v1('generic-worker', 600)$$,
   '22023',
   'worker_id must use the dedicated Nostr collector prefix',

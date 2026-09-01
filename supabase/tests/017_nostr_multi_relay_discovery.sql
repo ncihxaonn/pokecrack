@@ -371,10 +371,10 @@ select set_config(
   true
 );
 reset role;
-select like(
+select matches(
   current_setting('pokecrack_test.nostr_public_after_candidate', true)::jsonb
     #>> '{sources,1,note}',
-  '1 of 3 reviewed public relays collected recently; 1 retained tag-matched activity candidates.%',
+  '^1 of 3 reviewed public relays collected recently; 1 retained tag-matched activity candidates\.',
   'the anon public projection can count retained activity after worker-table policies are removed'
 );
 
