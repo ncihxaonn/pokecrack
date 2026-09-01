@@ -11,7 +11,7 @@ select is(
    join pg_namespace as schemas on schemas.oid = relations.relnamespace
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
      and relations.relkind in ('r', 'p')),
-  52,
+  56,
   'the least-privilege matrix covers every application table'
 );
 
@@ -22,7 +22,7 @@ select is(
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
      and relations.relkind in ('r', 'p')
      and has_table_privilege('service_role', relations.oid, 'select')),
-  48,
+  52,
   'service_role can read every non-Nostr application table except the opaque request gate'
 );
 
@@ -86,7 +86,7 @@ select is(
    where schemaname in ('catalog', 'ingest', 'analytics', 'public')
      and 'service_role' = any(roles)
      and cmd = 'SELECT'),
-  48,
+  52,
   'every readable service_role table has one read-only policy; isolated Nostr ledgers have none'
 );
 
@@ -101,6 +101,7 @@ select ok(
      'ingest.complete_job_v2(uuid,text,bigint)'::regprocedure,
      'ingest.pause_job_for_budget_v2(uuid,text,bigint,timestamp with time zone)'::regprocedure,
      'ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)'::regprocedure,
+     'ingest.submit_authorized_opening_v1(jsonb)'::regprocedure,
      'ingest.begin_public_study_job(uuid,text,bigint)'::regprocedure,
      'ingest.finalize_public_study_job(uuid,text,bigint,jsonb)'::regprocedure,
      'ingest.begin_public_study_job_v2(uuid,text,bigint,text)'::regprocedure,
@@ -119,6 +120,7 @@ select ok(
      'ingest.complete_job_v2(uuid,text,bigint)'::regprocedure,
      'ingest.pause_job_for_budget_v2(uuid,text,bigint,timestamp with time zone)'::regprocedure,
      'ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)'::regprocedure,
+     'ingest.submit_authorized_opening_v1(jsonb)'::regprocedure,
      'ingest.begin_public_study_job(uuid,text,bigint)'::regprocedure,
      'ingest.finalize_public_study_job(uuid,text,bigint,jsonb)'::regprocedure,
      'ingest.begin_public_study_job_v2(uuid,text,bigint,text)'::regprocedure,
@@ -137,6 +139,7 @@ select ok(
      'ingest.complete_job_v2(uuid,text,bigint)'::regprocedure,
      'ingest.pause_job_for_budget_v2(uuid,text,bigint,timestamp with time zone)'::regprocedure,
      'ingest.upsert_worker_heartbeat_v1(text,text,text,jsonb)'::regprocedure,
+     'ingest.submit_authorized_opening_v1(jsonb)'::regprocedure,
      'ingest.begin_public_study_job(uuid,text,bigint)'::regprocedure,
      'ingest.finalize_public_study_job(uuid,text,bigint,jsonb)'::regprocedure,
      'ingest.begin_public_study_job_v2(uuid,text,bigint,text)'::regprocedure,
