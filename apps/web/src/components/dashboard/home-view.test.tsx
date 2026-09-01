@@ -75,22 +75,52 @@ describe("HomeView", () => {
   });
 
   it("labels collecting observations as live coverage while withholding rates", () => {
+    const samplePacks = [18, 24, 210] as const;
+    const sampleOpenings = [5, 6, 20] as const;
+    const sampleSources = [1, 2, 3] as const;
+    const mixedMapCells = DEMO_PUBLIC_DATA.mapCells.slice(0, 3).map((cell, index) => ({
+      ...cell,
+      packsObserved: samplePacks[index] ?? 0,
+      openings: sampleOpenings[index] ?? 0,
+      independentSources: sampleSources[index] ?? 0,
+      baselineRate: null,
+      hitRate: null,
+      posteriorMean: null,
+      credibleInterval: null,
+      deltaFromBaseline: null,
+      state: index === 2 ? "pending" as const : "insufficient" as const,
+      sampleNote: index === 2
+        ? "Evidence threshold met; reviewed publication is pending."
+        : "Rate withheld below the evidence threshold.",
+    }));
     const liveCollecting = {
       ...DEMO_PUBLIC_DATA,
       mode: "live" as const,
+      summary: {
+        ...DEMO_PUBLIC_DATA.summary,
+        observedPacks: 252,
+        completeOpenings: 31,
+        trackedRegions: 3,
+        globalCoverage: "Three countries have verified observations; rates remain withheld.",
+      },
       observations: {
         ...DEMO_PUBLIC_DATA.observations,
         status: "collecting" as const,
         observedPacks: 252,
+        completeOpenings: 31,
+        sourceCountryContributions: 6,
         countriesObserved: 3,
         countriesWithPublishedRate: 0,
       },
+      mapCells: mixedMapCells,
     } satisfies PublicDashboardData;
 
     render(<HomeView data={liveCollecting} synthetic={false} />);
 
     expect(screen.getByText("Live observations")).toBeVisible();
-    expect(screen.getByText("Verified observations cover 3 countries and 252 packs; country-level rates remain withheld pending reviewed publication.")).toBeVisible();
+    expect(screen.getByText("Verified observations cover 3 countries and 252 packs; country-level rates remain withheld until evidence thresholds and reviewed publication are satisfied.")).toBeVisible();
+    expect(screen.getByText("Publication pending")).toBeVisible();
+    expect(screen.getAllByText("Withheld").length).toBeGreaterThan(0);
     expect(screen.queryByText(/Verified country observations are not published yet/)).not.toBeInTheDocument();
   });
 });
