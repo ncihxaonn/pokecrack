@@ -5,9 +5,11 @@ import hashlib
 import importlib.util
 import json
 import os
+import re
 import shutil
 import stat
 import subprocess
+import sys
 import tempfile
 import unittest
 import zipfile
@@ -30,6 +32,18 @@ def load_retention_module():
 def load_database_url_module():
     module_path = DEPLOY_ROOT / "lib" / "run_with_database_url.py"
     spec = importlib.util.spec_from_file_location("run_with_database_url", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def load_nostr_preflight_module():
+    database_url_module = load_database_url_module()
+    sys.modules["run_with_database_url"] = database_url_module
+    module_path = DEPLOY_ROOT / "lib" / "verify_nostr_release.py"
+    spec = importlib.util.spec_from_file_location("verify_nostr_release", module_path)
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {module_path}")
     module = importlib.util.module_from_spec(spec)
@@ -121,7 +135,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("pokecrack-worker-audit.txt", workflow)
         self.assertIn("pokecrack-browser-audit.txt", workflow)
 
-    def test_worker_deploy_workflow_forwards_only_the_explicit_tcgdex_service_set(
+    def test_worker_deploy_workflow_forwards_only_explicit_reviewed_service_sets(
         self,
     ) -> None:
         workflow = (
@@ -129,14 +143,20 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("service_set:", workflow)
         self.assertIn("- tcgdex", workflow)
+        self.assertIn("- tcgdex-nostr", workflow)
+        self.assertIn("retire_nostr:", workflow)
         self.assertIn("REQUESTED_SHA: ${{ inputs.confirm_sha }}", workflow)
         self.assertIn("REQUESTED_SERVICE_SET: ${{ inputs.service_set }}", workflow)
+        self.assertIn("REQUESTED_RETIRE_NOSTR: ${{ inputs.retire_nostr }}", workflow)
         self.assertIn('[[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]]', workflow)
-        self.assertIn('[[ "$REQUESTED_SERVICE_SET" == tcgdex ]]', workflow)
-        self.assertIn('[[ "$service_set" == tcgdex ]]', workflow)
+        self.assertIn("tcgdex|tcgdex-nostr", workflow)
+        self.assertIn("VPS_NOSTR_ENV_FILE:", workflow)
+        self.assertIn('--nostr-env-file "$nostr_env_file"', workflow)
+        self.assertIn("deploy_args+=(--retire-nostr)", workflow)
         self.assertIn('--service-set "$service_set"', workflow)
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
         self.assertNotIn('[[ "${{ inputs.service_set }}"', workflow)
+        self.assertNotIn('[[ "${{ inputs.retire_nostr }}"', workflow)
         checkout = workflow.index('git -C "$repository" checkout --detach "$sha"')
         deploy = workflow.index('"$repository/deploy/scripts/deploy.sh" "$sha"')
         self.assertLess(checkout, deploy)
@@ -158,6 +178,22 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         )
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
         self.assertNotIn('[[ -n "${{ inputs.backup_reference }}"', workflow)
+
+    def test_database_migration_workflow_uses_only_the_scoped_management_api_token(
+        self,
+    ) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "migrate-database.yml"
+        ).read_text(encoding="utf-8")
+        self.assertNotIn("SUPABASE_DB_URL", workflow)
+        self.assertIn("SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}", workflow)
+        self.assertIn("SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}", workflow)
+        self.assertIn("scripts/run_supabase_migrations.py list", workflow)
+        self.assertIn("scripts/run_supabase_migrations.py preview", workflow)
+        self.assertIn("scripts/run_supabase_migrations.py apply", workflow)
+        self.assertIn("scripts/run_supabase_migrations.py verify", workflow)
+        self.assertNotIn("db push", workflow)
+        self.assertNotIn("--db-url", workflow)
 
 
 class BackupRetentionTests(unittest.TestCase):
@@ -554,6 +590,194 @@ class DatabaseURLRunnerTests(unittest.TestCase):
         self.assertFalse(
             {"PGSSLCERTMODE", "PGLOADBALANCEHOSTS", "PGTCPUSERTO"} & environment.keys()
         )
+
+
+class NostrPreflightTests(unittest.TestCase):
+    def test_disabled_nostr_is_a_successful_noop_without_psql(self) -> None:
+        preflight = load_nostr_preflight_module()
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            env_file = Path(temporary) / "production.env"
+            env_file.write_text(
+                "DATA_MODE=live\nNOSTR_COLLECTION_ENABLED=false\n", encoding="utf-8"
+            )
+            env_file.chmod(0o600)
+            self.assertEqual(
+                preflight.run(type("Arguments", (), {"env_file": env_file})()), 0
+            )
+            with self.assertRaisesRegex(
+                preflight.NostrPreflightError,
+                "requires NOSTR_COLLECTION_ENABLED=true",
+            ):
+                preflight.run(
+                    type(
+                        "Arguments",
+                        (),
+                        {"env_file": env_file, "require_enabled": True},
+                    )()
+                )
+
+    def test_enabled_nostr_requires_a_separate_attestor_preflight_url(self) -> None:
+        preflight = load_nostr_preflight_module()
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            env_file = Path(temporary) / "production.env"
+            env_file.write_text(
+                "DATA_MODE=live\nNOSTR_COLLECTION_ENABLED=true\n", encoding="utf-8"
+            )
+            env_file.chmod(0o600)
+            with self.assertRaises(preflight.NostrPreflightError):
+                preflight.run(type("Arguments", (), {"env_file": env_file})())
+
+    def test_enabled_nostr_environment_rejects_every_unreviewed_variable(self) -> None:
+        preflight = load_nostr_preflight_module()
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            env_file = Path(temporary) / "nostr.env"
+            env_file.write_text(
+                "DATA_MODE=live\n"
+                "NOSTR_COLLECTION_ENABLED=true\n"
+                "NOSTR_SUPABASE_DB_URL=postgresql://worker:secret@db.example.invalid/db?sslmode=require\n"
+                "SUPABASE_NOSTR_PREFLIGHT_DB_URL=postgresql://attestor:secret@db.example.invalid/db?sslmode=require\n"
+                "DEPLOY_SHA=unreviewed-override\n",
+                encoding="utf-8",
+            )
+            env_file.chmod(0o600)
+            with self.assertRaisesRegex(
+                preflight.NostrPreflightError, "only the exact release variables"
+            ):
+                preflight.run(type("Arguments", (), {"env_file": env_file})())
+
+    def test_enabled_nostr_rejects_reusing_the_worker_database_url(self) -> None:
+        preflight = load_nostr_preflight_module()
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            env_file = Path(temporary) / "production.env"
+            database_url = "postgresql://worker:fixture-secret@example.invalid/db?sslmode=require"
+            env_file.write_text(
+                "DATA_MODE=live\n"
+                "NOSTR_COLLECTION_ENABLED=true\n"
+                f"NOSTR_SUPABASE_DB_URL={database_url}\n"
+                f"SUPABASE_NOSTR_PREFLIGHT_DB_URL={database_url}\n",
+                encoding="utf-8",
+            )
+            env_file.chmod(0o600)
+            with self.assertRaises(preflight.NostrPreflightError):
+                preflight.run(type("Arguments", (), {"env_file": env_file})())
+
+    def test_enabled_nostr_does_not_print_database_url_or_token(self) -> None:
+        preflight = load_nostr_preflight_module()
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            env_file = Path(temporary) / "production.env"
+            secret = "fixture-not-in-output"
+            env_file.write_text(
+                "DATA_MODE=live\n"
+                "NOSTR_COLLECTION_ENABLED=true\n"
+                f"SUPABASE_NOSTR_PREFLIGHT_DB_URL=postgresql://pokecrack_nostr_attestor_login:{secret}@db.example.invalid/db?sslmode=require\n",
+                encoding="utf-8",
+            )
+            env_file.chmod(0o600)
+            original_which = preflight.shutil.which
+            preflight.shutil.which = lambda name: sys.executable if name == "psql" else None
+            try:
+                with self.assertRaises(preflight.NostrPreflightError):
+                    preflight.run(type("Arguments", (), {"env_file": env_file})())
+            finally:
+                preflight.shutil.which = original_which
+            self.assertNotIn(secret, preflight.CONTRACT_QUERY)
+            self.assertIn("ingest.verify_nostr_release_v2", preflight.CONTRACT_QUERY)
+            self.assertNotIn("source_request_gates", preflight.CONTRACT_QUERY)
+            self.assertNotIn("schema_migrations", preflight.CONTRACT_QUERY)
+
+    def test_attestor_url_requires_the_exact_fixed_set_role_option(self) -> None:
+        preflight = load_nostr_preflight_module()
+        base = (
+            "postgresql://pokecrack_nostr_attestor_login:fixture-secret@"
+            "db.example.invalid/db?sslmode=require"
+        )
+        for suffix in (
+            "",
+            "&options=-c%20role%3Dservice_role",
+            "&options=-c%20role%3Dpokecrack_nostr_attestor%20-c%20statement_timeout%3D0",
+        ):
+            with self.subTest(suffix=suffix), self.assertRaises(
+                preflight.NostrPreflightError
+            ):
+                preflight._psql_contract(base + suffix, psql_path="/fixture/psql")
+
+    def test_attestor_contract_uses_fixed_role_and_returns_only_boolean_shape(self) -> None:
+        preflight = load_nostr_preflight_module()
+        database_url = (
+            "postgresql://pokecrack_nostr_attestor_login:fixture-secret@"
+            "db.example.invalid/db?sslmode=require&"
+            "options=-c%20role%3Dpokecrack_nostr_attestor"
+        )
+        expected = {key: True for key in preflight.REQUIRED_CONTRACT_KEYS}
+        captured: dict[str, object] = {}
+
+        def fake_run(command: list[str], **kwargs: object):
+            captured["command"] = command
+            captured["environment"] = kwargs["env"]
+            return type(
+                "Result",
+                (),
+                {"returncode": 0, "stdout": json.dumps(expected) + "\n"},
+            )()
+
+        original_run = preflight.subprocess.run
+        inherited_worker = os.environ.get("NOSTR_SUPABASE_DB_URL")
+        inherited_attestor = os.environ.get("SUPABASE_NOSTR_PREFLIGHT_DB_URL")
+        os.environ["NOSTR_SUPABASE_DB_URL"] = "must-not-reach-psql"
+        os.environ["SUPABASE_NOSTR_PREFLIGHT_DB_URL"] = "must-not-reach-psql"
+        preflight.subprocess.run = fake_run
+        try:
+            self.assertEqual(
+                preflight._psql_contract(database_url, psql_path="/fixture/psql"),
+                expected,
+            )
+        finally:
+            preflight.subprocess.run = original_run
+            if inherited_worker is None:
+                os.environ.pop("NOSTR_SUPABASE_DB_URL", None)
+            else:
+                os.environ["NOSTR_SUPABASE_DB_URL"] = inherited_worker
+            if inherited_attestor is None:
+                os.environ.pop("SUPABASE_NOSTR_PREFLIGHT_DB_URL", None)
+            else:
+                os.environ["SUPABASE_NOSTR_PREFLIGHT_DB_URL"] = inherited_attestor
+
+        environment = captured["environment"]
+        self.assertIsInstance(environment, dict)
+        self.assertEqual(
+            environment["PGOPTIONS"], preflight.ATTESTOR_ROLE_OPTION
+        )
+        self.assertEqual(environment["PGUSER"], "pokecrack_nostr_attestor_login")
+        self.assertNotIn("NOSTR_SUPABASE_DB_URL", environment)
+        self.assertNotIn("SUPABASE_NOSTR_PREFLIGHT_DB_URL", environment)
+        self.assertNotIn("fixture-secret", preflight.CONTRACT_QUERY)
+        self.assertIn("session_user = 'pokecrack_nostr_attestor_login'", preflight.CONTRACT_QUERY)
+        self.assertIn("current_user = 'pokecrack_nostr_attestor'", preflight.CONTRACT_QUERY)
+
+    def test_preflight_and_worker_must_target_the_same_database_with_distinct_roles(self) -> None:
+        preflight = load_nostr_preflight_module()
+        attestor = (
+            "postgresql://pokecrack_nostr_attestor_login:attestor-secret@"
+            "db-a.example.invalid/db?sslmode=require&"
+            "options=-c%20role%3Dpokecrack_nostr_attestor"
+        )
+        worker = (
+            "postgresql://pokecrack_nostr_worker_login:worker-secret@"
+            "db-b.example.invalid/db?sslmode=require&"
+            "options=-c%20role%3Dpokecrack_nostr_worker"
+        )
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            env_file = Path(temporary) / "nostr.env"
+            env_file.write_text(
+                "DATA_MODE=live\n"
+                "NOSTR_COLLECTION_ENABLED=true\n"
+                f"SUPABASE_NOSTR_PREFLIGHT_DB_URL={attestor}\n"
+                f"NOSTR_SUPABASE_DB_URL={worker}\n",
+                encoding="utf-8",
+            )
+            env_file.chmod(0o600)
+            with self.assertRaises(preflight.NostrPreflightError):
+                preflight.run(type("Arguments", (), {"env_file": env_file})())
 
 
 class BackupScriptTests(unittest.TestCase):
@@ -1577,13 +1801,36 @@ AbCdEfGhI_1\t{policy}
 
 class DeployAndRollbackScriptTests(unittest.TestCase):
     @staticmethod
-    def deployment_manifest(sha: str) -> str:
+    def deployment_manifest(sha: str, *, nostr: bool = False) -> str:
+        service_set = "tcgdex-nostr" if nostr else "tcgdex"
+        services = (
+            "collector,scheduler,watchdog,nostr-collector"
+            if nostr
+            else "collector,scheduler,watchdog"
+        )
         return (
             "version=1\n"
             f"sha={sha}\n"
-            "service_set=tcgdex\n"
-            "services=collector,scheduler,watchdog\n"
+            f"service_set={service_set}\n"
+            f"services={services}\n"
         )
+
+    @staticmethod
+    def write_nostr_env(path: Path) -> None:
+        path.write_text(
+            "DATA_MODE=live\n"
+            "NOSTR_COLLECTION_ENABLED=true\n"
+            "NOSTR_SUPABASE_DB_URL="
+            "postgresql://pokecrack_nostr_worker_login:worker-secret@"
+            "db.example.invalid/pokecrack?sslmode=require&"
+            "options=-c%20role%3Dpokecrack_nostr_worker\n"
+            "SUPABASE_NOSTR_PREFLIGHT_DB_URL="
+            "postgresql://pokecrack_nostr_attestor_login:attestor-secret@"
+            "db.example.invalid/pokecrack?sslmode=require&"
+            "options=-c%20role%3Dpokecrack_nostr_attestor\n",
+            encoding="utf-8",
+        )
+        path.chmod(0o600)
 
     def setUpRepository(self, base: Path) -> tuple[Path, str]:
         repository = base / "repository"
@@ -1597,6 +1844,8 @@ class DeployAndRollbackScriptTests(unittest.TestCase):
             DEPLOY_ROOT / "lib" / "shell_portability.sh",
             library / "shell_portability.sh",
         )
+        for name in ("run_with_database_url.py", "verify_nostr_release.py"):
+            shutil.copy2(DEPLOY_ROOT / "lib" / name, library / name)
         for name in ("deploy.sh", "rollback.sh"):
             shutil.copy2(DEPLOY_ROOT / "scripts" / name, scripts / name)
         subprocess.run(["git", "init", "-q", "-b", "main", str(repository)], check=True)
@@ -1740,6 +1989,68 @@ exit 97
                 result.stdout,
             )
 
+    def test_nostr_service_set_uses_two_env_files_and_marks_four_healthy_services(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            nostr_env_file = base / "nostr.env"
+            self.write_nostr_env(nostr_env_file)
+            contract = json.dumps(
+                {
+                    key: True
+                    for key in load_nostr_preflight_module().REQUIRED_CONTRACT_KEYS
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            write_executable(
+                fake_bin / "psql",
+                "#!/usr/bin/env bash\n" + f"printf '%s\\n' '{contract}'\n",
+            )
+            state_dir = base / "state"
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--nostr-env-file",
+                    str(nostr_env_file),
+                    "--state-dir",
+                    str(state_dir),
+                    "--health-timeout",
+                    "2",
+                    "--service-set",
+                    "tcgdex-nostr",
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                (state_dir / "last-successful-deployment").read_text(),
+                self.deployment_manifest(sha, nostr=True),
+            )
+            invocations = docker_log.read_text(encoding="utf-8").splitlines()
+            build = next(line for line in invocations if " build " in f" {line} ")
+            up = next(line for line in invocations if " up " in f" {line} ")
+            self.assertIn("--profile nostr", build)
+            self.assertIn(
+                "build --pull collector scheduler watchdog nostr-collector", build
+            )
+            self.assertIn(
+                "up --detach collector scheduler watchdog nostr-collector", up
+            )
+            self.assertNotIn("worker-secret", result.stdout + result.stderr)
+            self.assertNotIn("attestor-secret", result.stdout + result.stderr)
+
     def test_failed_health_does_not_write_success_marker(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
             base = Path(temporary)
@@ -1776,6 +2087,82 @@ exit 97
                 self.deployment_manifest(previous),
             )
             self.assertIn(f"Rollback commit: {previous}", result.stderr)
+
+    def test_nostr_contract_failure_happens_before_any_service_replacement(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            nostr_env_file = base / "nostr.env"
+            self.write_nostr_env(nostr_env_file)
+            write_executable(fake_bin / "psql", "#!/usr/bin/env bash\nexit 17\n")
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--nostr-env-file",
+                    str(nostr_env_file),
+                    "--service-set",
+                    "tcgdex-nostr",
+                    "--state-dir",
+                    str(base / "state"),
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("existing services were left unchanged", result.stderr)
+            self.assertNotIn("worker-secret", result.stdout + result.stderr)
+            self.assertNotIn("attestor-secret", result.stdout + result.stderr)
+            self.assertFalse((base / "state" / "last-successful-deployment").exists())
+            if docker_log.exists():
+                invocations = docker_log.read_text(encoding="utf-8")
+                self.assertNotIn(" build ", f" {invocations} ")
+                self.assertNotIn(" up ", f" {invocations} ")
+
+    def test_nostr_service_set_cannot_bypass_preflight_with_a_disabled_flag(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            nostr_env_file = base / "nostr.env"
+            nostr_env_file.write_text(
+                "DATA_MODE=live\nNOSTR_COLLECTION_ENABLED=false\n",
+                encoding="utf-8",
+            )
+            nostr_env_file.chmod(0o600)
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--nostr-env-file",
+                    str(nostr_env_file),
+                    "--service-set",
+                    "tcgdex-nostr",
+                    "--state-dir",
+                    str(base / "state"),
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("existing services were left unchanged", result.stderr)
+            if docker_log.exists():
+                invocations = docker_log.read_text(encoding="utf-8")
+                self.assertNotIn(" build ", f" {invocations} ")
+                self.assertNotIn(" up ", f" {invocations} ")
 
     def test_legacy_sha_only_marker_is_not_treated_as_a_service_set_success(
         self,
@@ -1837,15 +2224,66 @@ exit 97
                     self.assertNotEqual(result.returncode, 0)
             self.assertFalse(docker_log.exists())
 
+    def test_retiring_nostr_requires_the_explicit_flag_and_removes_only_that_service(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            environment["FAKE_PROJECT_ROWS"] = "container-nostr|nostr-collector"
+
+            denied = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--state-dir",
+                    str(base / "denied-state"),
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+            self.assertNotEqual(denied.returncode, 0)
+            self.assertIn("explicit --retire-nostr", denied.stderr)
+
+            docker_log.unlink(missing_ok=True)
+            allowed = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--state-dir",
+                    str(base / "allowed-state"),
+                    "--retire-nostr",
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+            self.assertEqual(allowed.returncode, 0, allowed.stderr)
+            invocations = docker_log.read_text(encoding="utf-8")
+            self.assertIn(" stop nostr-collector", f" {invocations}")
+            self.assertIn(" rm --force --stop nostr-collector", f" {invocations}")
+            self.assertNotIn("rm --force --stop collector", invocations)
+
     def test_existing_non_tcgdex_container_blocks_without_removing_it(self) -> None:
         cases = {
             "auth-browser": (
                 "container-auth|auth-browser",
-                "non-TCGdex service container exists: auth-browser",
+                "unapproved service container exists: auth-browser",
             ),
             "retired-worker": (
                 "container-retired|retired-worker",
-                "non-TCGdex service container exists: retired-worker",
+                "unapproved service container exists: retired-worker",
             ),
             "missing-label": (
                 "container-unknown|",
@@ -2086,7 +2524,9 @@ exit 0
 
 
 class ComposeSecurityPolicyTests(unittest.TestCase):
-    def render(self, *, include_unready: bool = True) -> dict[str, object]:
+    def render(
+        self, *, include_unready: bool = True, enable_nostr: bool = False
+    ) -> dict[str, object]:
         if shutil.which("docker") is None:
             self.skipTest(
                 "Docker CLI is unavailable; CI performs the Compose render contract"
@@ -2102,21 +2542,24 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
             }
         )
         if include_unready:
-            environment["COMPOSE_PROFILES"] = "unready-full"
+            environment["COMPOSE_PROFILES"] = "unready-full,nostr"
         else:
             environment.pop("COMPOSE_PROFILES", None)
+        command = [
+            "docker",
+            "compose",
+            "--env-file",
+            str(DEPLOY_ROOT / "env" / "production.env.example"),
+        ]
+        if enable_nostr:
+            command.extend(
+                ["--env-file", str(DEPLOY_ROOT / "env" / "nostr.env.example")]
+            )
+        command.extend(
+            ["-f", str(DEPLOY_ROOT / "compose.prod.yml"), "config", "--format", "json"]
+        )
         result = subprocess.run(
-            [
-                "docker",
-                "compose",
-                "--env-file",
-                str(DEPLOY_ROOT / "env" / "production.env.example"),
-                "-f",
-                str(DEPLOY_ROOT / "compose.prod.yml"),
-                "config",
-                "--format",
-                "json",
-            ],
+            command,
             check=False,
             text=True,
             capture_output=True,
@@ -2131,6 +2574,7 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         services = document["services"]
         expected = {
             "collector",
+            "nostr-collector",
             "auth-browser",
             "ai-worker",
             "aggregator",
@@ -2159,6 +2603,51 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
     def test_default_compose_profile_contains_only_tcgdex_core_services(self) -> None:
         services = self.render(include_unready=False)["services"]
         self.assertEqual(set(services), {"collector", "scheduler", "watchdog"})
+
+    def test_nostr_profile_has_one_dedicated_database_capability(self) -> None:
+        document = self.render(enable_nostr=True)
+        services = document["services"]
+        nostr = services["nostr-collector"]
+        environment = nostr["environment"]
+        self.assertEqual(nostr["profiles"], ["nostr"])
+        self.assertEqual(nostr["command"], ["nostr-collector"])
+        self.assertEqual(environment["WORKER_ROLE"], "nostr-collector")
+        self.assertEqual(environment["WORKER_ID"], "nostr-collector-1")
+        self.assertEqual(environment["NOSTR_COLLECTION_ENABLED"], "true")
+        self.assertEqual(environment["WORKER_MAX_CONCURRENCY"], "1")
+        self.assertIn("NOSTR_SUPABASE_DB_URL", environment)
+        self.assertNotIn("SUPABASE_DB_URL", environment)
+        self.assertNotIn("SUPABASE_NOSTR_PREFLIGHT_DB_URL", environment)
+        self.assertNotIn("YOUTUBE_API_KEY", environment)
+        self.assertEqual(
+            services["collector"]["environment"]["NOSTR_COLLECTION_ENABLED"],
+            "false",
+        )
+        self.assertEqual(
+            services["scheduler"]["environment"]["NOSTR_COLLECTION_ENABLED"],
+            "false",
+        )
+        self.assertNotIn(
+            "NOSTR_SUPABASE_DB_URL", services["scheduler"]["environment"]
+        )
+        rendered = json.dumps(document)
+        self.assertNotIn("SUPABASE_NOSTR_PREFLIGHT_DB_URL", rendered)
+
+        nostr_template = DEPLOY_ROOT / "env" / "nostr.env.example"
+        assignments = {
+            line.split("=", 1)[0]
+            for line in nostr_template.read_text(encoding="utf-8").splitlines()
+            if line and not line.startswith("#")
+        }
+        self.assertEqual(
+            assignments,
+            {
+                "DATA_MODE",
+                "NOSTR_COLLECTION_ENABLED",
+                "NOSTR_SUPABASE_DB_URL",
+                "SUPABASE_NOSTR_PREFLIGHT_DB_URL",
+            },
+        )
 
     def test_worker_services_do_not_receive_unused_supabase_service_role_secret(
         self,
@@ -2214,7 +2703,7 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
     ) -> None:
         compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
         collector = compose[
-            compose.index("  collector:") : compose.index("  auth-browser:")
+            compose.index("  collector:") : compose.index("  nostr-collector:")
         ]
         scheduler = compose[
             compose.index("  scheduler:") : compose.index("  watchdog:")
@@ -2231,12 +2720,32 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertNotIn("MATON_API_KEY:", scheduler)
         self.assertNotIn("YOUTUBE_MATON_CONNECTION_ID:", scheduler)
 
+    def test_nostr_enablement_is_pinned_to_the_isolated_collector(self) -> None:
+        compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
+        collector = compose[
+            compose.index("  collector:") : compose.index("  nostr-collector:")
+        ]
+        nostr = compose[
+            compose.index("  nostr-collector:") : compose.index("  auth-browser:")
+        ]
+        scheduler = compose[
+            compose.index("  scheduler:") : compose.index("  watchdog:")
+        ]
+        self.assertIn('NOSTR_COLLECTION_ENABLED: "false"', collector)
+        self.assertIn('NOSTR_COLLECTION_ENABLED: "true"', nostr)
+        self.assertIn('NOSTR_COLLECTION_ENABLED: "false"', scheduler)
+        self.assertNotIn("${NOSTR_COLLECTION_ENABLED", collector)
+        self.assertNotIn("${NOSTR_COLLECTION_ENABLED", scheduler)
+        self.assertNotIn("SCHEDULE_NOSTR_COLLECTION", scheduler)
+        self.assertIn("NOSTR_SUPABASE_DB_URL:", nostr)
+        self.assertNotIn("NOSTR_SUPABASE_DB_URL:", scheduler)
+
     def test_public_study_schedule_matches_the_fail_closed_worker_contract(
         self,
     ) -> None:
         compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
         collector = compose[
-            compose.index("  collector:") : compose.index("  auth-browser:")
+            compose.index("  collector:") : compose.index("  nostr-collector:")
         ]
         scheduler = compose[
             compose.index("  scheduler:") : compose.index("  watchdog:")
@@ -2264,6 +2773,19 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
             dockerfile,
         )
         self.assertIn("rm -rf /var/lib/apt/lists/*", dockerfile)
+
+    def test_worker_base_image_is_pinned_by_digest_in_build_and_compose_defaults(self) -> None:
+        dockerfile = (DEPLOY_ROOT / "Dockerfile.worker").read_text(encoding="utf-8")
+        match = re.search(
+            r"^ARG PYTHON_IMAGE=(python:3\.13\.5-slim-bookworm@sha256:[0-9a-f]{64})$",
+            dockerfile,
+            flags=re.MULTILINE,
+        )
+        self.assertIsNotNone(match)
+        image = match.group(1) if match is not None else ""
+        compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
+        self.assertIn(f"PYTHON_IMAGE:-{image}", compose)
+        self.assertNotIn("PYTHON_IMAGE:-python:3.13.5-slim-bookworm}", compose)
 
     def test_auth_browser_pins_opencli_and_starts_its_loopback_daemon(self) -> None:
         dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(
@@ -2362,13 +2884,14 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
     ) -> None:
         entrypoint = (DEPLOY_ROOT / "worker-service-entrypoint.sh").read_text()
         self.assertNotIn('if [[ "${DATA_MODE:-demo}" != "demo" ]]', entrypoint)
-        self.assertIn("collector|ai-worker|watchdog)", entrypoint)
+        self.assertIn("collector|nostr-collector|ai-worker|watchdog)", entrypoint)
         self.assertIn("command=(pokecrack-worker worker --forever)", entrypoint)
         self.assertIn("command=(pokecrack-worker scheduler)", entrypoint)
         self.assertIn("command=(pokecrack-worker aggregate all)", entrypoint)
 
         expected_commands = {
             "collector": "worker --forever",
+            "nostr-collector": "worker --forever",
             "ai-worker": "worker --forever",
             "watchdog": "worker --forever",
             "aggregator": "aggregate all",

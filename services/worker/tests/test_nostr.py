@@ -20,14 +20,26 @@ from pokecrack_worker.collectors.official_api.nostr import (
 from pokecrack_worker.composition import (
     NOSTR_RELAY_JOB_TYPE,
     LiveCompositionError,
+    WorkerRole,
+    _dsn_with_fixed_nostr_role,
     build_live_worker_runtime,
     live_schedule_entries,
     write_health_heartbeat,
 )
 from pokecrack_worker.config.nostr import NOSTR_APPROVED_TAGS, NostrRelayRegistry
 from pokecrack_worker.config.settings import Settings
-from pokecrack_worker.jobs import NostrCandidateWrite, NostrRelayCompletion
-from pokecrack_worker.jobs.postgres import FINALIZE_NOSTR_RELAY_SQL
+from pokecrack_worker.jobs import (
+    NostrCandidateWrite,
+    NostrPostgresJobRepository,
+    NostrRelayCompletion,
+)
+from pokecrack_worker.jobs.postgres import (
+    FINALIZE_NOSTR_RELAY_SQL,
+    NOSTR_CLAIM_SQL,
+    NOSTR_FAIL_SQL,
+    NOSTR_HEARTBEAT_SQL,
+    NOSTR_PAUSE_BUDGET_SQL,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
 NOW = datetime(2026, 8, 31, 4, 0, tzinfo=UTC)
@@ -320,30 +332,15 @@ def test_completion_payload_is_exact_and_never_contains_raw_content() -> None:
     assert payload["candidates"][0]["statistics_eligible"] is False
 
 
-def test_live_scheduler_emits_three_fixed_jobs_and_runtime_uses_typed_finalizer() -> None:
-    scheduler_settings = Settings(
+def test_isolated_collector_self_schedules_and_uses_typed_finalizer() -> None:
+    collector_settings = Settings(
         _env_file=None,
         data_mode="live",
-        supabase_db_url="postgresql://db.example.invalid/pokecrack",
-        worker_id="scheduler-1",
-        worker_role="scheduler",
+        nostr_supabase_db_url="postgresql://nostr.example.invalid/pokecrack",
+        worker_id="nostr-collector-test",
+        worker_role="nostr-collector",
         nostr_collection_enabled=True,
     )
-    entries = [
-        entry
-        for entry in live_schedule_entries(scheduler_settings)
-        if entry.job_type == NOSTR_RELAY_JOB_TYPE
-    ]
-    assert [entry.name for entry in entries] == [
-        "nostr_primal",
-        "nostr_nos_lol",
-        "nostr_nostr_net",
-    ]
-    assert [entry.payload for entry in entries] == [
-        {"relay_key": "primal"},
-        {"relay_key": "nos_lol"},
-        {"relay_key": "nostr_net"},
-    ]
 
     event = _signed_event()
     executor = RecordingExecutor(
@@ -362,26 +359,167 @@ def test_live_scheduler_emits_three_fixed_jobs_and_runtime_uses_typed_finalizer(
             [_job_row(status="completed")],
         ]
     )
-    collector_settings = scheduler_settings.model_copy(
-        update={"worker_role": "collector", "worker_id": "worker-1"}
-    )
     runtime = build_live_worker_runtime(
         collector_settings,
         executor=executor,
         nostr_transport=FixtureTransport(_envelope(event)),
     )
     assert NOSTR_RELAY_JOB_TYPE in runtime.handlers
+    assert tuple(runtime.handlers) == (NOSTR_RELAY_JOB_TYPE,)
+    assert isinstance(runtime.repository, NostrPostgresJobRepository)
     assert runtime.run_once().status.value == "completed"
+    assert "WITH due_jobs AS MATERIALIZED" in NOSTR_CLAIM_SQL
+    assert "ingest.enqueue_due_nostr_relay_jobs_v1" in NOSTR_CLAIM_SQL
     assert any(sql == FINALIZE_NOSTR_RELAY_SQL for sql, _params in executor.calls)
 
 
-def test_enabled_nostr_health_requires_the_exact_three_relay_contracts() -> None:
+def test_nostr_dsn_adds_a_fixed_libpq_role_option() -> None:
+    source = (
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack?sslmode=require"
+    )
+    dsn = _dsn_with_fixed_nostr_role(source)
+
+    assert dsn == (
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack?sslmode=require&"
+        "options=-c%20role%3Dpokecrack_nostr_worker"
+    )
+    assert WorkerRole.NOSTR_COLLECTOR.value == "nostr-collector"
+
+    already_fixed = _dsn_with_fixed_nostr_role(
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack?sslmode=require&"
+        "options=-c%20role%3Dpokecrack_nostr_worker"
+    )
+    assert already_fixed.count("options=") == 1
+    assert already_fixed == dsn
+
+
+@pytest.mark.parametrize(
+    "dsn",
+    (
+        "host=db.example.invalid dbname=pokecrack",
+        "postgresql://wrong-worker:fixture-secret@nostr.example.invalid/pokecrack",
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack#fragment",
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack?options=-c%20statement_timeout%3D0",
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack?"
+        "options=-c%20role%3Dpokecrack_nostr_worker&"
+        "options=-c%20role%3Dpokecrack_nostr_worker",
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack?sslmode=require&sslmode=require",
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack?user=pokecrack_nostr_attestor_login&"
+        "sslmode=require",
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack?sslmode=prefer",
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack",
+    ),
+)
+def test_nostr_dsn_rejects_ambiguous_or_caller_controlled_options(dsn: str) -> None:
+    with pytest.raises(LiveCompositionError):
+        _dsn_with_fixed_nostr_role(dsn)
+
+
+def test_nostr_repository_uses_only_source_scoped_queue_wrappers() -> None:
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running")],
+            [_job_row(status="running")],
+            [_job_row(status="completed")],
+            [_job_row(status="pending")],
+            [_job_row(status="failed")],
+        ]
+    )
+    repository = NostrPostgresJobRepository(executor)
+    completion = NostrRelayCompletion(
+        relay_key="primal",
+        since=NOW - timedelta(minutes=5),
+        until=NOW,
+        checkpoint=None,
+        incomplete=False,
+        events_seen=0,
+        bytes_seen=0,
+    )
+
+    assert repository.lease(
+        "worker-1",
+        now=NOW,
+        lease_for=timedelta(minutes=5),
+        kinds={NOSTR_RELAY_JOB_TYPE},
+    )
+    assert repository.heartbeat(
+        "00000000-0000-0000-0000-000000000001",
+        worker_id="worker-1",
+        lease_generation=1,
+        now=NOW,
+        lease_for=timedelta(minutes=5),
+    )
+    assert repository.complete(
+        "00000000-0000-0000-0000-000000000001",
+        worker_id="worker-1",
+        lease_generation=1,
+        now=NOW,
+        effect=completion,
+    )
+    assert repository.pause_for_budget(
+        "00000000-0000-0000-0000-000000000001",
+        worker_id="worker-1",
+        lease_generation=1,
+        now=NOW,
+        retry_at=NOW + timedelta(hours=1),
+    )
+    assert repository.fail(
+        "00000000-0000-0000-0000-000000000001",
+        "bounded failure",
+        worker_id="worker-1",
+        lease_generation=1,
+        now=NOW,
+    )
+
+    assert [sql for sql, _params in executor.calls] == [
+        NOSTR_CLAIM_SQL,
+        NOSTR_HEARTBEAT_SQL,
+        FINALIZE_NOSTR_RELAY_SQL,
+        NOSTR_PAUSE_BUDGET_SQL,
+        NOSTR_FAIL_SQL,
+    ]
+    assert "kinds" not in executor.calls[0][1]
+    for sql, _params in executor.calls:
+        assert "ingest.claim_jobs_v2" not in sql
+        assert "ingest.heartbeat_job_v2" not in sql
+        assert "ingest.fail_job_v2" not in sql
+        assert "ingest.pause_job_for_budget_v2" not in sql
+
+    assert "p_worker_id => %(worker_id)s" in NOSTR_CLAIM_SQL
+    assert "p_lease_seconds => %(lease_seconds)s::integer" in NOSTR_CLAIM_SQL
+    assert "ingest.enqueue_due_nostr_relay_jobs_v1" in NOSTR_CLAIM_SQL
+    assert "p_job_id => %(job_id)s::uuid" in NOSTR_HEARTBEAT_SQL
+    assert "p_lease_generation => %(lease_generation)s::bigint" in NOSTR_HEARTBEAT_SQL
+    assert "p_error_code => %(error_code)s" in NOSTR_FAIL_SQL
+    assert "p_retryable => %(retryable)s::boolean" in NOSTR_FAIL_SQL
+    assert "p_retry_at => %(retry_at)s::timestamptz" in NOSTR_PAUSE_BUDGET_SQL
+
+    with pytest.raises(ValueError, match="only source.nostr.relay"):
+        repository.lease(
+            "worker-1",
+            now=NOW,
+            lease_for=timedelta(minutes=5),
+            kinds={"source.youtube.discovery"},
+        )
+
+
+def test_enabled_nostr_health_uses_only_scoped_runtime_contracts() -> None:
     settings = Settings(
         _env_file=None,
         data_mode="live",
-        supabase_db_url="postgresql://db.example.invalid/pokecrack",
-        worker_id="worker-1",
-        worker_role="collector",
+        nostr_supabase_db_url="postgresql://nostr.example.invalid/pokecrack",
+        worker_id="nostr-collector-test",
+        worker_role="nostr-collector",
         nostr_collection_enabled=True,
     )
     executor = RecordingExecutor([[{"ready": False}]])
@@ -390,26 +528,94 @@ def test_enabled_nostr_health_requires_the_exact_three_relay_contracts() -> None
         write_health_heartbeat(settings, executor=executor)
 
     sql, params = executor.calls[0]
-    assert params["nostr_enabled"] is True
+    assert params == {"worker_type": "nostr-collector"}
+    assert "ingest.claim_nostr_relay_jobs_v1(text,integer)" in sql
+    assert "ingest.enqueue_due_nostr_relay_jobs_v1(text)" in sql
+    assert "ingest.heartbeat_nostr_relay_job_v1(uuid,text,bigint,integer)" in sql
+    assert "ingest.fail_nostr_relay_job_v1(uuid,text,bigint,text,text,boolean)" in sql
+    assert "ingest.pause_nostr_relay_job_v1(uuid,text,bigint,timestamptz)" in sql
+    assert "ingest.upsert_nostr_worker_heartbeat_v1(text,text,jsonb)" in sql
     assert "ingest.begin_nostr_relay_job(uuid,text,bigint,text)" in sql
     assert "ingest.finalize_nostr_relay_job(uuid,text,bigint,jsonb)" in sql
+    assert "ingest.nostr_worker_runtime_ready_v1()" in sql
+    assert "ingest.get_nostr_worker_policy_snapshot_v1()" in sql
+    assert "FROM ingest.get_nostr_worker_policy_snapshot_v1() AS policies" in sql
+    assert "FROM ingest.source_policies" not in sql
+    assert "ingest.claim_jobs_v2" not in sql
+    assert "ingest.heartbeat_job_v2" not in sql
+    assert "ingest.fail_job_v2" not in sql
+    assert "ingest.pause_job_for_budget_v2" not in sql
+    assert "ingest.upsert_worker_heartbeat_v1" not in sql
     assert sql.count("policies.config - 'relay_key' - 'endpoint' - 'nip11_url'") == 1
     assert "degraded_missing_relay_specific_terms" in sql
     assert "wss://relay.primal.net/" in sql
     assert "wss://nos.lol/" in sql
     assert "wss://relay.nostr.net/" in sql
+    assert "ingest.source_request_gates" in sql
+    assert "ingest.nostr_relay_candidates" in sql
+    assert "ingest.nostr_relay_observations" in sql
+    assert "ingest.nostr_relay_checkpoints" in sql
+    assert "ingest.nostr_relay_observations_id_seq" in sql
+    assert "has_any_column_privilege" in sql
+    assert "has_sequence_privilege" in sql
 
 
-def test_nostr_enablement_freezes_collection_and_cleanup_schedules() -> None:
-    with pytest.raises(ValidationError, match="SCHEDULE_NOSTR_COLLECTION"):
-        Settings(
-            _env_file=None,
-            nostr_collection_enabled=True,
-            schedule_nostr_collection="*/5 * * * *",
-        )
+def test_nostr_health_uses_the_dedicated_worker_heartbeat_wrapper() -> None:
+    settings = Settings(
+        _env_file=None,
+        data_mode="live",
+        nostr_supabase_db_url="postgresql://nostr.example.invalid/pokecrack",
+        worker_id="nostr-collector-test",
+        worker_role="nostr-collector",
+        nostr_collection_enabled=True,
+    )
+    executor = RecordingExecutor([[{"ready": True}], [{"last_seen_at": NOW}]])
+
+    heartbeat = write_health_heartbeat(settings, executor=executor)
+
+    assert heartbeat.worker_role is WorkerRole.NOSTR_COLLECTOR
+    heartbeat_sql, heartbeat_params = executor.calls[1]
+    assert "ingest.upsert_nostr_worker_heartbeat_v1" in heartbeat_sql
+    assert "ingest.upsert_worker_heartbeat_v1" not in heartbeat_sql
+    assert heartbeat_params["worker_id"] == "nostr-collector-test"
+    assert set(json.loads(str(heartbeat_params["metadata"]))) == {
+        "command",
+        "data_mode",
+        "max_concurrency",
+        "role_ready",
+    }
+
+
+def test_nostr_enablement_freezes_cleanup_schedule() -> None:
+    isolated = {
+        "worker_id": "nostr-collector-test",
+        "worker_role": "nostr-collector",
+        "nostr_supabase_db_url": "postgresql://nostr.example.invalid/pokecrack",
+    }
     with pytest.raises(ValidationError, match="NOSTR_COLLECTION_ENABLED.*SCHEDULE_CLEANUP"):
         Settings(
             _env_file=None,
             nostr_collection_enabled=True,
             schedule_cleanup="0 0 * * 0",
+            **isolated,
         )
+
+
+def test_generic_scheduler_ignores_legacy_nostr_schedule_environment(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SCHEDULE_NOSTR_COLLECTION", "not-a-cron")
+    settings = Settings(
+        _env_file=None,
+        data_mode="live",
+        supabase_db_url="postgresql://db.example.invalid/pokecrack",
+        worker_id="scheduler-test",
+        worker_role="scheduler",
+    )
+
+    entries = live_schedule_entries(settings)
+
+    assert all(entry.job_type != NOSTR_RELAY_JOB_TYPE for entry in entries)
+    cleanup = next(entry for entry in entries if entry.name == "cleanup")
+    assert cleanup.catch_up_within == timedelta(hours=36)
+    assert cleanup.catch_up_check_interval == timedelta(hours=1)

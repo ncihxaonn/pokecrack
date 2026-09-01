@@ -39,6 +39,12 @@ BLUESKY_RUNTIME_BOUNDS = (
 NOSTR_MULTI_RELAY = (
     ROOT / "migrations/20260906000000_nostr_multi_relay_discovery.sql"
 ).read_text()
+NOSTR_CLEANUP_CAPACITY = (
+    ROOT / "migrations/20260909000000_nostr_cleanup_capacity.sql"
+).read_text()
+NOSTR_WORKER_ISOLATION = (
+    ROOT / "migrations/20260910000000_nostr_worker_role_isolation.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -322,6 +328,152 @@ class IngestMigrationContractTests(unittest.TestCase):
             "get_public_social_discovery_v2:",
         ):
             self.assertIn(type_name, DATABASE_TYPES)
+
+    def test_nostr_cleanup_capacity_closes_the_36_hour_outage_bound(self) -> None:
+        lowered = NOSTR_CLEANUP_CAPACITY.casefold()
+        compact = " ".join(lowered.split())
+        compact_without_thousands_separators = compact.replace(",", "")
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn("max_rows integer default 750000", compact)
+        self.assertIn("max_rows > 750000", compact)
+        self.assertIn("for update of candidates skip locked", compact)
+        self.assertIn("for update of observations skip locked", compact)
+        self.assertIn("max_rows => 500000", compact)
+        self.assertIn("max_rows => 750000", compact)
+        cleanup_compact = compact.split(
+            "create or replace function ingest.verify_nostr_release_v1()", 1
+        )[0]
+        self.assertNotIn("delete from ingest.nostr_relay_checkpoints", cleanup_compact)
+        self.assertIn("648000", compact_without_thousands_separators)
+        self.assertIn("750000", compact_without_thousands_separators)
+        self.assertIn("length(definition) - length(replace(definition", compact)
+        self.assertIn("finalize_cleanup_job", compact)
+        attestation = lowered.split(
+            "create or replace function ingest.verify_nostr_release_v1()", 1
+        )[1].split(
+            "alter function ingest.verify_nostr_release_v1()", 1
+        )[0]
+        self.assertIn("returns jsonb", attestation)
+        self.assertIn("security definer", attestation)
+        self.assertIn("set search_path = pg_catalog", attestation)
+        self.assertIn("jsonb_build_object", attestation)
+        for contract_key in (
+            "ledger_060",
+            "ledger_090",
+            "request_gates_exact",
+            "nostr_acl_exact",
+            "public_v2_acl_exact",
+            "attestor_role_exact",
+        ):
+            self.assertIn(f"'{contract_key}'", attestation)
+        self.assertIn(
+            "create role pokecrack_nostr_attestor nologin noinherit nosuperuser",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function ingest.verify_nostr_release_v1() to pokecrack_nostr_attestor",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function ingest.verify_nostr_release_v1() to service_role",
+            compact,
+        )
+        self.assertIn("memberships.inherit_option", attestation)
+        self.assertIn("memberships.set_option", attestation)
+        self.assertIn("pokecrack_nostr_attestor_login", attestation)
+        self.assertIn("relations.relkind in ('r', 'p', 'v', 'm', 's')", attestation)
+        self.assertIn("grants.privilege_type = 'maintain'", attestation)
+        self.assertIn("grants.grantee <> gates.relowner", attestation)
+        self.assertIn("verify_nostr_release_v1:", DATABASE_TYPES)
+
+    def test_nostr_worker_role_isolation_is_exact_and_forward_only(self) -> None:
+        lowered = NOSTR_WORKER_ISOLATION.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn(
+            "create role pokecrack_nostr_worker nologin noinherit nosuperuser",
+            compact,
+        )
+        for function_name in (
+            "enqueue_due_nostr_relay_jobs_v1",
+            "claim_nostr_relay_jobs_v1",
+            "heartbeat_nostr_relay_job_v1",
+            "fail_nostr_relay_job_v1",
+            "pause_nostr_relay_job_v1",
+            "upsert_nostr_worker_heartbeat_v1",
+            "nostr_worker_runtime_ready_v1",
+            "get_nostr_worker_policy_snapshot_v1",
+        ):
+            self.assertEqual(
+                lowered.count(f"create or replace function ingest.{function_name}"),
+                1,
+            )
+            self.assertIn(function_name, DATABASE_TYPES)
+        self.assertIn("verify_nostr_release_v2:", DATABASE_TYPES)
+        self.assertIn("set search_path = pg_catalog", lowered)
+        self.assertIn("worker_id !~ '^nostr-collector-", lowered)
+        self.assertIn("where exhausted.job_type <> 'source.nostr.relay'", lowered)
+        self.assertIn("where j.job_type <> 'source.nostr.relay'", lowered)
+        self.assertIn("leased_job.job_type = 'source.nostr.relay'", lowered)
+        self.assertIn("jobs.job_type <> 'source.nostr.relay'", lowered)
+        self.assertIn(
+            "revoke all on function ingest.begin_nostr_relay_job", compact
+        )
+        self.assertIn(
+            "revoke all on function ingest.finalize_nostr_relay_job", compact
+        )
+        self.assertNotIn(
+            "grant execute on function ingest.begin_nostr_relay_job(uuid, text, bigint, text) to service_role",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function ingest.finalize_nostr_relay_job(uuid, text, bigint, jsonb) to service_role",
+            compact,
+        )
+        attestation = lowered.split(
+            "create or replace function ingest.verify_nostr_release_v2()", 1
+        )[1].split("alter function ingest.verify_nostr_release_v2()", 1)[0]
+        for contract_key in (
+            "ledger_100",
+            "nostr_policies_exact",
+            "nostr_acl_exact",
+            "attestor_role_exact",
+            "nostr_worker_role_exact",
+        ):
+            self.assertIn(f"'{contract_key}'", attestation)
+        self.assertIn("pg_catalog.pg_db_role_setting", attestation)
+        self.assertIn("owned_catalog_objects", attestation)
+        self.assertIn("pg_catalog.pg_default_acl", attestation)
+        self.assertIn("pg_catalog.pg_extension", attestation)
+        self.assertIn("nostr_column_acl_grants", attestation)
+        self.assertIn("ingest_column_acl_grants", attestation)
+        self.assertIn("nostr_sequence_acl_grants", attestation)
+        self.assertIn("worker_function_acl_grants", attestation)
+        self.assertIn("attestor_function_acl_grants", attestation)
+        self.assertIn("aclexplode", attestation)
+        self.assertIn("pg_has_role", attestation)
+        self.assertIn("relations.relkind = 's'", attestation)
+        self.assertIn("has_sequence_privilege", attestation)
+        self.assertIn("has_any_column_privilege", attestation)
+        self.assertIn("count(distinct grants.privilege_type) = 8", attestation)
+        self.assertIn("count(distinct grants.privilege_type) = 3", attestation)
+        self.assertIn("functions.prosecdef", attestation)
+        self.assertIn("functions.proconfig", attestation)
+        self.assertIn("grants.is_grantable", attestation)
+        self.assertIn("bool_and(grants.grantee = grants.relowner)", attestation)
+        self.assertIn("'maintain'", attestation)
+        self.assertIn("memberships.member <> roles.login_oid", attestation)
+        self.assertIn("memberships.roleid <> roles.group_oid", attestation)
+        self.assertIn(
+            "grant execute on function ingest.verify_nostr_release_v2() to pokecrack_nostr_attestor",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function ingest.verify_nostr_release_v2() to service_role",
+            compact,
+        )
 
     def test_bluesky_runtime_bounds_are_forward_only_and_fail_closed(self) -> None:
         lowered = BLUESKY_RUNTIME_BOUNDS.casefold()
@@ -743,8 +895,10 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertNotIn("major_version = 15", SUPABASE_CONFIG)
         self.assertIn("server_version_num", MIGRATION_WORKFLOW)
         self.assertIn("server_version_num >= 170000", MIGRATION_WORKFLOW)
-        self.assertIn("deploy/lib/run_with_database_url.py", MIGRATION_WORKFLOW)
-        self.assertNotIn('PGDATABASE="$SUPABASE_DB_URL"', MIGRATION_WORKFLOW)
+        self.assertIn("scripts/run_supabase_migrations.py", MIGRATION_WORKFLOW)
+        self.assertIn("SUPABASE_ACCESS_TOKEN", MIGRATION_WORKFLOW)
+        self.assertNotIn("SUPABASE_DB_URL", MIGRATION_WORKFLOW)
+        self.assertNotIn("--db-url", MIGRATION_WORKFLOW)
 
     def test_seed_aggregate_rows_obey_count_and_practical_probability_contracts(self) -> None:
         source_fields = {

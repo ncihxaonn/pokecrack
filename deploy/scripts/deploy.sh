@@ -5,14 +5,17 @@ umask 077
 
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 PORTABILITY_HELPER="$SCRIPT_DIR/../lib/shell_portability.sh"
+NOSTR_PREFLIGHT="$SCRIPT_DIR/../lib/verify_nostr_release.py"
 # shellcheck disable=SC1090
 source "$PORTABILITY_HELPER"
 REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/../.." && pwd -P)
 COMPOSE_FILE="$REPOSITORY_ROOT/deploy/compose.prod.yml"
 ENV_FILE=${POKECRACK_ENV_FILE:-/etc/pokecrack/production.env}
+NOSTR_ENV_FILE=${POKECRACK_NOSTR_ENV_FILE:-}
 STATE_DIR=${POKECRACK_DEPLOY_STATE_DIR:-/var/lib/pokecrack/deploy}
 HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-180}
 SERVICE_SET=tcgdex
+RETIRE_NOSTR=false
 SERVICES=(collector scheduler watchdog)
 SERVICES_CSV=collector,scheduler,watchdog
 
@@ -43,11 +46,15 @@ rollback_marker() {
       && $version_line == 'version=1' \
       && $sha_line == "sha=$rollback" \
       && $rollback =~ ^[0-9a-f]{40}$ \
-      && $service_set_line == 'service_set=tcgdex' \
-      && $services_line == "services=$SERVICES_CSV" ]]
+      && ( \
+        ( $service_set_line == 'service_set=tcgdex' \
+          && $services_line == 'services=collector,scheduler,watchdog' ) \
+        || ( $service_set_line == 'service_set=tcgdex-nostr' \
+          && $services_line == 'services=collector,scheduler,watchdog,nostr-collector' ) \
+      ) ]]
     then
-      printf "Rollback commit: %s (service set: tcgdex; services: %s)\n" \
-        "$rollback" "$SERVICES_CSV" >&2
+      printf "Rollback commit: %s (%s; %s)\n" \
+        "$rollback" "$service_set_line" "$services_line" >&2
     fi
   fi
 }
@@ -64,9 +71,11 @@ Usage: deploy.sh EXACT_40_CHARACTER_GIT_SHA [options]
 
 Options:
   --env-file ABSOLUTE_PATH    Compose interpolation file (default: /etc/pokecrack/production.env)
+  --nostr-env-file PATH       Dedicated Nostr interpolation/preflight file (tcgdex-nostr only)
   --state-dir ABSOLUTE_PATH   Success-marker directory (default: /var/lib/pokecrack/deploy)
   --health-timeout SECONDS    Health deadline (default: 180)
-  --service-set NAME          Exact release service set (only: tcgdex; default: tcgdex)
+  --service-set NAME          Exact release service set (tcgdex or tcgdex-nostr)
+  --retire-nostr              Explicitly stop/remove only the managed Nostr container
 
 The full service set is intentionally unavailable: ai-worker and aggregator do
 not have safe live handlers in this release.
@@ -79,9 +88,11 @@ shift
 while (($#)); do
   case $1 in
     --env-file) (($# >= 2)) || die "--env-file requires a value"; ENV_FILE=$2; shift 2 ;;
+    --nostr-env-file) (($# >= 2)) || die "--nostr-env-file requires a value"; NOSTR_ENV_FILE=$2; shift 2 ;;
     --state-dir) (($# >= 2)) || die "--state-dir requires a value"; STATE_DIR=$2; shift 2 ;;
     --health-timeout) (($# >= 2)) || die "--health-timeout requires a value"; HEALTH_TIMEOUT=$2; shift 2 ;;
     --service-set) (($# >= 2)) || die "--service-set requires a value"; SERVICE_SET=$2; shift 2 ;;
+    --retire-nostr) RETIRE_NOSTR=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
@@ -94,9 +105,26 @@ done
 [[ $HEALTH_TIMEOUT =~ ^[1-9][0-9]*$ ]] || die "health timeout must be a positive integer"
 [[ -f $COMPOSE_FILE ]] || die "Compose file is missing: $COMPOSE_FILE"
 case $SERVICE_SET in
-  tcgdex) ;;
+  tcgdex)
+    [[ -z $NOSTR_ENV_FILE ]] || \
+      die "the tcgdex service set does not accept a Nostr environment file"
+    ;;
+  tcgdex-nostr)
+    [[ $RETIRE_NOSTR == false ]] || \
+      die "tcgdex-nostr cannot be combined with --retire-nostr"
+    SERVICES=(collector scheduler watchdog nostr-collector)
+    SERVICES_CSV=collector,scheduler,watchdog,nostr-collector
+    [[ -n $NOSTR_ENV_FILE && $NOSTR_ENV_FILE == /* ]] || \
+      die "tcgdex-nostr requires an absolute Nostr environment file path"
+    [[ -f $NOSTR_ENV_FILE && ! -L $NOSTR_ENV_FILE ]] || \
+      die "Nostr environment file must be a regular, non-symlink file"
+    [[ ! $ENV_FILE -ef $NOSTR_ENV_FILE ]] || \
+      die "Nostr environment file must be distinct from the production environment file"
+    [[ -f $NOSTR_PREFLIGHT && ! -L $NOSTR_PREFLIGHT ]] || \
+      die "Nostr release preflight is missing"
+    ;;
   full) die "full service set is unavailable because ai-worker and aggregator fail closed in live mode" ;;
-  *) die "unsupported service set: $SERVICE_SET (allowed: tcgdex)" ;;
+  *) die "unsupported service set: $SERVICE_SET (allowed: tcgdex, tcgdex-nostr)" ;;
 esac
 
 for command in docker git install mktemp python3 stat; do
@@ -107,6 +135,15 @@ env_mode=$(pokecrack_stat_mode "$ENV_FILE") || die "could not validate environme
 [[ $env_mode =~ ^[0-7]{3,4}$ ]] || die "could not validate environment file permissions"
 env_permissions=$((8#$env_mode))
 (( (env_permissions & 0077) == 0 )) || die "environment file must not be accessible by group or other users (use mode 0600)"
+if [[ $SERVICE_SET == tcgdex-nostr ]]; then
+  nostr_env_mode=$(pokecrack_stat_mode "$NOSTR_ENV_FILE") || \
+    die "could not validate Nostr environment file permissions"
+  [[ $nostr_env_mode =~ ^[0-7]{3,4}$ ]] || \
+    die "could not validate Nostr environment file permissions"
+  nostr_env_permissions=$((8#$nostr_env_mode))
+  (( (nostr_env_permissions & 0077) == 0 )) || \
+    die "Nostr environment file must not be accessible by group or other users (use mode 0600)"
+fi
 
 [[ ! -L $STATE_DIR ]] || die "state directory must not be a symbolic link"
 install -d -m 0700 "$STATE_DIR"
@@ -137,6 +174,14 @@ checked_out_sha=$(git -C "$REPOSITORY_ROOT" rev-parse --verify HEAD)
 export DEPLOY_SHA=$target_sha
 export POKECRACK_ENV_FILE=$ENV_FILE
 compose=(docker compose --project-name pokecrack --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
+if [[ $SERVICE_SET == tcgdex-nostr ]]; then
+  compose=(docker compose --project-name pokecrack \
+    --env-file "$ENV_FILE" --env-file "$NOSTR_ENV_FILE" \
+    --profile nostr -f "$COMPOSE_FILE")
+  python3 "$NOSTR_PREFLIGHT" \
+    --env-file "$NOSTR_ENV_FILE" --require-enabled || \
+    die "Nostr hosted contract preflight failed; existing services were left unchanged"
+fi
 
 docker compose version >/dev/null
 "${compose[@]}" config --quiet
@@ -144,16 +189,32 @@ existing_services=$(docker ps --all \
   --filter label=com.docker.compose.project=pokecrack \
   --format '{{.ID}}|{{.Label "com.docker.compose.service"}}') || \
   die "could not enumerate existing Pokecrack project containers"
+nostr_container_present=false
 while IFS='|' read -r existing_id existing_service extra_field; do
   [[ -n $existing_id ]] || continue
   [[ -n $existing_service && -z $extra_field ]] || \
     die "Pokecrack project container is missing a valid Compose service label: $existing_id"
   case $existing_service in
     collector|scheduler|watchdog) ;;
+    nostr-collector)
+      if [[ $SERVICE_SET == tcgdex-nostr ]]; then
+        :
+      elif [[ $RETIRE_NOSTR == true ]]; then
+        nostr_container_present=true
+      else
+        die "Nostr collector exists but is excluded; repeat with explicit --retire-nostr"
+      fi
+      ;;
     *) die \
-      "non-TCGdex service container exists: $existing_service; retire it through a separately approved operation" ;;
+      "unapproved service container exists: $existing_service; retire it through a separately approved operation" ;;
   esac
 done <<< "$existing_services"
+if [[ $nostr_container_present == true ]]; then
+  "${compose[@]}" stop nostr-collector || \
+    die "could not stop the explicitly retired Nostr collector"
+  "${compose[@]}" rm --force --stop nostr-collector || \
+    die "could not remove the explicitly retired Nostr collector"
+fi
 "${compose[@]}" build --pull "${SERVICES[@]}"
 "${compose[@]}" config --quiet
 "${compose[@]}" up --detach "${SERVICES[@]}"

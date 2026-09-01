@@ -1067,7 +1067,7 @@ def test_live_scheduler_registers_the_daily_tcgdex_sets_job() -> None:
     executor = RecordingExecutor(
         [[_job_row(status="pending", locked=False, job_type=TCGDEX_SETS_JOB_TYPE)]]
     )
-    settings = _settings("scheduler")
+    settings = _settings("scheduler", schedule_cleanup="0 0 31 2 *")
 
     result = build_live_scheduler(settings, executor=executor).run_due(now=catalog_time)
 
@@ -1102,6 +1102,7 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
             ]
             for name in expected_names
         ]
+        + [[_job_row(status="pending", locked=False, job_type=CLEANUP_JOB_TYPE)]]
     )
 
     youtube_slot = NOW.replace(hour=0)
@@ -1109,14 +1110,20 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
 
     assert settings.youtube_api_key is None
     assert settings.schedule_official_api == "0 */6 * * *"
-    assert result.created == 5
-    assert result.due_names == tuple(f"youtube_{name}" for name in expected_names)
-    assert len(executor.calls) == 5
-    assert [json.loads(str(params["payload"])) for _sql, params in executor.calls] == [
+    assert result.created == 6
+    assert result.due_names == tuple(f"youtube_{name}" for name in expected_names) + (
+        "cleanup",
+    )
+    youtube_calls = [
+        (sql, params)
+        for sql, params in executor.calls
+        if params["kind"] == YOUTUBE_DISCOVERY_JOB_TYPE
+    ]
+    assert len(executor.calls) == 6
+    assert [json.loads(str(params["payload"])) for _sql, params in youtube_calls] == [
         {"query_name": name} for name in expected_names
     ]
-    assert all(params["kind"] == YOUTUBE_DISCOVERY_JOB_TYPE for _sql, params in executor.calls)
-    assert all(params["max_attempts"] == 3 for _sql, params in executor.calls)
+    assert all(params["max_attempts"] == 3 for _sql, params in youtube_calls)
     assert all(
         entry.cron == "0 */6 * * *" and entry.catch_up_within == timedelta(hours=12)
         for entry in live_schedule_entries(settings)
@@ -1124,15 +1131,15 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
     )
 
 
-def test_enabled_youtube_cleanup_has_a_bounded_restart_catch_up_margin() -> None:
-    entries = live_schedule_entries(_youtube_settings("scheduler"))
+def test_cleanup_has_the_source_agnostic_recovery_margin() -> None:
+    entries = live_schedule_entries(_settings("scheduler"))
     cleanup = next(entry for entry in entries if entry.name == "cleanup")
     missed_slot = NOW.replace(hour=3, minute=30)
 
-    assert cleanup.catch_up_within == timedelta(hours=12)
+    assert cleanup.catch_up_within == timedelta(hours=36)
     assert cleanup.catch_up_check_interval == timedelta(hours=1)
     assert cleanup.slot(NOW) == missed_slot
-    assert cleanup.slot(missed_slot + timedelta(hours=12, minutes=1)) is None
+    assert cleanup.slot(missed_slot + timedelta(hours=23, minutes=59)) == missed_slot
 
 
 def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
