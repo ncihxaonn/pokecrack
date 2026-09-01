@@ -4,7 +4,7 @@ x-worker-build: &worker-build
   context: ..
   dockerfile: deploy/Dockerfile.worker
   args:
-    PYTHON_IMAGE: "${PYTHON_IMAGE:-python:3.13.5-slim-bookworm}"
+    PYTHON_IMAGE: "${PYTHON_IMAGE:-python:3.13.5-slim-bookworm@sha256:4c2cf9917bd1cbacc5e9b07320025bdb7cdf2df7b0ceaccb55e9dd7e30987419}"
     UV_VERSION: "${UV_VERSION:-0.11.6}"
 
 x-worker-environment: &worker-environment
@@ -60,7 +60,8 @@ services:
       YOUTUBE_COLLECTION_ENABLED: "${YOUTUBE_COLLECTION_ENABLED:-false}"
       PUBLIC_STUDY_COLLECTION_ENABLED: "${PUBLIC_STUDY_COLLECTION_ENABLED:-false}"
       BLUESKY_COLLECTION_ENABLED: "${BLUESKY_COLLECTION_ENABLED:-false}"
-      NOSTR_COLLECTION_ENABLED: "${NOSTR_COLLECTION_ENABLED:-false}"
+      # Nostr is intentionally absent from the broad collector credential.
+      NOSTR_COLLECTION_ENABLED: "false"
       SCRAPLING_ENABLED: "${SCRAPLING_ENABLED:-true}"
       SCRAPLING_HTTP_CONCURRENCY: "${SCRAPLING_HTTP_CONCURRENCY:-4}"
       SCRAPLING_PER_DOMAIN_CONCURRENCY: "${SCRAPLING_PER_DOMAIN_CONCURRENCY:-2}"
@@ -74,6 +75,30 @@ services:
     mem_limit: "${COLLECTOR_MEMORY:-384m}"
     pids_limit: 256
 
+  nostr-collector:
+    profiles: ["nostr"]
+    <<: *worker-base
+    command: ["nostr-collector"]
+    environment:
+      DATA_MODE: "${DATA_MODE:-demo}"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      PYTHONUNBUFFERED: "1"
+      NOSTR_SUPABASE_DB_URL: "${NOSTR_SUPABASE_DB_URL:-}"
+      WORKER_POLL_SECONDS: "${WORKER_POLL_SECONDS:-10}"
+      WORKER_MAX_CONCURRENCY: "1"
+      WORKER_ID: "nostr-collector-1"
+      WORKER_ROLE: nostr-collector
+      YOUTUBE_COLLECTION_ENABLED: "false"
+      PUBLIC_STUDY_COLLECTION_ENABLED: "false"
+      BLUESKY_COLLECTION_ENABLED: "false"
+      NOSTR_COLLECTION_ENABLED: "true"
+      SCRAPLING_ENABLED: "false"
+      SCRAPLING_DYNAMIC_ENABLED: "false"
+      SCRAPLING_SAVE_RAW_HTML: "false"
+    cpus: "${NOSTR_COLLECTOR_CPUS:-0.20}"
+    mem_limit: "${NOSTR_COLLECTOR_MEMORY:-256m}"
+    pids_limit: 128
+
   auth-browser:
     profiles: ["unready-full"]
     image: "${POKECRACK_AUTH_BROWSER_IMAGE:-pokecrack-auth-browser}:${DEPLOY_SHA:?DEPLOY_SHA must be an exact 40-character Git commit}"
@@ -81,7 +106,7 @@ services:
       context: ..
       dockerfile: deploy/Dockerfile.auth-browser
       args:
-        PYTHON_IMAGE: "${PYTHON_IMAGE:-python:3.13.5-slim-bookworm}"
+        PYTHON_IMAGE: "${PYTHON_IMAGE:-python:3.13.5-slim-bookworm@sha256:4c2cf9917bd1cbacc5e9b07320025bdb7cdf2df7b0ceaccb55e9dd7e30987419}"
         NODE_IMAGE: "${NODE_IMAGE:-node:22.13.0-bookworm-slim}"
         OPENCLI_VERSION: "${OPENCLI_VERSION:-1.8.7}"
     restart: unless-stopped
@@ -216,11 +241,11 @@ services:
       YOUTUBE_COLLECTION_ENABLED: "${YOUTUBE_COLLECTION_ENABLED:-false}"
       PUBLIC_STUDY_COLLECTION_ENABLED: "${PUBLIC_STUDY_COLLECTION_ENABLED:-false}"
       BLUESKY_COLLECTION_ENABLED: "${BLUESKY_COLLECTION_ENABLED:-false}"
-      NOSTR_COLLECTION_ENABLED: "${NOSTR_COLLECTION_ENABLED:-false}"
+      # The isolated collector owns Nostr scheduling and execution.
+      NOSTR_COLLECTION_ENABLED: "false"
       SCHEDULE_OFFICIAL_API: "${SCHEDULE_OFFICIAL_API:-0 */6 * * *}"
       SCHEDULE_PUBLIC_COLLECTION: "${SCHEDULE_PUBLIC_COLLECTION:-15 4 * * *}"
       SCHEDULE_BLUESKY_COLLECTION: "${SCHEDULE_BLUESKY_COLLECTION:-* * * * *}"
-      SCHEDULE_NOSTR_COLLECTION: "${SCHEDULE_NOSTR_COLLECTION:-* * * * *}"
       SCHEDULE_AUTH_COLLECTION: "${SCHEDULE_AUTH_COLLECTION:-30 */12 * * *}"
       SCHEDULE_CATALOG_SYNC: "${SCHEDULE_CATALOG_SYNC:-0 2 * * *}"
       SCHEDULE_AGGREGATES: "${SCHEDULE_AGGREGATES:-5 * * * *}"

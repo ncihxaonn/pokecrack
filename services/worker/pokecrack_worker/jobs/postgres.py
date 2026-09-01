@@ -50,6 +50,26 @@ FROM ingest.claim_jobs_v2(
 )
 """.strip()
 
+# Nostr workers use fixed, source-scoped queue wrappers.  They deliberately do
+# not accept a caller-provided job-type array: the database function owns the
+# ``source.nostr.relay`` allowlist as well as the role boundary.
+NOSTR_JOB_TYPE = "source.nostr.relay"
+
+NOSTR_CLAIM_SQL = """
+WITH due_jobs AS MATERIALIZED (
+    SELECT ingest.enqueue_due_nostr_relay_jobs_v1(
+        p_worker_id => %(worker_id)s
+    ) AS scheduled_count
+)
+SELECT claimed.*
+FROM due_jobs
+CROSS JOIN LATERAL ingest.claim_nostr_relay_jobs_v1(
+    p_worker_id => %(worker_id)s,
+    p_lease_seconds => %(lease_seconds)s::integer
+) AS claimed
+WHERE due_jobs.scheduled_count = 3
+""".strip()
+
 ENQUEUE_SCHEDULED_SQL = """
 SELECT *
 FROM ingest.enqueue_scheduled_job_v1(
@@ -95,6 +115,16 @@ FROM ingest.heartbeat_job_v2(
 )
 """.strip()
 
+NOSTR_HEARTBEAT_SQL = """
+SELECT *
+FROM ingest.heartbeat_nostr_relay_job_v1(
+    p_job_id => %(job_id)s::uuid,
+    p_worker_id => %(worker_id)s,
+    p_lease_generation => %(lease_generation)s::bigint,
+    p_lease_seconds => %(lease_seconds)s::integer
+)
+""".strip()
+
 FAIL_SQL = """
 SELECT *
 FROM ingest.fail_job_v2(
@@ -104,6 +134,18 @@ FROM ingest.fail_job_v2(
     error_code => %(error_code)s,
     error_message => %(error_message)s,
     retryable => %(retryable)s::boolean
+)
+""".strip()
+
+NOSTR_FAIL_SQL = """
+SELECT *
+FROM ingest.fail_nostr_relay_job_v1(
+    p_job_id => %(job_id)s::uuid,
+    p_worker_id => %(worker_id)s,
+    p_lease_generation => %(lease_generation)s::bigint,
+    p_error_code => %(error_code)s,
+    p_error_message => %(error_message)s,
+    p_retryable => %(retryable)s::boolean
 )
 """.strip()
 
@@ -193,6 +235,16 @@ FROM ingest.pause_job_for_budget_v2(
     %(worker_id)s,
     %(lease_generation)s::bigint,
     %(retry_at)s
+)
+""".strip()
+
+NOSTR_PAUSE_BUDGET_SQL = """
+SELECT *
+FROM ingest.pause_nostr_relay_job_v1(
+    p_job_id => %(job_id)s::uuid,
+    p_worker_id => %(worker_id)s,
+    p_lease_generation => %(lease_generation)s::bigint,
+    p_retry_at => %(retry_at)s::timestamptz
 )
 """.strip()
 
@@ -496,3 +548,238 @@ class PostgresJobRepository:
         if not rows:
             raise LeaseLostError(job_id)
         return job_from_row(rows[0])
+
+
+class NostrPostgresJobRepository:
+    """Source-scoped queue adapter for the dedicated Nostr worker role.
+
+    The runtime protocol still uses ``lease``/``heartbeat``/``complete`` and
+    friends, but every implementation below calls a fixed Nostr-only database
+    wrapper.  In particular, this class never passes a caller-controlled job
+    type list to the generic queue RPC.
+    """
+
+    def __init__(self, executor: QueryExecutor) -> None:
+        self._executor = executor
+
+    @staticmethod
+    def _lease_seconds(lease_for: timedelta) -> int:
+        lease_seconds = int(lease_for.total_seconds())
+        if lease_for != timedelta(seconds=lease_seconds) or not 1 <= lease_seconds <= 86_400:
+            raise ValueError("lease_for must be a whole number of seconds between 1 and 86400")
+        return lease_seconds
+
+    def claim_nostr_relay_jobs(
+        self,
+        worker_id: str,
+        *,
+        now: datetime,
+        lease_for: timedelta,
+    ) -> Job | None:
+        del now
+        rows = self._executor.query(
+            NOSTR_CLAIM_SQL,
+            {
+                "worker_id": worker_id,
+                "lease_seconds": self._lease_seconds(lease_for),
+            },
+        )
+        return job_from_row(rows[0]) if rows else None
+
+    def heartbeat_nostr_relay_job(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        lease_for: timedelta,
+    ) -> Job:
+        del now
+        rows = self._executor.query(
+            NOSTR_HEARTBEAT_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+                "lease_seconds": self._lease_seconds(lease_for),
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        return job_from_row(rows[0])
+
+    def complete_nostr_relay_job(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        effect: CompletionEffect
+        | PublicStudyCompletion
+        | TCGdexSetsSyncCompletion
+        | YouTubeDiscoveryCompletion
+        | BlueskyJetstreamCompletion
+        | NostrRelayCompletion
+        | None = None,
+    ) -> Job:
+        del now
+        if not isinstance(effect, NostrRelayCompletion):
+            raise ValueError("Nostr jobs require a NostrRelayCompletion effect")
+        rows = self._executor.query(
+            FINALIZE_NOSTR_RELAY_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+                "result": json.dumps(effect.as_payload(), separators=(",", ":"), sort_keys=True),
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        return job_from_row(rows[0])
+
+    def pause_nostr_relay_job(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        retry_at: datetime,
+    ) -> Job:
+        del now
+        rows = self._executor.query(
+            NOSTR_PAUSE_BUDGET_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+                "retry_at": retry_at,
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        return job_from_row(rows[0])
+
+    def fail_nostr_relay_job(
+        self,
+        job_id: str,
+        error: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        error_code: str = "job_failed",
+        retryable: bool = True,
+    ) -> Job:
+        del now
+        rows = self._executor.query(
+            NOSTR_FAIL_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+                "error_code": error_code[:160],
+                "error_message": error[:8_000],
+                "retryable": retryable,
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        return job_from_row(rows[0])
+
+    def lease(
+        self,
+        worker_id: str,
+        *,
+        now: datetime,
+        lease_for: timedelta,
+        kinds: set[str] | None = None,
+    ) -> Job | None:
+        if kinds is not None and kinds != {NOSTR_JOB_TYPE}:
+            raise ValueError("Nostr workers may claim only source.nostr.relay jobs")
+        return self.claim_nostr_relay_jobs(
+            worker_id,
+            now=now,
+            lease_for=lease_for,
+        )
+
+    def heartbeat(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        lease_for: timedelta,
+    ) -> Job:
+        return self.heartbeat_nostr_relay_job(
+            job_id,
+            worker_id=worker_id,
+            lease_generation=lease_generation,
+            now=now,
+            lease_for=lease_for,
+        )
+
+    def complete(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        effect: CompletionEffect
+        | PublicStudyCompletion
+        | TCGdexSetsSyncCompletion
+        | YouTubeDiscoveryCompletion
+        | BlueskyJetstreamCompletion
+        | NostrRelayCompletion
+        | None = None,
+    ) -> Job:
+        return self.complete_nostr_relay_job(
+            job_id,
+            worker_id=worker_id,
+            lease_generation=lease_generation,
+            now=now,
+            effect=effect,
+        )
+
+    def pause_for_budget(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        retry_at: datetime,
+    ) -> Job:
+        return self.pause_nostr_relay_job(
+            job_id,
+            worker_id=worker_id,
+            lease_generation=lease_generation,
+            now=now,
+            retry_at=retry_at,
+        )
+
+    def fail(
+        self,
+        job_id: str,
+        error: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        error_code: str = "job_failed",
+        retryable: bool = True,
+    ) -> Job:
+        return self.fail_nostr_relay_job(
+            job_id,
+            error,
+            worker_id=worker_id,
+            lease_generation=lease_generation,
+            now=now,
+            error_code=error_code,
+            retryable=retryable,
+        )

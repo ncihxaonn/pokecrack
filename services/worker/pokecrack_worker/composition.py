@@ -14,6 +14,7 @@ from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from pathlib import Path
+from urllib.parse import parse_qsl, quote, unquote, urlencode, urlsplit, urlunsplit
 
 from pokecrack_worker import __version__
 from pokecrack_worker.collectors.base import CollectionService, CollectorError, HTTPClient
@@ -74,6 +75,7 @@ from pokecrack_worker.jobs import (
     Job,
     NostrCandidateWrite,
     NostrDeletionWrite,
+    NostrPostgresJobRepository,
     NostrRelayCompletion,
     PostgresJobRepository,
     PublicStudyCompletion,
@@ -90,6 +92,7 @@ from pokecrack_worker.scheduler import CronExpression, ScheduleEntry, Scheduler
 
 class WorkerRole(StrEnum):
     COLLECTOR = "collector"
+    NOSTR_COLLECTOR = "nostr-collector"
     AI_WORKER = "ai-worker"
     AGGREGATOR = "aggregator"
     SCHEDULER = "scheduler"
@@ -129,6 +132,15 @@ SELECT last_seen_at
 FROM ingest.upsert_worker_heartbeat_v1(
     %(worker_id)s,
     %(worker_type)s,
+    %(version)s,
+    %(metadata)s::jsonb
+)
+""".strip()
+
+NOSTR_WORKER_HEARTBEAT_SQL = """
+SELECT last_seen_at
+FROM ingest.upsert_nostr_worker_heartbeat_v1(
+    %(worker_id)s,
     %(version)s,
     %(metadata)s::jsonb
 )
@@ -691,8 +703,244 @@ SELECT
   END AS ready
 """.strip()
 
+# The Nostr collector has a separate database role and a source-scoped queue
+# API.  Keep this probe separate from the shared-worker probe so a Nostr
+# process cannot accidentally gain a dependency on a generic queue RPC or on
+# another source's policy table contract.
+NOSTR_LIVE_ROLE_DEPENDENCIES_SQL = """
+WITH nostr_dependencies AS (
+  SELECT COALESCE(
+    to_regprocedure('ingest.enqueue_due_nostr_relay_jobs_v1(text)') IS NOT NULL
+    AND to_regprocedure('ingest.claim_nostr_relay_jobs_v1(text,integer)') IS NOT NULL
+    AND to_regprocedure(
+      'ingest.heartbeat_nostr_relay_job_v1(uuid,text,bigint,integer)'
+    ) IS NOT NULL
+    AND to_regprocedure(
+      'ingest.fail_nostr_relay_job_v1(uuid,text,bigint,text,text,boolean)'
+    ) IS NOT NULL
+    AND to_regprocedure(
+      'ingest.pause_nostr_relay_job_v1(uuid,text,bigint,timestamptz)'
+    ) IS NOT NULL
+    AND to_regprocedure('ingest.begin_nostr_relay_job(uuid,text,bigint,text)') IS NOT NULL
+    AND to_regprocedure(
+      'ingest.finalize_nostr_relay_job(uuid,text,bigint,jsonb)'
+    ) IS NOT NULL
+    AND to_regprocedure('ingest.nostr_worker_runtime_ready_v1()') IS NOT NULL
+    AND to_regprocedure(
+      'ingest.get_nostr_worker_policy_snapshot_v1()'
+    ) IS NOT NULL
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.enqueue_due_nostr_relay_jobs_v1(text)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.claim_nostr_relay_jobs_v1(text,integer)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.heartbeat_nostr_relay_job_v1(uuid,text,bigint,integer)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.fail_nostr_relay_job_v1(uuid,text,bigint,text,text,boolean)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.pause_nostr_relay_job_v1(uuid,text,bigint,timestamptz)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.begin_nostr_relay_job(uuid,text,bigint,text)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.finalize_nostr_relay_job(uuid,text,bigint,jsonb)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.nostr_worker_runtime_ready_v1()'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.get_nostr_worker_policy_snapshot_v1()'),
+      'EXECUTE'
+    )
+    AND ingest.nostr_worker_runtime_ready_v1()
+    AND (
+      SELECT
+        count(*) = 3
+        AND bool_and(
+          policies.enabled
+          AND NOT policies.is_demo
+          AND policies.source_kind = 'public_web'
+          AND policies.collector_type = 'nostr_relay'
+          AND policies.access_mode = 'public'
+          AND policies.robots_policy = 'not_applicable'
+          AND policies.routes = ARRAY['nostr_relay']::text[]
+          AND NOT policies.include_subdomains
+          AND policies.min_delay_seconds = 1
+          AND policies.max_pages_per_run = 1
+          AND policies.max_items_per_run = 100
+          AND policies.max_concurrency = 1
+          AND policies.browser_profile IS NULL
+          AND NOT policies.statistics_eligible_default
+          AND policies.retention_days = 30
+          AND policies.version = 'nostr-multi-relay-v1'
+          AND policies.expected_interval_seconds = 60
+          AND policies.config - 'relay_key' - 'endpoint' - 'nip11_url' = '{
+            "protocol":"nip01",
+            "required_nips":[1,9,11],
+            "approved_tags":[
+              "pokemontcg","PokemonTCG","pokemoncards","PokemonCards",
+              "ポケカ","ポケモンカード","포켓몬카드","宝可梦卡牌","寶可夢卡牌"
+            ],
+            "replay_overlap_seconds":300,
+            "stream_window_seconds":15,
+            "max_events":100,
+            "max_message_bytes":262144,
+            "max_stream_bytes":2097152,
+            "max_candidates":100,
+            "max_deletions":100,
+            "max_delete_targets":16,
+            "statistics_eligible":false,
+            "policy_state":"degraded_missing_relay_specific_terms"
+          }'::jsonb
+        )
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'nostr_relay_primal'
+            AND policies.display_name =
+              'Nostr relay relay.primal.net discovery'
+            AND policies.domain = 'relay.primal.net'
+            AND policies.base_url = 'wss://relay.primal.net/'
+            AND policies.config ->> 'relay_key' = 'primal'
+            AND policies.config ->> 'endpoint' = 'wss://relay.primal.net/'
+            AND policies.config ->> 'nip11_url' = 'https://relay.primal.net/'
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'nostr_relay_nos_lol'
+            AND policies.display_name = 'Nostr relay nos.lol discovery'
+            AND policies.domain = 'nos.lol'
+            AND policies.base_url = 'wss://nos.lol/'
+            AND policies.config ->> 'relay_key' = 'nos_lol'
+            AND policies.config ->> 'endpoint' = 'wss://nos.lol/'
+            AND policies.config ->> 'nip11_url' = 'https://nos.lol/'
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'nostr_relay_nostr_net'
+            AND policies.display_name =
+              'Nostr relay relay.nostr.net discovery'
+            AND policies.domain = 'relay.nostr.net'
+            AND policies.base_url = 'wss://relay.nostr.net/'
+            AND policies.config ->> 'relay_key' = 'nostr_net'
+            AND policies.config ->> 'endpoint' = 'wss://relay.nostr.net/'
+            AND policies.config ->> 'nip11_url' = 'https://relay.nostr.net/'
+        ) = 1
+      FROM ingest.get_nostr_worker_policy_snapshot_v1() AS policies
+    ),
+    false
+  ) AS ready
+)
+SELECT
+  %(worker_type)s = 'nostr-collector'
+  AND (SELECT ready FROM nostr_dependencies)
+  AND to_regprocedure(
+    'ingest.upsert_nostr_worker_heartbeat_v1(text,text,jsonb)'
+  ) IS NOT NULL
+  AND has_function_privilege(
+    current_user,
+    to_regprocedure(
+      'ingest.upsert_nostr_worker_heartbeat_v1(text,text,jsonb)'
+    ),
+    'EXECUTE'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.jobs',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user, 'ingest.jobs', 'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.worker_heartbeats',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user,
+    'ingest.worker_heartbeats',
+    'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.source_request_gates',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user,
+    'ingest.source_request_gates',
+    'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.nostr_relay_candidates',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user,
+    'ingest.nostr_relay_candidates',
+    'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.nostr_relay_observations',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user,
+    'ingest.nostr_relay_observations',
+    'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.nostr_relay_checkpoints',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user,
+    'ingest.nostr_relay_checkpoints',
+    'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_sequence_privilege(
+    current_user, 'ingest.nostr_relay_observations_id_seq', 'USAGE'
+  )
+  AND NOT has_sequence_privilege(
+    current_user, 'ingest.nostr_relay_observations_id_seq', 'SELECT'
+  )
+  AND NOT has_sequence_privilege(
+    current_user, 'ingest.nostr_relay_observations_id_seq', 'UPDATE'
+  )
+AS ready
+""".strip()
+
 _WORKER_JOB_TYPES: Mapping[WorkerRole, tuple[str, ...]] = {
     WorkerRole.COLLECTOR: (TCGDEX_SETS_JOB_TYPE,),
+    WorkerRole.NOSTR_COLLECTOR: (NOSTR_RELAY_JOB_TYPE,),
     WorkerRole.WATCHDOG: (CLEANUP_JOB_TYPE,),
 }
 
@@ -700,7 +948,6 @@ _SCHEDULE_FIELDS: tuple[tuple[str, str], ...] = (
     ("official_api", "schedule_official_api"),
     ("public_collection", "schedule_public_collection"),
     ("bluesky_collection", "schedule_bluesky_collection"),
-    ("nostr_collection", "schedule_nostr_collection"),
     ("auth_collection", "schedule_auth_collection"),
     ("catalog_sync", "schedule_catalog_sync"),
     ("aggregates", "schedule_aggregates"),
@@ -717,7 +964,6 @@ UNWIRED_SCHEDULE_NAMES = tuple(
         "official_api",
         "public_collection",
         "bluesky_collection",
-        "nostr_collection",
         "catalog_sync",
         "cleanup",
     }
@@ -730,7 +976,13 @@ def _require_live_settings(settings: Settings) -> None:
             "live_mode_required",
             "the PostgreSQL composition root requires DATA_MODE=live",
         )
-    if settings.supabase_db_url is None:
+    if settings.worker_role == WorkerRole.NOSTR_COLLECTOR.value:
+        if settings.nostr_supabase_db_url is None:
+            raise LiveCompositionError(
+                "database_configuration_missing",
+                "live Nostr collector requires NOSTR_SUPABASE_DB_URL",
+            )
+    elif settings.supabase_db_url is None:
         raise LiveCompositionError(
             "database_configuration_missing",
             "live mode requires a PostgreSQL database URL",
@@ -770,8 +1022,29 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
             "worker_role_not_ready",
             "the configured role has no safe live job handlers in this build",
         )
+    if role is WorkerRole.NOSTR_COLLECTOR:
+        if not settings.nostr_collection_enabled:
+            raise LiveCompositionError(
+                "nostr_role_configuration_invalid",
+                "WORKER_ROLE=nostr-collector requires NOSTR_COLLECTION_ENABLED=true",
+            )
+        if (
+            settings.youtube_collection_enabled
+            or settings.bluesky_collection_enabled
+            or settings.public_study_collection_enabled
+        ):
+            raise LiveCompositionError(
+                "nostr_role_configuration_invalid",
+                "WORKER_ROLE=nostr-collector allows only NOSTR_COLLECTION_ENABLED",
+            )
+        return job_types
     if role is not WorkerRole.COLLECTOR:
         return job_types
+    if settings.nostr_collection_enabled:
+        raise LiveCompositionError(
+            "nostr_role_required",
+            "NOSTR_COLLECTION_ENABLED requires WORKER_ROLE=nostr-collector",
+        )
     enabled = list(job_types)
     if settings.youtube_collection_enabled:
         enabled.append(YOUTUBE_DISCOVERY_JOB_TYPE)
@@ -779,8 +1052,6 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
         enabled.append(PUBLIC_STUDY_JOB_TYPE)
     if settings.bluesky_collection_enabled:
         enabled.append(BLUESKY_JETSTREAM_JOB_TYPE)
-    if settings.nostr_collection_enabled:
-        enabled.append(NOSTR_RELAY_JOB_TYPE)
     return tuple(enabled)
 
 
@@ -800,8 +1071,101 @@ def role_is_ready(role: WorkerRole) -> bool:
     return role is WorkerRole.SCHEDULER or role in _WORKER_JOB_TYPES
 
 
+_NOSTR_DATABASE_ROLE = "pokecrack_nostr_worker"
+_NOSTR_DATABASE_LOGIN = "pokecrack_nostr_worker_login"
+_NOSTR_DATABASE_QUERY_OPTIONS = frozenset(
+    {
+        "application_name",
+        "channel_binding",
+        "connect_timeout",
+        "gssencmode",
+        "options",
+        "require_auth",
+        "sslcert",
+        "sslcrl",
+        "sslcrldir",
+        "sslkey",
+        "sslmode",
+        "sslnegotiation",
+        "sslrootcert",
+        "target_session_attrs",
+    }
+)
+_NOSTR_DATABASE_SSL_MODES = frozenset({"require", "verify-ca", "verify-full"})
+
+
+def _dsn_with_fixed_nostr_role(dsn: str) -> str:
+    """Return a URL DSN with exactly one fixed Nostr role option."""
+
+    parts = urlsplit(dsn)
+    if (
+        parts.scheme not in {"postgres", "postgresql"}
+        or not parts.netloc
+        or parts.fragment
+        or unquote(parts.username or "") != _NOSTR_DATABASE_LOGIN
+        or not parts.password
+    ):
+        raise LiveCompositionError(
+            "nostr_database_url_invalid",
+            "NOSTR_SUPABASE_DB_URL must use the dedicated worker login in an unfragmented PostgreSQL URL",
+        )
+    try:
+        query = parse_qsl(
+            parts.query,
+            keep_blank_values=True,
+            strict_parsing=True,
+            max_num_fields=32,
+        )
+    except ValueError as error:
+        raise LiveCompositionError(
+            "nostr_database_url_invalid",
+            "NOSTR_SUPABASE_DB_URL has an invalid query string",
+        ) from error
+    fixed_option = f"-c role={_NOSTR_DATABASE_ROLE}"
+    query_keys = [key for key, _value in query]
+    if len(query_keys) != len(set(query_keys)):
+        raise LiveCompositionError(
+            "nostr_database_url_invalid",
+            "NOSTR_SUPABASE_DB_URL has duplicate query options",
+        )
+    if not set(query_keys) <= _NOSTR_DATABASE_QUERY_OPTIONS:
+        raise LiveCompositionError(
+            "nostr_database_url_invalid",
+            "NOSTR_SUPABASE_DB_URL has an unsupported query option",
+        )
+    query_values = dict(query)
+    if query_values.get("sslmode") not in _NOSTR_DATABASE_SSL_MODES:
+        raise LiveCompositionError(
+            "nostr_database_url_invalid",
+            "NOSTR_SUPABASE_DB_URL requires sslmode=require or stronger",
+        )
+    existing_options = [value for key, value in query if key == "options"]
+    if existing_options and existing_options != [fixed_option]:
+        raise LiveCompositionError(
+            "nostr_database_role_options_invalid",
+            "NOSTR_SUPABASE_DB_URL may contain only the fixed Nostr role option",
+        )
+    if not existing_options:
+        query.append(("options", fixed_option))
+    return urlunsplit(
+        (
+            parts.scheme,
+            parts.netloc,
+            parts.path,
+            urlencode(query, quote_via=quote),
+            "",
+        )
+    )
+
+
 def executor_from_settings(settings: Settings) -> PsycopgQueryExecutor:
     _require_live_settings(settings)
+    role = require_supported_role(settings)
+    if role is WorkerRole.NOSTR_COLLECTOR:
+        assert settings.nostr_supabase_db_url is not None
+        return PsycopgQueryExecutor.from_dsn(
+            _dsn_with_fixed_nostr_role(settings.nostr_supabase_db_url.get_secret_value())
+        )
     assert settings.supabase_db_url is not None
     return PsycopgQueryExecutor.from_dsn(settings.supabase_db_url.get_secret_value())
 
@@ -820,39 +1184,50 @@ def write_health_heartbeat(
             "the configured role has no safe live command in this build",
         )
     database = executor or executor_from_settings(settings)
-    dependency_rows = database.query(
-        LIVE_ROLE_DEPENDENCIES_SQL,
-        {
+    dependency_sql = (
+        NOSTR_LIVE_ROLE_DEPENDENCIES_SQL
+        if role is WorkerRole.NOSTR_COLLECTOR
+        else LIVE_ROLE_DEPENDENCIES_SQL
+    )
+    dependency_params: Mapping[str, object]
+    if role is WorkerRole.NOSTR_COLLECTOR:
+        dependency_params = {"worker_type": role.value}
+    else:
+        dependency_params = {
             "worker_type": role.value,
             "youtube_enabled": settings.youtube_collection_enabled,
             "bluesky_enabled": settings.bluesky_collection_enabled,
             "nostr_enabled": settings.nostr_collection_enabled,
             "public_study_enabled": settings.public_study_collection_enabled,
-        },
-    )
+        }
+    dependency_rows = database.query(dependency_sql, dependency_params)
     if not dependency_rows or dependency_rows[0].get("ready") is not True:
         raise LiveCompositionError(
             "live_dependencies_unavailable",
             "the configured role database dependencies are unavailable",
         )
-    rows = database.query(
-        WORKER_HEARTBEAT_SQL,
-        {
-            "worker_id": settings.worker_id,
-            "worker_type": role.value,
-            "version": __version__,
-            "metadata": json.dumps(
-                {
-                    "command": "health",
-                    "data_mode": settings.data_mode.value,
-                    "max_concurrency": settings.worker_max_concurrency,
-                    "role_ready": role_is_ready(role),
-                },
-                separators=(",", ":"),
-                sort_keys=True,
-            ),
-        },
+    heartbeat_sql = (
+        NOSTR_WORKER_HEARTBEAT_SQL if role is WorkerRole.NOSTR_COLLECTOR else WORKER_HEARTBEAT_SQL
     )
+    metadata_values: dict[str, object] = {
+        "command": "health",
+        "data_mode": settings.data_mode.value,
+        "max_concurrency": settings.worker_max_concurrency,
+        "role_ready": role_is_ready(role),
+    }
+    metadata = json.dumps(
+        metadata_values,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
+    heartbeat_params: dict[str, object] = {
+        "worker_id": settings.worker_id,
+        "version": __version__,
+        "metadata": metadata,
+    }
+    if role is not WorkerRole.NOSTR_COLLECTOR:
+        heartbeat_params["worker_type"] = role.value
+    rows = database.query(heartbeat_sql, heartbeat_params)
     if not rows or not isinstance(rows[0].get("last_seen_at"), datetime):
         raise RuntimeError("worker heartbeat upsert returned no valid timestamp")
     last_seen_at = rows[0]["last_seen_at"]
@@ -1267,6 +1642,15 @@ def _handlers_for_role(
     public_study_robots_sleeper: Callable[[float], None] | None,
     clock: Callable[[], datetime] | None,
 ) -> Mapping[str, JobHandler]:
+    if role is WorkerRole.NOSTR_COLLECTOR:
+        return {
+            NOSTR_RELAY_JOB_TYPE: _nostr_relay_handler(
+                settings=settings,
+                executor=executor,
+                worker_id=worker_id,
+                transport=nostr_transport,
+            )
+        }
     if role is WorkerRole.COLLECTOR:
         handlers: dict[str, JobHandler] = {
             TCGDEX_SETS_JOB_TYPE: _tcgdex_sets_handler(
@@ -1298,13 +1682,6 @@ def _handlers_for_role(
                 executor=executor,
                 worker_id=worker_id,
                 transport=bluesky_transport,
-            )
-        if settings.nostr_collection_enabled:
-            handlers[NOSTR_RELAY_JOB_TYPE] = _nostr_relay_handler(
-                settings=settings,
-                executor=executor,
-                worker_id=worker_id,
-                transport=nostr_transport,
             )
         return handlers
     if role is WorkerRole.WATCHDOG:
@@ -1344,8 +1721,13 @@ def build_live_worker_runtime(
     )
     if tuple(handlers) != expected_job_types:
         raise RuntimeError("live worker handler registry is inconsistent")
+    repository = (
+        NostrPostgresJobRepository(database)
+        if role is WorkerRole.NOSTR_COLLECTOR
+        else PostgresJobRepository(database)
+    )
     return WorkerRuntime(
-        PostgresJobRepository(database),
+        repository,
         handlers=handlers,
         worker_id=settings.worker_id,
         lease_for=timedelta(seconds=settings.worker_lease_seconds),
@@ -1420,28 +1802,6 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
         if settings.bluesky_collection_enabled
         else ()
     )
-    nostr = (
-        tuple(
-            ScheduleEntry(
-                name=f"nostr_{relay.key}",
-                job_type=NOSTR_RELAY_JOB_TYPE,
-                cron=settings.schedule_nostr_collection,
-                payload={"relay_key": relay.key},
-                priority=-49,
-                max_attempts=min(3, settings.worker_max_attempts),
-            )
-            for relay in NostrRelayRegistry.from_yaml(NOSTR_RELAYS_CONFIG).relays
-        )
-        if settings.nostr_collection_enabled
-        else ()
-    )
-    cleanup_catch_up = (
-        timedelta(hours=36)
-        if settings.bluesky_collection_enabled or settings.nostr_collection_enabled
-        else timedelta(hours=12)
-        if settings.youtube_collection_enabled
-        else None
-    )
     cleanup = (
         ScheduleEntry(
             name="cleanup",
@@ -1449,14 +1809,14 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
             cron=settings.schedule_cleanup,
             priority=10,
             max_attempts=settings.worker_max_attempts,
-            # YouTube has a two-day expiry margin; Bluesky uses the full
-            # reviewed retention window, so a restart must catch a missed
-            # daily cleanup independently of whether YouTube is enabled.
-            catch_up_within=cleanup_catch_up,
-            catch_up_check_interval=(timedelta(hours=1) if cleanup_catch_up else None),
+            # Cleanup is source-agnostic. Preserve the reviewed 36-hour
+            # recovery bound even when only the isolated Nostr collector is
+            # enabled and the generic scheduler owns no Nostr configuration.
+            catch_up_within=timedelta(hours=36),
+            catch_up_check_interval=timedelta(hours=1),
         ),
     )
-    return catalog + youtube + public_studies + bluesky + nostr + cleanup
+    return catalog + youtube + public_studies + bluesky + cleanup
 
 
 def build_live_scheduler(

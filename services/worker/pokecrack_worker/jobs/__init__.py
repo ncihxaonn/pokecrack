@@ -19,7 +19,16 @@ from .models import (
     YouTubeDiscoveryCompletion,
     YouTubeSourceItemWrite,
 )
-from .postgres import CLAIM_SQL, PostgresJobRepository, QueryExecutor
+from .postgres import (
+    CLAIM_SQL,
+    NOSTR_CLAIM_SQL,
+    NOSTR_FAIL_SQL,
+    NOSTR_HEARTBEAT_SQL,
+    NOSTR_PAUSE_BUDGET_SQL,
+    NostrPostgresJobRepository,
+    PostgresJobRepository,
+    QueryExecutor,
+)
 from .repository import (
     InMemoryJobRepository,
     JobNotFoundError,
@@ -29,6 +38,10 @@ from .repository import (
 
 __all__ = [
     "CLAIM_SQL",
+    "NOSTR_CLAIM_SQL",
+    "NOSTR_FAIL_SQL",
+    "NOSTR_HEARTBEAT_SQL",
+    "NOSTR_PAUSE_BUDGET_SQL",
     "BlueskyCandidateWrite",
     "BlueskyDeletion",
     "BlueskyDeletionWrite",
@@ -44,6 +57,7 @@ __all__ = [
     "NostrCandidateWrite",
     "NostrDeletionWrite",
     "NostrRelayCompletion",
+    "NostrPostgresJobRepository",
     "PostgresJobRepository",
     "PublicStudyCompletion",
     "QueryExecutor",

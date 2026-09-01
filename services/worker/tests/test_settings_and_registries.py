@@ -31,6 +31,7 @@ def test_settings_default_to_network_free_demo_fixture_mode(
         "DATA_MODE",
         "AI_PROVIDER",
         "SUPABASE_DB_URL",
+        "NOSTR_SUPABASE_DB_URL",
         "AI_API_KEY",
         "AI_EXTRACT_MODEL",
         "AI_VALIDATE_MODEL",
@@ -46,6 +47,7 @@ def test_settings_default_to_network_free_demo_fixture_mode(
     assert settings.data_mode is DataMode.DEMO
     assert settings.ai_provider is AIProviderName.FIXTURE
     assert settings.supabase_db_url is None
+    assert settings.nostr_supabase_db_url is None
     assert settings.youtube_api_key is None
     assert settings.maton_api_key is None
     assert settings.youtube_maton_connection_id is None
@@ -64,6 +66,68 @@ def test_live_and_http_ai_modes_fail_closed_without_required_configuration() -> 
 
     with pytest.raises(ValidationError, match="AI_API_KEY.*AI_EXTRACT_MODEL"):
         Settings(_env_file=None, ai_provider="http")
+
+
+def test_nostr_role_requires_only_its_dedicated_live_database_and_flag() -> None:
+    with pytest.raises(ValidationError, match="NOSTR_SUPABASE_DB_URL"):
+        Settings(
+            _env_file=None,
+            data_mode="live",
+            worker_id="nostr-collector-test",
+            worker_role="nostr-collector",
+            nostr_collection_enabled=True,
+        )
+
+    settings = Settings(
+        _env_file=None,
+        data_mode="live",
+        worker_id="nostr-collector-test",
+        worker_role="nostr-collector",
+        nostr_collection_enabled=True,
+        nostr_supabase_db_url="postgresql://nostr.example.invalid/pokecrack",
+    )
+    assert settings.supabase_db_url is None
+    assert settings.nostr_supabase_db_url is not None
+
+    with pytest.raises(ValidationError, match="requires NOSTR_COLLECTION_ENABLED"):
+        Settings(
+            _env_file=None,
+            worker_id="nostr-collector-test",
+            worker_role="nostr-collector",
+            nostr_supabase_db_url="postgresql://nostr.example.invalid/pokecrack",
+        )
+
+    with pytest.raises(ValidationError, match="allows only NOSTR_COLLECTION_ENABLED"):
+        Settings(
+            _env_file=None,
+            worker_id="nostr-collector-test",
+            worker_role="nostr-collector",
+            nostr_collection_enabled=True,
+            bluesky_collection_enabled=True,
+            nostr_supabase_db_url="postgresql://nostr.example.invalid/pokecrack",
+        )
+
+
+def test_nostr_role_rejects_worker_ids_outside_the_database_contract() -> None:
+    with pytest.raises(ValidationError, match="WORKER_ID matching"):
+        Settings(
+            _env_file=None,
+            worker_id="worker-1",
+            worker_role="nostr-collector",
+            nostr_collection_enabled=True,
+            nostr_supabase_db_url="postgresql://nostr.example.invalid/pokecrack",
+        )
+
+
+@pytest.mark.parametrize("role", (None, "collector", "scheduler", "watchdog"))
+def test_shared_roles_cannot_enable_nostr_collection(role: str | None) -> None:
+    with pytest.raises(ValidationError, match="NOSTR_COLLECTION_ENABLED.*collector"):
+        Settings(
+            _env_file=None,
+            worker_role=role,
+            nostr_collection_enabled=True,
+            supabase_db_url="postgresql://db.example.invalid/pokecrack",
+        )
 
 
 def test_youtube_enablement_requires_one_credential_path_only_in_the_collector() -> None:
