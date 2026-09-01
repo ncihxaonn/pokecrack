@@ -416,8 +416,7 @@ def test_nostr_dsn_adds_a_fixed_libpq_role_option() -> None:
         "sslmode=require",
         "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
         "nostr.example.invalid/pokecrack?sslmode=prefer",
-        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
-        "nostr.example.invalid/pokecrack",
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@nostr.example.invalid/pokecrack",
     ),
 )
 def test_nostr_dsn_rejects_ambiguous_or_caller_controlled_options(dsn: str) -> None:

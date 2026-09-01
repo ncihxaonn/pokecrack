@@ -1111,9 +1111,7 @@ def test_scheduler_flag_registers_exactly_five_global_queries_without_receiving_
     assert settings.youtube_api_key is None
     assert settings.schedule_official_api == "0 */6 * * *"
     assert result.created == 6
-    assert result.due_names == tuple(f"youtube_{name}" for name in expected_names) + (
-        "cleanup",
-    )
+    assert result.due_names == tuple(f"youtube_{name}" for name in expected_names) + ("cleanup",)
     youtube_calls = [
         (sql, params)
         for sql, params in executor.calls
