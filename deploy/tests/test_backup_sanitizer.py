@@ -781,6 +781,63 @@ class BackupSanitizerTests(unittest.TestCase):
         self.assertEqual(failure.stdout, b"")
         self.assertNotIn(b"payload-must-not-leak", failure.stderr)
 
+    def test_target_insert_inside_dollar_quoted_function_body_is_schema(self) -> None:
+        function_definitions = (
+            b"\nCREATE FUNCTION ingest.test_backup_function() RETURNS void\n"
+            b"LANGUAGE plpgsql AS $function$\n"
+            b"BEGIN\n"
+            b"  INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ('function-body-only');\n"
+            b"  INSERT INTO ingest.nostr_relay_observations (event_id) "
+            b"VALUES ('function-body-only');\n"
+            b"END;\n"
+            b"$function$;\n"
+            b"CREATE FUNCTION ingest.test_inline_function() RETURNS text\n"
+            b"LANGUAGE sql AS $$ SELECT 'inline'; $$;\n"
+            b"SELECT $safe_tag$INSERT INTO ingest.source_request_gates "
+            b"VALUES ('quoted text only')$safe_tag$;\n"
+        )
+
+        result = self.run_sanitizer(self.complete_dump() + function_definitions)
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(function_definitions, result.stdout)
+
+    def test_top_level_target_insert_after_function_body_remains_rejected(
+        self,
+    ) -> None:
+        dump = self.complete_dump() + (
+            b"\nCREATE FUNCTION ingest.test_backup_function() RETURNS void\n"
+            b"LANGUAGE plpgsql AS $function$\n"
+            b"BEGIN\n"
+            b"  INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ('function-body-only');\n"
+            b"END;\n"
+            b"$function$;\n"
+            b"INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ($$top-level-payload-must-not-leak$$);\n"
+        )
+
+        result = self.run_sanitizer(dump)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+        self.assertNotIn(b"top-level-payload-must-not-leak", result.stderr)
+
+    def test_unterminated_dollar_quoted_body_is_rejected(self) -> None:
+        dump = self.complete_dump() + (
+            b"\nCREATE FUNCTION ingest.test_backup_function() RETURNS void\n"
+            b"LANGUAGE plpgsql AS $function$\n"
+            b"BEGIN\n"
+            b"  INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ('function-body-only');\n"
+        )
+
+        result = self.run_sanitizer(dump)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
     def test_temporary_spool_is_removed_after_success_and_scan_failure(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             spool_root = Path(temporary)
