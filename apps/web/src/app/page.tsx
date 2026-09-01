@@ -7,7 +7,8 @@ import { JsonLd } from "./_components/json-ld";
 import { loadDashboard } from "./_lib/dashboard";
 import { defaultWorldHeatMetric, normalizeWorldHeatMetric } from "./_lib/world-map-query";
 
-export const revalidate = 900;
+// Keep the route shell in step with the one-minute dashboard data cache.
+export const revalidate = 60;
 
 type SearchParams = Promise<{ metric?: string | string[] }>;
 

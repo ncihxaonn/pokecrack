@@ -76,7 +76,7 @@ def test_cron_catch_up_uses_the_latest_bounded_slot_without_wall_clock_phase() -
     entry = ScheduleEntry(
         name="catalog_sync",
         job_type="catalog.tcgdex.sets.sync",
-        cron="0 2 * * *",
+        cron="0 2,14 * * *",
         catch_up_within=timedelta(hours=36),
         catch_up_check_interval=timedelta(hours=1),
     )
@@ -85,9 +85,39 @@ def test_cron_catch_up_uses_the_latest_bounded_slot_without_wall_clock_phase() -
     assert entry.slot(NOW.replace(hour=3, minute=30, second=17)) == NOW.replace(hour=2)
     assert entry.slot(NOW.replace(hour=3, minute=31, second=17)) == NOW.replace(hour=2)
     assert entry.slot(NOW.replace(hour=2)) == NOW.replace(hour=2)
+    assert entry.slot(NOW.replace(hour=14)) == NOW.replace(hour=14)
+    assert entry.slot(NOW.replace(hour=22, minute=41)) == NOW.replace(hour=14)
+    assert entry.slot(NOW.replace(hour=1)) == NOW.replace(hour=14) - timedelta(days=1)
     assert entry.slot(NOW.replace(hour=2) + timedelta(days=2, hours=13)) == NOW.replace(
-        hour=2
+        hour=14
     ) + timedelta(days=2)
+
+
+def test_catalog_recovery_window_creates_one_durable_job_per_slot() -> None:
+    repository = InMemoryJobRepository()
+    entry = ScheduleEntry(
+        name="catalog_sync",
+        job_type="catalog.tcgdex.sets.sync",
+        cron="0 2,14 * * *",
+        catch_up_within=timedelta(hours=36),
+        catch_up_check_interval=timedelta(hours=1),
+    )
+    scheduler = Scheduler(repository, [entry])
+
+    first = scheduler.run_due(now=NOW.replace(hour=2))
+    same_slot = scheduler.run_due(now=NOW.replace(hour=2, second=30))
+    recovery = scheduler.run_due(now=NOW.replace(hour=14))
+
+    assert first.due_names == ("catalog_sync",)
+    assert same_slot.due_names == ("catalog_sync",)
+    assert recovery.due_names == ("catalog_sync",)
+    jobs = repository.list_jobs()
+    assert len(jobs) == 2
+    assert len({job.id for job in jobs}) == 2
+    assert {job.dedupe_key for job in jobs} == {
+        "schedule:catalog_sync:20260825T020000Z",
+        "schedule:catalog_sync:20260825T140000Z",
+    }
 
 
 def test_cron_catch_up_configuration_is_strict_and_bounded() -> None:
