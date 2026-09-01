@@ -218,12 +218,24 @@ select set_config(
   (select count(*)::text from ingest.get_nostr_worker_policy_snapshot_v1()),
   true
 );
-select extensions.throws_ok(
-  $$select count(*) from ingest.source_policies$$,
-  '42501',
-  'permission denied for table source_policies',
-  'the isolated worker can verify the projection but cannot read its source table'
-);
+do $worker_source_policy_denial$
+begin
+  begin
+    perform count(*) from ingest.source_policies;
+    perform set_config(
+      'pokecrack_test.source_policy_denial',
+      jsonb_build_object('state', 'allowed', 'message', '')::text,
+      true
+    );
+  exception when others then
+    perform set_config(
+      'pokecrack_test.source_policy_denial',
+      jsonb_build_object('state', sqlstate, 'message', sqlerrm)::text,
+      true
+    );
+  end;
+end;
+$worker_source_policy_denial$;
 reset role;
 revoke pokecrack_nostr_worker from current_user;
 select is(
@@ -233,6 +245,16 @@ select is(
 select is(
   current_setting('pokecrack_test.policy_rows_as_worker', true), '3',
   'the isolated role sees exactly the three reviewed projected policies'
+);
+select is(
+  current_setting('pokecrack_test.source_policy_denial', true)::jsonb ->> 'state',
+  '42501',
+  'the isolated worker cannot read the source-policy table'
+);
+select is(
+  current_setting('pokecrack_test.source_policy_denial', true)::jsonb ->> 'message',
+  'permission denied for table source_policies',
+  'the isolated worker denial identifies the protected source-policy table'
 );
 update ingest.source_policies
 set expected_interval_seconds = 61
@@ -529,12 +551,24 @@ select set_config('pokecrack_test.nostr_job_id', '', true);
 grant pokecrack_nostr_worker to current_user
   with inherit false, set true;
 set local role pokecrack_nostr_worker;
-select extensions.throws_ok(
-  $$select ingest.enqueue_due_nostr_relay_jobs_v1('generic-worker')$$,
-  '22023',
-  'worker_id must use the dedicated Nostr collector prefix',
-  'the dedicated scheduler rejects a shared worker identity'
-);
+do $worker_scheduler_identity_denial$
+begin
+  begin
+    perform ingest.enqueue_due_nostr_relay_jobs_v1('generic-worker');
+    perform set_config(
+      'pokecrack_test.scheduler_identity_denial',
+      jsonb_build_object('state', 'allowed', 'message', '')::text,
+      true
+    );
+  exception when others then
+    perform set_config(
+      'pokecrack_test.scheduler_identity_denial',
+      jsonb_build_object('state', sqlstate, 'message', sqlerrm)::text,
+      true
+    );
+  end;
+end;
+$worker_scheduler_identity_denial$;
 select set_config(
   'pokecrack_test.nostr_due_count',
   ingest.enqueue_due_nostr_relay_jobs_v1('nostr-collector-test')::text,
@@ -547,6 +581,18 @@ select set_config(
 );
 reset role;
 revoke pokecrack_nostr_worker from current_user;
+select is(
+  current_setting('pokecrack_test.scheduler_identity_denial', true)::jsonb
+    ->> 'state',
+  '22023',
+  'the dedicated scheduler rejects a shared worker identity'
+);
+select is(
+  current_setting('pokecrack_test.scheduler_identity_denial', true)::jsonb
+    ->> 'message',
+  'worker_id must use the dedicated Nostr collector prefix',
+  'the dedicated scheduler reports the exact worker-identity contract'
+);
 select is(
   current_setting('pokecrack_test.nostr_due_count', true), '3',
   'the isolated scheduler creates the three exact relay jobs'
@@ -599,12 +645,25 @@ select set_config('pokecrack_test.nostr_claim', '{}'::text, true);
 grant pokecrack_nostr_worker to current_user
   with inherit false, set true;
 set local role pokecrack_nostr_worker;
-select extensions.throws_ok(
-  $$select * from ingest.claim_nostr_relay_jobs_v1('generic-worker', 600)$$,
-  '22023',
-  'worker_id must use the dedicated Nostr collector prefix',
-  'the dedicated claim wrapper rejects a shared worker identity'
-);
+do $worker_claim_identity_denial$
+begin
+  begin
+    perform count(*)
+    from ingest.claim_nostr_relay_jobs_v1('generic-worker', 600);
+    perform set_config(
+      'pokecrack_test.claim_identity_denial',
+      jsonb_build_object('state', 'allowed', 'message', '')::text,
+      true
+    );
+  exception when others then
+    perform set_config(
+      'pokecrack_test.claim_identity_denial',
+      jsonb_build_object('state', sqlstate, 'message', sqlerrm)::text,
+      true
+    );
+  end;
+end;
+$worker_claim_identity_denial$;
 with claimed as materialized (
   select * from ingest.claim_nostr_relay_jobs_v1('nostr-collector-test', 600)
 )
@@ -620,6 +679,19 @@ select set_config(
 from claimed;
 reset role;
 revoke pokecrack_nostr_worker from current_user;
+
+select is(
+  current_setting('pokecrack_test.claim_identity_denial', true)::jsonb
+    ->> 'state',
+  '22023',
+  'the dedicated claim wrapper rejects a shared worker identity'
+);
+select is(
+  current_setting('pokecrack_test.claim_identity_denial', true)::jsonb
+    ->> 'message',
+  'worker_id must use the dedicated Nostr collector prefix',
+  'the dedicated claim wrapper reports the exact worker-identity contract'
+);
 
 select is(
   current_setting('pokecrack_test.nostr_claim', true)::jsonb ->> 'id',
