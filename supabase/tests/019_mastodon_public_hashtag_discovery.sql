@@ -797,11 +797,15 @@ select is(
   'cleanup retains the durable shared cooldown'
 );
 select ok(
-  (select last_status_id = 'opaque-z'
-      and requests_seen_total = 1
-      and statuses_seen_total = 1
-      and bytes_seen_total = 128
-      and candidates_seen_total = 1
+  -- The exact replay above is a second successful collection slice: it
+  -- advances the opaque cursor and counts transport activity even though the
+  -- immutable observation is deduplicated. Cleanup must preserve that current
+  -- checkpoint, not the snapshot from the first slice.
+  (select last_status_id = 'opaque-a'
+      and requests_seen_total = 2
+      and statuses_seen_total = 2
+      and bytes_seen_total = 256
+      and candidates_seen_total = 2
    from ingest.mastodon_public_hashtag_checkpoints
    where tag_key = 'pokemontcg'),
   'cleanup preserves the opaque cursor and checkpoint counters'
