@@ -16,6 +16,7 @@ from pokecrack_worker.jobs import (
     CompletionEffect,
     Job,
     LeaseLostError,
+    MastodonPublicHashtagCompletion,
     NostrRelayCompletion,
     PublicStudyCompletion,
     TCGdexSetsSyncCompletion,
@@ -56,6 +57,7 @@ class RuntimeRepository(Protocol):
         | YouTubeDiscoveryCompletion
         | BlueskyJetstreamCompletion
         | NostrRelayCompletion
+        | MastodonPublicHashtagCompletion
         | None = None,
     ) -> Job: ...
 
@@ -89,6 +91,7 @@ Completion = (
     | YouTubeDiscoveryCompletion
     | BlueskyJetstreamCompletion
     | NostrRelayCompletion
+    | MastodonPublicHashtagCompletion
 )
 JobHandler = Callable[[Job], Completion | None]
 
@@ -103,13 +106,25 @@ class BudgetPaused(RuntimeError):
 class JobDeferred(RuntimeError):
     """Retry a contended job later without consuming its claimed attempt."""
 
-    def __init__(self, *, retry_at: datetime, code: str) -> None:
+    def __init__(
+        self,
+        *,
+        retry_at: datetime,
+        code: str,
+        pause_applied: bool = False,
+    ) -> None:
         if retry_at.tzinfo is None or retry_at.utcoffset() is None:
             raise ValueError("deferred job retry timestamp must be timezone-aware")
         if not code or len(code) > 160:
             raise ValueError("deferred job code must contain 1 to 160 characters")
+        if not isinstance(pause_applied, bool):
+            raise ValueError("deferred job pause_applied must be boolean")
         self.retry_at = retry_at
         self.code = code
+        # Some source-specific DB RPCs atomically pause the fenced job while
+        # recording a shared cooldown.  The runtime must not issue a second,
+        # generic pause against the same lease in that case.
+        self.pause_applied = pause_applied
         super().__init__(code)
 
 
@@ -201,6 +216,7 @@ class WorkerRuntime:
                             YouTubeDiscoveryCompletion,
                             BlueskyJetstreamCompletion,
                             NostrRelayCompletion,
+                            MastodonPublicHashtagCompletion,
                         ),
                     ):
                         raise TypeError(
@@ -282,16 +298,17 @@ class WorkerRuntime:
                 error_code="budget_paused",
             )
         except JobDeferred as deferred:
-            try:
-                self.repository.pause_for_budget(
-                    job.id,
-                    worker_id=self.worker_id,
-                    lease_generation=job.lease_generation,
-                    now=self.clock(),
-                    retry_at=deferred.retry_at,
-                )
-            except LeaseLostError:
-                return self._lease_lost(job)
+            if not deferred.pause_applied:
+                try:
+                    self.repository.pause_for_budget(
+                        job.id,
+                        worker_id=self.worker_id,
+                        lease_generation=job.lease_generation,
+                        now=self.clock(),
+                        retry_at=deferred.retry_at,
+                    )
+                except LeaseLostError:
+                    return self._lease_lost(job)
             return CycleResult(
                 status=RuntimeStatus.DEFERRED,
                 job_id=job.id,

@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
+import hashlib
 import re
 import unicodedata
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from enum import StrEnum
 from typing import Any
 
+from pokecrack_worker.config.mastodon import (
+    MASTODON_INSTANCE_KEY,
+    MASTODON_TAG_KEYS,
+)
 from pokecrack_worker.config.public_studies import PUBLIC_STUDIES_BY_KEY
 from pokecrack_worker.deduplication.fingerprints import content_sha256
 
@@ -54,6 +59,13 @@ _NOSTR_MATCHED_TAGS = frozenset(
 _NOSTR_MAX_EVENTS = 100
 _NOSTR_MAX_STREAM_BYTES = 2 * 1024 * 1024
 _NOSTR_MAX_ITEMS = 100
+_MASTODON_MAX_PAGES = 2
+_MASTODON_MAX_STATUSES = 80
+_MASTODON_MAX_RESPONSE_BYTES = 2 * 1024 * 1024
+_MASTODON_MAX_RATE_LIMIT = 100_000
+_MASTODON_TAG_KEYS = frozenset(MASTODON_TAG_KEYS)
+_MASTODON_STATUS_ID_MAX = 160
+_MASTODON_PUBLISHED_AT_MIN = datetime(2000, 1, 1, tzinfo=UTC)
 
 
 def _lower_hex(value: object, *, length: int, field: str) -> str:
@@ -675,6 +687,183 @@ class NostrRelayCompletion:
             "candidates": [item.as_payload() for item in self.candidates],
             "deletions": [item.as_payload() for item in self.deletions],
         }
+
+
+def _mastodon_status_id(value: object, *, field: str) -> str:
+    """Validate an opaque Mastodon id without numeric conversion/comparison."""
+
+    if (
+        not isinstance(value, str)
+        or not 1 <= len(value) <= _MASTODON_STATUS_ID_MAX
+        or value != value.strip()
+        or any(unicodedata.category(character).startswith("C") for character in value)
+    ):
+        raise ValueError(f"Mastodon {field} must be a bounded opaque string")
+    return value
+
+
+def _mastodon_datetime(value: datetime | None, *, field: str) -> None:
+    if value is not None and (
+        not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None
+    ):
+        raise ValueError(f"Mastodon {field} must be timezone-aware or null")
+
+
+@dataclass(frozen=True, slots=True)
+class MastodonStatusWrite:
+    """Transient completion DTO; only the hash is persisted by the database."""
+
+    status_id: str
+    status_key_sha256: str
+    published_at: datetime
+    matched_tags: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        _mastodon_status_id(self.status_id, field="status ID")
+        _lower_hex(self.status_key_sha256, length=64, field="Mastodon status identity")
+        expected_hash = hashlib.sha256(
+            f"{MASTODON_INSTANCE_KEY}\n{self.status_id}".encode()
+        ).hexdigest()
+        if self.status_key_sha256 != expected_hash:
+            raise ValueError("Mastodon status identity does not match its opaque ID")
+        if (
+            not isinstance(self.published_at, datetime)
+            or self.published_at.tzinfo is None
+            or self.published_at.utcoffset() is None
+        ):
+            raise ValueError("Mastodon published_at must be timezone-aware")
+        published_at = self.published_at.astimezone(UTC)
+        if not _MASTODON_PUBLISHED_AT_MIN <= published_at <= datetime.now(UTC) + timedelta(days=1):
+            raise ValueError("Mastodon published_at is outside the approved range")
+        if (
+            not isinstance(self.matched_tags, tuple)
+            or not 1 <= len(self.matched_tags) <= len(_MASTODON_TAG_KEYS)
+            or len(self.matched_tags) != len(set(self.matched_tags))
+            or any(tag not in _MASTODON_TAG_KEYS for tag in self.matched_tags)
+            or self.matched_tags
+            != tuple(tag for tag in MASTODON_TAG_KEYS if tag in self.matched_tags)
+        ):
+            raise ValueError("Mastodon matched tags are invalid")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        return {
+            "status_id": self.status_id,
+            "status_key_sha256": self.status_key_sha256,
+            "published_at": _utc_text(self.published_at),
+            "matched_tags": list(self.matched_tags),
+            "activity_only": True,
+            "statistics_eligible": False,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class MastodonPublicHashtagCompletion:
+    """Exact version 1.0.0 completion contract for one fixed tag job."""
+
+    instance_key: str
+    tag_key: str
+    start_status_id: str | None
+    end_status_id: str | None
+    incomplete: bool
+    requests_made: int
+    statuses_seen: int
+    bytes_seen: int
+    candidates: tuple[MastodonStatusWrite, ...] = ()
+    rate_limit_limit: int | None = None
+    rate_limit_remaining: int | None = None
+    rate_limit_reset_at: datetime | None = None
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.instance_key, str) or self.instance_key != MASTODON_INSTANCE_KEY:
+            raise ValueError("Mastodon instance key is not approved")
+        if not isinstance(self.tag_key, str) or self.tag_key not in _MASTODON_TAG_KEYS:
+            raise ValueError("Mastodon tag key is not approved")
+        if self.start_status_id is not None:
+            _mastodon_status_id(self.start_status_id, field="start status ID")
+        if self.end_status_id is not None:
+            _mastodon_status_id(self.end_status_id, field="end status ID")
+        if not isinstance(self.incomplete, bool):
+            raise TypeError("Mastodon incomplete must be boolean")
+        for name, value, maximum in (
+            ("requests_made", self.requests_made, _MASTODON_MAX_PAGES),
+            ("statuses_seen", self.statuses_seen, _MASTODON_MAX_STATUSES),
+            ("bytes_seen", self.bytes_seen, _MASTODON_MAX_RESPONSE_BYTES),
+        ):
+            if isinstance(value, bool) or not isinstance(value, int) or not 0 <= value <= maximum:
+                raise ValueError(f"Mastodon {name} is outside the approved bound")
+        if (
+            not isinstance(self.candidates, tuple)
+            or len(self.candidates) > _MASTODON_MAX_STATUSES
+            or any(not isinstance(item, MastodonStatusWrite) for item in self.candidates)
+        ):
+            raise ValueError("Mastodon completion candidates are invalid")
+        if len(self.candidates) > self.statuses_seen:
+            raise ValueError("Mastodon candidates cannot exceed statuses_seen")
+        if any(self.tag_key not in item.matched_tags for item in self.candidates):
+            raise ValueError("Mastodon candidates must match the requested tag")
+        if self.statuses_seen == 0 and self.end_status_id != self.start_status_id:
+            raise ValueError("Mastodon empty completion must keep the start cursor")
+        if self.statuses_seen > 0 and self.end_status_id is None:
+            raise ValueError("Mastodon non-empty completion requires an end cursor")
+        status_ids = [item.status_id for item in self.candidates]
+        identity_hashes = [item.status_key_sha256 for item in self.candidates]
+        if len(status_ids) != len(set(status_ids)):
+            raise ValueError("Mastodon candidate status IDs must be unique")
+        if len(identity_hashes) != len(set(identity_hashes)):
+            raise ValueError("Mastodon candidate identities must be unique")
+        for item in self.candidates:
+            expected_hash = hashlib.sha256(
+                f"{self.instance_key}\n{item.status_id}".encode()
+            ).hexdigest()
+            if item.status_key_sha256 != expected_hash:
+                raise ValueError("Mastodon candidate identity does not match its opaque ID")
+        for name, rate_value in (
+            ("rate_limit_limit", self.rate_limit_limit),
+            ("rate_limit_remaining", self.rate_limit_remaining),
+        ):
+            if rate_value is not None and (
+                isinstance(rate_value, bool)
+                or not isinstance(rate_value, int)
+                or not 0 <= rate_value <= _MASTODON_MAX_RATE_LIMIT
+            ):
+                raise ValueError(f"Mastodon {name} is invalid")
+        if (
+            self.rate_limit_limit is not None
+            and self.rate_limit_remaining is not None
+            and self.rate_limit_remaining > self.rate_limit_limit
+        ):
+            raise ValueError("Mastodon rate limit remaining exceeds limit")
+        _mastodon_datetime(self.rate_limit_reset_at, field="rate_limit_reset_at")
+        if self.rate_limit_remaining == 0 and self.rate_limit_reset_at is None:
+            raise ValueError("Mastodon exhausted rate limit requires a reset timestamp")
+
+    def as_payload(self) -> dict[str, Any]:
+        self.__post_init__()
+        return {
+            "version": "1.0.0",
+            "instance_key": self.instance_key,
+            "tag_key": self.tag_key,
+            "start_status_id": self.start_status_id,
+            "end_status_id": self.end_status_id,
+            "incomplete": self.incomplete,
+            "requests_made": self.requests_made,
+            "statuses_seen": self.statuses_seen,
+            "bytes_seen": self.bytes_seen,
+            "candidates": [item.as_payload() for item in self.candidates],
+            "rate_limit_limit": self.rate_limit_limit,
+            "rate_limit_remaining": self.rate_limit_remaining,
+            "rate_limit_reset_at": (
+                _utc_text(self.rate_limit_reset_at)
+                if self.rate_limit_reset_at is not None
+                else None
+            ),
+        }
+
+
+# Readable aliases for integrations that call the candidate a source item.
+MastodonCandidateWrite = MastodonStatusWrite
+MastodonCompletion = MastodonPublicHashtagCompletion
 
 
 @dataclass(frozen=True, slots=True)

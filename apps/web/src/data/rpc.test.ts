@@ -14,7 +14,8 @@ describe("aggregate RPC adapter", () => {
     expect(PUBLIC_DASHBOARD_RPC).not.toMatch(/raw|ingest|observation/i);
     expect(PUBLIC_STUDY_COVERAGE_RPC).toBe("get_public_study_coverage_v1");
     expect(PUBLIC_STUDY_COVERAGE_RPC).not.toMatch(/raw|evidence|hit/i);
-    expect(PUBLIC_SOCIAL_DISCOVERY_RPC).toBe("get_public_social_discovery_v2");
+    expect(PUBLIC_SOCIAL_DISCOVERY_RPC).toBe("get_public_social_discovery_v3");
+    expect(PUBLIC_SOCIAL_DISCOVERY_RPC).not.toBe("get_public_social_discovery_v2");
     expect(PUBLIC_SOCIAL_DISCOVERY_RPC).not.toMatch(/raw|post|cursor|candidate/i);
     expect(PUBLIC_SOCIAL_DISCOVERY_FALLBACK_RPC).toBe(
       "get_public_social_discovery_v1",

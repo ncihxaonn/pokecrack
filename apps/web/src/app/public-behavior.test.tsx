@@ -19,6 +19,7 @@ import {
 } from "@/components/dashboard/public-views";
 import { ObservationStats, PublicUnavailable } from "@/components/ui/dashboard-ui";
 import { DEMO_PUBLIC_DATA } from "@/data/demo";
+import { mergePublicSocialDiscovery } from "@/data/social-discovery";
 import { filterAndSortSets } from "./_lib/sets-query";
 
 afterEach(cleanup);
@@ -100,6 +101,53 @@ describe("public route behavior", () => {
       expect(link).toHaveAttribute("target", "_blank");
       expect(link).toHaveAttribute("rel", "noopener noreferrer");
     }
+  });
+
+  it("renders Mastodon only from the safe activity-only source projection", () => {
+    const data = mergePublicSocialDiscovery(DEMO_PUBLIC_DATA, {
+      schemaVersion: "3.0.0",
+      sources: [
+        {
+          id: "bluesky_jetstream",
+          name: "Bluesky Jetstream discovery",
+          kind: "social",
+          access: "public",
+          status: "operational",
+          lastCollectedAt: "2026-08-30T10:45:00Z",
+          url: "https://bsky.network/docs/jetstream/",
+          note: "Public activity discovery only.",
+        },
+        {
+          id: "nostr_multi_relay",
+          name: "Nostr multi-relay discovery",
+          kind: "social",
+          access: "public",
+          status: "operational",
+          lastCollectedAt: "2026-08-31T02:15:00Z",
+          url: "https://github.com/nostr-protocol/nips/blob/master/01.md",
+          note: "Public activity discovery only.",
+        },
+        {
+          id: "mastodon_public_hashtag",
+          name: "Mastodon public hashtag discovery",
+          kind: "social",
+          access: "public",
+          status: "delayed",
+          lastCollectedAt: null,
+          url: "https://docs.joinmastodon.org/methods/timelines/",
+          note: "Public hashtag activity discovery only; never opening evidence or a pull-rate denominator.",
+        },
+      ],
+    });
+
+    render(<SourcesView data={data as typeof DEMO_PUBLIC_DATA} synthetic />);
+    expect(screen.getByRole("heading", { name: "Mastodon public hashtag discovery" })).toBeVisible();
+    expect(screen.getByText(/never opening evidence or a pull-rate denominator/)).toBeVisible();
+    expect(
+      screen
+        .getAllByRole("link", { name: /Source reference/ })
+        .find((link) => link.getAttribute("href")?.includes("joinmastodon.org")),
+    ).toHaveAttribute("href", "https://docs.joinmastodon.org/methods/timelines/");
   });
 
   it("keeps dynamic detail misses wired to notFound and provides a dynamic ECharts enhancement with table fallback", () => {
