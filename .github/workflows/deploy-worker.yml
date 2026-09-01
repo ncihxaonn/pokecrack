@@ -14,6 +14,12 @@ on:
         type: choice
         options:
           - tcgdex
+          - tcgdex-nostr
+      retire_nostr:
+        description: Explicitly retire the managed Nostr container (tcgdex only)
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -30,11 +36,13 @@ jobs:
     env:
       REQUESTED_SHA: ${{ inputs.confirm_sha }}
       REQUESTED_SERVICE_SET: ${{ inputs.service_set }}
+      REQUESTED_RETIRE_NOSTR: ${{ inputs.retire_nostr }}
       VPS_HOST: ${{ vars.VPS_HOST }}
       VPS_USER: ${{ vars.VPS_USER }}
       VPS_PORT: ${{ vars.VPS_PORT || '22' }}
       VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH }}
       VPS_ENV_FILE: ${{ vars.VPS_ENV_FILE || '/etc/pokecrack/production.env' }}
+      VPS_NOSTR_ENV_FILE: ${{ vars.VPS_NOSTR_ENV_FILE || '/etc/pokecrack/nostr.env' }}
       SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
       SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
     steps:
@@ -48,10 +56,14 @@ jobs:
               printf 'confirm_sha must equal GITHUB_SHA (%s)\n' "$GITHUB_SHA" >&2
               exit 1
             }
-            [[ "$REQUESTED_SERVICE_SET" == tcgdex ]] || {
-              printf 'service_set must be tcgdex\n' >&2
-              exit 1
-            }
+            case "$REQUESTED_SERVICE_SET" in
+              tcgdex|tcgdex-nostr) ;;
+              *) printf 'unsupported service_set\n' >&2; exit 1 ;;
+            esac
+            [[ "$REQUESTED_RETIRE_NOSTR" == true || "$REQUESTED_RETIRE_NOSTR" == false ]]
+            if [[ "$REQUESTED_RETIRE_NOSTR" == true ]]; then
+              [[ "$REQUESTED_SERVICE_SET" == tcgdex ]]
+            fi
           fi
       - name: Configure pinned SSH host identity
         shell: bash
@@ -62,6 +74,7 @@ jobs:
           [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]]
           [[ "$VPS_DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_DEPLOY_PATH" != *'..'* ]]
           [[ "$VPS_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_ENV_FILE" != *'..'* ]]
+          [[ "$VPS_NOSTR_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_NOSTR_ENV_FILE" != *'..'* ]]
           [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]]
           install -d -m 0700 "$HOME/.ssh"
           install -m 0600 /dev/null "$HOME/.ssh/id_ed25519"
@@ -72,8 +85,10 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          printf -v remote_command 'bash -s -- %q %q %q %q' \
-            "$GITHUB_SHA" "$VPS_DEPLOY_PATH" "$VPS_ENV_FILE" "$REQUESTED_SERVICE_SET"
+          printf -v remote_command 'bash -s -- %q %q %q %q %q %q' \
+            "$GITHUB_SHA" "$VPS_DEPLOY_PATH" "$VPS_ENV_FILE" \
+            "$VPS_NOSTR_ENV_FILE" "$REQUESTED_SERVICE_SET" \
+            "$REQUESTED_RETIRE_NOSTR"
           ssh -i "$HOME/.ssh/id_ed25519" \
             -p "$VPS_PORT" \
             -o BatchMode=yes \
@@ -84,9 +99,18 @@ jobs:
           sha=$1
           repository=$2
           env_file=$3
-          service_set=$4
+          nostr_env_file=$4
+          service_set=$5
+          retire_nostr=$6
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
-          [[ "$service_set" == tcgdex ]]
+          case "$service_set" in
+            tcgdex|tcgdex-nostr) ;;
+            *) exit 2 ;;
+          esac
+          [[ "$retire_nostr" == true || "$retire_nostr" == false ]]
+          if [[ "$retire_nostr" == true ]]; then
+            [[ "$service_set" == tcgdex ]]
+          fi
           [[ -d "$repository/.git" ]]
           git -C "$repository" diff --quiet --ignore-submodules --
           git -C "$repository" diff --cached --quiet --ignore-submodules --
@@ -97,9 +121,17 @@ jobs:
           resolved=$(git -C "$repository" rev-parse --verify "${sha}^{commit}")
           [[ "$resolved" == "$sha" ]]
           git -C "$repository" checkout --detach "$sha"
-          "$repository/deploy/scripts/deploy.sh" "$sha" \
-            --env-file "$env_file" \
+          deploy_args=(
+            --env-file "$env_file"
             --service-set "$service_set"
+          )
+          if [[ "$service_set" == tcgdex-nostr ]]; then
+            deploy_args+=(--nostr-env-file "$nostr_env_file")
+          fi
+          if [[ "$retire_nostr" == true ]]; then
+            deploy_args+=(--retire-nostr)
+          fi
+          "$repository/deploy/scripts/deploy.sh" "$sha" "${deploy_args[@]}"
           actual=$(git -C "$repository" rev-parse --verify HEAD)
           [[ "$actual" == "$sha" ]]
           REMOTE

@@ -12,8 +12,63 @@ A partial state, logged/temporary/duplicate/unsupported target definition, any r
 
 Provider-managed automatic backups and point-in-time recovery are outside this
 filter. Revalidate their actual retention for the exact Supabase plan before
-enabling YouTube or Bluesky collection; keep either feature off if any retained
-snapshot could outlive its source-data retention boundary.
+enabling YouTube, Bluesky, or Nostr collection; keep each feature off if any
+retained snapshot could outlive its source-data retention boundary.
+
+## Nostr backup/PITR enablement gate
+
+Nostr migration `20260906000000` creates the private three-relay ledgers and
+forward migration `20260909000000` raises the independent cleanup budget to
+`750000` rows per activity table. Migration `20260910000000` removes the Nostr
+ledger and typed execution path from `service_role` and adds the dedicated
+worker/attestor capability proof. That budget strictly covers the documented
+`648000`-row worst case (three relays × 100 candidates and observations per
+minute × 36 hours) with headroom; it does not change provider backup or PITR
+retention.
+
+When `NOSTR_COLLECTION_ENABLED=true`,
+`deploy/lib/verify_nostr_release.py --env-file /etc/pokecrack/nostr.env` is a
+required machine-checkable preflight before any service replacement. It reads
+only the separate least-privilege TLS DSN in
+`SUPABASE_NOSTR_PREFLIGHT_DB_URL` and keeps that URL out of the `psql` argv and
+output; it rejects an absent or byte-for-byte reused worker
+`NOSTR_SUPABASE_DB_URL` and every unreviewed environment key.
+The URL must authenticate exactly as `pokecrack_nostr_attestor_login` and set
+the single libpq option `-c role=pokecrack_nostr_attestor`. The login is
+`NOINHERIT`, has connection limit 2 and exactly one non-admin membership; the
+group is `NOLOGIN`, cannot read or mutate any relation or sequence and can
+execute only the 100 version-two `SECURITY DEFINER` attestation RPC. The
+separate worker login selects only `pokecrack_nostr_worker`, whose group has the
+ten exact Nostr RPCs: seven queue/heartbeat/persistence capabilities, one
+idempotent current-minute scheduler, one boolean runtime-contract proof, and
+one reviewed non-secret policy projection.
+It still has no direct relation/sequence or generic queue access.
+Both groups and logins must have no role-level configuration, unexpected
+membership, or owned schema/relation/function/type/database object. Neither
+login may inherit or join `service_role` or another worker role. The RPC has a
+fixed search path and returns only the exact 15-key boolean contract. The
+preflight fails closed unless the hosted ledger contains migrations `060`,
+`090`, and `100` with their exact names, the three source policies and idle
+request gates are exact, the three private tables have forced RLS and zero
+browser/service/worker policies or direct ACL, the checkpoints and 750000-row
+cleanup/finalizer contract are intact, both dedicated role/login/membership
+contracts remain exact, and
+public v2 returns the reviewed Bluesky-first/Nostr-second shape with its exact
+ACL. A false or absent Nostr flag is a successful no-op, so unrelated
+Bluesky-only maintenance is not blocked. The login and its random password are
+created by a separate account-owner operation after migration; an owner DSN is
+never persisted on the VPS.
+
+The logical sanitizer removes all Nostr candidate and observation rows and
+retains only the three checkpoint rows; it cannot sanitize provider-managed
+snapshots or PITR history. This repository has no evidence that the exact
+Personal Supabase plan currently provides a sufficient Nostr retention/PITR
+window. Before changing the flag to true, an operator must record an
+account-specific assertion covering automatic-backup retention, PITR window,
+restore access, and provider-side exclusion semantics, then complete a fresh
+isolated restore drill. Until that assertion and drill are recorded,
+`NOSTR_COLLECTION_ENABLED` remains false and the deployment preflight must not
+be bypassed.
 
 Defaults retain the newest backup on each of the newest 7 UTC dates plus the newest backup in each of the newest 4 ISO weeks (union). Unknown files are untouched and every managed deletion is logged. Schedule from a restricted systemd timer/cron environment, for example:
 

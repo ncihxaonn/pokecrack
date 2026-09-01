@@ -6,6 +6,7 @@ YouTube credentials. Live modes fail closed during settings validation.
 
 from __future__ import annotations
 
+import re
 from decimal import Decimal
 from enum import StrEnum
 from pathlib import Path
@@ -31,7 +32,7 @@ YOUTUBE_DISCOVERY_SCHEDULE = "0 */6 * * *"
 YOUTUBE_CLEANUP_SCHEDULE = "30 3 * * *"
 PUBLIC_STUDY_SCHEDULE = "15 4 * * *"
 BLUESKY_DISCOVERY_SCHEDULE = "* * * * *"
-NOSTR_DISCOVERY_SCHEDULE = "* * * * *"
+NOSTR_WORKER_ID_PATTERN = re.compile(r"^nostr-collector-[a-z0-9][a-z0-9_.-]{0,63}$")
 
 
 class Settings(BaseSettings):
@@ -46,6 +47,7 @@ class Settings(BaseSettings):
 
     data_mode: DataMode = DataMode.DEMO
     supabase_db_url: SecretStr | None = None
+    nostr_supabase_db_url: SecretStr | None = None
 
     ai_provider: AIProviderName = AIProviderName.FIXTURE
     ai_base_url: str = "https://api.openai.com/v1"
@@ -120,7 +122,6 @@ class Settings(BaseSettings):
     schedule_official_api: str = YOUTUBE_DISCOVERY_SCHEDULE
     schedule_public_collection: str = PUBLIC_STUDY_SCHEDULE
     schedule_bluesky_collection: str = BLUESKY_DISCOVERY_SCHEDULE
-    schedule_nostr_collection: str = NOSTR_DISCOVERY_SCHEDULE
     schedule_auth_collection: str = "30 */12 * * *"
     schedule_catalog_sync: str = "0 2 * * *"
     schedule_aggregates: str = "5 * * * *"
@@ -130,6 +131,7 @@ class Settings(BaseSettings):
 
     @field_validator(
         "supabase_db_url",
+        "nostr_supabase_db_url",
         "ai_api_key",
         "youtube_api_key",
         "maton_api_key",
@@ -167,8 +169,35 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_live_boundaries(self) -> Self:
-        if self.data_mode is DataMode.LIVE and self.supabase_db_url is None:
-            raise ValueError("live DATA_MODE requires SUPABASE_DB_URL")
+        if self.worker_role != "nostr-collector" and self.nostr_collection_enabled:
+            raise ValueError(
+                "NOSTR_COLLECTION_ENABLED is reserved for WORKER_ROLE=nostr-collector; "
+                "use WORKER_ROLE=nostr-collector"
+            )
+        if self.worker_role == "nostr-collector":
+            if not self.nostr_collection_enabled:
+                raise ValueError(
+                    "WORKER_ROLE=nostr-collector requires NOSTR_COLLECTION_ENABLED=true"
+                )
+            if NOSTR_WORKER_ID_PATTERN.fullmatch(self.worker_id) is None:
+                raise ValueError(
+                    "WORKER_ROLE=nostr-collector requires WORKER_ID matching "
+                    "^nostr-collector-[a-z0-9][a-z0-9_.-]{0,63}$"
+                )
+            if (
+                self.youtube_collection_enabled
+                or self.bluesky_collection_enabled
+                or self.public_study_collection_enabled
+            ):
+                raise ValueError("WORKER_ROLE=nostr-collector allows only NOSTR_COLLECTION_ENABLED")
+        if self.data_mode is DataMode.LIVE:
+            if self.worker_role == "nostr-collector":
+                if self.nostr_supabase_db_url is None:
+                    raise ValueError(
+                        "live WORKER_ROLE=nostr-collector requires NOSTR_SUPABASE_DB_URL"
+                    )
+            elif self.supabase_db_url is None:
+                raise ValueError("live DATA_MODE requires SUPABASE_DB_URL")
         if self.ai_provider is not AIProviderName.FIXTURE:
             missing: list[str] = []
             if self.ai_api_key is None:
@@ -256,14 +285,6 @@ class Settings(BaseSettings):
             raise ValueError(
                 "BLUESKY_COLLECTION_ENABLED requires "
                 f"SCHEDULE_BLUESKY_COLLECTION={BLUESKY_DISCOVERY_SCHEDULE!r}"
-            )
-        if (
-            self.nostr_collection_enabled
-            and self.schedule_nostr_collection != NOSTR_DISCOVERY_SCHEDULE
-        ):
-            raise ValueError(
-                "NOSTR_COLLECTION_ENABLED requires "
-                f"SCHEDULE_NOSTR_COLLECTION={NOSTR_DISCOVERY_SCHEDULE!r}"
             )
         if self.scrapling_save_raw_html:
             raise ValueError("SCRAPLING_SAVE_RAW_HTML must remain false")

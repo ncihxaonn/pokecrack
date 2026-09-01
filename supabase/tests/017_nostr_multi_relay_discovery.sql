@@ -70,17 +70,18 @@ select ok(
 );
 select ok(
   (select bool_and(
-      has_table_privilege('service_role', table_name, 'select')
+      not has_table_privilege('service_role', table_name, 'select')
       and not has_table_privilege('service_role', table_name, 'insert')
       and not has_table_privilege('service_role', table_name, 'update')
       and not has_table_privilege('service_role', table_name, 'delete')
+      and not has_table_privilege('pokecrack_nostr_worker', table_name, 'select')
     )
    from unnest(array[
      'ingest.nostr_relay_candidates'::text,
      'ingest.nostr_relay_observations'::text,
      'ingest.nostr_relay_checkpoints'::text
    ]) as tables(table_name)),
-  'service_role has SELECT-only access to private Nostr state'
+  'neither service_role nor the Nostr capability can read private Nostr state directly'
 );
 select ok(
   not has_table_privilege('anon', 'ingest.nostr_relay_candidates', 'select')
@@ -150,24 +151,30 @@ select ok(
    from pg_proc where oid =
      'ingest.begin_nostr_relay_job(uuid,text,bigint,text)'::regprocedure)
     and has_function_privilege(
+      'pokecrack_nostr_worker', 'ingest.begin_nostr_relay_job(uuid,text,bigint,text)', 'execute'
+    )
+    and not has_function_privilege(
       'service_role', 'ingest.begin_nostr_relay_job(uuid,text,bigint,text)', 'execute'
     )
     and not has_function_privilege(
       'anon', 'ingest.begin_nostr_relay_job(uuid,text,bigint,text)', 'execute'
     ),
-  'only service_role receives the fenced Nostr begin RPC'
+  'only the isolated Nostr capability receives the fenced Nostr begin RPC'
 );
 select ok(
   (select prosecdef and coalesce(proconfig, '{}'::text[]) @> array['search_path=pg_catalog']
    from pg_proc where oid =
      'ingest.finalize_nostr_relay_job(uuid,text,bigint,jsonb)'::regprocedure)
     and has_function_privilege(
+      'pokecrack_nostr_worker', 'ingest.finalize_nostr_relay_job(uuid,text,bigint,jsonb)', 'execute'
+    )
+    and not has_function_privilege(
       'service_role', 'ingest.finalize_nostr_relay_job(uuid,text,bigint,jsonb)', 'execute'
     )
     and not has_function_privilege(
       'authenticated', 'ingest.finalize_nostr_relay_job(uuid,text,bigint,jsonb)', 'execute'
     ),
-  'only service_role receives the fenced Nostr finalizer'
+  'only the isolated Nostr capability receives the fenced Nostr finalizer'
 );
 select ok(
   not has_function_privilege(
@@ -280,11 +287,11 @@ insert into ingest.jobs (
   'a6000000-0000-4000-8000-000000000001',
   'source.nostr.relay', '{"relay_key":"primal"}'::jsonb, 'running', 1,
   clock_timestamp(), clock_timestamp() + interval '10 minutes',
-  'nostr-worker-1', 1, false
+  'nostr-collector-1', 1, false
 );
 create temporary table nostr_begin_one on commit drop as
 select * from ingest.begin_nostr_relay_job(
-  'a6000000-0000-4000-8000-000000000001', 'nostr-worker-1', 1, 'primal'
+  'a6000000-0000-4000-8000-000000000001', 'nostr-collector-1', 1, 'primal'
 );
 select ok(
   (select acquired and retry_at is null and checkpoint is null
@@ -296,7 +303,7 @@ select ok(
 select is(
   pg_temp.sqlstate_of($sql$
     select * from ingest.finalize_nostr_relay_job(
-      'a6000000-0000-4000-8000-000000000001', 'nostr-worker-1', 1,
+      'a6000000-0000-4000-8000-000000000001', 'nostr-collector-1', 1,
       jsonb_build_object(
         'version', '1.0.0', 'relay_key', 'primal',
         'since', '2000-01-01T00:00:00Z', 'until', '2000-01-01T00:00:01Z',
@@ -319,7 +326,7 @@ select ok(
 
 select lives_ok(
   $sql$select * from ingest.finalize_nostr_relay_job(
-    'a6000000-0000-4000-8000-000000000001', 'nostr-worker-1', 1,
+    'a6000000-0000-4000-8000-000000000001', 'nostr-collector-1', 1,
     pg_temp.nostr_result(
       'primal',
       (select since from nostr_begin_one),
@@ -357,6 +364,19 @@ select is(
   1,
   'the candidate observation is idempotently recorded per relay'
 );
+set local role anon;
+select set_config(
+  'pokecrack_test.nostr_public_after_candidate',
+  public.get_public_social_discovery_v2()::text,
+  true
+);
+reset role;
+select matches(
+  current_setting('pokecrack_test.nostr_public_after_candidate', true)::jsonb
+    #>> '{sources,1,note}',
+  '^1 of 3 reviewed public relays collected recently; 1 retained tag-matched activity candidates\.',
+  'the anon public projection can count retained activity after worker-table policies are removed'
+);
 
 -- A duplicate trigger inside the same whole NIP-01 second must defer before
 -- taking the request gate. Seed a future whole-second checkpoint to make the
@@ -377,11 +397,11 @@ insert into ingest.jobs (
 ) values (
   'a6000000-0000-4000-8000-000000000005', 'source.nostr.relay',
   '{"relay_key":"primal"}'::jsonb, 'running', 1, clock_timestamp(),
-  clock_timestamp() + interval '10 minutes', 'nostr-worker-5', 1, false
+  clock_timestamp() + interval '10 minutes', 'nostr-collector-5', 1, false
 );
 create temporary table nostr_begin_same_second on commit drop as
 select * from ingest.begin_nostr_relay_job(
-  'a6000000-0000-4000-8000-000000000005', 'nostr-worker-5', 1, 'primal'
+  'a6000000-0000-4000-8000-000000000005', 'nostr-collector-5', 1, 'primal'
 );
 select ok(
   (select not acquired
@@ -440,15 +460,15 @@ insert into ingest.jobs (
 ) values (
   'a6000000-0000-4000-8000-000000000002', 'source.nostr.relay',
   '{"relay_key":"primal"}'::jsonb, 'running', 1, clock_timestamp(),
-  clock_timestamp() + interval '10 minutes', 'nostr-worker-2', 1, false
+  clock_timestamp() + interval '10 minutes', 'nostr-collector-2', 1, false
 );
 create temporary table nostr_begin_two on commit drop as
 select * from ingest.begin_nostr_relay_job(
-  'a6000000-0000-4000-8000-000000000002', 'nostr-worker-2', 1, 'primal'
+  'a6000000-0000-4000-8000-000000000002', 'nostr-collector-2', 1, 'primal'
 );
 select lives_ok(
   $sql$select * from ingest.finalize_nostr_relay_job(
-    'a6000000-0000-4000-8000-000000000002', 'nostr-worker-2', 1,
+    'a6000000-0000-4000-8000-000000000002', 'nostr-collector-2', 1,
     pg_temp.nostr_result(
       'primal', (select since from nostr_begin_two), (select until from nostr_begin_two),
       (select checkpoint from nostr_begin_two), 3, 256, '[]'::jsonb,
@@ -488,15 +508,15 @@ insert into ingest.jobs (
 ) values (
   'a6000000-0000-4000-8000-000000000003', 'source.nostr.relay',
   '{"relay_key":"primal"}'::jsonb, 'running', 1, clock_timestamp(),
-  clock_timestamp() + interval '10 minutes', 'nostr-worker-3', 1, false
+  clock_timestamp() + interval '10 minutes', 'nostr-collector-3', 1, false
 );
 create temporary table nostr_begin_three on commit drop as
 select * from ingest.begin_nostr_relay_job(
-  'a6000000-0000-4000-8000-000000000003', 'nostr-worker-3', 1, 'primal'
+  'a6000000-0000-4000-8000-000000000003', 'nostr-collector-3', 1, 'primal'
 );
 select lives_ok(
   $sql$select * from ingest.finalize_nostr_relay_job(
-    'a6000000-0000-4000-8000-000000000003', 'nostr-worker-3', 1,
+    'a6000000-0000-4000-8000-000000000003', 'nostr-collector-3', 1,
     pg_temp.nostr_result(
       'primal', (select since from nostr_begin_three), (select until from nostr_begin_three),
       (select checkpoint from nostr_begin_three), 1, 96, '[]'::jsonb,
@@ -529,15 +549,15 @@ insert into ingest.jobs (
 ) values (
   'a6000000-0000-4000-8000-000000000004', 'source.nostr.relay',
   '{"relay_key":"primal"}'::jsonb, 'running', 1, clock_timestamp(),
-  clock_timestamp() + interval '10 minutes', 'nostr-worker-4', 1, false
+  clock_timestamp() + interval '10 minutes', 'nostr-collector-4', 1, false
 );
 create temporary table nostr_begin_four on commit drop as
 select * from ingest.begin_nostr_relay_job(
-  'a6000000-0000-4000-8000-000000000004', 'nostr-worker-4', 1, 'primal'
+  'a6000000-0000-4000-8000-000000000004', 'nostr-collector-4', 1, 'primal'
 );
 select throws_ok(
   $$select * from ingest.complete_job_v2(
-    'a6000000-0000-4000-8000-000000000004', 'nostr-worker-4', 1
+    'a6000000-0000-4000-8000-000000000004', 'nostr-collector-4', 1
   )$$,
   '22023', 'typed live jobs require their dedicated fenced finalizer',
   'generic completion rejects typed Nostr jobs'
@@ -545,7 +565,7 @@ select throws_ok(
 select is(
   pg_temp.sqlstate_of($sql$
     select * from ingest.finalize_nostr_relay_job(
-      'a6000000-0000-4000-8000-000000000004', 'nostr-worker-4', 1,
+      'a6000000-0000-4000-8000-000000000004', 'nostr-collector-4', 1,
       pg_temp.nostr_result(
         'primal', (select since from nostr_begin_four),
         (select until from nostr_begin_four) - interval '1 second',
