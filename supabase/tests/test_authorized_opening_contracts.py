@@ -75,6 +75,7 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         self.assertEqual(lowered.count("begin;"), 1)
         self.assertEqual(lowered.count("commit;"), 1)
         self.assertIn("create role pokecrack_authorized_opening_reviewer", lowered)
+        self.assertIn("<<submit_contract>>", lowered)
         self.assertIn("nologin noinherit", lowered)
         self.assertIn("role_is_exact", lowered)
         self.assertIn("role_has_dangerous_memberships", lowered)
