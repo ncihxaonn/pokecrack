@@ -335,7 +335,7 @@ def test_redirect_status_is_not_followed_or_treated_as_data() -> None:
     assert len(transport.calls) == 1
 
 
-def test_opaque_no_link_pagination_advances_past_irrelevant_rows() -> None:
+def test_opaque_no_link_pagination_uses_newest_forward_boundary() -> None:
     collector, transport = _collector(
         _response(_preflight_payload(), headers=_headers(remaining=59)),
         _response(
@@ -353,9 +353,9 @@ def test_opaque_no_link_pagination_advances_past_irrelevant_rows() -> None:
     )
     assert result.candidates == ()
     assert result.statuses_seen == 2
-    assert result.end_status_id == "opaque-002"
+    assert result.end_status_id == "001"
     assert result.incomplete is True  # the private row is safely skipped, not replayed
-    assert "min_id=opaque-002" in transport.calls[2][0]
+    assert "min_id=001" in transport.calls[2][0]
 
 
 def test_link_cursor_requires_same_origin_exact_limit_and_forward_progress() -> None:
@@ -376,7 +376,7 @@ def test_link_cursor_requires_same_origin_exact_limit_and_forward_progress() -> 
     result = collector.collect(
         instance_key="mastodon_social", tag_key="pokemontcg", start_status_id=None, now=NOW
     )
-    assert result.end_status_id == "opaque-first"
+    assert result.end_status_id == "opaque-next"
     assert transport.calls[2][0] == next_url
 
     for link in (
@@ -394,6 +394,58 @@ def test_link_cursor_requires_same_origin_exact_limit_and_forward_progress() -> 
             collector.collect(
                 instance_key="mastodon_social", tag_key="pokemontcg", start_status_id=None, now=NOW
             )
+
+
+def test_link_forward_cursor_progresses_across_pages_and_stops_replay() -> None:
+    first_url = (
+        "https://mastodon.social/api/v1/timelines/tag/pokemontcg?limit=40&min_id=opaque-forward-one"
+    )
+    second_url = (
+        "https://mastodon.social/api/v1/timelines/tag/pokemontcg?limit=40&min_id=opaque-forward-two"
+    )
+    collector, transport = _collector(
+        _response(_preflight_payload()),
+        _response(
+            [_status("opaque-page-one-newest"), _status("opaque-page-one-oldest")],
+            headers={**_headers(remaining=58), "link": f'<{first_url}>; rel="prev"'},
+        ),
+        _response(
+            [_status("opaque-page-two-newest"), _status("opaque-page-two-oldest")],
+            headers={**_headers(remaining=57), "link": f'<{second_url}>; rel="prev"'},
+        ),
+    )
+
+    result = collector.collect(
+        instance_key="mastodon_social", tag_key="pokemontcg", start_status_id=None, now=NOW
+    )
+
+    assert transport.calls[2][0] == first_url
+    assert result.end_status_id == "opaque-forward-two"
+    assert result.requests_made == 2
+    assert result.incomplete is True  # the bounded page window ends here
+
+
+def test_invalid_row_does_not_poison_safe_link_boundary() -> None:
+    safe_url = (
+        "https://mastodon.social/api/v1/timelines/tag/pokemontcg?"
+        "limit=40&min_id=opaque-safe-boundary"
+    )
+    collector, transport = _collector(
+        _response(_preflight_payload()),
+        _response(
+            [_status("opaque-safe-newest"), {"not": "a status"}],
+            headers={**_headers(remaining=58), "link": f'<{safe_url}>; rel="prev"'},
+        ),
+        _response([], headers=_headers(remaining=57)),
+    )
+
+    result = collector.collect(
+        instance_key="mastodon_social", tag_key="pokemontcg", start_status_id=None, now=NOW
+    )
+
+    assert result.end_status_id == "opaque-safe-boundary"
+    assert result.incomplete is True
+    assert transport.calls[2][0] == safe_url
 
 
 def test_bounds_cover_pages_statuses_bytes_and_deterministic_empty_cursor() -> None:

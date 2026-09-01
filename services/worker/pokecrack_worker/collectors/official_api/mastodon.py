@@ -802,12 +802,15 @@ class MastodonPublicHashtagCollector:
                 if existing is not None and existing != status:
                     raise MastodonInvalidResponse("mastodon_status_identity_conflict")
                 candidates[status.status_key_sha256] = status
-            page_end_status_id = page_status_ids[-1] if page_status_ids else None
+            # Mastodon returns a min_id page in reverse order after selecting
+            # the oldest forward slice.  The first status is therefore the
+            # newest/forward boundary; IDs remain opaque and are never sorted.
+            page_forward_status_id = page_status_ids[0] if page_status_ids else None
             page_ids_complete = bool(page_status_ids) and all(
                 value is not None for value in page_status_ids
             )
-            if page_end_status_id is not None and page_ids_complete:
-                end_status_id = page_end_status_id
+            if page_forward_status_id is not None and page_ids_complete:
+                end_status_id = page_forward_status_id
             if invalid_status:
                 incomplete = True
 
@@ -819,12 +822,16 @@ class MastodonPublicHashtagCollector:
                 tag_value=tag.value,
             )
             if forward is None:
-                if page_end_status_id is None or not page_ids_complete:
+                if page_forward_status_id is None or not page_ids_complete:
                     break
-                next_url = _hashtag_url(instance, tag.value, min_id=page_end_status_id)
-                next_min_id = page_end_status_id
+                next_url = _hashtag_url(instance, tag.value, min_id=page_forward_status_id)
+                next_min_id = page_forward_status_id
             else:
                 next_url, next_min_id = forward
+                # The server's bounded, origin-checked forward cursor wins
+                # over any response-row boundary, including pages with rows
+                # that are invalid or ineligible for retention.
+                end_status_id = next_min_id
             if next_min_id == current_min_id:
                 incomplete = True
                 break
