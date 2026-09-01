@@ -28,7 +28,10 @@ describe("SEO metadata routes", () => {
     expect(layout).toContain("openGraph");
     expect(layout).toContain("twitter");
 
-    const researchPages = ["page.tsx", "sets/page.tsx", "regions/page.tsx", "retailers/page.tsx", "batches/page.tsx", "methodology/page.tsx"];
+    const liveDashboardPages = ["page.tsx"];
+    for (const page of liveDashboardPages) expect(readFileSync(path.join(appRoot, page), "utf8"), page).toContain("export const revalidate = 60");
+
+    const researchPages = ["sets/page.tsx", "regions/page.tsx", "retailers/page.tsx", "batches/page.tsx", "methodology/page.tsx"];
     for (const page of researchPages) expect(readFileSync(path.join(appRoot, page), "utf8"), page).toContain("export const revalidate = 900");
 
     const operationalPages = ["sources/page.tsx", "status/page.tsx"];

@@ -55,6 +55,8 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
         catalogSetCount={data.catalog.setCount}
         generatedAt={data.generatedAt}
         observationStatus={data.observations.status}
+        observedCountryCount={data.observations.countriesObserved}
+        observedPackCount={data.observations.observedPacks}
         synthetic={synthetic}
       />
       <WorldHeatmap

@@ -36,19 +36,26 @@ export function DataModeNotice({
   generatedAt,
   catalogSetCount,
   observationStatus,
+  observedCountryCount,
+  observedPackCount,
 }: {
   synthetic: boolean;
   generatedAt: string;
   catalogSetCount?: number;
   observationStatus?: "empty" | "collecting" | "published";
+  observedCountryCount?: number;
+  observedPackCount?: number;
 }) {
-  const catalogOnly = !synthetic && observationStatus !== undefined && observationStatus !== "published";
-  const label = synthetic ? "Synthetic demo" : catalogOnly ? "Live catalog" : "Live snapshot";
+  const catalogOnly = !synthetic && observationStatus === "empty";
+  const collecting = !synthetic && observationStatus === "collecting";
+  const label = synthetic ? "Synthetic demo" : collecting ? "Live observations" : catalogOnly ? "Live catalog" : "Live snapshot";
   const message = synthetic
     ? BRAND.demoNotice
-    : catalogOnly
-      ? `${integer.format(catalogSetCount ?? 0)} catalog sets are live. Verified country observations are not published yet.`
-      : "Live response with no demo fixtures.";
+    : collecting
+      ? `Verified observations cover ${integer.format(observedCountryCount ?? 0)} countries and ${integer.format(observedPackCount ?? 0)} packs; country-level rates remain withheld until evidence thresholds and reviewed publication are satisfied.`
+      : catalogOnly
+        ? `${integer.format(catalogSetCount ?? 0)} catalog sets are live. Verified country observations are not published yet.`
+        : "Live response with no demo fixtures.";
 
   return (
     <aside className={`mode-notice ${synthetic ? "mode-notice--demo" : "mode-notice--live"}`} aria-label="Data provenance">

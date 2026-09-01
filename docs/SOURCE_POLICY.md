@@ -16,11 +16,14 @@ Every source route uses one of the following exact values and no aliases: `offic
 
 The current registry enables TCGdex catalog metadata, YouTube Data API metadata
 (credential required; no video download), and `example.com` only as a
-fixture-safe adapter. Live TCGdex collection accepts one daily scheduled job for
+fixture-safe adapter. Live TCGdex collection accepts two independent daily UTC
+scheduled windows at 02:00 and 14:00 for
 `https://api.tcgdex.net/v2/en/sets`; each bounded attempt performs at most one
 fixed conditional GET, capped at 2 MiB and 1,000 sets, after both a local
 allowlist check and a fenced live database-policy check. It stores only English
-set names, upstream IDs, counts, ETag and a content hash.
+set names, upstream IDs, counts, ETag and a content hash. The durable schedule
+slot is the idempotency boundary, so a missed window can be caught up without
+duplicating an already-created slot.
 
 Live YouTube discovery defaults off. When explicitly enabled, its schedule is
 frozen to every six hours and enqueues exactly five versioned global-English
