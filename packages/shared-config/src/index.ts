@@ -91,7 +91,7 @@ export const SCHEDULE_DEFAULTS = {
   officialApi: "0 */6 * * *",
   publicCollection: "15 */6 * * *",
   authCollection: "30 */12 * * *",
-  catalogSync: "0 2 * * *",
+  catalogSync: "0 2,14 * * *",
   aggregates: "5 * * * *",
   cleanup: "30 3 * * *",
   backup: "0 4 * * *",

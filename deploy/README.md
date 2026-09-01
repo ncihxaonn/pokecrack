@@ -134,7 +134,7 @@ The container automatically starts the allowlisted profile selected by `CHROMIUM
 
 - `deploy/scripts/backup.sh`: a stdin-only URL runner requires `sslmode=require` or stronger, clears inherited `PG*`, and maps only allowlisted fields to libpq -> independently role-switched `psql` policy/table/privilege preflights -> one-snapshot plain `pg_dump` on the owner-capable login, strictly limited to `catalog`, `ingest`, `analytics`, `public`, and `supabase_migrations` (never provider `auth`/`storage`/`realtime` data), with exact request-gate and private social-activity data exclusions -> fail-closed sanitizer that verifies the policy-free regular gate schema, rejects live gate rows, inserts canonical idle gates before RLS enablement, strips disposable social discovery rows, retains exact checkpoints, and retains the public-study ledger only after exact schema/COPY/row validation -> gzip, non-empty validation, UTC filename, atomic last-success marker, newest 7 daily plus 4 weekly representatives.
 - `deploy/scripts/cleanup.sh`: removes only stopped project containers and unused labeled images; never stops services or prunes volumes/profiles/backups/extensions.
-- `deploy/scripts/deploy.sh`: exact-SHA, exact-service-set build/start/health gate plus host-only Nostr attestation.
+- `deploy/scripts/deploy.sh`: exact-SHA, exact-service-set build/start/health gate plus host-only Nostr attestation; rejects the retired once-daily TCGdex schedule before checkout while preserving other explicit operator overrides.
 - `deploy/scripts/rollback.sh`: explicit-SHA deployment of the same deterministic service set.
 - `deploy/scripts/install-opencli-extension.sh`: pinned extension install/rollback.
 
