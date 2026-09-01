@@ -16,7 +16,7 @@ import re
 import stat
 import sys
 import tempfile
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import BinaryIO
 from uuid import UUID
@@ -101,53 +101,214 @@ PUBLIC_STUDY_SOURCE_KEYS = (
 )
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
-DOLLAR_QUOTE_TAG = re.compile(rb"\$(?:[A-Za-z_][A-Za-z0-9_]*)?\$")
+DOLLAR_QUOTE_TAG = re.compile(
+    rb"\$(?:[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)?\$"
+)
+TARGET_TABLE_NAMES = tuple(
+    sorted(
+        table[1]
+        for table in (
+            RETENTION_CONTROL_TABLES
+            | EPHEMERAL_ACTIVITY_TABLES
+            | {SOURCE_REQUEST_GATES}
+        )
+    )
+)
+TARGET_UNQUOTED_TABLE_REFERENCE = (
+    r"(?:"
+    + "|".join(re.escape(name) for name in TARGET_TABLE_NAMES)
+    + r")(?![A-Za-z0-9_$\x80-\xff])"
+)
+TARGET_QUOTED_TABLE_REFERENCE = (
+    r'(?:"' + r'"|"'.join(re.escape(name) for name in TARGET_TABLE_NAMES) + r'")'
+)
+TARGET_TABLE_REFERENCE = (
+    rf"(?:{TARGET_UNQUOTED_TABLE_REFERENCE}|{TARGET_QUOTED_TABLE_REFERENCE})"
+)
 TARGET_INSERT = re.compile(
-    r'^\s*INSERT\s+INTO\s+(?:ingest|"ingest")\.'
-    r'(?:source_policies|"source_policies"|'
-    r'youtube_discoveries|"youtube_discoveries"|'
-    r'public_study_observations|"public_study_observations"|'
-    r'bluesky_jetstream_candidates|"bluesky_jetstream_candidates"|'
-    r'bluesky_jetstream_observations|"bluesky_jetstream_observations"|'
-    r'bluesky_jetstream_checkpoints|"bluesky_jetstream_checkpoints"|'
-    r'nostr_relay_candidates|"nostr_relay_candidates"|'
-    r'nostr_relay_observations|"nostr_relay_observations"|'
-    r'nostr_relay_checkpoints|"nostr_relay_checkpoints"|'
-    r'mastodon_public_hashtag_candidates|"mastodon_public_hashtag_candidates"|'
-    r'mastodon_public_hashtag_observations|"mastodon_public_hashtag_observations"|'
-    r'mastodon_public_hashtag_checkpoints|"mastodon_public_hashtag_checkpoints"|'
-    r'mastodon_rate_cooldowns|"mastodon_rate_cooldowns"|'
-    r'source_request_gates|"source_request_gates")(?:\s|\()',
+    r'^\s*INSERT\s+INTO\s+(?:(?:ingest|"ingest")\s*\.\s*)?'
+    + TARGET_TABLE_REFERENCE,
     re.IGNORECASE,
 )
+TARGET_DATA_STATEMENT = re.compile(
+    rb'(?:^|[\s;)])(?:INSERT\s+INTO\s+(?:ONLY\s+)?|'
+    rb'COPY\s+(?:BINARY\s+)?)'
+    rb'(?:(?:ingest|"ingest")\s*\.\s*)?'
+    + TARGET_TABLE_REFERENCE.encode("ascii"),
+    re.IGNORECASE,
+)
+ANY_COPY_STATEMENT_PREFIX = re.compile(rb"^\s*COPY\b", re.IGNORECASE)
+DO_STATEMENT_PREFIX = re.compile(rb"^\s*DO(?:\s|$)", re.IGNORECASE)
+MAX_SQL_STATEMENT_PREFIX_BYTES = 65_536
+UNQUALIFIED_TARGET_TABLES = frozenset(TARGET_TABLE_NAMES)
 
 
-def _advance_dollar_quote_state(
-    line: bytes, active_tag: bytes | None
-) -> bytes | None:
-    """Track PostgreSQL dollar-quoted strings without inspecting their body.
+@dataclass
+class SqlLexState:
+    mode: str = "normal"
+    dollar_tag: bytes | None = None
+    block_comment_depth: int = 0
+    single_quote_backslash_escapes: bool = False
+    statement_sql: bytearray = field(default_factory=bytearray)
 
-    ``pg_dump`` emits function definitions as dollar-quoted SQL. Statements in
-    those bodies are schema text, not row data, so the top-level INSERT guard
-    must not classify them as ``--inserts`` output. An INSERT encountered while
-    no quote is active is still checked before this state advances, including
-    INSERT rows whose values themselves use dollar quoting.
+
+def _is_identifier_byte(value: int) -> bool:
+    return (
+        ord("0") <= value <= ord("9")
+        or ord("A") <= value <= ord("Z")
+        or ord("a") <= value <= ord("z")
+        or value in (ord("_"), ord("$"))
+        or value >= 0x80
+    )
+
+
+def _append_statement_bytes(state: SqlLexState, value: bytes) -> None:
+    if len(state.statement_sql) + len(value) > MAX_SQL_STATEMENT_PREFIX_BYTES:
+        raise SanitizationError("SQL statement prefix exceeds the safety limit")
+    state.statement_sql.extend(value)
+
+
+def _append_statement_space(state: SqlLexState) -> None:
+    if not state.statement_sql or state.statement_sql[-1] != ord(" "):
+        _append_statement_bytes(state, b" ")
+
+
+def _reject_target_statement_prefix(state: SqlLexState) -> None:
+    statement = bytes(state.statement_sql)
+    if DO_STATEMENT_PREFIX.match(statement):
+        raise SanitizationError(
+            "executable DO bodies are not supported in managed backups"
+        )
+    if TARGET_DATA_STATEMENT.search(statement):
+        raise SanitizationError(
+            "retention-control table data must use COPY FROM stdin"
+        )
+    if ANY_COPY_STATEMENT_PREFIX.match(statement):
+        raise SanitizationError(
+            "COPY headers must use the supported line-oriented pg_dump shape"
+        )
+
+
+def _finish_sql_statement(state: SqlLexState) -> None:
+    _reject_target_statement_prefix(state)
+    state.statement_sql.clear()
+
+
+def _advance_sql_lex_state(line: bytes, state: SqlLexState) -> None:
+    """Track SQL lexical context around PostgreSQL dollar-quoted bodies.
+
+    The scanner recognizes dollar delimiters only in normal SQL, never inside
+    ordinary strings, quoted identifiers, or comments. It retains only the
+    normal-context statement prefix so comments and line breaks cannot split a
+    protected ``INSERT INTO`` or ``COPY`` target across scanner boundaries.
     """
 
-    offset = 0
-    while True:
-        if active_tag is not None:
-            closing_at = line.find(active_tag, offset)
+    index = 0
+    while index < len(line):
+        if state.mode == "dollar":
+            assert state.dollar_tag is not None
+            closing_at = line.find(state.dollar_tag, index)
             if closing_at < 0:
-                return active_tag
-            offset = closing_at + len(active_tag)
-            active_tag = None
+                return
+            index = closing_at + len(state.dollar_tag)
+            state.mode = "normal"
+            state.dollar_tag = None
+            continue
 
-        opening = DOLLAR_QUOTE_TAG.search(line, offset)
-        if opening is None:
-            return None
-        active_tag = opening.group(0)
-        offset = opening.end()
+        if state.mode == "single_quote":
+            if (
+                state.single_quote_backslash_escapes
+                and line[index] == ord("\\")
+                and index + 1 < len(line)
+            ):
+                index += 2
+            elif line[index] == ord("'"):
+                if index + 1 < len(line) and line[index + 1] == ord("'"):
+                    index += 2
+                else:
+                    state.mode = "normal"
+                    state.single_quote_backslash_escapes = False
+                    index += 1
+            else:
+                index += 1
+            continue
+
+        if state.mode == "double_quote":
+            if line[index] == ord('"'):
+                if index + 1 < len(line) and line[index + 1] == ord('"'):
+                    _append_statement_bytes(state, b'""')
+                    index += 2
+                else:
+                    _append_statement_bytes(state, b'"')
+                    state.mode = "normal"
+                    index += 1
+            else:
+                _append_statement_bytes(state, line[index : index + 1])
+                index += 1
+            continue
+
+        if state.mode == "block_comment":
+            if line[index : index + 2] == b"/*":
+                state.block_comment_depth += 1
+                index += 2
+            elif line[index : index + 2] == b"*/":
+                state.block_comment_depth -= 1
+                index += 2
+                if state.block_comment_depth == 0:
+                    state.mode = "normal"
+            else:
+                index += 1
+            continue
+
+        if line[index : index + 2] == b"--":
+            _append_statement_space(state)
+            _reject_target_statement_prefix(state)
+            return
+        if line[index : index + 2] == b"/*":
+            _append_statement_space(state)
+            state.mode = "block_comment"
+            state.block_comment_depth = 1
+            index += 2
+            continue
+        if line[index] == ord("'"):
+            _append_statement_space(state)
+            state.mode = "single_quote"
+            state.single_quote_backslash_escapes = (
+                index > 0
+                and line[index - 1] in (ord("E"), ord("e"))
+                and (index < 2 or not _is_identifier_byte(line[index - 2]))
+            )
+            index += 1
+            continue
+        if line[index] == ord('"'):
+            _append_statement_bytes(state, b'"')
+            state.mode = "double_quote"
+            index += 1
+            continue
+
+        opening = DOLLAR_QUOTE_TAG.match(line, index)
+        if opening is not None and (
+            index == 0 or not _is_identifier_byte(line[index - 1])
+        ):
+            _append_statement_space(state)
+            _reject_target_statement_prefix(state)
+            state.mode = "dollar"
+            state.dollar_tag = opening.group(0)
+            index = opening.end()
+            continue
+
+        if line[index] == ord(";"):
+            _finish_sql_statement(state)
+            index += 1
+            continue
+        if line[index] in b" \t\r\n\f\v":
+            _append_statement_space(state)
+            index += 1
+            continue
+        _append_statement_bytes(state, line[index : index + 1])
+        index += 1
+
+    _reject_target_statement_prefix(state)
 
 
 YOUTUBE_CREATE_REFERENCE = re.compile(
@@ -1663,7 +1824,7 @@ class PlainBackupSanitizer:
 
     def _scan(self, source: BinaryIO, spool: BinaryIO) -> None:
         block: CopyBlock | None = None
-        dollar_quote_tag: bytes | None = None
+        sql_lex_state = SqlLexState()
         for line in source:
             spool.write(line)
             if block is not None:
@@ -1673,10 +1834,8 @@ class PlainBackupSanitizer:
                 self._inspect_control_row(block, line)
                 continue
 
-            if dollar_quote_tag is not None:
-                dollar_quote_tag = _advance_dollar_quote_state(
-                    line, dollar_quote_tag
-                )
+            if sql_lex_state.mode != "normal":
+                _advance_sql_lex_state(line, sql_lex_state)
                 continue
 
             if self.request_gates_create_lines is not None:
@@ -1704,6 +1863,13 @@ class PlainBackupSanitizer:
 
             header = parse_copy_header(line)
             if header is not None:
+                if (
+                    len(header.table) == 1
+                    and header.table[0] in UNQUALIFIED_TARGET_TABLES
+                ):
+                    raise SanitizationError(
+                        "retention-control COPY targets must be schema-qualified"
+                    )
                 if header.table == SOURCE_REQUEST_GATES:
                     raise SanitizationError(
                         "source_request_gates data must be excluded by pg_dump"
@@ -1765,12 +1931,12 @@ class PlainBackupSanitizer:
                 raise SanitizationError(
                     "retention-control table data must use COPY FROM stdin"
                 )
-            dollar_quote_tag = _advance_dollar_quote_state(line, None)
+            _advance_sql_lex_state(line, sql_lex_state)
 
         if block is not None:
             raise SanitizationError("unterminated COPY data block")
-        if dollar_quote_tag is not None:
-            raise SanitizationError("unterminated dollar-quoted SQL body")
+        if sql_lex_state.mode != "normal":
+            raise SanitizationError("unterminated SQL quoted body or comment")
         if self.request_gates_create_lines is not None:
             raise SanitizationError("unterminated source_request_gates CREATE TABLE")
         if self.public_study_create_lines is not None:
