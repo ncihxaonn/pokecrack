@@ -124,6 +124,41 @@ select doesnt_match(
   'the fixed tuple still redacts endpoint, identity, cursor, policy, and raw fields'
 );
 
+update ingest.mastodon_public_hashtag_checkpoints as checkpoints
+set incomplete = true,
+    updated_at = statement_timestamp()
+from ingest.source_policies as policies
+where policies.id = checkpoints.source_policy_id
+  and policies.source_key = 'mastodon_social'
+  and checkpoints.tag_key = 'pokemontcg'
+  and not checkpoints.is_demo;
+
+select is(
+  public.get_public_social_discovery_v3() #>> '{sources,2,status}',
+  'delayed',
+  'a fresh but incomplete checkpoint is not reported as operational'
+);
+select is(
+  public.get_public_social_discovery_v3() #>> '{sources,2,note}',
+  '6 of 7 reviewed mastodon.social public hashtag activity-only feeds collected recently; 0 retained activity-only rows. Coverage may be incomplete and is never opening evidence, a denominator, or rate evidence.',
+  'an incomplete checkpoint is excluded from the recent feed count'
+);
+
+update ingest.mastodon_public_hashtag_checkpoints as checkpoints
+set incomplete = false,
+    updated_at = statement_timestamp()
+from ingest.source_policies as policies
+where policies.id = checkpoints.source_policy_id
+  and policies.source_key = 'mastodon_social'
+  and checkpoints.tag_key = 'pokemontcg'
+  and not checkpoints.is_demo;
+
+select is(
+  public.get_public_social_discovery_v3() #>> '{sources,2,status}',
+  'operational',
+  'completing the seventh fresh checkpoint restores operational health'
+);
+
 update ingest.source_policies
 set min_delay_seconds = 3,
     updated_at = statement_timestamp()

@@ -104,6 +104,7 @@ as $$
       count(checkpoints.tag_key) filter (
         where checkpoints.last_collected_at >= statement_timestamp() - interval '15 minutes'
           and checkpoints.last_collected_at <= statement_timestamp()
+          and not checkpoints.incomplete
       )::integer as recent_count,
       min(checkpoints.last_collected_at) filter (
         where checkpoints.last_collected_at <= statement_timestamp()
