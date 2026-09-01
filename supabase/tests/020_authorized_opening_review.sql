@@ -131,14 +131,29 @@ select ok(
   'reviewer capability is never granted to a parent role'
 );
 select ok(
+  (select count(*) = 1
+   from pg_auth_members as memberships
+   where memberships.roleid = (
+     select reviewer.oid
+     from pg_roles as reviewer
+     where reviewer.rolname = 'pokecrack_authorized_opening_reviewer'
+   )
+     and memberships.member = 'postgres'::regrole
+     and memberships.admin_option
+     and not memberships.inherit_option
+     and not memberships.set_option),
+  'reviewer capability retains only the PostgreSQL 17 creator-admin edge'
+);
+select ok(
   (select count(*) <= 1
    from pg_auth_members as memberships
    where memberships.roleid = (
      select reviewer.oid
      from pg_roles as reviewer
      where reviewer.rolname = 'pokecrack_authorized_opening_reviewer'
-   )),
-  'reviewer capability has at most one dedicated login member'
+   )
+     and memberships.member <> 'postgres'::regrole),
+  'reviewer capability has at most one dedicated login in addition to the creator edge'
 );
 select ok(
   not exists (
@@ -150,6 +165,7 @@ select ok(
       from pg_roles as reviewer
       where reviewer.rolname = 'pokecrack_authorized_opening_reviewer'
     )
+    and memberships.member <> 'postgres'::regrole
     and (
       not login.rolcanlogin
       or login.rolinherit
@@ -177,6 +193,17 @@ begin
     with inherit false, set true;
 end;
 $reviewer_membership_fixture$;
+select is(
+  (select count(*)::integer
+   from pg_auth_members as memberships
+   where memberships.roleid = (
+     select reviewer.oid
+     from pg_roles as reviewer
+     where reviewer.rolname = 'pokecrack_authorized_opening_reviewer'
+   )),
+  2,
+  'reviewer capability has exactly the creator edge plus one dedicated login'
+);
 select ok(
   (select count(*) = 1
    from pg_auth_members as memberships

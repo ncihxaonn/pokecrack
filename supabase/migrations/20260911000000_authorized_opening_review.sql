@@ -10,7 +10,9 @@ declare
   role_is_exact boolean;
   role_has_dangerous_memberships boolean;
   role_membership_count integer;
-  role_has_invalid_login_membership boolean;
+  role_creator_membership_count integer;
+  role_dedicated_login_count integer;
+  role_has_invalid_membership boolean;
 begin
   if not exists (
     select 1 from pg_catalog.pg_roles
@@ -47,45 +49,91 @@ begin
     from pg_catalog.pg_auth_members as memberships
     where memberships.roleid = reviewer_oid;
 
-    -- A membership granted to the capability itself would let a parent role
-    -- inherit the review RPCs. The only permitted edge points the other way:
-    -- one dedicated login is a member of this capability, with no admin or
-    -- inherited edge and no second role membership of its own.
+    -- PostgreSQL 17 records the creating postgres role as an ADMIN-only edge
+    -- with neither INHERIT nor SET.  That creator edge is required and is not
+    -- a reviewer login.  At most one separate NOINHERIT login may receive the
+    -- capability through SET ROLE, without admin or any second membership.
+    select count(*)::integer
+    into role_creator_membership_count
+    from pg_catalog.pg_auth_members as memberships
+    where memberships.roleid = reviewer_oid
+      and memberships.member = 'postgres'::regrole
+      and memberships.admin_option
+      and not memberships.inherit_option
+      and not memberships.set_option;
+
+    select count(*)::integer
+    into role_dedicated_login_count
+    from pg_catalog.pg_auth_members as memberships
+    join pg_catalog.pg_roles as login
+      on login.oid = memberships.member
+    where memberships.roleid = reviewer_oid
+      and memberships.member <> 'postgres'::regrole
+      and login.rolcanlogin
+      and not login.rolinherit
+      and not login.rolsuper
+      and not login.rolcreatedb
+      and not login.rolcreaterole
+      and not login.rolreplication
+      and not login.rolbypassrls
+      and login.rolconnlimit = 2
+      and login.rolconfig is null
+      and not memberships.admin_option
+      and not memberships.inherit_option
+      and memberships.set_option
+      and not exists (
+        select 1
+        from pg_catalog.pg_auth_members as other_memberships
+        where other_memberships.member = login.oid
+          and other_memberships.roleid <> reviewer_oid
+      );
+
     select exists (
       select 1
       from pg_catalog.pg_auth_members as memberships
-      join pg_catalog.pg_roles as login
+      left join pg_catalog.pg_roles as login
         on login.oid = memberships.member
       where memberships.roleid = reviewer_oid
-        and (
-          not login.rolcanlogin
-          or login.rolinherit
-          or login.rolsuper
-          or login.rolcreatedb
-          or login.rolcreaterole
-          or login.rolreplication
-          or login.rolbypassrls
-          or login.rolconnlimit <> 2
-          or login.rolconfig is not null
-          or memberships.admin_option
-          or memberships.inherit_option
-          or not memberships.set_option
-          or exists (
-            select 1
-            from pg_catalog.pg_auth_members as other_memberships
-            where other_memberships.member = login.oid
-              and other_memberships.roleid <> reviewer_oid
+        and not (
+          (
+            memberships.member = 'postgres'::regrole
+            and memberships.admin_option
+            and not memberships.inherit_option
+            and not memberships.set_option
+          )
+          or (
+            memberships.member <> 'postgres'::regrole
+            and login.rolcanlogin
+            and not login.rolinherit
+            and not login.rolsuper
+            and not login.rolcreatedb
+            and not login.rolcreaterole
+            and not login.rolreplication
+            and not login.rolbypassrls
+            and login.rolconnlimit = 2
+            and login.rolconfig is null
+            and not memberships.admin_option
+            and not memberships.inherit_option
+            and memberships.set_option
+            and not exists (
+              select 1
+              from pg_catalog.pg_auth_members as other_memberships
+              where other_memberships.member = login.oid
+                and other_memberships.roleid <> reviewer_oid
+            )
           )
         )
     )
-    into role_has_invalid_login_membership;
+    into role_has_invalid_membership;
 
     -- Never silently normalize a pre-existing role. A stale membership or
     -- role-level setting would otherwise inherit this review capability.
     if role_is_exact is distinct from true
       or role_has_dangerous_memberships
-      or role_membership_count > 1
-      or role_has_invalid_login_membership
+      or role_creator_membership_count <> 1
+      or role_dedicated_login_count > 1
+      or role_membership_count <> 1 + role_dedicated_login_count
+      or role_has_invalid_membership
     then
       raise exception using
         errcode = '55000',
@@ -2090,6 +2138,10 @@ do $reviewer_attestation$
 declare
   reviewer_oid oid;
   reviewer_login_oid oid;
+  reviewer_membership_count integer;
+  reviewer_creator_membership_count integer;
+  reviewer_dedicated_login_count integer;
+  reviewer_has_invalid_membership boolean;
   expected_review_functions constant oid[] := array[
     'ingest.list_authorized_opening_reviews_v1(text,integer)'::regprocedure,
     'ingest.review_authorized_opening_v1(uuid,bigint,text,text,text)'::regprocedure,
@@ -2104,12 +2156,101 @@ begin
   select memberships.member
   into reviewer_login_oid
   from pg_catalog.pg_auth_members as memberships
-  where memberships.roleid = reviewer_oid;
+  where memberships.roleid = reviewer_oid
+    and memberships.member <> 'postgres'::regrole;
 
   if reviewer_oid is null then
     raise exception using
       errcode = '55000',
       message = 'authorized opening reviewer capability role is missing';
+  end if;
+
+  select count(*)::integer
+  into reviewer_membership_count
+  from pg_catalog.pg_auth_members as memberships
+  where memberships.roleid = reviewer_oid;
+
+  select count(*)::integer
+  into reviewer_creator_membership_count
+  from pg_catalog.pg_auth_members as memberships
+  where memberships.roleid = reviewer_oid
+    and memberships.member = 'postgres'::regrole
+    and memberships.admin_option
+    and not memberships.inherit_option
+    and not memberships.set_option;
+
+  select count(*)::integer
+  into reviewer_dedicated_login_count
+  from pg_catalog.pg_auth_members as memberships
+  join pg_catalog.pg_roles as login
+    on login.oid = memberships.member
+  where memberships.roleid = reviewer_oid
+    and memberships.member <> 'postgres'::regrole
+    and login.rolcanlogin
+    and not login.rolinherit
+    and not login.rolsuper
+    and not login.rolcreatedb
+    and not login.rolcreaterole
+    and not login.rolreplication
+    and not login.rolbypassrls
+    and login.rolconnlimit = 2
+    and login.rolconfig is null
+    and not memberships.admin_option
+    and not memberships.inherit_option
+    and memberships.set_option
+    and not exists (
+      select 1
+      from pg_catalog.pg_auth_members as other_memberships
+      where other_memberships.member = login.oid
+        and other_memberships.roleid <> reviewer_oid
+    );
+
+  select exists (
+    select 1
+    from pg_catalog.pg_auth_members as memberships
+    left join pg_catalog.pg_roles as login
+      on login.oid = memberships.member
+    where memberships.roleid = reviewer_oid
+      and not (
+        (
+          memberships.member = 'postgres'::regrole
+          and memberships.admin_option
+          and not memberships.inherit_option
+          and not memberships.set_option
+        )
+        or (
+          memberships.member <> 'postgres'::regrole
+          and login.rolcanlogin
+          and not login.rolinherit
+          and not login.rolsuper
+          and not login.rolcreatedb
+          and not login.rolcreaterole
+          and not login.rolreplication
+          and not login.rolbypassrls
+          and login.rolconnlimit = 2
+          and login.rolconfig is null
+          and not memberships.admin_option
+          and not memberships.inherit_option
+          and memberships.set_option
+          and not exists (
+            select 1
+            from pg_catalog.pg_auth_members as other_memberships
+            where other_memberships.member = login.oid
+              and other_memberships.roleid <> reviewer_oid
+          )
+        )
+      )
+  )
+  into reviewer_has_invalid_membership;
+
+  if reviewer_creator_membership_count <> 1
+    or reviewer_dedicated_login_count > 1
+    or reviewer_membership_count <> 1 + reviewer_dedicated_login_count
+    or reviewer_has_invalid_membership
+  then
+    raise exception using
+      errcode = '55000',
+      message = 'authorized opening reviewer memberships drifted';
   end if;
 
   if not pg_catalog.has_schema_privilege(
