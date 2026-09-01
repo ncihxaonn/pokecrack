@@ -14,6 +14,7 @@ from .models import (
     CompletionEffect,
     Job,
     JobStatus,
+    MastodonPublicHashtagCompletion,
     NostrRelayCompletion,
     PublicStudyCompletion,
     TCGdexSetsSyncCompletion,
@@ -247,6 +248,7 @@ class InMemoryJobRepository:
         | YouTubeDiscoveryCompletion
         | BlueskyJetstreamCompletion
         | NostrRelayCompletion
+        | MastodonPublicHashtagCompletion
         | None = None,
     ) -> Job:
         with self._lock:

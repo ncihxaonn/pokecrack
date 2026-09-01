@@ -22,6 +22,7 @@ class CollectorRoute(StrEnum):
     BLUESKY = "bluesky"
     BLUESKY_JETSTREAM = "bluesky_jetstream"
     NOSTR_RELAY = "nostr_relay"
+    MASTODON_REST = "mastodon_rest"
     STATIC = "static"
     DYNAMIC = "dynamic"
     MANUAL = "manual"
@@ -43,6 +44,7 @@ _COLLECTOR_ROUTE_DEFAULTS: dict[CollectorType, frozenset[CollectorRoute]] = {
         {CollectorRoute.BLUESKY, CollectorRoute.BLUESKY_JETSTREAM}
     ),
     CollectorType.NOSTR_RELAY: frozenset({CollectorRoute.NOSTR_RELAY}),
+    CollectorType.MASTODON_REST: frozenset({CollectorRoute.MASTODON_REST}),
     CollectorType.SCRAPLING_HTTP: frozenset({CollectorRoute.STATIC}),
     CollectorType.SCRAPLING_DYNAMIC: frozenset({CollectorRoute.DYNAMIC}),
     CollectorType.OPENCLI_AUTHENTICATED: frozenset({CollectorRoute.OPENCLI}),
@@ -53,6 +55,7 @@ _ACCESS_MODE_DEFAULTS: dict[CollectorType, AccessMode] = {
     CollectorType.OFFICIAL_API: "official_api",
     CollectorType.BLUESKY_JETSTREAM: "official_api",
     CollectorType.NOSTR_RELAY: "public",
+    CollectorType.MASTODON_REST: "official_api",
     CollectorType.SCRAPLING_HTTP: "public",
     CollectorType.SCRAPLING_DYNAMIC: "public",
     CollectorType.OPENCLI_AUTHENTICATED: "authenticated",
@@ -65,6 +68,7 @@ _LEGACY_ROUTE_COLLECTORS = {
     CollectorRoute.BLUESKY.value: CollectorType.BLUESKY_JETSTREAM,
     CollectorRoute.BLUESKY_JETSTREAM.value: CollectorType.BLUESKY_JETSTREAM,
     CollectorRoute.NOSTR_RELAY.value: CollectorType.NOSTR_RELAY,
+    CollectorRoute.MASTODON_REST.value: CollectorType.MASTODON_REST,
     CollectorRoute.STATIC.value: CollectorType.SCRAPLING_HTTP,
     CollectorRoute.DYNAMIC.value: CollectorType.SCRAPLING_DYNAMIC,
     CollectorRoute.OPENCLI.value: CollectorType.OPENCLI_AUTHENTICATED,

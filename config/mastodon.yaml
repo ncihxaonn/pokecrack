@@ -1,0 +1,27 @@
+version: 1
+default_enabled: false
+protocol: rest
+instances:
+  - key: mastodon_social
+    domain: mastodon.social
+    base_url: https://mastodon.social/
+    instance_url: https://mastodon.social/api/v2/instance
+    rules_url: https://mastodon.social/api/v1/instance/rules
+    terms_url: https://mastodon.social/api/v1/instance/terms_of_service
+    hashtag_base_url: https://mastodon.social/api/v1/timelines/tag/
+    official_docs_url: https://docs.joinmastodon.org/methods/timelines/
+tags:
+  - key: pokemontcg
+    value: pokemontcg
+  - key: pokemoncards
+    value: pokemoncards
+  - key: pokeca_ja
+    value: ポケカ
+  - key: pokemon_card_ja
+    value: ポケモンカード
+  - key: pokemon_card_ko
+    value: 포켓몬카드
+  - key: pokemon_card_zh_hans
+    value: 宝可梦卡牌
+  - key: pokemon_card_zh_hant
+    value: 寶可夢卡牌

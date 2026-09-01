@@ -13,7 +13,7 @@ establish representative worldwide coverage or a global pull-rate claim.
 | Class | Examples | Allowed use |
 | --- | --- | --- |
 | `catalog` | TCGdex set metadata | Set/language identity and catalog matching only |
-| `activity_only` | Minimal YouTube search-result metadata | Private discovery coverage only |
+| `activity_only` | Minimal YouTube search-result metadata; bounded Mastodon public hashtag activity | Private discovery coverage only |
 | `statistics` | Complete, nonduplicate opening with a verified pack denominator and tier A/B evidence | Observed-rate calculations after deterministic and independent validation |
 
 The tier-D YouTube discovery records defined here never create an opening, hit,
@@ -80,6 +80,30 @@ official API refresh updates that same exact record.
 YouTube `regionCode` describes availability in a viewer market, not the physical
 location of an opening, so it is neither requested nor used. Search metadata has
 no route to a country, store, purchase, batch, opening, denominator, or rate.
+
+## Mastodon public hashtag activity boundary
+
+The Mastodon path is LOCAL ONLY and reads only public hashtag activity from the
+reviewed `mastodon.social` REST routes. It is fixed to the seven approved
+hashtag keys, the public local/remote access preflight, the exact User-Agent
+`PokecrackMetadataCollector/0.1 (+https://pokecrack.vercel.app)`, and a shared
+two-second request interval. The process limiter and fenced database gate target
+no more than 150 requests per five minutes against the instance's default
+300-request budget. Live `X-RateLimit-*` headers and `Retry-After` remain hard
+constraints; malformed, missing, expired, or conflicting boundaries fail
+closed.
+The process limiter is only local pacing; the Postgres gate, policy reservation,
+and fenced rate-limit transition are the cross-worker authority.
+
+The parser reduces each public status to an opaque hash, timestamp, and
+approved tag keys. It never saves or displays raw payloads, post body/text,
+account identity or handles, profiles, media, URLs/links, or location. Activity
+candidates and observations have a 30-day TTL and `statistics_eligible=false`.
+One opaque per-tag cursor is the sole exception that persists beyond the
+activity TTL so collection can resume; it is not an opening, denominator, or
+rate-evidence record. Mastodon activity is never used as opening evidence,
+pack-denominator evidence, rate evidence, or a statistical claim. The public
+source note can safely say `mastodon.social public hashtag activity only`.
 
 ## Persistence and failure semantics
 
