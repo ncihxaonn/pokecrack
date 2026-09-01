@@ -781,6 +781,286 @@ class BackupSanitizerTests(unittest.TestCase):
         self.assertEqual(failure.stdout, b"")
         self.assertNotIn(b"payload-must-not-leak", failure.stderr)
 
+    def test_target_insert_inside_dollar_quoted_function_body_is_schema(self) -> None:
+        function_definitions = (
+            b"\nCREATE FUNCTION ingest.test_backup_function() RETURNS void\n"
+            b"LANGUAGE plpgsql AS $function$\n"
+            b"BEGIN\n"
+            b"  INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ('function-body-only');\n"
+            b"  INSERT INTO ingest.nostr_relay_observations (event_id) "
+            b"VALUES ('function-body-only');\n"
+            b"END;\n"
+            b"$function$;\n"
+            b"CREATE FUNCTION ingest.test_inline_function() RETURNS text\n"
+            b"LANGUAGE sql AS $$ SELECT 'inline'; $$;\n"
+            b"SELECT $safe_tag$INSERT INTO ingest.source_request_gates "
+            b"VALUES ('quoted text only')$safe_tag$;\n"
+        )
+
+        result = self.run_sanitizer(self.complete_dump() + function_definitions)
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(function_definitions, result.stdout)
+
+    def test_top_level_target_insert_after_function_body_remains_rejected(
+        self,
+    ) -> None:
+        dump = self.complete_dump() + (
+            b"\nCREATE FUNCTION ingest.test_backup_function() RETURNS void\n"
+            b"LANGUAGE plpgsql AS $function$\n"
+            b"BEGIN\n"
+            b"  INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ('function-body-only');\n"
+            b"END;\n"
+            b"$function$;\n"
+            b"INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ($$top-level-payload-must-not-leak$$);\n"
+        )
+
+        result = self.run_sanitizer(dump)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+        self.assertNotIn(b"top-level-payload-must-not-leak", result.stderr)
+
+    def test_dollar_tags_in_strings_comments_and_identifiers_do_not_hide_data(
+        self,
+    ) -> None:
+        private_copy = copy_block(
+            "ingest.bluesky_jetstream_observations",
+            "at_uri, text_excerpt",
+            b"at://did:plc:private/app.bsky.feed.post/one\tprivate-marker",
+        )
+        prefixes = {
+            "single-quoted-comment": (
+                b"COMMENT ON TABLE public.unrelated IS '$x$';\n"
+            ),
+            "line-comment": b"-- $x$ is text, not a delimiter\n",
+            "quoted-identifier": b'COMMENT ON TABLE public."$x$" IS NULL;\n',
+            "unquoted-identifier": b"COMMENT ON TABLE public.foo$x$ IS NULL;\n",
+            "block-comment": b"/* $x$ is text, not a delimiter */\n",
+        }
+
+        for name, prefix in prefixes.items():
+            with self.subTest(name=name):
+                result = self.run_sanitizer(
+                    self.complete_dump()
+                    + prefix
+                    + private_copy
+                    + b"COMMENT ON TABLE public.unrelated IS '$x$';\n"
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+                self.assertNotIn(b"private-marker", result.stderr)
+
+    def test_closing_dollar_tag_cannot_hide_same_line_target_data(self) -> None:
+        suffixes = (
+            b"$function$; INSERT INTO ingest.youtube_discoveries "
+            b"VALUES ('private-insert');\n",
+            b"$function$; COPY ingest.bluesky_jetstream_observations "
+            b"(at_uri) FROM stdin;\n",
+        )
+        function_prefix = (
+            self.complete_dump()
+            + b"\nCREATE FUNCTION ingest.test_backup_function() RETURNS void\n"
+            + b"LANGUAGE plpgsql AS $function$\n"
+            + b"BEGIN\n"
+            + b"  NULL;\n"
+            + b"END;\n"
+        )
+
+        for suffix in suffixes:
+            with self.subTest(suffix=suffix):
+                result = self.run_sanitizer(function_prefix + suffix)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+                self.assertNotIn(b"private-insert", result.stderr)
+
+    def test_multiline_quote_or_comment_suffix_cannot_hide_target_data(
+        self,
+    ) -> None:
+        prefixes = (
+            b"COMMENT ON TABLE public.unrelated IS 'first line\nsecond line'",
+            b"/* first line\nsecond line */",
+        )
+
+        for prefix in prefixes:
+            with self.subTest(prefix=prefix):
+                result = self.run_sanitizer(
+                    self.complete_dump()
+                    + prefix
+                    + b"; COPY ingest.bluesky_jetstream_observations "
+                    + b"(at_uri) FROM stdin;\n"
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+
+    def test_comments_or_newlines_cannot_split_target_insert_tokens(self) -> None:
+        statements = (
+            b"INSERT /* split */ INTO ingest.youtube_discoveries\n"
+            b"  (video_id) VALUES ('comment-split-marker');\n",
+            b"INSERT\nINTO \"ingest\".\"youtube_discoveries\"\n"
+            b"  (video_id) VALUES ('newline-split-marker');\n",
+            b"INSERT /* first line\nsecond line */ INTO ONLY "
+            b"ingest.youtube_discoveries (video_id) "
+            b"VALUES ('multiline-comment-marker');\n",
+            b"WITH harmless AS (SELECT 1) "
+            b"INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ('cte-marker');\n",
+        )
+
+        for statement in statements:
+            with self.subTest(statement=statement):
+                result = self.run_sanitizer(self.complete_dump() + statement)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+                self.assertNotIn(b"marker", result.stderr)
+
+    def test_unicode_identifier_cannot_open_a_dollar_quote(self) -> None:
+        unicode_identifier = "SELECT α$tag$;\n".encode()
+        target_insert = (
+            b"INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ('unicode-boundary-marker');\n"
+        )
+
+        result = self.run_sanitizer(
+            self.complete_dump()
+            + unicode_identifier
+            + target_insert
+            + unicode_identifier
+        )
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+        self.assertNotIn(b"unicode-boundary-marker", result.stderr)
+
+    def test_unicode_dollar_tag_hides_its_function_body_from_data_checks(
+        self,
+    ) -> None:
+        function_definition = (
+            "CREATE FUNCTION ingest.unicode_body() RETURNS void\n"
+            "LANGUAGE plpgsql AS $é$\n"
+            "BEGIN\n"
+            "  PERFORM $tag$\n"
+            "  INSERT INTO ingest.youtube_discoveries (video_id) "
+            "VALUES ('function-body-text');\n"
+            "  $tag$;\n"
+            "END;\n"
+            "$é$;\n"
+        ).encode()
+
+        result = self.run_sanitizer(
+            self.complete_dump() + function_definition
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(function_definition, result.stdout)
+
+    def test_executable_do_body_is_rejected(self) -> None:
+        bodies = (
+            b"DO $do$\nBEGIN\n"
+            b"  INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ('direct-do-marker');\n"
+            b"END\n$do$;\n",
+            b"DO LANGUAGE plpgsql $do$\nBEGIN\n"
+            b"  EXECUTE 'INSERT INTO ingest.youtube_discoveries "
+            b"(video_id) VALUES (''dynamic-do-marker'')';\n"
+            b"END\n$do$;\n",
+        )
+
+        for body in bodies:
+            with self.subTest(body=body):
+                result = self.run_sanitizer(self.complete_dump() + body)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+                self.assertNotIn(b"do-marker", result.stderr)
+
+    def test_same_line_statement_cannot_hide_target_copy(self) -> None:
+        dump = self.complete_dump() + (
+            b"SELECT 1; COPY ingest.bluesky_jetstream_observations "
+            b"(at_uri) FROM stdin;\n"
+            b"at://did:plc:private/app.bsky.feed.post/one\n"
+            b"\\.\n"
+        )
+
+        result = self.run_sanitizer(dump)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+        self.assertNotIn(b"did:plc:private", result.stderr)
+
+    def test_unqualified_retention_targets_are_rejected(self) -> None:
+        statements = (
+            b"SET search_path = ingest;\n"
+            b"INSERT INTO youtube_discoveries (video_id) "
+            b"VALUES ('searchpath-insert-marker');\n",
+            b"SET search_path = ingest;\n"
+            b"COPY bluesky_jetstream_observations (at_uri) FROM stdin;\n"
+            b"at://did:plc:private/app.bsky.feed.post/one\n"
+            b"\\.\n",
+        )
+
+        for statement in statements:
+            with self.subTest(statement=statement):
+                result = self.run_sanitizer(self.complete_dump() + statement)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+                self.assertNotIn(b"marker", result.stderr)
+                self.assertNotIn(b"did:plc:private", result.stderr)
+
+    def test_quoted_retention_table_followed_by_alias_is_rejected(self) -> None:
+        statements = (
+            b'INSERT INTO ingest."youtube_discoveries"AS x (video_id) '
+            b"VALUES ('quoted-alias-marker');\n",
+            b'INSERT INTO "ingest"."youtube_discoveries"AS x (video_id) '
+            b"VALUES ('quoted-schema-alias-marker');\n",
+            b'INSERT INTO ONLY ingest."youtube_discoveries"AS x (video_id) '
+            b"VALUES ('quoted-only-alias-marker');\n",
+        )
+
+        for statement in statements:
+            with self.subTest(statement=statement):
+                result = self.run_sanitizer(self.complete_dump() + statement)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+                self.assertNotIn(b"marker", result.stderr)
+
+    def test_explicit_other_schema_same_name_is_not_a_retention_target(
+        self,
+    ) -> None:
+        statements = (
+            b"INSERT INTO public.youtube_discoveries (video_id) "
+            b"VALUES ('other-schema-insert');\n",
+            b"INSERT INTO youtube_discoveries_archive (video_id) "
+            b"VALUES ('identifier-suffix-insert');\n",
+            copy_block(
+                "public.bluesky_jetstream_observations",
+                "at_uri",
+                b"other-schema-copy",
+            ),
+        )
+
+        for statement in statements:
+            with self.subTest(statement=statement):
+                result = self.run_sanitizer(self.complete_dump() + statement)
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                self.assertIn(statement, result.stdout)
+
+    def test_unterminated_dollar_quoted_body_is_rejected(self) -> None:
+        dump = self.complete_dump() + (
+            b"\nCREATE FUNCTION ingest.test_backup_function() RETURNS void\n"
+            b"LANGUAGE plpgsql AS $function$\n"
+            b"BEGIN\n"
+            b"  INSERT INTO ingest.youtube_discoveries (video_id) "
+            b"VALUES ('function-body-only');\n"
+        )
+
+        result = self.run_sanitizer(dump)
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
     def test_temporary_spool_is_removed_after_success_and_scan_failure(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             spool_root = Path(temporary)
