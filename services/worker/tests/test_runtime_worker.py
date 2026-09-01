@@ -13,6 +13,7 @@ from pokecrack_worker.jobs import (
 )
 from pokecrack_worker.runtime import (
     BudgetPaused,
+    JobDeferred,
     JobExecutionError,
     RuntimeStatus,
     WorkerRuntime,
@@ -70,6 +71,56 @@ def test_budget_pause_is_requeued_without_becoming_a_failure() -> None:
     assert requeued.attempts == 0
     assert requeued.last_error is None
     assert requeued.available_at == NOW + timedelta(hours=1)
+
+
+def test_atomic_deferred_job_does_not_issue_a_second_generic_pause() -> None:
+    class RecordingRepository(InMemoryJobRepository):
+        def __init__(self) -> None:
+            super().__init__()
+            self.pause_calls = 0
+
+        def pause_for_budget(
+            self,
+            job_id: str,
+            *,
+            worker_id: str,
+            lease_generation: int,
+            now: datetime,
+            retry_at: datetime,
+        ) -> Job:
+            self.pause_calls += 1
+            return super().pause_for_budget(
+                job_id,
+                worker_id=worker_id,
+                lease_generation=lease_generation,
+                now=now,
+                retry_at=retry_at,
+            )
+
+    repository = RecordingRepository()
+    job = repository.enqueue("source.mastodon.public_hashtag", {}, now=NOW)
+
+    def atomically_deferred(_job: Job) -> None:
+        raise JobDeferred(
+            retry_at=NOW + timedelta(minutes=5),
+            code="mastodon_rate_limited",
+            pause_applied=True,
+        )
+
+    result = WorkerRuntime(
+        repository,
+        handlers={"source.mastodon.public_hashtag": atomically_deferred},
+        worker_id="worker-a",
+        clock=lambda: NOW,
+    ).run_once()
+
+    assert result.status is RuntimeStatus.DEFERRED
+    assert result.error_code == "mastodon_rate_limited"
+    assert repository.pause_calls == 0
+    # The source-specific DB RPC has already transitioned this leased row in
+    # production; this fixture only verifies the runtime does not race it with
+    # a second generic pause.
+    assert repository.get(job.id).status is JobStatus.RUNNING  # type: ignore[union-attr]
 
 
 def test_worker_heartbeats_lease_while_handler_is_running() -> None:

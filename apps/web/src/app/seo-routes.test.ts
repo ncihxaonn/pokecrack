@@ -33,5 +33,9 @@ describe("SEO metadata routes", () => {
 
     const operationalPages = ["sources/page.tsx", "status/page.tsx"];
     for (const page of operationalPages) expect(readFileSync(path.join(appRoot, page), "utf8"), page).toContain("export const revalidate = 60");
+
+    const sourcesPage = readFileSync(path.join(appRoot, "sources/page.tsx"), "utf8");
+    expect(sourcesPage).toContain('createPageMetadata("Sources"');
+    expect(sourcesPage).not.toMatch(/Mastodon/);
   });
 });

@@ -33,6 +33,7 @@ YOUTUBE_CLEANUP_SCHEDULE = "30 3 * * *"
 PUBLIC_STUDY_SCHEDULE = "15 4 * * *"
 BLUESKY_DISCOVERY_SCHEDULE = "* * * * *"
 NOSTR_WORKER_ID_PATTERN = re.compile(r"^nostr-collector-[a-z0-9][a-z0-9_.-]{0,63}$")
+MASTODON_DISCOVERY_SCHEDULE = "*/5 * * * *"
 
 
 class Settings(BaseSettings):
@@ -79,6 +80,7 @@ class Settings(BaseSettings):
     public_study_collection_enabled: bool = False
     bluesky_collection_enabled: bool = False
     nostr_collection_enabled: bool = False
+    mastodon_collection_enabled: bool = False
 
     scrapling_enabled: bool = True
     scrapling_http_concurrency: int = Field(default=4, ge=1, le=32)
@@ -122,6 +124,7 @@ class Settings(BaseSettings):
     schedule_official_api: str = YOUTUBE_DISCOVERY_SCHEDULE
     schedule_public_collection: str = PUBLIC_STUDY_SCHEDULE
     schedule_bluesky_collection: str = BLUESKY_DISCOVERY_SCHEDULE
+    schedule_mastodon_collection: str = MASTODON_DISCOVERY_SCHEDULE
     schedule_auth_collection: str = "30 */12 * * *"
     schedule_catalog_sync: str = "0 2 * * *"
     schedule_aggregates: str = "5 * * * *"
@@ -252,6 +255,7 @@ class Settings(BaseSettings):
             self.youtube_collection_enabled
             or self.bluesky_collection_enabled
             or self.nostr_collection_enabled
+            or self.mastodon_collection_enabled
         ):
             if self.schedule_cleanup != YOUTUBE_CLEANUP_SCHEDULE:
                 enabled_source = (
@@ -260,6 +264,8 @@ class Settings(BaseSettings):
                     else "BLUESKY_COLLECTION_ENABLED"
                     if self.bluesky_collection_enabled
                     else "NOSTR_COLLECTION_ENABLED"
+                    if self.nostr_collection_enabled
+                    else "MASTODON_COLLECTION_ENABLED"
                 )
                 raise ValueError(
                     f"{enabled_source} requires SCHEDULE_CLEANUP={YOUTUBE_CLEANUP_SCHEDULE!r}"
@@ -285,6 +291,14 @@ class Settings(BaseSettings):
             raise ValueError(
                 "BLUESKY_COLLECTION_ENABLED requires "
                 f"SCHEDULE_BLUESKY_COLLECTION={BLUESKY_DISCOVERY_SCHEDULE!r}"
+            )
+        if (
+            self.mastodon_collection_enabled
+            and self.schedule_mastodon_collection != MASTODON_DISCOVERY_SCHEDULE
+        ):
+            raise ValueError(
+                "MASTODON_COLLECTION_ENABLED requires "
+                f"SCHEDULE_MASTODON_COLLECTION={MASTODON_DISCOVERY_SCHEDULE!r}"
             )
         if self.scrapling_save_raw_html:
             raise ValueError("SCRAPLING_SAVE_RAW_HTML must remain false")
