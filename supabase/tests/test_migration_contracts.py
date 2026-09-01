@@ -55,6 +55,9 @@ MASTODON_COMPLIANCE_HARDENING = (
 MASTODON_PUBLIC_HEALTH_AGGREGATION = (
     ROOT / "migrations/20260912020000_mastodon_public_health_aggregation.sql"
 ).read_text()
+MASTODON_RUNTIME_FINALIZER_HOTFIX = (
+    ROOT / "migrations/20260912030000_mastodon_runtime_finalizer_hotfix.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -882,6 +885,65 @@ class IngestMigrationContractTests(unittest.TestCase):
         )
         self.assertNotIn(
             "grant execute on function public.get_public_social_discovery_v3() to service_role",
+            compact,
+        )
+
+    def test_mastodon_runtime_finalizer_hotfix_is_forward_only_and_guarded(
+        self,
+    ) -> None:
+        hotfix = MASTODON_RUNTIME_FINALIZER_HOTFIX
+        lowered = hotfix.casefold()
+        compact = " ".join(lowered.split())
+
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn("pg_get_functiondef(function_oid)", lowered)
+        self.assertIn(
+            "ingest.finalize_mastodon_public_hashtag_job(uuid,text,bigint,jsonb)",
+            lowered,
+        )
+        self.assertEqual(
+            lowered.count(
+                "result_rate_limit_reset_at < completion_time - interval '5 minutes'"
+            ),
+            1,
+            "the historical stale-reset guard appears only as the exact replacement needle",
+        )
+        self.assertEqual(
+            lowered.count("existing_candidate.matched_tags <> candidate_tags"),
+            1,
+            "the historical aggregate replay guard appears only as the exact replacement needle",
+        )
+        self.assertIn("char_length(old_rate_guard) <> 1", compact)
+        self.assertIn("char_length(old_candidate_guard) <> 1", compact)
+        self.assertIn("position(old_rate_guard in updated_definition) <> 0", compact)
+        self.assertIn(
+            "position(old_candidate_guard in updated_definition) <> 0", compact
+        )
+        self.assertIn("position(new_rate_guard in updated_definition) = 0", compact)
+        self.assertIn(
+            "position(new_candidate_guard in updated_definition) = 0", compact
+        )
+        self.assertIn("execute updated_definition", lowered)
+        self.assertIn("result_rate_limit_remaining = 0", lowered)
+        self.assertNotIn("existing_observation", lowered)
+        self.assertNotIn("create table", lowered)
+        self.assertNotIn("alter table", lowered)
+        self.assertNotIn("insert into", lowered)
+        self.assertNotIn("update ingest.", lowered)
+        self.assertNotIn("delete from", lowered)
+        self.assertNotIn("truncate", lowered)
+        self.assertNotIn("drop table", lowered)
+        self.assertIn(
+            "alter function ingest.finalize_mastodon_public_hashtag_job(uuid, text, bigint, jsonb) owner to postgres",
+            compact,
+        )
+        self.assertIn(
+            "revoke all on function ingest.finalize_mastodon_public_hashtag_job(uuid, text, bigint, jsonb) from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function ingest.finalize_mastodon_public_hashtag_job(uuid, text, bigint, jsonb) to service_role",
             compact,
         )
 
