@@ -52,6 +52,9 @@ MASTODON_PUBLIC_HASHTAG = (
 MASTODON_COMPLIANCE_HARDENING = (
     ROOT / "migrations/20260912010000_mastodon_compliance_hardening.sql"
 ).read_text()
+MASTODON_PUBLIC_HEALTH_AGGREGATION = (
+    ROOT / "migrations/20260912020000_mastodon_public_health_aggregation.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -778,6 +781,109 @@ class IngestMigrationContractTests(unittest.TestCase):
             "get_public_social_discovery_v3:",
         ):
             self.assertIn(type_name, DATABASE_TYPES)
+
+    def test_mastodon_public_health_aggregation_is_forward_only_and_non_multiplying(
+        self,
+    ) -> None:
+        hotfix = MASTODON_PUBLIC_HEALTH_AGGREGATION
+        lowered = hotfix.casefold()
+        compact = " ".join(lowered.split())
+        predecessor = MASTODON_COMPLIANCE_HARDENING.casefold()
+
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertEqual(
+            lowered.count(
+                "create or replace function public.get_public_social_discovery_v3()"
+            ),
+            1,
+        )
+        self.assertNotIn("create table", lowered)
+        self.assertNotIn("alter table", lowered)
+        self.assertNotIn("insert into", lowered)
+        self.assertNotIn("update ingest.", lowered)
+        self.assertNotIn("delete from", lowered)
+        self.assertNotIn("truncate", lowered)
+        self.assertNotIn("drop table", lowered)
+
+        predecessor_contract = predecessor.split("mastodon_registered as (", 1)[
+            1
+        ].split("\n  ),\n  mastodon_health as (", 1)[0]
+        fixed_contract = lowered.split("mastodon_registered as (", 1)[1].split(
+            "\n  ),\n  mastodon_policy_health as (", 1
+        )[0]
+        self.assertEqual(
+            " ".join(fixed_contract.split()),
+            " ".join(predecessor_contract.split()),
+            "the reviewed Mastodon policy fingerprint must remain byte-equivalent after whitespace normalization",
+        )
+        self.assertIn("policies.min_delay_seconds = 2", fixed_contract)
+
+        policy_health = lowered.split("mastodon_policy_health as (", 1)[1].split(
+            "\n  ),\n  mastodon_checkpoint_health as (", 1
+        )[0]
+        checkpoint_health = lowered.split("mastodon_checkpoint_health as (", 1)[
+            1
+        ].split("\n  ),\n  mastodon_activity_health as (", 1)[0]
+        combined_health = lowered.split("mastodon_health as (", 1)[1].split(
+            "\n  ),\n  mastodon_source as (", 1
+        )[0]
+        self.assertIn("count(*)::integer as registered_count", policy_health)
+        self.assertIn(
+            "count(*) filter (where registered.contract_valid)::integer as valid_count",
+            policy_health,
+        )
+        self.assertIn(
+            "count(*) filter (where registered.enabled)::integer as enabled_count",
+            policy_health,
+        )
+        self.assertNotIn("checkpoints", policy_health)
+        self.assertIn(
+            "count(checkpoints.tag_key)::integer as checkpoint_count", checkpoint_health
+        )
+        self.assertIn("join mastodon_registered as registered", checkpoint_health)
+        self.assertIn("mastodon_activity_health as", lowered)
+        self.assertIn(
+            "cross join mastodon_checkpoint_health as checkpoints", combined_health
+        )
+        self.assertIn(
+            "cross join mastodon_activity_health as activity", combined_health
+        )
+        self.assertNotIn(
+            "from mastodon_registered as registered left join",
+            compact,
+        )
+
+        predecessor_source = predecessor.split("mastodon_source as (", 1)[1].split(
+            "\n  ),\n  all_sources as (", 1
+        )[0]
+        fixed_source = lowered.split("mastodon_source as (", 1)[1].split(
+            "\n  ),\n  all_sources as (", 1
+        )[0]
+        self.assertEqual(
+            " ".join(fixed_source.split()),
+            " ".join(predecessor_source.split()),
+            "the public Mastodon eight-key source projection must remain unchanged",
+        )
+        self.assertIn("public.get_public_social_discovery_v2()", lowered)
+        self.assertIn("'schemaversion', '3.0.0'", lowered)
+        self.assertIn("select mastodon_source.source, 2147483647::bigint", lowered)
+        self.assertIn("security definer", lowered)
+        self.assertIn("stable", lowered)
+        self.assertIn("parallel safe", lowered)
+        self.assertIn("set search_path = pg_catalog", lowered)
+        self.assertIn(
+            "revoke all on function public.get_public_social_discovery_v3() from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_social_discovery_v3() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_social_discovery_v3() to service_role",
+            compact,
+        )
 
     def test_bluesky_runtime_bounds_are_forward_only_and_fail_closed(self) -> None:
         lowered = BLUESKY_RUNTIME_BOUNDS.casefold()
