@@ -2584,12 +2584,23 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertEqual(set(services), expected)
         self.assertTrue(document["networks"]["internal"]["internal"])
         self.assertFalse(document["networks"]["egress"].get("internal", False))
+        nostr_egress = document["networks"]["nostr-egress"]
+        self.assertFalse(nostr_egress.get("internal", False))
+        self.assertTrue(nostr_egress["enable_ipv6"])
+        self.assertEqual(
+            nostr_egress["ipam"]["config"], [{"subnet": "fd12:706f:6b65::/64"}]
+        )
         for name, service in services.items():
             self.assertEqual(service["restart"], "unless-stopped", name)
             self.assertTrue(service["read_only"], name)
             self.assertIn("healthcheck", service, name)
             self.assertIn("/tmp", " ".join(service["tmpfs"]), name)
-            self.assertEqual(set(service["networks"]), {"internal", "egress"}, name)
+            expected_networks = (
+                {"internal", "nostr-egress"}
+                if name == "nostr-collector"
+                else {"internal", "egress"}
+            )
+            self.assertEqual(set(service["networks"]), expected_networks, name)
             self.assertGreater(float(service["cpus"]), 0, name)
             self.assertGreater(int(service["mem_limit"]), 0, name)
             self.assertEqual(service["logging"]["driver"], "local", name)
@@ -2615,6 +2626,8 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertEqual(environment["WORKER_ID"], "nostr-collector-1")
         self.assertEqual(environment["NOSTR_COLLECTION_ENABLED"], "true")
         self.assertEqual(environment["WORKER_MAX_CONCURRENCY"], "1")
+        self.assertEqual(set(nostr["networks"]), {"internal", "nostr-egress"})
+        self.assertNotIn("egress", nostr["networks"])
         self.assertIn("NOSTR_SUPABASE_DB_URL", environment)
         self.assertNotIn("SUPABASE_DB_URL", environment)
         self.assertNotIn("SUPABASE_NOSTR_PREFLIGHT_DB_URL", environment)
