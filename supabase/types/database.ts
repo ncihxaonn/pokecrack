@@ -3328,6 +3328,7 @@ export type Database = {
       };
       verify_nostr_release_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       verify_nostr_release_v2: { Args: Record<PropertyKey, never>; Returns: Json };
+      verify_bluesky_release_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       enqueue_due_nostr_relay_jobs_v1: {
         Args: { p_worker_id: string };
         Returns: number;
