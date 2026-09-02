@@ -21,7 +21,7 @@ describe("SEO metadata routes", () => {
     expect(sitemap).toContain("loadDashboard");
   });
 
-  it("sets canonical, Open Graph, Twitter and bounded public revalidation metadata", () => {
+  it("sets canonical, Open Graph, Twitter and route-appropriate freshness metadata", () => {
     const layout = readFileSync(path.join(appRoot, "layout.tsx"), "utf8");
     expect(layout).toContain("metadataBase");
     expect(layout).toContain("alternates");
@@ -35,7 +35,12 @@ describe("SEO metadata routes", () => {
     for (const page of researchPages) expect(readFileSync(path.join(appRoot, page), "utf8"), page).toContain("export const revalidate = 900");
 
     const operationalPages = ["sources/page.tsx", "status/page.tsx"];
-    for (const page of operationalPages) expect(readFileSync(path.join(appRoot, page), "utf8"), page).toContain("export const revalidate = 60");
+    for (const page of operationalPages) {
+      const source = readFileSync(path.join(appRoot, page), "utf8");
+      expect(source, page).toContain('export const dynamic = "force-dynamic"');
+      expect(source, page).toContain("export const revalidate = 0");
+      expect(source, page).toContain("loadOperationalDashboard");
+    }
 
     const sourcesPage = readFileSync(path.join(appRoot, "sources/page.tsx"), "utf8");
     expect(sourcesPage).toContain('createPageMetadata("Sources"');
