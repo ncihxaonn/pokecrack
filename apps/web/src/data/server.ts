@@ -10,7 +10,10 @@ import {
   PUBLIC_STUDY_COVERAGE_RPC,
   unwrapRpcSnapshot,
 } from "./rpc";
-import { mergePublicSocialDiscovery } from "./social-discovery";
+import {
+  mergePublicSocialDiscovery,
+  publicSocialDiscoveryV4Schema,
+} from "./social-discovery";
 
 export function createPublicSupabaseClient(env: AppEnv = getEnv()) {
   if (!env.supabaseUrl || !env.supabasePublishableKey) return null;
@@ -21,6 +24,20 @@ export function createPublicSupabaseClient(env: AppEnv = getEnv()) {
       persistSession: false,
     },
   });
+}
+
+async function mergeSocialProvenance(
+  supabase: NonNullable<ReturnType<typeof createPublicSupabaseClient>>,
+  snapshot: unknown,
+) {
+  try {
+    const fallbackResult = await supabase.rpc(PUBLIC_SOCIAL_DISCOVERY_FALLBACK_RPC);
+    return fallbackResult.error === null
+      ? mergePublicSocialDiscovery(snapshot, fallbackResult.data)
+      : snapshot;
+  } catch {
+    return snapshot;
+  }
 }
 
 export async function getDashboardData() {
@@ -40,16 +57,13 @@ export async function getDashboardData() {
         ? mergePublicStudyCoverage(snapshot, coverageResult.value.data)
         : snapshot;
     if (socialResult.status === "fulfilled" && socialResult.value.error === null) {
-      return mergePublicSocialDiscovery(withCoverage, socialResult.value.data);
+      const withPulse = mergePublicSocialDiscovery(withCoverage, socialResult.value.data);
+      if (publicSocialDiscoveryV4Schema.safeParse(socialResult.value.data).success) {
+        return mergeSocialProvenance(supabase, withPulse);
+      }
+      return withPulse;
     }
 
-    try {
-      const fallbackResult = await supabase.rpc(PUBLIC_SOCIAL_DISCOVERY_FALLBACK_RPC);
-      return fallbackResult.error === null
-        ? mergePublicSocialDiscovery(withCoverage, fallbackResult.data)
-        : withCoverage;
-    } catch {
-      return withCoverage;
-    }
+    return mergeSocialProvenance(supabase, withCoverage);
   });
 }

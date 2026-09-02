@@ -1,7 +1,10 @@
 import { z } from "zod";
 
-import { publicDashboardDataSchema } from "./schema";
-import type { PublicDashboardData } from "./types";
+import {
+  publicDashboardDataSchema,
+  publicSocialDiscoveryV4Schema as publicSocialDiscoveryV4Contract,
+} from "./schema";
+import type { PublicDashboardData, PublicSource } from "./types";
 
 const BLUESKY_SOURCE_ID = "bluesky_jetstream" as const;
 const BLUESKY_SOURCE_NAME = "Bluesky Jetstream discovery" as const;
@@ -77,16 +80,32 @@ export const publicSocialDiscoveryV3Schema = z
   })
   .strict();
 
-// The v3 tuple is the current contract. V1 remains a read-only compatibility
-// path for installations that have not yet applied the Nostr/Mastodon RPCs;
-// v2 is intentionally rejected because it is a stale two-source projection.
-export const publicSocialDiscoverySchema = publicSocialDiscoveryV3Schema;
+// V4 is a deliberately separate activity pulse. It does not append source
+// cards to the dashboard's provenance list because its DTO has no URLs,
+// notes, or other evidence-facing fields. The only retained values are
+// bounded per-platform counts and collection freshness.
+export const publicSocialDiscoveryV4Schema = publicSocialDiscoveryV4Contract;
+
+// The v4 activity pulse is the current contract. V1-v3 remain read-only
+// compatibility paths for installations that have not yet applied the latest
+// projection; only v4 creates the dedicated pulse field below.
+export const publicSocialDiscoverySchema = publicSocialDiscoveryV4Schema;
 
 export function mergePublicSocialDiscovery(
   snapshot: unknown,
   discoveryPayload: unknown,
 ): unknown {
   const snapshotResult = publicDashboardDataSchema.safeParse(snapshot);
+  const v4Result = publicSocialDiscoveryV4Schema.safeParse(discoveryPayload);
+  if (snapshotResult.success && v4Result.success) {
+    const candidate = {
+      ...snapshotResult.data,
+      socialActivityPulse: v4Result.data,
+    } satisfies PublicDashboardData;
+    const merged = publicDashboardDataSchema.safeParse(candidate);
+    return merged.success ? merged.data : snapshot;
+  }
+
   const v3Result = publicSocialDiscoveryV3Schema.safeParse(discoveryPayload);
   const discoveryResult = v3Result.success
     ? v3Result
@@ -95,11 +114,21 @@ export function mergePublicSocialDiscovery(
 
   const base = snapshotResult.data;
   const discovery = discoveryResult.data;
+  const discoveryById = new Map<string, PublicSource>(
+    discovery.sources.map((source) => [source.id, source] as const),
+  );
   const baseSourceIds = new Set(base.sources.map((source) => source.id));
-  if (discovery.sources.some((source) => baseSourceIds.has(source.id))) return snapshot;
+  const mergedSources = base.sources.map(
+    (source) => discoveryById.get(source.id) ?? source,
+  );
+  mergedSources.push(
+    ...discovery.sources.filter((source) => !baseSourceIds.has(source.id)),
+  );
 
-  return {
+  const candidate = {
     ...base,
-    sources: [...base.sources, ...discovery.sources],
+    sources: mergedSources,
   } satisfies PublicDashboardData;
+  const merged = publicDashboardDataSchema.safeParse(candidate);
+  return merged.success ? merged.data : snapshot;
 }

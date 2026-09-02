@@ -1,8 +1,8 @@
 export const PUBLIC_DASHBOARD_RPC = "get_public_dashboard_snapshot_v3" as const;
 export const PUBLIC_STUDY_COVERAGE_RPC = "get_public_study_coverage_v1" as const;
-export const PUBLIC_SOCIAL_DISCOVERY_RPC = "get_public_social_discovery_v3" as const;
+export const PUBLIC_SOCIAL_DISCOVERY_RPC = "get_public_social_discovery_v4" as const;
 export const PUBLIC_SOCIAL_DISCOVERY_FALLBACK_RPC =
-  "get_public_social_discovery_v1" as const;
+  "get_public_social_discovery_v3" as const;
 export const ADMIN_DASHBOARD_RPC = "get_admin_dashboard_snapshot_v1" as const;
 
 interface RpcResult {
