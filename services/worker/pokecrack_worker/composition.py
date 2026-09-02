@@ -19,6 +19,7 @@ from urllib.parse import parse_qsl, quote, unquote, urlencode, urlsplit, urlunsp
 from pokecrack_worker import __version__
 from pokecrack_worker.collectors.base import CollectionService, CollectorError, HTTPClient
 from pokecrack_worker.collectors.official_api.bluesky import (
+    BlueskyCursorTooOldError,
     BlueskyError,
     BlueskyJetstreamCollector,
     BlueskyJetstreamTransport,
@@ -78,6 +79,7 @@ from pokecrack_worker.config.settings import DataMode, Settings
 from pokecrack_worker.config.source_policy import SourcePolicyRegistry
 from pokecrack_worker.db import PsycopgQueryExecutor
 from pokecrack_worker.jobs import (
+    BlueskyCursorRecoveryCompletion,
     BlueskyDeletionWrite,
     BlueskyJetstreamCompletion,
     BlueskySourceItemWrite,
@@ -224,6 +226,9 @@ bluesky_dependencies AS (
     AND to_regprocedure(
       'ingest.finalize_bluesky_jetstream_job(uuid,text,bigint,jsonb)'
     ) IS NOT NULL
+    AND to_regprocedure(
+      'ingest.recover_bluesky_cursor_too_old_job_v1(uuid,text,bigint,bigint)'
+    ) IS NOT NULL
     AND has_function_privilege(
       current_user,
       to_regprocedure('ingest.begin_bluesky_jetstream_job(uuid,text,bigint)'),
@@ -233,6 +238,13 @@ bluesky_dependencies AS (
       current_user,
       to_regprocedure(
         'ingest.finalize_bluesky_jetstream_job(uuid,text,bigint,jsonb)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.recover_bluesky_cursor_too_old_job_v1(uuid,text,bigint,bigint)'
       ),
       'EXECUTE'
     )
@@ -1554,7 +1566,7 @@ def _bluesky_jetstream_handler(
         policies=SourcePolicyRegistry.from_yaml(SOURCES_CONFIG),
     )
 
-    def discover(job: Job) -> BlueskyJetstreamCompletion:
+    def discover(job: Job) -> BlueskyJetstreamCompletion | BlueskyCursorRecoveryCompletion:
         if job.kind != BLUESKY_JETSTREAM_JOB_TYPE or job.payload:
             raise ValueError("Bluesky Jetstream jobs require an empty payload")
         try:
@@ -1570,6 +1582,13 @@ def _bluesky_jetstream_handler(
             ) from None
         try:
             result = collector.collect(start_cursor=checkpoint.start_cursor)
+        except BlueskyCursorTooOldError:
+            if checkpoint.start_cursor is None:
+                raise JobExecutionError(
+                    code="bluesky_cursor_reset_invalid",
+                    retryable=False,
+                ) from None
+            return BlueskyCursorRecoveryCompletion(start_cursor=checkpoint.start_cursor)
         except BlueskyError as error:
             raise JobExecutionError(code=error.code, retryable=error.retryable) from None
         return BlueskyJetstreamCompletion(

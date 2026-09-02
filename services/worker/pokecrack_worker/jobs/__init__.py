@@ -2,6 +2,7 @@
 
 from .models import (
     BlueskyCandidateWrite,
+    BlueskyCursorRecoveryCompletion,
     BlueskyDeletion,
     BlueskyDeletionWrite,
     BlueskyJetstreamCompletion,
@@ -47,6 +48,7 @@ __all__ = [
     "NOSTR_HEARTBEAT_SQL",
     "NOSTR_PAUSE_BUDGET_SQL",
     "BlueskyCandidateWrite",
+    "BlueskyCursorRecoveryCompletion",
     "BlueskyDeletion",
     "BlueskyDeletionWrite",
     "BlueskyJetstreamCompletion",
