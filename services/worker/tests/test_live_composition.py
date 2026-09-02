@@ -11,6 +11,7 @@ from pydantic import SecretStr
 from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
 from pokecrack_worker.collectors.official_api.youtube import YouTubeRequestStateUnknown
 from pokecrack_worker.composition import (
+    BLUESKY_JETSTREAM_JOB_TYPE,
     CLEANUP_JOB_TYPE,
     PUBLIC_STUDY_JOB_TYPE,
     TCGDEX_SETS_JOB_TYPE,
@@ -319,6 +320,18 @@ def test_watchdog_runtime_claims_only_the_cleanup_job_type() -> None:
     sql, params = executor.calls[0]
     assert "ingest.claim_jobs_v2" in sql
     assert params["kinds"] == [CLEANUP_JOB_TYPE]
+
+
+def test_shared_collector_never_includes_bluesky_in_its_claim_allowlist() -> None:
+    executor = RecordingExecutor()
+    runtime = build_live_worker_runtime(
+        _settings("collector"), executor=executor, clock=lambda: NOW
+    )
+
+    assert BLUESKY_JETSTREAM_JOB_TYPE not in runtime.handlers
+    assert runtime.run_once().status is RuntimeStatus.IDLE
+    _sql, params = executor.calls[0]
+    assert BLUESKY_JETSTREAM_JOB_TYPE not in params["kinds"]
 
 
 def test_live_worker_dry_run_never_touches_the_database() -> None:

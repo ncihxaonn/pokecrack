@@ -9,6 +9,11 @@ Highest-risk assets are DB/service-role/provider/SSH/noVNC credentials, persiste
 - Unknown sources/adapters are disabled; HTTPS, domain/route, size/rate/concurrency and retention are explicit.
 - Browser inputs and AI output are untrusted data. They cannot issue shell/SQL/adapter commands; strict schemas and deterministic policy decide eligibility.
 - Private schemas use default-deny grants/RLS. Browser bundles get publishable values only and public-safe DTOs/relations.
+- Bluesky uses a separate `NOLOGIN` capability role and mode-`0600` env file;
+  its fixed RPC surface is limited to the Bluesky job type, typed cursor
+  lifecycle, exact health, and non-secret policy projection. Generic queue
+  functions and direct Bluesky activity tables are not capabilities of that
+  role, and the broad collector/scheduler force the source flag off.
 - Compose drops all capabilities, uses `no-new-privileges`, read-only roots, noexec tmpfs where practical, pids/CPU/RAM limits, health checks and no Docker socket.
 - Services have outbound access through a non-published bridge; a second network is internal-only. Inbound host publication is only `127.0.0.1:6080`. CDP `9222`, VNC `5900`, daemon `19825` and DB are not mapped.
 - Browser profile root is `0700`, owned by uid `10001`; extension volume is read-only. Profiles/cookies never enter Git, logs, DB or ordinary backups.

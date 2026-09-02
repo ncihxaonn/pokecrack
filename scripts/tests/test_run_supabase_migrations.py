@@ -143,6 +143,7 @@ commit;
             "20260906000000_nostr_multi_relay_discovery.sql",
             "20260909000000_nostr_cleanup_capacity.sql",
             "20260910000000_nostr_worker_role_isolation.sql",
+            "20260921000000_bluesky_worker_role_isolation.sql",
         ):
             with self.subTest(migration=migration_name):
                 source = Path("supabase/migrations", migration_name).read_text()

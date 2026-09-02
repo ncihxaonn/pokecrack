@@ -5,10 +5,10 @@ the public Vercel site. The last verified Vercel production revision was
 `36d8701e85c098160635580aa46f614dcfdf066b`; the MAM VPS was separately
 observed at `fdfb49ebb03d116abafcfeccaa09618d171ee0fb` with the existing
 TCGdex/Bluesky service set. Those are historical observations, not evidence for
-this branch. General browser collection, AI-worker, aggregator, Nostr, and
-Mastodon remain fail closed until their separate release contracts pass. Do not
-describe the whole research pipeline as production-ready from a Compose render,
-heartbeat, or web deployment alone.
+this branch. General browser collection, AI-worker, aggregator, Nostr, Mastodon,
+and the Bluesky isolated lane remain fail closed until their separate release
+contracts pass. Do not describe the whole research pipeline as production-ready
+from a Compose render, heartbeat, or web deployment alone.
 
 > **Nostr remains disabled:** the authoritative hosted ledger currently stops
 > at `050`; `060`, `090`, and the worker-isolation migration `100` are not hosted, and
@@ -61,6 +61,24 @@ container. Neither DSN may be an owner, `service_role`, shared collector, or
 browser credential. Create both logins and their single non-inherited
 memberships outside migrations with account-owner authority and fresh random
 passwords; never store an owner or service-role DSN on the VPS.
+
+For Bluesky, keep `BLUESKY_COLLECTION_ENABLED=false` in the shared production
+file. The opt-in `bluesky` Compose profile reads only the separate mode-`0600`
+`/etc/pokecrack/bluesky.env` file, which must contain `DATA_MODE=live`,
+`BLUESKY_COLLECTION_ENABLED=true`, and a dedicated
+`BLUESKY_SUPABASE_DB_URL`. That URL must be a fresh `NOINHERIT` login whose
+libpq startup option is exactly `-c role=pokecrack_bluesky_worker`, with
+`sslmode=require` (or stronger) and a bounded `connect_timeout`; it must not be
+an owner, `service_role`, or shared collector credential. The migration grants
+the capability role only the fixed Bluesky enqueue/claim/heartbeat/fail/pause,
+typed begin/finalize/cursor-recovery, health, and read-only policy-snapshot RPCs.
+The generic queue RPCs and direct private activity tables are unavailable to
+that role, and generic `collector`/`scheduler` processes cannot claim Bluesky.
+Verify this with `docker compose --env-file /etc/pokecrack/production.env
+--env-file /etc/pokecrack/bluesky.env -f deploy/compose.prod.yml --profile
+bluesky config --quiet`, then inspect the rendered environments and migration
+contract before any service replacement. This is an opt-in bounded lane, not a
+production-ready claim.
 
 ## 3. Web (Vercel)
 

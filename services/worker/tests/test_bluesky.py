@@ -779,7 +779,7 @@ def test_postgres_repository_uses_fenced_cursor_recovery_rpc() -> None:
     assert completed.status is JobStatus.COMPLETED
     sql, params = executor.calls[-1]
     assert sql == RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL
-    assert "ingest.recover_bluesky_cursor_too_old_job_v1" in sql
+    assert "ingest.recover_bluesky_cursor_too_old_job_v2" in sql
     assert params["start_cursor"] == 41
 
 
@@ -1008,27 +1008,33 @@ def test_websocket_transport_keeps_other_handshake_failures_retryable(
     assert raised.value.retryable is True
 
 
-def test_live_composition_flag_schedule_priority_and_runtime_dispatch() -> None:
+def test_live_composition_dedicated_lane_and_queue_only_scheduler() -> None:
     settings = Settings(
         _env_file=None,
         data_mode="live",
         supabase_db_url="postgresql://db.example.invalid/pokecrack",
         worker_id="worker-1",
         worker_role="scheduler",
-        bluesky_collection_enabled=True,
     )
     entries = live_schedule_entries(settings)
     bluesky_entries = [entry for entry in entries if entry.job_type == BLUESKY_JETSTREAM_JOB_TYPE]
-    assert len(bluesky_entries) == 1
-    assert bluesky_entries[0].cron == "* * * * *"
-    assert bluesky_entries[0].payload == {}
-    assert bluesky_entries[0].priority == -50
+    assert bluesky_entries == []
     cleanup = next(entry for entry in entries if entry.name == "cleanup")
     assert cleanup.catch_up_within == timedelta(hours=36)
     assert cleanup.catch_up_check_interval == timedelta(hours=1)
     assert cleanup.slot(NOW) == NOW.replace(hour=3, minute=30)
 
-    collector_settings = settings.model_copy(update={"worker_role": "collector"})
+    collector_settings = Settings(
+        _env_file=None,
+        data_mode="live",
+        worker_id="bluesky-collector-1",
+        worker_role="bluesky-collector",
+        bluesky_collection_enabled=True,
+        bluesky_supabase_db_url=(
+            "postgresql://pokecrack_bluesky_worker_login:secret@"
+            "db.example.invalid/pokecrack?sslmode=require"
+        ),
+    )
     executor = RecordingExecutor(
         [
             [_job_row(status="running")],
@@ -1042,7 +1048,6 @@ def test_live_composition_flag_schedule_priority_and_runtime_dispatch() -> None:
         bluesky_transport=RecordingTransport((_frame(1),)),
     )
     assert set(runtime.handlers) == {
-        "catalog.tcgdex.sets.sync",
         BLUESKY_JETSTREAM_JOB_TYPE,
     }
     result = runtime.run_once()
@@ -1058,10 +1063,13 @@ def test_live_composition_recovers_only_a_nonnull_structured_stale_cursor() -> N
     settings = Settings(
         _env_file=None,
         data_mode="live",
-        supabase_db_url="postgresql://db.example.invalid/pokecrack",
-        worker_id="worker-1",
-        worker_role="collector",
+        worker_id="bluesky-collector-1",
+        worker_role="bluesky-collector",
         bluesky_collection_enabled=True,
+        bluesky_supabase_db_url=(
+            "postgresql://pokecrack_bluesky_worker_login:secret@"
+            "db.example.invalid/pokecrack?sslmode=require"
+        ),
     )
     executor = RecordingExecutor(
         [
@@ -1089,10 +1097,13 @@ def test_live_composition_refuses_to_reset_a_nullable_checkpoint() -> None:
     settings = Settings(
         _env_file=None,
         data_mode="live",
-        supabase_db_url="postgresql://db.example.invalid/pokecrack",
-        worker_id="worker-1",
-        worker_role="collector",
+        worker_id="bluesky-collector-1",
+        worker_role="bluesky-collector",
         bluesky_collection_enabled=True,
+        bluesky_supabase_db_url=(
+            "postgresql://pokecrack_bluesky_worker_login:secret@"
+            "db.example.invalid/pokecrack?sslmode=require"
+        ),
     )
     executor = RecordingExecutor(
         [
@@ -1118,5 +1129,11 @@ def test_bluesky_enablement_keeps_schedule_fixed() -> None:
         Settings(
             _env_file=None,
             bluesky_collection_enabled=True,
+            worker_id="bluesky-collector-1",
+            worker_role="bluesky-collector",
+            bluesky_supabase_db_url=(
+                "postgresql://pokecrack_bluesky_worker_login:secret@"
+                "db.example.invalid/pokecrack?sslmode=require"
+            ),
             schedule_bluesky_collection="*/5 * * * *",
         )

@@ -62,6 +62,10 @@ Every persistent collector has its own transactional database boundary. Cleanup 
 - Browser code receives only publishable Supabase values; service-role and DB credentials are server/VPS only.
 - Private `catalog`, `ingest`, and `analytics` schemas are not browser APIs. Public grants/views are explicit and read-only. The server-only `service_role` may read application tables but mutates them only through audited, bounded RPC contracts.
 - Compose has an internal-only network plus a non-published bridge needed for outbound Internet/Supabase. No service binds a public host interface.
+- Bluesky Jetstream has its own opt-in worker role, database capability, Compose
+  profile/network, fixed source-only queue wrappers, and typed cursor lane. The
+  generic collector and scheduler keep Bluesky disabled; the public activity
+  redaction/eligibility contract is unchanged.
 - Host loopback `6080` is the sole published browser-support port. CDP, raw VNC, OpenCLI daemon, PostgreSQL, and Docker socket are not published/mounted.
 - Browser profiles/cookies live only in a mode-`0700` VPS volume and are account credentials, not project data.
 - The logical database backup stream strips all data rows from the dedicated
