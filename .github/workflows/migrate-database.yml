@@ -31,7 +31,7 @@ jobs:
     env:
       CONFIRM_SHA: ${{ inputs.confirm_sha }}
       BACKUP_REFERENCE: ${{ inputs.backup_reference }}
-      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+      SUPABASE_PROJECT_REF: wohnphsxlquhhknuthrj
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
