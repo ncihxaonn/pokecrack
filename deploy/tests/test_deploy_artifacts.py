@@ -3389,6 +3389,7 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
             "backup.sh",
             "cleanup.sh",
             "install-opencli-extension.sh",
+            "verify-runtime-release.sh",
         }
         scripts = DEPLOY_ROOT / "scripts"
         self.assertEqual({path.name for path in scripts.glob("*.sh")}, required)

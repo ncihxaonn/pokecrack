@@ -97,6 +97,15 @@ deploy/scripts/backup.sh
 
 Alert on nonzero exit, stale/missing marker, unexpected size change and low disk. A success marker proves local dump validation, not off-site durability or restorability.
 
+The watchdog-mounted `.last-successful-backup` marker is also included in the
+optional `deploy/scripts/verify-runtime-release.sh` check as an age-only
+aggregate. A fresh marker can
+support release evidence; a stale or malformed marker fails the verifier, while
+a missing marker is `warming_up` only during the explicit first-run grace
+window. If the marker path is not mounted, the result is `unsupported` and no
+backup health is invented. The verifier never prints the backup filename or
+database URL.
+
 ## Off-site and profile policy
 
 Encrypt database backups before transfer, use a destination/account separate from the VPS, restrict retention/access, and test key recovery. Never commit/upload unencrypted dumps. Persistent browser profiles contain live cookies/tokens and are excluded by default; `PROFILE_BACKUP_ENABLED=false`. Prefer reauthentication. Any encrypted profile backup needs separate threat review, key file outside the VPS backup, short retention and tested revocation.
