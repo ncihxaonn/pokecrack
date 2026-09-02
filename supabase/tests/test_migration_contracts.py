@@ -67,6 +67,9 @@ AUTHORIZED_OPENING_AGGREGATE_COHORT_BRIDGE = (
 REVIEWED_GLOBAL_COVERAGE_PROJECTION_V2 = (
     ROOT / "migrations/20260917000000_reviewed_global_coverage_projection_v2.sql"
 ).read_text()
+PUBLIC_REVIEWED_SOURCE_COVERAGE = (
+    ROOT / "migrations/20260920000000_public_reviewed_source_coverage.sql"
+).read_text()
 SOCIAL_ACTIVITY_PULSE_V4 = (
     ROOT / "migrations/20260913000000_social_activity_pulse_v4.sql"
 ).read_text()
@@ -1388,6 +1391,65 @@ class IngestMigrationContractTests(unittest.TestCase):
             compact,
         )
         self.assertIn("get_public_study_coverage_v2:", DATABASE_TYPES)
+
+    def test_public_reviewed_source_coverage_is_current_period_and_denominator_only(
+        self,
+    ) -> None:
+        lowered = PUBLIC_REVIEWED_SOURCE_COVERAGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        projection = lowered.split(
+            "create or replace function public.get_public_study_coverage_v2", 1
+        )[1].split(
+            "alter function public.get_public_study_coverage_v2", 1
+        )[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "source_coverage as (",
+            "from valid_rows as rows",
+            "group by rows.public_id",
+            "count(distinct rows.country_code)",
+            "openings.eligible_for_statistics",
+            "openings.complete_opening",
+            "openings.validation_status = 'accepted'",
+            "openings.public_status = 'verified'",
+            "<= statement_timestamp()",
+            "contracts.config ->> 'denominator_complete' = 'true'",
+            "when source_coverage.public_id is null then '{}'::jsonb",
+            "'packsobserved', source_coverage.packs_observed",
+            "'countriesobserved', source_coverage.countries_observed",
+            "'completeopenings', source_coverage.complete_openings",
+            "'schemaversion', '2.0.0'",
+        ):
+            self.assertIn(fragment, projection)
+        for forbidden_json_key in (
+            "'evidenceexcerpt'",
+            "'evidencesha256'",
+            "'qualifyinghitpackcount'",
+            "'policyid'",
+            "'studykey'",
+            "'sourcepolicy'",
+            "'hitrate'",
+            "'posteriormean'",
+            "'baselinerate'",
+            "'credibleinterval'",
+            "'deltafrombaseline'",
+        ):
+            self.assertNotIn(forbidden_json_key, projection)
+        self.assertIn(
+            "revoke all on function public.get_public_study_coverage_v2() from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_study_coverage_v2() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_study_coverage_v2() to service_role",
+            compact,
+        )
 
     def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()

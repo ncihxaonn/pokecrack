@@ -308,6 +308,30 @@ const trendPoint = z
       addIssue("Sufficient trend evidence must publish both rates", "observedRate");
     }
   });
+const sourceCoverage = z
+  .object({
+    packsObserved: z.number().int().positive().max(1_000_000),
+    countriesObserved: z.number().int().positive().max(249),
+    completeOpenings: z.number().int().positive().max(1_000_000),
+  })
+  .strict()
+  .superRefine((coverage, context) => {
+    if (coverage.completeOpenings > coverage.packsObserved) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Reviewed source openings cannot exceed observed packs",
+        path: ["completeOpenings"],
+      });
+    }
+    if (coverage.countriesObserved > coverage.completeOpenings) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Reviewed source countries cannot exceed complete openings",
+        path: ["countriesObserved"],
+      });
+    }
+  });
+
 const source = z
   .object({
     id: z.string().min(1).max(128),
@@ -318,8 +342,21 @@ const source = z
     lastCollectedAt: isoDateTime.nullable(),
     url: publicHttpUrl,
     note: z.string().min(1).max(500),
+    coverage: sourceCoverage.optional(),
   })
-  .strict();
+  .strict()
+  .superRefine((source, context) => {
+    if (
+      source.coverage !== undefined &&
+      (source.kind !== "community" || source.access !== "public")
+    ) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Only public community sources can carry reviewed coverage",
+        path: ["coverage"],
+      });
+    }
+  });
 
 const socialPulseSourceBase = {
   kind: z.literal("social"),
