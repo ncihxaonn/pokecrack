@@ -9,7 +9,7 @@ absent.
 
 ## Runtime layout
 
-`compose.prod.yml` defines `collector`, `nostr-collector`, `auth-browser`, `ai-worker`, `aggregator`, `scheduler`, and `watchdog`. The default profile contains only the supported TCGdex core: `collector`, `scheduler`, and `watchdog`. The gated `nostr` profile adds only the isolated Nostr collector; `auth-browser`, `ai-worker`, and `aggregator` remain behind `unready-full`, and the release script refuses that full set. Worker roles share `Dockerfile.worker`; the headed browser uses `Dockerfile.auth-browser`. Every service has `restart: unless-stopped`, bounded local Docker logs, a health check, a read-only root filesystem, a private `/tmp` tmpfs, dropped capabilities, `no-new-privileges`, configurable CPU/RAM limits, and no Docker socket.
+`compose.prod.yml` defines `collector`, `nostr-collector`, `bluesky-collector`, `auth-browser`, `ai-worker`, `aggregator`, `scheduler`, and `watchdog`. The default profile contains only the supported TCGdex core: `collector`, `scheduler`, and `watchdog`. The gated `nostr` and `bluesky` profiles add only their independently schedulable, least-privilege source lane; `auth-browser`, `ai-worker`, and `aggregator` remain behind `unready-full`, and the release script refuses that full set. Worker roles share `Dockerfile.worker`; the headed browser uses `Dockerfile.auth-browser`. Every service has `restart: unless-stopped`, bounded local Docker logs, a health check, a read-only root filesystem, a private `/tmp` tmpfs, dropped capabilities, `no-new-privileges`, configurable CPU/RAM limits, and no Docker socket.
 
 Services join a non-published bridge for outbound Internet/Supabase access and an `internal: true` network for private service traffic. The only published port is host loopback `127.0.0.1:6080`. CDP `9222`, VNC `5900`, and the OpenCLI daemon `19825` are never published.
 
@@ -64,6 +64,22 @@ host/port/database and use their exact role options. Never place either one in
 `production.env`; the attestor DSN is host-preflight-only and is not passed to
 any container.
 
+Bluesky uses a separate mode-`0600` file and login. Create it only after the
+Bluesky isolation migration and an isolated restore/retention review are
+complete:
+
+```bash
+sudo cp deploy/env/bluesky.env.example /etc/pokecrack/bluesky.env
+sudo chmod 0600 /etc/pokecrack/bluesky.env
+sudoedit /etc/pokecrack/bluesky.env
+```
+
+Set `BLUESKY_SUPABASE_DB_URL` to a fresh `NOINHERIT` login whose startup option
+selects only `pokecrack_bluesky_worker`; never put it in `production.env` or
+reuse a `service_role` URL. The default source and Compose profile remain
+disabled. This repository contains deployment artifacts and verification
+instructions, not evidence of a production-ready Bluesky release.
+
 ## Pin the Browser Bridge
 
 Do not invent an OpenCLI release location. Obtain the audited extension version, HTTPS artifact URL (or documented URL template), and SHA-256 from the actual supplier, then run:
@@ -109,6 +125,25 @@ deploy/scripts/deploy.sh 0123456789abcdef0123456789abcdef01234567 \
 The shared collector never receives the Nostr flag or worker DSN. The Nostr
 container receives only its dedicated DSN; the separate attestor URL is read by
 the host preflight before build/up and removed from the child environment.
+
+Bluesky is an independent opt-in profile. Before enabling it, apply and verify
+the forward migration, provision the dedicated `NOLOGIN` capability plus a
+separate login, and check the login DSN has `options=-c
+role=pokecrack_bluesky_worker`, `sslmode=require` (or stronger), and a bounded
+`connect_timeout`. Then run the Compose render with the separate file:
+
+```bash
+docker compose --env-file /etc/pokecrack/production.env \
+  --env-file /etc/pokecrack/bluesky.env \
+  -f deploy/compose.prod.yml --profile bluesky config --quiet
+```
+
+Only after that review should an operator build/start the `bluesky-collector`
+service explicitly. Verify that `collector` and `scheduler` show
+`BLUESKY_COLLECTION_ENABLED=false`, the dedicated container has no
+`SUPABASE_DB_URL`, the env file is mode `0600`, and the Bluesky heartbeat,
+durable cursor, and typed job lease advance. A render or heartbeat alone is not
+deployment evidence and does not establish production readiness.
 
 The full service set is unavailable. Existing browser/AI/aggregator containers
 must be retired through a separately approved operation before the core release;

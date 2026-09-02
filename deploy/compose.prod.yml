@@ -60,7 +60,9 @@ services:
       YOUTUBE_MATON_CONNECTION_ID: '${YOUTUBE_MATON_CONNECTION_ID:-}'
       YOUTUBE_COLLECTION_ENABLED: "${YOUTUBE_COLLECTION_ENABLED:-false}"
       PUBLIC_STUDY_COLLECTION_ENABLED: "${PUBLIC_STUDY_COLLECTION_ENABLED:-false}"
-      BLUESKY_COLLECTION_ENABLED: "${BLUESKY_COLLECTION_ENABLED:-false}"
+      # Bluesky is intentionally absent from the broad collector credential;
+      # enable the separately profiled bluesky-collector instead.
+      BLUESKY_COLLECTION_ENABLED: "false"
       # Nostr is intentionally absent from the broad collector credential.
       NOSTR_COLLECTION_ENABLED: "false"
       MASTODON_COLLECTION_ENABLED: "${MASTODON_COLLECTION_ENABLED:-false}"
@@ -107,6 +109,40 @@ services:
       SCRAPLING_SAVE_RAW_HTML: "false"
     cpus: "${NOSTR_COLLECTOR_CPUS:-0.20}"
     mem_limit: "${NOSTR_COLLECTOR_MEMORY:-256m}"
+    pids_limit: 128
+
+  bluesky-collector:
+    profiles: ["bluesky"]
+    <<: *worker-base
+    command: ["bluesky-collector"]
+    # This file is intentionally separate from the broad collector .env. It
+    # must be provisioned with mode 0600 and contain only the dedicated login
+    # DSN plus the opt-in Bluesky settings; see deploy/env/bluesky.env.example.
+    env_file:
+      - "${BLUESKY_ENV_FILE:-/etc/pokecrack/bluesky.env}"
+    networks:
+      - internal
+      - bluesky-egress
+    environment:
+      # This profile is an explicit live-only opt-in. The separate env_file
+      # carries the dedicated DSN and must still set DATA_MODE=live.
+      DATA_MODE: "live"
+      LOG_LEVEL: "${LOG_LEVEL:-INFO}"
+      PYTHONUNBUFFERED: "1"
+      WORKER_POLL_SECONDS: "${WORKER_POLL_SECONDS:-10}"
+      WORKER_MAX_CONCURRENCY: "1"
+      WORKER_ID: "bluesky-collector-1"
+      WORKER_ROLE: bluesky-collector
+      YOUTUBE_COLLECTION_ENABLED: "false"
+      PUBLIC_STUDY_COLLECTION_ENABLED: "false"
+      BLUESKY_COLLECTION_ENABLED: "true"
+      NOSTR_COLLECTION_ENABLED: "false"
+      MASTODON_COLLECTION_ENABLED: "false"
+      SCRAPLING_ENABLED: "false"
+      SCRAPLING_DYNAMIC_ENABLED: "false"
+      SCRAPLING_SAVE_RAW_HTML: "false"
+    cpus: "${BLUESKY_COLLECTOR_CPUS:-0.20}"
+    mem_limit: "${BLUESKY_COLLECTOR_MEMORY:-256m}"
     pids_limit: 128
 
   auth-browser:
@@ -250,8 +286,9 @@ services:
       WORKER_ROLE: scheduler
       YOUTUBE_COLLECTION_ENABLED: "${YOUTUBE_COLLECTION_ENABLED:-false}"
       PUBLIC_STUDY_COLLECTION_ENABLED: "${PUBLIC_STUDY_COLLECTION_ENABLED:-false}"
-      BLUESKY_COLLECTION_ENABLED: "${BLUESKY_COLLECTION_ENABLED:-false}"
-      # The isolated collector owns Nostr scheduling and execution.
+      # The isolated collectors own Bluesky/Nostr scheduling and execution;
+      # the scheduler only services the remaining queue producers.
+      BLUESKY_COLLECTION_ENABLED: "false"
       NOSTR_COLLECTION_ENABLED: "false"
       SCHEDULE_OFFICIAL_API: "${SCHEDULE_OFFICIAL_API:-0 */6 * * *}"
       SCHEDULE_PUBLIC_COLLECTION: "${SCHEDULE_PUBLIC_COLLECTION:-15 4 * * *}"
@@ -307,6 +344,8 @@ networks:
     ipam:
       config:
         - subnet: fd12:706f:6b65::/64
+  bluesky-egress:
+    driver: bridge
 
 volumes:
   browser_profiles:

@@ -2921,7 +2921,11 @@ exit 0
 
 class ComposeSecurityPolicyTests(unittest.TestCase):
     def render(
-        self, *, include_unready: bool = True, enable_nostr: bool = False
+        self,
+        *,
+        include_unready: bool = True,
+        enable_nostr: bool = False,
+        enable_bluesky: bool = False,
     ) -> dict[str, object]:
         if shutil.which("docker") is None:
             self.skipTest(
@@ -2938,7 +2942,10 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
             }
         )
         if include_unready:
-            environment["COMPOSE_PROFILES"] = "unready-full,nostr"
+            profiles = ["unready-full", "nostr"]
+            if enable_bluesky:
+                profiles.append("bluesky")
+            environment["COMPOSE_PROFILES"] = ",".join(profiles)
         else:
             environment.pop("COMPOSE_PROFILES", None)
         command = [
@@ -2950,6 +2957,13 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         if enable_nostr:
             command.extend(
                 ["--env-file", str(DEPLOY_ROOT / "env" / "nostr.env.example")]
+            )
+        if enable_bluesky:
+            environment["BLUESKY_ENV_FILE"] = str(
+                DEPLOY_ROOT / "env" / "bluesky.env.example"
+            )
+            command.extend(
+                ["--env-file", str(DEPLOY_ROOT / "env" / "bluesky.env.example")]
             )
         command.extend(
             ["-f", str(DEPLOY_ROOT / "compose.prod.yml"), "config", "--format", "json"]
@@ -3056,6 +3070,53 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
                 "NOSTR_SUPABASE_DB_URL",
                 "SUPABASE_NOSTR_PREFLIGHT_DB_URL",
             },
+        )
+
+    def test_bluesky_profile_has_one_dedicated_database_capability(self) -> None:
+        document = self.render(enable_bluesky=True)
+        services = document["services"]
+        bluesky = services["bluesky-collector"]
+        environment = bluesky["environment"]
+        self.assertEqual(bluesky["profiles"], ["bluesky"])
+        self.assertEqual(bluesky["command"], ["bluesky-collector"])
+        self.assertEqual(environment["DATA_MODE"], "live")
+        self.assertEqual(environment["WORKER_ROLE"], "bluesky-collector")
+        self.assertEqual(environment["WORKER_ID"], "bluesky-collector-1")
+        self.assertEqual(environment["BLUESKY_COLLECTION_ENABLED"], "true")
+        self.assertEqual(environment["WORKER_MAX_CONCURRENCY"], "1")
+        self.assertEqual(set(bluesky["networks"]), {"internal", "bluesky-egress"})
+        self.assertNotIn("egress", bluesky["networks"])
+        self.assertIn("BLUESKY_SUPABASE_DB_URL", environment)
+        self.assertNotIn("SUPABASE_DB_URL", environment)
+        self.assertNotIn("NOSTR_SUPABASE_DB_URL", environment)
+        self.assertNotIn("YOUTUBE_API_KEY", environment)
+        self.assertEqual(
+            services["collector"]["environment"]["BLUESKY_COLLECTION_ENABLED"],
+            "false",
+        )
+        self.assertEqual(
+            services["scheduler"]["environment"]["BLUESKY_COLLECTION_ENABLED"],
+            "false",
+        )
+        self.assertNotIn(
+            "BLUESKY_SUPABASE_DB_URL", services["collector"]["environment"]
+        )
+        self.assertNotIn(
+            "BLUESKY_SUPABASE_DB_URL", services["scheduler"]["environment"]
+        )
+        self.assertEqual(
+            set(document["networks"]["bluesky-egress"]), {"driver"}
+        )
+
+        bluesky_template = DEPLOY_ROOT / "env" / "bluesky.env.example"
+        assignments = {
+            line.split("=", 1)[0]
+            for line in bluesky_template.read_text(encoding="utf-8").splitlines()
+            if line and not line.startswith("#")
+        }
+        self.assertEqual(
+            assignments,
+            {"DATA_MODE", "BLUESKY_COLLECTION_ENABLED", "BLUESKY_SUPABASE_DB_URL"},
         )
 
     def test_worker_services_do_not_receive_unused_supabase_service_role_secret(
@@ -3339,7 +3400,10 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
     ) -> None:
         entrypoint = (DEPLOY_ROOT / "worker-service-entrypoint.sh").read_text()
         self.assertNotIn('if [[ "${DATA_MODE:-demo}" != "demo" ]]', entrypoint)
-        self.assertIn("collector|nostr-collector|ai-worker|watchdog)", entrypoint)
+        self.assertIn(
+            "collector|nostr-collector|bluesky-collector|ai-worker|watchdog)",
+            entrypoint,
+        )
         self.assertIn("command=(pokecrack-worker worker --forever)", entrypoint)
         self.assertIn("command=(pokecrack-worker scheduler)", entrypoint)
         self.assertIn("command=(pokecrack-worker aggregate all)", entrypoint)
@@ -3347,6 +3411,7 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         expected_commands = {
             "collector": "worker --forever",
             "nostr-collector": "worker --forever",
+            "bluesky-collector": "worker --forever",
             "ai-worker": "worker --forever",
             "watchdog": "worker --forever",
             "aggregator": "aggregate all",

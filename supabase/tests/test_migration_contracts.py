@@ -76,6 +76,9 @@ SOCIAL_ACTIVITY_PULSE_V4 = (
 BLUESKY_CURSOR_RECOVERY = (
     ROOT / "migrations/20260914000000_bluesky_cursor_recovery.sql"
 ).read_text()
+BLUESKY_WORKER_ISOLATION = (
+    ROOT / "migrations/20260921000000_bluesky_worker_role_isolation.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -511,6 +514,50 @@ class IngestMigrationContractTests(unittest.TestCase):
             "grant execute on function ingest.verify_nostr_release_v2() to service_role",
             compact,
         )
+
+    def test_bluesky_worker_isolation_is_source_scoped_and_forward_only(self) -> None:
+        lowered = BLUESKY_WORKER_ISOLATION.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn(
+            "create role pokecrack_bluesky_worker nologin noinherit nosuperuser",
+            compact,
+        )
+        for function_name in (
+            "enqueue_due_bluesky_jetstream_jobs_v1",
+            "claim_bluesky_jetstream_jobs_v1",
+            "heartbeat_bluesky_jetstream_job_v1",
+            "fail_bluesky_jetstream_job_v1",
+            "pause_bluesky_jetstream_job_v1",
+            "upsert_bluesky_worker_heartbeat_v1",
+            "bluesky_worker_runtime_ready_v1",
+            "get_bluesky_worker_policy_snapshot_v1",
+        ):
+            self.assertEqual(
+                lowered.count(f"create or replace function ingest.{function_name}"),
+                1,
+            )
+            self.assertIn(function_name, DATABASE_TYPES)
+        self.assertIn("recover_bluesky_cursor_too_old_job_v1", DATABASE_TYPES)
+        self.assertIn("set search_path = pg_catalog", lowered)
+        self.assertIn("worker_id !~ '^bluesky-collector-", lowered)
+        self.assertIn("from ingest.enqueue_scheduled_job_v1(", lowered)
+        self.assertIn("'source.bluesky.jetstream'", lowered)
+        for function_name in (
+            "begin_bluesky_jetstream_job_v1",
+            "finalize_bluesky_jetstream_job_v1",
+            "recover_bluesky_cursor_too_old_job_v2",
+        ):
+            self.assertIn(f"create or replace function ingest.{function_name}", compact)
+            self.assertIn(f"revoke all on function ingest.{function_name}", compact)
+            self.assertIn(
+                f"grant execute on function ingest.{function_name}", compact
+            )
+        self.assertIn("revoke all on function ingest.begin_bluesky_jetstream_job", compact)
+        self.assertIn("revoke all on function ingest.finalize_bluesky_jetstream_job", compact)
+        self.assertIn("revoke all privileges on table ingest.bluesky_jetstream_candidates", compact)
+        self.assertIn("from public, anon, authenticated, service_role", compact)
 
     def test_mastodon_public_hashtag_is_fixed_private_hashed_and_public_safe(self) -> None:
         historical = MASTODON_PUBLIC_HASHTAG
