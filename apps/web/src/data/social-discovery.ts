@@ -98,7 +98,6 @@ export function mergePublicSocialDiscovery(
   const snapshotResult = publicDashboardDataSchema.safeParse(snapshot);
   const v4Result = publicSocialDiscoveryV4Schema.safeParse(discoveryPayload);
   if (snapshotResult.success && v4Result.success) {
-    if (snapshotResult.data.socialActivityPulse !== undefined) return snapshot;
     const candidate = {
       ...snapshotResult.data,
       socialActivityPulse: v4Result.data,
@@ -115,11 +114,19 @@ export function mergePublicSocialDiscovery(
 
   const base = snapshotResult.data;
   const discovery = discoveryResult.data;
+  const discoveryById = new Map(discovery.sources.map((source) => [source.id, source]));
   const baseSourceIds = new Set(base.sources.map((source) => source.id));
-  if (discovery.sources.some((source) => baseSourceIds.has(source.id))) return snapshot;
+  const mergedSources = base.sources.map(
+    (source) => discoveryById.get(source.id) ?? source,
+  );
+  mergedSources.push(
+    ...discovery.sources.filter((source) => !baseSourceIds.has(source.id)),
+  );
 
-  return {
+  const candidate = {
     ...base,
-    sources: [...base.sources, ...discovery.sources],
+    sources: mergedSources,
   } satisfies PublicDashboardData;
+  const merged = publicDashboardDataSchema.safeParse(candidate);
+  return merged.success ? merged.data : snapshot;
 }

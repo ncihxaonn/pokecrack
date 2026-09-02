@@ -140,21 +140,24 @@ describe("public live-data client", () => {
     ]);
   });
 
-  it("prefers the v4 social pulse and does not call the v3 fallback", async () => {
+  it("prefers the v4 social pulse and fetches v3 provenance independently", async () => {
     mocks.rpc
       .mockResolvedValueOnce({ data: DEMO_PUBLIC_DATA, error: null })
       .mockResolvedValueOnce({ data: null, error: null })
-      .mockResolvedValueOnce({ data: v4SocialPayload, error: null });
+      .mockResolvedValueOnce({ data: v4SocialPayload, error: null })
+      .mockResolvedValueOnce({ data: v3SocialPayload, error: null });
 
     const result = await getDashboardData();
 
     expect(result).toMatchObject({
       socialActivityPulse: v4SocialPayload,
+      sources: expect.arrayContaining([blueskySource, nostrSource, mastodonSource]),
     });
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
       "get_public_study_coverage_v1",
       "get_public_social_discovery_v4",
+      "get_public_social_discovery_v3",
     ]);
   });
 

@@ -66,7 +66,7 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
         observations={data.observations}
         initialMetric={worldMetric}
       />
-      <LiveDiscoveryPulse pulse={data.socialActivityPulse} />
+      <LiveDiscoveryPulse pulse={data.socialActivityPulse} sources={data.sources} />
 
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
         <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>

@@ -287,6 +287,116 @@ select is(
   'all fresh Mastodon checkpoints report operational health'
 );
 
+-- A missing policy must still produce the fixed source tuple and must not
+-- preserve a count from the private candidate ledger.
+update ingest.source_policies
+set source_key = 'bluesky_jetstream_missing_fixture'
+where source_key = 'bluesky_jetstream';
+set local role anon;
+select set_config(
+  'pokecrack.social_activity_pulse_v4_missing_policy',
+  public.get_public_social_discovery_v4()::text,
+  true
+);
+reset role;
+update ingest.source_policies
+set source_key = 'bluesky_jetstream'
+where source_key = 'bluesky_jetstream_missing_fixture';
+
+select is(
+  jsonb_array_length(
+    current_setting('pokecrack.social_activity_pulse_v4_missing_policy')::jsonb -> 'sources'
+  ),
+  3,
+  'a missing Bluesky policy still emits all three fixed source rows'
+);
+select is(
+  current_setting('pokecrack.social_activity_pulse_v4_missing_policy')::jsonb
+    #>> '{sources,0,status}',
+  'attention',
+  'a missing Bluesky policy reports attention'
+);
+select is(
+  current_setting('pokecrack.social_activity_pulse_v4_missing_policy')::jsonb
+    #>> '{sources,0,newCandidates24h}',
+  '0',
+  'a missing Bluesky policy suppresses its 24-hour count'
+);
+select is(
+  current_setting('pokecrack.social_activity_pulse_v4_missing_policy')::jsonb
+    #>> '{sources,0,retainedCandidates}',
+  '0',
+  'a missing Bluesky policy suppresses its retained count'
+);
+
+-- A registered but contract-invalid policy must not expose stale activity.
+update ingest.source_policies
+set display_name = 'Nostr relay relay.primal.net discovery (invalid fixture)'
+where source_key = 'nostr_relay_primal';
+set local role anon;
+select set_config(
+  'pokecrack.social_activity_pulse_v4_invalid_policy',
+  public.get_public_social_discovery_v4()::text,
+  true
+);
+reset role;
+update ingest.source_policies
+set display_name = 'Nostr relay relay.primal.net discovery'
+where source_key = 'nostr_relay_primal';
+
+select is(
+  current_setting('pokecrack.social_activity_pulse_v4_invalid_policy')::jsonb
+    #>> '{sources,1,status}',
+  'attention',
+  'an invalid Nostr contract reports attention'
+);
+select is(
+  current_setting('pokecrack.social_activity_pulse_v4_invalid_policy')::jsonb
+    #>> '{sources,1,newCandidates24h}',
+  '0',
+  'an invalid Nostr contract suppresses its 24-hour count'
+);
+select is(
+  current_setting('pokecrack.social_activity_pulse_v4_invalid_policy')::jsonb
+    #>> '{sources,1,retainedCandidates}',
+  '0',
+  'an invalid Nostr contract suppresses its retained count'
+);
+
+-- A disabled policy is paused and its old candidate rows are not reported.
+update ingest.source_policies
+set enabled = false
+where source_key = 'mastodon_social';
+set local role anon;
+select set_config(
+  'pokecrack.social_activity_pulse_v4_disabled_policy',
+  public.get_public_social_discovery_v4()::text,
+  true
+);
+reset role;
+update ingest.source_policies
+set enabled = true
+where source_key = 'mastodon_social';
+
+select is(
+  current_setting('pokecrack.social_activity_pulse_v4_disabled_policy')::jsonb
+    #>> '{sources,2,status}',
+  'paused',
+  'a disabled Mastodon policy reports paused'
+);
+select is(
+  current_setting('pokecrack.social_activity_pulse_v4_disabled_policy')::jsonb
+    #>> '{sources,2,newCandidates24h}',
+  '0',
+  'a disabled Mastodon policy suppresses its 24-hour count'
+);
+select is(
+  current_setting('pokecrack.social_activity_pulse_v4_disabled_policy')::jsonb
+    #>> '{sources,2,retainedCandidates}',
+  '0',
+  'a disabled Mastodon policy suppresses its retained count'
+);
+
 select doesnt_match(
   current_setting('pokecrack.social_activity_pulse_v4_payload'),
   '(?i)"(text|url|uri|event_id|status_id|sha256|hash|author|tag|cursor|raw_payload|profile|handle|media|country|pack|rate|endpoint|policy|gate|payload)"[[:space:]]*:',
