@@ -55,12 +55,16 @@ from pokecrack_worker.config.bluesky import (
 from pokecrack_worker.config.settings import Settings
 from pokecrack_worker.config.source_policy import CollectorRoute, SourcePolicyRegistry
 from pokecrack_worker.jobs import (
+    BlueskyCursorRecoveryCompletion,
     BlueskyJetstreamCompletion,
     BlueskySourceItemWrite,
     JobStatus,
     PostgresJobRepository,
 )
-from pokecrack_worker.jobs.postgres import FINALIZE_BLUESKY_JETSTREAM_SQL
+from pokecrack_worker.jobs.postgres import (
+    FINALIZE_BLUESKY_JETSTREAM_SQL,
+    RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL,
+)
 
 ROOT = Path(__file__).resolve().parents[3]
 NOW = datetime(2026, 8, 30, 12, 0, tzinfo=UTC)
@@ -690,6 +694,22 @@ def test_completion_dto_has_exact_bounded_result_contract() -> None:
             published_at=None,
         )
 
+    recovery = BlueskyCursorRecoveryCompletion(start_cursor="7")
+    assert recovery.start_cursor == 7
+    with pytest.raises(ValueError):
+        BlueskyCursorRecoveryCompletion(start_cursor="007")
+
+
+@pytest.mark.parametrize(
+    "value",
+    (None, True, 1.0, -1, "01", "9223372036854775808"),
+)
+def test_cursor_recovery_completion_accepts_only_a_canonical_nonnegative_bigint(
+    value: object,
+) -> None:
+    with pytest.raises((TypeError, ValueError)):
+        BlueskyCursorRecoveryCompletion(start_cursor=value)  # type: ignore[arg-type]
+
 
 def test_postgres_gate_and_finalizer_use_dedicated_fenced_rpcs() -> None:
     executor = RecordingExecutor(
@@ -743,6 +763,24 @@ def test_postgres_gate_and_finalizer_use_dedicated_fenced_rpcs() -> None:
             worker_id="worker-1",
             lease_generation=1,
         )
+
+
+def test_postgres_repository_uses_fenced_cursor_recovery_rpc() -> None:
+    executor = RecordingExecutor([[_job_row(status="completed")]])
+
+    completed = PostgresJobRepository(executor).complete(
+        "00000000-0000-0000-0000-000000000001",
+        worker_id="worker-1",
+        lease_generation=1,
+        now=NOW,
+        effect=BlueskyCursorRecoveryCompletion(start_cursor=41),
+    )
+
+    assert completed.status is JobStatus.COMPLETED
+    sql, params = executor.calls[-1]
+    assert sql == RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL
+    assert "ingest.recover_bluesky_cursor_too_old_job_v1" in sql
+    assert params["start_cursor"] == 41
 
 
 def test_websocket_transport_pins_protocol_query_and_proxy_boundary(
@@ -876,6 +914,62 @@ def test_websocket_transport_classifies_structured_stale_cursor_handshake(
     assert raised.value.retryable is False
 
 
+def test_websocket_transport_classifies_wrapped_structured_stale_cursor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class WrappedHandshakeError(RuntimeError):
+        def __init__(self) -> None:
+            self.response = SimpleNamespace(
+                status_code=400,
+                body=bytearray(b'{"error":"CursorTooOld"}'),
+            )
+
+    def connect(_uri: str, **_kwargs: object) -> object:
+        raise WrappedHandshakeError()
+
+    monkeypatch.setitem(sys.modules, "websockets", SimpleNamespace(connect=connect))
+    transport = WebsocketsBlueskyJetstreamTransport()
+
+    with pytest.raises(BlueskyCursorTooOldError):
+        transport.iter_messages(
+            start_cursor=1,
+            max_events=BLUESKY_MAX_EVENTS,
+            max_bytes=BLUESKY_MAX_STREAM_BYTES,
+            window_seconds=BLUESKY_STREAM_WINDOW_SECONDS,
+        )
+
+
+@pytest.mark.parametrize(
+    "response",
+    (
+        SimpleNamespace(status_code=500, body=b'{"error":"CursorTooOld"}'),
+        SimpleNamespace(status_code=400, body=b'{"error":"cursortooold"}'),
+        SimpleNamespace(status_code=400, body=b"not-json"),
+    ),
+)
+def test_websocket_transport_keeps_malformed_wrapped_errors_retryable(
+    monkeypatch: pytest.MonkeyPatch,
+    response: object,
+) -> None:
+    class WrappedHandshakeError(RuntimeError):
+        def __init__(self) -> None:
+            self.response = response
+
+    def connect(_uri: str, **_kwargs: object) -> object:
+        raise WrappedHandshakeError()
+
+    monkeypatch.setitem(sys.modules, "websockets", SimpleNamespace(connect=connect))
+    transport = WebsocketsBlueskyJetstreamTransport()
+
+    with pytest.raises(BlueskyTransportError):
+        transport.iter_messages(
+            start_cursor=1,
+            max_events=BLUESKY_MAX_EVENTS,
+            max_bytes=BLUESKY_MAX_STREAM_BYTES,
+            window_seconds=BLUESKY_STREAM_WINDOW_SECONDS,
+        )
+
+
 @pytest.mark.parametrize(
     ("status_code", "body"),
     (
@@ -954,6 +1048,69 @@ def test_live_composition_flag_schedule_priority_and_runtime_dispatch() -> None:
     result = runtime.run_once()
     assert result.status.value == "completed"
     assert any(sql == FINALIZE_BLUESKY_JETSTREAM_SQL for sql, _params in executor.calls)
+
+
+def test_live_composition_recovers_only_a_nonnull_structured_stale_cursor() -> None:
+    class CursorTooOldTransport:
+        def iter_messages(self, **_kwargs: object) -> tuple[bytes, ...]:
+            raise BlueskyCursorTooOldError()
+
+    settings = Settings(
+        _env_file=None,
+        data_mode="live",
+        supabase_db_url="postgresql://db.example.invalid/pokecrack",
+        worker_id="worker-1",
+        worker_role="collector",
+        bluesky_collection_enabled=True,
+    )
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running")],
+            [{"acquired": True, "retry_at": None, "start_cursor": 41}],
+            [_job_row(status="completed")],
+        ]
+    )
+    runtime = build_live_worker_runtime(
+        settings,
+        executor=executor,
+        bluesky_transport=CursorTooOldTransport(),
+    )
+
+    completed = runtime.run_once()
+    assert completed.status.value == "completed"
+    assert any(sql == RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL for sql, _params in executor.calls)
+
+
+def test_live_composition_refuses_to_reset_a_nullable_checkpoint() -> None:
+    class CursorTooOldTransport:
+        def iter_messages(self, **_kwargs: object) -> tuple[bytes, ...]:
+            raise BlueskyCursorTooOldError()
+
+    settings = Settings(
+        _env_file=None,
+        data_mode="live",
+        supabase_db_url="postgresql://db.example.invalid/pokecrack",
+        worker_id="worker-1",
+        worker_role="collector",
+        bluesky_collection_enabled=True,
+    )
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running")],
+            [{"acquired": True, "retry_at": None, "start_cursor": None}],
+            [_job_row(status="failed")],
+        ]
+    )
+    runtime = build_live_worker_runtime(
+        settings,
+        executor=executor,
+        bluesky_transport=CursorTooOldTransport(),
+    )
+
+    result = runtime.run_once()
+    assert result.status.value == "failed"
+    assert result.error_code == "bluesky_cursor_reset_invalid"
+    assert not any(sql == RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL for sql, _params in executor.calls)
 
 
 def test_bluesky_enablement_keeps_schedule_fixed() -> None:
