@@ -3715,6 +3715,184 @@ export type Database = {
           },
         ];
       };
+      reviewed_global_aggregate_audit: {
+        Row: {
+          id: string;
+          aggregate_key: string;
+          country_code: string;
+          period_start: string;
+          period_end: string;
+          language: string;
+          set_scope: string;
+          product_scope: string;
+          metric_key: string;
+          metric_version: string;
+          methodology_version: string;
+          publication_contract_version: string;
+          calculation_implementation_version: string;
+          source_domain_set_sha256: string;
+          cohort_fingerprint_sha256: string;
+          independent_source_count: number;
+          complete_openings: number;
+          observed_packs: number;
+          qualifying_hit_pack_count: number;
+          baseline_id: string | null;
+          baseline_contract_sha256: string | null;
+          baseline_rate: number | null;
+          prior_strength: number | null;
+          observed_rate: number | null;
+          posterior_mean: number | null;
+          credible_interval_low: number | null;
+          credible_interval_high: number | null;
+          probability_above_baseline: number | null;
+          probability_above_practical: number | null;
+          delta_from_baseline: number | null;
+          signal_status: string | null;
+          publication_state: string;
+          withhold_reason: string | null;
+          build_sha: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          aggregate_key: string;
+          country_code: string;
+          period_start: string;
+          period_end: string;
+          language: string;
+          set_scope: string;
+          product_scope: string;
+          metric_key: string;
+          metric_version: string;
+          methodology_version: string;
+          publication_contract_version: string;
+          calculation_implementation_version: string;
+          source_domain_set_sha256: string;
+          cohort_fingerprint_sha256: string;
+          independent_source_count: number;
+          complete_openings: number;
+          observed_packs: number;
+          qualifying_hit_pack_count: number;
+          baseline_id?: string | null;
+          baseline_contract_sha256?: string | null;
+          baseline_rate?: number | null;
+          prior_strength?: number | null;
+          observed_rate?: number | null;
+          posterior_mean?: number | null;
+          credible_interval_low?: number | null;
+          credible_interval_high?: number | null;
+          probability_above_baseline?: number | null;
+          probability_above_practical?: number | null;
+          delta_from_baseline?: number | null;
+          signal_status?: string | null;
+          publication_state: string;
+          withhold_reason?: string | null;
+          build_sha: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          aggregate_key?: string;
+          country_code?: string;
+          period_start?: string;
+          period_end?: string;
+          language?: string;
+          set_scope?: string;
+          product_scope?: string;
+          metric_key?: string;
+          metric_version?: string;
+          methodology_version?: string;
+          publication_contract_version?: string;
+          calculation_implementation_version?: string;
+          source_domain_set_sha256?: string;
+          cohort_fingerprint_sha256?: string;
+          independent_source_count?: number;
+          complete_openings?: number;
+          observed_packs?: number;
+          qualifying_hit_pack_count?: number;
+          baseline_id?: string | null;
+          baseline_contract_sha256?: string | null;
+          baseline_rate?: number | null;
+          prior_strength?: number | null;
+          observed_rate?: number | null;
+          posterior_mean?: number | null;
+          credible_interval_low?: number | null;
+          credible_interval_high?: number | null;
+          probability_above_baseline?: number | null;
+          probability_above_practical?: number | null;
+          delta_from_baseline?: number | null;
+          signal_status?: string | null;
+          publication_state?: string;
+          withhold_reason?: string | null;
+          build_sha?: string;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'reviewed_global_aggregate_audit_baseline_id_fkey';
+            columns: ['baseline_id'];
+            isOneToOne: false;
+            referencedRelation: 'reviewed_global_aggregate_baselines';
+            referencedColumns: ['baseline_id'];
+          },
+          {
+            foreignKeyName: 'reviewed_global_aggregate_audit_country_code_fkey';
+            columns: ['country_code'];
+            isOneToOne: false;
+            referencedRelation: 'iso_alpha2_codes';
+            referencedColumns: ['code'];
+          },
+        ];
+      };
+      reviewed_global_aggregate_baselines: {
+        Row: {
+          baseline_id: string;
+          baseline_version: string;
+          metric_key: string;
+          metric_version: string;
+          set_external_id: string;
+          language: string;
+          product_scope: string;
+          baseline_rate: number;
+          provenance_sha256: string;
+          contract_sha256: string;
+          valid_from: string;
+          valid_to: string | null;
+          created_at: string;
+        };
+        Insert: {
+          baseline_id: string;
+          baseline_version: string;
+          metric_key: string;
+          metric_version: string;
+          set_external_id: string;
+          language: string;
+          product_scope?: string;
+          baseline_rate: number;
+          provenance_sha256: string;
+          contract_sha256: string;
+          valid_from: string;
+          valid_to?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          baseline_id?: string;
+          baseline_version?: string;
+          metric_key?: string;
+          metric_version?: string;
+          set_external_id?: string;
+          language?: string;
+          product_scope?: string;
+          baseline_rate?: number;
+          provenance_sha256?: string;
+          contract_sha256?: string;
+          valid_from?: string;
+          valid_to?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+        ];
+      };
       signals: {
         Row: {
           id: string;
@@ -3813,6 +3991,20 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      reviewed_global_beta_parameters_v1: {
+        Args: {
+          p_hits: number;
+          p_packs: number;
+          p_baseline_rate: number;
+          p_prior_strength?: number;
+        };
+        Returns: {
+          alpha: number;
+          beta: number;
+          posterior_mean: number;
+        }[];
+      };
+    };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

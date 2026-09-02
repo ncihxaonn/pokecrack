@@ -159,8 +159,13 @@ select ok(
      and not has_table_privilege('service_role', c.oid, 'references')
      and not has_table_privilege('service_role', c.oid, 'trigger'))
    from pg_class c join pg_namespace n on n.oid = c.relnamespace
-   where n.nspname = 'analytics' and c.relkind in ('r', 'p')),
-  'service_role can inspect analytics but can mutate only through reviewed RPCs'
+   where n.nspname = 'analytics'
+     and c.relkind in ('r', 'p')
+     and c.relname not in (
+       'reviewed_global_aggregate_baselines',
+       'reviewed_global_aggregate_audit'
+     )),
+  'service_role can inspect legacy analytics but can mutate only through reviewed RPCs'
 );
 select ok(
   (select count(*) = 12 and bool_and(is_nullable = 'NO')

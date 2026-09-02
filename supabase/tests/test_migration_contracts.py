@@ -58,6 +58,9 @@ MASTODON_PUBLIC_HEALTH_AGGREGATION = (
 MASTODON_RUNTIME_FINALIZER_HOTFIX = (
     ROOT / "migrations/20260912030000_mastodon_runtime_finalizer_hotfix.sql"
 ).read_text()
+REVIEWED_GLOBAL_AGGREGATE_FOUNDATION = (
+    ROOT / "migrations/20260916000000_reviewed_global_aggregate_foundation.sql"
+).read_text()
 SOCIAL_ACTIVITY_PULSE_V4 = (
     ROOT / "migrations/20260913000000_social_activity_pulse_v4.sql"
 ).read_text()
@@ -1148,6 +1151,79 @@ class IngestMigrationContractTests(unittest.TestCase):
             compact,
         )
         self.assertIn("recover_bluesky_cursor_too_old_job_v1", DATABASE_TYPES)
+
+    def test_reviewed_global_aggregate_foundation_is_private_and_fails_closed(self) -> None:
+        lowered = REVIEWED_GLOBAL_AGGREGATE_FOUNDATION.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertNotIn("public.country_period_map_cells", lowered)
+        self.assertNotIn("insert into public.", lowered)
+        self.assertNotIn("update public.", lowered)
+        self.assertNotIn("delete from", lowered)
+
+        for table in (
+            "reviewed_global_aggregate_baselines",
+            "reviewed_global_aggregate_audit",
+        ):
+            self.assertIn(f"create table analytics.{table}", compact)
+            self.assertIn(f"alter table analytics.{table} force row level security", compact)
+            self.assertIn(f"revoke all on table analytics.{table}", compact)
+            self.assertNotIn(
+                f"grant select on table analytics.{table} to service_role", compact
+            )
+            self.assertNotIn(
+                f"grant insert on table analytics.{table}", compact
+            )
+
+        self.assertIn("qualifying_hit_pack_count", lowered)
+        self.assertIn("source_domain_set_sha256", lowered)
+        self.assertIn("cohort_fingerprint_sha256", lowered)
+        self.assertIn("baseline_contract_sha256", lowered)
+        self.assertIn("publication_state = 'withheld'", compact)
+        self.assertIn("withhold_reason is not null", compact)
+        self.assertNotIn("publication_state = 'calculated'", compact)
+        self.assertIn("exact_interval_unavailable", lowered)
+        self.assertIn("num_nonnulls(", lowered)
+        self.assertIn("reviewed global aggregate records are immutable", lowered)
+        self.assertIn(
+            "revoke all on function analytics.reject_reviewed_global_aggregate_mutation_v1() from public, anon, authenticated, service_role",
+            compact,
+        )
+
+        beta_parameters = lowered.split(
+            "create function analytics.reviewed_global_beta_parameters_v1", 1
+        )[1].split(
+            "alter table analytics.reviewed_global_aggregate_baselines", 1
+        )[0]
+        for fragment in (
+            "security invoker",
+            "immutable",
+            "parallel safe",
+            "set search_path = pg_catalog",
+            "hits must satisfy 0 <= hits <= packs",
+            "baseline rate must be strictly between zero and one",
+            "prior strength must be positive",
+            "p_baseline_rate * p_prior_strength + p_hits",
+        ):
+            self.assertIn(fragment, beta_parameters)
+        self.assertNotIn("credible_interval", beta_parameters)
+        self.assertNotIn("country_period_map_cells", beta_parameters)
+
+        self.assertIn(
+            "alter function analytics.reviewed_global_beta_parameters_v1( bigint, bigint, numeric, numeric ) owner to postgres",
+            compact,
+        )
+        self.assertIn(
+            "revoke all on function analytics.reviewed_global_beta_parameters_v1( bigint, bigint, numeric, numeric ) from public, anon, authenticated, service_role",
+            compact,
+        )
+        for type_name in (
+            "reviewed_global_aggregate_audit:",
+            "reviewed_global_aggregate_baselines:",
+            "reviewed_global_beta_parameters_v1:",
+        ):
+            self.assertIn(type_name, DATABASE_TYPES)
 
     def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()
