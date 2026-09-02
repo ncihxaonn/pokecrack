@@ -365,10 +365,10 @@ select ok(
 set local role pokecrack_authorized_opening_reviewer;
 select is(
   (
-    select count(*)::integer
+    select count(*)::bigint
     from ingest.list_authorized_opening_reviews_v1('queued', 10)
   ),
-  1,
+  1::bigint,
   'reviewer can list the bounded queued-review projection'
 );
 select doesnt_match(
