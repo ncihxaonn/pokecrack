@@ -2919,7 +2919,10 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
             else:
                 # Worker health performs a live database dependency probe plus
                 # heartbeat write; do not truncate a valid direct-IPv6 probe.
+                self.assertEqual(service["healthcheck"]["interval"], "30s", name)
                 self.assertEqual(service["healthcheck"]["timeout"], "45s", name)
+                self.assertEqual(service["healthcheck"]["retries"], 3, name)
+                self.assertEqual(service["healthcheck"]["start_period"], "30s", name)
             self.assertIn("/tmp", " ".join(service["tmpfs"]), name)
             expected_networks = (
                 {"internal", "nostr-egress"}
