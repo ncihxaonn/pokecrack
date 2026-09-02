@@ -16,6 +16,7 @@ NOSTR_ENV_FILE=${POKECRACK_NOSTR_ENV_FILE:-}
 STATE_DIR=${POKECRACK_DEPLOY_STATE_DIR:-/var/lib/pokecrack/deploy}
 HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-180}
 RUNTIME_GRACE_SECONDS=${DEPLOY_RUNTIME_GRACE_SECONDS:-21600}
+RUNTIME_EXEC_TIMEOUT_SECONDS=${DEPLOY_RUNTIME_EXEC_TIMEOUT_SECONDS:-60}
 SERVICE_SET=tcgdex
 RETIRE_NOSTR=false
 VERIFY_RUNTIME=false
@@ -81,6 +82,7 @@ Options:
   --health-timeout SECONDS    Health deadline (default: 180)
   --verify-runtime             Run aggregate runtime evidence after health checks
   --runtime-grace-seconds SEC First-run warming-up window (default: 21600)
+  --runtime-exec-timeout-seconds SEC Bound each runtime verifier probe (default: 60)
   --service-set NAME          Exact release service set (tcgdex or tcgdex-nostr)
   --retire-nostr              Explicitly stop/remove only the managed Nostr container
 
@@ -100,6 +102,7 @@ while (($#)); do
     --health-timeout) (($# >= 2)) || die "--health-timeout requires a value"; HEALTH_TIMEOUT=$2; shift 2 ;;
     --verify-runtime) VERIFY_RUNTIME=true; shift ;;
     --runtime-grace-seconds) (($# >= 2)) || die "--runtime-grace-seconds requires a value"; RUNTIME_GRACE_SECONDS=$2; shift 2 ;;
+    --runtime-exec-timeout-seconds) (($# >= 2)) || die "--runtime-exec-timeout-seconds requires a value"; RUNTIME_EXEC_TIMEOUT_SECONDS=$2; shift 2 ;;
     --service-set) (($# >= 2)) || die "--service-set requires a value"; SERVICE_SET=$2; shift 2 ;;
     --retire-nostr) RETIRE_NOSTR=true; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -114,6 +117,8 @@ done
 [[ $HEALTH_TIMEOUT =~ ^[1-9][0-9]*$ ]] || die "health timeout must be a positive integer"
 [[ $RUNTIME_GRACE_SECONDS =~ ^[0-9]+$ && $RUNTIME_GRACE_SECONDS -le 172800 ]] || \
   die "runtime grace seconds must be between 0 and 172800"
+[[ $RUNTIME_EXEC_TIMEOUT_SECONDS =~ ^[1-9][0-9]*$ && $RUNTIME_EXEC_TIMEOUT_SECONDS -le 120 ]] || \
+  die "runtime exec timeout seconds must be between 1 and 120"
 [[ -f $COMPOSE_FILE ]] || die "Compose file is missing: $COMPOSE_FILE"
 case $SERVICE_SET in
   tcgdex)
@@ -289,11 +294,32 @@ done
 if [[ $VERIFY_RUNTIME == true ]]; then
   [[ -f $RUNTIME_EVIDENCE_VERIFY && ! -L $RUNTIME_EVIDENCE_VERIFY ]] || \
     die "runtime release verifier is missing"
-  "$RUNTIME_EVIDENCE_VERIFY" "$target_sha" \
-    --env-file "$ENV_FILE" \
-    --release-started-at "$release_started_at" \
-    --grace-seconds "$RUNTIME_GRACE_SECONDS" || \
-    die "runtime release evidence did not pass; success marker was not advanced"
+  runtime_verify_args=(
+    "$target_sha"
+    --env-file "$ENV_FILE"
+    --release-started-at "$release_started_at"
+    --grace-seconds "$RUNTIME_GRACE_SECONDS"
+    --service-set "$SERVICE_SET"
+    --exec-timeout-seconds "$RUNTIME_EXEC_TIMEOUT_SECONDS"
+  )
+  if [[ -n $NOSTR_ENV_FILE ]]; then
+    runtime_verify_args+=(--nostr-env-file "$NOSTR_ENV_FILE")
+  fi
+  set +e
+  "$RUNTIME_EVIDENCE_VERIFY" "${runtime_verify_args[@]}"
+  runtime_verify_status=$?
+  set -e
+  case $runtime_verify_status in
+    0) ;;
+    1) die "runtime release evidence failed; success marker was not advanced" ;;
+    2)
+      printf '%s\n' \
+        "deploy: runtime release evidence was inconclusive; success marker was not advanced" >&2
+      rollback_marker
+      exit 2
+      ;;
+    *) die "runtime release evidence could not run; success marker was not advanced" ;;
+  esac
 fi
 
 marker=$(mktemp "$STATE_DIR/.last-successful-deployment.XXXXXXXX")

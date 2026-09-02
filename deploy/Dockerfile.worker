@@ -3,9 +3,11 @@ ARG PYTHON_IMAGE=python:3.13.5-slim-bookworm@sha256:4c2cf9917bd1cbacc5e9b0732002
 FROM ${PYTHON_IMAGE}
 
 ARG UV_VERSION=0.11.6
+ARG DEPLOY_SHA
 LABEL org.opencontainers.image.title="pokecrack-worker" \
       org.opencontainers.image.description="Policy-gated Pokecrack worker runtime" \
-      com.pokecrack.runtime="worker"
+      com.pokecrack.runtime="worker" \
+      org.opencontainers.image.revision="${DEPLOY_SHA}"
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \

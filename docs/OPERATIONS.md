@@ -7,16 +7,22 @@ For each released TCGdex UTC window (02:00 and 14:00): collector, scheduler, and
 ```bash
 deploy/scripts/verify-runtime-release.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
   --env-file /etc/pokecrack/production.env \
+  --service-set tcgdex \
   --release-started-at 2026-09-03T00:00:00Z
 ```
 
 Treat `healthy` as advancing evidence, `warming_up` as an expected first-run
 grace state, exit 1 as a release failure, and exit 2 as `inconclusive` (schema,
-role, or marker evidence unavailable). The command is read-only and emits only
-safe aggregates; do not paste environment files or container inspection into
-an incident. Weekly: failed jobs, unused images, provenance checks, and
-restore-drill schedule. Monthly: source/terms review, dependency/image
-updates, access review, key rotation plan and free-tier capacity trend.
+role, service-set, running-image, or marker evidence unavailable). Missing or
+unreadable backup markers stay inconclusive during grace; do not broaden the
+owner-only backup directory to make them readable. For a Nostr release, pass
+`--service-set tcgdex-nostr --nostr-env-file /etc/pokecrack/nostr.env`; this
+explicitly scopes the expected Nostr heartbeat, checkpoint, and schedules. The
+command is read-only and emits only safe aggregates; do not paste environment
+files or container inspection into an incident. Weekly: failed jobs, unused
+images, provenance checks, and restore-drill schedule. Monthly: source/terms
+review, dependency/image updates, access review, key rotation plan and
+free-tier capacity trend.
 AI/browser checks are not part of this release.
 
 Use the secret environment file without printing expanded config:

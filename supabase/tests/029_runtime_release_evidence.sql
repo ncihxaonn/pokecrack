@@ -6,18 +6,31 @@ begin;
 set local search_path = public, extensions, pg_catalog;
 select no_plan();
 
+select has_column(
+  'ingest', 'schedule_slots', 'is_demo',
+  'durable schedule slots carry an explicit demo boundary'
+);
+
 select has_function(
   'ingest', 'get_runtime_release_evidence_v1',
-  array['timestamp with time zone', 'integer', 'integer'],
-  'the runtime release evidence RPC exists with bounded parameters'
+  array['timestamp with time zone', 'integer', 'integer', 'text'],
+  'the runtime release evidence RPC exists with an exact service-set parameter'
 );
 
 select ok(
   (select prosecdef
       and coalesce(proconfig, '{}'::text[]) @> array['search_path=pg_catalog']
    from pg_catalog.pg_proc
-   where oid = 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer)'::regprocedure),
+   where oid = 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer,text)'::regprocedure),
   'the runtime evidence RPC is SECURITY DEFINER with a fixed search_path'
+);
+
+select is(
+  (select pg_catalog.pg_get_userbyid(proowner)
+   from pg_catalog.pg_proc
+   where oid = 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer,text)'::regprocedure),
+  'postgres',
+  'the runtime evidence RPC remains owned by postgres'
 );
 
 select set_eq(
@@ -28,17 +41,17 @@ select set_eq(
     ) as grants
     left join pg_catalog.pg_roles as grantees on grantees.oid = grants.grantee
     where procedures.oid =
-      'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer)'::regprocedure
+      'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer,text)'::regprocedure
       and grants.privilege_type = 'EXECUTE'$$,
   $$values ('postgres'::text), ('pokecrack_runtime_monitor')$$,
   'only postgres and the dedicated monitor capability can execute the RPC'
 );
 
 select ok(
-  not has_function_privilege('public', 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer)', 'execute')
-  and not has_function_privilege('anon', 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer)', 'execute')
-  and not has_function_privilege('authenticated', 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer)', 'execute')
-  and not has_function_privilege('service_role', 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer)', 'execute'),
+  not has_function_privilege('public', 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer,text)', 'execute')
+  and not has_function_privilege('anon', 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer,text)', 'execute')
+  and not has_function_privilege('authenticated', 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer,text)', 'execute')
+  and not has_function_privilege('service_role', 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer,text)', 'execute'),
   'public, browser roles, and service_role cannot execute the private RPC'
 );
 
@@ -60,13 +73,17 @@ select ok(
 );
 
 select is(
-  jsonb_typeof(ingest.get_runtime_release_evidence_v1()),
+  jsonb_typeof(ingest.get_runtime_release_evidence_v1(
+    now() - interval '1 minute', 21600, 180, 'tcgdex'
+  )),
   'object',
   'the RPC returns a JSON object'
 );
 
 select set_eq(
-  $$select jsonb_object_keys(ingest.get_runtime_release_evidence_v1())$$,
+  $$select jsonb_object_keys(ingest.get_runtime_release_evidence_v1(
+    now() - interval '1 minute', 21600, 180, 'tcgdex'
+  ))$$,
   $$values
     ('schema_version'), ('status'), ('release_age_seconds'), ('grace_seconds'),
     ('workers'), ('sources'), ('schedule'), ('queue'), ('checkpoints'), ('cleanup')$$,
@@ -74,31 +91,57 @@ select set_eq(
 );
 
 select ok(
-  not (ingest.get_runtime_release_evidence_v1())::text ~* '"(payload|url|cursor|policy_id|gate_id|worker_id|job_id|credential|identity)"\s*:',
+  not (ingest.get_runtime_release_evidence_v1(
+    now() - interval '1 minute', 21600, 180, 'tcgdex'
+  ))::text ~* '"(payload|url|cursor|policy_id|gate_id|worker_id|job_id|credential|identity)"\s*:',
   'the result contains no payload, URL, cursor, identifier, credential, or identity keys'
 );
 
 select is(
   ingest.get_runtime_release_evidence_v1(
+    now() - interval '1 minute',
     p_grace_seconds => 172800,
-    p_heartbeat_stale_seconds => 3600
+    p_heartbeat_stale_seconds => 3600,
+    p_service_set => 'tcgdex'
   ) ->> 'status' in ('healthy', 'warming_up', 'failed'),
   true,
   'the status is explicit and never silently omitted'
 );
 
 select throws_ok(
-  $$select ingest.get_runtime_release_evidence_v1(p_grace_seconds => 172801)$$,
+  $$select ingest.get_runtime_release_evidence_v1(
+      now() - interval '1 minute', 172801, 180, 'tcgdex'
+    )$$,
   NULL,
   'invalid runtime evidence grace window',
   'the RPC rejects an unbounded grace window'
 );
 
 select throws_ok(
-  $$select ingest.get_runtime_release_evidence_v1(p_heartbeat_stale_seconds => 29)$$,
+  $$select ingest.get_runtime_release_evidence_v1(
+      now() - interval '1 minute', 21600, 29, 'tcgdex'
+    )$$,
   NULL,
   'invalid runtime evidence heartbeat window',
   'the RPC rejects an unsafe heartbeat window'
+);
+
+select throws_ok(
+  $$select ingest.get_runtime_release_evidence_v1(
+      now() - interval '1 minute', 21600, 180, 'unknown-service-set'
+    )$$,
+  NULL,
+  'invalid runtime evidence service set',
+  'the RPC rejects an unapproved service set'
+);
+
+select throws_ok(
+  $$select ingest.get_runtime_release_evidence_v1(
+      now() + interval '6 minutes', 21600, 180, 'tcgdex'
+    )$$,
+  NULL,
+  'runtime evidence release start is in the future',
+  'the RPC rejects a release timestamp too far in the future'
 );
 
 select * from finish();

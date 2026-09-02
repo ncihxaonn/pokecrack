@@ -2527,18 +2527,21 @@ export type Database = {
           slot_at: string;
           job_id: string | null;
           created_at: string;
+          is_demo: boolean;
         };
         Insert: {
           schedule_name: string;
           slot_at: string;
           job_id?: string | null;
           created_at?: string;
+          is_demo?: boolean;
         };
         Update: {
           schedule_name?: string;
           slot_at?: string;
           job_id?: string | null;
           created_at?: string;
+          is_demo?: boolean;
         };
         Relationships: [
           {
@@ -3311,6 +3314,7 @@ export type Database = {
           p_release_started_at?: string | null;
           p_grace_seconds?: number;
           p_heartbeat_stale_seconds?: number;
+          p_service_set?: string;
         };
         Returns: Json;
       };

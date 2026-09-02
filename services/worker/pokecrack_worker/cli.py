@@ -28,6 +28,8 @@ from pokecrack_worker.config.source_policy import (
 )
 from pokecrack_worker.jobs import InMemoryJobRepository
 from pokecrack_worker.release_evidence import (
+    RUNTIME_RELEASE_SERVICE_SETS,
+    bound_release_started_at,
     exit_code_for_status,
     inconclusive_result,
     parse_release_started_at,
@@ -188,6 +190,11 @@ def health() -> None:
 
 @app.command("verify-release")
 def verify_release(
+    service_set: str = typer.Option(
+        "tcgdex",
+        "--service-set",
+        help="Exact deployed service set (tcgdex or tcgdex-nostr).",
+    ),
     release_started_at: str | None = typer.Option(
         None,
         "--release-started-at",
@@ -220,6 +227,9 @@ def verify_release(
     if settings.data_mode is not DataMode.LIVE:
         _json(inconclusive_result("live_mode_required"))
         raise typer.Exit(code=2)
+    if service_set not in RUNTIME_RELEASE_SERVICE_SETS:
+        _json(inconclusive_result("invalid_runtime_options"))
+        raise typer.Exit(code=2)
     if (
         grace_seconds < 0
         or grace_seconds > 172800
@@ -235,6 +245,7 @@ def verify_release(
         raise typer.Exit(code=2)
     try:
         parsed_release_started_at = parse_release_started_at(release_started_at)
+        parsed_release_started_at = bound_release_started_at(parsed_release_started_at)
     except ValueError:
         _json(inconclusive_result("invalid_release_timestamp"))
         raise typer.Exit(code=2) from None
@@ -252,6 +263,7 @@ def verify_release(
             release_started_at=parsed_release_started_at,
             grace_seconds=grace_seconds,
             heartbeat_stale_seconds=heartbeat_stale_seconds,
+            service_set=service_set,
         )
     except Exception:
         _json(inconclusive_result())

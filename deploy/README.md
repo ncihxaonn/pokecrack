@@ -17,7 +17,9 @@ The core release uses only the backup-marker volume. Optional, currently
 unreleased browser artifacts additionally use:
 
 - `/opt/pokecrack/browser-profiles` -> `/profiles` (sensitive, mode `0700`, uid/gid `10001`);
-- `/opt/pokecrack/backups` -> watchdog read-only marker access;
+- `/opt/pokecrack/backups` -> watchdog read-only volume (the default `0700`/`0600`
+  backup contract intentionally keeps the marker unavailable to container UID
+  `10001`);
 - `/opt/pokecrack/opencli-extension` -> browser read-only pinned extension releases.
 
 ## One-time host preparation
@@ -32,6 +34,14 @@ sudo cp deploy/env/production.env.example /etc/pokecrack/production.env
 sudo chmod 0600 /etc/pokecrack/production.env
 sudoedit /etc/pokecrack/production.env
 ```
+
+The default backup directory remains owner-only (`0700`) and backup artifacts and
+the success marker remain owner-only (`0600`). Do not broaden that directory or
+marker permissions to make the watchdog readable. Until a separately reviewed,
+narrow marker-only mount is provisioned for UID `10001`, runtime verification
+reports a missing, unsupported, or unreadable backup marker as `inconclusive`
+(exit `2`), including during first-run grace. This preserves backup
+confidentiality and never treats an unavailable marker as a successful backup.
 
 Put real secrets only in the root-readable environment file, never in Git, Compose YAML, command history, issues, prompts, or logs. Set `DATA_MODE=live` only after a real Supabase database is migrated and tested. Use a dedicated TLS database URL with bounded connection timeout, keep `WORKER_MAX_CONCURRENCY=1`, `YOUTUBE_COLLECTION_ENABLED=false`, `AI_PROVIDER=fixture`, and `OPENCLI_ENABLED=false`. The TCGdex catalog does not require an API key.
 
@@ -117,24 +127,42 @@ deploy/scripts/deploy.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
 ```
 
 The gate invokes the read-only `verify-release` command in the watchdog. It
-uses the private `ingest.get_runtime_release_evidence_v1` RPC from migration
-`20260923000000_runtime_release_evidence.sql` through the dedicated
-`pokecrack_runtime_monitor` capability role. Provision a separate NOINHERIT
-login outside migrations, set its URL as
+uses the private `ingest.get_runtime_release_evidence_v1` RPC from migrations
+`20260923000000_runtime_release_evidence.sql` and
+`20260924000000_runtime_release_evidence_hardening.sql` through the dedicated
+`pokecrack_runtime_monitor` capability role. Provision the exact
+`pokecrack_runtime_monitor_login` NOINHERIT login outside migrations with
+`NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOREPLICATION`, `NOBYPASSRLS`,
+`CONNECTION LIMIT 2`, and only the membership
+`pokecrack_runtime_monitor_login -> pokecrack_runtime_monitor` with
+`INHERIT FALSE, SET TRUE`. The login must not inherit any other capability or
+be a member of `service_role`. Set its TLS URL as
 `RUNTIME_RELEASE_EVIDENCE_DB_URL` in the mode-0600 environment file, and do
 not use `anon`, `authenticated`, `service_role`, or a worker DSN. The URL is
 forced to `options=-c role=pokecrack_runtime_monitor` by the worker and is
-never printed.
+never printed. Existing role attributes, ownership, or memberships that drift
+from this contract fail closed; the migration does not normalize unknown role
+state.
 
 The verifier prints only status, counts, age bands, and backup-marker age. It
 returns success for `healthy` and first-run `warming_up`, exit 1 for observed
-stale/failed evidence, and exit 2 for unavailable or incompatible schema and
-configuration. A new release remains `warming_up` for the configured grace
-window until its first schedule, heartbeat, source/checkpoint, and cleanup
-evidence exists. Disabled source policies remain observed as disabled; no
-source is assumed enabled. The deploy script advances its success manifest
-only when this optional gate succeeds. It never applies migrations or deploys
-anything on its own.
+stale/failed evidence, and exit 2 for unavailable or incompatible schema,
+configuration, role, image, or marker evidence. A new release remains
+`warming_up` for the configured grace window until its expected service-set
+heartbeat, schedule, source/checkpoint, and cleanup evidence exists. Enabled
+sources and checkpoints must advance at or after the release start before the
+result can become `healthy`; disabled source policies remain observed as
+disabled and do not become implicit expectations. The verifier checks the
+running container image revision against the requested exact SHA and requires
+the explicit `tcgdex` or `tcgdex-nostr` service set (the latter includes the
+Nostr worker heartbeat/checkpoint/schedule evidence). The deploy script advances
+its success manifest only when this optional gate succeeds. It never applies
+migrations or deploys anything on its own.
+
+If health or runtime evidence fails after replacement, the new containers are
+left in place for diagnosis, the success manifest is not advanced, and no
+rollback is attempted. Choose a known-good compatible SHA and run the explicit
+rollback command below after preserving the aggregate evidence.
 
 Rollback always requires the chosen commit; it does not guess “previous”:
 

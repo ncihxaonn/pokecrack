@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -9,6 +9,7 @@ import pytest
 
 from pokecrack_worker.release_evidence import (
     RuntimeEvidenceUnavailable,
+    bound_release_started_at,
     exit_code_for_status,
     parse_release_started_at,
     query_runtime_release_evidence,
@@ -106,7 +107,7 @@ def test_query_validates_schema_and_does_not_widen_output() -> None:
     executor = FakeExecutor(json.dumps(evidence()))
     result = query_runtime_release_evidence(
         executor,
-        release_started_at=datetime(2026, 9, 3, tzinfo=UTC),
+        release_started_at=datetime.now(UTC) - timedelta(minutes=5),
         grace_seconds=21600,
         heartbeat_stale_seconds=180,
     )
@@ -114,6 +115,7 @@ def test_query_validates_schema_and_does_not_widen_output() -> None:
     assert result["schema_version"] == "1.0.0"
     assert "payload" not in json.dumps(result)
     assert "release_started_at" in executor.params
+    assert executor.params["service_set"] == "tcgdex"
     assert "get_runtime_release_evidence_v1" in executor.sql
 
 
@@ -144,6 +146,32 @@ def test_parse_release_timestamp_requires_timezone() -> None:
     assert parse_release_started_at("2026-09-03T00:00:00Z") == datetime(2026, 9, 3, tzinfo=UTC)
     with pytest.raises(ValueError):
         parse_release_started_at("2026-09-03T00:00:00")
+    with pytest.raises(ValueError):
+        parse_release_started_at(123)  # type: ignore[arg-type]
+
+
+def test_release_timestamp_is_bounded_and_normalized() -> None:
+    now = datetime(2026, 9, 3, 3, tzinfo=UTC)
+    assert bound_release_started_at(datetime(2026, 9, 3, 2, tzinfo=UTC), now=now) == datetime(
+        2026, 9, 3, 2, tzinfo=UTC
+    )
+    with pytest.raises(ValueError):
+        bound_release_started_at(datetime(2026, 8, 1, tzinfo=UTC), now=now)
+    with pytest.raises(ValueError):
+        bound_release_started_at(datetime(2026, 9, 3, 3, 6, tzinfo=UTC), now=now)
+
+
+def test_query_rejects_unknown_service_set_without_querying() -> None:
+    executor = FakeExecutor(json.dumps(evidence()))
+    with pytest.raises(RuntimeEvidenceUnavailable):
+        query_runtime_release_evidence(
+            executor,
+            release_started_at=datetime(2026, 9, 3, tzinfo=UTC),
+            grace_seconds=21600,
+            heartbeat_stale_seconds=180,
+            service_set="tcgdex-nostr-extra",
+        )
+    assert executor.sql == ""
 
 
 def test_backup_marker_reports_only_safe_age_and_status(tmp_path: Path) -> None:
@@ -168,13 +196,60 @@ def test_backup_marker_stale_missing_and_unsupported_are_explicit(tmp_path: Path
     assert read_backup_marker(None) == {"status": "unsupported"}
 
 
+def test_backup_marker_with_invalid_encoding_is_malformed(tmp_path: Path) -> None:
+    marker = tmp_path / ".last-successful-backup"
+    marker.write_bytes(b"\xff\ncompleted_at=20260903T020000Z\n")
+    assert read_backup_marker(marker)["status"] == "invalid"
+
+
 def test_backup_marker_changes_release_status_conservatively() -> None:
-    assert with_backup_marker(evidence(), {"status": "fresh"})["status"] == "healthy"
-    assert with_backup_marker(evidence(), {"status": "missing"})["status"] == "warming_up"
+    assert (
+        with_backup_marker(evidence(), {"status": "fresh", "age_seconds": 60})["status"]
+        == "healthy"
+    )
+    assert with_backup_marker(evidence(), {"status": "missing"})["status"] == "inconclusive"
     old = evidence()
     old["release_age_seconds"] = 21601
-    assert with_backup_marker(old, {"status": "missing"})["status"] == "failed"
+    assert with_backup_marker(old, {"status": "missing"})["status"] == "inconclusive"
+    assert with_backup_marker(evidence(), {"status": "unsupported"})["status"] == "inconclusive"
     assert with_backup_marker(evidence(), {"status": "inconclusive"})["status"] == "inconclusive"
+
+
+@pytest.mark.parametrize(
+    ("path", "replacement"),
+    (
+        (("status",), True),
+        (("grace_seconds",), "21600"),
+        (("workers", "expected_count"), False),
+        (("queue", "pending_age_bands", "under_5m"), 1.0),
+        (("release_age_seconds",), "120"),
+        (("workers", "status"), "secret-like-value"),
+    ),
+)
+def test_rpc_rejects_unsafe_scalar_types_and_values(
+    path: tuple[str, ...], replacement: object
+) -> None:
+    value = evidence()
+    target: dict[str, Any] = value
+    for key in path[:-1]:
+        target = target[key]
+    target[path[-1]] = replacement
+    with pytest.raises(RuntimeEvidenceUnavailable):
+        validate_runtime_evidence(value)
+
+
+def test_rpc_rejects_duplicate_keys_and_nonfinite_json() -> None:
+    raw = json.dumps(evidence(), separators=(",", ":"))
+    duplicate = raw.replace(
+        '"schema_version":"1.0.0"',
+        '"schema_version":"1.0.0","schema_version":"1.0.0"',
+        1,
+    )
+    with pytest.raises(RuntimeEvidenceUnavailable):
+        validate_runtime_evidence(duplicate)
+    nonfinite = raw.replace('"release_age_seconds":120', '"release_age_seconds":NaN', 1)
+    with pytest.raises(RuntimeEvidenceUnavailable):
+        validate_runtime_evidence(nonfinite)
 
 
 @pytest.mark.parametrize(
