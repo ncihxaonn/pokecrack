@@ -68,9 +68,9 @@ const coverageSet = coverageMetric.extend({
   releaseDate: isoDate,
 });
 
-const coverageSource = z
+const reviewedCoverageSource = z
   .object({
-    id: z.enum(coverageSourceIds),
+    id: z.string().regex(/^[a-z][a-z0-9_-]{0,119}$/),
     name: z.string().min(1).max(160),
     kind: z.literal("community"),
     access: z.literal("public"),
@@ -79,7 +79,10 @@ const coverageSource = z
     url: publicHttpUrl,
     note: z.string().min(1).max(500),
   })
-  .strict()
+  .strict();
+
+const legacyCoverageSource = reviewedCoverageSource
+  .extend({ id: z.enum(coverageSourceIds) })
   .superRefine((source, context) => {
     const expected = coverageSourceIdentity[source.id];
     if (source.name !== expected.name) {
@@ -98,15 +101,26 @@ const coverageSource = z
     }
   });
 
-export const publicStudyCoverageSchema = z
+const coverageEnvelope = z
   .object({
-    schemaVersion: z.literal("1.0.0"),
     period: z.object({ start: isoDate, end: isoDate }).strict(),
     countries: z.array(coverageCountry).max(249),
     sets: z.array(coverageSet).max(100),
-    sources: z.array(coverageSource).length(3),
   })
-  .strict()
+  .strict();
+
+const publicStudyCoverageV1Schema = coverageEnvelope.extend({
+  schemaVersion: z.literal("1.0.0"),
+  sources: z.array(legacyCoverageSource).length(3),
+});
+
+const publicStudyCoverageV2Schema = coverageEnvelope.extend({
+  schemaVersion: z.literal("2.0.0"),
+  sources: z.array(reviewedCoverageSource).min(1).max(100),
+});
+
+export const publicStudyCoverageSchema = z
+  .union([publicStudyCoverageV1Schema, publicStudyCoverageV2Schema])
   .superRefine((value, context) => {
     if (value.period.start > value.period.end) {
       context.addIssue({
@@ -160,15 +174,21 @@ function mergeCountry(
   current: CountryMapCell | undefined,
   coverage: PublicStudyCoverage["countries"][number],
   period: PublicStudyCoverage["period"],
+  replaceWithAuthoritativeCoverage: boolean,
 ): CountryMapCell {
   // The aggregate publisher owns every inference field and its matching
   // denominator. Coverage-only evidence may populate a missing/withheld row,
   // but it must never rewrite an already-published aggregate.
   if (current !== undefined && current.hitRate !== null) return current;
-  const packsObserved = (current?.packsObserved ?? 0) + coverage.packsObserved;
-  const openings = (current?.openings ?? 0) + coverage.openings;
-  const independentSources =
-    (current?.independentSources ?? 0) + coverage.independentSources;
+  const packsObserved = replaceWithAuthoritativeCoverage
+    ? coverage.packsObserved
+    : (current?.packsObserved ?? 0) + coverage.packsObserved;
+  const openings = replaceWithAuthoritativeCoverage
+    ? coverage.openings
+    : (current?.openings ?? 0) + coverage.openings;
+  const independentSources = replaceWithAuthoritativeCoverage
+    ? coverage.independentSources
+    : (current?.independentSources ?? 0) + coverage.independentSources;
   return {
     countryCode: coverage.countryCode,
     countryName: current?.countryName ?? coverage.countryName,
@@ -196,12 +216,18 @@ function mergeCountry(
 function mergeSet(
   current: SetMetric | undefined,
   coverage: PublicStudyCoverage["sets"][number],
+  replaceWithAuthoritativeCoverage: boolean,
 ): SetMetric {
   if (current !== undefined && current.hitRate !== null) return current;
-  const packsObserved = (current?.packsObserved ?? 0) + coverage.packsObserved;
-  const openings = (current?.openings ?? 0) + coverage.openings;
-  const independentSources =
-    (current?.independentSources ?? 0) + coverage.independentSources;
+  const packsObserved = replaceWithAuthoritativeCoverage
+    ? coverage.packsObserved
+    : (current?.packsObserved ?? 0) + coverage.packsObserved;
+  const openings = replaceWithAuthoritativeCoverage
+    ? coverage.openings
+    : (current?.openings ?? 0) + coverage.openings;
+  const independentSources = replaceWithAuthoritativeCoverage
+    ? coverage.independentSources
+    : (current?.independentSources ?? 0) + coverage.independentSources;
   return {
     slug: coverage.slug,
     name: current?.name ?? coverage.name,
@@ -232,6 +258,7 @@ export function mergePublicStudyCoverage(
 
   const base = snapshotResult.data;
   const coverage = coverageResult.data;
+  const replaceWithAuthoritativeCoverage = coverage.schemaVersion === "2.0.0";
   if (
     base.observations.period !== null &&
     (base.observations.period.start !== coverage.period.start ||
@@ -239,17 +266,25 @@ export function mergePublicStudyCoverage(
   ) {
     return snapshot;
   }
-  const baseSourceIds = new Set(base.sources.map((source) => source.id));
-  if (coverage.sources.some((source) => baseSourceIds.has(source.id))) {
-    return snapshot;
-  }
-
   const sourceById = new Map<string, PublicSource>(
     base.sources.map((source) => [source.id, source]),
   );
-  for (const source of coverage.sources) sourceById.set(source.id, source);
+  for (const source of coverage.sources) {
+    const current = sourceById.get(source.id);
+    if (
+      current !== undefined &&
+      (!replaceWithAuthoritativeCoverage ||
+        current.name !== source.name ||
+        current.kind !== source.kind ||
+        current.access !== source.access ||
+        current.url !== source.url)
+    ) {
+      return snapshot;
+    }
+    sourceById.set(source.id, source);
+  }
 
-  if (coverage.countries.length === 0) {
+  if (coverage.countries.length === 0 && !replaceWithAuthoritativeCoverage) {
     return { ...base, sources: [...sourceById.values()] } satisfies PublicDashboardData;
   }
 
@@ -259,7 +294,12 @@ export function mergePublicStudyCoverage(
   for (const row of coverage.countries) {
     countryByCode.set(
       row.countryCode,
-      mergeCountry(countryByCode.get(row.countryCode), row, coverage.period),
+      mergeCountry(
+        countryByCode.get(row.countryCode),
+        row,
+        coverage.period,
+        replaceWithAuthoritativeCoverage,
+      ),
     );
   }
   const mapCells = [...countryByCode.values()].sort(
@@ -270,7 +310,10 @@ export function mergePublicStudyCoverage(
 
   const setBySlug = new Map<string, SetMetric>(base.sets.map((set) => [set.slug, set]));
   for (const row of coverage.sets) {
-    setBySlug.set(row.slug, mergeSet(setBySlug.get(row.slug), row));
+    setBySlug.set(
+      row.slug,
+      mergeSet(setBySlug.get(row.slug), row, replaceWithAuthoritativeCoverage),
+    );
   }
   const sets = [...setBySlug.values()].sort(
     (left, right) =>

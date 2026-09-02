@@ -79,12 +79,13 @@ countries without a reviewed observation remain neutral.
 
 Reviewed public-study inputs use publisher country as a coarse Tier-B geography
 basis. They do not assert the physical opening location and must not be shown
-as city/store evidence. The current reviewed denominator set includes US, GB,
-and SG publisher-country observations, with the Singapore study covering 54
-packs from nine booster bundles. Each country has only one independent source,
-so all observed-rate, baseline, posterior, interval, delta, and numerator
-fields remain private or null in the public response. Counts may be shown only
-as collecting evidence.
+as city/store evidence. The current reviewed registry spans five studies across
+US, GB, and SG publisher-country observations: 91 verified packs from two
+independent domains in the United States, 107 from two in the United Kingdom,
+and 54 from one in Singapore. All three countries remain below the three-domain
+inference gate, so observed-rate, baseline, posterior, interval, delta, and
+numerator fields remain private or null in the public response. Counts may be
+shown only as verified coverage, never as a rate.
 
 ## Reproducibility
 

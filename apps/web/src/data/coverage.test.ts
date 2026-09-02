@@ -38,6 +38,30 @@ const sources = [
   },
 ];
 
+const registrySources = [
+  {
+    id: "comicbook_perfect_order_study",
+    name: "ComicBook Perfect Order study",
+    kind: "community" as const,
+    access: "public" as const,
+    status: "operational" as const,
+    lastCollectedAt: collectedAt,
+    url: "https://comicbook.com/gaming/feature/pokemon-tcg-perfect-order-pull-rates-ex-illustration-rares-estimates",
+    note: "Reviewed 55-pack public study attributed to the United States.",
+  },
+  {
+    id: "wargamer_chaos_rising_study",
+    name: "Wargamer Chaos Rising study",
+    kind: "community" as const,
+    access: "public" as const,
+    status: "operational" as const,
+    lastCollectedAt: collectedAt,
+    url: "https://www.wargamer.com/pokemon-trading-card-game/chaos-rising-preview",
+    note: "Reviewed 17-pack public study attributed to the United Kingdom.",
+  },
+  ...sources,
+];
+
 function validCoveragePayload() {
   return {
     schemaVersion: "1.0.0",
@@ -65,6 +89,24 @@ function validCoveragePayload() {
       },
     ],
     sources,
+  };
+}
+
+function validRegistryCoveragePayload() {
+  return {
+    ...validCoveragePayload(),
+    schemaVersion: "2.0.0" as const,
+    countries: [
+      {
+        countryCode: "BR",
+        countryName: "Brazil",
+        packsObserved: 91,
+        openings: 2,
+        independentSources: 2,
+        updatedAt: collectedAt,
+      },
+    ],
+    sources: registrySources,
   };
 }
 
@@ -137,6 +179,47 @@ describe("reviewed public-study coverage merge", () => {
       deltaFromBaseline: null,
       state: "pending",
     });
+  });
+
+  it("uses the registry projection as the authoritative denominator instead of double counting", () => {
+    const original = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "BR");
+    expect(original?.hitRate).toBeNull();
+
+    const parsed = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(DEMO_PUBLIC_DATA, validRegistryCoveragePayload()),
+    );
+    expect(parsed.mapCells.find((cell) => cell.countryCode === "BR")).toMatchObject({
+      packsObserved: 91,
+      openings: 2,
+      independentSources: 2,
+      hitRate: null,
+      state: "insufficient",
+    });
+    expect(parsed.sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "comicbook_perfect_order_study" }),
+        expect.objectContaining({ id: "tcgtalk_perfect_order_study" }),
+      ]),
+    );
+  });
+
+  it("allows an exact reviewed source identity to replace its legacy source health row", () => {
+    const payload = validRegistryCoveragePayload();
+    const collidingBase = {
+      ...DEMO_PUBLIC_DATA,
+      sources: [
+        ...DEMO_PUBLIC_DATA.sources.filter((source) => source.id !== "tcgdex"),
+        registrySources[0]!,
+      ],
+    };
+
+    const merged = mergePublicStudyCoverage(collidingBase, payload);
+    expect(merged).not.toBe(collidingBase);
+    expect(publicDashboardDataSchema.parse(merged).sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ id: "comicbook_perfect_order_study" }),
+      ]),
+    );
   });
 
   it("ignores malformed or mismatched-period coverage without destabilizing v3", () => {
