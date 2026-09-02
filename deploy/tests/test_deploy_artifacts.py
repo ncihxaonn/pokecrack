@@ -187,7 +187,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertNotIn("SUPABASE_DB_URL", workflow)
         self.assertIn("SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}", workflow)
-        self.assertIn("SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}", workflow)
+        self.assertIn("SUPABASE_PROJECT_REF: wohnphsxlquhhknuthrj", workflow)
         self.assertIn("scripts/run_supabase_migrations.py list", workflow)
         self.assertIn("scripts/run_supabase_migrations.py preview", workflow)
         self.assertIn("scripts/run_supabase_migrations.py apply", workflow)
