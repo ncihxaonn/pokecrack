@@ -35,6 +35,8 @@ SCHEMA_VERSION = "1.0.0"
 SUBMITTER_ROLE = "pokecrack_authorized_opening_submitter"
 SUBMITTER_LOGIN = "pokecrack_authorized_opening_submitter_login"
 REVIEWER_ROLE = "pokecrack_authorized_opening_reviewer"
+# Retain the conventional name for compatibility; reviewer connections use
+# the owner-provisioned login attestation below instead of this literal.
 REVIEWER_LOGIN = "pokecrack_authorized_opening_reviewer_login"
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
@@ -43,6 +45,24 @@ _COUNTRY = re.compile(r"^[A-Z]{2}$")
 _LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$")
 _SET_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$")
 _UTC_SECONDS = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
+# The envelope has no URL-bearing fields.  Reject URI schemes and network-path
+# references anywhere in free-form strings, including the percent-encoded
+# forms commonly used to smuggle ``https://`` through a text field.  Error
+# messages name only the field so an untrusted value is never echoed.
+_URL_OR_URI = re.compile(
+    r"(?i)(?:(?<![A-Za-z0-9+.-])[A-Za-z][A-Za-z0-9+.-]{0,31}:|//|%3a(?:%2f){0,2}|%2f%2f)"
+)
+_LOGIN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,62}$")
+_RESERVED_LOGINS = frozenset(
+    {
+        "anon",
+        "authenticated",
+        "postgres",
+        "pokecrack_authorized_opening_reviewer",
+        "pokecrack_authorized_opening_submitter",
+        "service_role",
+    }
+)
 _SUPPORTED_SSL_MODES = frozenset({"require", "verify-ca", "verify-full"})
 _SUPPORTED_DSN_OPTIONS = frozenset(
     {
@@ -139,6 +159,13 @@ def _has_control_characters(value: str) -> bool:
     return any(unicodedata.category(character) == "Cc" for character in value)
 
 
+def _reject_url_or_uri(value: str, field_name: str) -> None:
+    """Reject URL/URI syntax without including the raw value in an error."""
+
+    if _URL_OR_URI.search(value) is not None:
+        _operator_error("invalid_envelope", f"{field_name} cannot contain a URL or URI")
+
+
 def _canonical_text(value: str, *, max_length: int, field_name: str) -> str:
     if not value or len(value) > max_length:
         _operator_error("invalid_envelope", f"{field_name} is not canonical")
@@ -194,6 +221,26 @@ class AuthorizedOpeningEnvelope(BaseModel):
 
     @model_validator(mode="after")
     def validate_canonical_contract(self) -> AuthorizedOpeningEnvelope:
+        for field_name, value in (
+            ("schemaVersion", self.schema_version),
+            ("submissionKey", self.submission_key),
+            ("discoveryPlatform", self.discovery_platform),
+            ("discoveryCandidateSha256", self.discovery_candidate_sha256),
+            ("sourceIdentitySha256", self.source_identity_sha256),
+            ("authorizationReferenceSha256", self.authorization_reference_sha256),
+            ("evidenceSha256", self.evidence_sha256),
+            ("provenanceDedupeSha256", self.provenance_dedupe_sha256),
+            ("countryCode", self.country_code),
+            ("countryName", self.country_name),
+            ("geographyBasis", self.geography_basis),
+            ("geographyConfidence", self.geography_confidence),
+            ("language", self.language),
+            ("tcgdexSetId", self.tcgdex_set_id),
+            ("productScope", self.product_scope),
+            ("observedAt", self.observed_at),
+        ):
+            if value is not None:
+                _reject_url_or_uri(value, field_name)
         if _KEY.fullmatch(self.submission_key) is None:
             _operator_error("invalid_envelope", "submissionKey is not canonical")
         for name, value in (
@@ -337,7 +384,7 @@ def _fixed_role_dsn(
     dsn: str,
     *,
     environment_name: str,
-    expected_login: str,
+    expected_login: str | None,
     expected_role: str,
 ) -> str:
     """Validate a dedicated TLS DSN and pin its session role option."""
@@ -350,9 +397,13 @@ def _fixed_role_dsn(
             or not parts.netloc
             or not parts.hostname
             or parts.fragment
-            or username != expected_login
             or not parts.password
         ):
+            raise ValueError
+        if expected_login is not None:
+            if username != expected_login:
+                raise ValueError
+        elif _LOGIN.fullmatch(username) is None or username.casefold() in _RESERVED_LOGINS:
             raise ValueError
         query = parse_qsl(
             parts.query,
@@ -398,7 +449,11 @@ def _operator_dsn(config: AuthorizedOpeningOperatorSettings, *, reviewer: bool) 
     if reviewer:
         configured = config.authorized_opening_reviewer_db_url
         environment_name = "AUTHORIZED_OPENING_REVIEWER_DB_URL"
-        expected_login = REVIEWER_LOGIN
+        # The reviewed migration deliberately permits one owner-provisioned
+        # reviewer login without fixing its username.  The connection is
+        # attested after connect, so this remains a capability check rather
+        # than a username allowlist.
+        expected_login = None
         expected_role = REVIEWER_ROLE
     else:
         configured = config.authorized_opening_submitter_db_url
@@ -430,6 +485,7 @@ class ReviewResult:
     submission_id: UUID
     revision: int
     state: str
+    accepted_observation_id: UUID | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -447,7 +503,7 @@ class ReviewQueueItem:
 
 SUBMIT_AUTHORIZED_OPENING_SQL = """
 select submission_id, revision, state
-from ingest.submit_authorized_opening_v1(%(payload)s::jsonb)
+from ingest.submit_authorized_opening_direct_v1(%(payload)s::jsonb)
 """
 LIST_AUTHORIZED_OPENING_REVIEWS_SQL = """
 select submission_id, revision, state
@@ -471,6 +527,48 @@ from ingest.retract_authorized_opening_v1(
   %(requested_reason_code)s
 )
 """
+REVIEWER_CONNECTION_ATTESTATION_SQL = """
+select
+  current_user::text = 'pokecrack_authorized_opening_reviewer' as capability_active,
+  (
+    pg_catalog.pg_has_role(
+      session_user,
+      'pokecrack_authorized_opening_reviewer',
+      'member'
+    )
+    and exists (
+      select 1
+      from pg_catalog.pg_auth_members as membership
+      join pg_catalog.pg_roles as login
+        on login.oid = membership.member
+      where login.rolname = session_user
+        and membership.roleid = 'pokecrack_authorized_opening_reviewer'::regrole
+        and not membership.admin_option
+        and not membership.inherit_option
+        and membership.set_option
+        and not exists (
+          select 1
+          from pg_catalog.pg_auth_members as other_membership
+          where other_membership.member = membership.member
+            and other_membership.roleid <> membership.roleid
+        )
+    )
+  ) as capability_membership,
+  exists (
+    select 1
+    from pg_catalog.pg_roles as login
+    where login.rolname = session_user
+      and login.rolcanlogin
+      and not login.rolinherit
+      and not login.rolsuper
+      and not login.rolcreatedb
+      and not login.rolcreaterole
+      and not login.rolreplication
+      and not login.rolbypassrls
+      and login.rolconnlimit = 2
+      and login.rolconfig is null
+  ) as login_contract
+"""
 
 
 def _uuid(value: object) -> UUID:
@@ -482,6 +580,12 @@ def _uuid(value: object) -> UUID:
         return UUID(value)
     except ValueError:
         _operator_error("database_protocol_error", "the database returned an unsafe result")
+
+
+def _optional_uuid(value: object) -> UUID | None:
+    if value is None:
+        return None
+    return _uuid(value)
 
 
 def _positive_revision(value: object) -> int:
@@ -520,6 +624,33 @@ class AuthorizedOpeningRpcClient:
         except Exception as error:
             del error
             _operator_error("database_unavailable", "the authorized-opening database call failed")
+
+    def attest_reviewer_connection(self) -> None:
+        """Require the connected login to hold only the reviewed role shape."""
+
+        try:
+            rows = self._executor.query(REVIEWER_CONNECTION_ATTESTATION_SQL, {})
+        except Exception as error:
+            del error
+            _operator_error(
+                "invalid_configuration",
+                "the reviewer database connection could not be attested",
+            )
+        if len(rows) != 1:
+            _operator_error(
+                "invalid_configuration",
+                "the reviewer database connection could not be attested",
+            )
+        row = rows[0]
+        if (
+            row.get("capability_active") is not True
+            or row.get("capability_membership") is not True
+            or row.get("login_contract") is not True
+        ):
+            _operator_error(
+                "invalid_configuration",
+                "the reviewer database connection is not an attested dedicated login",
+            )
 
     @staticmethod
     def _submission_result(row: Mapping[str, Any]) -> SubmissionResult:
@@ -580,7 +711,17 @@ class AuthorizedOpeningRpcClient:
         if len(rows) != 1:
             _operator_error("database_protocol_error", "the database returned an unsafe result")
         result = self._submission_result(rows[0])
-        return ReviewResult(result.submission_id, result.revision, result.state)
+        accepted_observation_id = _optional_uuid(rows[0].get("accepted_observation_id"))
+        if result.state == "accepted_statistics" and accepted_observation_id is None:
+            _operator_error("database_protocol_error", "the database returned an unsafe result")
+        if result.state != "accepted_statistics" and accepted_observation_id is not None:
+            _operator_error("database_protocol_error", "the database returned an unsafe result")
+        return ReviewResult(
+            result.submission_id,
+            result.revision,
+            result.state,
+            accepted_observation_id,
+        )
 
     def retract(
         self,
@@ -616,7 +757,12 @@ def build_operator_client(*, reviewer: bool) -> AuthorizedOpeningRpcClient:
         )
     dsn = _operator_dsn(config, reviewer=reviewer)
     try:
-        return AuthorizedOpeningRpcClient(PsycopgQueryExecutor.from_dsn(dsn))
+        client = AuthorizedOpeningRpcClient(PsycopgQueryExecutor.from_dsn(dsn))
+        if reviewer:
+            client.attest_reviewer_connection()
+        return client
+    except AuthorizedOpeningOperatorError:
+        raise
     except Exception as error:
         del error
         _operator_error(
@@ -705,11 +851,14 @@ def validate_retraction_request(reason_code: str) -> RetractionReason:
 def safe_submission_payload(result: SubmissionResult | ReviewResult) -> dict[str, object]:
     revision = _positive_revision(result.revision)
     state = _safe_state(result.state)
-    return {
+    payload: dict[str, object] = {
         "submission_id": str(result.submission_id),
         "revision": revision,
         "state": state,
     }
+    if isinstance(result, ReviewResult) and result.accepted_observation_id is not None:
+        payload["accepted_observation_id"] = str(_uuid(result.accepted_observation_id))
+    return payload
 
 
 def safe_review_queue_payload(items: Sequence[ReviewQueueItem]) -> dict[str, object]:
@@ -742,6 +891,7 @@ __all__ = [
     "ENVELOPE_FILE_MODE",
     "LIST_AUTHORIZED_OPENING_REVIEWS_SQL",
     "MAX_ENVELOPE_BYTES",
+    "REVIEWER_CONNECTION_ATTESTATION_SQL",
     "RETRACT_AUTHORIZED_OPENING_SQL",
     "REVIEW_AUTHORIZED_OPENING_SQL",
     "SUBMIT_AUTHORIZED_OPENING_SQL",

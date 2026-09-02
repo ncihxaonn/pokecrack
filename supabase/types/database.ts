@@ -3470,6 +3470,10 @@ export type Database = {
         Args: { payload: Json };
         Returns: { submission_id: string; revision: number; state: string }[];
       };
+      submit_authorized_opening_direct_v1: {
+        Args: { payload: Json };
+        Returns: { submission_id: string; revision: number; state: string }[];
+      };
       list_authorized_opening_reviews_v1: {
         Args: { requested_state: string; requested_limit: number };
         Returns: {

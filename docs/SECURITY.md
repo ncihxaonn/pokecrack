@@ -22,13 +22,18 @@ Store production env/noVNC files outside Git at mode `0600`. Prefer scoped, sepa
 
 The authorized-opening operator uses two additional mode-`0600` environment
 values outside the repository: `AUTHORIZED_OPENING_SUBMITTER_DB_URL` and
-`AUTHORIZED_OPENING_REVIEWER_DB_URL`. They must use the named NOINHERIT logins
-and fixed `options=-c role=...` settings; the CLI never falls back to a
-generic database URL or service-role key. Owner evidence-envelopes are also
-mode `0600` regular files, are bounded to 16 KiB, rejected when social-derived
-or URL-bearing, and are not persisted after the typed RPC call. Operator
-output contains only safe IDs/state/revision (plus a safe retraction reason);
-opaque references, raw evidence and connection details are never logged.
+`AUTHORIZED_OPENING_REVIEWER_DB_URL`. The submitter uses the named NOINHERIT
+login; the reviewer may use the one owner-provisioned reviewed NOINHERIT login,
+which the CLI attests after connecting. Both DSNs require fixed
+`options=-c role=...` settings; the CLI never falls back to a generic database
+URL or service-role key. The submitter role can call only the direct-only
+wrapper, while the historical broad submit RPC remains service-role-only.
+Owner evidence-envelopes are mode `0600` regular files, bounded to 16 KiB,
+rejected when social-derived or URL/URI-bearing in every string field, and not
+persisted after the typed RPC call. Operator output contains only safe
+IDs/state/revision, plus the accepted observation UUID and a safe retraction
+reason; opaque references, raw evidence and connection details are never
+logged.
 
 ## Browser/account boundary
 

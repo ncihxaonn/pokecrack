@@ -23,16 +23,21 @@ AUTHORIZED_OPENING_SUBMITTER_DB_URL=postgresql://...
 AUTHORIZED_OPENING_REVIEWER_DB_URL=postgresql://...
 ```
 
-The CLI never falls back to `SUPABASE_DB_URL` or a service-role key. Each URL
-must use its named `NOINHERIT` login and TLS (`sslmode=require`, `verify-ca`,
-or `verify-full`) and must pin the corresponding role with exactly
+The CLI never falls back to `SUPABASE_DB_URL` or a service-role key. The
+submitter URL must use the named `NOINHERIT` login
+`pokecrack_authorized_opening_submitter_login`. The reviewer URL may use the
+one owner-provisioned reviewed `NOINHERIT` login selected for the deployment;
+the CLI attests that login after connecting. Both URLs require TLS
+(`sslmode=require`, `verify-ca`, or `verify-full`) and must pin the
+corresponding role with exactly
 `options=-c role=pokecrack_authorized_opening_submitter` or
 `options=-c role=pokecrack_authorized_opening_reviewer`. Do not put either URL
 in command arguments, shell history, logs, Git, or chat.
 
 The migration creates the `NOLOGIN NOINHERIT` capability role and grants only
-the reviewed RPC. An account owner may provision one separate login outside
-the migration. The login must itself be `NOINHERIT`, non-superuser,
+the direct-only submit wrapper. An account owner may provision one separate
+reviewer login outside the migration; its username is intentionally not a
+security allowlist. The login must itself be `NOINHERIT`, non-superuser,
 non-`CREATEROLE`, non-`CREATEDB`, non-replication, `NOBYPASSRLS`, connection
 limit `2`, and must receive the capability only through a non-admin membership
 with `INHERIT FALSE, SET TRUE`. Generate and rotate its password out of band.
@@ -60,9 +65,12 @@ rmdir "$work_dir"
 ```
 
 On success the only returned fields are `submission_id`, `revision`, and
-`state`. A malformed, non-private, social-derived, or unauthorized envelope
-fails before any database call. Database and protocol failures are reduced to
-safe error codes; the CLI never prints the input path, DSN, password, opaque
+`state`. URL/URI syntax is rejected in every string field before any database
+call, and malformed, non-private, social-derived, or unauthorized envelopes
+fail closed. The submitter role reaches a database direct-only wrapper
+(`ingest.submit_authorized_opening_direct_v1`) and cannot call the historical
+service-role submit RPC directly. Database and protocol failures are reduced
+to safe error codes; the CLI never prints the input path, DSN, password, opaque
 hash, or evidence.
 
 ## Review and retract
@@ -93,6 +101,12 @@ shape checks and calls the typed RPCs; it never writes an ingest table. A
 reviewer must independently verify authorization, evidence completeness,
 geography, and denominator before choosing an acceptance state. There is no
 auto-approval path.
+
+An accepted-statistics review also returns the safe canonical
+`accepted_observation_id` UUID. Copy that UUID to the retract command when a
+later takedown is required. This identifier is the only observation detail
+returned; reviewer references, evidence hashes, and raw evidence remain
+redacted.
 
 The retraction result contains only the accepted observation UUID, safe reason
 code, and a `retracted` state. It does not reveal references or evidence.

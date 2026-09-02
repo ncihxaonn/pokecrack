@@ -94,6 +94,11 @@ select ok(
 select ok(
   has_function_privilege(
     'pokecrack_authorized_opening_submitter',
+    'ingest.submit_authorized_opening_direct_v1(jsonb)'::regprocedure,
+    'execute'
+  )
+  and not has_function_privilege(
+    'pokecrack_authorized_opening_submitter',
     'ingest.submit_authorized_opening_v1(jsonb)'::regprocedure,
     'execute'
   )
@@ -122,7 +127,7 @@ select ok(
     'ingest.submit_authorized_opening_v1(jsonb)'::regprocedure,
     'execute'
   ),
-  'submitter capability can execute only the exact submit RPC, never reviewer RPCs'
+  'submitter capability can execute only the direct-only submit RPC, never the historical or reviewer RPCs'
 );
 
 select ok(
