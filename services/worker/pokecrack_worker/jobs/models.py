@@ -520,6 +520,24 @@ class BlueskyJetstreamCompletion:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class BlueskyCursorRecoveryCompletion:
+    """Fenced acknowledgement that Jetstream rejected one stale checkpoint.
+
+    This is deliberately not a generic cursor mutation.  The database RPC
+    verifies the active job lease, request-gate ownership, exact policy, and
+    the expected non-null checkpoint before clearing it.  No activity rows or
+    counters are included here, so a recovery can never overwrite collection
+    data.
+    """
+
+    start_cursor: int | str
+
+    def __post_init__(self) -> None:
+        parsed = _bluesky_cursor(self.start_cursor, field="start_cursor")
+        object.__setattr__(self, "start_cursor", parsed)
+
+
 # Short aliases keep collector and repository call sites readable while the
 # persisted DTO names remain explicit about their source boundary.
 BlueskyCandidateWrite = BlueskySourceItemWrite

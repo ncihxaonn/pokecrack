@@ -61,6 +61,9 @@ MASTODON_RUNTIME_FINALIZER_HOTFIX = (
 SOCIAL_ACTIVITY_PULSE_V4 = (
     ROOT / "migrations/20260913000000_social_activity_pulse_v4.sql"
 ).read_text()
+BLUESKY_CURSOR_RECOVERY = (
+    ROOT / "migrations/20260914000000_bluesky_cursor_recovery.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -1099,6 +1102,52 @@ class IngestMigrationContractTests(unittest.TestCase):
         )
         self.assertNotIn("drop table", lowered)
         self.assertNotIn("truncate", lowered)
+
+    def test_bluesky_cursor_recovery_is_fenced_audited_and_non_destructive(self) -> None:
+        lowered = BLUESKY_CURSOR_RECOVERY.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn(
+            "create or replace function ingest.recover_bluesky_cursor_too_old_job_v1",
+            lowered,
+        )
+        recovery = lowered.split(
+            "create or replace function ingest.recover_bluesky_cursor_too_old_job_v1",
+            1,
+        )[1].split(
+            "alter function ingest.recover_bluesky_cursor_too_old_job_v1",
+            1,
+        )[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "for update of jobs",
+            "pg_advisory_xact_lock",
+            "request_gate.owner_job_id is distinct from job_id",
+            "checkpoint.last_cursor is distinct from expected_start_cursor",
+            "checkpoint.last_collected_at > recovery_time - interval '15 minutes'",
+            "set last_cursor = null",
+            "insert into ingest.admin_audit_log",
+            "'bluesky.cursor_reset'",
+            "'previous_cursor_present', true",
+            "'preserved_counters', true",
+            "'preserved_activity_rows', true",
+            "set status = 'completed'",
+        ):
+            self.assertIn(fragment, recovery)
+        self.assertNotIn("delete from ingest.bluesky_jetstream", recovery)
+        self.assertNotIn("events_seen_total = 0", recovery)
+        self.assertNotIn("last_collected_at = recovery_time", recovery)
+        self.assertIn(
+            "revoke all on function ingest.recover_bluesky_cursor_too_old_job_v1(uuid, text, bigint, bigint) from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function ingest.recover_bluesky_cursor_too_old_job_v1(uuid, text, bigint, bigint) to service_role",
+            compact,
+        )
+        self.assertIn("recover_bluesky_cursor_too_old_job_v1", DATABASE_TYPES)
 
     def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()
