@@ -46,7 +46,7 @@ as $$
           "operations":["create","update","delete"],
           "kinds":["commit"],
           "subprotocol":"xrpc.v1.json",
-          "stream_window_seconds":40,
+          "stream_window_seconds":10,
           "max_events":10000,
           "max_message_bytes":262144,
           "max_stream_bytes":2097152,

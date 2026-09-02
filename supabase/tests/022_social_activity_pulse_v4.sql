@@ -42,6 +42,18 @@ select set_eq(
   'only postgres and browser roles can execute public social v4'
 );
 
+select is(
+  (
+    select policies.config ->> 'stream_window_seconds'
+    from ingest.source_policies as policies
+    where policies.source_key = 'bluesky_jetstream'
+      and not policies.is_demo
+    limit 1
+  ),
+  '10',
+  'the v4 fixture uses the current ten-second Bluesky runtime bounds'
+);
+
 update ingest.bluesky_jetstream_checkpoints as checkpoints
 set last_collected_at = statement_timestamp() - interval '1 minute',
     updated_at = statement_timestamp()
