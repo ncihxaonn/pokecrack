@@ -290,7 +290,8 @@ select is(
 -- A missing policy must still produce the fixed source tuple and must not
 -- preserve a count from the private candidate ledger.
 update ingest.source_policies
-set source_key = 'bluesky_jetstream_missing_fixture'
+set source_key = 'bluesky_jetstream_missing_fixture',
+    base_url = 'https://example.invalid/bluesky-jetstream-missing-fixture'
 where source_key = 'bluesky_jetstream';
 set local role anon;
 select set_config(
@@ -300,7 +301,8 @@ select set_config(
 );
 reset role;
 update ingest.source_policies
-set source_key = 'bluesky_jetstream'
+set source_key = 'bluesky_jetstream',
+    base_url = 'wss://jetstream.us-west.bsky.network/xrpc/network.bsky.jetstream.subscribeEvents'
 where source_key = 'bluesky_jetstream_missing_fixture';
 
 select is(

@@ -236,12 +236,17 @@ describe("public social discovery supplement", () => {
         DEMO_PUBLIC_DATA,
       );
     }
+    const mergedCollision = mergePublicSocialDiscovery(collision, {
+      schemaVersion: "3.0.0",
+      sources: [blueskySource, nostrSource, mastodonSource],
+    }) as typeof DEMO_PUBLIC_DATA;
+    expect(mergedCollision).not.toBe(collision);
+    expect(mergedCollision.sources).toEqual(
+      expect.arrayContaining([blueskySource, nostrSource, mastodonSource]),
+    );
     expect(
-      mergePublicSocialDiscovery(collision, {
-        schemaVersion: "3.0.0",
-        sources: [blueskySource, nostrSource, mastodonSource],
-      }),
-    ).toEqual(collision);
+      mergedCollision.sources.filter((source) => source.id === mastodonSource.id),
+    ).toHaveLength(1);
   });
 
   it("rejects v4 fields that could become evidence, identity, or provider payload", () => {
