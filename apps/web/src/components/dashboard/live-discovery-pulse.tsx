@@ -4,20 +4,24 @@ import type { PublicSource } from "@/data/types";
 import { formatDateTime } from "@/lib/format";
 import { SectionHeading } from "@/components/ui/dashboard-ui";
 
-const KNOWN_YOUTUBE_SOURCE_IDS = new Set(["youtube", "youtube_discovery"]);
-const KNOWN_YOUTUBE_SOURCE_NAMES = new Set([
-  "YouTube Data API",
-  "YouTube global discovery",
-]);
-
-function isKnownYouTubeSource(source: PublicSource): boolean {
-  return KNOWN_YOUTUBE_SOURCE_IDS.has(source.id) || KNOWN_YOUTUBE_SOURCE_NAMES.has(source.name);
-}
+const DISCOVERY_SOURCE_CONTRACTS = {
+  youtube: { kind: "video", access: "api-key" },
+  youtube_discovery: { kind: "video", access: "api-key" },
+  bluesky_jetstream: { kind: "social", access: "public" },
+  nostr_multi_relay: { kind: "social", access: "public" },
+  mastodon_public_hashtag: { kind: "social", access: "public" },
+} as const satisfies Record<
+  string,
+  Pick<PublicSource, "kind" | "access">
+>;
 
 export function selectDiscoverySources(sources: readonly PublicSource[]): PublicSource[] {
-  return sources.filter((source) =>
-    (source.kind === "social" && source.access === "public") || isKnownYouTubeSource(source),
-  );
+  return sources.filter((source) => {
+    const contract = DISCOVERY_SOURCE_CONTRACTS[
+      source.id as keyof typeof DISCOVERY_SOURCE_CONTRACTS
+    ];
+    return contract?.kind === source.kind && contract.access === source.access;
+  });
 }
 
 export function LiveDiscoveryPulse({ sources }: { sources: readonly PublicSource[] }) {
