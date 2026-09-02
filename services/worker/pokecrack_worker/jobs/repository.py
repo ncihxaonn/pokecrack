@@ -10,6 +10,7 @@ from typing import Any
 from uuid import uuid4
 
 from .models import (
+    BlueskyCursorRecoveryCompletion,
     BlueskyJetstreamCompletion,
     CompletionEffect,
     Job,
@@ -247,6 +248,7 @@ class InMemoryJobRepository:
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
         | BlueskyJetstreamCompletion
+        | BlueskyCursorRecoveryCompletion
         | NostrRelayCompletion
         | MastodonPublicHashtagCompletion
         | None = None,

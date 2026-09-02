@@ -10,6 +10,7 @@ from typing import Any, Protocol
 from pokecrack_worker.config.public_studies import PUBLIC_STUDY_COVERAGE_KEYS
 
 from .models import (
+    BlueskyCursorRecoveryCompletion,
     BlueskyJetstreamCompletion,
     CompletionEffect,
     Job,
@@ -216,6 +217,16 @@ FROM ingest.finalize_bluesky_jetstream_job(
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint,
     result => %(result)s::jsonb
+)
+""".strip()
+
+RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL = """
+SELECT *
+FROM ingest.recover_bluesky_cursor_too_old_job_v1(
+    job_id => %(job_id)s::uuid,
+    worker_id => %(worker_id)s,
+    lease_generation => %(lease_generation)s::bigint,
+    expected_start_cursor => %(start_cursor)s::bigint
 )
 """.strip()
 
@@ -459,6 +470,7 @@ class PostgresJobRepository:
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
         | BlueskyJetstreamCompletion
+        | BlueskyCursorRecoveryCompletion
         | NostrRelayCompletion
         | MastodonPublicHashtagCompletion
         | None = None,
@@ -497,6 +509,9 @@ class PostgresJobRepository:
             params["result"] = json.dumps(
                 effect.as_payload(), separators=(",", ":"), sort_keys=True
             )
+        elif isinstance(effect, BlueskyCursorRecoveryCompletion):
+            sql = RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL
+            params["start_cursor"] = effect.start_cursor
         elif isinstance(effect, NostrRelayCompletion):
             sql = FINALIZE_NOSTR_RELAY_SQL
             params["result"] = json.dumps(
@@ -638,6 +653,7 @@ class NostrPostgresJobRepository:
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
         | BlueskyJetstreamCompletion
+        | BlueskyCursorRecoveryCompletion
         | NostrRelayCompletion
         | MastodonPublicHashtagCompletion
         | None = None,
@@ -753,6 +769,7 @@ class NostrPostgresJobRepository:
         | TCGdexSetsSyncCompletion
         | YouTubeDiscoveryCompletion
         | BlueskyJetstreamCompletion
+        | BlueskyCursorRecoveryCompletion
         | NostrRelayCompletion
         | MastodonPublicHashtagCompletion
         | None = None,

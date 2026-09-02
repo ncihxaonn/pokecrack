@@ -3093,6 +3093,15 @@ export type Database = {
         Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
+      recover_bluesky_cursor_too_old_job_v1: {
+        Args: {
+          job_id: string;
+          worker_id: string;
+          lease_generation: number;
+          expected_start_cursor: number;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       finalize_public_study_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];

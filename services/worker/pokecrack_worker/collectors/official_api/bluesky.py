@@ -215,7 +215,7 @@ def _error_from_payload(payload: Mapping[str, Any]) -> None:
         raise BlueskyCursorTooOldError()
 
 
-def _is_cursor_too_old_handshake(error: InvalidStatus) -> bool:
+def _is_cursor_too_old_handshake(error: BaseException) -> bool:
     """Recognize only Jetstream's structured stale-cursor HTTP rejection.
 
     Jetstream v2 rejects a cursor below its replay floor before upgrading the
@@ -225,14 +225,23 @@ def _is_cursor_too_old_handshake(error: InvalidStatus) -> bool:
     outages, so require the exact documented status and XRPC error name.
     """
 
-    response = error.response
-    if response.status_code != 400:
-        return False
-    body = response.body
-    if not isinstance(body, bytes) or not 1 <= len(body) <= BLUESKY_MAX_MESSAGE_BYTES:
+    try:
+        response = getattr(error, "response", None)
+        if getattr(response, "status_code", None) != 400:
+            return False
+        body = getattr(response, "body", None)
+        if not isinstance(body, (bytes, bytearray, memoryview)):
+            return False
+        body_length = body.nbytes if isinstance(body, memoryview) else len(body)
+        if not 1 <= body_length <= BLUESKY_MAX_MESSAGE_BYTES:
+            return False
+        payload = bytes(body)
+    except Exception:
+        # Attribute adapters are supplied by the WebSocket library.  A broken
+        # adapter is never enough evidence to clear a durable checkpoint.
         return False
     try:
-        decoded: object = json.loads(body.decode("utf-8"))
+        decoded: object = json.loads(payload.decode("utf-8"))
     except (UnicodeDecodeError, json.JSONDecodeError):
         return False
     return isinstance(decoded, Mapping) and decoded.get("error") == "CursorTooOld"
@@ -543,6 +552,8 @@ class WebsocketsBlueskyJetstreamTransport:
             # Do not expose endpoint/library details or upstream payloads.
             if type(error).__name__ == "ConnectionClosedOK":
                 return tuple(messages)
+            if _is_cursor_too_old_handshake(error):
+                raise BlueskyCursorTooOldError() from None
             raise BlueskyTransportError() from None
         return tuple(messages)
 
