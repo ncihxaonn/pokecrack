@@ -58,6 +58,9 @@ MASTODON_PUBLIC_HEALTH_AGGREGATION = (
 MASTODON_RUNTIME_FINALIZER_HOTFIX = (
     ROOT / "migrations/20260912030000_mastodon_runtime_finalizer_hotfix.sql"
 ).read_text()
+SOCIAL_ACTIVITY_PULSE_V4 = (
+    ROOT / "migrations/20260913000000_social_activity_pulse_v4.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -887,6 +890,127 @@ class IngestMigrationContractTests(unittest.TestCase):
             "grant execute on function public.get_public_social_discovery_v3() to service_role",
             compact,
         )
+
+    def test_social_activity_pulse_v4_is_strict_aggregate_only_and_forward_only(
+        self,
+    ) -> None:
+        migration = SOCIAL_ACTIVITY_PULSE_V4
+        lowered = migration.casefold()
+        compact = " ".join(lowered.split())
+        public_rpc = lowered.split(
+            "create or replace function public.get_public_social_discovery_v4()",
+            1,
+        )[1].split(
+            "alter function public.get_public_social_discovery_v4()",
+            1,
+        )[0]
+
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertEqual(
+            lowered.count("create or replace function public.get_public_social_discovery_v4()"),
+            1,
+        )
+        self.assertNotIn("create table", lowered)
+        self.assertNotIn("alter table", lowered)
+        self.assertNotIn("insert into", lowered)
+        self.assertNotIn("update ingest.", lowered)
+        self.assertNotIn("delete from", lowered)
+        self.assertNotIn("truncate", lowered)
+        self.assertNotIn("drop table", lowered)
+
+        for fragment in (
+            "returns jsonb",
+            "language sql",
+            "security definer",
+            "stable",
+            "parallel safe",
+            "set search_path = pg_catalog",
+            "statement_timestamp() - interval '24 hours'",
+            "first_seen_at >= pulse_clock.window_start",
+            "deleted_at is null",
+            "expires_at > pulse_clock.observed_at",
+            "new_candidates_24h",
+            "retained_candidates",
+            "activityonly",
+            "nonevidence",
+            "'fresh'",
+            "'delayed'",
+            "'attention'",
+            "'paused'",
+            "'operational'",
+            "'bluesky_jetstream'",
+            "'nostr_multi_relay'",
+            "'mastodon_public_hashtag'",
+            "ingest.bluesky_jetstream_candidates",
+            "ingest.nostr_relay_candidates",
+            "ingest.mastodon_public_hashtag_candidates",
+            "ingest.bluesky_jetstream_checkpoints",
+            "ingest.nostr_relay_checkpoints",
+            "ingest.mastodon_public_hashtag_checkpoints",
+        ):
+            self.assertIn(fragment, public_rpc)
+
+        # The v4 guard must match the current live Bluesky runtime bounds. The
+        # historical v1 and forward-migration tests intentionally retain both
+        # predecessor (40s) and replacement (10s) values; this assertion keeps
+        # the public v4 contract on the replacement configuration.
+        self.assertIn('"stream_window_seconds":10', public_rpc)
+        self.assertNotIn('"stream_window_seconds":40', public_rpc)
+
+        for source_name, expected_registered in (
+            ("bluesky", 1),
+            ("nostr", 3),
+            ("mastodon", 1),
+        ):
+            health_body = public_rpc.split(
+                f"{source_name}_health as (", 1
+            )[1].split(f"{source_name}_source as (", 1)[0]
+            compact_health = " ".join(health_body.split())
+            self.assertIn(
+                f"health.registered_count = {expected_registered}",
+                compact_health,
+            )
+            self.assertIn("else 0", compact_health)
+            self.assertNotIn(
+                f"from {source_name}_registered as registered cross join",
+                compact_health,
+            )
+            self.assertNotIn("group by", compact_health)
+
+        public_projection = public_rpc.split("bluesky_source as", 1)[1]
+        for forbidden_key in (
+            "'text'",
+            "'url'",
+            "'uri'",
+            "'id_hash'",
+            "'event_id'",
+            "'status_id'",
+            "'hash'",
+            "'author'",
+            "'tag'",
+            "'cursor'",
+            "'raw_payload'",
+            "'country'",
+            "'pack'",
+            "'rate'",
+        ):
+            self.assertNotIn(forbidden_key, public_projection)
+
+        self.assertIn(
+            "revoke all on function public.get_public_social_discovery_v4() from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_social_discovery_v4() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_social_discovery_v4() to service_role",
+            compact,
+        )
+        for type_name in ("get_public_social_discovery_v4:",):
+            self.assertIn(type_name, DATABASE_TYPES)
 
     def test_mastodon_runtime_finalizer_hotfix_is_forward_only_and_guarded(
         self,

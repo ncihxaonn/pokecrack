@@ -135,6 +135,49 @@ export interface PublicSource {
   readonly note: string;
 }
 
+export type SocialPulseFreshness = "fresh" | "delayed" | "attention" | "paused";
+
+export interface PublicSocialActivitySource {
+  readonly id:
+    | "bluesky_jetstream"
+    | "nostr_multi_relay"
+    | "mastodon_public_hashtag";
+  readonly name:
+    | "Bluesky Jetstream discovery"
+    | "Nostr multi-relay discovery"
+    | "Mastodon public hashtag discovery";
+  readonly kind: "social";
+  readonly access: "public";
+  readonly status: SourceStatus;
+  readonly freshness: SocialPulseFreshness;
+  readonly lastCollectedAt: string | null;
+  readonly newCandidates24h: number;
+  readonly retainedCandidates: number;
+  readonly activityOnly: true;
+  readonly statisticsEligible: false;
+}
+
+export interface PublicSocialActivityPulse {
+  readonly schemaVersion: "4.0.0";
+  readonly window: Readonly<{ start: string; end: string }>;
+  readonly activityOnly: true;
+  readonly nonEvidence: true;
+  readonly sources: readonly [
+    PublicSocialActivitySource & {
+      readonly id: "bluesky_jetstream";
+      readonly name: "Bluesky Jetstream discovery";
+    },
+    PublicSocialActivitySource & {
+      readonly id: "nostr_multi_relay";
+      readonly name: "Nostr multi-relay discovery";
+    },
+    PublicSocialActivitySource & {
+      readonly id: "mastodon_public_hashtag";
+      readonly name: "Mastodon public hashtag discovery";
+    },
+  ];
+}
+
 export interface PublicServiceStatus {
   readonly id: string;
   readonly name: string;
@@ -217,6 +260,7 @@ export interface DashboardData {
   readonly batches: readonly BatchMetric[];
   readonly trend: readonly TrendPoint[];
   readonly sources: readonly PublicSource[];
+  readonly socialActivityPulse?: PublicSocialActivityPulse;
   readonly services: readonly PublicServiceStatus[];
   readonly recentActivity: readonly RecentActivity[];
   readonly admin: {
