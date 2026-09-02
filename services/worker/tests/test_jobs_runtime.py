@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 import json
+import sys
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
+from types import SimpleNamespace
 
 import pytest
 
 from pokecrack_worker.collectors.official_api import PostgresPublicStudyGate
 from pokecrack_worker.db import PsycopgQueryExecutor
+from pokecrack_worker.db.postgres import _is_transient_connection_error
 from pokecrack_worker.deduplication.fingerprints import content_sha256
 from pokecrack_worker.jobs import (
     CompletionEffect,
@@ -752,6 +755,201 @@ def test_psycopg_query_executor_commits_and_returns_mapping_rows() -> None:
 
     assert rows == ({"id": "job-1"},)
     assert "commit" in events
+
+
+def test_psycopg_connection_retry_is_bounded_and_only_wraps_acquisition(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts: list[tuple[str, dict[str, object]]] = []
+    connection = object()
+
+    def connect(dsn: str, **kwargs: object) -> object:
+        attempts.append((dsn, kwargs))
+        if len(attempts) < 2:
+            raise ConnectionError("connection timed out")
+        return connection
+
+    monkeypatch.setitem(sys.modules, "psycopg", SimpleNamespace(connect=connect))
+    monkeypatch.setattr("pokecrack_worker.db.postgres.time.sleep", lambda _seconds: None)
+
+    executor = PsycopgQueryExecutor.from_dsn(
+        "postgresql://worker:fixture-secret@db.example.invalid/pokecrack",
+        retry_connection=True,
+    )
+
+    assert executor._connection_factory() is connection
+    assert attempts == [
+        (
+            "postgresql://worker:fixture-secret@db.example.invalid/pokecrack",
+            {"connect_timeout": 10},
+        ),
+        (
+            "postgresql://worker:fixture-secret@db.example.invalid/pokecrack",
+            {"connect_timeout": 10},
+        ),
+    ]
+
+
+def test_psycopg_connection_retry_runs_one_statement_and_commit_after_reconnect(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    connect_attempts = 0
+    events: list[object] = []
+
+    class Cursor:
+        description = object()
+
+        def __enter__(self) -> Cursor:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def execute(self, sql: str, params: object) -> None:
+            events.append((sql, params))
+
+        def fetchall(self) -> list[dict[str, object]]:
+            return [{"ok": True}]
+
+    class Connection:
+        def __enter__(self) -> Connection:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def cursor(self, *, row_factory: object = None) -> Cursor:
+            events.append(("row_factory", row_factory))
+            return Cursor()
+
+        def commit(self) -> None:
+            events.append("commit")
+
+    def connect(_dsn: str, **_kwargs: object) -> Connection:
+        nonlocal connect_attempts
+        connect_attempts += 1
+        if connect_attempts == 1:
+            raise ConnectionError("connection timed out")
+        return Connection()
+
+    monkeypatch.setitem(sys.modules, "psycopg", SimpleNamespace(connect=connect))
+    monkeypatch.setattr("pokecrack_worker.db.postgres.time.sleep", lambda _seconds: None)
+    executor = PsycopgQueryExecutor.from_dsn(
+        "postgresql://worker:fixture-secret@db.example.invalid/pokecrack",
+        retry_connection=True,
+    )
+
+    assert executor.query("SELECT %(value)s", {"value": 1}) == ({"ok": True},)
+    assert connect_attempts == 2
+    assert sum(isinstance(event, tuple) and event[0] == "SELECT %(value)s" for event in events) == 1
+    assert events.count("commit") == 1
+
+
+@pytest.mark.parametrize("failure_phase", ("statement", "commit"))
+def test_psycopg_connection_retry_never_retries_statement_or_commit(
+    monkeypatch: pytest.MonkeyPatch,
+    failure_phase: str,
+) -> None:
+    connect_attempts = 0
+
+    class Cursor:
+        description = object()
+
+        def __enter__(self) -> Cursor:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def execute(self, _sql: str, _params: object) -> None:
+            if failure_phase == "statement":
+                raise ConnectionError("connection timed out")
+
+        def fetchall(self) -> list[dict[str, object]]:
+            return [{"ok": True}]
+
+    class Connection:
+        def __enter__(self) -> Connection:
+            return self
+
+        def __exit__(self, *args: object) -> None:
+            return None
+
+        def cursor(self, *, row_factory: object = None) -> Cursor:
+            del row_factory
+            return Cursor()
+
+        def commit(self) -> None:
+            if failure_phase == "commit":
+                raise ConnectionError("connection timed out")
+
+    def connect(_dsn: str, **_kwargs: object) -> Connection:
+        nonlocal connect_attempts
+        connect_attempts += 1
+        return Connection()
+
+    monkeypatch.setitem(sys.modules, "psycopg", SimpleNamespace(connect=connect))
+    executor = PsycopgQueryExecutor.from_dsn(
+        "postgresql://worker:fixture-secret@db.example.invalid/pokecrack",
+        retry_connection=True,
+    )
+
+    with pytest.raises(ConnectionError, match="connection timed out"):
+        executor.query("SELECT 1", {})
+    assert connect_attempts == 1
+
+
+def test_transient_connection_classifier_accepts_sqlstate_and_explicit_markers() -> None:
+    class SqlStateError(Exception):
+        sqlstate = "08006"
+
+    assert _is_transient_connection_error(SqlStateError("transport failure"))
+    assert _is_transient_connection_error(RuntimeError("timeout expired"))
+    assert _is_transient_connection_error(RuntimeError("cannot assign requested address"))
+    assert not _is_transient_connection_error(RuntimeError("password authentication failed"))
+
+
+def test_psycopg_connection_retry_fails_fast_for_non_transport_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts = 0
+
+    def connect(_dsn: str, **_kwargs: object) -> object:
+        nonlocal attempts
+        attempts += 1
+        raise RuntimeError("permission denied")
+
+    monkeypatch.setitem(sys.modules, "psycopg", SimpleNamespace(connect=connect))
+    executor = PsycopgQueryExecutor.from_dsn(
+        "postgresql://worker:fixture-secret@db.example.invalid/pokecrack",
+        retry_connection=True,
+    )
+
+    with pytest.raises(RuntimeError, match="permission denied"):
+        executor._connection_factory()
+    assert attempts == 1
+
+
+def test_psycopg_connection_retry_stops_after_three_transport_failures(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts = 0
+
+    def connect(_dsn: str, **_kwargs: object) -> object:
+        nonlocal attempts
+        attempts += 1
+        raise ConnectionError("connection refused")
+
+    monkeypatch.setitem(sys.modules, "psycopg", SimpleNamespace(connect=connect))
+    monkeypatch.setattr("pokecrack_worker.db.postgres.time.sleep", lambda _seconds: None)
+    executor = PsycopgQueryExecutor.from_dsn(
+        "postgresql://worker:fixture-secret@db.example.invalid/pokecrack",
+        retry_connection=True,
+    )
+
+    with pytest.raises(ConnectionError, match="connection refused"):
+        executor._connection_factory()
+    assert attempts == 3
 
 
 def test_postgres_enqueue_is_atomic_and_respects_active_dedupe_constraint() -> None:

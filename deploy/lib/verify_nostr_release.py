@@ -19,6 +19,7 @@ import re
 import shutil
 import subprocess
 import sys
+import time
 
 from run_with_database_url import child_environment, libpq_environment
 
@@ -65,9 +66,41 @@ CONTRACT_QUERY = (
     "and session_user <> current_user;"
 )
 
+# The hosted Nostr contract query can briefly lose the project's direct IPv6
+# path.  Keep retries deliberately small and local to this preflight: a
+# malformed contract, an authentication/permission failure, or any other
+# non-transport error must fail closed immediately.
+PSQL_MAX_ATTEMPTS = 3
+PSQL_ATTEMPT_TIMEOUT_SECONDS = 15
+PSQL_TOTAL_TIMEOUT_SECONDS = 45
+PSQL_RETRY_DELAY_SECONDS = 0.25
+TRANSIENT_PSQL_ERROR_MARKERS = (
+    "connection timed out",
+    "operation timed out",
+    "connection refused",
+    "connection reset by peer",
+    "server closed the connection unexpectedly",
+    "connection terminated unexpectedly",
+    "could not receive data from server",
+    "could not send data to server",
+    "could not translate host name",
+    "temporary failure in name resolution",
+    "name or service not known",
+    "nodename nor servname provided",
+    "network is unreachable",
+    "no route to host",
+)
+
 
 class NostrPreflightError(RuntimeError):
     """A malformed environment or failed hosted contract preflight."""
+
+
+def _is_transient_psql_failure(stderr: str) -> bool:
+    """Return whether stderr contains an explicitly retryable transport error."""
+
+    normalized = stderr.casefold()
+    return any(marker in normalized for marker in TRANSIENT_PSQL_ERROR_MARKERS)
 
 
 def _read_env_file(path: Path) -> dict[str, str]:
@@ -133,40 +166,68 @@ def _psql_contract(database_url: str, *, psql_path: str) -> dict[str, object]:
         "NOSTR_SUPABASE_DB_URL",
     ):
         environment.pop(name, None)
-    try:
-        result = subprocess.run(
-            [
-                psql_path,
-                "--no-psqlrc",
-                "--set=ON_ERROR_STOP=1",
-                "--tuples-only",
-                "--no-align",
-                "--quiet",
-                "--command",
-                CONTRACT_QUERY,
-            ],
-            check=False,
-            text=True,
-            capture_output=True,
-            env=environment,
-            timeout=45,
-        )
-    except OSError as error:
-        raise NostrPreflightError("hosted Nostr contract client could not start") from error
-    if result.returncode != 0:
-        raise NostrPreflightError("hosted Nostr contract query failed")
-    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
-    if len(lines) != 1:
-        raise NostrPreflightError("hosted Nostr contract query returned an ambiguous result")
-    try:
-        contract = json.loads(lines[0])
-    except json.JSONDecodeError as error:
-        raise NostrPreflightError("hosted Nostr contract result was not JSON") from error
-    if not isinstance(contract, dict) or set(contract) != REQUIRED_CONTRACT_KEYS:
-        raise NostrPreflightError("hosted Nostr contract result had an unexpected shape")
-    if any(value is not True for value in contract.values()):
-        raise NostrPreflightError("hosted Nostr contract is not ready")
-    return contract
+    command = [
+        psql_path,
+        "--no-psqlrc",
+        "--set=ON_ERROR_STOP=1",
+        "--tuples-only",
+        "--no-align",
+        "--quiet",
+        "--command",
+        CONTRACT_QUERY,
+    ]
+    deadline = time.monotonic() + PSQL_TOTAL_TIMEOUT_SECONDS
+    for attempt in range(PSQL_MAX_ATTEMPTS):
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            break
+        timeout = min(PSQL_ATTEMPT_TIMEOUT_SECONDS, remaining)
+        try:
+            result = subprocess.run(
+                command,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+                timeout=timeout,
+            )
+        except subprocess.TimeoutExpired:
+            if attempt + 1 >= PSQL_MAX_ATTEMPTS:
+                break
+        except OSError as error:
+            raise NostrPreflightError(
+                "hosted Nostr contract client could not start"
+            ) from error
+        else:
+            if result.returncode == 0:
+                lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+                if len(lines) != 1:
+                    raise NostrPreflightError(
+                        "hosted Nostr contract query returned an ambiguous result"
+                    )
+                try:
+                    contract = json.loads(lines[0])
+                except json.JSONDecodeError as error:
+                    raise NostrPreflightError(
+                        "hosted Nostr contract result was not JSON"
+                    ) from error
+                if not isinstance(contract, dict) or set(contract) != REQUIRED_CONTRACT_KEYS:
+                    raise NostrPreflightError(
+                        "hosted Nostr contract result had an unexpected shape"
+                    )
+                if any(value is not True for value in contract.values()):
+                    raise NostrPreflightError("hosted Nostr contract is not ready")
+                return contract
+            if not _is_transient_psql_failure(getattr(result, "stderr", "")):
+                raise NostrPreflightError("hosted Nostr contract query failed")
+
+        if attempt + 1 < PSQL_MAX_ATTEMPTS:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            time.sleep(min(PSQL_RETRY_DELAY_SECONDS, remaining))
+
+    raise NostrPreflightError("hosted Nostr contract query failed")
 
 
 def _validated_target(database_url: str, *, login: str, role_option: str) -> tuple[str, str, str]:
