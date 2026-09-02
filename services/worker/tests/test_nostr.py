@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import sys
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -23,11 +25,13 @@ from pokecrack_worker.composition import (
     WorkerRole,
     _dsn_with_fixed_nostr_role,
     build_live_worker_runtime,
+    executor_from_settings,
     live_schedule_entries,
     write_health_heartbeat,
 )
 from pokecrack_worker.config.nostr import NOSTR_APPROVED_TAGS, NostrRelayRegistry
 from pokecrack_worker.config.settings import Settings
+from pokecrack_worker.db import PsycopgQueryExecutor
 from pokecrack_worker.jobs import (
     NostrCandidateWrite,
     NostrPostgresJobRepository,
@@ -394,6 +398,63 @@ def test_nostr_dsn_adds_a_fixed_libpq_role_option() -> None:
     )
     assert already_fixed.count("options=") == 1
     assert already_fixed == dsn
+
+
+def test_nostr_database_executor_retries_only_connection_acquisition(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    attempts: list[dict[str, object]] = []
+    connection = object()
+
+    def connect(_dsn: str, **kwargs: object) -> object:
+        attempts.append(kwargs)
+        if len(attempts) < 2:
+            raise ConnectionError("connection timed out")
+        return connection
+
+    monkeypatch.setitem(sys.modules, "psycopg", SimpleNamespace(connect=connect))
+    monkeypatch.setattr("pokecrack_worker.db.postgres.time.sleep", lambda _seconds: None)
+    executor = PsycopgQueryExecutor.from_dsn(
+        "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+        "nostr.example.invalid/pokecrack?sslmode=require&"
+        "options=-c%20role%3Dpokecrack_nostr_worker",
+        retry_connection=True,
+    )
+
+    assert executor._connection_factory() is connection
+    assert attempts == [{"connect_timeout": 10}, {"connect_timeout": 10}]
+
+
+def test_nostr_composition_enables_connection_retry_for_its_dedicated_executor(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    settings = Settings(
+        _env_file=None,
+        data_mode="live",
+        worker_id="nostr-collector-test",
+        worker_role="nostr-collector",
+        nostr_collection_enabled=True,
+        nostr_supabase_db_url=(
+            "postgresql://pokecrack_nostr_worker_login:fixture-secret@"
+            "nostr.example.invalid/pokecrack?sslmode=require"
+        ),
+    )
+    captured: dict[str, object] = {}
+
+    def fake_from_dsn(dsn: str, **kwargs: object) -> object:
+        captured["dsn"] = dsn
+        captured.update(kwargs)
+        return object()
+
+    monkeypatch.setattr(
+        "pokecrack_worker.composition.PsycopgQueryExecutor.from_dsn",
+        fake_from_dsn,
+    )
+
+    executor_from_settings(settings)
+
+    assert captured["retry_connection"] is True
+    assert "options=-c%20role%3Dpokecrack_nostr_worker" in str(captured["dsn"])
 
 
 @pytest.mark.parametrize(

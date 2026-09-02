@@ -44,7 +44,7 @@ x-worker-base: &worker-base
     # A live probe verifies database dependencies and writes a heartbeat.  It
     # must have enough time for the dedicated IPv6 Nostr path and the shared
     # PostgreSQL path to finish instead of being killed mid-probe.
-    timeout: 45s
+    timeout: 90s
     retries: 3
     start_period: 30s
   stop_grace_period: 30s
