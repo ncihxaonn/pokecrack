@@ -3,16 +3,25 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(22);
+select plan(23);
 
 select is(
   (select count(*)::integer
    from pg_class as relations
    join pg_namespace as schemas on schemas.oid = relations.relnamespace
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
-     and relations.relkind in ('r', 'p')),
+     and relations.relkind in ('r', 'p')
+     and not (
+       schemas.nspname = 'ingest'
+       and relations.relname in (
+         'authorized_opening_submissions',
+         'authorized_opening_review_events',
+         'authorized_opening_observations',
+         'authorized_opening_retractions'
+       )
+     )),
   52,
-  'the least-privilege matrix covers every application table'
+  'the least-privilege matrix covers every non-reviewer application table'
 );
 
 select is(
@@ -21,9 +30,103 @@ select is(
    join pg_namespace as schemas on schemas.oid = relations.relnamespace
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
      and relations.relkind in ('r', 'p')
+     and not (
+       schemas.nspname = 'ingest'
+       and relations.relname in (
+         'authorized_opening_submissions',
+         'authorized_opening_review_events',
+         'authorized_opening_observations',
+         'authorized_opening_retractions'
+       )
+     )
      and has_table_privilege('service_role', relations.oid, 'select')),
   48,
-  'service_role can read every non-Nostr application table except the opaque request gate'
+  'service_role can read every non-reviewer application table except the opaque request gate'
+);
+
+select ok(
+  (select count(*) = 4
+   from pg_class as relations
+   join pg_namespace as schemas on schemas.oid = relations.relnamespace
+   where schemas.nspname = 'ingest'
+     and relations.relkind in ('r', 'p')
+     and relations.relname in (
+       'authorized_opening_submissions',
+       'authorized_opening_review_events',
+       'authorized_opening_observations',
+       'authorized_opening_retractions'
+     ))
+  and (select bool_and(relations.relrowsecurity and relations.relforcerowsecurity)
+       from pg_class as relations
+       join pg_namespace as schemas on schemas.oid = relations.relnamespace
+       where schemas.nspname = 'ingest'
+         and relations.relname in (
+           'authorized_opening_submissions',
+           'authorized_opening_review_events',
+           'authorized_opening_observations',
+           'authorized_opening_retractions'
+         ))
+  and (select count(*) = 4
+       from pg_policies as policies
+       where policies.schemaname = 'ingest'
+         and policies.tablename in (
+           'authorized_opening_submissions',
+           'authorized_opening_review_events',
+           'authorized_opening_observations',
+           'authorized_opening_retractions'
+         )
+         and policies.roles = array['service_role']::name[]
+         and policies.cmd = 'SELECT')
+  and (select count(*) = 4
+       from pg_class as relations
+       join pg_namespace as schemas on schemas.oid = relations.relnamespace
+       where schemas.nspname = 'ingest'
+         and relations.relname in (
+           'authorized_opening_submissions',
+           'authorized_opening_review_events',
+           'authorized_opening_observations',
+           'authorized_opening_retractions'
+         )
+         and has_table_privilege('service_role', relations.oid, 'select'))
+  and not exists (
+    select 1
+    from pg_class as relations
+    join pg_namespace as schemas on schemas.oid = relations.relnamespace
+    where schemas.nspname = 'ingest'
+      and relations.relname in (
+        'authorized_opening_submissions',
+        'authorized_opening_review_events',
+        'authorized_opening_observations',
+        'authorized_opening_retractions'
+      )
+      and (
+        has_table_privilege('service_role', relations.oid, 'insert')
+        or has_table_privilege('service_role', relations.oid, 'update')
+        or has_table_privilege('service_role', relations.oid, 'delete')
+        or has_table_privilege('service_role', relations.oid, 'truncate')
+        or has_table_privilege('service_role', relations.oid, 'references')
+        or has_table_privilege('service_role', relations.oid, 'trigger')
+        or has_table_privilege('service_role', relations.oid, 'maintain')
+      )
+  )
+  and not exists (
+    select 1
+    from pg_class as relations
+    join pg_namespace as schemas on schemas.oid = relations.relnamespace
+    where schemas.nspname = 'ingest'
+      and relations.relname in (
+        'authorized_opening_submissions',
+        'authorized_opening_review_events',
+        'authorized_opening_observations',
+        'authorized_opening_retractions'
+      )
+      and (
+        has_table_privilege('anon', relations.oid, 'select')
+        or has_table_privilege('authenticated', relations.oid, 'select')
+        or has_table_privilege('public', relations.oid, 'select')
+      )
+  ),
+  'authorized-opening ledgers are explicit private force-RLS, SELECT-only service tables'
 );
 
 select is(
@@ -85,9 +188,18 @@ select is(
    from pg_policies
    where schemaname in ('catalog', 'ingest', 'analytics', 'public')
      and 'service_role' = any(roles)
-     and cmd = 'SELECT'),
+     and cmd = 'SELECT'
+     and not (
+       schemaname = 'ingest'
+       and tablename in (
+         'authorized_opening_submissions',
+         'authorized_opening_review_events',
+         'authorized_opening_observations',
+         'authorized_opening_retractions'
+       )
+     )),
   48,
-  'every readable service_role table has one read-only policy; isolated Nostr ledgers have none'
+  'every readable non-reviewer service_role table has one read-only policy; isolated Nostr ledgers have none'
 );
 
 select ok(
