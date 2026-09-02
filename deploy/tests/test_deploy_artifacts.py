@@ -15,6 +15,8 @@ import unittest
 import zipfile
 from pathlib import Path
 
+from deploy.tests.test_reviewed_global_aggregate_backup import bridge_dump
+
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEPLOY_ROOT = REPOSITORY_ROOT / "deploy"
 
@@ -798,6 +800,12 @@ class BackupScriptTests(unittest.TestCase):
         )
         for provider_schema in ("auth", "storage", "realtime", "extensions"):
             self.assertNotIn(f"--schema={provider_schema}", invocation)
+        for table in (
+            "analytics.reviewed_global_aggregate_independent_sources",
+            "analytics.reviewed_global_aggregate_authorized_source_bindings",
+            "analytics.reviewed_global_aggregate_input_admissions",
+        ):
+            self.assertNotIn(f"--exclude-table-data={table}", invocation)
 
     @staticmethod
     def gate_schema_dump(*, youtube: bool = True) -> bytes:
@@ -1218,7 +1226,7 @@ fi
 arguments="$*"
 if [[ $arguments == *mastodon_public_hashtag_candidates* && $arguments == *has_table_privilege* ]]; then
   [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'table-state:set-role' >> "$FAKE_PSQL_LOG"
-  printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru\\trp\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\ttrue}"
+  printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru\\trp\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\t0\\ttrue}"
 elif [[ $arguments == *to_regclass* ]]; then
   [[ -z ${FAKE_PSQL_LOG:-} ]] || printf '%s\n' 'table-state:set-role' >> "$FAKE_PSQL_LOG"
   printf '%b\n' "${FAKE_TABLE_STATE:-rp\\tru\\trp\\t0\\t0\\t0\\t0\\ttrue}"
@@ -1257,7 +1265,9 @@ fi
         timestamp: str,
         empty: bool = False,
         dump: bytes | None = None,
-        table_state: str = "rp\tru\trp\t0\t0\t0\t0\ttrue",
+        table_state: str = (
+            "rp\tru\trp\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\ttrue"
+        ),
         policy_output: str = "11111111-1111-4111-8111-111111111111",
         bluesky_policy_output: str = "",
         nostr_policy_output: str = "",
@@ -1598,6 +1608,72 @@ cache-second\t{youtube_policy}\t{second_video}
                 self.canonical_gate_seed(youtube=True, public_studies=True),
                 sanitized,
             )
+
+    def test_backup_retains_the_complete_reviewed_aggregate_bridge_bundle(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20260903T010203Z",
+                dump=bridge_dump(),
+                table_state=(
+                    "rp\t0\trp\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t"
+                    "rp\trp\trp\ttrue"
+                ),
+                policy_output="",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20260903T010203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            for table in (
+                b"analytics.reviewed_global_aggregate_independent_sources",
+                b"analytics.reviewed_global_aggregate_authorized_source_bindings",
+                b"analytics.reviewed_global_aggregate_input_admissions",
+            ):
+                self.assertIn(b"COPY " + table + b" (", sanitized)
+            self.assertIn(b"reviewed-admission-authorized", sanitized)
+
+    def test_partial_or_missing_reviewed_aggregate_bridge_fails_atomically(
+        self,
+    ) -> None:
+        cases = {
+            "partial-preflight": (
+                "rp\t0\trp\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t"
+                "rp\t0\trp\ttrue",
+                bridge_dump(),
+            ),
+            "preflight-dump-mismatch": (
+                "rp\t0\trp\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t0\t"
+                "rp\trp\trp\ttrue",
+                self.pre_youtube_dump(),
+            ),
+        }
+        for name, (table_state, dump) in cases.items():
+            with (
+                self.subTest(name=name),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
+                base = Path(temporary)
+                fake_bin = self.make_fake_commands(base)
+                backup_dir = base / "backups"
+                result = self.run_backup(
+                    fake_bin=fake_bin,
+                    backup_dir=backup_dir,
+                    timestamp="20260903T010204Z",
+                    table_state=table_state,
+                    policy_output="",
+                    dump=dump,
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertNotIn("very-secret", result.stdout + result.stderr)
+                self.assertEqual(list(backup_dir.iterdir()), [])
 
     def test_backup_retains_bluesky_checkpoint_but_no_private_activity(self) -> None:
         bluesky_policy = "cccccccc-cccc-4ccc-8ccc-cccccccccccc"
