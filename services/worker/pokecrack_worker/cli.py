@@ -14,6 +14,19 @@ import typer
 from pydantic import ValidationError
 
 from pokecrack_worker import composition
+from pokecrack_worker.authorized_opening_operator import (
+    AuthorizedOpeningOperatorError,
+    build_operator_client,
+    parse_uuid,
+    read_authorized_opening_envelope,
+    safe_retraction_payload,
+    safe_review_queue_payload,
+    safe_submission_payload,
+    validate_retraction_request,
+    validate_review_list_request,
+    validate_review_request,
+    validate_reviewer_reference,
+)
 from pokecrack_worker.collectors.manual_import import (
     ImportFormatError,
     import_csv_candidates,
@@ -52,9 +65,14 @@ app = typer.Typer(
 aggregate_app = typer.Typer(no_args_is_help=True, help="Build aggregate statistics.")
 collect_app = typer.Typer(no_args_is_help=True, help="Run official metadata collectors.")
 sync_catalog_app = typer.Typer(no_args_is_help=True, help="Synchronize card catalogs.")
+authorized_opening_app = typer.Typer(
+    no_args_is_help=True,
+    help="Submit explicitly authorized opening envelopes and review the private queue.",
+)
 app.add_typer(aggregate_app, name="aggregate")
 app.add_typer(collect_app, name="collect")
 app.add_typer(sync_catalog_app, name="sync-catalog")
+app.add_typer(authorized_opening_app, name="authorized-opening")
 
 _QUEUE: list[dict[str, Any]] = []
 
@@ -139,6 +157,107 @@ def _deny(error: PolicyDeniedError) -> None:
         err=True,
     )
     raise typer.Exit(code=2)
+
+
+def _fail_authorized_opening(error: AuthorizedOpeningOperatorError) -> NoReturn:
+    """Render only a fixed safe code/message; never stringify a database error."""
+
+    _json({"error": error.code, "message": error.safe_message}, err=True)
+    raise typer.Exit(code=1 if error.code.startswith("database_") else 2)
+
+
+@authorized_opening_app.command("submit")
+def authorized_opening_submit(
+    envelope: Path = typer.Argument(
+        ...,
+        help="Mode-0600 owner/creator evidence-envelope JSON file; it is not retained.",
+    ),
+) -> None:
+    """Submit one explicit owner envelope through the typed submit RPC."""
+
+    try:
+        validated = read_authorized_opening_envelope(envelope)
+        result = build_operator_client(reviewer=False).submit(validated)
+    except AuthorizedOpeningOperatorError as error:
+        _fail_authorized_opening(error)
+    _json(safe_submission_payload(result))
+
+
+@authorized_opening_app.command("list-reviews")
+def authorized_opening_list_reviews(
+    state: str = typer.Option("queued", "--state", help="Exact queue state or all."),
+    limit: int = typer.Option(50, "--limit", min=1, max=100, help="Maximum rows (1-100)."),
+) -> None:
+    """List a bounded redacted queue projection through the reviewer RPC."""
+
+    try:
+        validated_state = validate_review_list_request(state=state, limit=limit)
+        items = build_operator_client(reviewer=True).list_reviews(validated_state, limit)
+    except AuthorizedOpeningOperatorError as error:
+        _fail_authorized_opening(error)
+    _json(safe_review_queue_payload(items))
+
+
+@authorized_opening_app.command("review")
+def authorized_opening_review(
+    submission_id: str = typer.Argument(..., help="Canonical submission UUID from list-reviews."),
+    expected_revision: int = typer.Option(
+        ..., "--expected-revision", min=1, help="Revision fence."
+    ),
+    target_state: str = typer.Option(..., "--target-state", help="Reviewed target state."),
+    reviewer_reference_sha256: str = typer.Option(
+        ...,
+        "--reviewer-reference-sha256",
+        help="Owner-produced opaque reviewer reference; never printed.",
+    ),
+    reason_code: str = typer.Option(..., "--reason-code", help="Exact reason for the state."),
+) -> None:
+    """Apply one revision-fenced reviewer decision through the review RPC."""
+
+    try:
+        parsed_submission_id = parse_uuid(submission_id)
+        reviewer_reference = validate_reviewer_reference(reviewer_reference_sha256)
+        parsed_state, parsed_reason = validate_review_request(
+            target_state=target_state,
+            reason_code=reason_code,
+            expected_revision=expected_revision,
+        )
+        result = build_operator_client(reviewer=True).review(
+            parsed_submission_id,
+            expected_revision,
+            parsed_state,
+            reviewer_reference,
+            parsed_reason,
+        )
+    except AuthorizedOpeningOperatorError as error:
+        _fail_authorized_opening(error)
+    _json(safe_submission_payload(result))
+
+
+@authorized_opening_app.command("retract")
+def authorized_opening_retract(
+    observation_id: str = typer.Argument(..., help="Canonical accepted observation UUID."),
+    reviewer_reference_sha256: str = typer.Option(
+        ...,
+        "--reviewer-reference-sha256",
+        help="Owner-produced opaque reviewer reference; never printed.",
+    ),
+    reason_code: str = typer.Option(..., "--reason-code", help="Exact retraction reason."),
+) -> None:
+    """Retract one accepted observation through the immutable reviewer RPC."""
+
+    try:
+        parsed_observation_id = parse_uuid(observation_id)
+        reviewer_reference = validate_reviewer_reference(reviewer_reference_sha256)
+        parsed_reason = validate_retraction_request(reason_code)
+        result = build_operator_client(reviewer=True).retract(
+            parsed_observation_id,
+            reviewer_reference,
+            parsed_reason,
+        )
+    except AuthorizedOpeningOperatorError as error:
+        _fail_authorized_opening(error)
+    _json(safe_retraction_payload(result))
 
 
 @app.command("health")
