@@ -2296,6 +2296,30 @@ exit 97
         environment["FAKE_DOCKER_LOG"] = str(docker_log)
         return environment, env_file, docker_log
 
+    def test_default_health_deadline_covers_bounded_worker_health_contract(self) -> None:
+        script = (DEPLOY_ROOT / "scripts" / "deploy.sh").read_text(encoding="utf-8")
+        compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
+
+        # The Nostr worker can require three 90-second health probes after its
+        # 30-second start period.  Keep a 90-second margin for probe scheduling
+        # and a final successful result before deployment withholds the marker.
+        startup_seconds = 30
+        probe_timeout_seconds = 90
+        probe_retries = 3
+        scheduling_margin_seconds = 90
+        required_deadline = (
+            startup_seconds
+            + (probe_timeout_seconds * probe_retries)
+            + scheduling_margin_seconds
+        )
+
+        self.assertIn("timeout: 90s", compose)
+        self.assertIn("retries: 3", compose)
+        self.assertIn("start_period: 30s", compose)
+        self.assertIn("HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-420}", script)
+        self.assertIn("Health deadline (default: 420)", script)
+        self.assertGreaterEqual(420, required_deadline)
+
     def test_deploy_checks_out_exact_sha_builds_starts_and_marks_health(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
             base = Path(temporary)
@@ -3103,7 +3127,9 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
                 # Worker health performs a live database dependency probe plus
                 # heartbeat write; do not truncate a valid direct-IPv6 probe.
                 self.assertEqual(service["healthcheck"]["interval"], "30s", name)
-                self.assertEqual(service["healthcheck"]["timeout"], "90s", name)
+                # Docker Compose renders the equivalent 90-second duration in
+                # its canonical minute-and-second representation.
+                self.assertEqual(service["healthcheck"]["timeout"], "1m30s", name)
                 self.assertEqual(service["healthcheck"]["retries"], 3, name)
                 self.assertEqual(service["healthcheck"]["start_period"], "30s", name)
             self.assertIn("/tmp", " ".join(service["tmpfs"]), name)

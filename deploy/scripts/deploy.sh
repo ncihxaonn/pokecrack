@@ -13,7 +13,11 @@ COMPOSE_FILE="$REPOSITORY_ROOT/deploy/compose.prod.yml"
 ENV_FILE=${POKECRACK_ENV_FILE:-/etc/pokecrack/production.env}
 NOSTR_ENV_FILE=${POKECRACK_NOSTR_ENV_FILE:-}
 STATE_DIR=${POKECRACK_DEPLOY_STATE_DIR:-/var/lib/pokecrack/deploy}
-HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-180}
+# Worker health performs a live dependency probe plus heartbeat write.  Its
+# bounded Nostr path can use three 90-second Docker checks after startup, so
+# the deployment deadline must allow those probes to finish before declaring
+# the release failed and withholding the success marker.
+HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-420}
 SERVICE_SET=tcgdex
 RETIRE_NOSTR=false
 SERVICES=(collector scheduler watchdog)
@@ -75,7 +79,7 @@ Options:
   --env-file ABSOLUTE_PATH    Compose interpolation file (default: /etc/pokecrack/production.env)
   --nostr-env-file PATH       Dedicated Nostr interpolation/preflight file (tcgdex-nostr only)
   --state-dir ABSOLUTE_PATH   Success-marker directory (default: /var/lib/pokecrack/deploy)
-  --health-timeout SECONDS    Health deadline (default: 180)
+  --health-timeout SECONDS    Health deadline (default: 420)
   --service-set NAME          Exact release service set (tcgdex or tcgdex-nostr)
   --retire-nostr              Explicitly stop/remove only the managed Nostr container
 
