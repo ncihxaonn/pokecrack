@@ -138,6 +138,15 @@ class RuntimeReleaseEvidenceIntegrationContractTests(unittest.TestCase):
         self.assertIn("runtime_release_evidence_db_url", settings)
         self.assertIn("runtime_release_evidence_executor", composition)
         self.assertIn("_RUNTIME_EVIDENCE_DATABASE_ROLE", composition)
+        self.assertIn("_RUNTIME_EVIDENCE_DATABASE_LOGIN", composition)
+        self.assertIn("connect_timeout_seconds=", composition)
+        self.assertIn("statement_timeout_seconds=", composition)
+        self.assertIn('service_set: str = typer.Option(', cli)
+        self.assertIn("bound_release_started_at", cli)
+        evidence = (PYTHON_ROOT / "release_evidence.py").read_text(encoding="utf-8")
+        self.assertIn("object_pairs_hook=_reject_duplicate_pairs", evidence)
+        self.assertIn("parse_constant=_reject_json_constant", evidence)
+        self.assertIn("%(service_set)s", evidence)
 
     def test_watchdog_only_receives_the_monitor_url_and_wrapper_is_read_only(self) -> None:
         compose = (REPOSITORY_ROOT / "deploy" / "compose.prod.yml").read_text(encoding="utf-8")
@@ -150,6 +159,9 @@ class RuntimeReleaseEvidenceIntegrationContractTests(unittest.TestCase):
         self.assertIn("RUNTIME_RELEASE_EVIDENCE_DB_URL", watchdog)
         self.assertIn("exec -T watchdog pokecrack-worker verify-release", wrapper)
         self.assertIn("--release-started-at", wrapper)
+        self.assertIn("--service-set", wrapper)
+        self.assertIn("org.opencontainers.image.revision", wrapper)
+        self.assertIn("timeout --foreground --kill-after=5", wrapper)
         self.assertNotIn("migrate-database", wrapper)
         self.assertNotIn("docker compose up", wrapper)
 

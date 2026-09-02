@@ -93,11 +93,18 @@ Protect `worker-production` and configure `VPS_HOST`, `VPS_USER`, `VPS_PORT`,
 `VPS_SSH_PRIVATE_KEY`, and pinned `VPS_KNOWN_HOSTS`.
 
 For a stronger post-deploy gate than container health, provision the dedicated
-`pokecrack_runtime_monitor` capability role from migration
-`20260923000000_runtime_release_evidence.sql` and an outside-migration
-NOINHERIT login. Put only that login's TLS URL in the mode-0600 production env
-file as `RUNTIME_RELEASE_EVIDENCE_DB_URL`; the watchdog is the only container
-that receives it. Then opt into the verifier during deployment:
+`pokecrack_runtime_monitor` capability role from migrations
+`20260923000000_runtime_release_evidence.sql` and
+`20260924000000_runtime_release_evidence_hardening.sql`, plus the exact
+outside-migration `pokecrack_runtime_monitor_login` NOINHERIT login. That login
+must be `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOREPLICATION`,
+`NOBYPASSRLS`, `CONNECTION LIMIT 2`, and have only the capability membership
+`pokecrack_runtime_monitor_login -> pokecrack_runtime_monitor` with
+`INHERIT FALSE, SET TRUE`. Role attributes, ownership, or memberships that
+drift from this contract fail closed; they are not silently normalized. Put
+only that login's TLS URL in the mode-0600 production env file as
+`RUNTIME_RELEASE_EVIDENCE_DB_URL`; the watchdog is the only container that
+receives it. Then opt into the verifier during deployment:
 
 ```bash
 deploy/scripts/deploy.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
@@ -107,16 +114,28 @@ deploy/scripts/deploy.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
 ```
 
 The verifier reports aggregate worker heartbeat age/status, observed source
-state, schedule/job outcome, checkpoint freshness, queue age bands, cleanup
-freshness, and local backup-marker age where the marker is mounted. It never
-prints source text, URLs, payloads, policy/gate identifiers, cursors,
-credentials, or identity. `healthy` and first-run `warming_up` exit 0;
-observed stale/failed evidence exits 1; missing/incompatible schema or
-unavailable monitor access is explicitly `inconclusive` and exits 2. The
-first-run grace window avoids failing before the first schedule; it does not
-assert that a source is enabled. No migration or deployment is automatic.
-For an already-running release, the same check is available directly as
-`deploy/scripts/verify-runtime-release.sh` with an exact SHA and release start.
+state, expected schedule/job outcome, checkpoint freshness, queue age bands,
+cleanup freshness, and local backup-marker age where a narrowly scoped marker
+mount is available. It never prints source text, URLs, payloads, policy/gate
+identifiers, cursors, credentials, image labels, or identity. `healthy` and
+first-run `warming_up` exit 0; observed stale/failed evidence exits 1;
+missing/incompatible schema, service set, exact running-image revision, role,
+or monitor access is explicitly `inconclusive` and exits 2. Missing,
+unsupported, or unreadable backup markers are also `inconclusive` (exit 2),
+including during first-run grace; the default owner-only backup directory is
+not made group-readable for the watchdog. Enabled sources and checkpoints must
+advance at or after the bounded release start before `healthy` is possible.
+The `tcgdex-nostr` set additionally requires Nostr worker heartbeat, checkpoint,
+and expected schedule evidence and must be selected explicitly. No migration or
+deployment is automatic. For an already-running release, the same check is
+available directly as `deploy/scripts/verify-runtime-release.sh` with an exact
+SHA, explicit service set, and release start.
+
+If health or runtime evidence fails after replacement, the new containers stay
+in place for diagnosis, the success manifest is not advanced, and no automated
+rollback is attempted. Preserve the aggregate evidence, then select an
+explicit compatible SHA and run `rollback.sh` when an operator has approved the
+recovery.
 
 After every database or password rotation, provision the two login roles from
 an owner-controlled, parameterized session (never a password literal in a

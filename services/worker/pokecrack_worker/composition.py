@@ -1221,6 +1221,9 @@ def role_is_ready(role: WorkerRole) -> bool:
 _NOSTR_DATABASE_ROLE = "pokecrack_nostr_worker"
 _NOSTR_DATABASE_LOGIN = "pokecrack_nostr_worker_login"
 _RUNTIME_EVIDENCE_DATABASE_ROLE = "pokecrack_runtime_monitor"
+_RUNTIME_EVIDENCE_DATABASE_LOGIN = "pokecrack_runtime_monitor_login"
+_RUNTIME_EVIDENCE_CONNECT_TIMEOUT_SECONDS = 10
+_RUNTIME_EVIDENCE_STATEMENT_TIMEOUT_SECONDS = 30
 _NOSTR_DATABASE_QUERY_OPTIONS = frozenset(
     {
         "application_name",
@@ -1307,18 +1310,18 @@ def _dsn_with_fixed_nostr_role(dsn: str) -> str:
 
 
 def _dsn_with_fixed_runtime_evidence_role(dsn: str) -> str:
-    """Return a monitor DSN that cannot silently run as its login role."""
+    """Return a monitor DSN that cannot silently run as an unapproved login."""
 
     parts = urlsplit(dsn)
     if (
         parts.scheme not in {"postgres", "postgresql"}
         or not parts.netloc
-        or not parts.username
+        or unquote(parts.username or "") != _RUNTIME_EVIDENCE_DATABASE_LOGIN
         or parts.fragment
     ):
         raise LiveCompositionError(
             "runtime_evidence_database_url_invalid",
-            "RUNTIME_RELEASE_EVIDENCE_DB_URL must be an unfragmented PostgreSQL URL with a login",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL must use the dedicated monitor login in an unfragmented PostgreSQL URL",
         )
     try:
         query = parse_qsl(
@@ -1393,7 +1396,9 @@ def runtime_release_evidence_executor(settings: Settings) -> PsycopgQueryExecuto
     return PsycopgQueryExecutor.from_dsn(
         _dsn_with_fixed_runtime_evidence_role(
             settings.runtime_release_evidence_db_url.get_secret_value()
-        )
+        ),
+        connect_timeout_seconds=_RUNTIME_EVIDENCE_CONNECT_TIMEOUT_SECONDS,
+        statement_timeout_seconds=_RUNTIME_EVIDENCE_STATEMENT_TIMEOUT_SECONDS,
     )
 
 

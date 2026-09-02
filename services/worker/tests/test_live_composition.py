@@ -16,6 +16,7 @@ from pokecrack_worker.composition import (
     TCGDEX_SETS_JOB_TYPE,
     YOUTUBE_DISCOVERY_JOB_TYPE,
     LiveCompositionError,
+    _dsn_with_fixed_runtime_evidence_role,
     build_live_scheduler,
     build_live_worker_runtime,
     live_schedule_entries,
@@ -50,6 +51,23 @@ def _settings(role: str | None, **values: object) -> Settings:
         worker_max_concurrency=1,
         **values,
     )
+
+
+def test_runtime_evidence_dsn_requires_the_dedicated_login_and_fixed_role() -> None:
+    dsn = (
+        "postgresql://pokecrack_runtime_monitor_login:monitor-secret@"
+        "db.example.invalid/pokecrack?sslmode=require"
+    )
+    fixed = _dsn_with_fixed_runtime_evidence_role(dsn)
+    assert "options=-c%20role%3Dpokecrack_runtime_monitor" in fixed
+    assert "monitor-secret" in fixed
+
+    with pytest.raises(LiveCompositionError):
+        _dsn_with_fixed_runtime_evidence_role(
+            dsn.replace("pokecrack_runtime_monitor_login", "service_role")
+        )
+    with pytest.raises(LiveCompositionError):
+        _dsn_with_fixed_runtime_evidence_role(dsn + "&options=-c%20role%3Dservice_role")
 
 
 def _job_row(

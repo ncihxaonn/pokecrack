@@ -99,11 +99,13 @@ Alert on nonzero exit, stale/missing marker, unexpected size change and low disk
 
 The watchdog-mounted `.last-successful-backup` marker is also included in the
 optional `deploy/scripts/verify-runtime-release.sh` check as an age-only
-aggregate. A fresh marker can
-support release evidence; a stale or malformed marker fails the verifier, while
-a missing marker is `warming_up` only during the explicit first-run grace
-window. If the marker path is not mounted, the result is `unsupported` and no
-backup health is invented. The verifier never prints the backup filename or
+aggregate. A fresh marker can support release evidence; a stale or malformed
+marker fails the verifier. The default backup directory and marker remain
+owner-only (`0700`/`0600`), so UID `10001` cannot read them; missing,
+unsupported, or unreadable marker evidence is `inconclusive` and exits `2`,
+including during first-run grace. Provision any marker-only read mount through
+a separately reviewed, narrow ownership/group contract rather than broadening
+backup confidentiality. The verifier never prints the backup filename or
 database URL.
 
 ## Off-site and profile policy

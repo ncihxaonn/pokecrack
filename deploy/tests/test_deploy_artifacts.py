@@ -3214,6 +3214,34 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn(f"PYTHON_IMAGE:-{image}", compose)
         self.assertNotIn("PYTHON_IMAGE:-python:3.13.5-slim-bookworm}", compose)
 
+    def test_worker_image_revision_is_bound_to_the_exact_deploy_sha(self) -> None:
+        dockerfile = (DEPLOY_ROOT / "Dockerfile.worker").read_text(encoding="utf-8")
+        compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
+        self.assertIn("ARG DEPLOY_SHA", dockerfile)
+        self.assertIn('org.opencontainers.image.revision="${DEPLOY_SHA}"', dockerfile)
+        self.assertIn(
+            'DEPLOY_SHA: "${DEPLOY_SHA:?DEPLOY_SHA must be an exact 40-character Git commit}"',
+            compose,
+        )
+
+    def test_runtime_verifier_checks_exact_running_revision_and_service_set(self) -> None:
+        wrapper = (DEPLOY_ROOT / "scripts" / "verify-runtime-release.sh").read_text(
+            encoding="utf-8"
+        )
+        deploy = (DEPLOY_ROOT / "scripts" / "deploy.sh").read_text(encoding="utf-8")
+        self.assertIn("--service-set NAME", wrapper)
+        self.assertIn("SERVICES=(collector scheduler watchdog nostr-collector)", wrapper)
+        self.assertIn("docker image inspect", wrapper)
+        self.assertIn("org.opencontainers.image.revision", wrapper)
+        self.assertIn('[[ $image_revision == "$target_sha" ]]', wrapper)
+        self.assertIn("timeout --foreground --kill-after=5", wrapper)
+        self.assertIn("--service-set \"$SERVICE_SET\"", wrapper)
+        self.assertIn("verify_status=$?", wrapper)
+        self.assertIn("0|1|2) exit \"$verify_status\"", wrapper)
+        self.assertIn("runtime_verify_status=$?", deploy)
+        self.assertIn("runtime release evidence was inconclusive", deploy)
+        self.assertIn("exit 2", deploy)
+
     def test_auth_browser_pins_opencli_and_starts_its_loopback_daemon(self) -> None:
         dockerfile = (DEPLOY_ROOT / "Dockerfile.auth-browser").read_text(
             encoding="utf-8"

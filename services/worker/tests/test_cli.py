@@ -91,6 +91,39 @@ def test_verify_release_requires_bounded_start_in_live_mode(
     }
 
 
+def test_verify_release_rejects_unknown_service_set_before_querying(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_settings",
+        lambda: SimpleNamespace(data_mode=DataMode.LIVE, backup_dir=tmp_path),
+    )
+
+    def unexpected_executor(_settings: object) -> object:
+        raise AssertionError("release verifier must reject an unknown service set before querying")
+
+    monkeypatch.setattr(cli.composition, "runtime_release_evidence_executor", unexpected_executor)
+
+    result = runner.invoke(
+        app,
+        [
+            "verify-release",
+            "--service-set",
+            "tcgdex-unknown",
+            "--release-started-at",
+            "2026-09-03T00:00:00Z",
+        ],
+    )
+
+    assert result.exit_code == 2, result.output
+    assert json.loads(result.stdout) == {
+        "reason": "invalid_runtime_options",
+        "status": "inconclusive",
+    }
+
+
 @pytest.mark.parametrize(
     "args",
     [
