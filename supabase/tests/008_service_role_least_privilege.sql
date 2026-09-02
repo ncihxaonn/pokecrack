@@ -3,16 +3,23 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(22);
+select plan(23);
 
 select is(
   (select count(*)::integer
    from pg_class as relations
    join pg_namespace as schemas on schemas.oid = relations.relnamespace
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
-     and relations.relkind in ('r', 'p')),
+     and relations.relkind in ('r', 'p')
+     and not (
+       schemas.nspname = 'analytics'
+       and relations.relname in (
+         'reviewed_global_aggregate_baselines',
+         'reviewed_global_aggregate_audit'
+       )
+     )),
   52,
-  'the least-privilege matrix covers every application table'
+  'the least-privilege matrix covers every non-aggregate-foundation application table'
 );
 
 select is(
@@ -21,9 +28,79 @@ select is(
    join pg_namespace as schemas on schemas.oid = relations.relnamespace
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
      and relations.relkind in ('r', 'p')
+     and not (
+       schemas.nspname = 'analytics'
+       and relations.relname in (
+         'reviewed_global_aggregate_baselines',
+         'reviewed_global_aggregate_audit'
+       )
+     )
      and has_table_privilege('service_role', relations.oid, 'select')),
   48,
-  'service_role can read every non-Nostr application table except the opaque request gate'
+  'service_role can read every non-foundation application table except the opaque request gate'
+);
+
+select ok(
+  (select count(*) = 2
+   from pg_class as relations
+   join pg_namespace as schemas on schemas.oid = relations.relnamespace
+   where schemas.nspname = 'analytics'
+     and relations.relkind in ('r', 'p')
+     and relations.relname in (
+       'reviewed_global_aggregate_baselines',
+       'reviewed_global_aggregate_audit'
+     ))
+  and (select bool_and(relations.relrowsecurity and relations.relforcerowsecurity)
+       from pg_class as relations
+       join pg_namespace as schemas on schemas.oid = relations.relnamespace
+       where schemas.nspname = 'analytics'
+         and relations.relname in (
+           'reviewed_global_aggregate_baselines',
+           'reviewed_global_aggregate_audit'
+         ))
+  and (select count(*) = 0
+       from pg_policies as policies
+       where policies.schemaname = 'analytics'
+         and policies.tablename in (
+           'reviewed_global_aggregate_baselines',
+           'reviewed_global_aggregate_audit'
+         ))
+  and not exists (
+    select 1
+    from pg_class as relations
+    join pg_namespace as schemas on schemas.oid = relations.relnamespace
+    where schemas.nspname = 'analytics'
+      and relations.relname in (
+        'reviewed_global_aggregate_baselines',
+        'reviewed_global_aggregate_audit'
+      )
+      and (
+        has_table_privilege('service_role', relations.oid, 'select')
+        or has_table_privilege('service_role', relations.oid, 'insert')
+        or has_table_privilege('service_role', relations.oid, 'update')
+        or has_table_privilege('service_role', relations.oid, 'delete')
+        or has_table_privilege('service_role', relations.oid, 'truncate')
+        or has_table_privilege('service_role', relations.oid, 'references')
+        or has_table_privilege('service_role', relations.oid, 'trigger')
+        or has_table_privilege('service_role', relations.oid, 'maintain')
+      )
+  )
+  and not exists (
+    select 1
+    from pg_class as relations
+    join pg_namespace as schemas on schemas.oid = relations.relnamespace
+    where schemas.nspname = 'analytics'
+      and relations.relname in (
+        'reviewed_global_aggregate_baselines',
+        'reviewed_global_aggregate_audit'
+      )
+      and (
+        has_table_privilege('anon', relations.oid, 'select')
+        or has_table_privilege('authenticated', relations.oid, 'select')
+        or has_table_privilege('public', relations.oid, 'select')
+      )
+  ),
+  'reviewed global aggregate foundation is explicit private force-RLS with no direct application access'
 );
 
 select is(
@@ -85,9 +162,16 @@ select is(
    from pg_policies
    where schemaname in ('catalog', 'ingest', 'analytics', 'public')
      and 'service_role' = any(roles)
-     and cmd = 'SELECT'),
+     and cmd = 'SELECT'
+     and not (
+       schemaname = 'analytics'
+       and tablename in (
+         'reviewed_global_aggregate_baselines',
+         'reviewed_global_aggregate_audit'
+       )
+     )),
   48,
-  'every readable service_role table has one read-only policy; isolated Nostr ledgers have none'
+  'every readable non-foundation service_role table has one read-only policy; isolated ledgers have none'
 );
 
 select ok(
