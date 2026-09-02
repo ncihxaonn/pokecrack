@@ -79,6 +79,9 @@ BLUESKY_CURSOR_RECOVERY = (
 BLUESKY_WORKER_ISOLATION = (
     ROOT / "migrations/20260921000000_bluesky_worker_role_isolation.sql"
 ).read_text()
+BLUESKY_GENERIC_QUEUE_GUARD = (
+    ROOT / "migrations/20260926000000_bluesky_generic_queue_guard.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -558,6 +561,41 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("revoke all on function ingest.finalize_bluesky_jetstream_job", compact)
         self.assertIn("revoke all privileges on table ingest.bluesky_jetstream_candidates", compact)
         self.assertIn("from public, anon, authenticated, service_role", compact)
+
+    def test_bluesky_generic_queue_guard_is_forward_only_and_drift_checked(self) -> None:
+        lowered = BLUESKY_GENERIC_QUEUE_GUARD.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn("do $generic_isolation$", lowered)
+        self.assertNotIn("create or replace function", lowered)
+        self.assertNotIn("grant", compact)
+        self.assertNotIn("on table", compact)
+        for function_name in (
+            "claim_jobs_v2",
+            "heartbeat_job_v2",
+            "fail_job_v2",
+            "pause_job_for_budget_v2",
+        ):
+            self.assertIn("pg_get_functiondef(", lowered)
+            self.assertIn(function_name, lowered)
+            self.assertIn(f"alter function ingest.{function_name}", compact)
+        for fragment in (
+            "exhausted.job_type <> 'source.nostr.relay'",
+            "exhausted.job_type <> 'source.bluesky.jetstream'",
+            "j.job_type <> 'source.nostr.relay'",
+            "j.job_type <> 'source.bluesky.jetstream'",
+            "leased_job.job_type = 'source.nostr.relay'",
+            "leased_job.job_type = 'source.bluesky.jetstream'",
+            "jobs.job_type <> 'source.nostr.relay'",
+            "jobs.job_type <> 'source.bluesky.jetstream'",
+            "length(definition) - length(replace(definition",
+            "position(old_claim_sweep in updated_definition)",
+            "position(new_claim_sweep in updated_definition)",
+            "execute updated_definition",
+        ):
+            self.assertIn(fragment, lowered)
+        self.assertNotIn("revoke all on table", compact)
 
     def test_mastodon_public_hashtag_is_fixed_private_hashed_and_public_safe(self) -> None:
         historical = MASTODON_PUBLIC_HASHTAG

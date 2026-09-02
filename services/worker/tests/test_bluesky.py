@@ -57,11 +57,16 @@ from pokecrack_worker.config.source_policy import CollectorRoute, SourcePolicyRe
 from pokecrack_worker.jobs import (
     BlueskyCursorRecoveryCompletion,
     BlueskyJetstreamCompletion,
+    BlueskyPostgresJobRepository,
     BlueskySourceItemWrite,
     JobStatus,
     PostgresJobRepository,
 )
 from pokecrack_worker.jobs.postgres import (
+    BLUESKY_CLAIM_SQL,
+    BLUESKY_FAIL_SQL,
+    BLUESKY_HEARTBEAT_SQL,
+    BLUESKY_PAUSE_BUDGET_SQL,
     FINALIZE_BLUESKY_JETSTREAM_SQL,
     RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL,
 )
@@ -781,6 +786,66 @@ def test_postgres_repository_uses_fenced_cursor_recovery_rpc() -> None:
     assert sql == RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL
     assert "ingest.recover_bluesky_cursor_too_old_job_v2" in sql
     assert params["start_cursor"] == 41
+
+
+def test_bluesky_repository_uses_only_source_scoped_queue_lifecycle_rpcs() -> None:
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running")],
+            [_job_row(status="running")],
+            [_job_row(status="pending")],
+            [_job_row(status="dead")],
+        ]
+    )
+    repository = BlueskyPostgresJobRepository(executor)
+
+    assert repository.lease(
+        "bluesky-collector-test",
+        now=NOW,
+        lease_for=timedelta(minutes=5),
+        kinds={BLUESKY_JETSTREAM_JOB_TYPE},
+    )
+    assert repository.heartbeat(
+        "00000000-0000-0000-0000-000000000001",
+        worker_id="bluesky-collector-test",
+        lease_generation=1,
+        now=NOW,
+        lease_for=timedelta(minutes=5),
+    )
+    assert repository.pause_for_budget(
+        "00000000-0000-0000-0000-000000000001",
+        worker_id="bluesky-collector-test",
+        lease_generation=1,
+        now=NOW,
+        retry_at=NOW + timedelta(hours=1),
+    )
+    assert repository.fail(
+        "00000000-0000-0000-0000-000000000001",
+        "bounded failure",
+        worker_id="bluesky-collector-test",
+        lease_generation=1,
+        now=NOW,
+    )
+
+    assert [sql for sql, _params in executor.calls] == [
+        BLUESKY_CLAIM_SQL,
+        BLUESKY_HEARTBEAT_SQL,
+        BLUESKY_PAUSE_BUDGET_SQL,
+        BLUESKY_FAIL_SQL,
+    ]
+    for sql, _params in executor.calls:
+        assert "ingest.claim_jobs_v2" not in sql
+        assert "ingest.heartbeat_job_v2" not in sql
+        assert "ingest.fail_job_v2" not in sql
+        assert "ingest.pause_job_for_budget_v2" not in sql
+
+    with pytest.raises(ValueError, match="only source.bluesky.jetstream"):
+        repository.lease(
+            "bluesky-collector-test",
+            now=NOW,
+            lease_for=timedelta(minutes=5),
+            kinds={"source.nostr.relay"},
+        )
 
 
 def test_websocket_transport_pins_protocol_query_and_proxy_boundary(
