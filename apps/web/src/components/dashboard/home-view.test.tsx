@@ -164,6 +164,26 @@ describe("HomeView", () => {
         url: "https://docs.joinmastodon.org/methods/timelines/",
         note: "Public hashtag activity discovery only; it is never opening evidence or a pull-rate denominator.",
       },
+      {
+        id: "reviewed_social_evidence",
+        name: "Reviewed social evidence",
+        kind: "social",
+        access: "public",
+        status: "operational",
+        lastCollectedAt: "2026-08-30T10:39:00.000Z",
+        url: "https://example.com/reviewed-social-evidence",
+        note: "A public social source that is not an approved discovery projection.",
+      },
+      {
+        id: "youtube_discovery",
+        name: "YouTube with a drifted access contract",
+        kind: "video",
+        access: "public",
+        status: "operational",
+        lastCollectedAt: "2026-08-30T10:38:00.000Z",
+        url: "https://developers.google.com/youtube/v3",
+        note: "This source must fail closed because its access contract drifted.",
+      },
     ] as const;
     const liveSocialData = { ...DEMO_PUBLIC_DATA, mode: "live" as const, sources } satisfies PublicDashboardData;
 
@@ -177,6 +197,8 @@ describe("HomeView", () => {
     expect(screen.getByText("operational", { selector: "span" })).toBeVisible();
     expect(screen.getByText("30 Aug 2026, 10:45 UTC")).toBeVisible();
     expect(screen.getByText("Public activity discovery only; it is never opening evidence or a pull-rate denominator.")).toBeVisible();
+    expect(screen.queryByRole("link", { name: /Reviewed social evidence/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /YouTube with a drifted access contract/ })).not.toBeInTheDocument();
   });
 
   it("renders an honest empty state when no public discovery source is projected", () => {
