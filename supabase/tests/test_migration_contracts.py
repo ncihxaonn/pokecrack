@@ -951,6 +951,13 @@ class IngestMigrationContractTests(unittest.TestCase):
         ):
             self.assertIn(fragment, public_rpc)
 
+        # The v4 guard must match the current live Bluesky runtime bounds. The
+        # historical v1 and forward-migration tests intentionally retain both
+        # predecessor (40s) and replacement (10s) values; this assertion keeps
+        # the public v4 contract on the replacement configuration.
+        self.assertIn('"stream_window_seconds":10', public_rpc)
+        self.assertNotIn('"stream_window_seconds":40', public_rpc)
+
         for source_name, expected_registered in (
             ("bluesky", 1),
             ("nostr", 3),

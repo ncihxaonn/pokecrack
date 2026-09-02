@@ -54,7 +54,11 @@ export function LiveDiscoveryPulse({
         </Panel>
       ) : (
         <>
-          <div className="discovery-pulse__notice" aria-label="Social activity scope">
+          <div
+            className="discovery-pulse__notice"
+            role="group"
+            aria-label="Social activity scope"
+          >
             <span className="eligibility eligibility--activity">Activity only</span>
             <span className="eligibility eligibility--activity">Non-evidence</span>
             <span className="discovery-pulse__window">

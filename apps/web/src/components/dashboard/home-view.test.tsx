@@ -187,7 +187,9 @@ describe("HomeView", () => {
 
     render(<HomeView data={{ ...DEMO_PUBLIC_DATA, socialActivityPulse: pulse }} synthetic={false} />);
 
-    expect(screen.getByText("Activity only", { exact: true })).toBeVisible();
+    expect(
+      screen.getByRole("group", { name: "Social activity scope" }),
+    ).toHaveTextContent("Activity only");
     expect(screen.getByText("Non-evidence")).toBeVisible();
     expect(screen.getAllByText("New candidates (24h)")).toHaveLength(3);
     expect(screen.getByText("Bluesky Jetstream discovery")).toBeVisible();
