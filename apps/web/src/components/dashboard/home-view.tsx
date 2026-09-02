@@ -8,6 +8,7 @@ import { BRAND } from "@/config/brand";
 import type { PublicDashboardData } from "@/data/types";
 import { formatDate, formatDateTime, formatProbability } from "@/lib/format";
 import { TrendChart } from "@/components/charts/trend-chart";
+import { LiveDiscoveryPulse } from "./live-discovery-pulse";
 import { WorldHeatmap } from "./world-heatmap";
 import { DataModeNotice, MetricDisclaimer, Panel, SectionHeading, SignalBadge, TableFrame } from "@/components/ui/dashboard-ui";
 
@@ -65,6 +66,7 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
         observations={data.observations}
         initialMetric={worldMetric}
       />
+      <LiveDiscoveryPulse pulse={data.socialActivityPulse} />
 
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
         <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>

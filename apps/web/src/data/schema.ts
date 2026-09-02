@@ -320,6 +320,76 @@ const source = z
     note: z.string().min(1).max(500),
   })
   .strict();
+
+const socialPulseSourceBase = {
+  kind: z.literal("social"),
+  access: z.literal("public"),
+  status: z.enum(["operational", "delayed", "attention", "paused"]),
+  freshness: z.enum(["fresh", "delayed", "attention", "paused"]),
+  lastCollectedAt: isoDateTime.nullable(),
+  newCandidates24h: z.number().int().nonnegative().max(1_000_000),
+  retainedCandidates: z.number().int().nonnegative().max(1_000_000),
+  activityOnly: z.literal(true),
+  statisticsEligible: z.literal(false),
+} as const;
+
+const socialPulseSource = <
+  TId extends string,
+  TName extends string,
+>(id: TId, name: TName) =>
+  z
+    .object({
+      id: z.literal(id),
+      name: z.literal(name),
+      ...socialPulseSourceBase,
+    })
+    .strict();
+
+const socialActivityPulseSourceSchemas = [
+  socialPulseSource("bluesky_jetstream", "Bluesky Jetstream discovery"),
+  socialPulseSource("nostr_multi_relay", "Nostr multi-relay discovery"),
+  socialPulseSource("mastodon_public_hashtag", "Mastodon public hashtag discovery"),
+] as const;
+
+const socialActivityPulseWindow = z
+  .object({
+    start: isoDateTime,
+    end: isoDateTime,
+  })
+  .strict()
+  .superRefine((window, context) => {
+    if (Date.parse(window.end) - Date.parse(window.start) !== 24 * 60 * 60 * 1000) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Social activity pulse window must cover exactly 24 hours",
+        path: ["start"],
+      });
+    }
+  });
+
+export const publicSocialDiscoveryV4Schema = z
+  .object({
+    schemaVersion: z.literal("4.0.0"),
+    window: socialActivityPulseWindow,
+    activityOnly: z.literal(true),
+    nonEvidence: z.literal(true),
+    sources: z.tuple([...socialActivityPulseSourceSchemas]),
+  })
+  .strict()
+  .superRefine((pulse, context) => {
+    for (const [index, source] of pulse.sources.entries()) {
+      const expectedFreshness = source.status === "operational"
+        ? "fresh"
+        : source.status;
+      if (source.freshness !== expectedFreshness) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Freshness must agree with the source status",
+          path: ["sources", index, "freshness"],
+        });
+      }
+    }
+  });
 const service = z
   .object({
     id: z.string().min(1).max(128),
@@ -439,6 +509,7 @@ const dashboardDataObject = z
     batches: z.array(batchMetric).max(10_000),
     trend: z.array(trendPoint).max(10_000),
     sources: z.array(source).max(1_000),
+    socialActivityPulse: publicSocialDiscoveryV4Schema.optional(),
     services: z.array(service).max(1_000),
     recentActivity: z.array(recentActivity).max(10_000),
     admin: z

@@ -4,7 +4,7 @@ import { describe, expect, it } from "vitest";
 
 import { BRAND } from "@/config/brand";
 import { DEMO_PUBLIC_DATA } from "@/data/demo";
-import type { PublicDashboardData } from "@/data/types";
+import type { PublicDashboardData, PublicSocialActivityPulse } from "@/data/types";
 import { getSignalPresentation } from "@/lib/signals";
 import { HomeView } from "./home-view";
 
@@ -16,6 +16,8 @@ describe("HomeView", () => {
     expect(screen.getByText(BRAND.demoNotice)).toBeVisible();
     expect(screen.getByText(BRAND.individualPackDisclaimer)).toBeVisible();
     expect(screen.getByRole("heading", { name: "Worldwide qualifying-hit map" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Live discovery pulse" })).toBeVisible();
+    expect(screen.getByText("No public social activity pulse is available.")).toBeVisible();
     expect(screen.getByText(/fixed absolute colour scale/i)).toBeVisible();
     expect(screen.getByRole("heading", { name: "Global set catalog" })).toBeVisible();
     expect(screen.getByText(/never opening evidence or a pull-rate denominator/i)).toBeVisible();
@@ -122,5 +124,73 @@ describe("HomeView", () => {
     expect(screen.getByText("Publication pending")).toBeVisible();
     expect(screen.getAllByText("Withheld").length).toBeGreaterThan(0);
     expect(screen.queryByText(/Verified country observations are not published yet/)).not.toBeInTheDocument();
+  });
+
+  it("renders platform-specific social activity counts with explicit non-evidence labels", () => {
+    const pulse: PublicSocialActivityPulse = {
+      schemaVersion: "4.0.0" as const,
+      window: {
+        start: "2026-08-30T10:45:00Z",
+        end: "2026-08-31T10:45:00Z",
+      },
+      activityOnly: true as const,
+      nonEvidence: true as const,
+      sources: [
+        {
+          id: "bluesky_jetstream" as const,
+          name: "Bluesky Jetstream discovery" as const,
+          kind: "social" as const,
+          access: "public" as const,
+          status: "operational" as const,
+          freshness: "fresh" as const,
+          lastCollectedAt: "2026-08-31T10:45:00Z",
+          newCandidates24h: 12,
+          retainedCandidates: 42,
+          activityOnly: true as const,
+          statisticsEligible: false as const,
+        },
+        {
+          id: "nostr_multi_relay" as const,
+          name: "Nostr multi-relay discovery" as const,
+          kind: "social" as const,
+          access: "public" as const,
+          status: "delayed" as const,
+          freshness: "delayed" as const,
+          lastCollectedAt: "2026-08-31T10:30:00Z",
+          newCandidates24h: 8,
+          retainedCandidates: 18,
+          activityOnly: true as const,
+          statisticsEligible: false as const,
+        },
+        {
+          id: "mastodon_public_hashtag" as const,
+          name: "Mastodon public hashtag discovery" as const,
+          kind: "social" as const,
+          access: "public" as const,
+          status: "attention" as const,
+          freshness: "attention" as const,
+          lastCollectedAt: null,
+          newCandidates24h: 0,
+          retainedCandidates: 0,
+          activityOnly: true as const,
+          statisticsEligible: false as const,
+        },
+      ],
+    };
+
+    render(<HomeView data={{ ...DEMO_PUBLIC_DATA, socialActivityPulse: pulse }} synthetic={false} />);
+
+    expect(screen.getAllByText("Activity only").length).toBeGreaterThanOrEqual(3);
+    expect(screen.getByText("Non-evidence")).toBeVisible();
+    expect(screen.getAllByText("New candidates (24h)")).toHaveLength(3);
+    expect(screen.getByText("Bluesky Jetstream discovery")).toBeVisible();
+    expect(screen.getByText("Nostr multi-relay discovery")).toBeVisible();
+    expect(screen.getByText("Mastodon public hashtag discovery")).toBeVisible();
+    expect(screen.getByText("12")).toBeVisible();
+    expect(screen.getByText("42")).toBeVisible();
+    expect(screen.getByText("8")).toBeVisible();
+    expect(screen.getByText("18")).toBeVisible();
+    expect(screen.getByText(/not evidence for packs, country, or rate/i)).toBeVisible();
+    expect(screen.queryByRole("link", { name: /Bluesky Jetstream discovery/i })).not.toBeInTheDocument();
   });
 });
