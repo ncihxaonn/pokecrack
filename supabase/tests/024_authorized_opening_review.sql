@@ -363,28 +363,42 @@ select ok(
 );
 
 set local role pokecrack_authorized_opening_reviewer;
-select is(
+-- The reviewer capability deliberately has no USAGE on the pgtap extension.
+-- Capture each runtime result under the real capability, then assert it after
+-- RESET ROLE so the test harness never expands the production capability.
+select set_config(
+  'pokecrack.authorized_opening_review_list_count',
   (
-    select count(*)::bigint
+    select count(*)::text
     from ingest.list_authorized_opening_reviews_v1('queued', 10)
   ),
-  1::bigint,
-  'reviewer can list the bounded queued-review projection'
+  true
 );
-select doesnt_match(
+select set_config(
+  'pokecrack.authorized_opening_review_list_payload',
   (
     select coalesce(jsonb_agg(to_jsonb(rows))::text, '[]')
     from ingest.list_authorized_opening_reviews_v1('queued', 10) as rows
   ),
-  '(?i)(submission_key|sha256|evidence|authorization|source_identity|provenance)',
-  'reviewer list projection never returns opaque identity, authorization, evidence, or dedupe references'
+  true
 );
-select throws_ok(
-  $sql$select * from ingest.authorized_opening_submissions$sql$,
-  '42501',
-  'permission denied for table authorized_opening_submissions',
-  'reviewer cannot bypass the bounded list RPC with a direct ledger read'
-);
+do $reviewer_direct_read$
+begin
+  begin
+    perform 1 from ingest.authorized_opening_submissions;
+    perform set_config(
+      'pokecrack.authorized_opening_reviewer_direct_read_state', 'unexpected', true
+    );
+  exception when insufficient_privilege then
+    perform set_config(
+      'pokecrack.authorized_opening_reviewer_direct_read_state', sqlstate, true
+    );
+    perform set_config(
+      'pokecrack.authorized_opening_reviewer_direct_read_message', sqlerrm, true
+    );
+  end;
+end;
+$reviewer_direct_read$;
 
 select set_config(
   'pokecrack.authorized_opening_in_review_revision',
@@ -400,12 +414,6 @@ select set_config(
   ),
   true
 );
-select is(
-  current_setting('pokecrack.authorized_opening_in_review_revision'),
-  '2',
-  'reviewer moves a queued submission to in_review through the revision-fenced RPC'
-);
-
 select set_config(
   'pokecrack.authorized_opening_observation_id',
   (
@@ -420,26 +428,71 @@ select set_config(
   ),
   true
 );
-select ok(
-  nullif(current_setting('pokecrack.authorized_opening_observation_id'), '') is not null,
-  'accepted-statistics review atomically creates an immutable accepted observation'
-);
-select throws_ok(
-  $sql$
-    select *
+do $reviewer_stale_decision$
+begin
+  begin
+    perform 1
     from ingest.review_authorized_opening_v1(
       current_setting('pokecrack.authorized_opening_submission_id')::uuid,
       2,
       'rejected',
       repeat('0', 64),
       'reviewer_rejected'
-    )
-  $sql$,
+    );
+    perform set_config(
+      'pokecrack.authorized_opening_stale_review_state', 'unexpected', true
+    );
+  exception when serialization_failure then
+    perform set_config(
+      'pokecrack.authorized_opening_stale_review_state', sqlstate, true
+    );
+    perform set_config(
+      'pokecrack.authorized_opening_stale_review_message', sqlerrm, true
+    );
+  end;
+end;
+$reviewer_stale_decision$;
+reset role;
+
+select is(
+  current_setting('pokecrack.authorized_opening_review_list_count'),
+  '1',
+  'reviewer can list the bounded queued-review projection'
+);
+select doesnt_match(
+  current_setting('pokecrack.authorized_opening_review_list_payload'),
+  '(?i)(submission_key|sha256|evidence|authorization|source_identity|provenance)',
+  'reviewer list projection never returns opaque identity, authorization, evidence, or dedupe references'
+);
+select is(
+  current_setting('pokecrack.authorized_opening_reviewer_direct_read_state'),
+  '42501',
+  'reviewer cannot bypass the bounded list RPC with a direct ledger read'
+);
+select is(
+  current_setting('pokecrack.authorized_opening_reviewer_direct_read_message'),
+  'permission denied for table authorized_opening_submissions',
+  'reviewer direct-ledger denial returns the expected database error'
+);
+select is(
+  current_setting('pokecrack.authorized_opening_in_review_revision'),
+  '2',
+  'reviewer moves a queued submission to in_review through the revision-fenced RPC'
+);
+select ok(
+  nullif(current_setting('pokecrack.authorized_opening_observation_id'), '') is not null,
+  'accepted-statistics review atomically creates an immutable accepted observation'
+);
+select is(
+  current_setting('pokecrack.authorized_opening_stale_review_state'),
   '40001',
-  'authorized opening review revision is stale',
   'reviewer cannot overwrite an accepted decision with a stale revision'
 );
-reset role;
+select is(
+  current_setting('pokecrack.authorized_opening_stale_review_message'),
+  'authorized opening review revision is stale',
+  'stale reviewer decision returns the expected database error'
+);
 
 select ok(
   exists (
@@ -487,7 +540,8 @@ select set_config(
   ),
   true
 );
-select is(
+select set_config(
+  'pokecrack.authorized_opening_retraction_replay_at',
   (
     select retracted_at::text
     from ingest.retract_authorized_opening_v1(
@@ -496,11 +550,16 @@ select is(
       'authorization_revoked'
     )
   ),
-  current_setting('pokecrack.authorized_opening_retracted_at'),
-  'identical reviewer retraction replay is idempotent and preserves its original audit timestamp'
+  true
 );
 reset role;
 revoke pokecrack_authorized_opening_reviewer from current_user;
+
+select is(
+  current_setting('pokecrack.authorized_opening_retraction_replay_at'),
+  current_setting('pokecrack.authorized_opening_retracted_at'),
+  'identical reviewer retraction replay is idempotent and preserves its original audit timestamp'
+);
 
 select ok(
   (select count(*) = 1
