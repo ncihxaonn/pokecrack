@@ -189,7 +189,7 @@ select ok(
   (select count(*) = 4 and bool_and(
       functions.proowner = 'postgres'::regrole
       and functions.prosecdef
-      and coalesce(functions.proconfig, '{}'::text[]) @> array['search_path=pg_catalog']
+      and coalesce(functions.proconfig, '{}'::text[]) @> array['search_path=pg_catalog, pg_temp']
     )
    from pg_proc as functions
    where functions.oid = any(array[

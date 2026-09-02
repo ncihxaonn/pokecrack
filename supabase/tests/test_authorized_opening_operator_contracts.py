@@ -10,20 +10,57 @@ SUPABASE_ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = (
     SUPABASE_ROOT / "migrations/20260922000000_authorized_opening_operator.sql"
 ).read_text(encoding="utf-8")
+HARDENING = (
+    SUPABASE_ROOT
+    / "migrations/20260925000000_authorized_opening_operator_hardening.sql"
+).read_text(encoding="utf-8")
 OPERATOR = (
     SUPABASE_ROOT.parent
     / "services/worker/pokecrack_worker/authorized_opening_operator.py"
 ).read_text(encoding="utf-8")
-CLI = (
-    SUPABASE_ROOT.parent / "services/worker/pokecrack_worker/cli.py"
-).read_text(encoding="utf-8")
+CLI = (SUPABASE_ROOT.parent / "services/worker/pokecrack_worker/cli.py").read_text(
+    encoding="utf-8"
+)
 ENV_EXAMPLE = (SUPABASE_ROOT.parent / ".env.example").read_text(encoding="utf-8")
-DOCS = (
-    SUPABASE_ROOT.parent / "docs/AUTHORIZED_OPENING_OPERATOR.md"
-).read_text(encoding="utf-8")
+DOCS = (SUPABASE_ROOT.parent / "docs/AUTHORIZED_OPENING_OPERATOR.md").read_text(
+    encoding="utf-8"
+)
 
 
 class AuthorizedOpeningOperatorContractTests(unittest.TestCase):
+    def test_hardening_migration_pins_rpc_paths_and_capability_wrapper(self) -> None:
+        lowered = HARDENING.casefold()
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for signature in (
+            "submit_authorized_opening_v1(jsonb)",
+            "list_authorized_opening_reviews_v1(text, integer)",
+            "review_authorized_opening_v1(uuid, bigint, text, text, text)",
+            "retract_authorized_opening_v1(uuid, text, text)",
+        ):
+            self.assertIn(
+                f"alter function ingest.{signature}\n  set search_path = pg_catalog, pg_temp",
+                lowered,
+            )
+        self.assertIn(
+            "create or replace function ingest.submit_authorized_opening_direct_v1(",
+            lowered,
+        )
+        self.assertIn(
+            "authorized opening operator accepts direct submissions only", lowered
+        )
+        self.assertIn("jsonb_typeof(payload -> 'discoverycandidatesha256')", lowered)
+        self.assertIn(
+            "grant execute on function ingest.submit_authorized_opening_direct_v1(jsonb)",
+            lowered,
+        )
+        self.assertIn(
+            "revoke execute on function ingest.submit_authorized_opening_v1(jsonb)",
+            lowered,
+        )
+        self.assertIn("has_function_privilege", lowered)
+        self.assertIn("service_role", lowered)
+
     def test_forward_migration_declares_distinct_submitter_role_and_acl(self) -> None:
         lowered = MIGRATION.casefold()
         compact = " ".join(lowered.split())
@@ -33,7 +70,10 @@ class AuthorizedOpeningOperatorContractTests(unittest.TestCase):
         self.assertIn("nologin noinherit", lowered)
         self.assertIn("pokecrack_authorized_opening_submitter_login", lowered)
         self.assertIn("login.rolconnlimit = 2", lowered)
-        self.assertIn("grant usage on schema ingest to pokecrack_authorized_opening_submitter", compact)
+        self.assertIn(
+            "grant usage on schema ingest to pokecrack_authorized_opening_submitter",
+            compact,
+        )
         self.assertIn(
             "grant execute on function ingest.submit_authorized_opening_v1(jsonb)\n  to pokecrack_authorized_opening_submitter",
             lowered,
@@ -45,13 +85,18 @@ class AuthorizedOpeningOperatorContractTests(unittest.TestCase):
         self.assertIn("not login.rolbypassrls", lowered)
         self.assertIn("has_sequence_privilege", lowered)
         self.assertIn("aclexplode", lowered)
-        self.assertIn("dedicated authorized opening submitter login has direct application privileges", lowered)
+        self.assertIn(
+            "dedicated authorized opening submitter login has direct application privileges",
+            lowered,
+        )
         self.assertNotIn("grant insert on table ingest", lowered)
         self.assertNotIn("grant update on table ingest", lowered)
         self.assertNotIn("grant delete on table ingest", lowered)
         self.assertNotIn("create table", lowered)
 
-    def test_operator_uses_only_reviewed_rpc_names_and_fixed_input_boundary(self) -> None:
+    def test_operator_uses_only_reviewed_rpc_names_and_fixed_input_boundary(
+        self,
+    ) -> None:
         lowered = OPERATOR.casefold()
         self.assertIn("max_envelope_bytes = 16_384", lowered)
         self.assertIn("envelope_file_mode = 0o600", lowered)
@@ -59,13 +104,16 @@ class AuthorizedOpeningOperatorContractTests(unittest.TestCase):
         self.assertIn("o_nonblock", lowered)
         self.assertIn("object_pairs_hook", lowered)
         self.assertIn("parse_constant", lowered)
-        self.assertIn("discovery_platform != \"direct\"", lowered)
+        self.assertIn('discovery_platform != "direct"', lowered)
         self.assertIn("social_derived_rejected", lowered)
+        self.assertIn("_url_or_uri", lowered)
+        self.assertIn("reviewer_connection_attestation_sql", lowered)
+        self.assertIn("attest_reviewer_connection", lowered)
         self.assertIn("authorized_opening_submitter_db_url", lowered)
         self.assertIn("authorized_opening_reviewer_db_url", lowered)
         self.assertIn("-c role=", lowered)
         self.assertNotIn("supabase_db_url", lowered)
-        self.assertIn("ingest.submit_authorized_opening_v1", lowered)
+        self.assertIn("ingest.submit_authorized_opening_direct_v1", lowered)
         self.assertIn("ingest.list_authorized_opening_reviews_v1", lowered)
         self.assertIn("ingest.review_authorized_opening_v1", lowered)
         self.assertIn("ingest.retract_authorized_opening_v1", lowered)
@@ -75,7 +123,9 @@ class AuthorizedOpeningOperatorContractTests(unittest.TestCase):
         self.assertNotIn("evidence text", lowered)
 
     def test_cli_and_docs_keep_operator_and_reviewer_paths_explicit(self) -> None:
-        self.assertIn('app.add_typer(authorized_opening_app, name="authorized-opening")', CLI)
+        self.assertIn(
+            'app.add_typer(authorized_opening_app, name="authorized-opening")', CLI
+        )
         for command in ("submit", "list-reviews", "review", "retract"):
             self.assertIn(f'@authorized_opening_app.command("{command}")', CLI)
         for variable in (
@@ -88,6 +138,7 @@ class AuthorizedOpeningOperatorContractTests(unittest.TestCase):
         self.assertIn("social discovery", DOCS.casefold())
         self.assertIn("never falls back to `SUPABASE_DB_URL`", DOCS)
         self.assertIn("auto-approval path", DOCS.casefold())
+        self.assertIn("accepted_observation_id", DOCS)
 
 
 if __name__ == "__main__":

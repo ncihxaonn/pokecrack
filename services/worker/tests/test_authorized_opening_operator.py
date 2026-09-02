@@ -16,6 +16,7 @@ from pokecrack_worker.authorized_opening_operator import (
     AuthorizedOpeningRpcClient,
     RetractionResult,
     ReviewQueueItem,
+    ReviewResult,
     SubmissionResult,
     _fixed_role_dsn,
     _load_envelope_json,
@@ -85,6 +86,15 @@ def test_exact_owner_envelope_validates_and_is_read_only(tmp_path: Path) -> None
     [
         ({"unexpected": "url or social id"}, "invalid_envelope"),
         ({"sourceUrl": "https://example.invalid/raw"}, "invalid_envelope"),
+        ({"submissionKey": "https://example.invalid/opening"}, "invalid_envelope"),
+        ({"submissionKey": "mailto:owner@example.invalid"}, "invalid_envelope"),
+        ({"submissionKey": "a:opaque-uri"}, "invalid_envelope"),
+        ({"submissionKey": "h%74tps%3A%2F%2Fexample.invalid/opening"}, "invalid_envelope"),
+        ({"countryName": "https://example.invalid/country"}, "invalid_envelope"),
+        ({"countryName": "urn:pokecrack:country"}, "invalid_envelope"),
+        ({"language": "https://example.invalid/lang"}, "invalid_envelope"),
+        ({"tcgdexSetId": "urn:pokecrack:set"}, "invalid_envelope"),
+        ({"observedAt": "https://example.invalid/time"}, "invalid_envelope"),
         ({"discoveryPlatform": "bluesky"}, "social_derived_rejected"),
         (
             {"discoveryPlatform": "youtube", "discoveryCandidateSha256": "e" * 64},
@@ -178,6 +188,49 @@ def test_submitter_dsn_is_fixed_to_the_dedicated_role(dsn: str, expected: str) -
     )
 
 
+def test_reviewer_dsn_accepts_only_a_canonical_existing_login_name() -> None:
+    dsn = (
+        "postgresql://owner_review_login:secret@db.example/pokecrack?"
+        "sslmode=verify-full&options=-c%20role%3Dpokecrack_authorized_opening_reviewer"
+    )
+    assert (
+        _fixed_role_dsn(
+            dsn,
+            environment_name="AUTHORIZED_OPENING_REVIEWER_DB_URL",
+            expected_login=None,
+            expected_role="pokecrack_authorized_opening_reviewer",
+        )
+        == dsn
+    )
+
+
+@pytest.mark.parametrize(
+    "username",
+    [
+        "",
+        "postgres",
+        "service_role",
+        "pokecrack_authorized_opening_reviewer",
+        "reviewer-login",
+        "reviewer%20login",
+    ],
+)
+def test_reviewer_dsn_rejects_unreviewed_login_names(username: str) -> None:
+    dsn = (
+        f"postgresql://{username}:secret@db.example/pokecrack?"
+        "sslmode=require&options=-c%20role%3Dpokecrack_authorized_opening_reviewer"
+    )
+    with pytest.raises(AuthorizedOpeningOperatorError) as error:
+        _fixed_role_dsn(
+            dsn,
+            environment_name="AUTHORIZED_OPENING_REVIEWER_DB_URL",
+            expected_login=None,
+            expected_role="pokecrack_authorized_opening_reviewer",
+        )
+    assert error.value.code == "invalid_configuration"
+    assert "secret" not in error.value.safe_message
+
+
 @pytest.mark.parametrize(
     "dsn",
     [
@@ -228,7 +281,7 @@ def test_rpc_client_calls_only_typed_functions_and_never_table_dml() -> None:
     assert result == SubmissionResult(UUID("00000000-0000-0000-0000-000000000001"), 1, "queued")
     sql, params = fake.calls[0]
     lowered = sql.lower()
-    assert "ingest.submit_authorized_opening_v1" in lowered
+    assert "ingest.submit_authorized_opening_direct_v1" in lowered
     assert all(token not in lowered for token in ("insert into", "update ", "delete from"))
     assert all(value not in sql for value in HASHES.values())
     assert all(value not in json.dumps(params) for value in ("https://", "raw"))
@@ -237,7 +290,14 @@ def test_rpc_client_calls_only_typed_functions_and_never_table_dml() -> None:
 def test_reviewer_rpc_calls_are_typed_and_return_only_safe_fields() -> None:
     submission_id = "00000000-0000-0000-0000-000000000001"
     fake = FakeExecutor(
-        ({"submission_id": submission_id, "revision": 2, "state": "accepted_statistics"},)
+        (
+            {
+                "submission_id": submission_id,
+                "revision": 2,
+                "state": "accepted_statistics",
+                "accepted_observation_id": "00000000-0000-0000-0000-000000000002",
+            },
+        )
     )
     client = AuthorizedOpeningRpcClient(fake)  # type: ignore[arg-type]
     reference = "e" * 64
@@ -253,6 +313,7 @@ def test_reviewer_rpc_calls_are_typed_and_return_only_safe_fields() -> None:
     assert review.submission_id == UUID(submission_id)
     assert review.revision == 2
     assert review.state == "accepted_statistics"
+    assert review.accepted_observation_id == UUID("00000000-0000-0000-0000-000000000002")
     sql, params = fake.calls[0]
     assert "ingest.review_authorized_opening_v1" in sql.lower()
     assert reference in json.dumps(params)
@@ -265,6 +326,40 @@ def test_reviewer_rpc_calls_are_typed_and_return_only_safe_fields() -> None:
     queue = client.list_reviews("queued", 50)
     assert len(queue) == 2
     assert all(item.state == "queued" for item in queue)
+
+
+def test_reviewer_connection_attestation_accepts_only_the_reviewed_capability() -> None:
+    fake = FakeExecutor(
+        (
+            {
+                "capability_active": True,
+                "capability_membership": True,
+                "login_contract": True,
+            },
+        )
+    )
+    client = AuthorizedOpeningRpcClient(fake)  # type: ignore[arg-type]
+
+    client.attest_reviewer_connection()
+    assert "pg_has_role" in fake.calls[0][0]
+    assert "pg_auth_members" in fake.calls[0][0]
+    assert "pg_roles" in fake.calls[0][0]
+
+
+@pytest.mark.parametrize(
+    "rows",
+    [
+        (),
+        ({"capability_active": False, "capability_membership": True, "login_contract": True},),
+        ({"capability_active": True, "capability_membership": False, "login_contract": True},),
+        ({"capability_active": True, "capability_membership": True, "login_contract": False},),
+    ],
+)
+def test_reviewer_connection_attestation_fails_closed(rows: tuple[dict[str, object], ...]) -> None:
+    client = AuthorizedOpeningRpcClient(FakeExecutor(rows))  # type: ignore[arg-type]
+    with pytest.raises(AuthorizedOpeningOperatorError) as error:
+        client.attest_reviewer_connection()
+    assert error.value.code == "invalid_configuration"
 
 
 def test_retraction_rpc_result_is_safe_and_does_not_echo_reference() -> None:
@@ -318,11 +413,23 @@ def test_safe_output_strips_opaque_fields() -> None:
     submission = SubmissionResult(UUID("00000000-0000-0000-0000-000000000001"), 2, "in_review")
     queue = (ReviewQueueItem(submission.submission_id, 2, "in_review"),)
     retraction = RetractionResult(submission.submission_id, "privacy_request")
+    review = ReviewResult(
+        submission.submission_id,
+        3,
+        "accepted_statistics",
+        UUID("00000000-0000-0000-0000-000000000002"),
+    )
 
     assert safe_submission_payload(submission) == {
         "submission_id": "00000000-0000-0000-0000-000000000001",
         "revision": 2,
         "state": "in_review",
+    }
+    assert safe_submission_payload(review) == {
+        "submission_id": "00000000-0000-0000-0000-000000000001",
+        "revision": 3,
+        "state": "accepted_statistics",
+        "accepted_observation_id": "00000000-0000-0000-0000-000000000002",
     }
     assert safe_review_queue_payload(queue) == {
         "reviews": [
@@ -341,6 +448,7 @@ def test_safe_output_strips_opaque_fields() -> None:
     rendered = json.dumps(
         [
             safe_submission_payload(submission),
+            safe_submission_payload(review),
             safe_review_queue_payload(queue),
             safe_retraction_payload(retraction),
         ]
