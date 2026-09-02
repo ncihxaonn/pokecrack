@@ -4,7 +4,7 @@ import {
   publicDashboardDataSchema,
   publicSocialDiscoveryV4Schema as publicSocialDiscoveryV4Contract,
 } from "./schema";
-import type { PublicDashboardData } from "./types";
+import type { PublicDashboardData, PublicSource } from "./types";
 
 const BLUESKY_SOURCE_ID = "bluesky_jetstream" as const;
 const BLUESKY_SOURCE_NAME = "Bluesky Jetstream discovery" as const;
@@ -114,7 +114,9 @@ export function mergePublicSocialDiscovery(
 
   const base = snapshotResult.data;
   const discovery = discoveryResult.data;
-  const discoveryById = new Map(discovery.sources.map((source) => [source.id, source]));
+  const discoveryById = new Map<string, PublicSource>(
+    discovery.sources.map((source) => [source.id, source] as const),
+  );
   const baseSourceIds = new Set(base.sources.map((source) => source.id));
   const mergedSources = base.sources.map(
     (source) => discoveryById.get(source.id) ?? source,
