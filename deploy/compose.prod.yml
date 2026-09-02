@@ -41,7 +41,10 @@ x-worker-base: &worker-base
   healthcheck:
     test: ["CMD", "pokecrack-worker", "health"]
     interval: 30s
-    timeout: 10s
+    # A live probe verifies database dependencies and writes a heartbeat.  It
+    # must have enough time for the dedicated IPv6 Nostr path and the shared
+    # PostgreSQL path to finish instead of being killed mid-probe.
+    timeout: 45s
     retries: 3
     start_period: 30s
   stop_grace_period: 30s
