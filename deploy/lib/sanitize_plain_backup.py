@@ -35,6 +35,25 @@ MASTODON_CANDIDATES = ("ingest", "mastodon_public_hashtag_candidates")
 MASTODON_OBSERVATIONS = ("ingest", "mastodon_public_hashtag_observations")
 MASTODON_CHECKPOINTS = ("ingest", "mastodon_public_hashtag_checkpoints")
 MASTODON_COOLDOWNS = ("ingest", "mastodon_rate_cooldowns")
+REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES = (
+    "analytics",
+    "reviewed_global_aggregate_independent_sources",
+)
+REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS = (
+    "analytics",
+    "reviewed_global_aggregate_authorized_source_bindings",
+)
+REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS = (
+    "analytics",
+    "reviewed_global_aggregate_input_admissions",
+)
+REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES = frozenset(
+    {
+        REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES,
+        REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS,
+        REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS,
+    }
+)
 BLUESKY_EPHEMERAL_TABLES = frozenset({BLUESKY_CANDIDATES, BLUESKY_OBSERVATIONS})
 NOSTR_EPHEMERAL_TABLES = frozenset({NOSTR_CANDIDATES, NOSTR_OBSERVATIONS})
 MASTODON_EPHEMERAL_TABLES = frozenset({MASTODON_CANDIDATES, MASTODON_OBSERVATIONS})
@@ -50,6 +69,7 @@ RETENTION_CONTROL_TABLES = frozenset(
         NOSTR_CHECKPOINTS,
         MASTODON_CHECKPOINTS,
         MASTODON_COOLDOWNS,
+        *REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES,
     }
 )
 TCGDEX_SOURCE_KEY = b"tcgdex_catalog"
@@ -104,36 +124,44 @@ COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(
     rb"\$(?:[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)?\$"
 )
-TARGET_TABLE_NAMES = tuple(
-    sorted(
-        table[1]
-        for table in (
-            RETENTION_CONTROL_TABLES
-            | EPHEMERAL_ACTIVITY_TABLES
-            | {SOURCE_REQUEST_GATES}
-        )
+TARGET_TABLES = RETENTION_CONTROL_TABLES | EPHEMERAL_ACTIVITY_TABLES | {
+    SOURCE_REQUEST_GATES
+}
+INGEST_TARGET_TABLE_NAMES = tuple(
+    sorted(table[1] for table in TARGET_TABLES if table[0] == "ingest")
+)
+ANALYTICS_TARGET_TABLE_NAMES = tuple(
+    sorted(table[1] for table in TARGET_TABLES if table[0] == "analytics")
+)
+TARGET_TABLE_NAMES = tuple(sorted(table[1] for table in TARGET_TABLES))
+
+
+def _target_table_reference(table_names: tuple[str, ...]) -> str:
+    unquoted = (
+        r"(?:"
+        + "|".join(re.escape(name) for name in table_names)
+        + r")(?![A-Za-z0-9_$\x80-\xff])"
     )
-)
-TARGET_UNQUOTED_TABLE_REFERENCE = (
-    r"(?:"
-    + "|".join(re.escape(name) for name in TARGET_TABLE_NAMES)
-    + r")(?![A-Za-z0-9_$\x80-\xff])"
-)
-TARGET_QUOTED_TABLE_REFERENCE = (
-    r'(?:"' + r'"|"'.join(re.escape(name) for name in TARGET_TABLE_NAMES) + r'")'
-)
-TARGET_TABLE_REFERENCE = (
-    rf"(?:{TARGET_UNQUOTED_TABLE_REFERENCE}|{TARGET_QUOTED_TABLE_REFERENCE})"
-)
+    quoted = r'(?:"' + r'"|"'.join(re.escape(name) for name in table_names) + r'")'
+    return rf"(?:{unquoted}|{quoted})"
+
+
+def _schema_target_table_reference(schema: str, table_names: tuple[str, ...]) -> str:
+    schema_reference = rf'(?:{re.escape(schema)}|"{re.escape(schema)}")'
+    return (
+        rf"(?:(?:{schema_reference}\s*\.\s*)?"
+        rf"{_target_table_reference(table_names)})"
+    )
+
+
+TARGET_TABLE_REFERENCE = rf"(?:{_schema_target_table_reference('ingest', INGEST_TARGET_TABLE_NAMES)}|{_schema_target_table_reference('analytics', ANALYTICS_TARGET_TABLE_NAMES)})"
 TARGET_INSERT = re.compile(
-    r'^\s*INSERT\s+INTO\s+(?:(?:ingest|"ingest")\s*\.\s*)?'
-    + TARGET_TABLE_REFERENCE,
+    r"^\s*INSERT\s+INTO\s+(?:ONLY\s+)?" + TARGET_TABLE_REFERENCE,
     re.IGNORECASE,
 )
 TARGET_DATA_STATEMENT = re.compile(
     rb'(?:^|[\s;)])(?:INSERT\s+INTO\s+(?:ONLY\s+)?|'
     rb'COPY\s+(?:BINARY\s+)?)'
-    rb'(?:(?:ingest|"ingest")\s*\.\s*)?'
     + TARGET_TABLE_REFERENCE.encode("ascii"),
     re.IGNORECASE,
 )
@@ -350,6 +378,35 @@ PUBLIC_STUDY_CREATE = re.compile(
     r'(?:public_study_observations(?![A-Za-z0-9_$])|"public_study_observations")\s*\(',
     re.IGNORECASE,
 )
+
+
+def _aggregate_bridge_table_expression(table: tuple[str, str]) -> str:
+    schema, name = table
+    return (
+        rf'(?:{re.escape(schema)}(?![A-Za-z0-9_$])|"{re.escape(schema)}")'
+        rf"\s*\.\s*"
+        rf'(?:{re.escape(name)}(?![A-Za-z0-9_$])|"{re.escape(name)}")'
+    )
+
+
+REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CREATE_REFERENCE = {
+    table: re.compile(
+        r"^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+"
+        + _aggregate_bridge_table_expression(table)
+        + r"(?:\s|\()",
+        re.IGNORECASE,
+    )
+    for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
+}
+REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CREATE = {
+    table: re.compile(
+        r"^\s*CREATE\s+TABLE\s+"
+        + _aggregate_bridge_table_expression(table)
+        + r"\s*\(",
+        re.IGNORECASE,
+    )
+    for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
+}
 PUBLIC_STUDY_COPY_COLUMNS = (
     "study_key",
     "source_policy_id",
@@ -432,6 +489,270 @@ MASTODON_COOLDOWN_COPY_COLUMNS = (
     "created_at",
     "updated_at",
 )
+REVIEWED_GLOBAL_AGGREGATE_BRIDGE_COPY_COLUMNS = {
+    REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES: (
+        "source_key",
+        "canonical_domain",
+        "domain_contract_version",
+        "domain_contract_sha256",
+        "created_at",
+    ),
+    REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS: (
+        "binding_key",
+        "source_identity_sha256",
+        "authorization_reference_sha256",
+        "independent_source_key",
+        "authorization_contract_version",
+        "authorization_contract_sha256",
+        "valid_from",
+        "valid_until",
+        "created_at",
+    ),
+    REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS: (
+        "admission_key",
+        "input_kind",
+        "public_study_key",
+        "accepted_observation_id",
+        "binding_key",
+        "canonical_opening_fingerprint_sha256",
+        "admission_contract_version",
+        "admission_contract_sha256",
+        "admitted_at",
+    ),
+}
+REVIEWED_GLOBAL_AGGREGATE_BRIDGE_COLUMN_DECLARATIONS = {
+    REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES: (
+        "source_key text not null",
+        "canonical_domain text not null",
+        "domain_contract_version text not null",
+        "domain_contract_sha256 text not null",
+        "created_at timestamp with time zone default statement_timestamp() not null",
+    ),
+    REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS: (
+        "binding_key text not null",
+        "source_identity_sha256 text not null",
+        "authorization_reference_sha256 text not null",
+        "independent_source_key text not null",
+        "authorization_contract_version text not null",
+        "authorization_contract_sha256 text not null",
+        "valid_from timestamp with time zone not null",
+        "valid_until timestamp with time zone",
+        "created_at timestamp with time zone default statement_timestamp() not null",
+    ),
+    REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS: (
+        "admission_key text not null",
+        "input_kind text not null",
+        "public_study_key text",
+        "accepted_observation_id uuid",
+        "binding_key text",
+        "canonical_opening_fingerprint_sha256 text not null",
+        "admission_contract_version text not null",
+        "admission_contract_sha256 text not null",
+        "admitted_at timestamp with time zone default statement_timestamp() not null",
+    ),
+}
+REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CHECK_TOKENS = {
+    REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES: {
+        "reviewed_global_aggregate_independent_sources_key_check": (
+            "check",
+            "source_key",
+            "[a-z0-9][a-z0-9._-]{0,119}",
+            "btrim(source_key)",
+            "normalize(source_key, nfkc)",
+            "[[:cntrl:]]",
+        ),
+        "reviewed_global_aggregate_independent_sources_domain_check": (
+            "check",
+            "canonical_domain",
+            "lower(canonical_domain)",
+            "btrim(canonical_domain)",
+            "normalize(canonical_domain, nfkc)",
+            "char_length(canonical_domain)",
+            "between 3 and 253",
+            "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$",
+            "[[:cntrl:]]",
+        ),
+        "reviewed_global_aggregate_independent_sources_contract_check": (
+            "check",
+            "domain_contract_version",
+            "domain_contract_sha256",
+            "[a-z0-9][a-z0-9._-]{0,119}",
+            "[0-9a-f]{64}",
+        ),
+    },
+    REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS: {
+        "reviewed_global_aggregate_authorized_source_bindings_key_check": (
+            "check",
+            "binding_key",
+            "[a-z0-9][a-z0-9._-]{0,119}",
+            "btrim(binding_key)",
+            "normalize(binding_key, nfkc)",
+            "[[:cntrl:]]",
+        ),
+        "reviewed_global_aggregate_authorized_source_bindings_hash_check": (
+            "check",
+            "source_identity_sha256",
+            "authorization_reference_sha256",
+            "authorization_contract_sha256",
+            "[0-9a-f]{64}",
+        ),
+        "rga_asb_contract_check": (
+            "check",
+            "authorization_contract_version",
+            "[a-z0-9][a-z0-9._-]{0,119}",
+            "btrim(authorization_contract_version)",
+            "normalize(authorization_contract_version, nfkc)",
+            "[[:cntrl:]]",
+        ),
+        "rga_asb_window_check": (
+            "check",
+            "valid_until is null",
+            "valid_until >= valid_from",
+        ),
+    },
+    REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS: {
+        "reviewed_global_aggregate_input_admissions_key_check": (
+            "check",
+            "admission_key",
+            "[a-z0-9][a-z0-9._-]{0,159}",
+            "btrim(admission_key)",
+            "normalize(admission_key, nfkc)",
+            "[[:cntrl:]]",
+        ),
+        "reviewed_global_aggregate_input_admissions_kind_check": (
+            "check",
+            "input_kind = 'public_study'",
+            "public_study_key",
+            "public_study_key is not null",
+            "public_study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'",
+            "accepted_observation_id is null",
+            "binding_key is null",
+            "input_kind = 'authorized_opening'",
+            "accepted_observation_id is not null",
+            "binding_key is not null",
+        ),
+        "reviewed_global_aggregate_input_admissions_hash_check": (
+            "check",
+            "canonical_opening_fingerprint_sha256",
+            "admission_contract_sha256",
+            "[0-9a-f]{64}",
+        ),
+        "reviewed_global_aggregate_input_admissions_contract_check": (
+            "check",
+            "admission_contract_version",
+            "[a-z0-9][a-z0-9._-]{0,119}",
+            "btrim(admission_contract_version)",
+            "normalize(admission_contract_version, nfkc)",
+            "[[:cntrl:]]",
+        ),
+    },
+}
+REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCE_SEEDS = frozenset(
+    {
+        (
+            "public-study-comicbook-v1",
+            "comicbook.com",
+            "reviewed-public-study-domain-v1",
+            "203fb8576dd77f4e5d8b0da5436007697aecaeaf521df66b541a1ecaf22bac7d",
+        ),
+        (
+            "public-study-wargamer-v1",
+            "www.wargamer.com",
+            "reviewed-public-study-domain-v1",
+            "841536c8203fa98aefff8e5a5babeec58d8e31ca627109c3fee9fceadd5a2cc1",
+        ),
+        (
+            "public-study-cardchill-v1",
+            "cardchill.com",
+            "reviewed-public-study-domain-v1",
+            "3868dca0a04c840032b85dc958ab96e3b3f8b5821c87a54c3946daadc97b026f",
+        ),
+        (
+            "public-study-bleedingcool-v1",
+            "bleedingcool.com",
+            "reviewed-public-study-domain-v1",
+            "65a31ab7ec173797b1748a3e82ce492da0b4be612bd1e70c02df4549b897efa0",
+        ),
+        (
+            "public-study-tcgtalk-v1",
+            "tcgtalk.com",
+            "reviewed-public-study-domain-v1",
+            "000ef62d275b3452ed34dc337bfc1fda14aa7212a3e8684f6f240dca2a11e858",
+        ),
+    }
+)
+REVIEWED_GLOBAL_AGGREGATE_BRIDGE_NAMED_STRUCTURAL_CONSTRAINTS = {
+    REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES: {},
+    REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS: {
+        "rga_asb_source_auth_key": (
+            "unique (source_identity_sha256, authorization_reference_sha256)"
+        ),
+        "rga_asb_source_key_fkey": (
+            "foreign key (independent_source_key) references "
+            "analytics.reviewed_global_aggregate_independent_sources(source_key) "
+            "on update restrict on delete restrict"
+        ),
+    },
+    REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS: {
+        "rga_ia_fingerprint_key": (
+            "unique (canonical_opening_fingerprint_sha256)"
+        ),
+        "rga_ia_observation_fkey": (
+            "foreign key (accepted_observation_id) references "
+            "ingest.authorized_opening_observations(id) on update restrict "
+            "on delete restrict"
+        ),
+        "rga_ia_binding_key_fkey": (
+            "foreign key (binding_key) references "
+            "analytics.reviewed_global_aggregate_authorized_source_bindings(binding_key) "
+            "on update restrict on delete restrict"
+        ),
+    },
+}
+REVIEWED_GLOBAL_AGGREGATE_BRIDGE_ALTER_CONSTRAINTS = {
+    REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES: frozenset(
+        {
+            "primary key (source_key)",
+            "unique (canonical_domain)",
+        }
+    ),
+    REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS: frozenset(
+        {
+            "primary key (binding_key)",
+            "unique (source_identity_sha256, authorization_reference_sha256)",
+            "foreign key (independent_source_key) references "
+            "analytics.reviewed_global_aggregate_independent_sources(source_key) "
+            "on update restrict on delete restrict",
+        }
+    ),
+    REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS: frozenset(
+        {
+            "primary key (admission_key)",
+            "unique (canonical_opening_fingerprint_sha256)",
+            "foreign key (accepted_observation_id) references "
+            "ingest.authorized_opening_observations(id) on update restrict "
+            "on delete restrict",
+            "foreign key (binding_key) references "
+            "analytics.reviewed_global_aggregate_authorized_source_bindings(binding_key) "
+            "on update restrict on delete restrict",
+        }
+    ),
+}
+REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSION_INDEXES = frozenset(
+    {
+        "public_study_key",
+        "accepted_observation_id",
+    }
+)
+REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_BINDING_INDEX = "source-window"
+SAFE_CONTRACT_KEY = re.compile(r"[a-z0-9][a-z0-9._-]{0,119}\Z")
+SAFE_ADMISSION_KEY = re.compile(r"[a-z0-9][a-z0-9._-]{0,159}\Z")
+SAFE_PUBLIC_STUDY_KEY = re.compile(r"[a-z0-9][a-z0-9-]{0,119}\Z")
+CANONICAL_DOMAIN = re.compile(
+    r"(?=.{1,253}\Z)(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+"
+    r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\Z"
+)
+LOWERCASE_SHA256 = re.compile(r"[0-9a-f]{64}\Z")
 PUBLIC_STUDY_COLUMN_DECLARATIONS = (
     "study_key text not null",
     "source_policy_id uuid not null",
@@ -724,14 +1045,14 @@ def _policy_tokens_if_complete(
     return None
 
 
-def _identifier_is(token: PolicyToken, expected: str) -> bool:
+def _identifier_value(token: PolicyToken) -> str | None:
     kind, value = token
-    return (kind == "word" and value == expected) or (
-        kind == "quoted_identifier" and value == expected
-    )
+    if kind in {"word", "quoted_identifier"}:
+        return value
+    return None
 
 
-def _policy_targets_request_gates(tokens: list[PolicyToken]) -> bool:
+def _policy_target_table(tokens: list[PolicyToken]) -> tuple[str, str] | None:
     words = [token[1] if token[0] == "word" else None for token in tokens]
     if words[:2] in (["create", "policy"], ["alter", "policy"], ["drop", "policy"]):
         search_start = 2
@@ -748,12 +1069,24 @@ def _policy_targets_request_gates(tokens: list[PolicyToken]) -> bool:
             target += 1
         if target + 2 >= len(tokens):
             raise SanitizationError("policy statement has no qualified table target")
-        return (
-            _identifier_is(tokens[target], "ingest")
-            and tokens[target + 1] == ("punctuation", ".")
-            and _identifier_is(tokens[target + 2], "source_request_gates")
-        )
+        schema = _identifier_value(tokens[target])
+        table = _identifier_value(tokens[target + 2])
+        if schema is None or tokens[target + 1] != ("punctuation", "."):
+            return None
+        if table is None:
+            return None
+        return (schema, table)
     raise SanitizationError("policy statement has no table target")
+
+
+def _policy_targets_request_gates(tokens: list[PolicyToken]) -> bool:
+    return _policy_target_table(tokens) == SOURCE_REQUEST_GATES
+
+
+def _policy_targets_reviewed_global_aggregate_bridge(
+    tokens: list[PolicyToken],
+) -> bool:
+    return _policy_target_table(tokens) in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
 
 
 @dataclass(frozen=True)
@@ -927,17 +1260,73 @@ def parse_public_study_create(line: bytes) -> bool | None:
     return True
 
 
-def _split_create_declarations(lines: list[bytes]) -> tuple[str, ...]:
+def parse_reviewed_global_aggregate_bridge_create(
+    line: bytes,
+) -> tuple[str, str] | None:
+    """Identify one regular private aggregate-bridge table definition."""
+
+    try:
+        text = line.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if not re.match(r"^\s*CREATE(?:\s|\Z)", text, re.IGNORECASE):
+        return None
+    for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES:
+        if not REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CREATE_REFERENCE[table].match(text):
+            continue
+        if REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CREATE[table].match(text) is None:
+            raise SanitizationError(
+                "aggregate bridge CREATE TABLE must be a regular logged table"
+            )
+        return table
+    return None
+
+
+def _reviewed_global_aggregate_bridge_alter_table(
+    statement: str,
+) -> tuple[str, str] | None:
+    for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES:
+        if re.match(
+            r"^alter table(?: only)?\s+"
+            + _aggregate_bridge_table_expression(table)
+            + r"(?:\s|;|\Z)",
+            statement,
+            re.IGNORECASE,
+        ):
+            return table
+    return None
+
+
+def _reviewed_global_aggregate_bridge_index_table(
+    statement: str,
+) -> tuple[str, str] | None:
+    if re.match(r"^create(?: unique)? index(?:\s|$)", statement, re.IGNORECASE) is None:
+        return None
+    for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES:
+        if re.search(
+            r"\bon\s+"
+            + _aggregate_bridge_table_expression(table)
+            + r"(?:\s|$)",
+            statement,
+            re.IGNORECASE,
+        ):
+            return table
+    return None
+
+
+def _split_create_declarations(
+    lines: list[bytes], *, label: str = "public-study"
+) -> tuple[str, ...]:
     try:
         text = b"".join(lines).decode("utf-8")
     except UnicodeDecodeError as error:
-        raise SanitizationError("public-study schema is not UTF-8") from error
+        raise SanitizationError(f"{label} schema is not UTF-8") from error
     open_parenthesis = text.find("(")
     close_parenthesis = text.rfind(");")
     if open_parenthesis < 0 or close_parenthesis <= open_parenthesis:
-        raise SanitizationError("public-study CREATE TABLE is malformed")
+        raise SanitizationError(f"{label} CREATE TABLE is malformed")
     if text[close_parenthesis + 2 :].strip():
-        raise SanitizationError("public-study CREATE TABLE has trailing SQL")
+        raise SanitizationError(f"{label} CREATE TABLE has trailing SQL")
     body = text[open_parenthesis + 1 : close_parenthesis]
     declarations: list[str] = []
     start = 0
@@ -968,7 +1357,7 @@ def _split_create_declarations(lines: list[bytes]) -> tuple[str, ...]:
         elif character == ")":
             if depth == 0:
                 raise SanitizationError(
-                    "public-study schema has unbalanced parentheses"
+                    f"{label} schema has unbalanced parentheses"
                 )
             depth -= 1
         elif character == "," and depth == 0:
@@ -976,10 +1365,10 @@ def _split_create_declarations(lines: list[bytes]) -> tuple[str, ...]:
             start = index + 1
         index += 1
     if in_single_quote or in_double_quote or depth:
-        raise SanitizationError("public-study schema is unterminated")
+        raise SanitizationError(f"{label} schema is unterminated")
     declarations.append(_normalize_sql((body[start:].encode("utf-8"),)))
     if any(not declaration for declaration in declarations):
-        raise SanitizationError("public-study schema has an empty declaration")
+        raise SanitizationError(f"{label} schema has an empty declaration")
     return tuple(declarations)
 
 
@@ -998,6 +1387,79 @@ def _validate_public_study_create(lines: list[bytes]) -> None:
         raise SanitizationError(
             "unsupported public_study_observations check-constraint schema"
         )
+
+
+def _named_constraint(declaration: str, *, label: str) -> tuple[str, str]:
+    match = re.fullmatch(r"constraint (?P<name>[a-z_][a-z0-9_$]*) (?P<semantic>.+)", declaration)
+    if match is None:
+        raise SanitizationError(f"{label} has an unnamed or malformed constraint")
+    return match.group("name"), match.group("semantic")
+
+
+def _validate_reviewed_global_aggregate_bridge_check(
+    *, table: tuple[str, str], name: str, semantic: str
+) -> None:
+    expected_tokens = REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CHECK_TOKENS[table].get(name)
+    if expected_tokens is None:
+        raise SanitizationError(
+            f"unsupported {table[1]} inline constraint schema"
+        )
+    # pg_dump preserves CHECK expression semantics but may add parentheses and
+    # explicit text casts.  Check every reviewed predicate token rather than
+    # relying on layout, while the COPY validator independently enforces the
+    # exact retained values.
+    normalized = semantic.replace("::text", "")
+    if any(token not in normalized for token in expected_tokens):
+        raise SanitizationError(
+            f"unsupported {table[1]} inline constraint schema"
+        )
+
+
+def _validate_reviewed_global_aggregate_bridge_create(
+    table: tuple[str, str], lines: list[bytes]
+) -> set[str]:
+    label = table[1]
+    declarations = _split_create_declarations(lines, label=label)
+    expected_columns = REVIEWED_GLOBAL_AGGREGATE_BRIDGE_COLUMN_DECLARATIONS[table]
+    columns = declarations[: len(expected_columns)]
+    if columns != expected_columns:
+        raise SanitizationError(f"unsupported {label} column schema")
+    expected_checks = REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CHECK_TOKENS[table]
+    expected_named_structural = (
+        REVIEWED_GLOBAL_AGGREGATE_BRIDGE_NAMED_STRUCTURAL_CONSTRAINTS[table]
+    )
+    seen_checks: set[str] = set()
+    structural_constraints: set[str] = set()
+    expected_structural = REVIEWED_GLOBAL_AGGREGATE_BRIDGE_ALTER_CONSTRAINTS[table]
+    for declaration in declarations[len(expected_columns) :]:
+        name, semantic = _named_constraint(declaration, label=label)
+        if name in expected_checks:
+            if name in seen_checks:
+                raise SanitizationError(f"duplicate {label} check constraint")
+            _validate_reviewed_global_aggregate_bridge_check(
+                table=table, name=name, semantic=semantic
+            )
+            seen_checks.add(name)
+            continue
+        expected_semantic = expected_named_structural.get(name)
+        if expected_semantic is not None:
+            if semantic != expected_semantic:
+                raise SanitizationError(f"unsupported {label} inline constraint schema")
+            if semantic in structural_constraints:
+                raise SanitizationError(f"duplicate {label} structural constraint")
+            structural_constraints.add(semantic)
+            continue
+        if semantic in expected_structural:
+            if semantic in expected_named_structural.values():
+                raise SanitizationError(f"unsupported {label} inline constraint schema")
+            if semantic in structural_constraints:
+                raise SanitizationError(f"duplicate {label} structural constraint")
+            structural_constraints.add(semantic)
+            continue
+        raise SanitizationError(f"unsupported {label} inline constraint schema")
+    if seen_checks != set(expected_checks):
+        raise SanitizationError(f"unsupported {label} inline constraint schema")
+    return structural_constraints
 
 
 def _without_line_ending(line: bytes) -> bytes:
@@ -1021,6 +1483,12 @@ def _canonical_uuid(value: bytes, *, field: str) -> str:
     return str(parsed)
 
 
+def _optional_canonical_uuid(value: bytes, *, field: str) -> str | None:
+    if value == b"\\N":
+        return None
+    return _canonical_uuid(value, field=field)
+
+
 def _plain_copy_text(value: bytes, *, field: str) -> str:
     if value == b"\\N" or b"\\" in value or b"\x00" in value:
         raise SanitizationError(f"{field} is not plain text")
@@ -1028,6 +1496,40 @@ def _plain_copy_text(value: bytes, *, field: str) -> str:
         return value.decode("utf-8")
     except UnicodeDecodeError as error:
         raise SanitizationError(f"{field} is not UTF-8") from error
+
+
+def _optional_plain_copy_text(value: bytes, *, field: str) -> str | None:
+    if value == b"\\N":
+        return None
+    return _plain_copy_text(value, field=field)
+
+
+def _contract_key_copy(value: bytes, *, field: str) -> str:
+    text = _plain_copy_text(value, field=field)
+    if SAFE_CONTRACT_KEY.fullmatch(text) is None:
+        raise SanitizationError(f"{field} is not a bounded canonical contract key")
+    return text
+
+
+def _admission_key_copy(value: bytes, *, field: str) -> str:
+    text = _plain_copy_text(value, field=field)
+    if SAFE_ADMISSION_KEY.fullmatch(text) is None:
+        raise SanitizationError(f"{field} is not a bounded canonical admission key")
+    return text
+
+
+def _canonical_domain_copy(value: bytes, *, field: str) -> str:
+    text = _plain_copy_text(value, field=field)
+    if CANONICAL_DOMAIN.fullmatch(text) is None:
+        raise SanitizationError(f"{field} is not a canonical lowercase domain")
+    return text
+
+
+def _sha256_copy(value: bytes, *, field: str) -> str:
+    text = _plain_copy_text(value, field=field)
+    if LOWERCASE_SHA256.fullmatch(text) is None:
+        raise SanitizationError(f"{field} is not a lowercase SHA-256")
+    return text
 
 
 def _utc_copy_timestamp(value: bytes, *, field: str) -> datetime:
@@ -1039,6 +1541,12 @@ def _utc_copy_timestamp(value: bytes, *, field: str) -> datetime:
     if parsed.tzinfo is None or parsed.utcoffset() != UTC.utcoffset(parsed):
         raise SanitizationError(f"{field} is not an explicit UTC timestamp")
     return parsed
+
+
+def _optional_utc_copy_timestamp(value: bytes, *, field: str) -> datetime | None:
+    if value == b"\\N":
+        return None
+    return _utc_copy_timestamp(value, field=field)
 
 
 def _copy_nonnegative_bigint(
@@ -1087,6 +1595,7 @@ class PlainBackupSanitizer:
         nostr_policy_ids: tuple[str, ...] | list[str] = (),
         mastodon_public_hashtag_present: bool = False,
         mastodon_policy_id: str | None = None,
+        reviewed_global_aggregate_bridge_present: bool = False,
     ) -> None:
         if youtube_policy_id is not None:
             youtube_policy_id = _canonical_uuid(
@@ -1162,6 +1671,10 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "Mastodon policy exists without the exact Mastodon table set"
             )
+        if reviewed_global_aggregate_bridge_present and not source_policies_present:
+            raise SanitizationError(
+                "reviewed global aggregate bridge requires the source policy registry"
+            )
 
         self.expected = {
             SOURCE_POLICIES: source_policies_present,
@@ -1171,6 +1684,15 @@ class PlainBackupSanitizer:
             NOSTR_CHECKPOINTS: nostr_relay_present,
             MASTODON_CHECKPOINTS: mastodon_public_hashtag_present,
             MASTODON_COOLDOWNS: mastodon_public_hashtag_present,
+            REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES: (
+                reviewed_global_aggregate_bridge_present
+            ),
+            REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS: (
+                reviewed_global_aggregate_bridge_present
+            ),
+            REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS: (
+                reviewed_global_aggregate_bridge_present
+            ),
         }
         self.preflight_youtube_policy_id = youtube_policy_id
         self.preflight_bluesky_policy_id = bluesky_policy_id
@@ -1179,6 +1701,9 @@ class PlainBackupSanitizer:
         self.bluesky_jetstream_present = bluesky_jetstream_present
         self.nostr_relay_present = nostr_relay_present
         self.mastodon_public_hashtag_present = mastodon_public_hashtag_present
+        self.reviewed_global_aggregate_bridge_present = (
+            reviewed_global_aggregate_bridge_present
+        )
         self.request_gate_broad = (
             youtube_discoveries_present or mastodon_public_hashtag_present
         )
@@ -1207,6 +1732,48 @@ class PlainBackupSanitizer:
         self.youtube_create_count = 0
         self.public_study_create_count = 0
         self.public_study_create_lines: list[bytes] | None = None
+        self.reviewed_global_aggregate_bridge_create_counts = {
+            table: 0 for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
+        }
+        self.reviewed_global_aggregate_bridge_create_table: tuple[str, str] | None = (
+            None
+        )
+        self.reviewed_global_aggregate_bridge_create_lines: list[bytes] | None = None
+        self.reviewed_global_aggregate_bridge_alter_table: tuple[str, str] | None = (
+            None
+        )
+        self.reviewed_global_aggregate_bridge_alter_lines: list[bytes] | None = None
+        self.reviewed_global_aggregate_bridge_force_rls_counts = {
+            table: 0 for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
+        }
+        self.reviewed_global_aggregate_bridge_enable_rls_counts = {
+            table: 0 for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
+        }
+        self.reviewed_global_aggregate_bridge_constraints = {
+            table: set() for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
+        }
+        self.reviewed_global_aggregate_bridge_index_table: tuple[str, str] | None = (
+            None
+        )
+        self.reviewed_global_aggregate_bridge_index_lines: list[bytes] | None = None
+        self.reviewed_global_aggregate_bridge_indexes = {
+            table: set() for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
+        }
+        self.reviewed_global_aggregate_independent_sources: dict[
+            str, tuple[str, str, str]
+        ] = {}
+        self.reviewed_global_aggregate_authorized_source_bindings: dict[
+            str, str
+        ] = {}
+        self.reviewed_global_aggregate_binding_identity_pairs: set[tuple[str, str]] = (
+            set()
+        )
+        self.reviewed_global_aggregate_input_admissions: dict[
+            str, tuple[str, str | None]
+        ] = {}
+        self.reviewed_global_aggregate_input_fingerprints: set[str] = set()
+        self.reviewed_global_aggregate_public_study_keys: set[str] = set()
+        self.reviewed_global_aggregate_accepted_observation_ids: set[str] = set()
         self.request_gates_create_count = 0
         self.request_gates_create_lines: list[bytes] | None = None
         self.request_gates_alter_lines: list[bytes] | None = None
@@ -1231,6 +1798,21 @@ class PlainBackupSanitizer:
         _validate_public_study_create(lines)
         self.public_study_create_lines = None
 
+    def _finish_reviewed_global_aggregate_bridge_create(self) -> None:
+        table = self.reviewed_global_aggregate_bridge_create_table
+        lines = self.reviewed_global_aggregate_bridge_create_lines
+        if table is None or lines is None:
+            raise SanitizationError("aggregate bridge CREATE state is missing")
+        inline_structural_constraints = (
+            _validate_reviewed_global_aggregate_bridge_create(table, lines)
+        )
+        seen = self.reviewed_global_aggregate_bridge_constraints[table]
+        if seen.intersection(inline_structural_constraints):
+            raise SanitizationError("duplicate aggregate bridge constraint")
+        seen.update(inline_structural_constraints)
+        self.reviewed_global_aggregate_bridge_create_table = None
+        self.reviewed_global_aggregate_bridge_create_lines = None
+
     def _finish_request_gates_alter(self) -> None:
         lines = self.request_gates_alter_lines
         if lines is None:
@@ -1246,6 +1828,91 @@ class PlainBackupSanitizer:
             raise SanitizationError("unsupported source_request_gates ALTER TABLE")
         self.request_gates_alter_lines = None
 
+    def _finish_reviewed_global_aggregate_bridge_alter(self) -> None:
+        table = self.reviewed_global_aggregate_bridge_alter_table
+        lines = self.reviewed_global_aggregate_bridge_alter_lines
+        if table is None or lines is None:
+            raise SanitizationError("aggregate bridge ALTER state is missing")
+        statement = _normalize_sql(lines)
+        table_expression = _aggregate_bridge_table_expression(table)
+        prefix = r"alter table(?: only)?\s+" + table_expression + r"\s+"
+        if re.fullmatch(prefix + r"force row level security;", statement):
+            self.reviewed_global_aggregate_bridge_force_rls_counts[table] += 1
+            if self.reviewed_global_aggregate_bridge_force_rls_counts[table] != 1:
+                raise SanitizationError("duplicate aggregate bridge FORCE RLS")
+        elif re.fullmatch(prefix + r"enable row level security;", statement):
+            self.reviewed_global_aggregate_bridge_enable_rls_counts[table] += 1
+            if self.reviewed_global_aggregate_bridge_enable_rls_counts[table] != 1:
+                raise SanitizationError("duplicate aggregate bridge ENABLE RLS")
+        else:
+            constraint_match = re.fullmatch(
+                prefix
+                + r"add constraint (?P<name>[a-z_][a-z0-9_$]*) "
+                + r"(?P<semantic>.+);",
+                statement,
+            )
+            if constraint_match is None:
+                raise SanitizationError("unsupported aggregate bridge ALTER TABLE")
+            name = constraint_match.group("name")
+            semantic = constraint_match.group("semantic")
+            expected = REVIEWED_GLOBAL_AGGREGATE_BRIDGE_ALTER_CONSTRAINTS[table]
+            expected_named = (
+                REVIEWED_GLOBAL_AGGREGATE_BRIDGE_NAMED_STRUCTURAL_CONSTRAINTS[
+                    table
+                ]
+            )
+            seen = self.reviewed_global_aggregate_bridge_constraints[table]
+            named_semantic = expected_named.get(name)
+            if named_semantic is not None:
+                if semantic != named_semantic:
+                    raise SanitizationError("unsupported aggregate bridge constraint")
+            elif semantic in expected_named.values():
+                raise SanitizationError("unsupported aggregate bridge constraint")
+            elif semantic not in expected:
+                raise SanitizationError("unsupported aggregate bridge constraint")
+            if semantic in seen:
+                raise SanitizationError("unsupported aggregate bridge constraint")
+            seen.add(semantic)
+        self.reviewed_global_aggregate_bridge_alter_table = None
+        self.reviewed_global_aggregate_bridge_alter_lines = None
+
+    def _finish_reviewed_global_aggregate_bridge_index(self) -> None:
+        table = self.reviewed_global_aggregate_bridge_index_table
+        lines = self.reviewed_global_aggregate_bridge_index_lines
+        if table is None or lines is None:
+            raise SanitizationError("aggregate bridge index state is missing")
+        statement = _normalize_sql(lines)
+        if table == REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS:
+            match = re.fullmatch(
+                r"create unique index [a-z_][a-z0-9_$]* on "
+                + _aggregate_bridge_table_expression(table)
+                + r" using btree \((?P<column>public_study_key|accepted_observation_id)\) "
+                r"where \((?P=column) is not null\);",
+                statement,
+            )
+            if match is None:
+                raise SanitizationError(
+                    "unsupported aggregate bridge partial unique index"
+                )
+            index_key = match.group("column")
+        elif table == REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS:
+            if re.fullmatch(
+                r"create index [a-z_][a-z0-9_$]* on "
+                + _aggregate_bridge_table_expression(table)
+                + r" using btree \(independent_source_key, valid_from, valid_until\);",
+                statement,
+            ) is None:
+                raise SanitizationError("unsupported aggregate bridge binding index")
+            index_key = REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_BINDING_INDEX
+        else:
+            raise SanitizationError("unexpected aggregate bridge index")
+        seen_indexes = self.reviewed_global_aggregate_bridge_indexes[table]
+        if index_key in seen_indexes:
+            raise SanitizationError("duplicate aggregate bridge index")
+        seen_indexes.add(index_key)
+        self.reviewed_global_aggregate_bridge_index_table = None
+        self.reviewed_global_aggregate_bridge_index_lines = None
+
     def _maybe_finish_policy_statement(self) -> None:
         lines = self.policy_statement_lines
         if lines is None:
@@ -1256,6 +1923,10 @@ class PlainBackupSanitizer:
         if _policy_targets_request_gates(tokens):
             raise SanitizationError(
                 "source_request_gates must not have a row-level security policy"
+            )
+        if _policy_targets_reviewed_global_aggregate_bridge(tokens):
+            raise SanitizationError(
+                "aggregate bridge tables must not have a row-level security policy"
             )
         self.policy_statement_lines = None
 
@@ -1307,6 +1978,14 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "mastodon_rate_cooldowns COPY columns do not match the exact retained schema"
             )
+        elif header.table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES:
+            expected_columns = REVIEWED_GLOBAL_AGGREGATE_BRIDGE_COPY_COLUMNS[
+                header.table
+            ]
+            if header.columns != expected_columns:
+                raise SanitizationError(
+                    f"{header.table[1]} COPY columns do not match the exact retained schema"
+                )
         return CopyBlock(header=header, column_indexes=indexes)
 
     def _target_fields(self, block: CopyBlock, line: bytes) -> list[bytes]:
@@ -1319,6 +1998,19 @@ class PlainBackupSanitizer:
         if block.header.table not in RETENTION_CONTROL_TABLES:
             return
         fields = self._target_fields(block, line)
+        if block.header.table == REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES:
+            self._inspect_reviewed_global_aggregate_independent_source_row(
+                block, fields
+            )
+            return
+        if block.header.table == REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS:
+            self._inspect_reviewed_global_aggregate_authorized_binding_row(
+                block, fields
+            )
+            return
+        if block.header.table == REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS:
+            self._inspect_reviewed_global_aggregate_input_admission_row(block, fields)
+            return
         if block.header.table == SOURCE_POLICIES:
             source_key = fields[block.column_indexes["source_key"]]
             if b"\\" in source_key or source_key == b"\\N":
@@ -1613,6 +2305,188 @@ class PlainBackupSanitizer:
         if updated_at < created_at:
             raise SanitizationError("Mastodon cooldown timestamps are out of order")
 
+    def _inspect_reviewed_global_aggregate_independent_source_row(
+        self, block: CopyBlock, fields: list[bytes]
+    ) -> None:
+        if not self.reviewed_global_aggregate_bridge_present:
+            raise SanitizationError(
+                "dump contains aggregate bridge rows absent from database preflight"
+            )
+        indexes = block.column_indexes
+        source_key = _contract_key_copy(
+            fields[indexes["source_key"]], field="aggregate source key"
+        )
+        canonical_domain = _canonical_domain_copy(
+            fields[indexes["canonical_domain"]], field="aggregate source domain"
+        )
+        domain_contract_version = _contract_key_copy(
+            fields[indexes["domain_contract_version"]],
+            field="aggregate source domain contract version",
+        )
+        domain_contract_sha256 = _sha256_copy(
+            fields[indexes["domain_contract_sha256"]],
+            field="aggregate source domain contract hash",
+        )
+        _utc_copy_timestamp(
+            fields[indexes["created_at"]], field="aggregate source created_at"
+        )
+        if source_key in self.reviewed_global_aggregate_independent_sources:
+            raise SanitizationError("aggregate independent source key is duplicated")
+        if any(
+            canonical_domain == retained[0]
+            for retained in self.reviewed_global_aggregate_independent_sources.values()
+        ):
+            raise SanitizationError("aggregate independent source domain is duplicated")
+        self.reviewed_global_aggregate_independent_sources[source_key] = (
+            canonical_domain,
+            domain_contract_version,
+            domain_contract_sha256,
+        )
+
+    def _inspect_reviewed_global_aggregate_authorized_binding_row(
+        self, block: CopyBlock, fields: list[bytes]
+    ) -> None:
+        if not self.reviewed_global_aggregate_bridge_present:
+            raise SanitizationError(
+                "dump contains aggregate bridge rows absent from database preflight"
+            )
+        indexes = block.column_indexes
+        binding_key = _contract_key_copy(
+            fields[indexes["binding_key"]], field="aggregate binding key"
+        )
+        source_identity = _sha256_copy(
+            fields[indexes["source_identity_sha256"]],
+            field="aggregate binding source identity hash",
+        )
+        authorization_reference = _sha256_copy(
+            fields[indexes["authorization_reference_sha256"]],
+            field="aggregate binding authorization reference hash",
+        )
+        independent_source_key = _contract_key_copy(
+            fields[indexes["independent_source_key"]],
+            field="aggregate binding independent source key",
+        )
+        _contract_key_copy(
+            fields[indexes["authorization_contract_version"]],
+            field="aggregate binding authorization contract version",
+        )
+        _sha256_copy(
+            fields[indexes["authorization_contract_sha256"]],
+            field="aggregate binding authorization contract hash",
+        )
+        valid_from = _utc_copy_timestamp(
+            fields[indexes["valid_from"]], field="aggregate binding valid_from"
+        )
+        valid_until = _optional_utc_copy_timestamp(
+            fields[indexes["valid_until"]], field="aggregate binding valid_until"
+        )
+        _utc_copy_timestamp(
+            fields[indexes["created_at"]], field="aggregate binding created_at"
+        )
+        if valid_until is not None and valid_until < valid_from:
+            raise SanitizationError("aggregate binding validity window is inverted")
+        if binding_key in self.reviewed_global_aggregate_authorized_source_bindings:
+            raise SanitizationError("aggregate binding key is duplicated")
+        identity_pair = (source_identity, authorization_reference)
+        if identity_pair in self.reviewed_global_aggregate_binding_identity_pairs:
+            raise SanitizationError("aggregate binding identity pair is duplicated")
+        self.reviewed_global_aggregate_authorized_source_bindings[binding_key] = (
+            independent_source_key
+        )
+        self.reviewed_global_aggregate_binding_identity_pairs.add(identity_pair)
+
+    def _inspect_reviewed_global_aggregate_input_admission_row(
+        self, block: CopyBlock, fields: list[bytes]
+    ) -> None:
+        if not self.reviewed_global_aggregate_bridge_present:
+            raise SanitizationError(
+                "dump contains aggregate bridge rows absent from database preflight"
+            )
+        indexes = block.column_indexes
+        admission_key = _admission_key_copy(
+            fields[indexes["admission_key"]], field="aggregate admission key"
+        )
+        input_kind = _plain_copy_text(
+            fields[indexes["input_kind"]], field="aggregate admission input kind"
+        )
+        public_study_key = _optional_plain_copy_text(
+            fields[indexes["public_study_key"]],
+            field="aggregate admission public study key",
+        )
+        if public_study_key is not None:
+            if SAFE_PUBLIC_STUDY_KEY.fullmatch(public_study_key) is None:
+                raise SanitizationError(
+                    "aggregate admission public study key is not a contract key"
+                )
+        accepted_observation_id = _optional_canonical_uuid(
+            fields[indexes["accepted_observation_id"]],
+            field="aggregate admission accepted observation id",
+        )
+        binding_key = _optional_plain_copy_text(
+            fields[indexes["binding_key"]], field="aggregate admission binding key"
+        )
+        if binding_key is not None and SAFE_CONTRACT_KEY.fullmatch(binding_key) is None:
+            raise SanitizationError("aggregate admission binding key is not a contract key")
+        fingerprint = _sha256_copy(
+            fields[indexes["canonical_opening_fingerprint_sha256"]],
+            field="aggregate admission opening fingerprint hash",
+        )
+        _contract_key_copy(
+            fields[indexes["admission_contract_version"]],
+            field="aggregate admission contract version",
+        )
+        _sha256_copy(
+            fields[indexes["admission_contract_sha256"]],
+            field="aggregate admission contract hash",
+        )
+        _utc_copy_timestamp(
+            fields[indexes["admitted_at"]], field="aggregate admission admitted_at"
+        )
+        if input_kind == "public_study":
+            if (
+                public_study_key is None
+                or accepted_observation_id is not None
+                or binding_key is not None
+            ):
+                raise SanitizationError(
+                    "aggregate public-study admission has an invalid input shape"
+                )
+        elif input_kind == "authorized_opening":
+            if (
+                public_study_key is not None
+                or accepted_observation_id is None
+                or binding_key is None
+            ):
+                raise SanitizationError(
+                    "aggregate authorized-opening admission has an invalid input shape"
+                )
+        else:
+            raise SanitizationError("aggregate admission input kind is not approved")
+        if admission_key in self.reviewed_global_aggregate_input_admissions:
+            raise SanitizationError("aggregate admission key is duplicated")
+        if fingerprint in self.reviewed_global_aggregate_input_fingerprints:
+            raise SanitizationError("aggregate admission fingerprint is duplicated")
+        self.reviewed_global_aggregate_input_fingerprints.add(fingerprint)
+        if public_study_key is not None:
+            if public_study_key in self.reviewed_global_aggregate_public_study_keys:
+                raise SanitizationError("aggregate admission public study key is duplicated")
+            self.reviewed_global_aggregate_public_study_keys.add(public_study_key)
+        if accepted_observation_id is not None:
+            if (
+                accepted_observation_id
+                in self.reviewed_global_aggregate_accepted_observation_ids
+            ):
+                raise SanitizationError(
+                    "aggregate admission accepted observation id is duplicated"
+                )
+            self.reviewed_global_aggregate_accepted_observation_ids.add(
+                accepted_observation_id
+            )
+        self.reviewed_global_aggregate_input_admissions[admission_key] = (
+            input_kind,
+            binding_key,
+        )
+
     def _inspect_public_study_row(self, block: CopyBlock, fields: list[bytes]) -> None:
         indexes = block.column_indexes
         study_key_value = fields[indexes["study_key"]]
@@ -1708,6 +2582,98 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "unexpected public_study_observations CREATE TABLE definition"
             )
+
+        for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES:
+            expected_bridge_table = int(
+                self.reviewed_global_aggregate_bridge_present
+            )
+            if (
+                self.reviewed_global_aggregate_bridge_create_counts[table]
+                != expected_bridge_table
+            ):
+                if expected_bridge_table:
+                    raise SanitizationError(
+                        f"expected one {table[1]} CREATE TABLE definition"
+                    )
+                raise SanitizationError(
+                    f"unexpected {table[1]} CREATE TABLE definition"
+                )
+            if (
+                self.reviewed_global_aggregate_bridge_force_rls_counts[table]
+                != expected_bridge_table
+            ):
+                raise SanitizationError(
+                    f"{table[1]} FORCE RLS does not match database preflight"
+                )
+            if (
+                self.reviewed_global_aggregate_bridge_enable_rls_counts[table]
+                != expected_bridge_table
+            ):
+                raise SanitizationError(
+                    f"{table[1]} ENABLE RLS does not match database preflight"
+                )
+            expected_constraints = (
+                REVIEWED_GLOBAL_AGGREGATE_BRIDGE_ALTER_CONSTRAINTS[table]
+                if expected_bridge_table
+                else set()
+            )
+            if (
+                self.reviewed_global_aggregate_bridge_constraints[table]
+                != expected_constraints
+            ):
+                raise SanitizationError(
+                    f"{table[1]} constraint set does not match the reviewed contract"
+                )
+        expected_indexes = {
+            REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES: set(),
+            REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS: (
+                {REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_BINDING_INDEX}
+                if self.reviewed_global_aggregate_bridge_present
+                else set()
+            ),
+            REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS: (
+                set(REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSION_INDEXES)
+                if self.reviewed_global_aggregate_bridge_present
+                else set()
+            ),
+        }
+        if self.reviewed_global_aggregate_bridge_indexes != expected_indexes:
+            raise SanitizationError(
+                "aggregate bridge index set does not match the reviewed contract"
+            )
+        if self.reviewed_global_aggregate_bridge_present:
+            retained_independent_sources = {
+                (source_key, *contract)
+                for source_key, contract in (
+                    self.reviewed_global_aggregate_independent_sources.items()
+                )
+            }
+            if (
+                retained_independent_sources
+                != REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCE_SEEDS
+            ):
+                raise SanitizationError(
+                    "aggregate independent-source seed set does not match the reviewed contract"
+                )
+        for _binding_key, independent_source_key in (
+            self.reviewed_global_aggregate_authorized_source_bindings.items()
+        ):
+            if (
+                independent_source_key
+                not in self.reviewed_global_aggregate_independent_sources
+            ):
+                raise SanitizationError(
+                    "aggregate binding has no retained independent source"
+                )
+        for _admission_key, (input_kind, binding_key) in (
+            self.reviewed_global_aggregate_input_admissions.items()
+        ):
+            if (
+                input_kind == "authorized_opening"
+                and binding_key
+                not in self.reviewed_global_aggregate_authorized_source_bindings
+            ):
+                raise SanitizationError("aggregate admission has no retained binding")
 
         if self.request_gates_create_count != 1:
             raise SanitizationError(
@@ -1850,10 +2816,28 @@ class PlainBackupSanitizer:
                     self._finish_public_study_create()
                 continue
 
+            if self.reviewed_global_aggregate_bridge_create_lines is not None:
+                self.reviewed_global_aggregate_bridge_create_lines.append(line)
+                if line.rstrip() == b");":
+                    self._finish_reviewed_global_aggregate_bridge_create()
+                continue
+
             if self.request_gates_alter_lines is not None:
                 self.request_gates_alter_lines.append(line)
                 if line.rstrip().endswith(b";"):
                     self._finish_request_gates_alter()
+                continue
+
+            if self.reviewed_global_aggregate_bridge_alter_lines is not None:
+                self.reviewed_global_aggregate_bridge_alter_lines.append(line)
+                if line.rstrip().endswith(b";"):
+                    self._finish_reviewed_global_aggregate_bridge_alter()
+                continue
+
+            if self.reviewed_global_aggregate_bridge_index_lines is not None:
+                self.reviewed_global_aggregate_bridge_index_lines.append(line)
+                if line.rstrip().endswith(b";"):
+                    self._finish_reviewed_global_aggregate_bridge_index()
                 continue
 
             if self.policy_statement_lines is not None:
@@ -1907,6 +2891,28 @@ class PlainBackupSanitizer:
                 self.public_study_create_lines = [line]
                 continue
 
+            aggregate_bridge_create_table = (
+                parse_reviewed_global_aggregate_bridge_create(line)
+            )
+            if aggregate_bridge_create_table is not None:
+                self.reviewed_global_aggregate_bridge_create_counts[
+                    aggregate_bridge_create_table
+                ] += 1
+                if (
+                    self.reviewed_global_aggregate_bridge_create_counts[
+                        aggregate_bridge_create_table
+                    ]
+                    != 1
+                ):
+                    raise SanitizationError(
+                        "duplicate aggregate bridge CREATE TABLE header"
+                    )
+                self.reviewed_global_aggregate_bridge_create_table = (
+                    aggregate_bridge_create_table
+                )
+                self.reviewed_global_aggregate_bridge_create_lines = [line]
+                continue
+
             normalized_line = _normalize_sql((line,))
             if normalized_line.startswith(POLICY_STATEMENT_PREFIXES):
                 self.policy_statement_lines = [line]
@@ -1921,6 +2927,28 @@ class PlainBackupSanitizer:
                 self.request_gates_alter_lines = [line]
                 if line.rstrip().endswith(b";"):
                     self._finish_request_gates_alter()
+                continue
+            aggregate_bridge_alter_table = (
+                _reviewed_global_aggregate_bridge_alter_table(normalized_line)
+            )
+            if aggregate_bridge_alter_table is not None:
+                self.reviewed_global_aggregate_bridge_alter_table = (
+                    aggregate_bridge_alter_table
+                )
+                self.reviewed_global_aggregate_bridge_alter_lines = [line]
+                if line.rstrip().endswith(b";"):
+                    self._finish_reviewed_global_aggregate_bridge_alter()
+                continue
+            aggregate_bridge_index_table = (
+                _reviewed_global_aggregate_bridge_index_table(normalized_line)
+            )
+            if aggregate_bridge_index_table is not None:
+                self.reviewed_global_aggregate_bridge_index_table = (
+                    aggregate_bridge_index_table
+                )
+                self.reviewed_global_aggregate_bridge_index_lines = [line]
+                if line.rstrip().endswith(b";"):
+                    self._finish_reviewed_global_aggregate_bridge_index()
                 continue
 
             try:
@@ -1943,8 +2971,14 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "unterminated public_study_observations CREATE TABLE"
             )
+        if self.reviewed_global_aggregate_bridge_create_lines is not None:
+            raise SanitizationError("unterminated aggregate bridge CREATE TABLE")
         if self.request_gates_alter_lines is not None:
             raise SanitizationError("unterminated source_request_gates ALTER TABLE")
+        if self.reviewed_global_aggregate_bridge_alter_lines is not None:
+            raise SanitizationError("unterminated aggregate bridge ALTER TABLE")
+        if self.reviewed_global_aggregate_bridge_index_lines is not None:
+            raise SanitizationError("unterminated aggregate bridge CREATE INDEX")
         if self.policy_statement_lines is not None:
             raise SanitizationError("unterminated policy statement")
         self._validate_complete()
@@ -2024,6 +3058,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
     # current backup script always supplies this state explicitly.
     parser.add_argument("--nostr-relay", choices=presence, default="absent")
     parser.add_argument("--mastodon-public-hashtag", choices=presence, default="absent")
+    parser.add_argument(
+        "--reviewed-global-aggregate-bridge",
+        choices=presence,
+        default="absent",
+    )
     parser.add_argument("--youtube-policy-id")
     parser.add_argument("--bluesky-policy-id")
     parser.add_argument("--mastodon-policy-id")
@@ -2051,6 +3090,9 @@ def main(argv: list[str] | None = None) -> int:
             nostr_policy_ids=tuple(args.nostr_policy_ids),
             mastodon_public_hashtag_present=args.mastodon_public_hashtag == "present",
             mastodon_policy_id=args.mastodon_policy_id,
+            reviewed_global_aggregate_bridge_present=(
+                args.reviewed_global_aggregate_bridge == "present"
+            ),
         )
         sanitizer.sanitize(sys.stdin.buffer, sys.stdout.buffer)
     except (SanitizationError, UnicodeEncodeError) as exc:
