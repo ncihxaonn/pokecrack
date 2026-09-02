@@ -53,7 +53,7 @@ Every persistent collector has its own transactional database boundary. Cleanup 
 3. Metadata/excerpts are normalized and deduplicated according to each source's exact contract. YouTube retains only the video identity, canonical URL, title, publication timestamp, and lifecycle fields; video, audio, captions, thumbnails, descriptions, query/rank associations, channel data, and derived classifications are not retained.
 4. Deterministic bounds and catalog checks precede any AI call.
 5. Independent extraction and validation must agree; one escalation can break a tie. Remaining conflict or low confidence is rejected.
-6. Only accepted, complete, nonduplicate tier A/B openings with a verified positive pack denominator and an eligible geography contribute to statistics.
+6. Only accepted, complete, nonduplicate tier A/B openings with a verified positive pack denominator and an eligible geography may be considered for statistics. Authorized submissions additionally require an immutable owner-reviewed source-domain binding and aggregate admission; ambiguity fails closed.
 7. Public v1 aggregation publishes only the reviewed Australia/English statistical slice. Global activity metadata stays private.
 8. Aggregation produces public-safe summaries; private URLs, payloads, prompts, author hashes, sessions, and worker state stay outside the browser surface.
 
@@ -70,6 +70,9 @@ Every persistent collector has its own transactional database boundary. Cleanup 
   data, rejects any gate row that still appears, and restores only canonical
   idle gate keys. The sanitizer also uniquely verifies the cache's
   `CREATE UNLOGGED TABLE` and regular gate-table headers inside that same dump.
+  The optional aggregate-admission bridge is retained only as a coherent
+  three-table immutable bundle; partial, malformed, or unlinked rows abort the
+  backup.
   Provider-managed snapshot retention must be revalidated separately before the
   feature is enabled.
 

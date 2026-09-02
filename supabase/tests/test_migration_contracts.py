@@ -61,6 +61,9 @@ MASTODON_RUNTIME_FINALIZER_HOTFIX = (
 REVIEWED_GLOBAL_AGGREGATE_FOUNDATION = (
     ROOT / "migrations/20260916000000_reviewed_global_aggregate_foundation.sql"
 ).read_text()
+AUTHORIZED_OPENING_AGGREGATE_COHORT_BRIDGE = (
+    ROOT / "migrations/20260919000000_authorized_opening_aggregate_cohort_bridge.sql"
+).read_text()
 REVIEWED_GLOBAL_COVERAGE_PROJECTION_V2 = (
     ROOT / "migrations/20260917000000_reviewed_global_coverage_projection_v2.sql"
 ).read_text()
@@ -1225,6 +1228,115 @@ class IngestMigrationContractTests(unittest.TestCase):
             "reviewed_global_aggregate_audit:",
             "reviewed_global_aggregate_baselines:",
             "reviewed_global_beta_parameters_v1:",
+        ):
+            self.assertIn(type_name, DATABASE_TYPES)
+
+    def test_authorized_opening_aggregate_cohort_bridge_is_private_and_fails_closed(
+        self,
+    ) -> None:
+        lowered = AUTHORIZED_OPENING_AGGREGATE_COHORT_BRIDGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertNotIn("public.country_period_map_cells", lowered)
+        self.assertNotIn("insert into public.", lowered)
+        self.assertNotIn("update public.", lowered)
+        self.assertNotIn("delete from public.", lowered)
+        self.assertNotIn("insert into analytics.reviewed_global_aggregate_audit", lowered)
+        self.assertNotIn("update analytics.reviewed_global_aggregate_audit", lowered)
+
+        for table in (
+            "reviewed_global_aggregate_independent_sources",
+            "reviewed_global_aggregate_authorized_source_bindings",
+            "reviewed_global_aggregate_input_admissions",
+        ):
+            self.assertIn(f"create table analytics.{table}", compact)
+            self.assertIn(f"alter table analytics.{table} force row level security", compact)
+            self.assertNotIn(
+                f"grant select on table analytics.{table} to service_role", compact
+            )
+            self.assertNotIn(f"grant insert on table analytics.{table}", compact)
+        self.assertIn(
+            "revoke all on table analytics.reviewed_global_aggregate_independent_sources, analytics.reviewed_global_aggregate_authorized_source_bindings, analytics.reviewed_global_aggregate_input_admissions from public, anon, authenticated, service_role, pokecrack_authorized_opening_reviewer",
+            compact,
+        )
+
+        for domain in (
+            "comicbook.com",
+            "www.wargamer.com",
+            "cardchill.com",
+            "bleedingcool.com",
+            "tcgtalk.com",
+        ):
+            self.assertIn(f"'{domain}'", lowered)
+        for fragment in (
+            "input_kind = 'public_study'",
+            "input_kind = 'authorized_opening'",
+            "public_study_key is not null",
+            "canonical_opening_fingerprint_sha256",
+            "accepted_observation_id",
+            "reviewed_global_aggregate_input_admissions_public_study_uidx",
+            "reviewed_global_aggregate_input_admissions_authorized_uidx",
+        ):
+            self.assertIn(fragment, lowered)
+        for constraint_name in (
+            "rga_asb_source_auth_key",
+            "rga_asb_source_key_fkey",
+            "rga_asb_contract_check",
+            "rga_asb_window_check",
+            "rga_ia_fingerprint_key",
+            "rga_ia_observation_fkey",
+            "rga_ia_binding_key_fkey",
+        ):
+            self.assertIn(f"constraint {constraint_name}", compact)
+        for foreign_key_name in (
+            "rga_asb_source_key_fkey",
+            "rga_ia_observation_fkey",
+            "rga_ia_binding_key_fkey",
+        ):
+            self.assertIn(
+                f"foreignKeyName: '{foreign_key_name}'", DATABASE_TYPES
+            )
+
+        cohort = lowered.split(
+            "create function analytics.reviewed_global_aggregate_cohort_v1", 1
+        )[1].split("alter function analytics.reviewed_global_aggregate_cohort_v1", 1)[0]
+        for fragment in (
+            "security definer",
+            "stable",
+            "set search_path = pg_catalog",
+            "ingest.reviewed_public_study_contracts()",
+            "ingest.public_study_observations",
+            "ingest.openings",
+            "catalog.iso_alpha2_codes",
+            "public.tcgdex_set_index",
+            "ingest.authorized_opening_observations",
+            "ingest.authorized_opening_retractions",
+            "reviewed_global_aggregate_authorized_source_bindings",
+            "source_identity_sha256 = observations.source_identity_sha256",
+            "authorization_reference_sha256",
+            "admissions.canonical_opening_fingerprint_sha256",
+            "= observations.provenance_dedupe_sha256",
+            "conflicting_bindings.source_identity_sha256",
+            "is distinct from bindings.independent_source_key",
+            "retractions.accepted_observation_id is null",
+            "between p_period_start and p_period_end",
+            "aggregate cohort window must be a nonfuture utc period of at most 365 days",
+        ):
+            self.assertIn(fragment, cohort)
+        self.assertNotIn("country_period_map_cells", cohort)
+        self.assertNotIn("reviewed_global_aggregate_audit", cohort)
+        for social_fragment in ("bluesky", "nostr", "mastodon", "youtube"):
+            self.assertNotIn(social_fragment, cohort)
+        self.assertIn(
+            "revoke all on function analytics.reviewed_global_aggregate_cohort_v1( date, date, timestamptz ) from public, anon, authenticated, service_role, pokecrack_authorized_opening_reviewer",
+            compact,
+        )
+        for type_name in (
+            "reviewed_global_aggregate_independent_sources:",
+            "reviewed_global_aggregate_authorized_source_bindings:",
+            "reviewed_global_aggregate_input_admissions:",
+            "reviewed_global_aggregate_cohort_v1:",
         ):
             self.assertIn(type_name, DATABASE_TYPES)
 
