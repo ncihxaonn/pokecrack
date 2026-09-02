@@ -2914,6 +2914,12 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
             self.assertEqual(service["restart"], "unless-stopped", name)
             self.assertTrue(service["read_only"], name)
             self.assertIn("healthcheck", service, name)
+            if name == "auth-browser":
+                self.assertEqual(service["healthcheck"]["timeout"], "10s", name)
+            else:
+                # Worker health performs a live database dependency probe plus
+                # heartbeat write; do not truncate a valid direct-IPv6 probe.
+                self.assertEqual(service["healthcheck"]["timeout"], "45s", name)
             self.assertIn("/tmp", " ".join(service["tmpfs"]), name)
             expected_networks = (
                 {"internal", "nostr-egress"}
