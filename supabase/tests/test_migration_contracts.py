@@ -951,6 +951,26 @@ class IngestMigrationContractTests(unittest.TestCase):
         ):
             self.assertIn(fragment, public_rpc)
 
+        for source_name, expected_registered in (
+            ("bluesky", 1),
+            ("nostr", 3),
+            ("mastodon", 1),
+        ):
+            health_body = public_rpc.split(
+                f"{source_name}_health as (", 1
+            )[1].split(f"{source_name}_source as (", 1)[0]
+            compact_health = " ".join(health_body.split())
+            self.assertIn(
+                f"health.registered_count = {expected_registered}",
+                compact_health,
+            )
+            self.assertIn("else 0", compact_health)
+            self.assertNotIn(
+                f"from {source_name}_registered as registered cross join",
+                compact_health,
+            )
+            self.assertNotIn("group by", compact_health)
+
         public_projection = public_rpc.split("bluesky_source as", 1)[1]
         for forbidden_key in (
             "'text'",

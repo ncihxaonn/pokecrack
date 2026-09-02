@@ -101,23 +101,36 @@ as $$
   ),
   bluesky_health as (
     select
-      count(*)::integer as registered_count,
-      count(*) filter (where registered.contract_valid)::integer as valid_count,
-      count(*) filter (where registered.enabled)::integer as enabled_count,
+      health.registered_count,
+      health.valid_count,
+      health.enabled_count,
       checkpoints.checkpoint_count,
       checkpoints.recent_count,
       checkpoints.last_collected_at,
-      activity.new_candidates_24h,
-      activity.retained_candidates
-    from bluesky_registered as registered
+      case
+        when health.registered_count = 1
+          and health.valid_count = 1
+          and health.enabled_count = 1
+          and checkpoints.checkpoint_count = 1
+          then activity.new_candidates_24h
+        else 0
+      end as new_candidates_24h,
+      case
+        when health.registered_count = 1
+          and health.valid_count = 1
+          and health.enabled_count = 1
+          and checkpoints.checkpoint_count = 1
+          then activity.retained_candidates
+        else 0
+      end as retained_candidates
+    from (
+      select
+        (select count(*)::integer from bluesky_registered) as registered_count,
+        (select count(*) filter (where registered.contract_valid)::integer from bluesky_registered as registered) as valid_count,
+        (select count(*) filter (where registered.enabled)::integer from bluesky_registered as registered) as enabled_count
+    ) as health
     cross join bluesky_checkpoint_health as checkpoints
     cross join bluesky_activity_health as activity
-    group by
-      checkpoints.checkpoint_count,
-      checkpoints.recent_count,
-      checkpoints.last_collected_at,
-      activity.new_candidates_24h,
-      activity.retained_candidates
   ),
   bluesky_source as (
     select jsonb_build_object(
@@ -299,23 +312,36 @@ as $$
   ),
   nostr_health as (
     select
-      count(*)::integer as registered_count,
-      count(*) filter (where registered.contract_valid)::integer as valid_count,
-      count(*) filter (where registered.enabled)::integer as enabled_count,
+      health.registered_count,
+      health.valid_count,
+      health.enabled_count,
       checkpoints.checkpoint_count,
       checkpoints.recent_count,
       checkpoints.last_collected_at,
-      activity.new_candidates_24h,
-      activity.retained_candidates
-    from nostr_registered as registered
+      case
+        when health.registered_count = 3
+          and health.valid_count = 3
+          and health.enabled_count = 3
+          and checkpoints.checkpoint_count = 3
+          then activity.new_candidates_24h
+        else 0
+      end as new_candidates_24h,
+      case
+        when health.registered_count = 3
+          and health.valid_count = 3
+          and health.enabled_count = 3
+          and checkpoints.checkpoint_count = 3
+          then activity.retained_candidates
+        else 0
+      end as retained_candidates
+    from (
+      select
+        (select count(*)::integer from nostr_registered) as registered_count,
+        (select count(*) filter (where registered.contract_valid)::integer from nostr_registered as registered) as valid_count,
+        (select count(*) filter (where registered.enabled)::integer from nostr_registered as registered) as enabled_count
+    ) as health
     cross join nostr_checkpoint_health as checkpoints
     cross join nostr_activity_health as activity
-    group by
-      checkpoints.checkpoint_count,
-      checkpoints.recent_count,
-      checkpoints.last_collected_at,
-      activity.new_candidates_24h,
-      activity.retained_candidates
   ),
   nostr_source as (
     select jsonb_build_object(
@@ -482,23 +508,36 @@ as $$
   ),
   mastodon_health as (
     select
-      count(*)::integer as registered_count,
-      count(*) filter (where registered.contract_valid)::integer as valid_count,
-      count(*) filter (where registered.enabled)::integer as enabled_count,
+      health.registered_count,
+      health.valid_count,
+      health.enabled_count,
       checkpoints.checkpoint_count,
       checkpoints.recent_count,
       checkpoints.last_collected_at,
-      activity.new_candidates_24h,
-      activity.retained_candidates
-    from mastodon_registered as registered
+      case
+        when health.registered_count = 1
+          and health.valid_count = 1
+          and health.enabled_count = 1
+          and checkpoints.checkpoint_count = 7
+          then activity.new_candidates_24h
+        else 0
+      end as new_candidates_24h,
+      case
+        when health.registered_count = 1
+          and health.valid_count = 1
+          and health.enabled_count = 1
+          and checkpoints.checkpoint_count = 7
+          then activity.retained_candidates
+        else 0
+      end as retained_candidates
+    from (
+      select
+        (select count(*)::integer from mastodon_registered) as registered_count,
+        (select count(*) filter (where registered.contract_valid)::integer from mastodon_registered as registered) as valid_count,
+        (select count(*) filter (where registered.enabled)::integer from mastodon_registered as registered) as enabled_count
+    ) as health
     cross join mastodon_checkpoint_health as checkpoints
     cross join mastodon_activity_health as activity
-    group by
-      checkpoints.checkpoint_count,
-      checkpoints.recent_count,
-      checkpoints.last_collected_at,
-      activity.new_candidates_24h,
-      activity.retained_candidates
   ),
   mastodon_source as (
     select jsonb_build_object(

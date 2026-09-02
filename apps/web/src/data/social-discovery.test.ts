@@ -107,6 +107,30 @@ describe("public social discovery supplement", () => {
     expect(merged.socialActivityPulse).toEqual(validV4Payload);
   });
 
+  it("replaces an older embedded v4 pulse with the valid current payload", () => {
+    const stalePulse = {
+      ...validV4Payload,
+      window: {
+        start: "2026-08-29T10:45:00Z",
+        end: "2026-08-30T10:45:00Z",
+      },
+      sources: validV4Payload.sources.map((source) => ({
+        ...source,
+        newCandidates24h: 999,
+        retainedCandidates: 999,
+      })),
+    };
+    const snapshot = {
+      ...DEMO_PUBLIC_DATA,
+      socialActivityPulse: stalePulse,
+    };
+
+    const merged = mergePublicSocialDiscovery(snapshot, validV4Payload) as typeof DEMO_PUBLIC_DATA;
+
+    expect(merged).not.toBe(snapshot);
+    expect(merged.socialActivityPulse).toEqual(validV4Payload);
+  });
+
   it("accepts every legacy source status while rejecting unavailable", () => {
     for (const status of ["operational", "delayed", "attention", "paused"] as const) {
       expect(
@@ -217,7 +241,7 @@ describe("public social discovery supplement", () => {
         schemaVersion: "3.0.0",
         sources: [blueskySource, nostrSource, mastodonSource],
       }),
-    ).toBe(collision);
+    ).toEqual(collision);
   });
 
   it("rejects v4 fields that could become evidence, identity, or provider payload", () => {

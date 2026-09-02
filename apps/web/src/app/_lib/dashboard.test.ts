@@ -12,4 +12,12 @@ describe("public dashboard cache", () => {
     expect(source).toContain("revalidate: 60");
     expect(source).toContain('tags: ["public-dashboard"]');
   });
+
+  it("keeps operational pages on a request-time loader outside the shared ISR cache", () => {
+    const loaderStart = source.indexOf(
+      "export const loadOperationalDashboard = cache(getDashboardData);",
+    );
+    expect(loaderStart).toBeGreaterThan(-1);
+    expect(source.slice(loaderStart)).not.toContain("unstable_cache(");
+  });
 });

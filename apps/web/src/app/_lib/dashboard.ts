@@ -13,3 +13,9 @@ const cachedDashboard = unstable_cache(
 );
 
 export const loadDashboard = cache(cachedDashboard);
+
+// Operational pages must evaluate the database clock on every request. React's
+// cache only deduplicates calls within one render; unlike `cachedDashboard`, it
+// does not create a Next/Vercel persistent cache entry. The public RPCs then
+// calculate social freshness against the request-time statement timestamp.
+export const loadOperationalDashboard = cache(getDashboardData);

@@ -26,7 +26,7 @@ describe("public App Router inventory", () => {
 
     for (const file of publicPages) {
       const source = readFileSync(path.join(appDirectory, file), "utf8");
-      expect(source, file).toContain("loadDashboard");
+      expect(source, file).toMatch(/load(?:Dashboard|OperationalDashboard)/);
       expect(source, file).not.toMatch(/@\/data\/(demo|schema|rpc)|DEMO_(PUBLIC_)?DATA/);
     }
   });
