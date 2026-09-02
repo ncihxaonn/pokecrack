@@ -56,6 +56,12 @@ class Settings(BaseSettings):
     # Optional dedicated NOINHERIT monitor login. It is only consumed by the
     # read-only release verifier and is intentionally separate from worker DSNs.
     runtime_release_evidence_db_url: SecretStr | None = None
+    # These are intentionally separate from the worker/service DSN. The
+    # authorized-opening CLI validates and reads them through its isolated
+    # operator settings, but keeping the fields here also makes accidental
+    # generic-environment reuse visible to configuration consumers.
+    authorized_opening_submitter_db_url: SecretStr | None = None
+    authorized_opening_reviewer_db_url: SecretStr | None = None
 
     ai_provider: AIProviderName = AIProviderName.FIXTURE
     ai_base_url: str = "https://api.openai.com/v1"
@@ -143,6 +149,8 @@ class Settings(BaseSettings):
         "supabase_db_url",
         "nostr_supabase_db_url",
         "runtime_release_evidence_db_url",
+        "authorized_opening_submitter_db_url",
+        "authorized_opening_reviewer_db_url",
         "ai_api_key",
         "youtube_api_key",
         "maton_api_key",

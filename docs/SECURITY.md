@@ -20,6 +20,16 @@ Highest-risk assets are DB/service-role/provider/SSH/noVNC credentials, persiste
 
 Store production env/noVNC files outside Git at mode `0600`. Prefer scoped, separate credentials; rotate on staff/device/provider changes. Do not pass DB URLs in command arguments when avoidable, paste them into chat/issues, enable shell tracing, publish Compose expansion or upload logs/artifacts containing them. GitHub secrets are account-bound; pin the VPS host key rather than `ssh-keyscan` at deploy time.
 
+The authorized-opening operator uses two additional mode-`0600` environment
+values outside the repository: `AUTHORIZED_OPENING_SUBMITTER_DB_URL` and
+`AUTHORIZED_OPENING_REVIEWER_DB_URL`. They must use the named NOINHERIT logins
+and fixed `options=-c role=...` settings; the CLI never falls back to a
+generic database URL or service-role key. Owner evidence-envelopes are also
+mode `0600` regular files, are bounded to 16 KiB, rejected when social-derived
+or URL-bearing, and are not persisted after the typed RPC call. Operator
+output contains only safe IDs/state/revision (plus a safe retraction reason);
+opaque references, raw evidence and connection details are never logged.
+
 ## Browser/account boundary
 
 A logged-in account remains governed by platform terms and owner authorization. Login does not authorize broad collection/republishing. CAPTCHA/2FA is completed manually through `ssh -L 6080:127.0.0.1:6080 VPS_USER@VPS_HOST`; no bypass, proxy pool or credential sharing. Disable the adapter on challenge/denial and re-review.
