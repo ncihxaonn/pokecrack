@@ -50,10 +50,7 @@ def _connect_with_retry(connection_factory: Callable[[], Any]) -> Any:
         try:
             return connection_factory()
         except Exception as error:
-            if (
-                not _is_transient_connection_error(error)
-                or attempt + 1 >= CONNECTION_MAX_ATTEMPTS
-            ):
+            if not _is_transient_connection_error(error) or attempt + 1 >= CONNECTION_MAX_ATTEMPTS:
                 raise
             time.sleep(CONNECTION_RETRY_DELAY_SECONDS)
     raise AssertionError("connection retry loop exhausted unexpectedly")
