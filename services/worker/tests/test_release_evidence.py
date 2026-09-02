@@ -24,12 +24,69 @@ def evidence(status: str = "healthy") -> dict[str, Any]:
         "status": status,
         "release_age_seconds": 120,
         "grace_seconds": 21600,
-        "workers": {"status": "healthy"},
-        "sources": {"status": "healthy"},
-        "schedule": {"status": "advancing"},
-        "queue": {"status": "healthy", "pending_age_bands": {}},
-        "checkpoints": {"status": "healthy"},
-        "cleanup": {"status": "healthy"},
+        "workers": {
+            "expected_count": 3,
+            "observed_count": 3,
+            "healthy_count": 3,
+            "stale_count": 0,
+            "missing_count": 0,
+            "future_count": 0,
+            "max_age_seconds": 30,
+            "status": "healthy",
+        },
+        "sources": {
+            "configured_count": 2,
+            "enabled_count": 1,
+            "disabled_count": 1,
+            "fresh_count": 1,
+            "stale_count": 0,
+            "never_succeeded_count": 0,
+            "future_count": 0,
+            "advanced_since_release_count": 1,
+            "status": "healthy",
+        },
+        "schedule": {
+            "slot_count": 1,
+            "slots_with_job_count": 1,
+            "orphan_slot_count": 0,
+            "latest_slot_age_seconds": 60,
+            "latest_job_age_seconds": 30,
+            "latest_job_status": "completed",
+            "status": "advancing",
+        },
+        "queue": {
+            "live_job_count": 1,
+            "pending_count": 0,
+            "running_count": 0,
+            "completed_count": 1,
+            "failed_count": 0,
+            "dead_count": 0,
+            "cancelled_count": 0,
+            "future_created_count": 0,
+            "pending_age_bands": {
+                "under_5m": 0,
+                "5m_to_1h": 0,
+                "1h_to_6h": 0,
+                "over_6h": 0,
+            },
+            "status": "healthy",
+        },
+        "checkpoints": {
+            "expected_count": 1,
+            "observed_count": 1,
+            "fresh_count": 1,
+            "stale_count": 0,
+            "never_collected_count": 0,
+            "future_count": 0,
+            "status": "healthy",
+        },
+        "cleanup": {
+            "scheduled_count": 1,
+            "completed_count": 1,
+            "latest_status": "completed",
+            "latest_age_seconds": 60,
+            "status": "healthy",
+        },
     }
 
 
@@ -60,7 +117,9 @@ def test_query_validates_schema_and_does_not_widen_output() -> None:
     assert "get_runtime_release_evidence_v1" in executor.sql
 
 
-@pytest.mark.parametrize("value", [{"schema_version": "0.9.0"}, {"schema_version": "1.0.0", "status": "unknown"}])
+@pytest.mark.parametrize(
+    "value", [{"schema_version": "0.9.0"}, {"schema_version": "1.0.0", "status": "unknown"}]
+)
 def test_old_or_unknown_rpc_shape_is_inconclusive(value: dict[str, object]) -> None:
     with pytest.raises(RuntimeEvidenceUnavailable):
         validate_runtime_evidence(value)
@@ -73,10 +132,16 @@ def test_forbidden_rpc_key_is_rejected_even_when_nested() -> None:
         validate_runtime_evidence(value)
 
 
+def test_missing_runtime_evidence_field_is_rejected() -> None:
+    value = evidence()
+    del value["workers"]["max_age_seconds"]
+
+    with pytest.raises(RuntimeEvidenceUnavailable):
+        validate_runtime_evidence(value)
+
+
 def test_parse_release_timestamp_requires_timezone() -> None:
-    assert parse_release_started_at("2026-09-03T00:00:00Z") == datetime(
-        2026, 9, 3, tzinfo=UTC
-    )
+    assert parse_release_started_at("2026-09-03T00:00:00Z") == datetime(2026, 9, 3, tzinfo=UTC)
     with pytest.raises(ValueError):
         parse_release_started_at("2026-09-03T00:00:00")
 
