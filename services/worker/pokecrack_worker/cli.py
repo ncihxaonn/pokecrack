@@ -230,6 +230,9 @@ def verify_release(
     ):
         _json(inconclusive_result("invalid_runtime_options"))
         raise typer.Exit(code=2)
+    if release_started_at is None or not release_started_at.strip():
+        _json(inconclusive_result("invalid_release_timestamp"))
+        raise typer.Exit(code=2)
     try:
         parsed_release_started_at = parse_release_started_at(release_started_at)
     except ValueError:

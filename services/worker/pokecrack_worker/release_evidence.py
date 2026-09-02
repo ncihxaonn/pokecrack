@@ -180,13 +180,12 @@ def _assert_safe_json(value: object, *, parent: str = "root") -> None:
         allowed = _ROOT_KEYS if parent == "root" else _NESTED_KEYS.get(parent)
         if allowed is None:
             raise RuntimeEvidenceUnavailable("runtime evidence shape is unsupported")
+        keys = set(value)
+        if not all(isinstance(key, str) for key in keys) or keys != allowed:
+            raise RuntimeEvidenceUnavailable("runtime evidence shape is unsupported")
         for key, nested in value.items():
-            if not isinstance(key, str):
-                raise RuntimeEvidenceUnavailable("runtime evidence shape is unsupported")
             if key.casefold() in _FORBIDDEN_KEYS:
                 raise RuntimeEvidenceUnavailable("runtime evidence contains restricted data")
-            if key not in allowed:
-                raise RuntimeEvidenceUnavailable("runtime evidence schema is newer than this verifier")
             _assert_safe_json(nested, parent=key)
         return
     if isinstance(value, (list, tuple)):
