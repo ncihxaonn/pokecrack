@@ -6,6 +6,8 @@ import {
   publicSocialDiscoverySchema,
   publicSocialDiscoveryV1Schema,
   publicSocialDiscoveryV2Schema,
+  publicSocialDiscoveryV3Schema,
+  publicSocialDiscoveryV4Schema,
 } from "./social-discovery";
 
 const blueskySource = {
@@ -41,33 +43,82 @@ const mastodonSource = {
   note: "Public hashtag activity discovery only; it is never opening evidence, a statistical sample, or a pull-rate denominator.",
 } as const;
 
-const validPayload = {
+const validV3Payload = {
   schemaVersion: "3.0.0",
   sources: [blueskySource, nostrSource, mastodonSource],
 } as const;
 
-describe("public social discovery supplement", () => {
-  it("accepts the exact public-safe Bluesky, Nostr, and Mastodon identities in order", () => {
-    expect(publicSocialDiscoverySchema.parse(validPayload)).toEqual(validPayload);
-    const merged = mergePublicSocialDiscovery(DEMO_PUBLIC_DATA, validPayload);
+const pulseBlueskySource = {
+  id: "bluesky_jetstream",
+  name: "Bluesky Jetstream discovery",
+  kind: "social",
+  access: "public",
+  status: "operational",
+  freshness: "fresh",
+  lastCollectedAt: "2026-08-31T10:45:00Z",
+  newCandidates24h: 12,
+  retainedCandidates: 42,
+  activityOnly: true,
+  statisticsEligible: false,
+} as const;
+const pulseNostrSource = {
+  id: "nostr_multi_relay",
+  name: "Nostr multi-relay discovery",
+  kind: "social",
+  access: "public",
+  status: "delayed",
+  freshness: "delayed",
+  lastCollectedAt: "2026-08-31T10:30:00Z",
+  newCandidates24h: 8,
+  retainedCandidates: 18,
+  activityOnly: true,
+  statisticsEligible: false,
+} as const;
+const pulseMastodonSource = {
+  id: "mastodon_public_hashtag",
+  name: "Mastodon public hashtag discovery",
+  kind: "social",
+  access: "public",
+  status: "attention",
+  freshness: "attention",
+  lastCollectedAt: null,
+  newCandidates24h: 0,
+  retainedCandidates: 0,
+  activityOnly: true,
+  statisticsEligible: false,
+} as const;
+const validV4Payload = {
+  schemaVersion: "4.0.0",
+  window: {
+    start: "2026-08-30T10:45:00Z",
+    end: "2026-08-31T10:45:00Z",
+  },
+  activityOnly: true,
+  nonEvidence: true,
+  sources: [pulseBlueskySource, pulseNostrSource, pulseMastodonSource],
+} as const;
 
-    expect((merged as { sources: readonly unknown[] }).sources.slice(-3)).toEqual(
-      validPayload.sources,
-    );
+describe("public social discovery supplement", () => {
+  it("accepts and merges the strict v4 activity pulse without changing provenance cards", () => {
+    expect(publicSocialDiscoverySchema.parse(validV4Payload)).toEqual(validV4Payload);
+    const merged = mergePublicSocialDiscovery(DEMO_PUBLIC_DATA, validV4Payload) as typeof DEMO_PUBLIC_DATA;
+
+    expect(merged.sources).toEqual(DEMO_PUBLIC_DATA.sources);
+    expect(merged.socialActivityPulse).toEqual(validV4Payload);
   });
 
-  it("accepts every existing source status while rejecting unavailable", () => {
+  it("accepts every legacy source status while rejecting unavailable", () => {
     for (const status of ["operational", "delayed", "attention", "paused"] as const) {
       expect(
-        publicSocialDiscoverySchema.safeParse({
-          ...validPayload,
+        publicSocialDiscoveryV3Schema.safeParse({
+          ...validV3Payload,
           sources: [blueskySource, nostrSource, { ...mastodonSource, status }],
         }).success,
       ).toBe(true);
     }
     expect(
-      publicSocialDiscoverySchema.safeParse({
-        ...validPayload,
+      publicSocialDiscoveryV3Schema.safeParse({
+        ...validV3Payload,
         sources: [
           blueskySource,
           nostrSource,
@@ -89,7 +140,7 @@ describe("public social discovery supplement", () => {
 
     expect(publicSocialDiscoverySchema.safeParse(oldV2Payload).success).toBe(false);
     expect(publicSocialDiscoveryV2Schema.parse(oldV2Payload)).toEqual(oldV2Payload);
-    expect(publicSocialDiscoverySchema.safeParse(wrongOrderPayload).success).toBe(false);
+    expect(publicSocialDiscoveryV3Schema.safeParse(wrongOrderPayload).success).toBe(false);
     expect(mergePublicSocialDiscovery(DEMO_PUBLIC_DATA, oldV2Payload)).toBe(
       DEMO_PUBLIC_DATA,
     );
@@ -121,7 +172,7 @@ describe("public social discovery supplement", () => {
 
   it("fails closed on identity drift, private fields, and source collisions", () => {
     const drifted = {
-      schemaVersion: "3.0.0",
+      ...validV3Payload,
       sources: [
         blueskySource,
         nostrSource,
@@ -143,19 +194,20 @@ describe("public social discovery supplement", () => {
       sources: [...DEMO_PUBLIC_DATA.sources, mastodonSource],
     };
 
+    expect(publicSocialDiscoveryV3Schema.safeParse(drifted).success).toBe(false);
     expect(mergePublicSocialDiscovery(DEMO_PUBLIC_DATA, drifted)).toBe(
       DEMO_PUBLIC_DATA,
     );
     for (const field of privatePayloads) {
       const privatePayload = {
-        ...validPayload,
+        ...validV3Payload,
         sources: [
           blueskySource,
           nostrSource,
           { ...mastodonSource, [field]: "private" },
         ],
       };
-      expect(publicSocialDiscoverySchema.safeParse(privatePayload).success).toBe(false);
+      expect(publicSocialDiscoveryV3Schema.safeParse(privatePayload).success).toBe(false);
       expect(mergePublicSocialDiscovery(DEMO_PUBLIC_DATA, privatePayload)).toBe(
         DEMO_PUBLIC_DATA,
       );
@@ -166,5 +218,50 @@ describe("public social discovery supplement", () => {
         sources: [blueskySource, nostrSource, mastodonSource],
       }),
     ).toBe(collision);
+  });
+
+  it("rejects v4 fields that could become evidence, identity, or provider payload", () => {
+    for (const field of [
+      "text",
+      "url",
+      "uri",
+      "eventId",
+      "statusId",
+      "hash",
+      "author",
+      "tag",
+      "cursor",
+      "rawPayload",
+      "country",
+      "pack",
+      "rate",
+    ] as const) {
+      const payload = {
+        ...validV4Payload,
+        sources: [
+          { ...pulseBlueskySource, [field]: "private" },
+          pulseNostrSource,
+          pulseMastodonSource,
+        ],
+      };
+      expect(publicSocialDiscoveryV4Schema.safeParse(payload).success).toBe(false);
+      expect(mergePublicSocialDiscovery(DEMO_PUBLIC_DATA, payload)).toBe(DEMO_PUBLIC_DATA);
+    }
+    expect(
+      publicSocialDiscoveryV4Schema.safeParse({
+        ...validV4Payload,
+        window: { start: "2026-08-30T10:45:00Z", end: "2026-08-31T09:45:00Z" },
+      }).success,
+    ).toBe(false);
+    expect(
+      publicSocialDiscoveryV4Schema.safeParse({
+        ...validV4Payload,
+        sources: [
+          { ...pulseBlueskySource, status: "delayed", freshness: "fresh" },
+          pulseNostrSource,
+          pulseMastodonSource,
+        ],
+      }).success,
+    ).toBe(false);
   });
 });
