@@ -4031,6 +4031,125 @@ export type Database = {
           },
         ];
       };
+      reviewed_global_aggregate_independent_sources: {
+        Row: {
+          source_key: string;
+          canonical_domain: string;
+          domain_contract_version: string;
+          domain_contract_sha256: string;
+          created_at: string;
+        };
+        Insert: {
+          source_key: string;
+          canonical_domain: string;
+          domain_contract_version: string;
+          domain_contract_sha256: string;
+          created_at?: string;
+        };
+        Update: {
+          source_key?: string;
+          canonical_domain?: string;
+          domain_contract_version?: string;
+          domain_contract_sha256?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      reviewed_global_aggregate_authorized_source_bindings: {
+        Row: {
+          binding_key: string;
+          source_identity_sha256: string;
+          authorization_reference_sha256: string;
+          independent_source_key: string;
+          authorization_contract_version: string;
+          authorization_contract_sha256: string;
+          valid_from: string;
+          valid_until: string | null;
+          created_at: string;
+        };
+        Insert: {
+          binding_key: string;
+          source_identity_sha256: string;
+          authorization_reference_sha256: string;
+          independent_source_key: string;
+          authorization_contract_version: string;
+          authorization_contract_sha256: string;
+          valid_from: string;
+          valid_until?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          binding_key?: string;
+          source_identity_sha256?: string;
+          authorization_reference_sha256?: string;
+          independent_source_key?: string;
+          authorization_contract_version?: string;
+          authorization_contract_sha256?: string;
+          valid_from?: string;
+          valid_until?: string | null;
+          created_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'rga_asb_source_key_fkey';
+            columns: ['independent_source_key'];
+            isOneToOne: false;
+            referencedRelation: 'reviewed_global_aggregate_independent_sources';
+            referencedColumns: ['source_key'];
+          },
+        ];
+      };
+      reviewed_global_aggregate_input_admissions: {
+        Row: {
+          admission_key: string;
+          input_kind: string;
+          public_study_key: string | null;
+          accepted_observation_id: string | null;
+          binding_key: string | null;
+          canonical_opening_fingerprint_sha256: string;
+          admission_contract_version: string;
+          admission_contract_sha256: string;
+          admitted_at: string;
+        };
+        Insert: {
+          admission_key: string;
+          input_kind: string;
+          public_study_key?: string | null;
+          accepted_observation_id?: string | null;
+          binding_key?: string | null;
+          canonical_opening_fingerprint_sha256: string;
+          admission_contract_version: string;
+          admission_contract_sha256: string;
+          admitted_at?: string;
+        };
+        Update: {
+          admission_key?: string;
+          input_kind?: string;
+          public_study_key?: string | null;
+          accepted_observation_id?: string | null;
+          binding_key?: string | null;
+          canonical_opening_fingerprint_sha256?: string;
+          admission_contract_version?: string;
+          admission_contract_sha256?: string;
+          admitted_at?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'rga_ia_observation_fkey';
+            columns: ['accepted_observation_id'];
+            isOneToOne: false;
+            referencedRelation: 'authorized_opening_observations';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'rga_ia_binding_key_fkey';
+            columns: ['binding_key'];
+            isOneToOne: false;
+            referencedRelation: 'reviewed_global_aggregate_authorized_source_bindings';
+            referencedColumns: ['binding_key'];
+          },
+        ];
+      };
       reviewed_global_aggregate_audit: {
         Row: {
           id: string;
@@ -4307,6 +4426,28 @@ export type Database = {
     };
     Views: { [_ in never]: never };
     Functions: {
+      reviewed_global_aggregate_cohort_v1: {
+        Args: {
+          p_period_start: string;
+          p_period_end: string;
+          p_as_of: string;
+        };
+        Returns: {
+          input_kind: string;
+          input_id: string;
+          country_code: string;
+          country_name: string;
+          language: string;
+          set_external_id: string;
+          product_scope: string;
+          observed_at: string;
+          pack_count: number;
+          qualifying_hit_pack_count: number;
+          independent_source_key: string;
+          source_contract_version: string;
+          methodology_version: string;
+        }[];
+      };
       reviewed_global_beta_parameters_v1: {
         Args: {
           p_hits: number;
