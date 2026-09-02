@@ -61,6 +61,9 @@ MASTODON_RUNTIME_FINALIZER_HOTFIX = (
 REVIEWED_GLOBAL_AGGREGATE_FOUNDATION = (
     ROOT / "migrations/20260916000000_reviewed_global_aggregate_foundation.sql"
 ).read_text()
+REVIEWED_GLOBAL_COVERAGE_PROJECTION_V2 = (
+    ROOT / "migrations/20260917000000_reviewed_global_coverage_projection_v2.sql"
+).read_text()
 SOCIAL_ACTIVITY_PULSE_V4 = (
     ROOT / "migrations/20260913000000_social_activity_pulse_v4.sql"
 ).read_text()
@@ -1224,6 +1227,55 @@ class IngestMigrationContractTests(unittest.TestCase):
             "reviewed_global_beta_parameters_v1:",
         ):
             self.assertIn(type_name, DATABASE_TYPES)
+
+    def test_reviewed_global_coverage_projection_v2_is_registry_driven_and_public_safe(
+        self,
+    ) -> None:
+        lowered = REVIEWED_GLOBAL_COVERAGE_PROJECTION_V2.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        projection = lowered.split(
+            "create or replace function public.get_public_study_coverage_v2", 1
+        )[1].split(
+            "alter function public.get_public_study_coverage_v2", 1
+        )[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "ingest.reviewed_public_study_contracts()",
+            "ingest.public_study_observations",
+            "ingest.public_study_coverage_observations",
+            "catalog.iso_alpha2_codes",
+            "count(distinct rows.domain)",
+            "'schemaversion', '2.0.0'",
+        ):
+            self.assertIn(fragment, projection)
+        self.assertNotIn("contracts.ordinal in (", projection)
+        for forbidden_json_key in (
+            "'evidenceexcerpt'",
+            "'evidencesha256'",
+            "'qualifyinghitpackcount'",
+            "'policyid'",
+            "'studykey'",
+            "'sourcepolicy'",
+            "'hitrate'",
+            "'posteriormean'",
+        ):
+            self.assertNotIn(forbidden_json_key, projection)
+        self.assertIn(
+            "revoke all on function public.get_public_study_coverage_v2() from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_study_coverage_v2() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_study_coverage_v2() to service_role",
+            compact,
+        )
+        self.assertIn("get_public_study_coverage_v2:", DATABASE_TYPES)
 
     def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()

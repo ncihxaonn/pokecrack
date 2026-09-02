@@ -778,6 +778,7 @@ export type Database = {
       get_public_social_discovery_v3: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_social_discovery_v4: { Args: Record<PropertyKey, never>; Returns: Json };
       get_public_study_coverage_v1: { Args: Record<PropertyKey, never>; Returns: Json };
+      get_public_study_coverage_v2: { Args: Record<PropertyKey, never>; Returns: Json };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };
