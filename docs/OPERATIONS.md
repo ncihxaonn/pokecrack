@@ -2,7 +2,22 @@
 
 ## Routine checks
 
-For each released TCGdex UTC window (02:00 and 14:00): collector, scheduler, and watchdog healthy; no non-core containers; catalog job backlog/lease expiry; `catalog.sync_state` freshness/item count; database/storage/egress thresholds; backup marker age/size; and TCGdex terms/API errors. The durable slot list should show at most one catalog job per window; a missed window is eligible for bounded catch-up. Weekly: failed jobs, unused images, provenance checks, and restore-drill schedule. Monthly: source/terms review, dependency/image updates, access review, key rotation plan and free-tier capacity trend. AI/browser checks are not part of this release.
+For each released TCGdex UTC window (02:00 and 14:00): collector, scheduler, and watchdog healthy; no non-core containers; catalog job backlog/lease expiry; `catalog.sync_state` freshness/item count; database/storage/egress thresholds; backup marker age/size; and TCGdex terms/API errors. The durable slot list should show at most one catalog job per window; a missed window is eligible for bounded catch-up. After a release, run the optional aggregate verifier with the exact deployment SHA and release start:
+
+```bash
+deploy/scripts/verify-runtime-release.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
+  --env-file /etc/pokecrack/production.env \
+  --release-started-at 2026-09-03T00:00:00Z
+```
+
+Treat `healthy` as advancing evidence, `warming_up` as an expected first-run
+grace state, exit 1 as a release failure, and exit 2 as `inconclusive` (schema,
+role, or marker evidence unavailable). The command is read-only and emits only
+safe aggregates; do not paste environment files or container inspection into
+an incident. Weekly: failed jobs, unused images, provenance checks, and
+restore-drill schedule. Monthly: source/terms review, dependency/image
+updates, access review, key rotation plan and free-tier capacity trend.
+AI/browser checks are not part of this release.
 
 Use the secret environment file without printing expanded config:
 

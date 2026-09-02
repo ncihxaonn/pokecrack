@@ -19,6 +19,7 @@ runner = CliRunner()
     [
         ["--help"],
         ["health", "--help"],
+        ["verify-release", "--help"],
         ["worker", "--help"],
         ["scheduler", "--help"],
         ["aggregate", "all", "--help"],
@@ -51,6 +52,16 @@ def test_health_is_structured_and_uses_fixture_boundaries_by_default() -> None:
     assert payload["data_mode"] == "demo"
     assert payload["ai_provider"] == "fixture"
     assert payload["database"] == "in_memory_fixture"
+
+
+def test_verify_release_is_inconclusive_in_fixture_mode() -> None:
+    result = runner.invoke(app, ["verify-release"])
+
+    assert result.exit_code == 2, result.output
+    assert json.loads(result.stdout) == {
+        "reason": "live_mode_required",
+        "status": "inconclusive",
+    }
 
 
 @pytest.mark.parametrize(

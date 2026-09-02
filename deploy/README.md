@@ -104,6 +104,38 @@ The full service set is unavailable. Existing browser/AI/aggregator containers
 must be retired through a separately approved operation before the core release;
 the deploy script will not stop or remove them implicitly.
 
+### Verify runtime release evidence
+
+Container health proves only that processes started. A release operator can
+add the bounded runtime gate after the health wait:
+
+```bash
+deploy/scripts/deploy.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
+  --env-file /etc/pokecrack/production.env \
+  --service-set tcgdex \
+  --verify-runtime
+```
+
+The gate invokes the read-only `verify-release` command in the watchdog. It
+uses the private `ingest.get_runtime_release_evidence_v1` RPC from migration
+`20260923000000_runtime_release_evidence.sql` through the dedicated
+`pokecrack_runtime_monitor` capability role. Provision a separate NOINHERIT
+login outside migrations, set its URL as
+`RUNTIME_RELEASE_EVIDENCE_DB_URL` in the mode-0600 environment file, and do
+not use `anon`, `authenticated`, `service_role`, or a worker DSN. The URL is
+forced to `options=-c role=pokecrack_runtime_monitor` by the worker and is
+never printed.
+
+The verifier prints only status, counts, age bands, and backup-marker age. It
+returns success for `healthy` and first-run `warming_up`, exit 1 for observed
+stale/failed evidence, and exit 2 for unavailable or incompatible schema and
+configuration. A new release remains `warming_up` for the configured grace
+window until its first schedule, heartbeat, source/checkpoint, and cleanup
+evidence exists. Disabled source policies remain observed as disabled; no
+source is assumed enabled. The deploy script advances its success manifest
+only when this optional gate succeeds. It never applies migrations or deploys
+anything on its own.
+
 Rollback always requires the chosen commit; it does not guess “previous”:
 
 ```bash
@@ -135,6 +167,7 @@ The container automatically starts the allowlisted profile selected by `CHROMIUM
 - `deploy/scripts/backup.sh`: a stdin-only URL runner requires `sslmode=require` or stronger, clears inherited `PG*`, and maps only allowlisted fields to libpq -> independently role-switched `psql` policy/table/privilege preflights -> one-snapshot plain `pg_dump` on the owner-capable login, strictly limited to `catalog`, `ingest`, `analytics`, `public`, and `supabase_migrations` (never provider `auth`/`storage`/`realtime` data), with exact request-gate and private social-activity data exclusions -> fail-closed sanitizer that verifies the policy-free regular gate schema, rejects live gate rows, inserts canonical idle gates before RLS enablement, strips disposable social discovery rows, retains exact checkpoints, retains the public-study ledger only after exact schema/COPY/row validation, and retains the optional aggregate-admission bridge only as a complete immutable source/binding/admission bundle -> gzip, non-empty validation, UTC filename, atomic last-success marker, newest 7 daily plus 4 weekly representatives.
 - `deploy/scripts/cleanup.sh`: removes only stopped project containers and unused labeled images; never stops services or prunes volumes/profiles/backups/extensions.
 - `deploy/scripts/deploy.sh`: exact-SHA, exact-service-set build/start/health gate plus host-only Nostr attestation; rejects the retired once-daily TCGdex schedule before checkout while preserving other explicit operator overrides.
+- `deploy/scripts/verify-runtime-release.sh`: optional exact-SHA post-deploy aggregate verifier; it executes only inside the already-running watchdog and preserves `healthy`/`warming_up`/failure exit semantics.
 - `deploy/scripts/rollback.sh`: explicit-SHA deployment of the same deterministic service set.
 - `deploy/scripts/install-opencli-extension.sh`: pinned extension install/rollback.
 

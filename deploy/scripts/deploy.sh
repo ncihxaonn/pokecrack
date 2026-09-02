@@ -6,6 +6,7 @@ umask 077
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 PORTABILITY_HELPER="$SCRIPT_DIR/../lib/shell_portability.sh"
 NOSTR_PREFLIGHT="$SCRIPT_DIR/../lib/verify_nostr_release.py"
+RUNTIME_EVIDENCE_VERIFY="$SCRIPT_DIR/verify-runtime-release.sh"
 # shellcheck disable=SC1090
 source "$PORTABILITY_HELPER"
 REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/../.." && pwd -P)
@@ -14,8 +15,10 @@ ENV_FILE=${POKECRACK_ENV_FILE:-/etc/pokecrack/production.env}
 NOSTR_ENV_FILE=${POKECRACK_NOSTR_ENV_FILE:-}
 STATE_DIR=${POKECRACK_DEPLOY_STATE_DIR:-/var/lib/pokecrack/deploy}
 HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-180}
+RUNTIME_GRACE_SECONDS=${DEPLOY_RUNTIME_GRACE_SECONDS:-21600}
 SERVICE_SET=tcgdex
 RETIRE_NOSTR=false
+VERIFY_RUNTIME=false
 SERVICES=(collector scheduler watchdog)
 SERVICES_CSV=collector,scheduler,watchdog
 EXPECTED_CATALOG_SCHEDULE='0 2,14 * * *'
@@ -76,6 +79,8 @@ Options:
   --nostr-env-file PATH       Dedicated Nostr interpolation/preflight file (tcgdex-nostr only)
   --state-dir ABSOLUTE_PATH   Success-marker directory (default: /var/lib/pokecrack/deploy)
   --health-timeout SECONDS    Health deadline (default: 180)
+  --verify-runtime             Run aggregate runtime evidence after health checks
+  --runtime-grace-seconds SEC First-run warming-up window (default: 21600)
   --service-set NAME          Exact release service set (tcgdex or tcgdex-nostr)
   --retire-nostr              Explicitly stop/remove only the managed Nostr container
 
@@ -93,6 +98,8 @@ while (($#)); do
     --nostr-env-file) (($# >= 2)) || die "--nostr-env-file requires a value"; NOSTR_ENV_FILE=$2; shift 2 ;;
     --state-dir) (($# >= 2)) || die "--state-dir requires a value"; STATE_DIR=$2; shift 2 ;;
     --health-timeout) (($# >= 2)) || die "--health-timeout requires a value"; HEALTH_TIMEOUT=$2; shift 2 ;;
+    --verify-runtime) VERIFY_RUNTIME=true; shift ;;
+    --runtime-grace-seconds) (($# >= 2)) || die "--runtime-grace-seconds requires a value"; RUNTIME_GRACE_SECONDS=$2; shift 2 ;;
     --service-set) (($# >= 2)) || die "--service-set requires a value"; SERVICE_SET=$2; shift 2 ;;
     --retire-nostr) RETIRE_NOSTR=true; shift ;;
     -h|--help) usage; exit 0 ;;
@@ -105,6 +112,8 @@ done
 [[ -f $ENV_FILE && ! -L $ENV_FILE ]] || die "environment file must be a regular, non-symlink file"
 [[ $STATE_DIR == /* ]] || die "state directory path must be absolute"
 [[ $HEALTH_TIMEOUT =~ ^[1-9][0-9]*$ ]] || die "health timeout must be a positive integer"
+[[ $RUNTIME_GRACE_SECONDS =~ ^[0-9]+$ && $RUNTIME_GRACE_SECONDS -le 172800 ]] || \
+  die "runtime grace seconds must be between 0 and 172800"
 [[ -f $COMPOSE_FILE ]] || die "Compose file is missing: $COMPOSE_FILE"
 case $SERVICE_SET in
   tcgdex)
@@ -129,7 +138,7 @@ case $SERVICE_SET in
   *) die "unsupported service set: $SERVICE_SET (allowed: tcgdex, tcgdex-nostr)" ;;
 esac
 
-for command in docker git install mktemp python3 stat; do
+for command in date docker git install mktemp python3 stat; do
   command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
 done
 
@@ -205,6 +214,7 @@ checked_out_sha=$(git -C "$REPOSITORY_ROOT" rev-parse --verify HEAD)
 
 export DEPLOY_SHA=$target_sha
 export POKECRACK_ENV_FILE=$ENV_FILE
+release_started_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 compose=(docker compose --project-name pokecrack --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
 if [[ $SERVICE_SET == tcgdex-nostr ]]; then
   compose=(docker compose --project-name pokecrack \
@@ -275,6 +285,16 @@ while true; do
   fi
   sleep 1
 done
+
+if [[ $VERIFY_RUNTIME == true ]]; then
+  [[ -f $RUNTIME_EVIDENCE_VERIFY && ! -L $RUNTIME_EVIDENCE_VERIFY ]] || \
+    die "runtime release verifier is missing"
+  "$RUNTIME_EVIDENCE_VERIFY" "$target_sha" \
+    --env-file "$ENV_FILE" \
+    --release-started-at "$release_started_at" \
+    --grace-seconds "$RUNTIME_GRACE_SECONDS" || \
+    die "runtime release evidence did not pass; success marker was not advanced"
+fi
 
 marker=$(mktemp "$STATE_DIR/.last-successful-deployment.XXXXXXXX")
 printf 'version=1\nsha=%s\nservice_set=%s\nservices=%s\n' \

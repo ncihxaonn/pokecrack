@@ -274,6 +274,9 @@ services:
       <<: *worker-environment
       WORKER_ID: "${WATCHDOG_WORKER_ID:-watchdog-1}"
       WORKER_ROLE: watchdog
+      # Only the watchdog receives the dedicated NOINHERIT monitor DSN. The
+      # worker DSN cannot execute the private release-evidence RPC.
+      RUNTIME_RELEASE_EVIDENCE_DB_URL: "${RUNTIME_RELEASE_EVIDENCE_DB_URL:-}"
       BACKUP_MARKER_PATH: /backups/.last-successful-backup
       DATABASE_WARNING_MB: "${DATABASE_WARNING_MB:-350}"
       DATABASE_CRITICAL_MB: "${DATABASE_CRITICAL_MB:-425}"

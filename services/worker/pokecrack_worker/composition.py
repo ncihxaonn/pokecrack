@@ -1220,6 +1220,7 @@ def role_is_ready(role: WorkerRole) -> bool:
 
 _NOSTR_DATABASE_ROLE = "pokecrack_nostr_worker"
 _NOSTR_DATABASE_LOGIN = "pokecrack_nostr_worker_login"
+_RUNTIME_EVIDENCE_DATABASE_ROLE = "pokecrack_runtime_monitor"
 _NOSTR_DATABASE_QUERY_OPTIONS = frozenset(
     {
         "application_name",
@@ -1305,6 +1306,69 @@ def _dsn_with_fixed_nostr_role(dsn: str) -> str:
     )
 
 
+def _dsn_with_fixed_runtime_evidence_role(dsn: str) -> str:
+    """Return a monitor DSN that cannot silently run as its login role."""
+
+    parts = urlsplit(dsn)
+    if (
+        parts.scheme not in {"postgres", "postgresql"}
+        or not parts.netloc
+        or not parts.username
+        or parts.fragment
+    ):
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL must be an unfragmented PostgreSQL URL with a login",
+        )
+    try:
+        query = parse_qsl(
+            parts.query,
+            keep_blank_values=True,
+            strict_parsing=True,
+            max_num_fields=32,
+        )
+    except ValueError as error:
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL has an invalid query string",
+        ) from error
+    query_keys = [key for key, _value in query]
+    if len(query_keys) != len(set(query_keys)):
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL has duplicate query options",
+        )
+    if not set(query_keys) <= _NOSTR_DATABASE_QUERY_OPTIONS:
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL has an unsupported query option",
+        )
+    query_values = dict(query)
+    if query_values.get("sslmode") not in _NOSTR_DATABASE_SSL_MODES:
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL requires sslmode=require or stronger",
+        )
+    fixed_option = f"-c role={_RUNTIME_EVIDENCE_DATABASE_ROLE}"
+    existing_options = [value for key, value in query if key == "options"]
+    if existing_options and existing_options != [fixed_option]:
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL may contain only the fixed monitor role option",
+        )
+    if not existing_options:
+        query.append(("options", fixed_option))
+    return urlunsplit(
+        (
+            parts.scheme,
+            parts.netloc,
+            parts.path,
+            urlencode(query, quote_via=quote),
+            "",
+        )
+    )
+
+
 def executor_from_settings(settings: Settings) -> PsycopgQueryExecutor:
     _require_live_settings(settings)
     role = require_supported_role(settings)
@@ -1315,6 +1379,22 @@ def executor_from_settings(settings: Settings) -> PsycopgQueryExecutor:
         )
     assert settings.supabase_db_url is not None
     return PsycopgQueryExecutor.from_dsn(settings.supabase_db_url.get_secret_value())
+
+
+def runtime_release_evidence_executor(settings: Settings) -> PsycopgQueryExecutor:
+    """Build the dedicated monitor connection; worker roles cannot call the RPC."""
+
+    _require_live_settings(settings)
+    if settings.runtime_release_evidence_db_url is None:
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_missing",
+            "runtime release verification requires the dedicated monitor database URL",
+        )
+    return PsycopgQueryExecutor.from_dsn(
+        _dsn_with_fixed_runtime_evidence_role(
+            settings.runtime_release_evidence_db_url.get_secret_value()
+        )
+    )
 
 
 def write_health_heartbeat(

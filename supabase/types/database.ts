@@ -3306,6 +3306,14 @@ export type Database = {
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
       finalize_cleanup_job: { Args: { job_id: string; worker_id: string; lease_generation: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
+      get_runtime_release_evidence_v1: {
+        Args: {
+          p_release_started_at?: string | null;
+          p_grace_seconds?: number;
+          p_heartbeat_stale_seconds?: number;
+        };
+        Returns: Json;
+      };
       verify_nostr_release_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       verify_nostr_release_v2: { Args: Record<PropertyKey, never>; Returns: Json };
       enqueue_due_nostr_relay_jobs_v1: {

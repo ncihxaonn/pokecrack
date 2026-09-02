@@ -92,6 +92,32 @@ Protect `worker-production` and configure `VPS_HOST`, `VPS_USER`, `VPS_PORT`,
 `VPS_DEPLOY_PATH`, `VPS_ENV_FILE`, `VPS_NOSTR_ENV_FILE`,
 `VPS_SSH_PRIVATE_KEY`, and pinned `VPS_KNOWN_HOSTS`.
 
+For a stronger post-deploy gate than container health, provision the dedicated
+`pokecrack_runtime_monitor` capability role from migration
+`20260923000000_runtime_release_evidence.sql` and an outside-migration
+NOINHERIT login. Put only that login's TLS URL in the mode-0600 production env
+file as `RUNTIME_RELEASE_EVIDENCE_DB_URL`; the watchdog is the only container
+that receives it. Then opt into the verifier during deployment:
+
+```bash
+deploy/scripts/deploy.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
+  --env-file /etc/pokecrack/production.env \
+  --service-set tcgdex \
+  --verify-runtime
+```
+
+The verifier reports aggregate worker heartbeat age/status, observed source
+state, schedule/job outcome, checkpoint freshness, queue age bands, cleanup
+freshness, and local backup-marker age where the marker is mounted. It never
+prints source text, URLs, payloads, policy/gate identifiers, cursors,
+credentials, or identity. `healthy` and first-run `warming_up` exit 0;
+observed stale/failed evidence exits 1; missing/incompatible schema or
+unavailable monitor access is explicitly `inconclusive` and exits 2. The
+first-run grace window avoids failing before the first schedule; it does not
+assert that a source is enabled. No migration or deployment is automatic.
+For an already-running release, the same check is available directly as
+`deploy/scripts/verify-runtime-release.sh` with an exact SHA and release start.
+
 After every database or password rotation, provision the two login roles from
 an owner-controlled, parameterized session (never a password literal in a
 shell argument or repository): `NOINHERIT`, `NOSUPERUSER`, `NOCREATEDB`,
@@ -115,8 +141,10 @@ Complete login/CAPTCHA/2FA manually, run doctor/auth/read-only adapter checks, t
 For a real release record: exact Git SHA; exact service-set manifest; CI and
 migration run; backup reference and plan-specific retention evidence; Supabase
 project reference (not secret); VPS host identifier; every selected service
-healthy; excluded services absent; source checkpoints/jobs advancing; anon
-public projection redaction; restore-drill date; and known warnings. For Nostr,
+healthy; excluded services absent; runtime verifier status and exit code (with
+worker/source/schedule/checkpoint/queue/cleanup aggregates and marker age);
+source checkpoints/jobs advancing; anon public projection redaction;
+restore-drill date; and known warnings. For Nostr,
 also record that both dedicated sessions authenticated, the 15-key v2 contract
 was all true, three relay jobs completed, and neither DSN appeared in logs or
 container inspection. A Compose render, migration file, heartbeat-only result,
