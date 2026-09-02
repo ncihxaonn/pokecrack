@@ -199,7 +199,7 @@ describe("HomeView", () => {
     expect(screen.getByText("42")).toBeVisible();
     expect(screen.getByText("8")).toBeVisible();
     expect(screen.getByText("18")).toBeVisible();
-    expect(screen.getByText(/not evidence for packs, country, or rate/i)).toBeVisible();
+    expect(screen.getAllByText(/not evidence for packs, country, or rate/i)).toHaveLength(3);
     expect(screen.queryByRole("link", { name: /Bluesky Jetstream discovery/i })).not.toBeInTheDocument();
   });
 
