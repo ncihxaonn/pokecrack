@@ -69,8 +69,8 @@ select ok(
           'select,insert,update,references'
         )
       )
-  ),
-  not exists (
+  )
+  and not exists (
     select 1
     from pg_class as sequences
     join pg_namespace as schemas on schemas.oid = sequences.relnamespace

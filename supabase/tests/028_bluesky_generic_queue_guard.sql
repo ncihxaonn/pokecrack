@@ -279,40 +279,72 @@ select ok(
 -- The dedicated capability remains able to operate the exact Bluesky lane.
 grant pokecrack_bluesky_worker to current_user with inherit false, set true;
 set local role pokecrack_bluesky_worker;
-select is(
-  (select count(*)::integer from ingest.claim_bluesky_jetstream_jobs_v1(
-    'bluesky-collector-test', 600
-  )),
-  1,
-  'the dedicated wrapper claims one Bluesky job'
+-- The production capability deliberately has no USAGE on the pgtap extension.
+-- Capture the exact wrapper results under the real role, then assert after
+-- RESET ROLE so the test harness does not expand that production capability.
+select set_config(
+  'pokecrack.bluesky_claim_count',
+  (
+    select count(*)::text from ingest.claim_bluesky_jetstream_jobs_v1(
+      'bluesky-collector-test', 600
+    )
+  ),
+  true
 );
-select is(
-  (select count(*)::integer from ingest.heartbeat_bluesky_jetstream_job_v1(
-    'bc000000-0000-4000-8000-000000000001',
-    'bluesky-collector-test', 1, 600
-  )),
-  1,
-  'the dedicated wrapper renews the Bluesky lease'
+select set_config(
+  'pokecrack.bluesky_heartbeat_count',
+  (
+    select count(*)::text from ingest.heartbeat_bluesky_jetstream_job_v1(
+      'bc000000-0000-4000-8000-000000000001',
+      'bluesky-collector-test', 1, 600
+    )
+  ),
+  true
 );
-select is(
-  (select count(*)::integer from ingest.fail_bluesky_jetstream_job_v1(
-    'bc000000-0000-4000-8000-000000000004',
-    'bluesky-collector-test', 1, 'dedicated_failure',
-    'expected dedicated transition', false
-  )),
-  1,
-  'the dedicated wrapper can fail a Bluesky lease'
+select set_config(
+  'pokecrack.bluesky_fail_count',
+  (
+    select count(*)::text from ingest.fail_bluesky_jetstream_job_v1(
+      'bc000000-0000-4000-8000-000000000004',
+      'bluesky-collector-test', 1, 'dedicated_failure',
+      'expected dedicated transition', false
+    )
+  ),
+  true
 );
-select is(
-  (select count(*)::integer from ingest.pause_bluesky_jetstream_job_v1(
-    'bc000000-0000-4000-8000-000000000005',
-    'bluesky-collector-test', 1, clock_timestamp() + interval '1 hour'
-  )),
-  1,
-  'the dedicated wrapper can pause a Bluesky lease'
+select set_config(
+  'pokecrack.bluesky_pause_count',
+  (
+    select count(*)::text from ingest.pause_bluesky_jetstream_job_v1(
+      'bc000000-0000-4000-8000-000000000005',
+      'bluesky-collector-test', 1, clock_timestamp() + interval '1 hour'
+    )
+  ),
+  true
 );
 reset role;
 revoke pokecrack_bluesky_worker from current_user;
+
+select is(
+  current_setting('pokecrack.bluesky_claim_count'),
+  '1',
+  'the dedicated wrapper claims one Bluesky job'
+);
+select is(
+  current_setting('pokecrack.bluesky_heartbeat_count'),
+  '1',
+  'the dedicated wrapper renews the Bluesky lease'
+);
+select is(
+  current_setting('pokecrack.bluesky_fail_count'),
+  '1',
+  'the dedicated wrapper can fail a Bluesky lease'
+);
+select is(
+  current_setting('pokecrack.bluesky_pause_count'),
+  '1',
+  'the dedicated wrapper can pause a Bluesky lease'
+);
 
 select ok(
   (select status = 'dead' and last_error_code = 'max_attempts_exhausted'
