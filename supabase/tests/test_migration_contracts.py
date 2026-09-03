@@ -680,6 +680,14 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("worker_memberships", attestation)
         self.assertIn("creator_edge_valid", attestation)
         self.assertIn("dedicated_login_edge_valid", attestation)
+        membership_count_expression = (
+            "case when bool_or(roles.login_oid is null) then 0 else 1 end"
+        )
+        self.assertEqual(attestation.count(membership_count_expression), 2)
+        self.assertNotIn(
+            "case when roles.login_oid is null then 0 else 1 end",
+            attestation,
+        )
         self.assertNotIn("memberships.member = 'postgres'::regrole", attestation)
         self.assertIn("pg_catalog.pg_db_role_setting", attestation)
         self.assertIn("owned_catalog_objects", attestation)
