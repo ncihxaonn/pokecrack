@@ -70,7 +70,9 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          npx --yes supabase@2.116.0 start
+          # Schema build and type generation use the local PostgreSQL port;
+          # exclude unrelated API/UI services from this database-only check.
+          npx --yes supabase@2.116.0 start --exclude gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
           npx --yes supabase@2.116.0 db reset
           install -d -m 0700 generated-types
           npx --yes supabase@2.116.0 gen types typescript --local \

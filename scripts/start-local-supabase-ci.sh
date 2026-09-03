@@ -13,7 +13,12 @@ cleanup() {
 }
 trap cleanup EXIT
 
-if npx --yes supabase@2.116.0 start >"$log_file" 2>&1; then
+# This job runs only migration and pgTAP checks. Keep PostgreSQL in the local
+# stack, but exclude unrelated API/UI services so their health cannot mask a
+# database migration failure. `supabase db reset` and `supabase test db` both
+# use the local PostgreSQL port directly.
+database_only_excludes='gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor'
+if npx --yes supabase@2.116.0 start --exclude "$database_only_excludes" >"$log_file" 2>&1; then
   printf 'category=started\n' >>"$GITHUB_OUTPUT"
   exit 0
 fi
