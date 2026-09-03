@@ -91,7 +91,24 @@ jobs:
       # the Actions step state. This is intentionally safe diagnostic output:
       # it never prints a database URL, payload, policy, or migration SQL.
       - name: Start local Supabase
-        run: npx --yes supabase@2.116.0 start
+        id: local-supabase-start
+        continue-on-error: true
+        run: bash scripts/start-local-supabase-ci.sh
+      - name: "Safe Supabase startup diagnosis: ${{ steps.local-supabase-start.outputs.category }}"
+        if: always()
+        env:
+          START_CATEGORY: ${{ steps.local-supabase-start.outputs.category }}
+        run: |
+          case "$START_CATEGORY" in
+            started) exit 0 ;;
+            docker_unavailable|image_pull|port_conflict|health_check|startup_timeout|cli_install|unknown)
+              exit 1
+              ;;
+            *)
+              printf 'Safe Supabase local startup category was not recognised.\n'
+              exit 1
+              ;;
+          esac
       - name: Reset local database and apply migrations
         run: npx --yes supabase@2.116.0 db reset
       - name: Run pgTAP database tests
