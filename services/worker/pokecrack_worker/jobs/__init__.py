@@ -25,11 +25,16 @@ from .models import (
     YouTubeSourceItemWrite,
 )
 from .postgres import (
+    BLUESKY_CLAIM_SQL,
+    BLUESKY_FAIL_SQL,
+    BLUESKY_HEARTBEAT_SQL,
+    BLUESKY_PAUSE_BUDGET_SQL,
     CLAIM_SQL,
     NOSTR_CLAIM_SQL,
     NOSTR_FAIL_SQL,
     NOSTR_HEARTBEAT_SQL,
     NOSTR_PAUSE_BUDGET_SQL,
+    BlueskyPostgresJobRepository,
     NostrPostgresJobRepository,
     PostgresJobRepository,
     QueryExecutor,
@@ -42,6 +47,10 @@ from .repository import (
 )
 
 __all__ = [
+    "BLUESKY_CLAIM_SQL",
+    "BLUESKY_FAIL_SQL",
+    "BLUESKY_HEARTBEAT_SQL",
+    "BLUESKY_PAUSE_BUDGET_SQL",
     "CLAIM_SQL",
     "NOSTR_CLAIM_SQL",
     "NOSTR_FAIL_SQL",
@@ -53,6 +62,7 @@ __all__ = [
     "BlueskyDeletionWrite",
     "BlueskyJetstreamCompletion",
     "BlueskySourceItemWrite",
+    "BlueskyPostgresJobRepository",
     "CompletionEffect",
     "InMemoryJobRepository",
     "Job",

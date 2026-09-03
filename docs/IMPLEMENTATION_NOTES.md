@@ -25,6 +25,13 @@ itself evidence of a live collection run.
   in this branch. It must pass clean PostgreSQL 17 migration/pgTAP replay, merge,
   apply to Personal Supabase project `wohnphsxlquhhknuthrj`, and receive live
   browser verification before that claim changes.
+- The authorized-opening operator hardening remains a forward-only,
+  not-deployed change in migration `20260925000000`. It pins the four existing
+  SECURITY DEFINER RPCs to `pg_catalog, pg_temp`, gives the submitter only a
+  direct-owner wrapper, rejects URL/URI-bearing envelope strings locally, and
+  carries accepted observation UUIDs through the reviewer CLI. PostgreSQL
+  replay, dedicated-login attestation, and owner review are still required
+  before any real operator envelope is used.
 - The MAM VPS runtime was not re-audited in this branch because the current
   session had not yet received exact authorization for that boundary. YouTube
   collection and the hosted worker revision therefore remain unverified here.
