@@ -90,6 +90,7 @@ def test_exact_owner_envelope_validates_and_is_read_only(tmp_path: Path) -> None
         ({"submissionKey": "mailto:owner@example.invalid"}, "invalid_envelope"),
         ({"submissionKey": "a:opaque-uri"}, "invalid_envelope"),
         ({"submissionKey": "h%74tps%3A%2F%2Fexample.invalid/opening"}, "invalid_envelope"),
+        ({"submissionKey": "https%253A%252F%252Fexample.invalid/opening"}, "invalid_envelope"),
         ({"countryName": "https://example.invalid/country"}, "invalid_envelope"),
         ({"countryName": "urn:pokecrack:country"}, "invalid_envelope"),
         ({"language": "https://example.invalid/lang"}, "invalid_envelope"),
@@ -332,9 +333,15 @@ def test_reviewer_connection_attestation_accepts_only_the_reviewed_capability() 
     fake = FakeExecutor(
         (
             {
+                "session_identity": True,
                 "capability_active": True,
+                "capability_contract": True,
                 "capability_membership": True,
+                "capability_membership_contract": True,
                 "login_contract": True,
+                "capability_acl_clean": True,
+                "login_acl_clean": True,
+                "object_ownership_clean": True,
             },
         )
     )
@@ -346,13 +353,101 @@ def test_reviewer_connection_attestation_accepts_only_the_reviewed_capability() 
     assert "pg_roles" in fake.calls[0][0]
 
 
+def test_submitter_connection_attestation_accepts_only_the_reviewed_capability() -> None:
+    fake = FakeExecutor(
+        (
+            {
+                "session_identity": True,
+                "capability_active": True,
+                "capability_contract": True,
+                "capability_membership": True,
+                "capability_membership_contract": True,
+                "login_contract": True,
+                "capability_acl_clean": True,
+                "login_acl_clean": True,
+                "object_ownership_clean": True,
+            },
+        )
+    )
+    client = AuthorizedOpeningRpcClient(fake)  # type: ignore[arg-type]
+
+    client.attest_submitter_connection()
+    sql = fake.calls[0][0].lower()
+    assert "session_user" in sql
+    assert "current_user" in sql
+    assert "pokecrack_authorized_opening_submitter" in sql
+    assert "submit_authorized_opening_direct_v1" in sql
+
+
 @pytest.mark.parametrize(
     "rows",
     [
         (),
-        ({"capability_active": False, "capability_membership": True, "login_contract": True},),
-        ({"capability_active": True, "capability_membership": False, "login_contract": True},),
-        ({"capability_active": True, "capability_membership": True, "login_contract": False},),
+        (
+            {
+                "session_identity": False,
+                "capability_active": True,
+                "capability_contract": True,
+                "capability_membership": True,
+                "capability_membership_contract": True,
+                "login_contract": True,
+                "capability_acl_clean": True,
+                "login_acl_clean": True,
+                "object_ownership_clean": True,
+            },
+        ),
+        (
+            {
+                "session_identity": True,
+                "capability_active": False,
+                "capability_contract": True,
+                "capability_membership": True,
+                "capability_membership_contract": True,
+                "login_contract": True,
+                "capability_acl_clean": True,
+                "login_acl_clean": True,
+                "object_ownership_clean": True,
+            },
+        ),
+        (
+            {
+                "session_identity": True,
+                "capability_active": True,
+                "capability_contract": False,
+                "capability_membership": True,
+                "capability_membership_contract": True,
+                "login_contract": True,
+                "capability_acl_clean": True,
+                "login_acl_clean": True,
+                "object_ownership_clean": True,
+            },
+        ),
+        (
+            {
+                "session_identity": True,
+                "capability_active": True,
+                "capability_contract": True,
+                "capability_membership": True,
+                "capability_membership_contract": True,
+                "login_contract": True,
+                "capability_acl_clean": False,
+                "login_acl_clean": True,
+                "object_ownership_clean": True,
+            },
+        ),
+        (
+            {
+                "session_identity": True,
+                "capability_active": True,
+                "capability_contract": True,
+                "capability_membership": True,
+                "capability_membership_contract": True,
+                "login_contract": True,
+                "capability_acl_clean": True,
+                "login_acl_clean": False,
+                "object_ownership_clean": True,
+            },
+        ),
     ],
 )
 def test_reviewer_connection_attestation_fails_closed(rows: tuple[dict[str, object], ...]) -> None:
@@ -360,6 +455,50 @@ def test_reviewer_connection_attestation_fails_closed(rows: tuple[dict[str, obje
     with pytest.raises(AuthorizedOpeningOperatorError) as error:
         client.attest_reviewer_connection()
     assert error.value.code == "invalid_configuration"
+
+
+def test_connection_attestation_fails_closed_on_missing_or_extra_fields() -> None:
+    incomplete = AuthorizedOpeningRpcClient(
+        FakeExecutor(
+            (
+                {
+                    "session_identity": True,
+                    "capability_active": True,
+                    "capability_contract": True,
+                    "capability_membership": True,
+                    "capability_membership_contract": True,
+                    "login_contract": True,
+                    "capability_acl_clean": True,
+                    "login_acl_clean": True,
+                },
+            )
+        )
+    )  # type: ignore[arg-type]
+    with pytest.raises(AuthorizedOpeningOperatorError) as incomplete_error:
+        incomplete.attest_submitter_connection()
+    assert incomplete_error.value.code == "invalid_configuration"
+
+    extra = AuthorizedOpeningRpcClient(
+        FakeExecutor(
+            (
+                {
+                    "session_identity": True,
+                    "capability_active": True,
+                    "capability_contract": True,
+                    "capability_membership": True,
+                    "capability_membership_contract": True,
+                    "login_contract": True,
+                    "capability_acl_clean": True,
+                    "login_acl_clean": True,
+                    "object_ownership_clean": True,
+                    "unexpected": True,
+                },
+            )
+        )
+    )  # type: ignore[arg-type]
+    with pytest.raises(AuthorizedOpeningOperatorError) as extra_error:
+        extra.attest_submitter_connection()
+    assert extra_error.value.code == "invalid_configuration"
 
 
 def test_retraction_rpc_result_is_safe_and_does_not_echo_reference() -> None:

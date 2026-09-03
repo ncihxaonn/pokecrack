@@ -26,8 +26,12 @@ AUTHORIZED_OPENING_REVIEWER_DB_URL=postgresql://...
 The CLI never falls back to `SUPABASE_DB_URL` or a service-role key. The
 submitter URL must use the named `NOINHERIT` login
 `pokecrack_authorized_opening_submitter_login`. The reviewer URL may use the
-one owner-provisioned reviewed `NOINHERIT` login selected for the deployment;
-the CLI attests that login after connecting. Both URLs require TLS
+one owner-provisioned reviewed `NOINHERIT` login selected for the deployment.
+After every connection, the CLI attests both `session_user` and
+`current_user`, the exact role and membership posture, the login's direct
+application privileges, and the capability ACL/ownership contract. Any
+unexpected direct path or failed check stops the command before an RPC call.
+Both URLs require TLS
 (`sslmode=require`, `verify-ca`, or `verify-full`) and must pin the
 corresponding role with exactly
 `options=-c role=pokecrack_authorized_opening_submitter` or
@@ -66,8 +70,10 @@ rmdir "$work_dir"
 
 On success the only returned fields are `submission_id`, `revision`, and
 `state`. URL/URI syntax is rejected in every string field before any database
-call, and malformed, non-private, social-derived, or unauthorized envelopes
-fail closed. The submitter role reaches a database direct-only wrapper
+call, including values hidden behind repeated percent-encoding. Submission
+keys use only lowercase letters, digits, `.`, `_`, and `-`; malformed,
+non-private, social-derived, or unauthorized envelopes fail closed. The
+submitter role reaches a database direct-only wrapper
 (`ingest.submit_authorized_opening_direct_v1`) and cannot call the historical
 service-role submit RPC directly. Database and protocol failures are reduced
 to safe error codes; the CLI never prints the input path, DSN, password, opaque
@@ -113,7 +119,12 @@ code, and a `retracted` state. It does not reveal references or evidence.
 
 ## Explicit limitations
 
-This vertical slice is local and forward-only. It does not apply migrations,
+This vertical slice is local and forward-only. The role-contract migration
+reasserts only missing reviewed capability grants and fails closed on unknown
+ACLs, ownership, or memberships; it never guesses an existing creator account
+or revokes drift. The earlier role-creation migrations contain the narrow
+fresh-reset compatibility needed for PostgreSQL's dynamic automatic
+CREATEROLE creator membership. It does not apply migrations,
 provision credentials, fetch evidence, validate external URLs, operate a
 browser/social account, or publish an aggregate. Apply the migration only via
 the separately reviewed owner migration workflow, then verify the role ACL and

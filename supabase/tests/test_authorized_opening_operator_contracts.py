@@ -10,6 +10,9 @@ SUPABASE_ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = (
     SUPABASE_ROOT / "migrations/20260922000000_authorized_opening_operator.sql"
 ).read_text(encoding="utf-8")
+ROLE_CONTRACT = (
+    SUPABASE_ROOT / "migrations/20260928000000_authorized_opening_role_contract.sql"
+).read_text(encoding="utf-8")
 HARDENING = (
     SUPABASE_ROOT
     / "migrations/20260925000000_authorized_opening_operator_hardening.sql"
@@ -67,6 +70,14 @@ class AuthorizedOpeningOperatorContractTests(unittest.TestCase):
         self.assertEqual(lowered.count("begin;"), 1)
         self.assertEqual(lowered.count("commit;"), 1)
         self.assertIn("create role pokecrack_authorized_opening_submitter", lowered)
+        self.assertIn(
+            "grant pokecrack_authorized_opening_submitter\n        to current_user\n"
+            "        with admin true, inherit false, set false",
+            lowered,
+        )
+        self.assertIn("grantor.rolsuper", lowered)
+        self.assertIn("owner.rolsuper or owner.rolcreaterole", lowered)
+        self.assertNotIn("memberships.member = 'postgres'::regrole", lowered)
         self.assertIn("nologin noinherit", lowered)
         self.assertIn("pokecrack_authorized_opening_submitter_login", lowered)
         self.assertIn("login.rolconnlimit = 2", lowered)
@@ -108,7 +119,15 @@ class AuthorizedOpeningOperatorContractTests(unittest.TestCase):
         self.assertIn("social_derived_rejected", lowered)
         self.assertIn("_url_or_uri", lowered)
         self.assertIn("reviewer_connection_attestation_sql", lowered)
+        self.assertIn("submitter_connection_attestation_sql", lowered)
         self.assertIn("attest_reviewer_connection", lowered)
+        self.assertIn("attest_submitter_connection", lowered)
+        self.assertIn("session_user", lowered)
+        self.assertIn("current_user", lowered)
+        self.assertIn("capability_acl_clean", lowered)
+        self.assertIn("login_acl_clean", lowered)
+        self.assertIn("object_ownership_clean", lowered)
+        self.assertIn("capability_membership_contract", lowered)
         self.assertIn("authorized_opening_submitter_db_url", lowered)
         self.assertIn("authorized_opening_reviewer_db_url", lowered)
         self.assertIn("-c role=", lowered)
@@ -121,6 +140,12 @@ class AuthorizedOpeningOperatorContractTests(unittest.TestCase):
         self.assertNotIn("update ingest", lowered)
         self.assertNotIn("delete from", lowered)
         self.assertNotIn("evidence text", lowered)
+
+        role_contract = ROLE_CONTRACT.casefold()
+        self.assertIn("authorized_opening_role_contract", role_contract)
+        self.assertIn("does not guess or replace that owner edge", role_contract)
+        self.assertIn("grantor.rolsuper", role_contract)
+        self.assertNotIn("memberships.member = 'postgres'::regrole", role_contract)
 
     def test_cli_and_docs_keep_operator_and_reviewer_paths_explicit(self) -> None:
         self.assertIn(
