@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Run the local Supabase stack without emitting unbounded CLI diagnostics into
 # the GitHub Actions log. On failure, expose only a fixed, non-sensitive
-# category through GITHUB_OUTPUT so CI can distinguish infrastructure failures
-# from migration failures without printing a database URL or service output.
+# category and regexp-bounded migration metadata through GITHUB_OUTPUT so CI
+# can distinguish infrastructure failures from migration failures without
+# printing a database URL, statement, or service output.
 set -Eeuo pipefail
 
 : "${GITHUB_OUTPUT:?GITHUB_OUTPUT is required}"
@@ -43,5 +44,16 @@ elif grep -Eiq 'npm ERR|failed to install|cannot find module' "$log_file"; then
 fi
 
 printf 'category=%s\n' "$category" >>"$GITHUB_OUTPUT"
+if [[ "$category" == "bootstrap_migration" ]]; then
+  migration_file="$({ grep -Eo '[0-9]{14}_[a-z0-9_]+\.sql' "$log_file" || true; } | tail -n 1)"
+  sqlstate="$({ grep -Eo 'SQLSTATE[[:space:]]+[0-9]{5}' "$log_file" || true; } | tail -n 1)"
+  sqlstate="${sqlstate##* }"
+  if [[ "$migration_file" =~ ^[0-9]{14}_[a-z0-9_]+\.sql$ ]]; then
+    printf 'migration_file=%s\n' "$migration_file" >>"$GITHUB_OUTPUT"
+  fi
+  if [[ "$sqlstate" =~ ^[0-9]{5}$ ]]; then
+    printf 'sqlstate=%s\n' "$sqlstate" >>"$GITHUB_OUTPUT"
+  fi
+fi
 printf 'Safe Supabase local startup category: %s\n' "$category"
 exit 1
