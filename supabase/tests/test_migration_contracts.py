@@ -698,6 +698,18 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("bluesky_relation_acl_grants", attestation)
         self.assertIn("bluesky_column_acl_grants", attestation)
         self.assertIn("bluesky_sequence_acl_grants", attestation)
+        bluesky_relations_contract = attestation.split(
+            "bluesky_relations as (", 1
+        )[1].split("),\nbluesky_relation_acl_grants as (", 1)[0]
+        for relation_field in (
+            "relations.oid",
+            "relations.relowner",
+            "relations.relacl",
+            "relations.relkind",
+            "relations.relrowsecurity",
+            "relations.relforcerowsecurity",
+        ):
+            self.assertIn(relation_field, bluesky_relations_contract)
         self.assertIn("worker_function_acl_grants", attestation)
         self.assertIn("pg_has_role", attestation)
         self.assertIn("has_sequence_privilege", attestation)
