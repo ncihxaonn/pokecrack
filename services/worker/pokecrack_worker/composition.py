@@ -1684,8 +1684,7 @@ def _dsn_with_fixed_bluesky_role(dsn: str) -> str:
     if (
         connect_timeout is None
         or _BLUESKY_DATABASE_CONNECT_TIMEOUT.fullmatch(connect_timeout) is None
-        or len(connect_timeout)
-        > len(str(_BLUESKY_DATABASE_MAX_CONNECT_TIMEOUT_SECONDS))
+        or len(connect_timeout) > len(str(_BLUESKY_DATABASE_MAX_CONNECT_TIMEOUT_SECONDS))
         or int(connect_timeout) > _BLUESKY_DATABASE_MAX_CONNECT_TIMEOUT_SECONDS
     ):
         raise LiveCompositionError(
