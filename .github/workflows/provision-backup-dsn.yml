@@ -17,6 +17,7 @@ concurrency:
 
 jobs:
   provision:
+    if: ${{ github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     timeout-minutes: 45
     environment: Production
@@ -34,18 +35,21 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.sha }}
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Verify exact checkout and protected inputs
         shell: bash
         run: |
           set -Eeuo pipefail
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_REF" == refs/heads/main ]]
           [[ "$CONFIRM_SHA" == "$GITHUB_SHA" ]] || {
             printf 'confirm_sha must equal GITHUB_SHA (%s)\n' "$GITHUB_SHA" >&2
             exit 1
           }
           [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
+          git fetch --no-tags origin main
+          [[ "$(git rev-parse --verify refs/remotes/origin/main)" == "$GITHUB_SHA" ]]
           [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
           [[ "$VPS_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
           [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]]
@@ -239,7 +243,8 @@ jobs:
               raise SystemExit(1)
           PY
 
-          probe="$(docker run --rm --network host --env-file "$pg_env" postgres:17 \
+          probe="$(docker run --rm --network host --env-file "$pg_env" \
+            "postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675" \
             psql -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
           select current_user;
           set role service_role;
@@ -254,7 +259,8 @@ jobs:
             exit 1
           }
 
-          docker run --rm --network host --env-file "$pg_env" postgres:17 \
+          docker run --rm --network host --env-file "$pg_env" \
+            "postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675" \
             pg_dump \
               --format=plain \
               --no-owner \
@@ -332,7 +338,8 @@ jobs:
             fi
           done
           command_name="$(basename "$0")"
-          if docker run --rm --network host --env-file "$env_file" postgres:17 \
+          if docker run --rm --network host --env-file "$env_file" \
+            "postgres@sha256:67f41722b7a8cbdb868a44a4995c846eddfdc2973bccb291ce937dce88ad5675" \
             "$command_name" "$@"; then
             status=0
           else
