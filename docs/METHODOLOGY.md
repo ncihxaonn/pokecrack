@@ -79,12 +79,35 @@ countries without a reviewed observation remain neutral.
 
 Reviewed public-study inputs use publisher country as a coarse Tier-B geography
 basis. They do not assert the physical opening location and must not be shown
-as city/store evidence. The current reviewed denominator set includes US, GB,
-and SG publisher-country observations, with the Singapore study covering 54
-packs from nine booster bundles. Each country has only one independent source,
-so all observed-rate, baseline, posterior, interval, delta, and numerator
-fields remain private or null in the public response. Counts may be shown only
-as collecting evidence.
+as city/store evidence. The current reviewed registry spans five studies across
+US, GB, and SG publisher-country observations: 91 verified packs from two
+independent domains in the United States, 107 from two in the United Kingdom,
+and 54 from one in Singapore. All three countries remain below the three-domain
+inference gate, so observed-rate, baseline, posterior, interval, delta, and
+numerator fields remain private or null in the public response. Counts may be
+shown only as verified coverage, never as a rate.
+
+## Authorized opening review and aggregate admission
+
+An accepted authorized-opening submission is not automatically a statistical
+input. Before it can enter a private aggregate cohort, an owner must record an
+immutable binding from the opaque authorized-source identity to one explicitly
+declared independent source domain, then admit the exact accepted observation
+through a separate immutable admission record. An authorized admission's
+canonical opening fingerprint must equal its immutable private provenance HMAC;
+the same collision namespace is reserved for reviewed public studies. A source
+identity mapped to conflicting independent domains fails closed rather than
+counting toward source diversity.
+
+The cohort resolver is evaluated **as of** a timestamp: it includes only an
+admitted observation whose authorization was valid when accepted, whose catalog
+and denominator contract still match, and which had not been retracted by that
+time. Retraction excludes the observation from later cohorts without mutating
+the accepted evidence needed to reproduce an earlier one. This bridge is a
+private input contract only; it does not calculate a posterior, publish a rate,
+or colour the country map. Bluesky, Nostr, Mastodon, YouTube, and other social
+discovery records remain discovery-only unless separately reviewed as complete
+opening evidence under this contract.
 
 ## Reproducibility
 

@@ -3,7 +3,7 @@ create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
-select plan(23);
+select plan(24);
 
 select is(
   (select count(*)::integer
@@ -12,14 +12,28 @@ select is(
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
      and relations.relkind in ('r', 'p')
      and not (
-       schemas.nspname = 'analytics'
-       and relations.relname in (
-         'reviewed_global_aggregate_baselines',
-         'reviewed_global_aggregate_audit'
+       (
+         schemas.nspname = 'analytics'
+         and relations.relname in (
+           'reviewed_global_aggregate_baselines',
+           'reviewed_global_aggregate_audit',
+           'reviewed_global_aggregate_independent_sources',
+           'reviewed_global_aggregate_authorized_source_bindings',
+           'reviewed_global_aggregate_input_admissions'
+         )
+       )
+       or (
+         schemas.nspname = 'ingest'
+         and relations.relname in (
+           'authorized_opening_submissions',
+           'authorized_opening_review_events',
+           'authorized_opening_observations',
+           'authorized_opening_retractions'
+         )
        )
      )),
   52,
-  'the least-privilege matrix covers every non-aggregate-foundation application table'
+  'the least-privilege matrix covers every non-publication private application table'
 );
 
 select is(
@@ -29,26 +43,43 @@ select is(
    where schemas.nspname in ('catalog', 'ingest', 'analytics', 'public')
      and relations.relkind in ('r', 'p')
      and not (
-       schemas.nspname = 'analytics'
-       and relations.relname in (
-         'reviewed_global_aggregate_baselines',
-         'reviewed_global_aggregate_audit'
+       (
+         schemas.nspname = 'analytics'
+         and relations.relname in (
+           'reviewed_global_aggregate_baselines',
+           'reviewed_global_aggregate_audit',
+           'reviewed_global_aggregate_independent_sources',
+           'reviewed_global_aggregate_authorized_source_bindings',
+           'reviewed_global_aggregate_input_admissions'
+         )
+       )
+       or (
+         schemas.nspname = 'ingest'
+         and relations.relname in (
+           'authorized_opening_submissions',
+           'authorized_opening_review_events',
+           'authorized_opening_observations',
+           'authorized_opening_retractions'
+         )
        )
      )
      and has_table_privilege('service_role', relations.oid, 'select')),
   48,
-  'service_role can read every non-foundation application table except the opaque request gate'
+  'service_role can read every non-private-publication table except the opaque request gate'
 );
 
 select ok(
-  (select count(*) = 2
+  (select count(*) = 5
    from pg_class as relations
    join pg_namespace as schemas on schemas.oid = relations.relnamespace
    where schemas.nspname = 'analytics'
      and relations.relkind in ('r', 'p')
      and relations.relname in (
        'reviewed_global_aggregate_baselines',
-       'reviewed_global_aggregate_audit'
+       'reviewed_global_aggregate_audit',
+       'reviewed_global_aggregate_independent_sources',
+       'reviewed_global_aggregate_authorized_source_bindings',
+       'reviewed_global_aggregate_input_admissions'
      ))
   and (select bool_and(relations.relrowsecurity and relations.relforcerowsecurity)
        from pg_class as relations
@@ -56,14 +87,20 @@ select ok(
        where schemas.nspname = 'analytics'
          and relations.relname in (
            'reviewed_global_aggregate_baselines',
-           'reviewed_global_aggregate_audit'
+           'reviewed_global_aggregate_audit',
+           'reviewed_global_aggregate_independent_sources',
+           'reviewed_global_aggregate_authorized_source_bindings',
+           'reviewed_global_aggregate_input_admissions'
          ))
   and (select count(*) = 0
        from pg_policies as policies
        where policies.schemaname = 'analytics'
          and policies.tablename in (
            'reviewed_global_aggregate_baselines',
-           'reviewed_global_aggregate_audit'
+           'reviewed_global_aggregate_audit',
+           'reviewed_global_aggregate_independent_sources',
+           'reviewed_global_aggregate_authorized_source_bindings',
+           'reviewed_global_aggregate_input_admissions'
          ))
   and not exists (
     select 1
@@ -72,7 +109,10 @@ select ok(
     where schemas.nspname = 'analytics'
       and relations.relname in (
         'reviewed_global_aggregate_baselines',
-        'reviewed_global_aggregate_audit'
+        'reviewed_global_aggregate_audit',
+        'reviewed_global_aggregate_independent_sources',
+        'reviewed_global_aggregate_authorized_source_bindings',
+        'reviewed_global_aggregate_input_admissions'
       )
       and (
         has_table_privilege('service_role', relations.oid, 'select')
@@ -92,7 +132,10 @@ select ok(
     where schemas.nspname = 'analytics'
       and relations.relname in (
         'reviewed_global_aggregate_baselines',
-        'reviewed_global_aggregate_audit'
+        'reviewed_global_aggregate_audit',
+        'reviewed_global_aggregate_independent_sources',
+        'reviewed_global_aggregate_authorized_source_bindings',
+        'reviewed_global_aggregate_input_admissions'
       )
       and (
         has_table_privilege('anon', relations.oid, 'select')
@@ -100,7 +143,92 @@ select ok(
         or has_table_privilege('public', relations.oid, 'select')
       )
   ),
-  'reviewed global aggregate foundation is explicit private force-RLS with no direct application access'
+  'reviewed global aggregate inputs and foundation are explicit private force-RLS with no direct application access'
+);
+
+select ok(
+  (select count(*) = 4
+   from pg_class as relations
+   join pg_namespace as schemas on schemas.oid = relations.relnamespace
+   where schemas.nspname = 'ingest'
+     and relations.relkind in ('r', 'p')
+     and relations.relname in (
+       'authorized_opening_submissions',
+       'authorized_opening_review_events',
+       'authorized_opening_observations',
+       'authorized_opening_retractions'
+     ))
+  and (select bool_and(relations.relrowsecurity and relations.relforcerowsecurity)
+       from pg_class as relations
+       join pg_namespace as schemas on schemas.oid = relations.relnamespace
+       where schemas.nspname = 'ingest'
+         and relations.relname in (
+           'authorized_opening_submissions',
+           'authorized_opening_review_events',
+           'authorized_opening_observations',
+           'authorized_opening_retractions'
+         ))
+  and (select count(*) = 4
+       from pg_policies as policies
+       where policies.schemaname = 'ingest'
+         and policies.tablename in (
+           'authorized_opening_submissions',
+           'authorized_opening_review_events',
+           'authorized_opening_observations',
+           'authorized_opening_retractions'
+         )
+         and policies.roles = array['service_role']::name[]
+         and policies.cmd = 'SELECT')
+  and (select count(*) = 4
+       from pg_class as relations
+       join pg_namespace as schemas on schemas.oid = relations.relnamespace
+       where schemas.nspname = 'ingest'
+         and relations.relname in (
+           'authorized_opening_submissions',
+           'authorized_opening_review_events',
+           'authorized_opening_observations',
+           'authorized_opening_retractions'
+         )
+         and has_table_privilege('service_role', relations.oid, 'select'))
+  and not exists (
+    select 1
+    from pg_class as relations
+    join pg_namespace as schemas on schemas.oid = relations.relnamespace
+    where schemas.nspname = 'ingest'
+      and relations.relname in (
+        'authorized_opening_submissions',
+        'authorized_opening_review_events',
+        'authorized_opening_observations',
+        'authorized_opening_retractions'
+      )
+      and (
+        has_table_privilege('service_role', relations.oid, 'insert')
+        or has_table_privilege('service_role', relations.oid, 'update')
+        or has_table_privilege('service_role', relations.oid, 'delete')
+        or has_table_privilege('service_role', relations.oid, 'truncate')
+        or has_table_privilege('service_role', relations.oid, 'references')
+        or has_table_privilege('service_role', relations.oid, 'trigger')
+        or has_table_privilege('service_role', relations.oid, 'maintain')
+      )
+  )
+  and not exists (
+    select 1
+    from pg_class as relations
+    join pg_namespace as schemas on schemas.oid = relations.relnamespace
+    where schemas.nspname = 'ingest'
+      and relations.relname in (
+        'authorized_opening_submissions',
+        'authorized_opening_review_events',
+        'authorized_opening_observations',
+        'authorized_opening_retractions'
+      )
+      and (
+        has_table_privilege('anon', relations.oid, 'select')
+        or has_table_privilege('authenticated', relations.oid, 'select')
+        or has_table_privilege('public', relations.oid, 'select')
+      )
+  ),
+  'authorized-opening ledgers are explicit private force-RLS, SELECT-only service tables'
 );
 
 select is(
@@ -164,14 +292,28 @@ select is(
      and 'service_role' = any(roles)
      and cmd = 'SELECT'
      and not (
-       schemaname = 'analytics'
-       and tablename in (
-         'reviewed_global_aggregate_baselines',
-         'reviewed_global_aggregate_audit'
+       (
+         schemaname = 'analytics'
+         and tablename in (
+           'reviewed_global_aggregate_baselines',
+           'reviewed_global_aggregate_audit',
+           'reviewed_global_aggregate_independent_sources',
+           'reviewed_global_aggregate_authorized_source_bindings',
+           'reviewed_global_aggregate_input_admissions'
+         )
+       )
+       or (
+         schemaname = 'ingest'
+         and tablename in (
+           'authorized_opening_submissions',
+           'authorized_opening_review_events',
+           'authorized_opening_observations',
+           'authorized_opening_retractions'
+         )
        )
      )),
   48,
-  'every readable non-foundation service_role table has one read-only policy; isolated ledgers have none'
+  'every readable non-private-publication service_role table has one read-only policy; isolated ledgers have none'
 );
 
 select ok(

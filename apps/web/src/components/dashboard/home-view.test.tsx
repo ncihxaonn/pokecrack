@@ -40,6 +40,41 @@ describe("HomeView", () => {
     expect(mapHeading.compareDocumentPosition(trendHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
+  it("places reviewed opening-sample coverage after the map and before social discovery", () => {
+    const reviewedCoverage = {
+      ...DEMO_PUBLIC_DATA,
+      sources: [
+        ...DEMO_PUBLIC_DATA.sources,
+        {
+          id: "comicbook_perfect_order_study",
+          name: "ComicBook Perfect Order study",
+          kind: "community" as const,
+          access: "public" as const,
+          status: "operational" as const,
+          lastCollectedAt: "2026-09-03T01:00:00.000Z",
+          url: "https://comicbook.com/example",
+          note: "Reviewed opening sample.",
+          coverage: {
+            packsObserved: 55,
+            countriesObserved: 1,
+            completeOpenings: 1,
+          },
+        },
+      ],
+    } satisfies PublicDashboardData;
+
+    render(<HomeView data={reviewedCoverage} synthetic={false} />);
+
+    const mapHeading = screen.getByRole("heading", { name: "Worldwide qualifying-hit map" });
+    const sourcesHeading = screen.getByRole("heading", { name: "Reviewed evidence sources" });
+    const socialHeading = screen.getByRole("heading", { name: "Live discovery pulse" });
+
+    expect(mapHeading.compareDocumentPosition(sourcesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(sourcesHeading.compareDocumentPosition(socialHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByText(/not a hit rate/i)).toBeVisible();
+    expect(screen.getByText("55 packs")).toBeVisible();
+  });
+
   it("separates live catalog coverage from unpublished observations", () => {
     const liveCatalogOnly = {
       ...DEMO_PUBLIC_DATA,

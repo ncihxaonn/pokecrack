@@ -9,6 +9,7 @@ AI and general URL collection remain unavailable.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -82,6 +83,7 @@ from pokecrack_worker.jobs import (
     BlueskyCursorRecoveryCompletion,
     BlueskyDeletionWrite,
     BlueskyJetstreamCompletion,
+    BlueskyPostgresJobRepository,
     BlueskySourceItemWrite,
     CompletionEffect,
     Job,
@@ -106,6 +108,7 @@ from pokecrack_worker.scheduler import CronExpression, ScheduleEntry, Scheduler
 
 class WorkerRole(StrEnum):
     COLLECTOR = "collector"
+    BLUESKY_COLLECTOR = "bluesky-collector"
     NOSTR_COLLECTOR = "nostr-collector"
     AI_WORKER = "ai-worker"
     AGGREGATOR = "aggregator"
@@ -157,6 +160,15 @@ FROM ingest.upsert_worker_heartbeat_v1(
 NOSTR_WORKER_HEARTBEAT_SQL = """
 SELECT last_seen_at
 FROM ingest.upsert_nostr_worker_heartbeat_v1(
+    %(worker_id)s,
+    %(version)s,
+    %(metadata)s::jsonb
+)
+""".strip()
+
+BLUESKY_WORKER_HEARTBEAT_SQL = """
+SELECT last_seen_at
+FROM ingest.upsert_bluesky_worker_heartbeat_v1(
     %(worker_id)s,
     %(version)s,
     %(metadata)s::jsonb
@@ -846,6 +858,225 @@ SELECT
   END AS ready
 """.strip()
 
+# The Bluesky collector has a separate database role and a source-scoped queue
+# API. Keep this probe separate from the shared-worker probe so a Bluesky
+# process cannot accidentally gain a dependency on a generic queue RPC or on
+# another source's policy table contract.
+BLUESKY_LIVE_ROLE_DEPENDENCIES_SQL = """
+WITH bluesky_dependencies AS (
+  SELECT COALESCE(
+    to_regprocedure('ingest.enqueue_due_bluesky_jetstream_jobs_v1(text)') IS NOT NULL
+    AND to_regprocedure('ingest.claim_bluesky_jetstream_jobs_v1(text,integer)') IS NOT NULL
+    AND to_regprocedure(
+      'ingest.heartbeat_bluesky_jetstream_job_v1(uuid,text,bigint,integer)'
+    ) IS NOT NULL
+    AND to_regprocedure(
+      'ingest.fail_bluesky_jetstream_job_v1(uuid,text,bigint,text,text,boolean)'
+    ) IS NOT NULL
+    AND to_regprocedure(
+      'ingest.pause_bluesky_jetstream_job_v1(uuid,text,bigint,timestamptz)'
+    ) IS NOT NULL
+    AND to_regprocedure('ingest.begin_bluesky_jetstream_job_v1(uuid,text,bigint)') IS NOT NULL
+    AND to_regprocedure(
+      'ingest.finalize_bluesky_jetstream_job_v1(uuid,text,bigint,jsonb)'
+    ) IS NOT NULL
+    AND to_regprocedure(
+      'ingest.recover_bluesky_cursor_too_old_job_v2(uuid,text,bigint,bigint)'
+    ) IS NOT NULL
+    AND to_regprocedure('ingest.bluesky_worker_runtime_ready_v1()') IS NOT NULL
+    AND to_regprocedure('ingest.get_bluesky_worker_policy_snapshot_v1()') IS NOT NULL
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.enqueue_due_bluesky_jetstream_jobs_v1(text)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.claim_bluesky_jetstream_jobs_v1(text,integer)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.heartbeat_bluesky_jetstream_job_v1(uuid,text,bigint,integer)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.fail_bluesky_jetstream_job_v1(uuid,text,bigint,text,text,boolean)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.pause_bluesky_jetstream_job_v1(uuid,text,bigint,timestamptz)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.begin_bluesky_jetstream_job_v1(uuid,text,bigint)'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.finalize_bluesky_jetstream_job_v1(uuid,text,bigint,jsonb)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure(
+        'ingest.recover_bluesky_cursor_too_old_job_v2(uuid,text,bigint,bigint)'
+      ),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.bluesky_worker_runtime_ready_v1()'),
+      'EXECUTE'
+    )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.get_bluesky_worker_policy_snapshot_v1()'),
+      'EXECUTE'
+    )
+    AND ingest.bluesky_worker_runtime_ready_v1()
+    AND (
+      SELECT count(*) = 1
+        AND bool_and(
+          policies.source_key = 'bluesky_jetstream'
+          AND policies.display_name = 'Bluesky Jetstream discovery'
+          AND policies.source_kind = 'official_api'
+          AND policies.domain = 'jetstream.us-west.bsky.network'
+          AND policies.base_url =
+            'wss://jetstream.us-west.bsky.network/xrpc/network.bsky.jetstream.subscribeEvents'
+          AND policies.enabled
+          AND policies.collector_type = 'bluesky_jetstream'
+          AND policies.access_mode = 'official_api'
+          AND policies.robots_policy = 'not_applicable'
+          AND policies.routes = ARRAY['bluesky_jetstream']::text[]
+          AND NOT policies.include_subdomains
+          AND policies.min_delay_seconds = 1
+          AND policies.max_pages_per_run = 1
+          AND policies.max_items_per_run = 100
+          AND policies.max_concurrency = 1
+          AND policies.browser_profile IS NULL
+          AND NOT policies.statistics_eligible_default
+          AND policies.retention_days = 30
+          AND policies.config = '{
+            "endpoint":"wss://jetstream.us-west.bsky.network/xrpc/network.bsky.jetstream.subscribeEvents",
+            "collection":"app.bsky.feed.post",
+            "operations":["create","update","delete"],
+            "kinds":["commit"],
+            "subprotocol":"xrpc.v1.json",
+            "stream_window_seconds":10,
+            "max_events":10000,
+            "max_message_bytes":262144,
+            "max_stream_bytes":2097152,
+            "max_candidates":100,
+            "max_deletions":100,
+            "max_excerpt_chars":500,
+            "keyword_registry":"bluesky-keywords-v1",
+            "statistics_eligible":false
+          }'::jsonb
+          AND policies.version = 'bluesky-jetstream-v1'
+          AND policies.expected_interval_seconds = 60
+          AND NOT policies.is_demo
+        )
+      FROM ingest.get_bluesky_worker_policy_snapshot_v1() AS policies
+    ),
+    false
+  ) AS ready
+)
+SELECT %(worker_type)s = 'bluesky-collector'
+  AND (SELECT ready FROM bluesky_dependencies)
+  AND to_regprocedure(
+    'ingest.upsert_bluesky_worker_heartbeat_v1(text,text,jsonb)'
+  ) IS NOT NULL
+  AND has_function_privilege(
+    current_user,
+    to_regprocedure(
+      'ingest.upsert_bluesky_worker_heartbeat_v1(text,text,jsonb)'
+    ),
+    'EXECUTE'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.jobs',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user, 'ingest.jobs', 'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.worker_heartbeats',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user, 'ingest.worker_heartbeats', 'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.source_request_gates',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user, 'ingest.source_request_gates', 'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.bluesky_jetstream_candidates',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user,
+    'ingest.bluesky_jetstream_candidates',
+    'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.bluesky_jetstream_observations',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user,
+    'ingest.bluesky_jetstream_observations',
+    'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_table_privilege(
+    current_user,
+    'ingest.bluesky_jetstream_checkpoints',
+    'SELECT,INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER,MAINTAIN'
+  )
+  AND NOT has_any_column_privilege(
+    current_user,
+    'ingest.bluesky_jetstream_checkpoints',
+    'SELECT,INSERT,UPDATE,REFERENCES'
+  )
+  AND NOT has_sequence_privilege(
+    current_user,
+    'ingest.bluesky_jetstream_observations_id_seq',
+    'USAGE'
+  )
+  AND NOT has_sequence_privilege(
+    current_user,
+    'ingest.bluesky_jetstream_observations_id_seq',
+    'SELECT'
+  )
+  AND NOT has_sequence_privilege(
+    current_user,
+    'ingest.bluesky_jetstream_observations_id_seq',
+    'UPDATE'
+  )
+AS ready
+""".strip()
+
 # The Nostr collector has a separate database role and a source-scoped queue
 # API.  Keep this probe separate from the shared-worker probe so a Nostr
 # process cannot accidentally gain a dependency on a generic queue RPC or on
@@ -1083,6 +1314,7 @@ AS ready
 
 _WORKER_JOB_TYPES: Mapping[WorkerRole, tuple[str, ...]] = {
     WorkerRole.COLLECTOR: (TCGDEX_SETS_JOB_TYPE,),
+    WorkerRole.BLUESKY_COLLECTOR: (BLUESKY_JETSTREAM_JOB_TYPE,),
     WorkerRole.NOSTR_COLLECTOR: (NOSTR_RELAY_JOB_TYPE,),
     WorkerRole.WATCHDOG: (CLEANUP_JOB_TYPE,),
 }
@@ -1126,6 +1358,12 @@ def _require_live_settings(settings: Settings) -> None:
             raise LiveCompositionError(
                 "database_configuration_missing",
                 "live Nostr collector requires NOSTR_SUPABASE_DB_URL",
+            )
+    elif settings.worker_role == WorkerRole.BLUESKY_COLLECTOR.value:
+        if settings.bluesky_supabase_db_url is None:
+            raise LiveCompositionError(
+                "database_configuration_missing",
+                "live Bluesky collector requires BLUESKY_SUPABASE_DB_URL",
             )
     elif settings.supabase_db_url is None:
         raise LiveCompositionError(
@@ -1183,6 +1421,23 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
                 "WORKER_ROLE=nostr-collector allows only NOSTR_COLLECTION_ENABLED",
             )
         return job_types
+    if role is WorkerRole.BLUESKY_COLLECTOR:
+        if not settings.bluesky_collection_enabled:
+            raise LiveCompositionError(
+                "bluesky_role_configuration_invalid",
+                "WORKER_ROLE=bluesky-collector requires BLUESKY_COLLECTION_ENABLED=true",
+            )
+        if (
+            settings.youtube_collection_enabled
+            or settings.public_study_collection_enabled
+            or settings.nostr_collection_enabled
+            or settings.mastodon_collection_enabled
+        ):
+            raise LiveCompositionError(
+                "bluesky_role_configuration_invalid",
+                "WORKER_ROLE=bluesky-collector allows only BLUESKY_COLLECTION_ENABLED",
+            )
+        return job_types
     if role is not WorkerRole.COLLECTOR:
         return job_types
     if settings.nostr_collection_enabled:
@@ -1190,13 +1445,16 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
             "nostr_role_required",
             "NOSTR_COLLECTION_ENABLED requires WORKER_ROLE=nostr-collector",
         )
+    if settings.bluesky_collection_enabled:
+        raise LiveCompositionError(
+            "bluesky_role_required",
+            "BLUESKY_COLLECTION_ENABLED requires WORKER_ROLE=bluesky-collector",
+        )
     enabled = list(job_types)
     if settings.youtube_collection_enabled:
         enabled.append(YOUTUBE_DISCOVERY_JOB_TYPE)
     if settings.public_study_collection_enabled:
         enabled.append(PUBLIC_STUDY_JOB_TYPE)
-    if settings.bluesky_collection_enabled:
-        enabled.append(BLUESKY_JETSTREAM_JOB_TYPE)
     if settings.mastodon_collection_enabled:
         enabled.append(MASTODON_PUBLIC_HASHTAG_JOB_TYPE)
     return tuple(enabled)
@@ -1220,6 +1478,10 @@ def role_is_ready(role: WorkerRole) -> bool:
 
 _NOSTR_DATABASE_ROLE = "pokecrack_nostr_worker"
 _NOSTR_DATABASE_LOGIN = "pokecrack_nostr_worker_login"
+_RUNTIME_EVIDENCE_DATABASE_ROLE = "pokecrack_runtime_monitor"
+_RUNTIME_EVIDENCE_DATABASE_LOGIN = "pokecrack_runtime_monitor_login"
+_RUNTIME_EVIDENCE_CONNECT_TIMEOUT_SECONDS = 10
+_RUNTIME_EVIDENCE_STATEMENT_TIMEOUT_SECONDS = 30
 _NOSTR_DATABASE_QUERY_OPTIONS = frozenset(
     {
         "application_name",
@@ -1239,6 +1501,11 @@ _NOSTR_DATABASE_QUERY_OPTIONS = frozenset(
     }
 )
 _NOSTR_DATABASE_SSL_MODES = frozenset({"require", "verify-ca", "verify-full"})
+_BLUESKY_DATABASE_ROLE = "pokecrack_bluesky_worker"
+_BLUESKY_DATABASE_LOGIN = "pokecrack_bluesky_worker_login"
+_BLUESKY_DATABASE_SSL_MODES = _NOSTR_DATABASE_SSL_MODES
+_BLUESKY_DATABASE_CONNECT_TIMEOUT = re.compile(r"^[1-9][0-9]*$")
+_BLUESKY_DATABASE_MAX_CONNECT_TIMEOUT_SECONDS = 60
 
 
 def _dsn_with_fixed_nostr_role(dsn: str) -> str:
@@ -1305,6 +1572,144 @@ def _dsn_with_fixed_nostr_role(dsn: str) -> str:
     )
 
 
+def _dsn_with_fixed_runtime_evidence_role(dsn: str) -> str:
+    """Return a monitor DSN that cannot silently run as an unapproved login."""
+
+    parts = urlsplit(dsn)
+    if (
+        parts.scheme not in {"postgres", "postgresql"}
+        or not parts.netloc
+        or unquote(parts.username or "") != _RUNTIME_EVIDENCE_DATABASE_LOGIN
+        or parts.fragment
+    ):
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL must use the dedicated monitor login in an unfragmented PostgreSQL URL",
+        )
+    try:
+        query = parse_qsl(
+            parts.query,
+            keep_blank_values=True,
+            strict_parsing=True,
+            max_num_fields=32,
+        )
+    except ValueError as error:
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL has an invalid query string",
+        ) from error
+    query_keys = [key for key, _value in query]
+    if len(query_keys) != len(set(query_keys)):
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL has duplicate query options",
+        )
+    if not set(query_keys) <= _NOSTR_DATABASE_QUERY_OPTIONS:
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL has an unsupported query option",
+        )
+    query_values = dict(query)
+    if query_values.get("sslmode") not in _NOSTR_DATABASE_SSL_MODES:
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL requires sslmode=require or stronger",
+        )
+    fixed_option = f"-c role={_RUNTIME_EVIDENCE_DATABASE_ROLE}"
+    existing_options = [value for key, value in query if key == "options"]
+    if existing_options and existing_options != [fixed_option]:
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_invalid",
+            "RUNTIME_RELEASE_EVIDENCE_DB_URL may contain only the fixed monitor role option",
+        )
+    if not existing_options:
+        query.append(("options", fixed_option))
+    return urlunsplit(
+        (
+            parts.scheme,
+            parts.netloc,
+            parts.path,
+            urlencode(query, quote_via=quote),
+            "",
+        )
+    )
+
+
+def _dsn_with_fixed_bluesky_role(dsn: str) -> str:
+    """Return a URL DSN with exactly one fixed Bluesky role option."""
+
+    parts = urlsplit(dsn)
+    if (
+        parts.scheme not in {"postgres", "postgresql"}
+        or not parts.netloc
+        or parts.fragment
+        or unquote(parts.username or "") != _BLUESKY_DATABASE_LOGIN
+        or not parts.password
+    ):
+        raise LiveCompositionError(
+            "bluesky_database_url_invalid",
+            "BLUESKY_SUPABASE_DB_URL must use the dedicated worker login in an unfragmented PostgreSQL URL",
+        )
+    try:
+        query = parse_qsl(
+            parts.query,
+            keep_blank_values=True,
+            strict_parsing=True,
+            max_num_fields=32,
+        )
+    except ValueError as error:
+        raise LiveCompositionError(
+            "bluesky_database_url_invalid",
+            "BLUESKY_SUPABASE_DB_URL has an invalid query string",
+        ) from error
+    fixed_option = f"-c role={_BLUESKY_DATABASE_ROLE}"
+    query_keys = [key for key, _value in query]
+    if len(query_keys) != len(set(query_keys)):
+        raise LiveCompositionError(
+            "bluesky_database_url_invalid",
+            "BLUESKY_SUPABASE_DB_URL has duplicate query options",
+        )
+    if not set(query_keys) <= _NOSTR_DATABASE_QUERY_OPTIONS:
+        raise LiveCompositionError(
+            "bluesky_database_url_invalid",
+            "BLUESKY_SUPABASE_DB_URL has an unsupported query option",
+        )
+    query_values = dict(query)
+    if query_values.get("sslmode") not in _BLUESKY_DATABASE_SSL_MODES:
+        raise LiveCompositionError(
+            "bluesky_database_url_invalid",
+            "BLUESKY_SUPABASE_DB_URL requires sslmode=require or stronger",
+        )
+    connect_timeout = query_values.get("connect_timeout")
+    if (
+        connect_timeout is None
+        or _BLUESKY_DATABASE_CONNECT_TIMEOUT.fullmatch(connect_timeout) is None
+        or len(connect_timeout) > len(str(_BLUESKY_DATABASE_MAX_CONNECT_TIMEOUT_SECONDS))
+        or int(connect_timeout) > _BLUESKY_DATABASE_MAX_CONNECT_TIMEOUT_SECONDS
+    ):
+        raise LiveCompositionError(
+            "bluesky_database_url_invalid",
+            "BLUESKY_SUPABASE_DB_URL requires a positive bounded connect_timeout",
+        )
+    existing_options = [value for key, value in query if key == "options"]
+    if existing_options and existing_options != [fixed_option]:
+        raise LiveCompositionError(
+            "bluesky_database_role_options_invalid",
+            "BLUESKY_SUPABASE_DB_URL may contain only the fixed Bluesky role option",
+        )
+    if not existing_options:
+        query.append(("options", fixed_option))
+    return urlunsplit(
+        (
+            parts.scheme,
+            parts.netloc,
+            parts.path,
+            urlencode(query, quote_via=quote),
+            "",
+        )
+    )
+
+
 def executor_from_settings(settings: Settings) -> PsycopgQueryExecutor:
     _require_live_settings(settings)
     role = require_supported_role(settings)
@@ -1314,8 +1719,31 @@ def executor_from_settings(settings: Settings) -> PsycopgQueryExecutor:
             _dsn_with_fixed_nostr_role(settings.nostr_supabase_db_url.get_secret_value()),
             retry_connection=True,
         )
+    if role is WorkerRole.BLUESKY_COLLECTOR:
+        assert settings.bluesky_supabase_db_url is not None
+        return PsycopgQueryExecutor.from_dsn(
+            _dsn_with_fixed_bluesky_role(settings.bluesky_supabase_db_url.get_secret_value())
+        )
     assert settings.supabase_db_url is not None
     return PsycopgQueryExecutor.from_dsn(settings.supabase_db_url.get_secret_value())
+
+
+def runtime_release_evidence_executor(settings: Settings) -> PsycopgQueryExecutor:
+    """Build the dedicated monitor connection; worker roles cannot call the RPC."""
+
+    _require_live_settings(settings)
+    if settings.runtime_release_evidence_db_url is None:
+        raise LiveCompositionError(
+            "runtime_evidence_database_url_missing",
+            "runtime release verification requires the dedicated monitor database URL",
+        )
+    return PsycopgQueryExecutor.from_dsn(
+        _dsn_with_fixed_runtime_evidence_role(
+            settings.runtime_release_evidence_db_url.get_secret_value()
+        ),
+        connect_timeout_seconds=_RUNTIME_EVIDENCE_CONNECT_TIMEOUT_SECONDS,
+        statement_timeout_seconds=_RUNTIME_EVIDENCE_STATEMENT_TIMEOUT_SECONDS,
+    )
 
 
 def write_health_heartbeat(
@@ -1335,10 +1763,12 @@ def write_health_heartbeat(
     dependency_sql = (
         NOSTR_LIVE_ROLE_DEPENDENCIES_SQL
         if role is WorkerRole.NOSTR_COLLECTOR
+        else BLUESKY_LIVE_ROLE_DEPENDENCIES_SQL
+        if role is WorkerRole.BLUESKY_COLLECTOR
         else LIVE_ROLE_DEPENDENCIES_SQL
     )
     dependency_params: Mapping[str, object]
-    if role is WorkerRole.NOSTR_COLLECTOR:
+    if role in {WorkerRole.NOSTR_COLLECTOR, WorkerRole.BLUESKY_COLLECTOR}:
         dependency_params = {"worker_type": role.value}
     else:
         dependency_params = {
@@ -1356,7 +1786,11 @@ def write_health_heartbeat(
             "the configured role database dependencies are unavailable",
         )
     heartbeat_sql = (
-        NOSTR_WORKER_HEARTBEAT_SQL if role is WorkerRole.NOSTR_COLLECTOR else WORKER_HEARTBEAT_SQL
+        NOSTR_WORKER_HEARTBEAT_SQL
+        if role is WorkerRole.NOSTR_COLLECTOR
+        else BLUESKY_WORKER_HEARTBEAT_SQL
+        if role is WorkerRole.BLUESKY_COLLECTOR
+        else WORKER_HEARTBEAT_SQL
     )
     metadata_values: dict[str, object] = {
         "command": "health",
@@ -1374,7 +1808,7 @@ def write_health_heartbeat(
         "version": __version__,
         "metadata": metadata,
     }
-    if role is not WorkerRole.NOSTR_COLLECTOR:
+    if role not in {WorkerRole.NOSTR_COLLECTOR, WorkerRole.BLUESKY_COLLECTOR}:
         heartbeat_params["worker_type"] = role.value
     rows = database.query(heartbeat_sql, heartbeat_params)
     if not rows or not isinstance(rows[0].get("last_seen_at"), datetime):
@@ -1888,6 +2322,15 @@ def _handlers_for_role(
     public_study_robots_sleeper: Callable[[float], None] | None,
     clock: Callable[[], datetime] | None,
 ) -> Mapping[str, JobHandler]:
+    if role is WorkerRole.BLUESKY_COLLECTOR:
+        return {
+            BLUESKY_JETSTREAM_JOB_TYPE: _bluesky_jetstream_handler(
+                settings=settings,
+                executor=executor,
+                worker_id=worker_id,
+                transport=bluesky_transport,
+            )
+        }
     if role is WorkerRole.NOSTR_COLLECTOR:
         return {
             NOSTR_RELAY_JOB_TYPE: _nostr_relay_handler(
@@ -1921,13 +2364,6 @@ def _handlers_for_role(
                 worker_id=worker_id,
                 http_client=public_study_http_client,
                 robots_sleeper=public_study_robots_sleeper,
-            )
-        if settings.bluesky_collection_enabled:
-            handlers[BLUESKY_JETSTREAM_JOB_TYPE] = _bluesky_jetstream_handler(
-                settings=settings,
-                executor=executor,
-                worker_id=worker_id,
-                transport=bluesky_transport,
             )
         if settings.mastodon_collection_enabled:
             handlers[MASTODON_PUBLIC_HASHTAG_JOB_TYPE] = _mastodon_public_hashtag_handler(
@@ -1977,7 +2413,9 @@ def build_live_worker_runtime(
     if tuple(handlers) != expected_job_types:
         raise RuntimeError("live worker handler registry is inconsistent")
     repository = (
-        NostrPostgresJobRepository(database)
+        BlueskyPostgresJobRepository(database)
+        if role is WorkerRole.BLUESKY_COLLECTOR
+        else NostrPostgresJobRepository(database)
         if role is WorkerRole.NOSTR_COLLECTOR
         else PostgresJobRepository(database)
     )
@@ -2043,20 +2481,6 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
         if settings.public_study_collection_enabled
         else ()
     )
-    bluesky = (
-        (
-            ScheduleEntry(
-                name="bluesky_jetstream",
-                job_type=BLUESKY_JETSTREAM_JOB_TYPE,
-                cron=settings.schedule_bluesky_collection,
-                payload={},
-                priority=-50,
-                max_attempts=min(3, settings.worker_max_attempts),
-            ),
-        )
-        if settings.bluesky_collection_enabled
-        else ()
-    )
     mastodon_registry = (
         MastodonRegistry.from_yaml(MASTODON_CONFIG)
         if settings.mastodon_collection_enabled
@@ -2092,7 +2516,10 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
             catch_up_check_interval=timedelta(hours=1),
         ),
     )
-    return catalog + youtube + public_studies + bluesky + mastodon + cleanup
+    # Bluesky is scheduled by its fixed source-scoped claim wrapper. Keeping
+    # it out of this scheduler prevents a generic queue producer from creating
+    # jobs that a broad collector could accidentally claim.
+    return catalog + youtube + public_studies + mastodon + cleanup
 
 
 def build_live_scheduler(

@@ -5,10 +5,10 @@ the public Vercel site. The last verified Vercel production revision was
 `36d8701e85c098160635580aa46f614dcfdf066b`; the MAM VPS was separately
 observed at `fdfb49ebb03d116abafcfeccaa09618d171ee0fb` with the existing
 TCGdex/Bluesky service set. Those are historical observations, not evidence for
-this branch. General browser collection, AI-worker, aggregator, Nostr, and
-Mastodon remain fail closed until their separate release contracts pass. Do not
-describe the whole research pipeline as production-ready from a Compose render,
-heartbeat, or web deployment alone.
+this branch. General browser collection, AI-worker, aggregator, Nostr, Mastodon,
+and the Bluesky isolated lane remain fail closed until their separate release
+contracts pass. Do not describe the whole research pipeline as production-ready
+from a Compose render, heartbeat, or web deployment alone.
 
 > **Nostr remains disabled:** the authoritative hosted ledger currently stops
 > at `050`; `060`, `090`, and the worker-isolation migration `100` are not hosted, and
@@ -62,13 +62,44 @@ browser credential. Create both logins and their single non-inherited
 memberships outside migrations with account-owner authority and fresh random
 passwords; never store an owner or service-role DSN on the VPS.
 
+For Bluesky, keep `BLUESKY_COLLECTION_ENABLED=false` in the shared production
+file. The opt-in `bluesky` Compose profile reads only the separate mode-`0600`
+`/etc/pokecrack/bluesky.env` file, which must contain `DATA_MODE=live`,
+`BLUESKY_COLLECTION_ENABLED=true`, and a dedicated
+`BLUESKY_SUPABASE_DB_URL`. That URL must be a fresh `NOINHERIT` login whose
+libpq startup option is exactly `-c role=pokecrack_bluesky_worker`, with
+`sslmode=require` (or stronger) and a bounded `connect_timeout`; it must not be
+an owner, `service_role`, or shared collector credential. The migration grants
+the capability role only the fixed Bluesky enqueue/claim/heartbeat/fail/pause,
+typed begin/finalize/cursor-recovery, health, and read-only policy-snapshot RPCs.
+The generic queue RPCs and direct private activity tables are unavailable to
+that role, and generic `collector`/`scheduler` processes cannot claim Bluesky.
+The host preflight accepts exactly those three environment assignments, rejects
+`service_role`, `SUPABASE_DB_URL`, and every unknown key, and requires the
+dedicated file to be a regular non-symlink with exact mode `0600`. The
+`tcgdex-bluesky` deployment service set runs that preflight before Compose
+validation, build, or service replacement; `tcgdex` remains the default. A
+Bluesky release additionally forces the exact `tcgdex-bluesky` runtime-evidence
+set after health checks. It requires fresh evidence from all four workers, the
+TCGdex and Bluesky policies, the three expected schedules, the bounded queue,
+the Bluesky checkpoint, and cleanup. A role attestation and healthy containers
+alone cannot create a verified success marker. The deploy script also requires
+the executable verifier from the detached exact target SHA to declare the exact
+`RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky` capability sentinel before the
+service set can be enabled.
+Verify this with `docker compose --env-file /etc/pokecrack/production.env
+--env-file /etc/pokecrack/bluesky.env -f deploy/compose.prod.yml --profile
+bluesky config --quiet`, then inspect the rendered environments and migration
+contract before any service replacement. This is an opt-in bounded lane, not a
+production-ready claim.
+
 ## 3. Web (Vercel)
 
 Import the private repository and use `apps/web` as the project root. Pin the production branch and Node version. Set only `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL` and the publishable key in browser-visible variables. Keep `ADMIN_EMAILS`, `ADMIN_CONTROL_RPC_ENABLED`, and `SUPABASE_SERVICE_ROLE_KEY` as Vercel server-only variables; never prefix the service-role key with `NEXT_PUBLIC_`, place it in the VPS environment, or enable controls before the Auth claim and email allowlist are verified. Start with `ADMIN_CONTROL_RPC_ENABLED=false` and demo mode, run the production build, verify the demo label/disclaimers and no secret in built assets, then switch to live only after the database public surface and service-role-only Admin RPC grants are verified. DNS/OAuth/email-provider setup is account-bound and was not done here.
 
 ## 4. VPS
 
-Use a patched Linux host, dedicated non-root deploy user, SSH keys only, host firewall and Docker Engine/Compose. Clone the private repo to an absolute path; keep config/secrets outside it. Follow `deploy/README.md` to configure the mode-`0600` `/etc/pokecrack/production.env` and backup-marker directory. For Nostr, create a separate mode-`0600` `/etc/pokecrack/nostr.env` from the exact four-key template; do not add either Nostr DSN to the shared production file. Browser profile/noVNC/Bridge preparation is not part of these service sets.
+Use a patched Linux host, dedicated non-root deploy user, SSH keys only, host firewall and Docker Engine/Compose. Clone the private repo to an absolute path; keep config/secrets outside it. Follow `deploy/README.md` to configure the mode-`0600` `/etc/pokecrack/production.env` and backup-marker directory. For Nostr, create a separate mode-`0600` `/etc/pokecrack/nostr.env` from the exact four-key template; for Bluesky, create a separate exact mode-`0600` `/etc/pokecrack/bluesky.env` from the exact three-key template. Do not add either source's DSN to the shared production file. Browser profile/noVNC/Bridge preparation is not part of these service sets.
 
 Deploy an exact commit:
 
@@ -79,18 +110,73 @@ deploy/scripts/deploy.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
 ```
 
 The default service set remains `tcgdex`: collector, scheduler, and watchdog.
-The gated `tcgdex-nostr` set adds only `nostr-collector` and requires both
+The `tcgdex-nostr` set adds only `nostr-collector` and requires both
 `--nostr-env-file /etc/pokecrack/nostr.env` and the successful hosted
 attestation before any service replacement. The shared collector always has
 Nostr disabled; only the dedicated container receives the worker DSN. The
-script refuses full mode and every unknown container. Removing an existing
+`tcgdex-bluesky` set likewise adds only `bluesky-collector`, requires
+`--bluesky-env-file /etc/pokecrack/bluesky.env`, and forces its strictly
+healthy aggregate runtime-evidence gate before it can advance the success
+marker. The shared
+collector always has Bluesky disabled; only the dedicated container receives
+the Bluesky worker DSN. The script refuses full mode and every unknown
+container. Removing an existing
 Nostr container requires the explicit `--retire-nostr` rollback flag; it never
 uses `--remove-orphans`. The atomic success manifest records SHA, service-set
 name, and exact services. The GitHub deploy workflow requires the same explicit
 choice and verifies remote `HEAD == GITHUB_SHA`; it never uses `git pull`.
 Protect `worker-production` and configure `VPS_HOST`, `VPS_USER`, `VPS_PORT`,
 `VPS_DEPLOY_PATH`, `VPS_ENV_FILE`, `VPS_NOSTR_ENV_FILE`,
+`VPS_BLUESKY_ENV_FILE`,
 `VPS_SSH_PRIVATE_KEY`, and pinned `VPS_KNOWN_HOSTS`.
+
+For a stronger post-deploy gate than container health, provision the dedicated
+`pokecrack_runtime_monitor` capability role from migrations
+`20260923000000_runtime_release_evidence.sql` and
+`20260924000000_runtime_release_evidence_hardening.sql`, plus the exact
+outside-migration `pokecrack_runtime_monitor_login` NOINHERIT login. That login
+must be `NOSUPERUSER`, `NOCREATEDB`, `NOCREATEROLE`, `NOREPLICATION`,
+`NOBYPASSRLS`, `CONNECTION LIMIT 2`, and have only the capability membership
+`pokecrack_runtime_monitor_login -> pokecrack_runtime_monitor` with
+`INHERIT FALSE, SET TRUE`. Role attributes, ownership, or memberships that
+drift from this contract fail closed; they are not silently normalized. Put
+only that login's TLS URL in the mode-0600 production env file as
+`RUNTIME_RELEASE_EVIDENCE_DB_URL`; the watchdog is the only container that
+receives it. Then opt into the verifier during deployment:
+
+```bash
+deploy/scripts/deploy.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
+  --env-file /etc/pokecrack/production.env \
+  --service-set tcgdex \
+  --verify-runtime
+```
+
+The verifier reports aggregate worker heartbeat age/status, observed source
+state, expected schedule/job outcome, checkpoint freshness, queue age bands,
+cleanup freshness, and local backup-marker age where a narrowly scoped marker
+mount is available. It never prints source text, URLs, payloads, policy/gate
+identifiers, cursors, credentials, image labels, or identity. For ordinary
+observations, `healthy` and first-run `warming_up` exit 0; the forced Bluesky
+deployment gate treats `warming_up` as inconclusive and cannot advance its
+success marker. Observed stale/failed evidence exits 1;
+missing/incompatible schema, service set, exact running-image revision, role,
+or monitor access is explicitly `inconclusive` and exits 2. Missing,
+unsupported, or unreadable backup markers are also `inconclusive` (exit 2),
+including during first-run grace; the default owner-only backup directory is
+not made group-readable for the watchdog. Enabled sources and checkpoints must
+advance at or after the bounded release start before `healthy` is possible.
+The `tcgdex-nostr` set additionally requires Nostr worker heartbeat, checkpoint,
+and expected schedule evidence. The `tcgdex-bluesky` set applies equivalent
+Bluesky requirements automatically and cannot run without the post-release
+gate. No migration or deployment is automatic. For an already-running release, the same check is
+available directly as `deploy/scripts/verify-runtime-release.sh` with an exact
+SHA, explicit service set, and release start.
+
+If health or runtime evidence fails after replacement, the new containers stay
+in place for diagnosis, the success manifest is not advanced, and no automated
+rollback is attempted. Preserve the aggregate evidence, then select an
+explicit compatible SHA and run `rollback.sh` when an operator has approved the
+recovery.
 
 After every database or password rotation, provision the two login roles from
 an owner-controlled, parameterized session (never a password literal in a
@@ -115,8 +201,10 @@ Complete login/CAPTCHA/2FA manually, run doctor/auth/read-only adapter checks, t
 For a real release record: exact Git SHA; exact service-set manifest; CI and
 migration run; backup reference and plan-specific retention evidence; Supabase
 project reference (not secret); VPS host identifier; every selected service
-healthy; excluded services absent; source checkpoints/jobs advancing; anon
-public projection redaction; restore-drill date; and known warnings. For Nostr,
+healthy; excluded services absent; runtime verifier status and exit code (with
+worker/source/schedule/checkpoint/queue/cleanup aggregates and marker age);
+source checkpoints/jobs advancing; anon public projection redaction;
+restore-drill date; and known warnings. For Nostr,
 also record that both dedicated sessions authenticated, the 15-key v2 contract
 was all true, three relay jobs completed, and neither DSN appeared in logs or
 container inspection. A Compose render, migration file, heartbeat-only result,
