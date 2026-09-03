@@ -96,19 +96,21 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
       - name: Deploy and verify the exact GITHUB_SHA
         shell: bash
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
+          [[ -n "$GITHUB_TOKEN" ]]
           printf -v remote_command 'bash -s -- %q %q %q %q %q %q %q %q' \
             "$GITHUB_SHA" "$VPS_DEPLOY_PATH" "$VPS_ENV_FILE" \
             "$VPS_NOSTR_ENV_FILE" "$VPS_BLUESKY_ENV_FILE" \
             "$REQUESTED_SERVICE_SET" "$REQUESTED_RETIRE_NOSTR" \
             "$REQUESTED_RETIRE_BLUESKY"
-          ssh -i "$HOME/.ssh/id_ed25519" \
-            -p "$VPS_PORT" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            "$VPS_USER@$VPS_HOST" "$remote_command" <<'REMOTE'
+          {
+            printf '%s\n' "$GITHUB_TOKEN"
+            cat <<'REMOTE'
+          IFS= read -r github_token
+          [[ -n "$github_token" ]]
           set -Eeuo pipefail
           sha=$1
           repository=$2
@@ -135,9 +137,13 @@ jobs:
           git -C "$repository" diff --quiet --ignore-submodules --
           git -C "$repository" diff --cached --quiet --ignore-submodules --
           [[ -z $(git -C "$repository" status --porcelain --untracked-files=all) ]]
+          [[ "$(git -C "$repository" remote get-url origin)" == "https://github.com/ncihxaonn/pokecrack.git" ]]
           if ! git -C "$repository" cat-file -e "${sha}^{commit}" 2>/dev/null; then
-            git -C "$repository" fetch --no-tags --no-write-fetch-head origin "$sha"
+            git -C "$repository" \
+              -c "http.extraheader=Authorization: Bearer $github_token" \
+              fetch --no-tags --no-write-fetch-head origin "$sha"
           fi
+          unset github_token
           resolved=$(git -C "$repository" rev-parse --verify "${sha}^{commit}")
           [[ "$resolved" == "$sha" ]]
           git -C "$repository" checkout --detach "$sha"
@@ -160,6 +166,12 @@ jobs:
           actual=$(git -C "$repository" rev-parse --verify HEAD)
           [[ "$actual" == "$sha" ]]
           REMOTE
+          } | ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "$remote_command"
       - name: Remove transient SSH key
         if: always()
         run: rm -f "$HOME/.ssh/id_ed25519"
