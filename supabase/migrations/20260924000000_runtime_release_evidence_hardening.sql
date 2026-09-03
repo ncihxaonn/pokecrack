@@ -184,6 +184,15 @@ begin
        from pg_catalog.pg_auth_members as memberships
        where memberships.member = monitor_oid
      )
+     or (select count(*) from pg_catalog.pg_auth_members as memberships
+         join pg_catalog.pg_roles as owner on owner.oid = memberships.member
+         join pg_catalog.pg_roles as grantor on grantor.oid = memberships.grantor
+         where memberships.roleid = monitor_oid
+           and memberships.admin_option
+           and not memberships.inherit_option
+           and not memberships.set_option
+           and grantor.rolsuper
+           and (owner.rolsuper or owner.rolcreaterole)) <> 1
      or exists (
        select 1
        from pg_catalog.pg_db_role_setting as settings
@@ -246,12 +255,15 @@ begin
        select 1
        from pg_catalog.pg_auth_members as memberships
        join pg_catalog.pg_roles as members on members.oid = memberships.member
+       join pg_catalog.pg_roles as owner on owner.oid = memberships.member
+       join pg_catalog.pg_roles as grantor on grantor.oid = memberships.grantor
        where memberships.roleid = monitor_oid
          and not (
-           memberships.member = memberships.grantor
-           and memberships.admin_option
+           memberships.admin_option
            and not memberships.inherit_option
            and not memberships.set_option
+           and grantor.rolsuper
+           and (owner.rolsuper or owner.rolcreaterole)
          )
          and not (
            members.rolname = 'pokecrack_runtime_monitor_login'
