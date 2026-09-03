@@ -3680,8 +3680,10 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         # for a bridge network. The security invariant is its explicit bridge
         # driver plus the collector's exclusive internal/Bluesky network set,
         # not an unstable rendered-key list.
+        bluesky_egress = document["networks"]["bluesky-egress"]
+        self.assertFalse(bluesky_egress.get("internal", False))
         self.assertEqual(
-            document["networks"]["bluesky-egress"]["driver"], "bridge"
+            bluesky_egress["driver"], "bridge"
         )
 
         bluesky_template = DEPLOY_ROOT / "env" / "bluesky.env.example"
