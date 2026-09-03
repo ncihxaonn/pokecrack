@@ -389,10 +389,10 @@ select jsonb_build_object(
     -- than a fixed account name.  A provisioned login is the only optional
     -- second edge and can only SET this capability.
     and (select count(*) = (1
-      + case when roles.login_oid is null then 0 else 1 end)
+      + case when bool_or(roles.login_oid is null) then 0 else 1 end)
       and count(*) filter (where memberships.creator_edge_valid) = 1
       and count(*) filter (where memberships.dedicated_login_edge_valid)
-        = case when roles.login_oid is null then 0 else 1 end
+        = case when bool_or(roles.login_oid is null) then 0 else 1 end
       and bool_and(
         memberships.creator_edge_valid
         or memberships.dedicated_login_edge_valid
