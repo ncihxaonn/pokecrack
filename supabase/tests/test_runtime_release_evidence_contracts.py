@@ -7,6 +7,12 @@ from pathlib import Path
 
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 MIGRATION = REPOSITORY_ROOT / "supabase" / "migrations" / "20260923000000_runtime_release_evidence.sql"
+HARDENING_MIGRATION = (
+    REPOSITORY_ROOT
+    / "supabase"
+    / "migrations"
+    / "20260924000000_runtime_release_evidence_hardening.sql"
+)
 PYTHON_ROOT = REPOSITORY_ROOT / "services" / "worker" / "pokecrack_worker"
 
 
@@ -125,6 +131,62 @@ class RuntimeReleaseEvidenceMigrationContractTests(unittest.TestCase):
         self.assertIn("raise exception 'invalid runtime evidence heartbeat window'", self.sql)
         self.assertIn("revoke all on all tables in schema ingest from pokecrack_runtime_monitor", self.sql)
         self.assertNotIn("grant select on", self.sql.lower())
+
+
+class RuntimeReleaseEvidenceHardeningContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.sql = HARDENING_MIGRATION.read_text(encoding="utf-8")
+
+    def test_service_sets_are_exact_scoped_and_exclude_demo_data(self) -> None:
+        self.assertEqual(self.sql.lower().count("begin;"), 1)
+        self.assertEqual(self.sql.lower().count("commit;"), 1)
+        self.assertIn("when 'tcgdex' then", self.sql)
+        self.assertIn("when 'tcgdex-nostr' then", self.sql)
+        self.assertIn("raise exception 'invalid runtime evidence service set'", self.sql)
+        self.assertIn("'nostr-collector'", self.sql)
+        for source_key in (
+            "tcgdex_catalog",
+            "nostr_relay_primal",
+            "nostr_relay_nos_lol",
+            "nostr_relay_nostr_net",
+        ):
+            self.assertIn(f"'{source_key}'", self.sql)
+        self.assertIn("and policies.is_demo = false", self.sql)
+        self.assertIn("heartbeats.is_demo = false", self.sql)
+        self.assertIn("jobs.is_demo = false", self.sql)
+
+    def test_healthy_requires_current_release_progress_not_just_old_state(self) -> None:
+        self.assertIn("worker_advanced_count <> expected_worker_count", self.sql)
+        self.assertIn("source_advanced_count <> expected_source_count", self.sql)
+        self.assertIn("checkpoint_advanced_count <> expected_source_count", self.sql)
+        self.assertIn("freshness_at >= p_release_started_at", self.sql)
+        self.assertIn("jobs.created_at >= p_release_started_at", self.sql)
+        self.assertIn("slots.slot_at >= p_release_started_at", self.sql)
+        self.assertIn("schedule_stale_count > 0", self.sql)
+        self.assertIn("schedule_future_count > 0", self.sql)
+        self.assertIn("cleanup_latest_age_seconds > 129600", self.sql)
+
+    def test_monitor_capability_is_runtime_attested_and_old_overload_is_not_a_bypass(self) -> None:
+        self.assertIn("set search_path = pg_catalog, pg_temp", self.sql)
+        self.assertIn("if session_user <> 'postgres' then", self.sql)
+        self.assertIn("memberships.set_option", self.sql)
+        self.assertIn("not memberships.inherit_option", self.sql)
+        self.assertIn("not memberships.admin_option", self.sql)
+        self.assertIn("runtime evidence monitor capability has drifted", self.sql)
+        self.assertIn("pg_catalog.pg_db_role_setting", self.sql)
+        self.assertIn("relations.relowner = monitor_oid", self.sql)
+        self.assertIn("relations.relowner = caller_oid", self.sql)
+        self.assertIn("coalesce(roles.rolconfig, '{}'::text[]) = '{}'::text[]", self.sql)
+        self.assertIn("runtime evidence monitor login has direct application grants", self.sql)
+        self.assertIn(
+            "revoke execute on function ingest.get_runtime_release_evidence_v1(timestamptz, integer, integer)",
+            self.sql,
+        )
+        self.assertRegex(
+            self.sql,
+            r"grant execute on function ingest\.get_runtime_release_evidence_v1\(timestamptz, integer, integer, text\)\s+to pokecrack_runtime_monitor",
+        )
 
 
 class RuntimeReleaseEvidenceIntegrationContractTests(unittest.TestCase):
