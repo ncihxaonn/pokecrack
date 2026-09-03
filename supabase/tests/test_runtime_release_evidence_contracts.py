@@ -19,6 +19,12 @@ BLUESKY_RUNTIME_MIGRATION = (
     / "migrations"
     / "20260929000000_runtime_release_evidence_bluesky.sql"
 )
+ACL_NORMALIZATION_MIGRATION = (
+    REPOSITORY_ROOT
+    / "supabase"
+    / "migrations"
+    / "20260930000000_runtime_release_evidence_acl_normalization.sql"
+)
 PYTHON_ROOT = REPOSITORY_ROOT / "services" / "worker" / "pokecrack_worker"
 
 
@@ -297,6 +303,82 @@ class RuntimeReleaseEvidenceBlueskyContractTests(unittest.TestCase):
             self.sql,
             r"grant execute on function ingest\.get_runtime_release_evidence_v1\(timestamptz, integer, integer, text\)\s+to pokecrack_runtime_monitor",
         )
+
+
+class RuntimeReleaseEvidenceAclNormalizationContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.sql = ACL_NORMALIZATION_MIGRATION.read_text(encoding="utf-8")
+
+    def test_forward_patch_normalizes_null_catalog_acls_without_relaxing_header(self) -> None:
+        self.assertEqual(self.sql.lower().count("begin;"), 1)
+        self.assertEqual(self.sql.lower().count("commit;"), 1)
+        self.assertIn("pg_get_functiondef(", self.sql)
+        self.assertIn("functions.prosecdef", self.sql)
+        self.assertIn("functions.provolatile = 's'", self.sql)
+        self.assertIn("functions.proparallel = 'r'", self.sql)
+        self.assertIn(
+            "array['search_path=pg_catalog, pg_temp']::text[]",
+            self.sql,
+        )
+        self.assertEqual(self.sql.count("'{}'::aclitem[]"), 3)
+        for expected in (
+            "acldefault('n', namespaces.nspowner)",
+            "acldefault('r', relations.relowner)",
+            "acldefault('f', procedures.proowner)",
+            "runtime release evidence ACL normalization did not match exactly",
+        ):
+            self.assertIn(expected, self.sql)
+
+    def test_forward_patch_replaces_each_acl_fragment_twice(self) -> None:
+        hardened_sql = HARDENING_MIGRATION.read_text(encoding="utf-8")
+        updated_body = hardened_sql.split("as $function$", 1)[1].split("$function$", 1)[0]
+        bluesky_sql = BLUESKY_RUNTIME_MIGRATION.read_text(encoding="utf-8")
+
+        for fragment_name in (
+            "service_sets",
+            "declaration",
+            "monitor_transition",
+            "checkpoint_rows",
+        ):
+            old_match = re.search(
+                rf"old_{fragment_name} constant text := \$old\$(.*?)\$old\$;",
+                bluesky_sql,
+                flags=re.DOTALL,
+            )
+            new_match = re.search(
+                rf"new_{fragment_name} constant text := \$new\$(.*?)\$new\$;",
+                bluesky_sql,
+                flags=re.DOTALL,
+            )
+            self.assertIsNotNone(old_match)
+            self.assertIsNotNone(new_match)
+            assert old_match is not None
+            assert new_match is not None
+            updated_body = updated_body.replace(old_match.group(1), new_match.group(1))
+
+        for fragment_name in ("namespace_acl", "relation_acl", "procedure_acl"):
+            old_match = re.search(
+                rf"old_{fragment_name} constant text := \$old\$(.*?)\$old\$;",
+                self.sql,
+                flags=re.DOTALL,
+            )
+            new_match = re.search(
+                rf"new_{fragment_name} constant text := \$new\$(.*?)\$new\$;",
+                self.sql,
+                flags=re.DOTALL,
+            )
+            self.assertIsNotNone(old_match)
+            self.assertIsNotNone(new_match)
+            assert old_match is not None
+            assert new_match is not None
+            old_fragment = old_match.group(1)
+            new_fragment = new_match.group(1)
+            self.assertEqual(updated_body.count(old_fragment), 2, fragment_name)
+            self.assertNotIn(new_fragment, updated_body)
+            updated_body = updated_body.replace(old_fragment, new_fragment)
+            self.assertNotIn(old_fragment, updated_body)
+            self.assertEqual(updated_body.count(new_fragment), 2, fragment_name)
 
 
 class RuntimeReleaseEvidenceIntegrationContractTests(unittest.TestCase):
