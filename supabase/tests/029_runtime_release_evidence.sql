@@ -67,6 +67,119 @@ select ok(
   'the monitor has schema usage only and no direct ingest table reads'
 );
 
+select ok(
+  coalesce((
+    select coalesce(roles.rolconfig, '{}'::text[]) = '{}'::text[]
+    from pg_catalog.pg_roles as roles
+    where roles.rolname = 'pokecrack_runtime_monitor'
+  ), false),
+  'the monitor capability has no role-level settings'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_catalog.pg_auth_members as memberships
+    where memberships.member = 'pokecrack_runtime_monitor'::regrole
+  ),
+  'the monitor capability is not a member of another role'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_catalog.pg_db_role_setting as settings
+    where settings.setrole = 'pokecrack_runtime_monitor'::regrole
+  ),
+  'the monitor capability has no database-level role settings'
+);
+
+select ok(
+  not exists (
+    select 1 from pg_catalog.pg_namespace as namespaces
+    where namespaces.nspowner = 'pokecrack_runtime_monitor'::regrole
+    union all
+    select 1 from pg_catalog.pg_class as relations
+    where relations.relowner = 'pokecrack_runtime_monitor'::regrole
+    union all
+    select 1 from pg_catalog.pg_proc as procedures
+    where procedures.proowner = 'pokecrack_runtime_monitor'::regrole
+    union all
+    select 1 from pg_catalog.pg_database as databases
+    where databases.datdba = 'pokecrack_runtime_monitor'::regrole
+    union all
+    select 1 from pg_catalog.pg_tablespace as tablespaces
+    where tablespaces.spcowner = 'pokecrack_runtime_monitor'::regrole
+  ),
+  'the monitor capability owns no database objects'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_catalog.pg_namespace as namespaces
+    cross join lateral aclexplode(
+      coalesce(namespaces.nspacl, acldefault('n', namespaces.nspowner))
+    ) as grants
+    where grants.grantee = 'pokecrack_runtime_monitor'::regrole
+      and not (
+        namespaces.nspname = 'ingest'
+        and grants.privilege_type = 'USAGE'
+      )
+  ),
+  'the monitor capability has no unexpected direct schema grants'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_catalog.pg_class as relations
+    cross join lateral aclexplode(
+      coalesce(relations.relacl, acldefault('r', relations.relowner))
+    ) as grants
+    where grants.grantee = 'pokecrack_runtime_monitor'::regrole
+  ),
+  'the monitor capability has no direct relation grants'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_catalog.pg_proc as procedures
+    cross join lateral aclexplode(
+      coalesce(procedures.proacl, acldefault('f', procedures.proowner))
+    ) as grants
+    where grants.grantee = 'pokecrack_runtime_monitor'::regrole
+      and (
+        procedures.oid <> 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer,text)'::regprocedure
+        or grants.privilege_type <> 'EXECUTE'
+      )
+  ),
+  'the monitor capability has only the private runtime verifier execute grant'
+);
+
+select ok(
+  not exists (
+    select 1
+    from pg_catalog.pg_auth_members as memberships
+    join pg_catalog.pg_roles as members on members.oid = memberships.member
+    where memberships.roleid = 'pokecrack_runtime_monitor'::regrole
+      and not (
+        memberships.member = memberships.grantor
+        and memberships.admin_option
+        and not memberships.inherit_option
+        and not memberships.set_option
+      )
+      and not (
+        members.rolname = 'pokecrack_runtime_monitor_login'
+        and not memberships.admin_option
+        and not memberships.inherit_option
+        and memberships.set_option
+      )
+  ),
+  'the monitor capability has only exact approved membership edges'
+);
+
 select is(
   jsonb_typeof(ingest.get_runtime_release_evidence_v1(
     now() - interval '1 minute', 21600, 180, 'tcgdex'

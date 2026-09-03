@@ -160,7 +160,6 @@ select ok(
       'ingest.review_authorized_opening_v1(uuid,bigint,text,text,text)'::regprocedure,
       'ingest.retract_authorized_opening_v1(uuid,text,text)'::regprocedure
     ])
-    group by true
     having count(*) = 4 and bool_and(procedures.prosecdef)
   ),
   'operator uses the existing security-definer submit/reviewer functions and no direct table writer'
