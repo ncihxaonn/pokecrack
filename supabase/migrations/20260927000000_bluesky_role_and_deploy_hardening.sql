@@ -5,6 +5,7 @@ begin;
 -- modified by a migration: its password remains outside the repository.
 do $roles$
 declare
+  bluesky_role_oid oid;
   role_is_exact boolean;
 begin
   if not exists (
@@ -21,6 +22,53 @@ begin
       noreplication
       nobypassrls
       connection limit -1;
+
+    select roles.oid
+    into bluesky_role_oid
+    from pg_catalog.pg_roles as roles
+    where roles.rolname = 'pokecrack_bluesky_worker';
+
+    -- Keep the creator edge tied to the actual migration owner.  A
+    -- non-superuser CREATEROLE actor can receive PostgreSQL's bootstrap
+    -- ADMIN-only edge; a superuser receives no implicit edge, so create the
+    -- same constrained edge explicitly.  No fixed account name is trusted.
+    if not exists (
+      select 1
+      from pg_catalog.pg_auth_members as memberships
+      where memberships.roleid = bluesky_role_oid
+        and memberships.admin_option
+        and not memberships.inherit_option
+        and not memberships.set_option
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as grantor
+          where grantor.oid = memberships.grantor
+            and grantor.rolsuper
+        )
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as owner
+          where owner.oid = memberships.member
+            and (owner.rolsuper or owner.rolcreaterole)
+        )
+    ) then
+      if exists (
+        select 1
+        from pg_catalog.pg_auth_members as memberships
+        where memberships.roleid = bluesky_role_oid
+          and memberships.admin_option
+          and not memberships.inherit_option
+          and not memberships.set_option
+      ) then
+        raise exception using
+          errcode = '55000',
+          message = 'fresh Bluesky creator edge is not isolated';
+      end if;
+
+      grant pokecrack_bluesky_worker
+        to current_user
+        with admin true, inherit false, set false;
+    end if;
   else
     select
       not rolsuper
@@ -55,7 +103,10 @@ stable
 security definer
 set search_path = pg_catalog, pg_temp
 as $attestation$
-with expected_worker_functions(signature) as (
+with as_of as (
+  select statement_timestamp() as observed_at
+),
+expected_worker_functions(signature) as (
   values
     ('ingest.enqueue_due_bluesky_jetstream_jobs_v1(text)'::text),
     ('ingest.claim_bluesky_jetstream_jobs_v1(text,integer)'::text),
@@ -97,6 +148,47 @@ worker_roles as (
   left join pg_catalog.pg_roles as login_role
     on login_role.rolname = 'pokecrack_bluesky_worker_login'
   where group_role.rolname = 'pokecrack_bluesky_worker'
+),
+worker_memberships as (
+  select
+    memberships.roleid,
+    memberships.member,
+    memberships.grantor,
+    memberships.admin_option,
+    memberships.inherit_option,
+    memberships.set_option,
+    roles.group_oid,
+    roles.login_oid,
+    memberships.admin_option
+      and not memberships.inherit_option
+      and not memberships.set_option
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as grantor
+        where grantor.oid = memberships.grantor
+          and grantor.rolsuper
+      )
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as owner
+        where owner.oid = memberships.member
+          and (owner.rolsuper or owner.rolcreaterole)
+      ) as creator_edge_valid,
+    roles.login_oid is not null
+      and memberships.member = roles.login_oid
+      and roles.login_valid
+      and not memberships.admin_option
+      and not memberships.inherit_option
+      and memberships.set_option
+      and not exists (
+        select 1
+        from pg_catalog.pg_auth_members as other_memberships
+        where other_memberships.member = roles.login_oid
+          and other_memberships.roleid <> roles.group_oid
+      ) as dedicated_login_edge_valid
+  from pg_catalog.pg_auth_members as memberships
+  cross join worker_roles as roles
+  where memberships.roleid = roles.group_oid
 ),
 ingest_relations as (
   select relations.oid, relations.relowner, relations.relacl
@@ -296,24 +388,20 @@ select jsonb_build_object(
     (select count(*) = 1
       and count(*) filter (where group_valid and login_valid) = 1
       from worker_roles)
-    -- PostgreSQL 17 records the migration owner as an ADMIN-only creator
-    -- membership. The provisioned login is the only other membership edge.
-    and (select count(*) = 2
-      and count(*) filter (
-        where memberships.member = roles.login_oid
-          and not memberships.admin_option
-          and not memberships.inherit_option
-          and memberships.set_option
-      ) = 1
-      and count(*) filter (
-        where memberships.member = 'postgres'::regrole
-          and memberships.admin_option
-          and not memberships.inherit_option
-          and not memberships.set_option
-      ) = 1
-      from pg_catalog.pg_auth_members as memberships
-      cross join worker_roles as roles
-      where memberships.roleid = roles.group_oid)
+    -- The creator edge is tied to the actual bootstrap owner/grantor rather
+    -- than a fixed account name.  A provisioned login is the only optional
+    -- second edge and can only SET this capability.
+    and (select count(*) = (1
+      + case when roles.login_oid is null then 0 else 1 end)
+      and count(*) filter (where memberships.creator_edge_valid) = 1
+      and count(*) filter (where memberships.dedicated_login_edge_valid)
+        = case when roles.login_oid is null then 0 else 1 end
+      and bool_and(
+        memberships.creator_edge_valid
+        or memberships.dedicated_login_edge_valid
+      )
+      from worker_memberships as memberships
+      cross join worker_roles as roles)
     -- The capability must not itself be a member of service_role, postgres,
     -- another worker, or any other role.
     and not exists (
@@ -332,9 +420,11 @@ select jsonb_build_object(
     )
     and not exists (
       select 1
-      from pg_catalog.pg_auth_members as memberships
-      join worker_roles as roles on roles.group_oid = memberships.roleid
-      where memberships.member not in (roles.login_oid, 'postgres'::regrole)
+      from worker_memberships as memberships
+      where not (
+        memberships.creator_edge_valid
+        or memberships.dedicated_login_edge_valid
+      )
     )
     and has_schema_privilege(
       'pokecrack_bluesky_worker', 'ingest', 'USAGE'
@@ -342,8 +432,11 @@ select jsonb_build_object(
     and not has_schema_privilege(
       'pokecrack_bluesky_worker', 'ingest', 'CREATE'
     )
-    and not has_schema_privilege(
-      'pokecrack_bluesky_worker_login', 'ingest', 'USAGE'
+    and not exists (
+      select 1
+      from worker_roles as roles
+      where roles.login_oid is not null
+        and has_schema_privilege(roles.login_oid, 'ingest', 'USAGE')
     )
     and (select count(*) = 12
       and bool_and(has_function_privilege(
@@ -354,14 +447,8 @@ select jsonb_build_object(
       and bool_and(
         pg_get_userbyid(grants.proowner) = 'postgres'
         and grants.prosecdef
-        and (
-          grants.oid = 'ingest.verify_bluesky_release_v1()'::regprocedure
-          and coalesce(grants.proconfig, '{}'::text[])
-            = array['search_path=pg_catalog, pg_temp']::text[]
-          or grants.oid <> 'ingest.verify_bluesky_release_v1()'::regprocedure
-          and coalesce(grants.proconfig, '{}'::text[])
-            = array['search_path=pg_catalog']::text[]
-        )
+        and coalesce(grants.proconfig, '{}'::text[])
+          = array['search_path=pg_catalog, pg_temp']::text[]
       )
       from worker_function_acl_grants as grants)
     -- No extra ingest function can be reached by the capability, including
@@ -430,46 +517,48 @@ select jsonb_build_object(
         or has_sequence_privilege('pokecrack_bluesky_worker', sequences.oid, 'UPDATE')
     )
     and not exists (
-      select 1 from ingest_functions as functions
-      where has_function_privilege(
-        'pokecrack_bluesky_worker_login', functions.oid, 'EXECUTE'
-      )
+      select 1
+      from worker_roles as roles
+      join ingest_functions as functions on roles.login_oid is not null
+      where has_function_privilege(roles.login_oid, functions.oid, 'EXECUTE')
     )
     and not exists (
-      select 1 from ingest_relations as relations
-      where has_table_privilege('pokecrack_bluesky_worker_login', relations.oid, 'SELECT')
-        or has_table_privilege('pokecrack_bluesky_worker_login', relations.oid, 'INSERT')
-        or has_table_privilege('pokecrack_bluesky_worker_login', relations.oid, 'UPDATE')
-        or has_table_privilege('pokecrack_bluesky_worker_login', relations.oid, 'DELETE')
-        or has_table_privilege('pokecrack_bluesky_worker_login', relations.oid, 'REFERENCES')
-        or has_table_privilege('pokecrack_bluesky_worker_login', relations.oid, 'TRIGGER')
-        or has_table_privilege('pokecrack_bluesky_worker_login', relations.oid, 'MAINTAIN')
+      select 1
+      from worker_roles as roles
+      join ingest_relations as relations on roles.login_oid is not null
+      where has_table_privilege(roles.login_oid, relations.oid, 'SELECT')
+        or has_table_privilege(roles.login_oid, relations.oid, 'INSERT')
+        or has_table_privilege(roles.login_oid, relations.oid, 'UPDATE')
+        or has_table_privilege(roles.login_oid, relations.oid, 'DELETE')
+        or has_table_privilege(roles.login_oid, relations.oid, 'REFERENCES')
+        or has_table_privilege(roles.login_oid, relations.oid, 'TRIGGER')
+        or has_table_privilege(roles.login_oid, relations.oid, 'MAINTAIN')
         or has_any_column_privilege(
-          'pokecrack_bluesky_worker_login', relations.oid,
-          'SELECT,INSERT,UPDATE,REFERENCES'
+          roles.login_oid, relations.oid, 'SELECT,INSERT,UPDATE,REFERENCES'
         )
     )
     and not exists (
       select 1
-      from ingest_relation_acl_grants as grants
+      from worker_roles as roles
+      join ingest_relation_acl_grants as grants on roles.login_oid is not null
       where case
         when grants.grantee = 0 then true
-        else pg_has_role(
-          'pokecrack_bluesky_worker_login', grants.grantee, 'USAGE'
-        )
+        else pg_has_role(roles.login_oid, grants.grantee, 'USAGE')
       end
     )
     and not exists (
-      select 1 from ingest_relations as relations
-      where pg_has_role(
-        'pokecrack_bluesky_worker_login', relations.relowner, 'USAGE'
-      )
+      select 1
+      from worker_roles as roles
+      join ingest_relations as relations on roles.login_oid is not null
+      where pg_has_role(roles.login_oid, relations.relowner, 'USAGE')
     )
     and not exists (
-      select 1 from ingest_sequences as sequences
-      where has_sequence_privilege('pokecrack_bluesky_worker_login', sequences.oid, 'USAGE')
-        or has_sequence_privilege('pokecrack_bluesky_worker_login', sequences.oid, 'SELECT')
-        or has_sequence_privilege('pokecrack_bluesky_worker_login', sequences.oid, 'UPDATE')
+      select 1
+      from worker_roles as roles
+      join ingest_sequences as sequences on roles.login_oid is not null
+      where has_sequence_privilege(roles.login_oid, sequences.oid, 'USAGE')
+        or has_sequence_privilege(roles.login_oid, sequences.oid, 'SELECT')
+        or has_sequence_privilege(roles.login_oid, sequences.oid, 'UPDATE')
     )
     -- Role-level settings include both ALTER ROLE ... SET and per-database
     -- settings. The check is intentionally read-only and catches either.
@@ -546,12 +635,42 @@ select jsonb_build_object(
         and not policies.is_demo
     )
     and (select count(*) = 1
+      and coalesce(bool_and(
+        (
+          gates.owner_job_id is null
+          and gates.owner_lease_generation is null
+          and gates.acquired_at is null
+          and gates.active_until is null
+        )
+        or (
+          gates.owner_job_id is not null
+          and gates.owner_lease_generation >= 1
+          and gates.acquired_at is not null
+          and gates.acquired_at <= as_of.observed_at
+          and gates.active_until is not null
+          and gates.active_until > gates.acquired_at
+          and gates.active_until > as_of.observed_at
+          and jobs.id = gates.owner_job_id
+          and jobs.status = 'running'
+          and jobs.job_type = 'source.bluesky.jetstream'
+          and jobs.payload = '{}'::jsonb
+          and not jobs.is_demo
+          and jobs.attempts < jobs.max_attempts
+          and jobs.locked_by ~ '^bluesky-collector-[a-z0-9][a-z0-9_.-]{0,63}$'
+          and jobs.locked_at is not null
+          and jobs.locked_at <= as_of.observed_at
+          and jobs.lease_generation = gates.owner_lease_generation
+          and jobs.lock_expires_at is not null
+          and jobs.lock_expires_at > jobs.locked_at
+          and jobs.lock_expires_at > as_of.observed_at
+          and jobs.lock_expires_at = gates.active_until
+        )
+      ), false)
       from ingest.source_request_gates as gates
-      where gates.source_key = 'bluesky_jetstream'
-        and gates.owner_job_id is null
-        and gates.owner_lease_generation is null
-        and gates.acquired_at is null
-        and gates.active_until is null)
+      cross join as_of
+      left join ingest.jobs as jobs
+        on jobs.id = gates.owner_job_id
+      where gates.source_key = 'bluesky_jetstream')
   ),
   'bluesky_acl_exact', (
     -- The three private tables retain PostgreSQL's complete owner ACL plus
@@ -582,6 +701,9 @@ select jsonb_build_object(
       and count(distinct grants.privilege_type) = 3
       and bool_and(not grants.is_grantable)
       from bluesky_sequence_acl_grants as grants)
+    and (select count(*) = 1
+      and bool_and(pg_get_userbyid(sequences.relowner) = 'postgres')
+      from bluesky_sequences as sequences)
     and not exists (
       select 1
       from bluesky_relation_acl_grants as grants
@@ -600,7 +722,7 @@ select jsonb_build_object(
       from bluesky_sequences as sequences
       cross join unnest(array[
         'service_role', 'anon', 'authenticated',
-        'pokecrack_bluesky_worker', 'pokecrack_bluesky_worker_login'
+        'pokecrack_bluesky_worker'
       ]::name[]) as checked_roles(role_name)
       where has_sequence_privilege(checked_roles.role_name, sequences.oid, 'USAGE')
         or has_sequence_privilege(checked_roles.role_name, sequences.oid, 'SELECT')

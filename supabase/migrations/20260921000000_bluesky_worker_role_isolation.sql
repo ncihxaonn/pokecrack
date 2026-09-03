@@ -6,6 +6,7 @@ begin;
 -- libpq startup option documented by the deployment artifacts.
 do $roles$
 declare
+  bluesky_role_oid oid;
   role_is_exact boolean;
 begin
   if not exists (
@@ -22,6 +23,54 @@ begin
       noreplication
       nobypassrls
       connection limit -1;
+
+    select roles.oid
+    into bluesky_role_oid
+    from pg_catalog.pg_roles as roles
+    where roles.rolname = 'pokecrack_bluesky_worker';
+
+    -- A migration may run as a superuser or as a dedicated CREATEROLE
+    -- owner.  Keep the creator edge tied to the actual owner/grantor rather
+    -- than assuming that the role is named postgres.  PostgreSQL may create
+    -- this ADMIN-only edge while a non-superuser creates the capability; a
+    -- superuser has no implicit edge, so add the same reviewed edge explicitly.
+    if not exists (
+      select 1
+      from pg_catalog.pg_auth_members as memberships
+      where memberships.roleid = bluesky_role_oid
+        and memberships.admin_option
+        and not memberships.inherit_option
+        and not memberships.set_option
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as grantor
+          where grantor.oid = memberships.grantor
+            and grantor.rolsuper
+        )
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as owner
+          where owner.oid = memberships.member
+            and (owner.rolsuper or owner.rolcreaterole)
+        )
+    ) then
+      if exists (
+        select 1
+        from pg_catalog.pg_auth_members as memberships
+        where memberships.roleid = bluesky_role_oid
+          and memberships.admin_option
+          and not memberships.inherit_option
+          and not memberships.set_option
+      ) then
+        raise exception using
+          errcode = '55000',
+          message = 'fresh Bluesky creator edge is not isolated';
+      end if;
+
+      grant pokecrack_bluesky_worker
+        to current_user
+        with admin true, inherit false, set false;
+    end if;
   else
     select
       not rolsuper
@@ -69,7 +118,7 @@ language plpgsql
 security definer
 volatile
 parallel unsafe
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 declare
   scheduled_for timestamptz := date_trunc('minute', clock_timestamp(), 'UTC');
@@ -110,7 +159,7 @@ returns boolean
 language sql
 stable
 security definer
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 with expected_policy as (
   select
@@ -230,7 +279,7 @@ returns table(
 language sql
 stable
 security definer
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 select
   policies.source_key,
@@ -283,7 +332,7 @@ language plpgsql
 security definer
 volatile
 parallel unsafe
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 declare
   sweep_time timestamptz := clock_timestamp();
@@ -374,7 +423,7 @@ language plpgsql
 security definer
 volatile
 parallel unsafe
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 declare
   leased_job ingest.jobs%rowtype;
@@ -464,7 +513,7 @@ language plpgsql
 security definer
 volatile
 parallel unsafe
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 declare
   leased_job ingest.jobs%rowtype;
@@ -600,7 +649,7 @@ language plpgsql
 security definer
 volatile
 parallel unsafe
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 declare
   pause_time timestamptz;
@@ -680,7 +729,7 @@ language plpgsql
 security definer
 volatile
 parallel unsafe
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 declare
   heartbeat_time timestamptz := clock_timestamp();
@@ -752,7 +801,7 @@ language plpgsql
 security definer
 volatile
 parallel unsafe
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 begin
   if p_worker_id is null
@@ -778,7 +827,7 @@ language plpgsql
 security definer
 volatile
 parallel unsafe
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 begin
   if p_worker_id is null
@@ -804,7 +853,7 @@ language plpgsql
 security definer
 volatile
 parallel unsafe
-set search_path = pg_catalog
+set search_path = pg_catalog, pg_temp
 as $function$
 begin
   if p_worker_id is null

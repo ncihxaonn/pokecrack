@@ -547,6 +547,11 @@ class IngestMigrationContractTests(unittest.TestCase):
             self.assertIn(function_name, DATABASE_TYPES)
         self.assertIn("recover_bluesky_cursor_too_old_job_v1", DATABASE_TYPES)
         self.assertIn("set search_path = pg_catalog", lowered)
+        self.assertEqual(
+            lowered.count("set search_path = pg_catalog, pg_temp"),
+            11,
+            "all Bluesky worker SECURITY DEFINER functions use pg_temp explicitly",
+        )
         self.assertIn("worker_id !~ '^bluesky-collector-", lowered)
         self.assertIn("from ingest.enqueue_scheduled_job_v1(", lowered)
         self.assertIn("'source.bluesky.jetstream'", lowered)
@@ -655,7 +660,10 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("memberships.set_option", attestation)
         self.assertIn("memberships.admin_option", attestation)
         self.assertIn("pokecrack_bluesky_worker_login", attestation)
-        self.assertIn("memberships.member = 'postgres'::regrole", attestation)
+        self.assertIn("worker_memberships", attestation)
+        self.assertIn("creator_edge_valid", attestation)
+        self.assertIn("dedicated_login_edge_valid", attestation)
+        self.assertNotIn("memberships.member = 'postgres'::regrole", attestation)
         self.assertIn("pg_catalog.pg_db_role_setting", attestation)
         self.assertIn("owned_catalog_objects", attestation)
         self.assertIn("pg_catalog.pg_default_acl", attestation)
@@ -674,6 +682,14 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("grants.is_grantable", attestation)
         self.assertIn("'maintain'", attestation)
         self.assertIn("source.bluesky.jetstream", lowered)
+        self.assertIn("statement_timestamp()", attestation)
+        self.assertIn("jobs.status = 'running'", attestation)
+        self.assertIn("jobs.job_type = 'source.bluesky.jetstream'", attestation)
+        self.assertIn("jobs.attempts < jobs.max_attempts", attestation)
+        self.assertIn("jobs.locked_at <= as_of.observed_at", attestation)
+        self.assertIn("jobs.lock_expires_at = gates.active_until", attestation)
+        self.assertIn("coalesce(bool_and", attestation)
+        self.assertIn("search_path=pg_catalog, pg_temp", attestation)
         self.assertIn("stream_window_seconds", attestation)
         self.assertIn("20260927000000", attestation)
         self.assertIn(
