@@ -40,6 +40,23 @@ Catalog rows carry `is_demo`; synthetic and live rows must not be conflated.
 - `ingest.ai_usage_daily`: request/token/estimated-cost budget ledger.
 - `ingest.admin_audit_log`: hashed actor/network identifiers and bounded action details.
 
+## Private aggregate admission bridge
+
+- `analytics.reviewed_global_aggregate_independent_sources`: immutable,
+  owner-reviewed explicit domain identities used for independent-source
+  diversity. It never derives registrable domains in SQL.
+- `analytics.reviewed_global_aggregate_authorized_source_bindings`: immutable
+  HMAC-to-domain bindings with a reviewed authorization validity window. An
+  identity mapped to conflicting domains is excluded from the cohort.
+- `analytics.reviewed_global_aggregate_input_admissions`: immutable
+  cross-ledger admission records. An authorized row must match its private
+  provenance-dedupe HMAC; the shared canonical fingerprint namespace prevents
+  a known opening from entering through both reviewed-study and authorized paths.
+- `analytics.reviewed_global_aggregate_cohort_v1(...)`: owner-only,
+  as-of resolver for future aggregate publication. It returns no raw identity,
+  authorization, evidence, or social-discovery fields and never writes a public
+  map cell or derived rate.
+
 ## Important invariants
 
 An opening can be `statistics_eligible=true` only when it has a set and positive pack count, is complete, nonduplicate, tier A/B, and not rejected. The current application policy additionally requires `country_code=AU` for public v1 aggregation. Activity-only evidence never contributes a denominator. Duplicate links cannot self-reference. Queue lease fields must agree with state. Raw payloads and AI output are private and retention-bounded. Browser cookies remain outside PostgreSQL.
