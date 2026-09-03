@@ -183,6 +183,13 @@ begin
        select 1
        from pg_catalog.pg_auth_members as memberships
        where memberships.member = monitor_oid
+         and not (
+           memberships.roleid = monitor_oid
+           and memberships.member = memberships.grantor
+           and memberships.admin_option
+           and not memberships.inherit_option
+           and not memberships.set_option
+         )
      )
      or exists (
        select 1
