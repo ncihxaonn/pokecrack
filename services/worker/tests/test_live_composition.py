@@ -11,11 +11,13 @@ from pydantic import SecretStr
 from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
 from pokecrack_worker.collectors.official_api.youtube import YouTubeRequestStateUnknown
 from pokecrack_worker.composition import (
+    BLUESKY_JETSTREAM_JOB_TYPE,
     CLEANUP_JOB_TYPE,
     PUBLIC_STUDY_JOB_TYPE,
     TCGDEX_SETS_JOB_TYPE,
     YOUTUBE_DISCOVERY_JOB_TYPE,
     LiveCompositionError,
+    _dsn_with_fixed_runtime_evidence_role,
     build_live_scheduler,
     build_live_worker_runtime,
     live_schedule_entries,
@@ -50,6 +52,23 @@ def _settings(role: str | None, **values: object) -> Settings:
         worker_max_concurrency=1,
         **values,
     )
+
+
+def test_runtime_evidence_dsn_requires_the_dedicated_login_and_fixed_role() -> None:
+    dsn = (
+        "postgresql://pokecrack_runtime_monitor_login:monitor-secret@"
+        "db.example.invalid/pokecrack?sslmode=require"
+    )
+    fixed = _dsn_with_fixed_runtime_evidence_role(dsn)
+    assert "options=-c%20role%3Dpokecrack_runtime_monitor" in fixed
+    assert "monitor-secret" in fixed
+
+    with pytest.raises(LiveCompositionError):
+        _dsn_with_fixed_runtime_evidence_role(
+            dsn.replace("pokecrack_runtime_monitor_login", "service_role")
+        )
+    with pytest.raises(LiveCompositionError):
+        _dsn_with_fixed_runtime_evidence_role(dsn + "&options=-c%20role%3Dservice_role")
 
 
 def _job_row(
@@ -301,6 +320,18 @@ def test_watchdog_runtime_claims_only_the_cleanup_job_type() -> None:
     sql, params = executor.calls[0]
     assert "ingest.claim_jobs_v2" in sql
     assert params["kinds"] == [CLEANUP_JOB_TYPE]
+
+
+def test_shared_collector_never_includes_bluesky_in_its_claim_allowlist() -> None:
+    executor = RecordingExecutor()
+    runtime = build_live_worker_runtime(
+        _settings("collector"), executor=executor, clock=lambda: NOW
+    )
+
+    assert BLUESKY_JETSTREAM_JOB_TYPE not in runtime.handlers
+    assert runtime.run_once().status is RuntimeStatus.IDLE
+    _sql, params = executor.calls[0]
+    assert BLUESKY_JETSTREAM_JOB_TYPE not in params["kinds"]
 
 
 def test_live_worker_dry_run_never_touches_the_database() -> None:

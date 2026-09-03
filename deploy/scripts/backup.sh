@@ -128,6 +128,21 @@ select concat_ws(E'\\t',
     from pg_catalog.pg_class
     where oid = to_regclass('ingest.mastodon_rate_cooldowns')
   ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('analytics.reviewed_global_aggregate_independent_sources')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('analytics.reviewed_global_aggregate_authorized_source_bindings')
+  ), '0'),
+  coalesce((
+    select relkind::text || relpersistence::text
+    from pg_catalog.pg_class
+    where oid = to_regclass('analytics.reviewed_global_aggregate_input_admissions')
+  ), '0'),
   coalesce(has_table_privilege(
     'service_role',
     to_regclass('ingest.source_request_gates'),
@@ -140,12 +155,17 @@ if ! table_state=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-o
 fi
 
 mastodon_public_hashtag=absent
+reviewed_global_aggregate_bridge=absent
 table_state_fields=()
 if [[ $table_state == *$'\t'* ]]; then
   IFS=$'\t' read -r -a table_state_fields <<< "$table_state"
 fi
-if [[ ${#table_state_fields[@]} == 15 ]]; then
-  if [[ ${table_state_fields[0]} != rp || ${table_state_fields[2]} != rp || ${table_state_fields[14]} != true ]]; then
+if [[ ${#table_state_fields[@]} == 18 || ${#table_state_fields[@]} == 15 ]]; then
+  table_state_maintain_index=14
+  if [[ ${#table_state_fields[@]} == 18 ]]; then
+    table_state_maintain_index=17
+  fi
+  if [[ ${table_state_fields[0]} != rp || ${table_state_fields[2]} != rp || ${table_state_fields[table_state_maintain_index]} != true ]]; then
     unset database_url
     die "database retention preflight has an invalid policy/gate state"
   fi
@@ -182,6 +202,16 @@ if [[ ${#table_state_fields[@]} == 15 ]]; then
   else
     unset database_url
     die "database retention preflight requires a coherent Mastodon table set"
+  fi
+  if [[ ${#table_state_fields[@]} == 18 ]]; then
+    if [[ ${table_state_fields[14]} == rp && ${table_state_fields[15]} == rp && ${table_state_fields[16]} == rp ]]; then
+      reviewed_global_aggregate_bridge=present
+    elif [[ ${table_state_fields[14]} == 0 && ${table_state_fields[15]} == 0 && ${table_state_fields[16]} == 0 ]]; then
+      reviewed_global_aggregate_bridge=absent
+    else
+      unset database_url
+      die "database retention preflight requires a coherent reviewed global aggregate bridge table set"
+    fi
   fi
 else
 case "$table_state" in
@@ -261,7 +291,7 @@ case "$table_state" in
     ;;
   *)
     unset database_url
-    die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, coherent Bluesky/Nostr logged tables, the public-study ledger either absent or logged, and youtube_discoveries either absent or UNLOGGED"
+    die "database retention preflight requires logged policy/gate tables, gate MAINTAIN, coherent Bluesky/Nostr logged tables, the public-study ledger either absent or logged, youtube_discoveries either absent or UNLOGGED, and the reviewed global aggregate bridge either absent or logged as one table set"
     ;;
 esac
 fi
@@ -353,6 +383,7 @@ sanitizer_arguments=(
   --bluesky-jetstream "$bluesky_jetstream"
   --nostr-relay "$nostr_relay"
   --mastodon-public-hashtag "$mastodon_public_hashtag"
+  --reviewed-global-aggregate-bridge "$reviewed_global_aggregate_bridge"
 )
 if [[ $youtube_discoveries == present ]]; then
   if [[ -z $youtube_policy_id ]]; then

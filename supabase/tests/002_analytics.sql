@@ -163,7 +163,10 @@ select ok(
      and c.relkind in ('r', 'p')
      and c.relname not in (
        'reviewed_global_aggregate_baselines',
-       'reviewed_global_aggregate_audit'
+       'reviewed_global_aggregate_audit',
+       'reviewed_global_aggregate_independent_sources',
+       'reviewed_global_aggregate_authorized_source_bindings',
+       'reviewed_global_aggregate_input_admissions'
      )),
   'service_role can inspect legacy analytics but can mutate only through reviewed RPCs'
 );
