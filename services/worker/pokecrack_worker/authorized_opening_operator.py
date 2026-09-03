@@ -1,0 +1,1293 @@
+"""Fail-closed local operators for the authorized-opening RPC boundary.
+
+The operator path deliberately has no collector, browser, URL fetcher, or raw
+evidence store.  It accepts one owner-produced JSON envelope from a mode-0600
+regular file, validates the exact v1 shape locally, and then sends the
+validated JSON to one of the reviewed PostgreSQL functions.  All database
+errors are collapsed to safe operator-facing codes; opaque references and
+evidence digests never appear in output.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import re
+import stat
+import unicodedata
+from collections.abc import Mapping, Sequence
+from dataclasses import dataclass
+from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from typing import Any, Literal, NoReturn
+from urllib.parse import parse_qsl, quote, unquote, urlencode, urlsplit, urlunsplit
+from uuid import UUID
+
+from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationError, model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from pokecrack_worker.db import PsycopgQueryExecutor
+
+MAX_ENVELOPE_BYTES = 16_384
+ENVELOPE_FILE_MODE = 0o600
+SCHEMA_VERSION = "1.0.0"
+
+SUBMITTER_ROLE = "pokecrack_authorized_opening_submitter"
+SUBMITTER_LOGIN = "pokecrack_authorized_opening_submitter_login"
+REVIEWER_ROLE = "pokecrack_authorized_opening_reviewer"
+# Retain the conventional name for compatibility; reviewer connections use
+# the owner-provisioned login attestation below instead of this literal.
+REVIEWER_LOGIN = "pokecrack_authorized_opening_reviewer_login"
+
+_SHA256 = re.compile(r"^[0-9a-f]{64}$")
+_KEY = re.compile(r"^[a-z0-9][a-z0-9._-]{0,159}$")
+_COUNTRY = re.compile(r"^[A-Z]{2}$")
+_LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$")
+_SET_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$")
+_UTC_SECONDS = re.compile(r"^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}Z$")
+# The envelope has no URL-bearing fields.  Reject URI schemes and network-path
+# references anywhere in free-form strings, including the percent-encoded
+# forms commonly used to smuggle ``https://`` through a text field.  Error
+# messages name only the field so an untrusted value is never echoed.
+_URL_OR_URI = re.compile(
+    r"(?i)(?:(?<![A-Za-z0-9+.-])[A-Za-z][A-Za-z0-9+.-]{0,31}:|//|%3a(?:%2f){0,2}|%2f%2f)"
+)
+_LOGIN = re.compile(r"^[A-Za-z_][A-Za-z0-9_]{0,62}$")
+_RESERVED_LOGINS = frozenset(
+    {
+        "anon",
+        "authenticated",
+        "postgres",
+        "pokecrack_authorized_opening_reviewer",
+        "pokecrack_authorized_opening_submitter",
+        "service_role",
+    }
+)
+_SUPPORTED_SSL_MODES = frozenset({"require", "verify-ca", "verify-full"})
+_SUPPORTED_DSN_OPTIONS = frozenset(
+    {
+        "application_name",
+        "channel_binding",
+        "connect_timeout",
+        "gssencmode",
+        "options",
+        "require_auth",
+        "sslcert",
+        "sslcrl",
+        "sslcrldir",
+        "sslkey",
+        "sslmode",
+        "sslnegotiation",
+        "sslrootcert",
+        "target_session_attrs",
+    }
+)
+_SAFE_STATES = frozenset(
+    {
+        "queued",
+        "in_review",
+        "accepted_statistics",
+        "accepted_activity_only",
+        "duplicate",
+        "rejected",
+        "expired",
+        "retracted",
+    }
+)
+_SAFE_RETRACTION_REASONS = frozenset(
+    {
+        "authorization_revoked",
+        "evidence_corrected",
+        "privacy_request",
+        "policy_takedown",
+    }
+)
+
+SubmissionState = Literal[
+    "in_review",
+    "accepted_statistics",
+    "accepted_activity_only",
+    "duplicate",
+    "rejected",
+    "expired",
+]
+ReviewListState = Literal[
+    "all",
+    "queued",
+    "in_review",
+    "accepted_statistics",
+    "accepted_activity_only",
+    "duplicate",
+    "rejected",
+    "expired",
+]
+ReviewReason = Literal[
+    "review_started",
+    "evidence_verified",
+    "activity_only",
+    "duplicate_provenance",
+    "duplicate_source",
+    "authorization_invalid",
+    "evidence_incomplete",
+    "geography_unverified",
+    "denominator_incomplete",
+    "reviewer_rejected",
+    "policy_expired",
+]
+RetractionReason = Literal[
+    "authorization_revoked",
+    "evidence_corrected",
+    "privacy_request",
+    "policy_takedown",
+]
+
+
+class AuthorizedOpeningOperatorError(RuntimeError):
+    """An expected, safe error that may be rendered to a local operator."""
+
+    def __init__(self, code: str, safe_message: str) -> None:
+        self.code = code
+        self.safe_message = safe_message
+        super().__init__(safe_message)
+
+
+def _operator_error(code: str, message: str) -> NoReturn:
+    raise AuthorizedOpeningOperatorError(code, message)
+
+
+def _has_control_characters(value: str) -> bool:
+    return any(unicodedata.category(character) == "Cc" for character in value)
+
+
+def _reject_url_or_uri(value: str, field_name: str) -> None:
+    """Reject URL/URI syntax without including the raw value in an error."""
+
+    # Decode repeatedly so a value such as ``https%253A%252F%252F...`` cannot
+    # hide a URL behind two percent-encoding layers.  The fixed bound keeps
+    # this validation deterministic while covering the nested encodings used
+    # by common form and JSON serializers.
+    candidate = value
+    for _ in range(3):
+        if _URL_OR_URI.search(candidate) is not None:
+            _operator_error("invalid_envelope", f"{field_name} cannot contain a URL or URI")
+        decoded = unquote(candidate)
+        if decoded == candidate:
+            break
+        candidate = decoded
+
+
+def _canonical_text(value: str, *, max_length: int, field_name: str) -> str:
+    if not value or len(value) > max_length:
+        _operator_error("invalid_envelope", f"{field_name} is not canonical")
+    normalized = unicodedata.normalize("NFKC", value)
+    if value != normalized or value != value.strip() or _has_control_characters(value):
+        _operator_error("invalid_envelope", f"{field_name} is not canonical")
+    return value
+
+
+class AuthorizedOpeningEnvelope(BaseModel):
+    """The exact camel-case payload accepted by ``submit_authorized_opening_v1``."""
+
+    model_config = ConfigDict(
+        extra="forbid",
+        strict=True,
+        populate_by_name=False,
+        str_strip_whitespace=False,
+    )
+
+    schema_version: Literal["1.0.0"] = Field(alias="schemaVersion")
+    submission_key: str = Field(alias="submissionKey", min_length=1, max_length=160)
+    discovery_platform: Literal["youtube", "bluesky", "nostr", "direct"] = Field(
+        alias="discoveryPlatform"
+    )
+    discovery_candidate_sha256: str | None = Field(alias="discoveryCandidateSha256")
+    source_identity_sha256: str = Field(alias="sourceIdentitySha256", min_length=64, max_length=64)
+    authorization_reference_sha256: str = Field(
+        alias="authorizationReferenceSha256", min_length=64, max_length=64
+    )
+    evidence_sha256: str = Field(alias="evidenceSha256", min_length=64, max_length=64)
+    provenance_dedupe_sha256: str = Field(
+        alias="provenanceDedupeSha256", min_length=64, max_length=64
+    )
+    country_code: str = Field(alias="countryCode", min_length=2, max_length=2)
+    country_name: str = Field(alias="countryName", min_length=1, max_length=160)
+    geography_basis: Literal[
+        "opening_location",
+        "publisher_country",
+        "author_public_residence",
+        "self_reported_country",
+    ] = Field(alias="geographyBasis")
+    geography_confidence: Literal["tier_a", "tier_b"] = Field(alias="geographyConfidence")
+    language: str = Field(alias="language", min_length=2, max_length=35)
+    tcgdex_set_id: str = Field(alias="tcgdexSetId", min_length=1, max_length=160)
+    product_scope: Literal["all", "booster_box", "etb", "booster_bundle"] = Field(
+        alias="productScope"
+    )
+    observed_at: str = Field(alias="observedAt")
+    pack_count: int = Field(alias="packCount", ge=1, le=100_000)
+    qualifying_hit_pack_count: int = Field(alias="qualifyingHitPackCount", ge=0, le=100_000)
+    denominator_complete: Literal[True] = Field(alias="denominatorComplete")
+    statistics_eligible: bool = Field(alias="statisticsEligible")
+
+    @model_validator(mode="after")
+    def validate_canonical_contract(self) -> AuthorizedOpeningEnvelope:
+        for field_name, value in (
+            ("schemaVersion", self.schema_version),
+            ("submissionKey", self.submission_key),
+            ("discoveryPlatform", self.discovery_platform),
+            ("discoveryCandidateSha256", self.discovery_candidate_sha256),
+            ("sourceIdentitySha256", self.source_identity_sha256),
+            ("authorizationReferenceSha256", self.authorization_reference_sha256),
+            ("evidenceSha256", self.evidence_sha256),
+            ("provenanceDedupeSha256", self.provenance_dedupe_sha256),
+            ("countryCode", self.country_code),
+            ("countryName", self.country_name),
+            ("geographyBasis", self.geography_basis),
+            ("geographyConfidence", self.geography_confidence),
+            ("language", self.language),
+            ("tcgdexSetId", self.tcgdex_set_id),
+            ("productScope", self.product_scope),
+            ("observedAt", self.observed_at),
+        ):
+            if value is not None:
+                _reject_url_or_uri(value, field_name)
+        if _KEY.fullmatch(self.submission_key) is None:
+            _operator_error("invalid_envelope", "submissionKey is not canonical")
+        for name, value in (
+            ("sourceIdentitySha256", self.source_identity_sha256),
+            ("authorizationReferenceSha256", self.authorization_reference_sha256),
+            ("evidenceSha256", self.evidence_sha256),
+            ("provenanceDedupeSha256", self.provenance_dedupe_sha256),
+        ):
+            if _SHA256.fullmatch(value) is None:
+                _operator_error("invalid_envelope", f"{name} is not a lowercase SHA-256 reference")
+        if _COUNTRY.fullmatch(self.country_code) is None:
+            _operator_error("invalid_envelope", "countryCode is not canonical")
+        _canonical_text(self.country_name, max_length=160, field_name="countryName")
+        if _LANGUAGE.fullmatch(self.language) is None:
+            _operator_error("invalid_envelope", "language is not canonical")
+        if _SET_ID.fullmatch(self.tcgdex_set_id) is None:
+            _operator_error("invalid_envelope", "tcgdexSetId is not canonical")
+        if _UTC_SECONDS.fullmatch(self.observed_at) is None:
+            _operator_error("invalid_envelope", "observedAt must use UTC seconds")
+        try:
+            observed_at = datetime.strptime(self.observed_at, "%Y-%m-%dT%H:%M:%SZ").replace(
+                tzinfo=UTC
+            )
+        except ValueError:
+            _operator_error("invalid_envelope", "observedAt is not a valid timestamp")
+        if observed_at < datetime(2000, 1, 1, tzinfo=UTC):
+            _operator_error("invalid_envelope", "observedAt is outside the approved range")
+        if observed_at > datetime.now(UTC) + timedelta(hours=24):
+            _operator_error("invalid_envelope", "observedAt is outside the approved range")
+        if self.qualifying_hit_pack_count > self.pack_count:
+            _operator_error("invalid_envelope", "opening counts are not coherent")
+
+        # This boundary is for an explicitly supplied creator/owner envelope.
+        # A social candidate is never promoted by this command, even though the
+        # database contract retains a bounded field for other future paths.
+        if self.discovery_platform != "direct" or self.discovery_candidate_sha256 is not None:
+            _operator_error(
+                "social_derived_rejected",
+                "social discovery cannot be submitted through the authorized-opening operator",
+            )
+        return self
+
+
+def _reject_duplicate_keys(pairs: list[tuple[str, object]]) -> dict[str, object]:
+    result: dict[str, object] = {}
+    for key, value in pairs:
+        if key in result:
+            _operator_error("invalid_envelope", "the envelope contains duplicate fields")
+        result[key] = value
+    return result
+
+
+def _reject_json_constant(value: str) -> NoReturn:
+    del value
+    _operator_error("invalid_envelope", "the envelope contains a non-finite JSON number")
+
+
+def _load_envelope_json(raw: bytes) -> AuthorizedOpeningEnvelope:
+    if len(raw) > MAX_ENVELOPE_BYTES:
+        _operator_error("invalid_envelope", "the envelope exceeds the fixed size limit")
+    try:
+        decoded = raw.decode("utf-8")
+        payload = json.loads(
+            decoded,
+            object_pairs_hook=_reject_duplicate_keys,
+            parse_constant=_reject_json_constant,
+        )
+    except AuthorizedOpeningOperatorError:
+        raise
+    except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError):
+        _operator_error("invalid_envelope", "the envelope is not valid UTF-8 JSON")
+    if not isinstance(payload, dict):
+        _operator_error("invalid_envelope", "the envelope must be a JSON object")
+    try:
+        envelope = AuthorizedOpeningEnvelope.model_validate(payload)
+        serialized = json.dumps(
+            envelope.model_dump(by_alias=True, mode="json"),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+    except AuthorizedOpeningOperatorError:
+        raise
+    except (ValidationError, TypeError, ValueError):
+        _operator_error("invalid_envelope", "the envelope does not match the exact v1 contract")
+    if len(serialized) > MAX_ENVELOPE_BYTES:
+        _operator_error("invalid_envelope", "the envelope exceeds the fixed size limit")
+    return envelope
+
+
+def read_authorized_opening_envelope(path: Path) -> AuthorizedOpeningEnvelope:
+    """Read one owner envelope without following symlinks or retaining it."""
+
+    try:
+        descriptor = os.open(
+            path,
+            os.O_RDONLY
+            | os.O_CLOEXEC
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_NONBLOCK", 0),
+        )
+    except OSError:
+        _operator_error(
+            "private_input_required",
+            "envelope must be an existing mode-0600 regular file",
+        )
+    try:
+        with os.fdopen(descriptor, "rb", closefd=True) as stream:
+            file_stat = os.fstat(stream.fileno())
+            if (
+                not stat.S_ISREG(file_stat.st_mode)
+                or stat.S_IMODE(file_stat.st_mode) != ENVELOPE_FILE_MODE
+                or file_stat.st_uid != os.geteuid()
+            ):
+                _operator_error(
+                    "private_input_required",
+                    "envelope must be an existing mode-0600 regular file",
+                )
+            raw = stream.read(MAX_ENVELOPE_BYTES + 1)
+    except AuthorizedOpeningOperatorError:
+        raise
+    except (OSError, ValueError):
+        _operator_error("private_input_required", "the envelope could not be read safely")
+    return _load_envelope_json(raw)
+
+
+class AuthorizedOpeningOperatorSettings(BaseSettings):
+    """Isolated operator config; it never falls back to worker/service DSNs."""
+
+    model_config = SettingsConfigDict(
+        env_file=None,
+        case_sensitive=False,
+        extra="ignore",
+    )
+
+    authorized_opening_submitter_db_url: SecretStr | None = None
+    authorized_opening_reviewer_db_url: SecretStr | None = None
+
+
+def _fixed_role_dsn(
+    dsn: str,
+    *,
+    environment_name: str,
+    expected_login: str | None,
+    expected_role: str,
+) -> str:
+    """Validate a dedicated TLS DSN and pin its session role option."""
+
+    try:
+        parts = urlsplit(dsn)
+        username = unquote(parts.username or "")
+        if (
+            parts.scheme not in {"postgres", "postgresql"}
+            or not parts.netloc
+            or not parts.hostname
+            or parts.fragment
+            or not parts.password
+        ):
+            raise ValueError
+        if expected_login is not None:
+            if username != expected_login:
+                raise ValueError
+        elif _LOGIN.fullmatch(username) is None or username.casefold() in _RESERVED_LOGINS:
+            raise ValueError
+        query = parse_qsl(
+            parts.query,
+            keep_blank_values=True,
+            strict_parsing=True,
+            max_num_fields=32,
+        )
+    except (TypeError, ValueError):
+        _operator_error(
+            "invalid_configuration",
+            f"{environment_name} must be a dedicated TLS PostgreSQL URL",
+        )
+    query_keys = [key for key, _value in query]
+    if len(query_keys) != len(set(query_keys)) or not set(query_keys) <= _SUPPORTED_DSN_OPTIONS:
+        _operator_error(
+            "invalid_configuration",
+            f"{environment_name} has unsupported or duplicate connection options",
+        )
+    query_values = dict(query)
+    if query_values.get("sslmode") not in _SUPPORTED_SSL_MODES:
+        _operator_error(
+            "invalid_configuration",
+            f"{environment_name} requires sslmode=require or stronger",
+        )
+    expected_options = f"-c role={expected_role}"
+    if query_values.get("options") != expected_options:
+        _operator_error(
+            "invalid_configuration",
+            f"{environment_name} must pin the reviewed least-privilege role",
+        )
+    return urlunsplit(
+        (
+            parts.scheme,
+            parts.netloc,
+            parts.path,
+            urlencode(query, quote_via=quote),
+            "",
+        )
+    )
+
+
+def _operator_dsn(config: AuthorizedOpeningOperatorSettings, *, reviewer: bool) -> str:
+    if reviewer:
+        configured = config.authorized_opening_reviewer_db_url
+        environment_name = "AUTHORIZED_OPENING_REVIEWER_DB_URL"
+        # The reviewed migration deliberately permits one owner-provisioned
+        # reviewer login without fixing its username.  The connection is
+        # attested after connect, so this remains a capability check rather
+        # than a username allowlist.
+        expected_login = None
+        expected_role = REVIEWER_ROLE
+    else:
+        configured = config.authorized_opening_submitter_db_url
+        environment_name = "AUTHORIZED_OPENING_SUBMITTER_DB_URL"
+        expected_login = SUBMITTER_LOGIN
+        expected_role = SUBMITTER_ROLE
+    if configured is None or not configured.get_secret_value().strip():
+        _operator_error(
+            "invalid_configuration",
+            f"{environment_name} is required in a separate mode-0600 operator environment",
+        )
+    return _fixed_role_dsn(
+        configured.get_secret_value(),
+        environment_name=environment_name,
+        expected_login=expected_login,
+        expected_role=expected_role,
+    )
+
+
+@dataclass(frozen=True, slots=True)
+class SubmissionResult:
+    submission_id: UUID
+    revision: int
+    state: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReviewResult:
+    submission_id: UUID
+    revision: int
+    state: str
+    accepted_observation_id: UUID | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class RetractionResult:
+    accepted_observation_id: UUID
+    reason_code: str
+
+
+@dataclass(frozen=True, slots=True)
+class ReviewQueueItem:
+    submission_id: UUID
+    revision: int
+    state: str
+
+
+SUBMIT_AUTHORIZED_OPENING_SQL = """
+select submission_id, revision, state
+from ingest.submit_authorized_opening_direct_v1(%(payload)s::jsonb)
+"""
+LIST_AUTHORIZED_OPENING_REVIEWS_SQL = """
+select submission_id, revision, state
+from ingest.list_authorized_opening_reviews_v1(%(requested_state)s, %(requested_limit)s)
+"""
+REVIEW_AUTHORIZED_OPENING_SQL = """
+select submission_id, revision, state, accepted_observation_id
+from ingest.review_authorized_opening_v1(
+  %(requested_submission_id)s::uuid,
+  %(expected_revision)s::bigint,
+  %(target_state)s,
+  %(reviewer_reference_sha256)s,
+  %(reason_code)s
+)
+"""
+RETRACT_AUTHORIZED_OPENING_SQL = """
+select accepted_observation_id, reason_code
+from ingest.retract_authorized_opening_v1(
+  %(requested_observation_id)s::uuid,
+  %(reviewer_reference_sha256)s,
+  %(requested_reason_code)s
+)
+"""
+_CONNECTION_ATTESTATION_FIELDS = frozenset(
+    {
+        "session_identity",
+        "capability_active",
+        "capability_contract",
+        "capability_membership",
+        "capability_membership_contract",
+        "login_contract",
+        "capability_acl_clean",
+        "login_acl_clean",
+        "object_ownership_clean",
+    }
+)
+
+
+def _connection_attestation_sql(*, capability_role: str, expected_login: str | None) -> str:
+    """Build SQL for one of the two fixed post-connect capability checks.
+
+    The arguments are module constants below, never operator input. Keeping
+    the query shared makes the submitter and reviewer checks fail closed on
+    the same role, membership, ACL, and ownership contract.
+    """
+
+    if capability_role not in {SUBMITTER_ROLE, REVIEWER_ROLE}:
+        raise ValueError("unsupported capability role")
+
+    if expected_login is None:
+        session_identity = """
+    session_user::text <> current_user::text
+    and session_user::text ~ '^[A-Za-z_][A-Za-z0-9_]{0,62}$'
+    and lower(session_user::text) not in (
+      'anon',
+      'authenticated',
+      'postgres',
+      'service_role',
+      'pokecrack_authorized_opening_reviewer',
+      'pokecrack_authorized_opening_submitter'
+    )
+"""
+    else:
+        session_identity = f"""
+    session_user::text = '{expected_login}'
+    and session_user::text <> current_user::text
+"""
+
+    if capability_role == SUBMITTER_ROLE:
+        expected_functions = (
+            "array['ingest.submit_authorized_opening_direct_v1(jsonb)'::regprocedure]"
+        )
+    else:
+        expected_functions = (
+            "array["
+            "'ingest.list_authorized_opening_reviews_v1(text,integer)'::regprocedure,"
+            "'ingest.review_authorized_opening_v1(uuid,bigint,text,text,text)'::regprocedure,"
+            "'ingest.retract_authorized_opening_v1(uuid,text,text)'::regprocedure"
+            "]"
+        )
+
+    return f"""
+with capability as (
+  select roles.*
+  from pg_catalog.pg_roles as roles
+  where roles.rolname = '{capability_role}'
+),
+login as (
+  select roles.*
+  from pg_catalog.pg_roles as roles
+  where roles.rolname = session_user
+)
+select
+  ({session_identity}) as session_identity,
+  current_user::text = '{capability_role}' as capability_active,
+  coalesce((
+    select not roles.rolsuper
+      and not roles.rolcanlogin
+      and not roles.rolinherit
+      and not roles.rolcreatedb
+      and not roles.rolcreaterole
+      and not roles.rolreplication
+      and not roles.rolbypassrls
+      and roles.rolconnlimit = -1
+      and roles.rolconfig is null
+      and not exists (
+        select 1
+        from pg_catalog.pg_db_role_setting as settings
+        where settings.setrole = roles.oid
+      )
+    from capability as roles
+  ), false) as capability_contract,
+  coalesce((
+    select
+      pg_catalog.pg_has_role(
+        session_user,
+        '{capability_role}',
+        'member'
+      )
+      and exists (
+        select 1
+        from pg_catalog.pg_auth_members as memberships
+        join capability as roles on roles.oid = memberships.roleid
+        join login on login.oid = memberships.member
+        where not memberships.admin_option
+          and not memberships.inherit_option
+          and memberships.set_option
+          and not exists (
+            select 1
+            from pg_catalog.pg_auth_members as other_memberships
+            where other_memberships.member = memberships.member
+              and other_memberships.roleid <> memberships.roleid
+          )
+      )
+  ), false) as capability_membership,
+  coalesce((
+    select
+      (select count(*) = 1 + (
+         select count(*)
+         from pg_catalog.pg_auth_members as login_memberships
+         join login as dedicated_login
+           on dedicated_login.oid = login_memberships.member
+         where login_memberships.roleid = roles.oid
+           and not login_memberships.admin_option
+           and not login_memberships.inherit_option
+           and login_memberships.set_option
+       )
+       from pg_catalog.pg_auth_members as memberships
+       where memberships.roleid = roles.oid)
+      and exists (
+        select 1
+        from pg_catalog.pg_auth_members as memberships
+        join pg_catalog.pg_roles as owner
+          on owner.oid = memberships.member
+        where memberships.roleid = roles.oid
+          and memberships.admin_option
+          and not memberships.inherit_option
+          and not memberships.set_option
+          and exists (
+            select 1
+            from pg_catalog.pg_roles as grantor
+            where grantor.oid = memberships.grantor
+              and grantor.rolsuper
+          )
+          and (owner.rolsuper or owner.rolcreaterole)
+      )
+      and (select count(*) = 1
+           from pg_catalog.pg_auth_members as login_memberships
+           join login on login.oid = login_memberships.member
+           where login_memberships.roleid = roles.oid
+             and not login_memberships.admin_option
+             and not login_memberships.inherit_option
+             and login_memberships.set_option)
+      and not exists (
+        select 1
+        from pg_catalog.pg_auth_members as memberships
+        where memberships.roleid = roles.oid
+          and not (
+            (
+              memberships.admin_option
+              and not memberships.inherit_option
+              and not memberships.set_option
+              and exists (
+                select 1
+                from pg_catalog.pg_roles as grantor
+                where grantor.oid = memberships.grantor
+                  and grantor.rolsuper
+              )
+              and exists (
+                select 1
+                from pg_catalog.pg_roles as owner
+                where owner.oid = memberships.member
+                  and (owner.rolsuper or owner.rolcreaterole)
+              )
+            )
+            or (
+              memberships.member = (select login.oid from login)
+              and not memberships.admin_option
+              and not memberships.inherit_option
+              and memberships.set_option
+            )
+          )
+      )
+    from capability as roles
+  ), false) as capability_membership_contract,
+  coalesce((
+    select roles.rolcanlogin
+      and not roles.rolinherit
+      and not roles.rolsuper
+      and not roles.rolcreatedb
+      and not roles.rolcreaterole
+      and not roles.rolreplication
+      and not roles.rolbypassrls
+      and roles.rolconnlimit = 2
+      and roles.rolconfig is null
+      and not exists (
+        select 1
+        from pg_catalog.pg_db_role_setting as settings
+        where settings.setrole = roles.oid
+      )
+    from login as roles
+  ), false) as login_contract,
+  (
+    pg_catalog.has_schema_privilege(
+      '{capability_role}', 'ingest', 'USAGE'
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_namespace as namespaces
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and pg_catalog.has_schema_privilege(
+          '{capability_role}', namespaces.oid, 'CREATE'
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_class as relations
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = relations.relnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and relations.relkind in ('r', 'p', 'v', 'm', 'f')
+        and (
+          pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'SELECT')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'INSERT')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'UPDATE')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'DELETE')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, concat('TRUN', 'CATE'))
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'REFERENCES')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'TRIGGER')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'MAINTAIN')
+          or pg_catalog.has_any_column_privilege(
+            '{capability_role}', relations.oid, 'SELECT,INSERT,UPDATE,REFERENCES'
+          )
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_class as sequences
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = sequences.relnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and sequences.relkind = 'S'
+        and (
+          pg_catalog.has_sequence_privilege('{capability_role}', sequences.oid, 'USAGE')
+          or pg_catalog.has_sequence_privilege('{capability_role}', sequences.oid, 'SELECT')
+          or pg_catalog.has_sequence_privilege('{capability_role}', sequences.oid, 'UPDATE')
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_proc as procedures
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = procedures.pronamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and pg_catalog.has_function_privilege(
+          '{capability_role}', procedures.oid, 'EXECUTE'
+        )
+        and procedures.oid <> all({expected_functions})
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_proc as procedures
+      where procedures.oid = any({expected_functions})
+        and (
+          procedures.proowner <> 'postgres'::regrole
+          or not procedures.prosecdef
+          or procedures.proconfig is distinct from array['search_path=pg_catalog, pg_temp']::text[]
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_proc as procedures
+      cross join lateral pg_catalog.aclexplode(
+        coalesce(
+          procedures.proacl,
+          pg_catalog.acldefault('f'::"char", procedures.proowner)
+        )
+      ) as grants
+      cross join capability as roles
+      where procedures.oid = any({expected_functions})
+        and (
+          grants.privilege_type <> 'EXECUTE'
+          or grants.is_grantable
+          or grants.grantee not in (procedures.proowner, roles.oid)
+        )
+    )
+    and coalesce((
+      select bool_and(
+        pg_catalog.has_function_privilege(
+          '{capability_role}', procedures.oid, 'EXECUTE'
+        )
+      )
+      from pg_catalog.pg_proc as procedures
+      where procedures.oid = any({expected_functions})
+    ), false)
+  ) as capability_acl_clean,
+  (
+    not exists (
+      select 1
+      from pg_catalog.pg_namespace as namespaces
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and pg_catalog.has_schema_privilege(
+          session_user, namespaces.oid, 'CREATE'
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_class as relations
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = relations.relnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and relations.relkind in ('r', 'p', 'v', 'm', 'f')
+        and (
+          pg_catalog.has_table_privilege(session_user, relations.oid, 'SELECT')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'INSERT')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'UPDATE')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'DELETE')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, concat('TRUN', 'CATE'))
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'REFERENCES')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'TRIGGER')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'MAINTAIN')
+          or pg_catalog.has_any_column_privilege(
+            session_user, relations.oid, 'SELECT,INSERT,UPDATE,REFERENCES'
+          )
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_class as sequences
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = sequences.relnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and sequences.relkind = 'S'
+        and (
+          pg_catalog.has_sequence_privilege(session_user, sequences.oid, 'USAGE')
+          or pg_catalog.has_sequence_privilege(session_user, sequences.oid, 'SELECT')
+          or pg_catalog.has_sequence_privilege(session_user, sequences.oid, 'UPDATE')
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_proc as procedures
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = procedures.pronamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and pg_catalog.has_function_privilege(
+          session_user, procedures.oid, 'EXECUTE'
+        )
+    )
+  ) as login_acl_clean,
+  (
+    not exists (
+      select 1
+      from pg_catalog.pg_namespace as namespaces
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and namespaces.nspowner in (
+          (select roles.oid from capability as roles),
+          (select roles.oid from login as roles)
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_class as relations
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = relations.relnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and relations.relowner in (
+          (select roles.oid from capability as roles),
+          (select roles.oid from login as roles)
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_proc as procedures
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = procedures.pronamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and procedures.proowner in (
+          (select roles.oid from capability as roles),
+          (select roles.oid from login as roles)
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_type as types
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = types.typnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and types.typowner in (
+          (select roles.oid from capability as roles),
+          (select roles.oid from login as roles)
+        )
+    )
+  ) as object_ownership_clean
+from (select 1) as singleton
+"""
+
+
+SUBMITTER_CONNECTION_ATTESTATION_SQL = _connection_attestation_sql(
+    capability_role=SUBMITTER_ROLE,
+    expected_login=SUBMITTER_LOGIN,
+)
+REVIEWER_CONNECTION_ATTESTATION_SQL = _connection_attestation_sql(
+    capability_role=REVIEWER_ROLE,
+    expected_login=None,
+)
+
+
+def _uuid(value: object) -> UUID:
+    if isinstance(value, UUID):
+        return value
+    if not isinstance(value, str):
+        _operator_error("database_protocol_error", "the database returned an unsafe result")
+    try:
+        return UUID(value)
+    except ValueError:
+        _operator_error("database_protocol_error", "the database returned an unsafe result")
+
+
+def _optional_uuid(value: object) -> UUID | None:
+    if value is None:
+        return None
+    return _uuid(value)
+
+
+def _positive_revision(value: object) -> int:
+    if isinstance(value, bool) or not isinstance(value, int) or value < 1:
+        _operator_error("database_protocol_error", "the database returned an unsafe result")
+    return value
+
+
+def _safe_state(value: object) -> str:
+    if not isinstance(value, str) or value not in _SAFE_STATES or _has_control_characters(value):
+        _operator_error("database_protocol_error", "the database returned an unsafe result")
+    return value
+
+
+def _safe_retraction_reason(value: object) -> str:
+    if not isinstance(value, str) or value not in _SAFE_RETRACTION_REASONS:
+        _operator_error("database_protocol_error", "the database returned an unsafe result")
+    return value
+
+
+class AuthorizedOpeningRpcClient:
+    """Typed calls to the four reviewed functions; no table SQL is exposed."""
+
+    def __init__(self, executor: PsycopgQueryExecutor) -> None:
+        self._executor = executor
+
+    def _query(
+        self,
+        sql: str,
+        params: Mapping[str, object],
+    ) -> tuple[Mapping[str, Any], ...]:
+        try:
+            return self._executor.query(sql, params)
+        except AuthorizedOpeningOperatorError:
+            raise
+        except Exception as error:
+            del error
+            _operator_error("database_unavailable", "the authorized-opening database call failed")
+
+    def _attest_connection(
+        self, *, sql: str, connection_name: Literal["submitter", "reviewer"]
+    ) -> None:
+        """Require every post-connect identity, role, membership, and ACL check."""
+
+        try:
+            rows = self._executor.query(sql, {})
+            if len(rows) != 1:
+                raise ValueError("attestation returned an unexpected row count")
+            row = rows[0]
+            fields = frozenset(row.keys())
+            if fields != _CONNECTION_ATTESTATION_FIELDS or any(
+                row.get(field) is not True for field in _CONNECTION_ATTESTATION_FIELDS
+            ):
+                raise ValueError("attestation returned an unsafe contract")
+        except Exception as error:
+            del error
+            _operator_error(
+                "invalid_configuration",
+                f"the {connection_name} database connection could not be attested",
+            )
+
+    def attest_submitter_connection(self) -> None:
+        """Require the submitter login to acquire only its SET ROLE capability."""
+
+        self._attest_connection(
+            sql=SUBMITTER_CONNECTION_ATTESTATION_SQL,
+            connection_name="submitter",
+        )
+
+    def attest_reviewer_connection(self) -> None:
+        """Require the reviewer login to acquire only its SET ROLE capability."""
+
+        self._attest_connection(
+            sql=REVIEWER_CONNECTION_ATTESTATION_SQL,
+            connection_name="reviewer",
+        )
+
+    @staticmethod
+    def _submission_result(row: Mapping[str, Any]) -> SubmissionResult:
+        return SubmissionResult(
+            submission_id=_uuid(row.get("submission_id")),
+            revision=_positive_revision(row.get("revision")),
+            state=_safe_state(row.get("state")),
+        )
+
+    def submit(self, envelope: AuthorizedOpeningEnvelope) -> SubmissionResult:
+        payload = json.dumps(
+            envelope.model_dump(by_alias=True, mode="json"),
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        rows = self._query(SUBMIT_AUTHORIZED_OPENING_SQL, {"payload": payload})
+        if len(rows) != 1:
+            _operator_error("database_protocol_error", "the database returned an unsafe result")
+        return self._submission_result(rows[0])
+
+    def list_reviews(
+        self, requested_state: ReviewListState, requested_limit: int
+    ) -> tuple[ReviewQueueItem, ...]:
+        rows = self._query(
+            LIST_AUTHORIZED_OPENING_REVIEWS_SQL,
+            {"requested_state": requested_state, "requested_limit": requested_limit},
+        )
+        items: list[ReviewQueueItem] = []
+        for row in rows:
+            items.append(
+                ReviewQueueItem(
+                    submission_id=_uuid(row.get("submission_id")),
+                    revision=_positive_revision(row.get("revision")),
+                    state=_safe_state(row.get("state")),
+                )
+            )
+        return tuple(items)
+
+    def review(
+        self,
+        submission_id: UUID,
+        expected_revision: int,
+        target_state: SubmissionState,
+        reviewer_reference_sha256: str,
+        reason_code: ReviewReason,
+    ) -> ReviewResult:
+        rows = self._query(
+            REVIEW_AUTHORIZED_OPENING_SQL,
+            {
+                "requested_submission_id": str(submission_id),
+                "expected_revision": expected_revision,
+                "target_state": target_state,
+                "reviewer_reference_sha256": reviewer_reference_sha256,
+                "reason_code": reason_code,
+            },
+        )
+        if len(rows) != 1:
+            _operator_error("database_protocol_error", "the database returned an unsafe result")
+        result = self._submission_result(rows[0])
+        accepted_observation_id = _optional_uuid(rows[0].get("accepted_observation_id"))
+        if result.state == "accepted_statistics" and accepted_observation_id is None:
+            _operator_error("database_protocol_error", "the database returned an unsafe result")
+        if result.state != "accepted_statistics" and accepted_observation_id is not None:
+            _operator_error("database_protocol_error", "the database returned an unsafe result")
+        return ReviewResult(
+            result.submission_id,
+            result.revision,
+            result.state,
+            accepted_observation_id,
+        )
+
+    def retract(
+        self,
+        observation_id: UUID,
+        reviewer_reference_sha256: str,
+        reason_code: RetractionReason,
+    ) -> RetractionResult:
+        rows = self._query(
+            RETRACT_AUTHORIZED_OPENING_SQL,
+            {
+                "requested_observation_id": str(observation_id),
+                "reviewer_reference_sha256": reviewer_reference_sha256,
+                "requested_reason_code": reason_code,
+            },
+        )
+        if len(rows) != 1:
+            _operator_error("database_protocol_error", "the database returned an unsafe result")
+        row = rows[0]
+        return RetractionResult(
+            accepted_observation_id=_uuid(row.get("accepted_observation_id")),
+            reason_code=_safe_retraction_reason(row.get("reason_code")),
+        )
+
+
+def build_operator_client(*, reviewer: bool) -> AuthorizedOpeningRpcClient:
+    """Build a client from only the dedicated operator environment variable."""
+
+    try:
+        config = AuthorizedOpeningOperatorSettings(_env_file=None)
+    except ValidationError:
+        _operator_error(
+            "invalid_configuration", "authorized-opening operator configuration is invalid"
+        )
+    dsn = _operator_dsn(config, reviewer=reviewer)
+    try:
+        client = AuthorizedOpeningRpcClient(PsycopgQueryExecutor.from_dsn(dsn))
+        if reviewer:
+            client.attest_reviewer_connection()
+        else:
+            client.attest_submitter_connection()
+        return client
+    except AuthorizedOpeningOperatorError:
+        raise
+    except Exception as error:
+        del error
+        _operator_error(
+            "invalid_configuration", "authorized-opening database configuration is invalid"
+        )
+
+
+def parse_uuid(value: str) -> UUID:
+    try:
+        parsed = UUID(value)
+    except (AttributeError, ValueError, TypeError):
+        _operator_error("invalid_request", "the requested identifier is not a UUID")
+    if str(parsed) != value:
+        _operator_error("invalid_request", "the requested identifier must be a canonical UUID")
+    return parsed
+
+
+def validate_reviewer_reference(value: str) -> str:
+    if not isinstance(value, str) or _SHA256.fullmatch(value) is None:
+        _operator_error(
+            "invalid_request", "reviewer reference must be a lowercase SHA-256 reference"
+        )
+    return value
+
+
+def validate_review_list_request(*, state: str, limit: int) -> ReviewListState:
+    allowed_states = {
+        "all",
+        "queued",
+        "in_review",
+        "accepted_statistics",
+        "accepted_activity_only",
+        "duplicate",
+        "rejected",
+        "expired",
+    }
+    if state not in allowed_states:
+        _operator_error("invalid_request", "review state filter is not allowed")
+    if isinstance(limit, bool) or not isinstance(limit, int) or not 1 <= limit <= 100:
+        _operator_error("invalid_request", "review limit must be between 1 and 100")
+    return state  # type: ignore[return-value]
+
+
+def validate_review_request(
+    *,
+    target_state: str,
+    reason_code: str,
+    expected_revision: int,
+) -> tuple[SubmissionState, ReviewReason]:
+    if (
+        isinstance(expected_revision, bool)
+        or not isinstance(expected_revision, int)
+        or expected_revision < 1
+    ):
+        _operator_error("invalid_request", "expected revision must be positive")
+    state_reason: dict[str, set[str]] = {
+        "in_review": {"review_started"},
+        "accepted_statistics": {"evidence_verified"},
+        "accepted_activity_only": {"activity_only"},
+        "duplicate": {"duplicate_provenance", "duplicate_source"},
+        "rejected": {
+            "authorization_invalid",
+            "evidence_incomplete",
+            "geography_unverified",
+            "denominator_incomplete",
+            "reviewer_rejected",
+        },
+        "expired": {"policy_expired"},
+    }
+    if target_state not in state_reason or reason_code not in state_reason[target_state]:
+        _operator_error("invalid_request", "review state and reason are not an allowed pair")
+    return target_state, reason_code  # type: ignore[return-value]
+
+
+def validate_retraction_request(reason_code: str) -> RetractionReason:
+    if not isinstance(reason_code, str) or reason_code not in {
+        "authorization_revoked",
+        "evidence_corrected",
+        "privacy_request",
+        "policy_takedown",
+    }:
+        _operator_error("invalid_request", "retraction reason is not allowed")
+    return reason_code  # type: ignore[return-value]
+
+
+def safe_submission_payload(result: SubmissionResult | ReviewResult) -> dict[str, object]:
+    revision = _positive_revision(result.revision)
+    state = _safe_state(result.state)
+    payload: dict[str, object] = {
+        "submission_id": str(result.submission_id),
+        "revision": revision,
+        "state": state,
+    }
+    if isinstance(result, ReviewResult) and result.accepted_observation_id is not None:
+        payload["accepted_observation_id"] = str(_uuid(result.accepted_observation_id))
+    return payload
+
+
+def safe_review_queue_payload(items: Sequence[ReviewQueueItem]) -> dict[str, object]:
+    return {
+        "reviews": [
+            {
+                "submission_id": str(item.submission_id),
+                "revision": item.revision,
+                "state": item.state,
+            }
+            for item in items
+        ]
+    }
+
+
+def safe_retraction_payload(result: RetractionResult) -> dict[str, object]:
+    reason_code = _safe_retraction_reason(result.reason_code)
+    return {
+        "accepted_observation_id": str(result.accepted_observation_id),
+        "reason_code": reason_code,
+        "state": "retracted",
+    }
+
+
+__all__ = [
+    "AuthorizedOpeningEnvelope",
+    "AuthorizedOpeningOperatorError",
+    "AuthorizedOpeningOperatorSettings",
+    "AuthorizedOpeningRpcClient",
+    "ENVELOPE_FILE_MODE",
+    "LIST_AUTHORIZED_OPENING_REVIEWS_SQL",
+    "MAX_ENVELOPE_BYTES",
+    "SUBMITTER_CONNECTION_ATTESTATION_SQL",
+    "REVIEWER_CONNECTION_ATTESTATION_SQL",
+    "RETRACT_AUTHORIZED_OPENING_SQL",
+    "REVIEW_AUTHORIZED_OPENING_SQL",
+    "SUBMIT_AUTHORIZED_OPENING_SQL",
+    "build_operator_client",
+    "parse_uuid",
+    "read_authorized_opening_envelope",
+    "safe_retraction_payload",
+    "safe_review_queue_payload",
+    "safe_submission_payload",
+    "validate_retraction_request",
+    "validate_review_list_request",
+    "validate_review_request",
+    "validate_reviewer_reference",
+]

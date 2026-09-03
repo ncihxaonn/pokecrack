@@ -48,6 +48,20 @@ select ok(
 );
 
 select ok(
+  (select count(*) = 1
+   from pg_auth_members as memberships
+   join pg_roles as owner on owner.oid = memberships.member
+   join pg_roles as grantor on grantor.oid = memberships.grantor
+   where memberships.roleid = 'pokecrack_authorized_opening_reviewer'::regrole
+     and memberships.admin_option
+     and not memberships.inherit_option
+     and not memberships.set_option
+     and grantor.rolsuper
+     and (owner.rolsuper or owner.rolcreaterole)),
+  'reviewer capability retains one owner-only creator membership edge'
+);
+
+select ok(
   (select count(*) = 4
    from pg_class as relations
    join pg_namespace as schemas on schemas.oid = relations.relnamespace
@@ -189,7 +203,7 @@ select ok(
   (select count(*) = 4 and bool_and(
       functions.proowner = 'postgres'::regrole
       and functions.prosecdef
-      and coalesce(functions.proconfig, '{}'::text[]) @> array['search_path=pg_catalog']
+      and coalesce(functions.proconfig, '{}'::text[]) @> array['search_path=pg_catalog, pg_temp']
     )
    from pg_proc as functions
    where functions.oid = any(array[

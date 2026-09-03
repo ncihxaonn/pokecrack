@@ -27,34 +27,47 @@ begin
     from pg_catalog.pg_roles as roles
     where roles.rolname = 'pokecrack_authorized_opening_reviewer';
 
-    -- PostgreSQL only creates the creator-admin membership automatically for
-    -- a non-superuser CREATEROLE actor. Local reset runners commonly execute
-    -- as a superuser, so provision the same reviewed edge explicitly when it
-    -- is absent instead of making fresh-install behavior actor-dependent.
+    -- PostgreSQL automatically creates one creator-admin membership for a
+    -- non-superuser CREATEROLE actor. The member is the migration actor, not
+    -- a fixed account, and the bootstrap grantor is the stable marker
+    -- for that implicit owner edge. Local reset runners commonly execute as a
+    -- superuser, so provision the same reviewed edge only when no exact
+    -- creator edge exists; never add a second edge beside an automatic one.
     if exists (
       select 1
       from pg_catalog.pg_auth_members as memberships
       where memberships.roleid = reviewer_oid
-        and memberships.member = 'postgres'::regrole
-        and not (
-          memberships.admin_option
-          and not memberships.inherit_option
-          and not memberships.set_option
+        and memberships.admin_option
+        and not memberships.inherit_option
+        and not memberships.set_option
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as grantor
+          where grantor.oid = memberships.grantor
+            and grantor.rolsuper
         )
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as owner
+          where owner.oid = memberships.member
+            and (owner.rolsuper or owner.rolcreaterole)
+        )
+    ) then
+      null;
+    elsif exists (
+      select 1
+      from pg_catalog.pg_auth_members as memberships
+      where memberships.roleid = reviewer_oid
+        and memberships.admin_option
+        and not memberships.inherit_option
+        and not memberships.set_option
     ) then
       raise exception using
         errcode = '55000',
         message = 'fresh authorized opening reviewer creator edge is not isolated';
-    end if;
-
-    if not exists (
-      select 1
-      from pg_catalog.pg_auth_members as memberships
-      where memberships.roleid = reviewer_oid
-        and memberships.member = 'postgres'::regrole
-    ) then
+    else
       grant pokecrack_authorized_opening_reviewer
-        to postgres
+        to current_user
         with admin true, inherit false, set false;
     end if;
   else
@@ -69,6 +82,11 @@ begin
       and not roles.rolbypassrls
       and roles.rolconnlimit = -1
       and roles.rolconfig is null
+      and not exists (
+        select 1
+        from pg_catalog.pg_db_role_setting as settings
+        where settings.setrole = roles.oid
+      )
     into reviewer_oid, role_is_exact
     from pg_catalog.pg_roles as roles
     where roles.rolname = 'pokecrack_authorized_opening_reviewer';
@@ -85,18 +103,30 @@ begin
     from pg_catalog.pg_auth_members as memberships
     where memberships.roleid = reviewer_oid;
 
-    -- PostgreSQL 17 records the creating postgres role as an ADMIN-only edge
-    -- with neither INHERIT nor SET.  That creator edge is required and is not
-    -- a reviewer login.  At most one separate NOINHERIT login may receive the
-    -- capability through SET ROLE, without admin or any second membership.
+    -- The creator edge is an ADMIN-only bootstrap grant. Its member is the
+    -- role that created this capability, which may be a non-superuser
+    -- CREATEROLE migration actor rather than a fixed account. At most one separate
+    -- NOINHERIT login may receive the capability through SET ROLE, without
+    -- admin or any second membership.
     select count(*)::integer
     into role_creator_membership_count
     from pg_catalog.pg_auth_members as memberships
     where memberships.roleid = reviewer_oid
-      and memberships.member = 'postgres'::regrole
       and memberships.admin_option
       and not memberships.inherit_option
-      and not memberships.set_option;
+      and not memberships.set_option
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as grantor
+        where grantor.oid = memberships.grantor
+          and grantor.rolsuper
+      )
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as owner
+        where owner.oid = memberships.member
+          and (owner.rolsuper or owner.rolcreaterole)
+      );
 
     select count(*)::integer
     into role_dedicated_login_count
@@ -104,7 +134,23 @@ begin
     join pg_catalog.pg_roles as login
       on login.oid = memberships.member
     where memberships.roleid = reviewer_oid
-      and memberships.member <> 'postgres'::regrole
+      and not (
+        memberships.admin_option
+        and not memberships.inherit_option
+        and not memberships.set_option
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as grantor
+          where grantor.oid = memberships.grantor
+            and grantor.rolsuper
+        )
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as owner
+          where owner.oid = memberships.member
+            and (owner.rolsuper or owner.rolcreaterole)
+        )
+      )
       and login.rolcanlogin
       and not login.rolinherit
       and not login.rolsuper
@@ -114,6 +160,11 @@ begin
       and not login.rolbypassrls
       and login.rolconnlimit = 2
       and login.rolconfig is null
+      and not exists (
+        select 1
+        from pg_catalog.pg_db_role_setting as settings
+        where settings.setrole = login.oid
+      )
       and not memberships.admin_option
       and not memberships.inherit_option
       and memberships.set_option
@@ -132,13 +183,40 @@ begin
       where memberships.roleid = reviewer_oid
         and not (
           (
-            memberships.member = 'postgres'::regrole
-            and memberships.admin_option
+            memberships.admin_option
             and not memberships.inherit_option
             and not memberships.set_option
+            and exists (
+              select 1
+              from pg_catalog.pg_roles as grantor
+              where grantor.oid = memberships.grantor
+                and grantor.rolsuper
+            )
+            and exists (
+              select 1
+              from pg_catalog.pg_roles as owner
+              where owner.oid = memberships.member
+                and (owner.rolsuper or owner.rolcreaterole)
+            )
           )
           or (
-            memberships.member <> 'postgres'::regrole
+            not (
+              memberships.admin_option
+              and not memberships.inherit_option
+              and not memberships.set_option
+              and exists (
+                select 1
+                from pg_catalog.pg_roles as grantor
+                where grantor.oid = memberships.grantor
+                  and grantor.rolsuper
+              )
+              and exists (
+                select 1
+                from pg_catalog.pg_roles as owner
+                where owner.oid = memberships.member
+                  and (owner.rolsuper or owner.rolcreaterole)
+              )
+            )
             and login.rolcanlogin
             and not login.rolinherit
             and not login.rolsuper
@@ -148,6 +226,11 @@ begin
             and not login.rolbypassrls
             and login.rolconnlimit = 2
             and login.rolconfig is null
+            and not exists (
+              select 1
+              from pg_catalog.pg_db_role_setting as settings
+              where settings.setrole = login.oid
+            )
             and not memberships.admin_option
             and not memberships.inherit_option
             and memberships.set_option
@@ -495,7 +578,7 @@ create table ingest.authorized_opening_submissions (
   updated_at timestamptz not null default statement_timestamp(),
   expires_at timestamptz not null default (statement_timestamp() + interval '30 days'),
   constraint authorized_opening_submission_key_check check (
-    submission_key ~ '^[a-z0-9][a-z0-9._:-]{0,159}$'
+    submission_key ~ '^[a-z0-9][a-z0-9._-]{0,159}$'
     and submission_key = btrim(submission_key)
     and submission_key = normalize(submission_key, NFKC)
     and submission_key !~ '[[:cntrl:]]'
@@ -684,6 +767,12 @@ create table ingest.authorized_opening_observations (
   constraint authorized_opening_observation_discovery_check check (
     discovery_platform is null
     or discovery_platform in ('youtube', 'bluesky', 'nostr', 'direct')
+  ),
+  constraint authorized_opening_observation_key_check check (
+    submission_key ~ '^[a-z0-9][a-z0-9._-]{0,159}$'
+    and submission_key = btrim(submission_key)
+    and submission_key = normalize(submission_key, NFKC)
+    and submission_key !~ '[[:cntrl:]]'
   ),
   constraint authorized_opening_observation_candidate_check check (
     discovery_candidate_sha256 is null
@@ -991,7 +1080,7 @@ begin
     or submission_key <> btrim(submission_key)
     or submission_key <> normalize(submission_key, NFKC)
     or submission_key ~ '[[:cntrl:]]'
-    or submission_key !~ '^[a-z0-9][a-z0-9._:-]{0,159}$'
+    or submission_key !~ '^[a-z0-9][a-z0-9._-]{0,159}$'
   then
     raise exception using errcode = '22023', message = 'submissionKey is not canonical';
   end if;
@@ -1720,8 +1809,27 @@ begin
   select memberships.member
   into reviewer_login_oid
   from pg_catalog.pg_auth_members as memberships
+  join pg_catalog.pg_roles as login
+    on login.oid = memberships.member
   where memberships.roleid = reviewer_oid
-    and memberships.member <> 'postgres'::regrole;
+    and not (
+      memberships.admin_option
+      and not memberships.inherit_option
+      and not memberships.set_option
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as grantor
+        where grantor.oid = memberships.grantor
+          and grantor.rolsuper
+      )
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as owner
+        where owner.oid = memberships.member
+          and (owner.rolsuper or owner.rolcreaterole)
+      )
+    )
+    and login.rolcanlogin;
 
   if reviewer_oid is null then
     raise exception using
@@ -1738,10 +1846,21 @@ begin
   into reviewer_creator_membership_count
   from pg_catalog.pg_auth_members as memberships
   where memberships.roleid = reviewer_oid
-    and memberships.member = 'postgres'::regrole
     and memberships.admin_option
     and not memberships.inherit_option
-    and not memberships.set_option;
+    and not memberships.set_option
+    and exists (
+      select 1
+      from pg_catalog.pg_roles as grantor
+      where grantor.oid = memberships.grantor
+        and grantor.rolsuper
+    )
+    and exists (
+      select 1
+      from pg_catalog.pg_roles as owner
+      where owner.oid = memberships.member
+        and (owner.rolsuper or owner.rolcreaterole)
+    );
 
   select count(*)::integer
   into reviewer_dedicated_login_count
@@ -1749,7 +1868,23 @@ begin
   join pg_catalog.pg_roles as login
     on login.oid = memberships.member
   where memberships.roleid = reviewer_oid
-    and memberships.member <> 'postgres'::regrole
+    and not (
+      memberships.admin_option
+      and not memberships.inherit_option
+      and not memberships.set_option
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as grantor
+        where grantor.oid = memberships.grantor
+          and grantor.rolsuper
+      )
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as owner
+        where owner.oid = memberships.member
+          and (owner.rolsuper or owner.rolcreaterole)
+      )
+    )
     and login.rolcanlogin
     and not login.rolinherit
     and not login.rolsuper
@@ -1759,6 +1894,11 @@ begin
     and not login.rolbypassrls
     and login.rolconnlimit = 2
     and login.rolconfig is null
+    and not exists (
+      select 1
+      from pg_catalog.pg_db_role_setting as settings
+      where settings.setrole = login.oid
+    )
     and not memberships.admin_option
     and not memberships.inherit_option
     and memberships.set_option
@@ -1777,13 +1917,40 @@ begin
     where memberships.roleid = reviewer_oid
       and not (
         (
-          memberships.member = 'postgres'::regrole
-          and memberships.admin_option
+          memberships.admin_option
           and not memberships.inherit_option
           and not memberships.set_option
+          and exists (
+            select 1
+            from pg_catalog.pg_roles as grantor
+            where grantor.oid = memberships.grantor
+              and grantor.rolsuper
+          )
+          and exists (
+            select 1
+            from pg_catalog.pg_roles as owner
+            where owner.oid = memberships.member
+              and (owner.rolsuper or owner.rolcreaterole)
+          )
         )
         or (
-          memberships.member <> 'postgres'::regrole
+          not (
+            memberships.admin_option
+            and not memberships.inherit_option
+            and not memberships.set_option
+            and exists (
+              select 1
+              from pg_catalog.pg_roles as grantor
+              where grantor.oid = memberships.grantor
+                and grantor.rolsuper
+            )
+            and exists (
+              select 1
+              from pg_catalog.pg_roles as owner
+              where owner.oid = memberships.member
+                and (owner.rolsuper or owner.rolcreaterole)
+            )
+          )
           and login.rolcanlogin
           and not login.rolinherit
           and not login.rolsuper
@@ -1793,6 +1960,11 @@ begin
           and not login.rolbypassrls
           and login.rolconnlimit = 2
           and login.rolconfig is null
+          and not exists (
+            select 1
+            from pg_catalog.pg_db_role_setting as settings
+            where settings.setrole = login.oid
+          )
           and not memberships.admin_option
           and not memberships.inherit_option
           and memberships.set_option
