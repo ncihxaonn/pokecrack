@@ -3676,8 +3676,12 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertNotIn(
             "BLUESKY_SUPABASE_DB_URL", services["scheduler"]["environment"]
         )
+        # Compose materialises an environment-specific name and IPv4 IPAM block
+        # for a bridge network. The security invariant is its explicit bridge
+        # driver plus the collector's exclusive internal/Bluesky network set,
+        # not an unstable rendered-key list.
         self.assertEqual(
-            set(document["networks"]["bluesky-egress"]), {"driver"}
+            document["networks"]["bluesky-egress"]["driver"], "bridge"
         )
 
         bluesky_template = DEPLOY_ROOT / "env" / "bluesky.env.example"
