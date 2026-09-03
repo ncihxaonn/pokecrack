@@ -7,6 +7,12 @@ begin;
 set local search_path = public, extensions, pg_catalog;
 select no_plan();
 
+select is(
+  ingest.verify_bluesky_release_v1() -> 'bluesky_worker_role_exact',
+  'true'::jsonb,
+  'the capability remains ready before its separately provisioned optional login exists'
+);
+
 create role pokecrack_bluesky_worker_login
   login
   noinherit

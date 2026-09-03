@@ -677,6 +677,7 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("memberships.set_option", attestation)
         self.assertIn("memberships.admin_option", attestation)
         self.assertIn("pokecrack_bluesky_worker_login", attestation)
+        self.assertIn("login_role.oid is null or (", " ".join(attestation.split()))
         self.assertIn("worker_memberships", attestation)
         self.assertIn("creator_edge_valid", attestation)
         self.assertIn("dedicated_login_edge_valid", attestation)
