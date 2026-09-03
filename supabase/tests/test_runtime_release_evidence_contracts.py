@@ -248,6 +248,42 @@ class RuntimeReleaseEvidenceBlueskyContractTests(unittest.TestCase):
             self.sql,
         )
 
+    def test_forward_patch_replaces_rather_than_retains_reviewed_fragments(self) -> None:
+        hardened_sql = HARDENING_MIGRATION.read_text(encoding="utf-8")
+        baseline_body = hardened_sql.split("as $function$", 1)[1].split("$function$", 1)[0]
+        updated_body = baseline_body
+        fragments: list[tuple[str, str]] = []
+
+        for fragment_name in (
+            "service_sets",
+            "declaration",
+            "monitor_transition",
+            "checkpoint_rows",
+        ):
+            old_match = re.search(
+                rf"old_{fragment_name} constant text := \$old\$(.*?)\$old\$;",
+                self.sql,
+                flags=re.DOTALL,
+            )
+            new_match = re.search(
+                rf"new_{fragment_name} constant text := \$new\$(.*?)\$new\$;",
+                self.sql,
+                flags=re.DOTALL,
+            )
+            self.assertIsNotNone(old_match)
+            self.assertIsNotNone(new_match)
+            assert old_match is not None
+            assert new_match is not None
+            old_fragment = old_match.group(1)
+            new_fragment = new_match.group(1)
+            self.assertEqual(updated_body.count(old_fragment), 1, fragment_name)
+            updated_body = updated_body.replace(old_fragment, new_fragment)
+            fragments.append((old_fragment, new_fragment))
+
+        for old_fragment, new_fragment in fragments:
+            self.assertNotIn(old_fragment, updated_body)
+            self.assertEqual(updated_body.count(new_fragment), 1)
+
     def test_reissued_private_rpc_preserves_exact_owner_and_acl(self) -> None:
         self.assertIn(
             "alter function ingest.get_runtime_release_evidence_v1(timestamptz, integer, integer, text)\n  owner to postgres;",
