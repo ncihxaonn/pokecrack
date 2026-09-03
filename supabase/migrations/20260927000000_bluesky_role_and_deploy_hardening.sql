@@ -244,7 +244,13 @@ ingest_column_acl_grants as (
     and not columns.attisdropped
 ),
 bluesky_relations as (
-  select relations.oid, relations.relowner, relations.relacl
+  select
+    relations.oid,
+    relations.relowner,
+    relations.relacl,
+    relations.relkind,
+    relations.relrowsecurity,
+    relations.relforcerowsecurity
   from pg_catalog.pg_class as relations
   join pg_catalog.pg_namespace as namespaces
     on namespaces.oid = relations.relnamespace
