@@ -68,6 +68,56 @@ describe("DEMO_DATA", () => {
     }).success).toBe(false);
   });
 
+  it("allows reviewed source coverage only on public community sources", () => {
+    const communitySource = DEMO_PUBLIC_DATA.sources.find(
+      (source) => source.kind === "community" && source.access === "public",
+    );
+    expect(communitySource).toBeDefined();
+
+    const reviewedCoverage = {
+      packsObserved: 55,
+      countriesObserved: 1,
+      completeOpenings: 1,
+    };
+    expect(publicDashboardDataSchema.safeParse({
+      ...DEMO_PUBLIC_DATA,
+      sources: DEMO_PUBLIC_DATA.sources.map((source) =>
+        source === communitySource ? { ...source, coverage: reviewedCoverage } : source,
+      ),
+    }).success).toBe(true);
+    expect(publicDashboardDataSchema.safeParse({
+      ...DEMO_PUBLIC_DATA,
+      sources: DEMO_PUBLIC_DATA.sources.map((source, index) =>
+        index === 0 ? { ...source, coverage: reviewedCoverage } : source,
+      ),
+    }).success).toBe(false);
+    expect(publicDashboardDataSchema.safeParse({
+      ...DEMO_PUBLIC_DATA,
+      sources: DEMO_PUBLIC_DATA.sources.map((source) =>
+        source === communitySource
+          ? {
+              ...source,
+              coverage: { ...reviewedCoverage, hitRate: 0.02 },
+            }
+          : source,
+      ),
+    }).success).toBe(false);
+
+    for (const invalidCoverage of [
+      { ...reviewedCoverage, packsObserved: 0 },
+      { ...reviewedCoverage, countriesObserved: 1.5 },
+      { ...reviewedCoverage, completeOpenings: 56 },
+      { ...reviewedCoverage, countriesObserved: 2 },
+    ]) {
+      expect(publicDashboardDataSchema.safeParse({
+        ...DEMO_PUBLIC_DATA,
+        sources: DEMO_PUBLIC_DATA.sources.map((source) =>
+          source === communitySource ? { ...source, coverage: invalidCoverage } : source,
+        ),
+      }).success).toBe(false);
+    }
+  });
+
   it("keeps the legacy regional slice Australia-only while the v2 map is global", () => {
     expect(DEMO_DATA.regions.every((item) => item.countryCode === "AU")).toBe(true);
     expect(new Set(DEMO_DATA.mapCells.map((item) => item.countryCode)).size).toBeGreaterThan(1);

@@ -9,6 +9,11 @@ Highest-risk assets are DB/service-role/provider/SSH/noVNC credentials, persiste
 - Unknown sources/adapters are disabled; HTTPS, domain/route, size/rate/concurrency and retention are explicit.
 - Browser inputs and AI output are untrusted data. They cannot issue shell/SQL/adapter commands; strict schemas and deterministic policy decide eligibility.
 - Private schemas use default-deny grants/RLS. Browser bundles get publishable values only and public-safe DTOs/relations.
+- Bluesky uses a separate `NOLOGIN` capability role and mode-`0600` env file;
+  its fixed RPC surface is limited to the Bluesky job type, typed cursor
+  lifecycle, exact health, and non-secret policy projection. Generic queue
+  functions and direct Bluesky activity tables are not capabilities of that
+  role, and the broad collector/scheduler force the source flag off.
 - Compose drops all capabilities, uses `no-new-privileges`, read-only roots, noexec tmpfs where practical, pids/CPU/RAM limits, health checks and no Docker socket.
 - Services have outbound access through a non-published bridge; a second network is internal-only. Inbound host publication is only `127.0.0.1:6080`. CDP `9222`, VNC `5900`, daemon `19825` and DB are not mapped.
 - Browser profile root is `0700`, owned by uid `10001`; extension volume is read-only. Profiles/cookies never enter Git, logs, DB or ordinary backups.
@@ -19,6 +24,21 @@ Highest-risk assets are DB/service-role/provider/SSH/noVNC credentials, persiste
 ## Secret handling
 
 Store production env/noVNC files outside Git at mode `0600`. Prefer scoped, separate credentials; rotate on staff/device/provider changes. Do not pass DB URLs in command arguments when avoidable, paste them into chat/issues, enable shell tracing, publish Compose expansion or upload logs/artifacts containing them. GitHub secrets are account-bound; pin the VPS host key rather than `ssh-keyscan` at deploy time.
+
+The authorized-opening operator uses two additional mode-`0600` environment
+values outside the repository: `AUTHORIZED_OPENING_SUBMITTER_DB_URL` and
+`AUTHORIZED_OPENING_REVIEWER_DB_URL`. The submitter uses the named NOINHERIT
+login; the reviewer may use the one owner-provisioned reviewed NOINHERIT login,
+which the CLI attests after connecting. Both DSNs require fixed
+`options=-c role=...` settings; the CLI never falls back to a generic database
+URL or service-role key. The submitter role can call only the direct-only
+wrapper, while the historical broad submit RPC remains service-role-only.
+Owner evidence-envelopes are mode `0600` regular files, bounded to 16 KiB,
+rejected when social-derived or URL/URI-bearing in every string field, and not
+persisted after the typed RPC call. Operator output contains only safe
+IDs/state/revision, plus the accepted observation UUID and a safe retraction
+reason; opaque references, raw evidence and connection details are never
+logged.
 
 ## Browser/account boundary
 
