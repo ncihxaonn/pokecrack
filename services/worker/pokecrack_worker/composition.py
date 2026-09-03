@@ -1716,7 +1716,8 @@ def executor_from_settings(settings: Settings) -> PsycopgQueryExecutor:
     if role is WorkerRole.NOSTR_COLLECTOR:
         assert settings.nostr_supabase_db_url is not None
         return PsycopgQueryExecutor.from_dsn(
-            _dsn_with_fixed_nostr_role(settings.nostr_supabase_db_url.get_secret_value())
+            _dsn_with_fixed_nostr_role(settings.nostr_supabase_db_url.get_secret_value()),
+            retry_connection=True,
         )
     if role is WorkerRole.BLUESKY_COLLECTOR:
         assert settings.bluesky_supabase_db_url is not None

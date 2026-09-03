@@ -2,8 +2,58 @@
 
 from __future__ import annotations
 
+import socket
+import time
 from collections.abc import Callable, Mapping
 from typing import Any
+
+CONNECTION_MAX_ATTEMPTS = 3
+# libpq bounds each acquisition to 10 seconds.  A single operation can spend
+# at most three such attempts plus two short delays; the Nostr healthcheck
+# allows for its two independent database operations.
+CONNECTION_ATTEMPT_TIMEOUT_SECONDS = 10
+CONNECTION_RETRY_DELAY_SECONDS = 0.25
+_TRANSIENT_CONNECTION_MARKERS = (
+    "connection timed out",
+    "operation timed out",
+    "timeout expired",
+    "connection refused",
+    "connection reset by peer",
+    "server closed the connection unexpectedly",
+    "connection terminated unexpectedly",
+    "could not translate host name",
+    "temporary failure in name resolution",
+    "name or service not known",
+    "nodename nor servname provided",
+    "network is unreachable",
+    "no route to host",
+    "cannot assign requested address",
+)
+
+
+def _is_transient_connection_error(error: BaseException) -> bool:
+    """Recognize only explicit transport failures at connection acquisition."""
+
+    sqlstate = getattr(error, "sqlstate", None)
+    if isinstance(sqlstate, str) and sqlstate.startswith("08"):
+        return True
+    if isinstance(error, (ConnectionError, TimeoutError, socket.gaierror)):
+        return True
+    message = str(error).casefold()
+    return any(marker in message for marker in _TRANSIENT_CONNECTION_MARKERS)
+
+
+def _connect_with_retry(connection_factory: Callable[[], Any]) -> Any:
+    """Retry only opening a connection; never wraps statements or commits."""
+
+    for attempt in range(CONNECTION_MAX_ATTEMPTS):
+        try:
+            return connection_factory()
+        except Exception as error:
+            if not _is_transient_connection_error(error) or attempt + 1 >= CONNECTION_MAX_ATTEMPTS:
+                raise
+            time.sleep(CONNECTION_RETRY_DELAY_SECONDS)
+    raise AssertionError("connection retry loop exhausted unexpectedly")
 
 
 class PsycopgQueryExecutor:
@@ -28,6 +78,7 @@ class PsycopgQueryExecutor:
         dsn: str,
         *,
         connect_timeout_seconds: int = 10,
+        retry_connection: bool = False,
         statement_timeout_seconds: float | None = 30,
     ) -> PsycopgQueryExecutor:
         if not 1 <= connect_timeout_seconds <= 120:
@@ -36,7 +87,12 @@ class PsycopgQueryExecutor:
         def connect() -> Any:
             import psycopg
 
-            return psycopg.connect(dsn, connect_timeout=connect_timeout_seconds)
+            def open_connection() -> Any:
+                return psycopg.connect(dsn, connect_timeout=connect_timeout_seconds)
+
+            if retry_connection:
+                return _connect_with_retry(open_connection)
+            return open_connection()
 
         return cls(connect, statement_timeout_seconds=statement_timeout_seconds)
 

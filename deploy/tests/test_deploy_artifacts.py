@@ -774,6 +774,189 @@ class NostrPreflightTests(unittest.TestCase):
         self.assertIn("session_user = 'pokecrack_nostr_attestor_login'", preflight.CONTRACT_QUERY)
         self.assertIn("current_user = 'pokecrack_nostr_attestor'", preflight.CONTRACT_QUERY)
 
+    def test_transient_contract_transport_failure_is_retried_once(self) -> None:
+        preflight = load_nostr_preflight_module()
+        database_url = (
+            "postgresql://pokecrack_nostr_attestor_login:fixture-secret@"
+            "db.example.invalid/db?sslmode=require&"
+            "options=-c%20role%3Dpokecrack_nostr_attestor"
+        )
+        expected = {key: True for key in preflight.REQUIRED_CONTRACT_KEYS}
+        results = iter(
+            (
+                type(
+                    "Result",
+                    (),
+                    {
+                        "returncode": 2,
+                        "stdout": "",
+                        "stderr": "psql: error: connection to server failed: Connection timed out\n",
+                    },
+                )(),
+                type(
+                    "Result",
+                    (),
+                    {"returncode": 0, "stdout": json.dumps(expected) + "\n"},
+                )(),
+            )
+        )
+        calls: list[float] = []
+        original_run = preflight.subprocess.run
+        original_sleep = preflight.time.sleep
+
+        def fake_run(command: list[str], **kwargs: object):
+            calls.append(float(kwargs["timeout"]))
+            return next(results)
+
+        preflight.subprocess.run = fake_run
+        preflight.time.sleep = lambda _seconds: None
+        try:
+            self.assertEqual(
+                preflight._psql_contract(database_url, psql_path="/fixture/psql"),
+                expected,
+            )
+        finally:
+            preflight.subprocess.run = original_run
+            preflight.time.sleep = original_sleep
+        self.assertEqual(len(calls), 2)
+        self.assertLessEqual(calls[0], preflight.PSQL_ATTEMPT_TIMEOUT_SECONDS)
+
+    def test_contract_authentication_failure_is_not_retried(self) -> None:
+        preflight = load_nostr_preflight_module()
+        database_url = (
+            "postgresql://pokecrack_nostr_attestor_login:fixture-secret@"
+            "db.example.invalid/db?sslmode=require&"
+            "options=-c%20role%3Dpokecrack_nostr_attestor"
+        )
+        calls = 0
+        original_run = preflight.subprocess.run
+
+        def fake_run(_command: list[str], **_kwargs: object):
+            nonlocal calls
+            calls += 1
+            return type(
+                "Result",
+                (),
+                {
+                    "returncode": 2,
+                    "stdout": "",
+                    "stderr": "psql: error: FATAL: password authentication failed\n",
+                },
+            )()
+
+        preflight.subprocess.run = fake_run
+        try:
+            with self.assertRaisesRegex(
+                preflight.NostrPreflightError, "contract query failed"
+            ):
+                preflight._psql_contract(database_url, psql_path="/fixture/psql")
+        finally:
+            preflight.subprocess.run = original_run
+        self.assertEqual(calls, 1)
+
+    def test_malformed_contract_result_is_not_retried(self) -> None:
+        preflight = load_nostr_preflight_module()
+        database_url = (
+            "postgresql://pokecrack_nostr_attestor_login:fixture-secret@"
+            "db.example.invalid/db?sslmode=require&"
+            "options=-c%20role%3Dpokecrack_nostr_attestor"
+        )
+        calls = 0
+        original_run = preflight.subprocess.run
+
+        def fake_run(_command: list[str], **_kwargs: object):
+            nonlocal calls
+            calls += 1
+            return type(
+                "Result",
+                (),
+                {"returncode": 0, "stdout": "not-json\n", "stderr": ""},
+            )()
+
+        preflight.subprocess.run = fake_run
+        try:
+            with self.assertRaisesRegex(
+                preflight.NostrPreflightError, "result was not JSON"
+            ):
+                preflight._psql_contract(database_url, psql_path="/fixture/psql")
+        finally:
+            preflight.subprocess.run = original_run
+        self.assertEqual(calls, 1)
+
+    def test_transient_contract_failures_are_capped_at_three_attempts(self) -> None:
+        preflight = load_nostr_preflight_module()
+        database_url = (
+            "postgresql://pokecrack_nostr_attestor_login:fixture-secret@"
+            "db.example.invalid/db?sslmode=require&"
+            "options=-c%20role%3Dpokecrack_nostr_attestor"
+        )
+        calls = 0
+        original_run = preflight.subprocess.run
+        original_sleep = preflight.time.sleep
+
+        def fake_run(_command: list[str], **_kwargs: object):
+            nonlocal calls
+            calls += 1
+            return type(
+                "Result",
+                (),
+                {
+                    "returncode": 2,
+                    "stdout": "",
+                    "stderr": "could not translate host name: Temporary failure in name resolution\n",
+                },
+            )()
+
+        preflight.subprocess.run = fake_run
+        preflight.time.sleep = lambda _seconds: None
+        try:
+            with self.assertRaisesRegex(
+                preflight.NostrPreflightError, "contract query failed"
+            ):
+                preflight._psql_contract(database_url, psql_path="/fixture/psql")
+        finally:
+            preflight.subprocess.run = original_run
+            preflight.time.sleep = original_sleep
+        self.assertEqual(calls, preflight.PSQL_MAX_ATTEMPTS)
+
+    def test_psql_timeout_is_retried_without_exposing_the_command_or_secret(self) -> None:
+        preflight = load_nostr_preflight_module()
+        database_url = (
+            "postgresql://pokecrack_nostr_attestor_login:fixture-secret@"
+            "db.example.invalid/db?sslmode=require&"
+            "options=-c%20role%3Dpokecrack_nostr_attestor"
+        )
+        expected = {key: True for key in preflight.REQUIRED_CONTRACT_KEYS}
+        calls = 0
+        commands: list[list[str]] = []
+        original_run = preflight.subprocess.run
+        original_sleep = preflight.time.sleep
+
+        def fake_run(command: list[str], **_kwargs: object):
+            nonlocal calls
+            calls += 1
+            commands.append(command)
+            if calls == 1:
+                raise preflight.subprocess.TimeoutExpired(command, 15)
+            return type(
+                "Result",
+                (),
+                {"returncode": 0, "stdout": json.dumps(expected), "stderr": ""},
+            )()
+
+        preflight.subprocess.run = fake_run
+        preflight.time.sleep = lambda _seconds: None
+        try:
+            self.assertEqual(
+                preflight._psql_contract(database_url, psql_path="/fixture/psql"),
+                expected,
+            )
+        finally:
+            preflight.subprocess.run = original_run
+            preflight.time.sleep = original_sleep
+        self.assertEqual(calls, 2)
+        self.assertTrue(all("fixture-secret" not in command for command in commands))
+
     def test_preflight_and_worker_must_target_the_same_database_with_distinct_roles(self) -> None:
         preflight = load_nostr_preflight_module()
         attestor = (
@@ -2398,6 +2581,30 @@ exit 97
         environment["FAKE_DOCKER_LOG"] = str(docker_log)
         return environment, env_file, docker_log
 
+    def test_default_health_deadline_covers_bounded_worker_health_contract(self) -> None:
+        script = (DEPLOY_ROOT / "scripts" / "deploy.sh").read_text(encoding="utf-8")
+        compose = (DEPLOY_ROOT / "compose.prod.yml").read_text(encoding="utf-8")
+
+        # The Nostr worker can require three 90-second health probes after its
+        # 30-second start period.  Keep a 90-second margin for probe scheduling
+        # and a final successful result before deployment withholds the marker.
+        startup_seconds = 30
+        probe_timeout_seconds = 90
+        probe_retries = 3
+        scheduling_margin_seconds = 90
+        required_deadline = (
+            startup_seconds
+            + (probe_timeout_seconds * probe_retries)
+            + scheduling_margin_seconds
+        )
+
+        self.assertIn("timeout: 90s", compose)
+        self.assertIn("retries: 3", compose)
+        self.assertIn("start_period: 30s", compose)
+        self.assertIn("HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-420}", script)
+        self.assertIn("Health deadline (default: 420)", script)
+        self.assertGreaterEqual(420, required_deadline)
+
     def test_deploy_checks_out_exact_sha_builds_starts_and_marks_health(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
             base = Path(temporary)
@@ -3576,6 +3783,17 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
             self.assertEqual(service["restart"], "unless-stopped", name)
             self.assertTrue(service["read_only"], name)
             self.assertIn("healthcheck", service, name)
+            if name == "auth-browser":
+                self.assertEqual(service["healthcheck"]["timeout"], "10s", name)
+            else:
+                # Worker health performs a live database dependency probe plus
+                # heartbeat write; do not truncate a valid direct-IPv6 probe.
+                self.assertEqual(service["healthcheck"]["interval"], "30s", name)
+                # Docker Compose renders the equivalent 90-second duration in
+                # its canonical minute-and-second representation.
+                self.assertEqual(service["healthcheck"]["timeout"], "1m30s", name)
+                self.assertEqual(service["healthcheck"]["retries"], 3, name)
+                self.assertEqual(service["healthcheck"]["start_period"], "30s", name)
             self.assertIn("/tmp", " ".join(service["tmpfs"]), name)
             expected_networks = (
                 {"internal", "nostr-egress"}

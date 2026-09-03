@@ -16,7 +16,11 @@ ENV_FILE=${POKECRACK_ENV_FILE:-/etc/pokecrack/production.env}
 NOSTR_ENV_FILE=${POKECRACK_NOSTR_ENV_FILE:-}
 BLUESKY_ENV_FILE=${POKECRACK_BLUESKY_ENV_FILE:-}
 STATE_DIR=${POKECRACK_DEPLOY_STATE_DIR:-/var/lib/pokecrack/deploy}
-HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-180}
+# Worker health performs a live dependency probe plus heartbeat write.  Its
+# bounded Nostr path can use three 90-second Docker checks after startup, so
+# the deployment deadline must allow those probes to finish before declaring
+# the release failed and withholding the success marker.
+HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-420}
 RUNTIME_GRACE_SECONDS=${DEPLOY_RUNTIME_GRACE_SECONDS:-21600}
 RUNTIME_EXEC_TIMEOUT_SECONDS=${DEPLOY_RUNTIME_EXEC_TIMEOUT_SECONDS:-60}
 SERVICE_SET=tcgdex
@@ -85,7 +89,7 @@ Options:
   --nostr-env-file PATH       Dedicated Nostr interpolation/preflight file (tcgdex-nostr only)
   --bluesky-env-file PATH     Dedicated Bluesky interpolation/preflight file (tcgdex-bluesky only)
   --state-dir ABSOLUTE_PATH   Success-marker directory (default: /var/lib/pokecrack/deploy)
-  --health-timeout SECONDS    Health deadline (default: 180)
+  --health-timeout SECONDS    Health deadline (default: 420)
   --verify-runtime             Run aggregate runtime evidence after health checks (always required for tcgdex-bluesky)
   --runtime-grace-seconds SEC First-run warming-up window (default: 21600)
   --runtime-exec-timeout-seconds SEC Bound each runtime verifier probe (default: 60)
