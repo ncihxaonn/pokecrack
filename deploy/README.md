@@ -133,9 +133,12 @@ the host preflight before build/up and removed from the child environment.
 After the Bluesky migration and owner-provisioned login pass their contract,
 deploy the four-service set explicitly. The script validates the exact env
 file, runs the boolean-only hosted attestation before any replacement, and
-records the exact service list in the success marker once the runtime-release
-evidence verifier has an explicit `tcgdex-bluesky` implementation and declares
-the exact `RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky` capability sentinel:
+then forces the aggregate `tcgdex-bluesky` runtime-evidence verifier before it
+can record the exact service list in the success marker. The verifier checks
+all four worker heartbeats, TCGdex and Bluesky policy state, the three expected
+schedules, the bounded job queue, the Bluesky checkpoint, and cleanup progress.
+Its executable from the detached exact target SHA must declare the exact
+`RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky` capability sentinel:
 
 ```bash
 deploy/scripts/deploy.sh 0123456789abcdef0123456789abcdef01234567 \
@@ -147,9 +150,9 @@ deploy/scripts/deploy.sh 0123456789abcdef0123456789abcdef01234567 \
 The default `tcgdex` set remains unchanged. Existing `bluesky-collector`
 containers are rejected unless the explicit `--retire-bluesky` operation is
 selected on a `tcgdex` deployment; the script never uses `--remove-orphans`.
-Until that runtime verifier integration lands, the `tcgdex-bluesky` command is
-deliberately rejected before Compose or service replacement; a comment or
-unrelated service-set string cannot unlock it.
+An omitted `--verify-runtime` cannot bypass the Bluesky runtime gate; failures
+or inconclusive evidence leave the new containers in place for diagnosis but do
+not advance the success marker.
 
 Bluesky is an independent opt-in profile. Before enabling it, apply and verify
 the forward migration, provision the dedicated `NOLOGIN` capability plus a
@@ -205,19 +208,24 @@ from this contract fail closed; the migration does not normalize unknown role
 state.
 
 The verifier prints only status, counts, age bands, and backup-marker age. It
-returns success for `healthy` and first-run `warming_up`, exit 1 for observed
-stale/failed evidence, and exit 2 for unavailable or incompatible schema,
-configuration, role, image, or marker evidence. A new release remains
+normally returns success for `healthy` and first-run `warming_up`, exit 1 for
+observed stale/failed evidence, and exit 2 for unavailable or incompatible
+schema, configuration, role, image, or marker evidence. The isolated Bluesky
+deployment path adds `--require-healthy`, so `warming_up` cannot advance its
+success manifest: it must prove fresh post-release evidence first. A new release remains
 `warming_up` for the configured grace window until its expected service-set
 heartbeat, schedule, source/checkpoint, and cleanup evidence exists. Enabled
 sources and checkpoints must advance at or after the release start before the
 result can become `healthy`; disabled source policies remain observed as
 disabled and do not become implicit expectations. The verifier checks the
 running container image revision against the requested exact SHA and requires
-the explicit `tcgdex` or `tcgdex-nostr` service set (the latter includes the
-Nostr worker heartbeat/checkpoint/schedule evidence). The deploy script advances
-its success manifest only when this optional gate succeeds. It never applies
-migrations or deploys anything on its own.
+the explicit `tcgdex`, `tcgdex-nostr`, or `tcgdex-bluesky` service set. The
+Nostr and Bluesky sets include their respective dedicated worker,
+source/checkpoint, queue, and schedule evidence. The deploy script advances
+its success manifest only when this gate succeeds; the gate is optional for
+the core and Nostr paths but mandatory and strictly healthy for the isolated
+Bluesky path. It never
+applies migrations or deploys anything on its own.
 
 If health or runtime evidence fails after replacement, the new containers are
 left in place for diagnosis, the success manifest is not advanced, and no
@@ -254,8 +262,8 @@ The container automatically starts the allowlisted profile selected by `CHROMIUM
 
 - `deploy/scripts/backup.sh`: a stdin-only URL runner requires `sslmode=require` or stronger, clears inherited `PG*`, and maps only allowlisted fields to libpq -> independently role-switched `psql` policy/table/privilege preflights -> one-snapshot plain `pg_dump` on the owner-capable login, strictly limited to `catalog`, `ingest`, `analytics`, `public`, and `supabase_migrations` (never provider `auth`/`storage`/`realtime` data), with exact request-gate and private social-activity data exclusions -> fail-closed sanitizer that verifies the policy-free regular gate schema, rejects live gate rows, inserts canonical idle gates before RLS enablement, strips disposable social discovery rows, retains exact checkpoints, retains the public-study ledger only after exact schema/COPY/row validation, and retains the optional aggregate-admission bridge only as a complete immutable source/binding/admission bundle -> gzip, non-empty validation, UTC filename, atomic last-success marker, newest 7 daily plus 4 weekly representatives.
 - `deploy/scripts/cleanup.sh`: removes only stopped project containers and unused labeled images; never stops services or prunes volumes/profiles/backups/extensions.
-- `deploy/scripts/deploy.sh`: exact-SHA, exact-service-set build/start/health gate plus host-only Nostr attestation; rejects the retired once-daily TCGdex schedule before checkout while preserving other explicit operator overrides.
-- `deploy/scripts/verify-runtime-release.sh`: optional exact-SHA post-deploy aggregate verifier; it executes only inside the already-running watchdog and preserves `healthy`/`warming_up`/failure exit semantics.
+- `deploy/scripts/deploy.sh`: exact-SHA, exact-service-set build/start/health gate plus host-only Nostr/Bluesky attestation; rejects the retired once-daily TCGdex schedule before checkout while preserving other explicit operator overrides.
+- `deploy/scripts/verify-runtime-release.sh`: exact-SHA post-deploy aggregate verifier; it executes only inside the already-running watchdog and preserves `healthy`/`warming_up`/failure exit semantics. It is mandatory for the isolated Bluesky service set.
 - `deploy/scripts/rollback.sh`: explicit-SHA deployment of the same deterministic service set.
 - `deploy/scripts/install-opencli-extension.sh`: pinned extension install/rollback.
 

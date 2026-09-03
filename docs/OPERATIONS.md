@@ -18,9 +18,14 @@ unreadable backup markers stay inconclusive during grace; do not broaden the
 owner-only backup directory to make them readable. For a Nostr release, pass
 `--service-set tcgdex-nostr --nostr-env-file /etc/pokecrack/nostr.env`; this
 explicitly scopes the expected Nostr heartbeat, checkpoint, and schedules. The
-command is read-only and emits only safe aggregates; do not paste environment
-files or container inspection into an incident. Weekly: failed jobs, unused
-images, provenance checks, and restore-drill schedule. Monthly: source/terms
+same command supports Bluesky with
+`--service-set tcgdex-bluesky --bluesky-env-file /etc/pokecrack/bluesky.env`;
+that service set is mandatory during deployment, forces `--require-healthy`,
+and scopes the Bluesky worker, policy, schedule, queue, and durable cursor.
+The command is read-only and emits
+only safe aggregates; do not paste environment files or container inspection
+into an incident. Weekly: failed jobs, unused images, provenance checks, and
+restore-drill schedule. Monthly: source/terms
 review, dependency/image updates, access review, key rotation plan and
 free-tier capacity trend.
 AI/browser checks are not part of this release.

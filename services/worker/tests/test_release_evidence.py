@@ -174,6 +174,20 @@ def test_query_rejects_unknown_service_set_without_querying() -> None:
     assert executor.sql == ""
 
 
+def test_query_accepts_the_explicit_bluesky_release_set() -> None:
+    executor = FakeExecutor(json.dumps(evidence()))
+
+    query_runtime_release_evidence(
+        executor,
+        release_started_at=datetime.now(UTC) - timedelta(minutes=5),
+        grace_seconds=21600,
+        heartbeat_stale_seconds=180,
+        service_set="tcgdex-bluesky",
+    )
+
+    assert executor.params["service_set"] == "tcgdex-bluesky"
+
+
 def test_backup_marker_reports_only_safe_age_and_status(tmp_path: Path) -> None:
     marker = tmp_path / ".last-successful-backup"
     marker.write_text(
@@ -258,3 +272,9 @@ def test_rpc_rejects_duplicate_keys_and_nonfinite_json() -> None:
 )
 def test_exit_codes_are_stable(status: str, expected: int) -> None:
     assert exit_code_for_status(status) == expected
+
+
+def test_strict_release_gate_refuses_warming_up_without_fabricating_failure() -> None:
+    assert exit_code_for_status("warming_up", require_healthy=True) == 2
+    assert exit_code_for_status("healthy", require_healthy=True) == 0
+    assert exit_code_for_status("failed", require_healthy=True) == 1

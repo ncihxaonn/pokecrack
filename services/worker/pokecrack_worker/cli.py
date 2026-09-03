@@ -312,7 +312,12 @@ def verify_release(
     service_set: str = typer.Option(
         "tcgdex",
         "--service-set",
-        help="Exact deployed service set (tcgdex or tcgdex-nostr).",
+        help="Exact deployed service set (tcgdex, tcgdex-nostr, or tcgdex-bluesky).",
+    ),
+    require_healthy: bool = typer.Option(
+        False,
+        "--require-healthy",
+        help="Return non-success until every required post-release signal is healthy.",
     ),
     release_started_at: str | None = typer.Option(
         None,
@@ -398,7 +403,9 @@ def verify_release(
         _json(inconclusive_result("backup_marker_unavailable"))
         raise typer.Exit(code=2) from None
     _json(evidence)
-    raise typer.Exit(code=exit_code_for_status(str(evidence.get("status"))))
+    raise typer.Exit(
+        code=exit_code_for_status(str(evidence.get("status")), require_healthy=require_healthy)
+    )
 
 
 @app.command("worker")
