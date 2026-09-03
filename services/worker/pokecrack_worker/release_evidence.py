@@ -29,7 +29,7 @@ SELECT ingest.get_runtime_release_evidence_v1(
 RUNTIME_EVIDENCE_SCHEMA_VERSION = "1.0.0"
 RUNTIME_EVIDENCE_SUCCESS_STATUSES = frozenset({"healthy", "warming_up"})
 RUNTIME_EVIDENCE_STATUSES = frozenset({"healthy", "warming_up", "failed"})
-RUNTIME_RELEASE_SERVICE_SETS = frozenset({"tcgdex", "tcgdex-nostr"})
+RUNTIME_RELEASE_SERVICE_SETS = frozenset({"tcgdex", "tcgdex-nostr", "tcgdex-bluesky"})
 RUNTIME_RELEASE_MAX_AGE_SECONDS = 2_592_000
 RUNTIME_RELEASE_MAX_FUTURE_SECONDS = 300
 
@@ -527,9 +527,18 @@ def with_backup_marker(
     return result
 
 
-def exit_code_for_status(status: str) -> int:
-    """Return 0 for healthy/warming, 1 for observed failure, 2 for inconclusive."""
+def exit_code_for_status(status: str, *, require_healthy: bool = False) -> int:
+    """Map aggregate evidence to a bounded operator exit status.
 
+    A normal status probe may treat first-run ``warming_up`` as successful so
+    an operator can inspect its aggregate state during the grace window.  A
+    release gate may instead require proof that every post-release signal has
+    advanced; in that mode warming-up is inconclusive and cannot advance a
+    deployment success marker.
+    """
+
+    if require_healthy and status == "warming_up":
+        return 2
     return {"healthy": 0, "warming_up": 0, "failed": 1, "inconclusive": 2}.get(status, 2)
 
 

@@ -16,6 +16,12 @@ BACKUP_MAX_AGE_SECONDS=172800
 RELEASE_STARTED_AT=''
 SERVICE_SET=tcgdex
 NOSTR_ENV_FILE=''
+BLUESKY_ENV_FILE=''
+REQUIRE_HEALTHY=false
+# deploy.sh reads this exact supported-set marker before it allows the isolated
+# Bluesky lane to create a success marker. Keep it coupled to the full case
+# branch below, image proof, and private RPC service-set support.
+RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky
 COMPOSE_EXEC_TIMEOUT_SECONDS=60
 
 die() {
@@ -33,8 +39,10 @@ Options:
   --grace-seconds SECONDS        First-run warming-up window (default: 21600)
   --heartbeat-stale-seconds SEC  Worker heartbeat stale threshold (default: 180)
   --backup-max-age-seconds SEC   Backup marker stale threshold (default: 172800)
-  --service-set NAME             Exact release service set (tcgdex or tcgdex-nostr)
+  --service-set NAME             Exact release service set (tcgdex, tcgdex-nostr, or tcgdex-bluesky)
   --nostr-env-file ABSOLUTE_PATH Nostr interpolation file (tcgdex-nostr only)
+  --bluesky-env-file ABSOLUTE_PATH Bluesky interpolation file (tcgdex-bluesky only)
+  --require-healthy            Do not return success for first-run warming_up evidence
   --exec-timeout-seconds SEC     Bound each Compose/Docker probe (default: 60)
 
 The command only runs the read-only verifier in the already running watchdog
@@ -54,6 +62,8 @@ while (($#)); do
     --backup-max-age-seconds) (($# >= 2)) || die "--backup-max-age-seconds requires a value"; BACKUP_MAX_AGE_SECONDS=$2; shift 2 ;;
     --service-set) (($# >= 2)) || die "--service-set requires a value"; SERVICE_SET=$2; shift 2 ;;
     --nostr-env-file) (($# >= 2)) || die "--nostr-env-file requires a value"; NOSTR_ENV_FILE=$2; shift 2 ;;
+    --bluesky-env-file) (($# >= 2)) || die "--bluesky-env-file requires a value"; BLUESKY_ENV_FILE=$2; shift 2 ;;
+    --require-healthy) REQUIRE_HEALTHY=true; shift ;;
     --exec-timeout-seconds) (($# >= 2)) || die "--exec-timeout-seconds requires a value"; COMPOSE_EXEC_TIMEOUT_SECONDS=$2; shift 2 ;;
     -h|--help) usage; exit 0 ;;
     *) die "unknown argument: $1" ;;
@@ -65,15 +75,25 @@ done
 case $SERVICE_SET in
   tcgdex)
     [[ -z $NOSTR_ENV_FILE ]] || die "the tcgdex service set does not accept a Nostr environment file"
+    [[ -z $BLUESKY_ENV_FILE ]] || die "the tcgdex service set does not accept a Bluesky environment file"
     SERVICES=(collector scheduler watchdog)
     ;;
   tcgdex-nostr)
+    [[ -z $BLUESKY_ENV_FILE ]] || die "the tcgdex-nostr service set does not accept a Bluesky environment file"
     [[ $NOSTR_ENV_FILE == /* && -f $NOSTR_ENV_FILE && ! -L $NOSTR_ENV_FILE ]] || \
       die "tcgdex-nostr requires an absolute regular, non-symlink Nostr environment file"
     [[ ! $ENV_FILE -ef $NOSTR_ENV_FILE ]] || die "Nostr environment file must be distinct from the production environment file"
     SERVICES=(collector scheduler watchdog nostr-collector)
     ;;
-  *) die "unsupported service set: $SERVICE_SET (allowed: tcgdex, tcgdex-nostr)" ;;
+  "$RUNTIME_EVIDENCE_SERVICE_SET")
+    [[ -z $NOSTR_ENV_FILE ]] || die "the tcgdex-bluesky service set does not accept a Nostr environment file"
+    [[ $BLUESKY_ENV_FILE == /* && -f $BLUESKY_ENV_FILE && ! -L $BLUESKY_ENV_FILE ]] || \
+      die "tcgdex-bluesky requires an absolute regular, non-symlink Bluesky environment file"
+    [[ ! $ENV_FILE -ef $BLUESKY_ENV_FILE ]] || die "Bluesky environment file must be distinct from the production environment file"
+    SERVICES=(collector scheduler watchdog bluesky-collector)
+    REQUIRE_HEALTHY=true
+    ;;
+  *) die "unsupported service set: $SERVICE_SET (allowed: tcgdex, tcgdex-nostr, tcgdex-bluesky)" ;;
 esac
 [[ -n $RELEASE_STARTED_AT && $RELEASE_STARTED_AT =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(Z|[+-][0-9]{2}:[0-9]{2})$ ]] || \
   die "--release-started-at must be a UTC ISO-8601 timestamp"
@@ -96,12 +116,18 @@ if [[ $SERVICE_SET == tcgdex-nostr ]]; then
   nostr_env_permissions=$((8#$nostr_env_mode))
   (( (nostr_env_permissions & 0077) == 0 )) || die "Nostr environment file must be owner-only"
 fi
+if [[ $SERVICE_SET == "$RUNTIME_EVIDENCE_SERVICE_SET" ]]; then
+  bluesky_env_mode=$(pokecrack_stat_mode "$BLUESKY_ENV_FILE") || die "could not validate Bluesky environment file permissions"
+  [[ $bluesky_env_mode == 600 ]] || die "Bluesky environment file must have exact mode 0600"
+fi
 
 command -v docker >/dev/null 2>&1 || die "required command not found: docker"
 command -v timeout >/dev/null 2>&1 || die "required command not found: timeout"
 compose=(docker compose --project-name pokecrack --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
 if [[ $SERVICE_SET == tcgdex-nostr ]]; then
   compose=(docker compose --project-name pokecrack --env-file "$ENV_FILE" --env-file "$NOSTR_ENV_FILE" --profile nostr -f "$COMPOSE_FILE")
+elif [[ $SERVICE_SET == "$RUNTIME_EVIDENCE_SERVICE_SET" ]]; then
+  compose=(env "POKECRACK_BLUESKY_ENV_FILE=$BLUESKY_ENV_FILE" docker compose --project-name pokecrack --env-file "$ENV_FILE" --env-file "$BLUESKY_ENV_FILE" --profile bluesky -f "$COMPOSE_FILE")
 fi
 export DEPLOY_SHA=$target_sha
 
@@ -119,13 +145,19 @@ for service in "${SERVICES[@]}"; do
   [[ $image_revision == "$target_sha" ]] || die "running service image does not match the requested release"
 done
 
-set +e
-bounded "${compose[@]}" exec -T watchdog pokecrack-worker verify-release \
-  --release-started-at "$RELEASE_STARTED_AT" \
-  --grace-seconds "$GRACE_SECONDS" \
-  --heartbeat-stale-seconds "$HEARTBEAT_STALE_SECONDS" \
-  --backup-max-age-seconds "$BACKUP_MAX_AGE_SECONDS" \
+verify_args=(
+  --release-started-at "$RELEASE_STARTED_AT"
+  --grace-seconds "$GRACE_SECONDS"
+  --heartbeat-stale-seconds "$HEARTBEAT_STALE_SECONDS"
+  --backup-max-age-seconds "$BACKUP_MAX_AGE_SECONDS"
   --service-set "$SERVICE_SET"
+)
+if [[ $REQUIRE_HEALTHY == true ]]; then
+  verify_args+=(--require-healthy)
+fi
+
+set +e
+bounded "${compose[@]}" exec -T watchdog pokecrack-worker verify-release "${verify_args[@]}"
 verify_status=$?
 set -e
 case $verify_status in

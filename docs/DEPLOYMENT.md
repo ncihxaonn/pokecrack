@@ -78,13 +78,15 @@ The host preflight accepts exactly those three environment assignments, rejects
 `service_role`, `SUPABASE_DB_URL`, and every unknown key, and requires the
 dedicated file to be a regular non-symlink with exact mode `0600`. The
 `tcgdex-bluesky` deployment service set runs that preflight before Compose
-validation, build, or service replacement; `tcgdex` remains the default.
-On this branch it is additionally held fail closed until the runtime-release
-evidence verifier has an explicit `tcgdex-bluesky` implementation; a role
-attestation and healthy containers alone cannot create a verified success
-marker. The deploy script requires the executable verifier to declare the
-exact `RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky` capability sentinel before
-the service set can be enabled.
+validation, build, or service replacement; `tcgdex` remains the default. A
+Bluesky release additionally forces the exact `tcgdex-bluesky` runtime-evidence
+set after health checks. It requires fresh evidence from all four workers, the
+TCGdex and Bluesky policies, the three expected schedules, the bounded queue,
+the Bluesky checkpoint, and cleanup. A role attestation and healthy containers
+alone cannot create a verified success marker. The deploy script also requires
+the executable verifier from the detached exact target SHA to declare the exact
+`RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky` capability sentinel before the
+service set can be enabled.
 Verify this with `docker compose --env-file /etc/pokecrack/production.env
 --env-file /etc/pokecrack/bluesky.env -f deploy/compose.prod.yml --profile
 bluesky config --quiet`, then inspect the rendered environments and migration
@@ -108,11 +110,17 @@ deploy/scripts/deploy.sh EXACT_LOWERCASE_40_CHARACTER_SHA \
 ```
 
 The default service set remains `tcgdex`: collector, scheduler, and watchdog.
-The gated `tcgdex-nostr` set adds only `nostr-collector` and requires both
+The `tcgdex-nostr` set adds only `nostr-collector` and requires both
 `--nostr-env-file /etc/pokecrack/nostr.env` and the successful hosted
 attestation before any service replacement. The shared collector always has
 Nostr disabled; only the dedicated container receives the worker DSN. The
-script refuses full mode and every unknown container. Removing an existing
+`tcgdex-bluesky` set likewise adds only `bluesky-collector`, requires
+`--bluesky-env-file /etc/pokecrack/bluesky.env`, and forces its strictly
+healthy aggregate runtime-evidence gate before it can advance the success
+marker. The shared
+collector always has Bluesky disabled; only the dedicated container receives
+the Bluesky worker DSN. The script refuses full mode and every unknown
+container. Removing an existing
 Nostr container requires the explicit `--retire-nostr` rollback flag; it never
 uses `--remove-orphans`. The atomic success manifest records SHA, service-set
 name, and exact services. The GitHub deploy workflow requires the same explicit
@@ -147,8 +155,10 @@ The verifier reports aggregate worker heartbeat age/status, observed source
 state, expected schedule/job outcome, checkpoint freshness, queue age bands,
 cleanup freshness, and local backup-marker age where a narrowly scoped marker
 mount is available. It never prints source text, URLs, payloads, policy/gate
-identifiers, cursors, credentials, image labels, or identity. `healthy` and
-first-run `warming_up` exit 0; observed stale/failed evidence exits 1;
+identifiers, cursors, credentials, image labels, or identity. For ordinary
+observations, `healthy` and first-run `warming_up` exit 0; the forced Bluesky
+deployment gate treats `warming_up` as inconclusive and cannot advance its
+success marker. Observed stale/failed evidence exits 1;
 missing/incompatible schema, service set, exact running-image revision, role,
 or monitor access is explicitly `inconclusive` and exits 2. Missing,
 unsupported, or unreadable backup markers are also `inconclusive` (exit 2),
@@ -156,8 +166,9 @@ including during first-run grace; the default owner-only backup directory is
 not made group-readable for the watchdog. Enabled sources and checkpoints must
 advance at or after the bounded release start before `healthy` is possible.
 The `tcgdex-nostr` set additionally requires Nostr worker heartbeat, checkpoint,
-and expected schedule evidence and must be selected explicitly. No migration or
-deployment is automatic. For an already-running release, the same check is
+and expected schedule evidence. The `tcgdex-bluesky` set applies equivalent
+Bluesky requirements automatically and cannot run without the post-release
+gate. No migration or deployment is automatic. For an already-running release, the same check is
 available directly as `deploy/scripts/verify-runtime-release.sh` with an exact
 SHA, explicit service set, and release start.
 

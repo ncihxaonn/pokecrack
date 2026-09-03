@@ -2284,7 +2284,12 @@ class DeployAndRollbackScriptTests(unittest.TestCase):
         path.chmod(0o600)
 
     def setUpRepository(
-        self, base: Path, *, runtime_verifier_support: bool = False
+        self,
+        base: Path,
+        *,
+        runtime_verifier_support: bool = False,
+        runtime_verifier_exit: int = 0,
+        runtime_verifier_interface: bool = True,
     ) -> tuple[Path, str]:
         repository = base / "repository"
         deploy = repository / "deploy"
@@ -2318,7 +2323,21 @@ class DeployAndRollbackScriptTests(unittest.TestCase):
         if runtime_verifier_support:
             write_executable(
                 scripts / "verify-runtime-release.sh",
-                "#!/usr/bin/env bash\nRUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky\nexit 0\n",
+                "#!/usr/bin/env bash\n"
+                "set -Eeuo pipefail\n"
+                "RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky\n"
+                "if [[ ${1:-} == --help ]]; then\n"
+                + (
+                    "  printf '%s\\n' 'Usage: verify-runtime-release.sh --service-set NAME --bluesky-env-file PATH --require-healthy (tcgdex-bluesky)'\n"
+                    if runtime_verifier_interface
+                    else "  :\n"
+                )
+                + "  exit 0\n"
+                "fi\n"
+                "if [[ -n ${FAKE_RUNTIME_VERIFY_LOG:-} ]]; then\n"
+                "  printf '%s\\n' \"$*\" >> \"$FAKE_RUNTIME_VERIFY_LOG\"\n"
+                "fi\n"
+                f"exit {runtime_verifier_exit}\n",
             )
         subprocess.run(["git", "add", "."], cwd=repository, check=True)
         subprocess.run(
@@ -2645,6 +2664,8 @@ exit 97
             repository, sha = self.setUpRepository(base, runtime_verifier_support=True)
             fake_bin = self.make_fake_docker(base)
             environment, env_file, docker_log = self.environment(base, fake_bin)
+            runtime_log = base / "runtime-verify.log"
+            environment["FAKE_RUNTIME_VERIFY_LOG"] = str(runtime_log)
             bluesky_env_file = base / "bluesky.env"
             self.write_bluesky_env(bluesky_env_file)
             contract = json.dumps(
@@ -2696,7 +2717,79 @@ exit 97
             self.assertIn(
                 "up --detach collector scheduler watchdog bluesky-collector", up
             )
+            runtime_invocation = runtime_log.read_text(encoding="utf-8")
+            self.assertIn("--service-set tcgdex-bluesky", runtime_invocation)
+            self.assertIn("--bluesky-env-file", runtime_invocation)
+            self.assertIn("--require-healthy", runtime_invocation)
+            self.assertIn(str(bluesky_env_file), runtime_invocation)
             self.assertNotIn("worker-secret", result.stdout + result.stderr)
+
+    def test_bluesky_runtime_evidence_is_mandatory_before_success_marker(self) -> None:
+        for runtime_exit, expected_exit, expected_message in (
+            (1, 1, "runtime release evidence failed"),
+            (2, 2, "runtime release evidence was inconclusive"),
+        ):
+            with self.subTest(runtime_exit=runtime_exit), tempfile.TemporaryDirectory(
+                dir=DEPLOY_ROOT / "tests"
+            ) as temporary:
+                base = Path(temporary)
+                repository, sha = self.setUpRepository(
+                    base,
+                    runtime_verifier_support=True,
+                    runtime_verifier_exit=runtime_exit,
+                )
+                fake_bin = self.make_fake_docker(base)
+                environment, env_file, docker_log = self.environment(base, fake_bin)
+                runtime_log = base / "runtime-verify.log"
+                environment["FAKE_RUNTIME_VERIFY_LOG"] = str(runtime_log)
+                bluesky_env_file = base / "bluesky.env"
+                self.write_bluesky_env(bluesky_env_file)
+                contract = json.dumps(
+                    {
+                        key: True
+                        for key in load_bluesky_preflight_module().REQUIRED_CONTRACT_KEYS
+                    },
+                    sort_keys=True,
+                    separators=(",", ":"),
+                )
+                write_executable(
+                    fake_bin / "psql",
+                    "#!/usr/bin/env bash\n" + f"printf '%s\\n' '{contract}'\n",
+                )
+                state_dir = base / "state"
+
+                result = subprocess.run(
+                    [
+                        str(repository / "deploy" / "scripts" / "deploy.sh"),
+                        sha,
+                        "--env-file",
+                        str(env_file),
+                        "--bluesky-env-file",
+                        str(bluesky_env_file),
+                        "--state-dir",
+                        str(state_dir),
+                        "--health-timeout",
+                        "2",
+                        "--service-set",
+                        "tcgdex-bluesky",
+                    ],
+                    cwd=repository,
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                    env=environment,
+                )
+
+                self.assertEqual(result.returncode, expected_exit, result.stderr)
+                self.assertIn(expected_message, result.stderr)
+                self.assertFalse((state_dir / "last-successful-deployment").exists())
+                self.assertIn(
+                    "--service-set tcgdex-bluesky",
+                    runtime_log.read_text(encoding="utf-8"),
+                )
+                invocations = docker_log.read_text(encoding="utf-8")
+                self.assertIn(" build ", f" {invocations} ")
+                self.assertIn(" up ", f" {invocations} ")
 
     def test_bluesky_contract_failure_happens_before_any_service_replacement(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
@@ -2763,9 +2856,168 @@ exit 97
                 env=environment,
             )
             self.assertNotEqual(result.returncode, 0)
-            self.assertIn("remains gated until runtime release evidence support is integrated", result.stderr)
+            self.assertIn("target SHA provides runtime release evidence", result.stderr)
             self.assertFalse(docker_log.exists())
             self.assertFalse((base / "state").exists())
+
+    def test_bluesky_rejects_a_stale_caller_verifier_missing_from_target_sha(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, caller_sha = self.setUpRepository(
+                base, runtime_verifier_support=True
+            )
+            target_verifier = repository / "deploy" / "scripts" / "verify-runtime-release.sh"
+            target_verifier.unlink()
+            subprocess.run(["git", "add", "-u"], cwd=repository, check=True)
+            subprocess.run(
+                ["git", "commit", "-q", "-m", "target lacks verifier"],
+                cwd=repository,
+                check=True,
+            )
+            target_sha = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repository,
+                check=True,
+                text=True,
+                capture_output=True,
+            ).stdout.strip()
+            subprocess.run(
+                ["git", "checkout", "--detach", caller_sha],
+                cwd=repository,
+                check=True,
+            )
+
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            bluesky_env_file = base / "bluesky.env"
+            self.write_bluesky_env(bluesky_env_file)
+            state_dir = base / "state"
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    target_sha,
+                    "--env-file",
+                    str(env_file),
+                    "--bluesky-env-file",
+                    str(bluesky_env_file),
+                    "--state-dir",
+                    str(state_dir),
+                    "--service-set",
+                    "tcgdex-bluesky",
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("target SHA provides runtime release evidence", result.stderr)
+            self.assertFalse(docker_log.exists())
+            self.assertFalse(state_dir.exists())
+
+    def test_deploy_reexecutes_a_changed_target_entrypoint_after_checkout(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, caller_sha = self.setUpRepository(base)
+            target_script = repository / "deploy" / "scripts" / "deploy.sh"
+            target_script.write_text(
+                target_script.read_text(encoding="utf-8")
+                + "\nprintf '%s\\n' target-entrypoint >> \"$FAKE_TARGET_ENTRYPOINT_LOG\"\n",
+                encoding="utf-8",
+            )
+            subprocess.run(
+                ["git", "add", "deploy/scripts/deploy.sh"],
+                cwd=repository,
+                check=True,
+            )
+            subprocess.run(
+                ["git", "commit", "-q", "-m", "target entrypoint"],
+                cwd=repository,
+                check=True,
+            )
+            target_sha = subprocess.run(
+                ["git", "rev-parse", "HEAD"],
+                cwd=repository,
+                check=True,
+                text=True,
+                capture_output=True,
+            ).stdout.strip()
+            subprocess.run(
+                ["git", "checkout", "--detach", caller_sha],
+                cwd=repository,
+                check=True,
+            )
+
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, _ = self.environment(base, fake_bin)
+            target_log = base / "target-entrypoint.log"
+            environment["FAKE_TARGET_ENTRYPOINT_LOG"] = str(target_log)
+            state_dir = base / "state"
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    target_sha,
+                    "--env-file",
+                    str(env_file),
+                    "--state-dir",
+                    str(state_dir),
+                    "--health-timeout",
+                    "2",
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(target_log.read_text(encoding="utf-8"), "target-entrypoint\n")
+            self.assertIn(f"sha={target_sha}", (state_dir / "last-successful-deployment").read_text())
+
+    def test_bluesky_rejects_a_target_verifier_without_the_reviewed_interface(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(
+                base,
+                runtime_verifier_support=True,
+                runtime_verifier_interface=False,
+            )
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            bluesky_env_file = base / "bluesky.env"
+            self.write_bluesky_env(bluesky_env_file)
+            state_dir = base / "state"
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--bluesky-env-file",
+                    str(bluesky_env_file),
+                    "--state-dir",
+                    str(state_dir),
+                    "--service-set",
+                    "tcgdex-bluesky",
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("does not expose the reviewed interface", result.stderr)
+            self.assertFalse(docker_log.exists())
+            self.assertFalse(state_dir.exists())
 
     def test_failed_health_does_not_write_success_marker(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
@@ -3612,6 +3864,9 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         deploy = (DEPLOY_ROOT / "scripts" / "deploy.sh").read_text(encoding="utf-8")
         self.assertIn("--service-set NAME", wrapper)
         self.assertIn("SERVICES=(collector scheduler watchdog nostr-collector)", wrapper)
+        self.assertIn("SERVICES=(collector scheduler watchdog bluesky-collector)", wrapper)
+        self.assertIn("--bluesky-env-file", wrapper)
+        self.assertIn("Bluesky environment file must have exact mode 0600", wrapper)
         self.assertIn("docker image inspect", wrapper)
         self.assertIn("org.opencontainers.image.revision", wrapper)
         self.assertIn('[[ $image_revision == "$target_sha" ]]', wrapper)
@@ -3620,6 +3875,18 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertIn("verify_status=$?", wrapper)
         self.assertIn("0|1|2) exit \"$verify_status\"", wrapper)
         self.assertIn("runtime_verify_status=$?", deploy)
+        self.assertIn("VERIFY_RUNTIME=true", deploy)
+        self.assertIn("require_bluesky_runtime_verifier", deploy)
+        self.assertIn("target SHA provides runtime release evidence", deploy)
+        self.assertIn("target runtime verifier does not expose the reviewed interface", deploy)
+        self.assertLess(
+            deploy.index('git -C "$REPOSITORY_ROOT" checkout --detach "$target_sha"'),
+            deploy.rindex("require_bluesky_runtime_verifier"),
+        )
+        self.assertIn(
+            'runtime_verify_args+=(--bluesky-env-file "$BLUESKY_ENV_FILE" --require-healthy)',
+            deploy,
+        )
         self.assertIn("runtime release evidence was inconclusive", deploy)
         self.assertIn("exit 2", deploy)
 

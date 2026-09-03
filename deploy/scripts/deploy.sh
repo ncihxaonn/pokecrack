@@ -86,7 +86,7 @@ Options:
   --bluesky-env-file PATH     Dedicated Bluesky interpolation/preflight file (tcgdex-bluesky only)
   --state-dir ABSOLUTE_PATH   Success-marker directory (default: /var/lib/pokecrack/deploy)
   --health-timeout SECONDS    Health deadline (default: 180)
-  --verify-runtime             Run aggregate runtime evidence after health checks
+  --verify-runtime             Run aggregate runtime evidence after health checks (always required for tcgdex-bluesky)
   --runtime-grace-seconds SEC First-run warming-up window (default: 21600)
   --runtime-exec-timeout-seconds SEC Bound each runtime verifier probe (default: 60)
   --service-set NAME          Exact release service set (tcgdex, tcgdex-nostr, or tcgdex-bluesky)
@@ -98,7 +98,38 @@ not have safe live handlers in this release.
 USAGE
 }
 
+require_bluesky_runtime_verifier() {
+  local runtime_verifier_line runtime_verifier_help
+  local runtime_verifier_supports_bluesky=false
+
+  # This path is checked only after the exact deployment SHA is detached.
+  # Reading the caller checkout would let a stale or untracked helper unlock a
+  # target that cannot actually prove the isolated lane's runtime evidence.
+  [[ -x $RUNTIME_EVIDENCE_VERIFY && ! -L $RUNTIME_EVIDENCE_VERIFY ]] || \
+    die "tcgdex-bluesky remains gated until the target SHA provides runtime release evidence"
+  while IFS= read -r runtime_verifier_line || [[ -n $runtime_verifier_line ]]; do
+    case $runtime_verifier_line in
+      RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky)
+        runtime_verifier_supports_bluesky=true
+        break
+        ;;
+    esac
+  done < "$RUNTIME_EVIDENCE_VERIFY"
+  [[ $runtime_verifier_supports_bluesky == true ]] || \
+    die "tcgdex-bluesky remains gated until the target SHA provides runtime verifier service-set support"
+
+  if ! runtime_verifier_help=$("$RUNTIME_EVIDENCE_VERIFY" --help 2>&1); then
+    die "tcgdex-bluesky target runtime verifier could not validate its read-only interface"
+  fi
+  [[ $runtime_verifier_help == *"--service-set NAME"* \
+    && $runtime_verifier_help == *"--bluesky-env-file"* \
+    && $runtime_verifier_help == *"--require-healthy"* \
+    && $runtime_verifier_help == *"tcgdex-bluesky"* ]] || \
+    die "tcgdex-bluesky target runtime verifier does not expose the reviewed interface"
+}
+
 (($# >= 1)) || { usage; exit 2; }
+original_args=("$@")
 target_sha=$1
 shift
 while (($#)); do
@@ -155,22 +186,12 @@ case $SERVICE_SET in
       die "Nostr release preflight is missing"
     ;;
   tcgdex-bluesky)
-    # This branch is intentionally held behind the runtime-release-evidence
-    # integration. A role/health preflight alone must never create a success
-    # marker while the runtime verifier still knows only the older service set.
-    [[ -x $RUNTIME_EVIDENCE_VERIFY && ! -L $RUNTIME_EVIDENCE_VERIFY ]] || \
-      die "tcgdex-bluesky remains gated until runtime release evidence support is integrated"
-    runtime_verifier_supports_bluesky=false
-    while IFS= read -r runtime_verifier_line || [[ -n $runtime_verifier_line ]]; do
-      case $runtime_verifier_line in
-        RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky)
-          runtime_verifier_supports_bluesky=true
-          break
-          ;;
-      esac
-    done < "$RUNTIME_EVIDENCE_VERIFY"
-    [[ $runtime_verifier_supports_bluesky == true ]] || \
-      die "tcgdex-bluesky remains gated until runtime verifier service-set support is integrated"
+    # The isolated social lane may only advance the success marker after its
+    # own post-release evidence has advanced. Health and the host attestation
+    # prove configuration, not a durable cursor, queue, or worker heartbeat.
+    # Do not make this opt-in: callers cannot bypass the verifier by omitting
+    # --verify-runtime.
+    VERIFY_RUNTIME=true
     [[ $RETIRE_NOSTR == false ]] || \
       die "tcgdex-bluesky cannot be combined with --retire-nostr"
     [[ $RETIRE_BLUESKY == false ]] || \
@@ -246,15 +267,6 @@ validate_catalog_schedule_override() {
 
 validate_catalog_schedule_override
 
-[[ ! -L $STATE_DIR ]] || die "state directory must not be a symbolic link"
-install -d -m 0700 "$STATE_DIR"
-[[ -d $STATE_DIR && ! -L $STATE_DIR ]] || die "state directory is invalid"
-manifest="$STATE_DIR/last-successful-deployment"
-if [[ -e $manifest || -L $manifest ]]; then
-  [[ -f $manifest && ! -L $manifest ]] || \
-    die "success manifest path must be a regular, non-symlink file"
-fi
-
 actual_root=$(git -C "$REPOSITORY_ROOT" rev-parse --show-toplevel 2>/dev/null) || die "repository root is not a Git working tree"
 actual_root=$(CDPATH='' cd -- "$actual_root" && pwd -P)
 [[ $actual_root == "$REPOSITORY_ROOT" ]] || die "script path does not match the Git repository root"
@@ -262,6 +274,14 @@ actual_root=$(CDPATH='' cd -- "$actual_root" && pwd -P)
 git -C "$REPOSITORY_ROOT" diff --quiet --ignore-submodules -- || die "tracked working tree changes must be resolved before deployment"
 git -C "$REPOSITORY_ROOT" diff --cached --quiet --ignore-submodules -- || die "staged changes must be resolved before deployment"
 [[ -z $(git -C "$REPOSITORY_ROOT" status --porcelain --untracked-files=all) ]] || die "untracked files must be removed before deployment"
+
+# This shell has already sourced deploy.sh and shell_portability.sh from the
+# caller checkout. Capture their tracked content before the target checkout so
+# a different target entrypoint is always re-executed from the exact target
+# SHA, rather than continuing to run stale code in this process.
+caller_entrypoint_blobs=$(git -C "$REPOSITORY_ROOT" hash-object -- \
+  "$SCRIPT_DIR/deploy.sh" "$PORTABILITY_HELPER") || \
+  die "could not fingerprint the deployment entrypoint"
 
 if ! git -C "$REPOSITORY_ROOT" cat-file -e "${target_sha}^{commit}" 2>/dev/null; then
   git -C "$REPOSITORY_ROOT" fetch --no-tags --no-write-fetch-head origin "$target_sha"
@@ -271,6 +291,29 @@ resolved_sha=$(git -C "$REPOSITORY_ROOT" rev-parse --verify "${target_sha}^{comm
 git -C "$REPOSITORY_ROOT" checkout --detach "$target_sha"
 checked_out_sha=$(git -C "$REPOSITORY_ROOT" rev-parse --verify HEAD)
 [[ $checked_out_sha == "$target_sha" ]] || die "checkout did not land on the requested SHA"
+[[ -f $SCRIPT_DIR/deploy.sh && -x $SCRIPT_DIR/deploy.sh && ! -L $SCRIPT_DIR/deploy.sh ]] || \
+  die "target deployment script is not a regular executable"
+target_entrypoint_blobs=$(git -C "$REPOSITORY_ROOT" hash-object -- \
+  "$SCRIPT_DIR/deploy.sh" "$PORTABILITY_HELPER") || \
+  die "could not fingerprint the target deployment entrypoint"
+if [[ $caller_entrypoint_blobs != "$target_entrypoint_blobs" ]]; then
+  # Preserve the original options, including the exact SHA, and restart in the
+  # target checkout. On the second pass the entrypoint fingerprints match, so
+  # this cannot loop and the code controlling replacement is target-bound.
+  exec "$SCRIPT_DIR/deploy.sh" "${original_args[@]}"
+fi
+if [[ $SERVICE_SET == tcgdex-bluesky ]]; then
+  require_bluesky_runtime_verifier
+fi
+
+[[ ! -L $STATE_DIR ]] || die "state directory must not be a symbolic link"
+install -d -m 0700 "$STATE_DIR"
+[[ -d $STATE_DIR && ! -L $STATE_DIR ]] || die "state directory is invalid"
+manifest="$STATE_DIR/last-successful-deployment"
+if [[ -e $manifest || -L $manifest ]]; then
+  [[ -f $manifest && ! -L $manifest ]] || \
+    die "success manifest path must be a regular, non-symlink file"
+fi
 
 export DEPLOY_SHA=$target_sha
 export POKECRACK_ENV_FILE=$ENV_FILE
@@ -382,6 +425,9 @@ if [[ $VERIFY_RUNTIME == true ]]; then
   )
   if [[ -n $NOSTR_ENV_FILE ]]; then
     runtime_verify_args+=(--nostr-env-file "$NOSTR_ENV_FILE")
+  fi
+  if [[ -n $BLUESKY_ENV_FILE ]]; then
+    runtime_verify_args+=(--bluesky-env-file "$BLUESKY_ENV_FILE" --require-healthy)
   fi
   set +e
   "$RUNTIME_EVIDENCE_VERIFY" "${runtime_verify_args[@]}"

@@ -13,6 +13,12 @@ HARDENING_MIGRATION = (
     / "migrations"
     / "20260924000000_runtime_release_evidence_hardening.sql"
 )
+BLUESKY_RUNTIME_MIGRATION = (
+    REPOSITORY_ROOT
+    / "supabase"
+    / "migrations"
+    / "20260929000000_runtime_release_evidence_bluesky.sql"
+)
 PYTHON_ROOT = REPOSITORY_ROOT / "services" / "worker" / "pokecrack_worker"
 
 
@@ -189,6 +195,74 @@ class RuntimeReleaseEvidenceHardeningContractTests(unittest.TestCase):
         )
 
 
+class RuntimeReleaseEvidenceBlueskyContractTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.sql = BLUESKY_RUNTIME_MIGRATION.read_text(encoding="utf-8")
+
+    def test_forward_patch_requires_the_reviewed_bluesky_prerequisites(self) -> None:
+        self.assertEqual(self.sql.lower().count("begin;"), 1)
+        self.assertEqual(self.sql.lower().count("commit;"), 1)
+        self.assertIn(
+            "to_regprocedure('ingest.verify_bluesky_release_v1()')", self.sql
+        )
+        self.assertIn(
+            "to_regclass('ingest.bluesky_jetstream_checkpoints')", self.sql
+        )
+        self.assertIn(
+            "runtime evidence Bluesky capability is unavailable or drifted", self.sql
+        )
+        self.assertIn(
+            "runtime release evidence Bluesky integration did not match exactly", self.sql
+        )
+        self.assertIn(
+            "runtime release evidence no longer has the reviewed security header",
+            self.sql,
+        )
+        self.assertIn("functions.prosecdef", self.sql)
+        self.assertIn("functions.provolatile = 's'", self.sql)
+        self.assertIn("functions.proparallel = 'r'", self.sql)
+        self.assertIn(
+            "array['search_path=pg_catalog, pg_temp']::text[]", self.sql
+        )
+        self.assertIn("pg_get_functiondef(", self.sql)
+        self.assertIn("execute updated_definition;", self.sql)
+
+    def test_bluesky_service_set_is_exact_and_uses_its_own_checkpoint(self) -> None:
+        for expected in (
+            "when 'tcgdex-bluesky' then",
+            "'collector', 'scheduler', 'watchdog', 'bluesky-collector'",
+            "'tcgdex_catalog'",
+            "'bluesky_jetstream'",
+            "'catalog.tcgdex.sets.sync'",
+            "'maintenance.cleanup'",
+            "'source.bluesky.jetstream'",
+            "'catalog_sync', 'cleanup', 'bluesky_jetstream'",
+            "expected_schedule_count := 3;",
+            "bluesky_checkpoints.last_collected_at",
+            "ingest.bluesky_jetstream_checkpoints",
+        ):
+            self.assertIn(expected, self.sql)
+        self.assertIn(
+            "expected.source_key <> 'bluesky_jetstream'\n      and nostr_checkpoints.source_policy_id",
+            self.sql,
+        )
+
+    def test_reissued_private_rpc_preserves_exact_owner_and_acl(self) -> None:
+        self.assertIn(
+            "alter function ingest.get_runtime_release_evidence_v1(timestamptz, integer, integer, text)\n  owner to postgres;",
+            self.sql,
+        )
+        self.assertIn(
+            "revoke all on function ingest.get_runtime_release_evidence_v1(timestamptz, integer, integer, text)\n  from public, anon, authenticated, service_role;",
+            self.sql,
+        )
+        self.assertRegex(
+            self.sql,
+            r"grant execute on function ingest\.get_runtime_release_evidence_v1\(timestamptz, integer, integer, text\)\s+to pokecrack_runtime_monitor",
+        )
+
+
 class RuntimeReleaseEvidenceIntegrationContractTests(unittest.TestCase):
     def test_cli_and_settings_use_the_dedicated_monitor_path(self) -> None:
         cli = (PYTHON_ROOT / "cli.py").read_text(encoding="utf-8")
@@ -204,11 +278,14 @@ class RuntimeReleaseEvidenceIntegrationContractTests(unittest.TestCase):
         self.assertIn("connect_timeout_seconds=", composition)
         self.assertIn("statement_timeout_seconds=", composition)
         self.assertIn('service_set: str = typer.Option(', cli)
+        self.assertIn('require_healthy: bool = typer.Option(', cli)
+        self.assertIn('require_healthy=require_healthy', cli)
         self.assertIn("bound_release_started_at", cli)
         evidence = (PYTHON_ROOT / "release_evidence.py").read_text(encoding="utf-8")
         self.assertIn("object_pairs_hook=_reject_duplicate_pairs", evidence)
         self.assertIn("parse_constant=_reject_json_constant", evidence)
         self.assertIn("%(service_set)s", evidence)
+        self.assertIn('"tcgdex-bluesky"', evidence)
 
     def test_watchdog_only_receives_the_monitor_url_and_wrapper_is_read_only(self) -> None:
         compose = (REPOSITORY_ROOT / "deploy" / "compose.prod.yml").read_text(encoding="utf-8")
@@ -224,8 +301,22 @@ class RuntimeReleaseEvidenceIntegrationContractTests(unittest.TestCase):
         self.assertIn("--service-set", wrapper)
         self.assertIn("org.opencontainers.image.revision", wrapper)
         self.assertIn("timeout --foreground --kill-after=5", wrapper)
+        self.assertIn("--bluesky-env-file", wrapper)
+        self.assertIn("--require-healthy", wrapper)
+        self.assertIn(
+            "SERVICES=(collector scheduler watchdog bluesky-collector)", wrapper
+        )
+        self.assertIn("Bluesky environment file must have exact mode 0600", wrapper)
         self.assertNotIn("migrate-database", wrapper)
         self.assertNotIn("docker compose up", wrapper)
+
+        deploy = (REPOSITORY_ROOT / "deploy" / "scripts" / "deploy.sh").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("VERIFY_RUNTIME=true", deploy)
+        self.assertIn(
+            'runtime_verify_args+=(--bluesky-env-file "$BLUESKY_ENV_FILE" --require-healthy)', deploy
+        )
 
     def test_type_and_docs_name_the_new_contract(self) -> None:
         database_types = (REPOSITORY_ROOT / "supabase" / "types" / "database.ts").read_text(
