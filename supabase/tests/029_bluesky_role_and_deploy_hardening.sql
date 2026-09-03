@@ -64,7 +64,7 @@ select is(
 select is(
   ingest.verify_bluesky_release_v1() -> 'bluesky_policy_exact',
   'true'::jsonb,
-  'the Bluesky policy and idle gate are ready'
+  'the Bluesky policy and idle-or-valid-active gate are ready'
 );
 select is(
   ingest.verify_bluesky_release_v1() -> 'bluesky_acl_exact',
@@ -125,7 +125,7 @@ select is(
   'a Bluesky worker-function search_path drift fails closed'
 );
 alter function ingest.get_bluesky_worker_policy_snapshot_v1()
-  set search_path = pg_catalog;
+  set search_path = pg_catalog, pg_temp;
 
 grant select (source_key) on ingest.source_policies to pokecrack_bluesky_worker;
 select is(
