@@ -131,16 +131,20 @@ worker_roles as (
       and not group_role.rolbypassrls
       and group_role.rolconnlimit = -1
       and coalesce(group_role.rolconfig, '{}'::text[]) = '{}'::text[] as group_valid,
-    login_role.oid is not null
-      and not login_role.rolsuper
-      and not login_role.rolinherit
-      and not login_role.rolcreaterole
-      and not login_role.rolcreatedb
-      and login_role.rolcanlogin
-      and not login_role.rolreplication
-      and not login_role.rolbypassrls
-      and login_role.rolconnlimit = 2
-      and coalesce(login_role.rolconfig, '{}'::text[]) = '{}'::text[] as login_valid
+    (
+      login_role.oid is null
+      or (
+        not login_role.rolsuper
+        and not login_role.rolinherit
+        and not login_role.rolcreaterole
+        and not login_role.rolcreatedb
+        and login_role.rolcanlogin
+        and not login_role.rolreplication
+        and not login_role.rolbypassrls
+        and login_role.rolconnlimit = 2
+        and coalesce(login_role.rolconfig, '{}'::text[]) = '{}'::text[]
+      )
+    ) as login_valid
   from pg_catalog.pg_roles as group_role
   left join pg_catalog.pg_roles as login_role
     on login_role.rolname = 'pokecrack_bluesky_worker_login'
