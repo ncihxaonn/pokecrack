@@ -2527,18 +2527,21 @@ export type Database = {
           slot_at: string;
           job_id: string | null;
           created_at: string;
+          is_demo: boolean;
         };
         Insert: {
           schedule_name: string;
           slot_at: string;
           job_id?: string | null;
           created_at?: string;
+          is_demo?: boolean;
         };
         Update: {
           schedule_name?: string;
           slot_at?: string;
           job_id?: string | null;
           created_at?: string;
+          is_demo?: boolean;
         };
         Relationships: [
           {
@@ -3165,6 +3168,10 @@ export type Database = {
         Args: { job_id: string; worker_id: string; lease_generation: number };
         Returns: { acquired: boolean; retry_at: string | null; start_cursor: number | null }[];
       };
+      begin_bluesky_jetstream_job_v1: {
+        Args: { p_job_id: string; p_worker_id: string; p_lease_generation: number };
+        Returns: { acquired: boolean; retry_at: string | null; start_cursor: number | null }[];
+      };
       begin_nostr_relay_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number; relay_key: string };
         Returns: {
@@ -3211,6 +3218,10 @@ export type Database = {
       claim_jobs: { Args: { worker_id: string; job_types?: string[] | null; batch_size?: number; lease_seconds?: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
       claim_jobs_v2: { Args: { worker_id: string; job_types?: string[] | null; batch_size?: number; lease_seconds?: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
       claim_nostr_relay_jobs_v1: {
+        Args: { p_worker_id: string; p_lease_seconds: number };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      claim_bluesky_jetstream_jobs_v1: {
         Args: { p_worker_id: string; p_lease_seconds: number };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
@@ -3306,9 +3317,23 @@ export type Database = {
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
       finalize_cleanup_job: { Args: { job_id: string; worker_id: string; lease_generation: number }; Returns: Database['ingest']['Tables']['jobs']['Row'][] };
+      get_runtime_release_evidence_v1: {
+        Args: {
+          p_release_started_at?: string | null;
+          p_grace_seconds?: number;
+          p_heartbeat_stale_seconds?: number;
+          p_service_set?: string;
+        };
+        Returns: Json;
+      };
       verify_nostr_release_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       verify_nostr_release_v2: { Args: Record<PropertyKey, never>; Returns: Json };
+      verify_bluesky_release_v1: { Args: Record<PropertyKey, never>; Returns: Json };
       enqueue_due_nostr_relay_jobs_v1: {
+        Args: { p_worker_id: string };
+        Returns: number;
+      };
+      enqueue_due_bluesky_jetstream_jobs_v1: {
         Args: { p_worker_id: string };
         Returns: number;
       };
@@ -3316,7 +3341,38 @@ export type Database = {
         Args: Record<PropertyKey, never>;
         Returns: boolean;
       };
+      bluesky_worker_runtime_ready_v1: {
+        Args: Record<PropertyKey, never>;
+        Returns: boolean;
+      };
       get_nostr_worker_policy_snapshot_v1: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          source_key: string;
+          display_name: string;
+          source_kind: string;
+          domain: string;
+          base_url: string | null;
+          enabled: boolean;
+          collector_type: string;
+          access_mode: string;
+          robots_policy: string;
+          routes: string[];
+          include_subdomains: boolean;
+          min_delay_seconds: number;
+          max_pages_per_run: number;
+          max_items_per_run: number;
+          max_concurrency: number;
+          browser_profile: string | null;
+          statistics_eligible_default: boolean;
+          retention_days: number;
+          config: Json;
+          version: string;
+          expected_interval_seconds: number;
+          is_demo: boolean;
+        }[];
+      };
+      get_bluesky_worker_policy_snapshot_v1: {
         Args: Record<PropertyKey, never>;
         Returns: {
           source_key: string;
@@ -3353,6 +3409,28 @@ export type Database = {
       };
       finalize_bluesky_jetstream_job: {
         Args: { job_id: string; worker_id: string; lease_generation: number; result: Json };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      finalize_bluesky_jetstream_job_v1: {
+        Args: { p_job_id: string; p_worker_id: string; p_lease_generation: number; p_result: Json };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      recover_bluesky_cursor_too_old_job_v2: {
+        Args: {
+          p_job_id: string;
+          p_worker_id: string;
+          p_lease_generation: number;
+          p_expected_start_cursor: number;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
+      heartbeat_bluesky_jetstream_job_v1: {
+        Args: {
+          p_job_id: string;
+          p_worker_id: string;
+          p_lease_generation: number;
+          p_lease_seconds: number;
+        };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
       recover_bluesky_cursor_too_old_job_v1: {
@@ -3400,6 +3478,17 @@ export type Database = {
         };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
+      fail_bluesky_jetstream_job_v1: {
+        Args: {
+          p_job_id: string;
+          p_worker_id: string;
+          p_lease_generation: number;
+          p_error_code: string;
+          p_error_message: string;
+          p_retryable: boolean;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       heartbeat_job_v2: {
         Args: { job_id: string; worker_id: string; lease_generation: number; lease_seconds: number };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
@@ -3426,6 +3515,15 @@ export type Database = {
         };
         Returns: Database['ingest']['Tables']['jobs']['Row'][];
       };
+      pause_bluesky_jetstream_job_v1: {
+        Args: {
+          p_job_id: string;
+          p_worker_id: string;
+          p_lease_generation: number;
+          p_retry_at: string;
+        };
+        Returns: Database['ingest']['Tables']['jobs']['Row'][];
+      };
       prune_expired_ephemera: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
       prune_expired_ephemera_v2: { Args: { cutoff?: string; max_rows?: number }; Returns: Json };
       prune_bluesky_jetstream_v1: {
@@ -3433,6 +3531,10 @@ export type Database = {
         Returns: { candidates_deleted: number; observations_deleted: number }[];
       };
       upsert_nostr_worker_heartbeat_v1: {
+        Args: { p_worker_id: string; p_version: string; p_metadata: Json };
+        Returns: { last_seen_at: string }[];
+      };
+      upsert_bluesky_worker_heartbeat_v1: {
         Args: { p_worker_id: string; p_version: string; p_metadata: Json };
         Returns: { last_seen_at: string }[];
       };
@@ -3455,6 +3557,10 @@ export type Database = {
         }[];
       };
       submit_authorized_opening_v1: {
+        Args: { payload: Json };
+        Returns: { submission_id: string; revision: number; state: string }[];
+      };
+      submit_authorized_opening_direct_v1: {
         Args: { payload: Json };
         Returns: { submission_id: string; revision: number; state: string }[];
       };

@@ -32,6 +32,7 @@ def test_settings_default_to_network_free_demo_fixture_mode(
         "AI_PROVIDER",
         "SUPABASE_DB_URL",
         "NOSTR_SUPABASE_DB_URL",
+        "BLUESKY_SUPABASE_DB_URL",
         "AI_API_KEY",
         "AI_EXTRACT_MODEL",
         "AI_VALIDATE_MODEL",
@@ -48,6 +49,7 @@ def test_settings_default_to_network_free_demo_fixture_mode(
     assert settings.ai_provider is AIProviderName.FIXTURE
     assert settings.supabase_db_url is None
     assert settings.nostr_supabase_db_url is None
+    assert settings.bluesky_supabase_db_url is None
     assert settings.youtube_api_key is None
     assert settings.maton_api_key is None
     assert settings.youtube_maton_connection_id is None
@@ -104,8 +106,60 @@ def test_nostr_role_requires_only_its_dedicated_live_database_and_flag() -> None
             worker_id="nostr-collector-test",
             worker_role="nostr-collector",
             nostr_collection_enabled=True,
-            bluesky_collection_enabled=True,
+            mastodon_collection_enabled=True,
             nostr_supabase_db_url="postgresql://nostr.example.invalid/pokecrack",
+        )
+
+
+def test_bluesky_role_requires_only_its_dedicated_live_database_and_flag() -> None:
+    with pytest.raises(ValidationError, match="BLUESKY_SUPABASE_DB_URL"):
+        Settings(
+            _env_file=None,
+            data_mode="live",
+            worker_id="bluesky-collector-test",
+            worker_role="bluesky-collector",
+            bluesky_collection_enabled=True,
+        )
+
+    settings = Settings(
+        _env_file=None,
+        data_mode="live",
+        worker_id="bluesky-collector-test",
+        worker_role="bluesky-collector",
+        bluesky_collection_enabled=True,
+        bluesky_supabase_db_url="postgresql://bluesky.example.invalid/pokecrack",
+    )
+    assert settings.supabase_db_url is None
+    assert settings.nostr_supabase_db_url is None
+    assert settings.bluesky_supabase_db_url is not None
+
+    with pytest.raises(ValidationError, match="requires BLUESKY_COLLECTION_ENABLED"):
+        Settings(
+            _env_file=None,
+            worker_id="bluesky-collector-test",
+            worker_role="bluesky-collector",
+            bluesky_supabase_db_url="postgresql://bluesky.example.invalid/pokecrack",
+        )
+
+    with pytest.raises(ValidationError, match="allows only BLUESKY_COLLECTION_ENABLED"):
+        Settings(
+            _env_file=None,
+            worker_id="bluesky-collector-test",
+            worker_role="bluesky-collector",
+            bluesky_collection_enabled=True,
+            mastodon_collection_enabled=True,
+            bluesky_supabase_db_url="postgresql://bluesky.example.invalid/pokecrack",
+        )
+
+
+def test_bluesky_role_rejects_worker_ids_outside_the_database_contract() -> None:
+    with pytest.raises(ValidationError, match="WORKER_ID matching"):
+        Settings(
+            _env_file=None,
+            worker_id="worker-1",
+            worker_role="bluesky-collector",
+            bluesky_collection_enabled=True,
+            bluesky_supabase_db_url="postgresql://bluesky.example.invalid/pokecrack",
         )
 
 
@@ -258,8 +312,10 @@ def test_bluesky_enablement_rejects_retention_schedule_drift(schedule: str) -> N
     with pytest.raises(ValidationError, match="BLUESKY_COLLECTION_ENABLED.*SCHEDULE_CLEANUP"):
         Settings(
             _env_file=None,
+            worker_id="bluesky-collector-test",
+            worker_role="bluesky-collector",
             bluesky_collection_enabled=True,
-            worker_role="scheduler",
+            bluesky_supabase_db_url="postgresql://bluesky.example.invalid/pokecrack",
             schedule_cleanup=schedule,
         )
 

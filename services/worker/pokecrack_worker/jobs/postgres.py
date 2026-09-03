@@ -56,6 +56,7 @@ FROM ingest.claim_jobs_v2(
 # not accept a caller-provided job-type array: the database function owns the
 # ``source.nostr.relay`` allowlist as well as the role boundary.
 NOSTR_JOB_TYPE = "source.nostr.relay"
+BLUESKY_JOB_TYPE = "source.bluesky.jetstream"
 
 NOSTR_CLAIM_SQL = """
 WITH due_jobs AS MATERIALIZED (
@@ -70,6 +71,24 @@ CROSS JOIN LATERAL ingest.claim_nostr_relay_jobs_v1(
     p_lease_seconds => %(lease_seconds)s::integer
 ) AS claimed
 WHERE due_jobs.scheduled_count = 3
+""".strip()
+
+# Bluesky workers use fixed, source-scoped queue wrappers. They deliberately
+# do not accept a caller-provided job-type array: the database function owns
+# the ``source.bluesky.jetstream`` allowlist and current-minute schedule.
+BLUESKY_CLAIM_SQL = """
+WITH due_jobs AS MATERIALIZED (
+    SELECT ingest.enqueue_due_bluesky_jetstream_jobs_v1(
+        p_worker_id => %(worker_id)s
+    ) AS scheduled_count
+)
+SELECT claimed.*
+FROM due_jobs
+CROSS JOIN LATERAL ingest.claim_bluesky_jetstream_jobs_v1(
+    p_worker_id => %(worker_id)s,
+    p_lease_seconds => %(lease_seconds)s::integer
+) AS claimed
+WHERE due_jobs.scheduled_count = 1
 """.strip()
 
 ENQUEUE_SCHEDULED_SQL = """
@@ -127,6 +146,16 @@ FROM ingest.heartbeat_nostr_relay_job_v1(
 )
 """.strip()
 
+BLUESKY_HEARTBEAT_SQL = """
+SELECT *
+FROM ingest.heartbeat_bluesky_jetstream_job_v1(
+    p_job_id => %(job_id)s::uuid,
+    p_worker_id => %(worker_id)s,
+    p_lease_generation => %(lease_generation)s::bigint,
+    p_lease_seconds => %(lease_seconds)s::integer
+)
+""".strip()
+
 FAIL_SQL = """
 SELECT *
 FROM ingest.fail_job_v2(
@@ -142,6 +171,18 @@ FROM ingest.fail_job_v2(
 NOSTR_FAIL_SQL = """
 SELECT *
 FROM ingest.fail_nostr_relay_job_v1(
+    p_job_id => %(job_id)s::uuid,
+    p_worker_id => %(worker_id)s,
+    p_lease_generation => %(lease_generation)s::bigint,
+    p_error_code => %(error_code)s,
+    p_error_message => %(error_message)s,
+    p_retryable => %(retryable)s::boolean
+)
+""".strip()
+
+BLUESKY_FAIL_SQL = """
+SELECT *
+FROM ingest.fail_bluesky_jetstream_job_v1(
     p_job_id => %(job_id)s::uuid,
     p_worker_id => %(worker_id)s,
     p_lease_generation => %(lease_generation)s::bigint,
@@ -212,7 +253,7 @@ FROM ingest.finalize_public_study_coverage_job_v1(
 
 FINALIZE_BLUESKY_JETSTREAM_SQL = """
 SELECT *
-FROM ingest.finalize_bluesky_jetstream_job(
+FROM ingest.finalize_bluesky_jetstream_job_v1(
     job_id => %(job_id)s::uuid,
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint,
@@ -222,7 +263,7 @@ FROM ingest.finalize_bluesky_jetstream_job(
 
 RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL = """
 SELECT *
-FROM ingest.recover_bluesky_cursor_too_old_job_v1(
+FROM ingest.recover_bluesky_cursor_too_old_job_v2(
     job_id => %(job_id)s::uuid,
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint,
@@ -263,6 +304,16 @@ FROM ingest.pause_job_for_budget_v2(
 NOSTR_PAUSE_BUDGET_SQL = """
 SELECT *
 FROM ingest.pause_nostr_relay_job_v1(
+    p_job_id => %(job_id)s::uuid,
+    p_worker_id => %(worker_id)s,
+    p_lease_generation => %(lease_generation)s::bigint,
+    p_retry_at => %(retry_at)s::timestamptz
+)
+""".strip()
+
+BLUESKY_PAUSE_BUDGET_SQL = """
+SELECT *
+FROM ingest.pause_bluesky_jetstream_job_v1(
     p_job_id => %(job_id)s::uuid,
     p_worker_id => %(worker_id)s,
     p_lease_generation => %(lease_generation)s::bigint,
@@ -580,6 +631,253 @@ class PostgresJobRepository:
         if not rows:
             raise LeaseLostError(job_id)
         return job_from_row(rows[0])
+
+
+class BlueskyPostgresJobRepository:
+    """Source-scoped queue adapter for the dedicated Bluesky worker role.
+
+    Every queue lifecycle call below uses a fixed Bluesky-only database
+    wrapper. The worker cannot widen the claim set to another source and the
+    typed completion paths keep cursor persistence and stale-cursor recovery
+    behind the same generation-fenced finalizers used by the collector.
+    """
+
+    def __init__(self, executor: QueryExecutor) -> None:
+        self._executor = executor
+
+    @staticmethod
+    def _lease_seconds(lease_for: timedelta) -> int:
+        lease_seconds = int(lease_for.total_seconds())
+        if lease_for != timedelta(seconds=lease_seconds) or not 1 <= lease_seconds <= 86_400:
+            raise ValueError("lease_for must be a whole number of seconds between 1 and 86400")
+        return lease_seconds
+
+    def claim_bluesky_jetstream_jobs(
+        self,
+        worker_id: str,
+        *,
+        now: datetime,
+        lease_for: timedelta,
+    ) -> Job | None:
+        del now
+        rows = self._executor.query(
+            BLUESKY_CLAIM_SQL,
+            {
+                "worker_id": worker_id,
+                "lease_seconds": self._lease_seconds(lease_for),
+            },
+        )
+        return job_from_row(rows[0]) if rows else None
+
+    def heartbeat_bluesky_jetstream_job(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        lease_for: timedelta,
+    ) -> Job:
+        del now
+        rows = self._executor.query(
+            BLUESKY_HEARTBEAT_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+                "lease_seconds": self._lease_seconds(lease_for),
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        return job_from_row(rows[0])
+
+    def complete_bluesky_jetstream_job(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        effect: CompletionEffect
+        | PublicStudyCompletion
+        | TCGdexSetsSyncCompletion
+        | YouTubeDiscoveryCompletion
+        | BlueskyJetstreamCompletion
+        | BlueskyCursorRecoveryCompletion
+        | NostrRelayCompletion
+        | MastodonPublicHashtagCompletion
+        | None = None,
+    ) -> Job:
+        del now
+        params: dict[str, object] = {
+            "job_id": job_id,
+            "worker_id": worker_id,
+            "lease_generation": lease_generation,
+        }
+        if isinstance(effect, BlueskyJetstreamCompletion):
+            sql = FINALIZE_BLUESKY_JETSTREAM_SQL
+            params["result"] = json.dumps(
+                effect.as_payload(), separators=(",", ":"), sort_keys=True
+            )
+        elif isinstance(effect, BlueskyCursorRecoveryCompletion):
+            sql = RECOVER_BLUESKY_CURSOR_TOO_OLD_SQL
+            params["start_cursor"] = effect.start_cursor
+        else:
+            raise ValueError(
+                "Bluesky jobs require a BlueskyJetstreamCompletion or "
+                "BlueskyCursorRecoveryCompletion effect"
+            )
+        rows = self._executor.query(sql, params)
+        if not rows:
+            raise LeaseLostError(job_id)
+        return job_from_row(rows[0])
+
+    def pause_bluesky_jetstream_job(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        retry_at: datetime,
+    ) -> Job:
+        del now
+        rows = self._executor.query(
+            BLUESKY_PAUSE_BUDGET_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+                "retry_at": retry_at,
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        return job_from_row(rows[0])
+
+    def fail_bluesky_jetstream_job(
+        self,
+        job_id: str,
+        error: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        error_code: str = "job_failed",
+        retryable: bool = True,
+    ) -> Job:
+        del now
+        rows = self._executor.query(
+            BLUESKY_FAIL_SQL,
+            {
+                "job_id": job_id,
+                "worker_id": worker_id,
+                "lease_generation": lease_generation,
+                "error_code": error_code[:160],
+                "error_message": error[:8_000],
+                "retryable": retryable,
+            },
+        )
+        if not rows:
+            raise LeaseLostError(job_id)
+        return job_from_row(rows[0])
+
+    def lease(
+        self,
+        worker_id: str,
+        *,
+        now: datetime,
+        lease_for: timedelta,
+        kinds: set[str] | None = None,
+    ) -> Job | None:
+        if kinds is not None and kinds != {BLUESKY_JOB_TYPE}:
+            raise ValueError("Bluesky workers may claim only source.bluesky.jetstream jobs")
+        return self.claim_bluesky_jetstream_jobs(
+            worker_id,
+            now=now,
+            lease_for=lease_for,
+        )
+
+    def heartbeat(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        lease_for: timedelta,
+    ) -> Job:
+        return self.heartbeat_bluesky_jetstream_job(
+            job_id,
+            worker_id=worker_id,
+            lease_generation=lease_generation,
+            now=now,
+            lease_for=lease_for,
+        )
+
+    def complete(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        effect: CompletionEffect
+        | PublicStudyCompletion
+        | TCGdexSetsSyncCompletion
+        | YouTubeDiscoveryCompletion
+        | BlueskyJetstreamCompletion
+        | BlueskyCursorRecoveryCompletion
+        | NostrRelayCompletion
+        | MastodonPublicHashtagCompletion
+        | None = None,
+    ) -> Job:
+        return self.complete_bluesky_jetstream_job(
+            job_id,
+            worker_id=worker_id,
+            lease_generation=lease_generation,
+            now=now,
+            effect=effect,
+        )
+
+    def pause_for_budget(
+        self,
+        job_id: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        retry_at: datetime,
+    ) -> Job:
+        return self.pause_bluesky_jetstream_job(
+            job_id,
+            worker_id=worker_id,
+            lease_generation=lease_generation,
+            now=now,
+            retry_at=retry_at,
+        )
+
+    def fail(
+        self,
+        job_id: str,
+        error: str,
+        *,
+        worker_id: str,
+        lease_generation: int,
+        now: datetime,
+        error_code: str = "job_failed",
+        retryable: bool = True,
+    ) -> Job:
+        return self.fail_bluesky_jetstream_job(
+            job_id,
+            error,
+            worker_id=worker_id,
+            lease_generation=lease_generation,
+            now=now,
+            error_code=error_code,
+            retryable=retryable,
+        )
 
 
 class NostrPostgresJobRepository:
