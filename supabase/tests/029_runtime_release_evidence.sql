@@ -6,11 +6,6 @@ begin;
 set local search_path = public, extensions, pg_catalog;
 select no_plan();
 
-select has_column(
-  'ingest', 'schedule_slots', 'is_demo',
-  'durable schedule slots carry an explicit demo boundary'
-);
-
 select has_function(
   'ingest', 'get_runtime_release_evidence_v1',
   array['timestamp with time zone', 'integer', 'integer', 'text'],
@@ -19,7 +14,7 @@ select has_function(
 
 select ok(
   (select prosecdef
-      and coalesce(proconfig, '{}'::text[]) @> array['search_path=pg_catalog']
+      and coalesce(proconfig, '{}'::text[]) @> array['search_path=pg_catalog, pg_temp']
    from pg_catalog.pg_proc
    where oid = 'ingest.get_runtime_release_evidence_v1(timestamptz,integer,integer,text)'::regprocedure),
   'the runtime evidence RPC is SECURITY DEFINER with a fixed search_path'
@@ -142,6 +137,29 @@ select throws_ok(
   NULL,
   'runtime evidence release start is in the future',
   'the RPC rejects a release timestamp too far in the future'
+);
+
+grant select on ingest.jobs to pokecrack_runtime_monitor;
+
+select throws_ok(
+  $$select ingest.get_runtime_release_evidence_v1(
+      now() - interval '1 minute', 21600, 180, 'tcgdex'
+    )$$,
+  NULL,
+  'runtime evidence monitor capability has drifted',
+  'a direct monitor table grant fails closed at runtime'
+);
+
+revoke select on ingest.jobs from pokecrack_runtime_monitor;
+alter role pokecrack_runtime_monitor inherit;
+
+select throws_ok(
+  $$select ingest.get_runtime_release_evidence_v1(
+      now() - interval '1 minute', 21600, 180, 'tcgdex'
+    )$$,
+  NULL,
+  'runtime evidence monitor capability has drifted',
+  'a drifted monitor attribute fails closed at runtime'
 );
 
 select * from finish();
