@@ -101,7 +101,7 @@ jobs:
         run: |
           case "$START_CATEGORY" in
             started) exit 0 ;;
-            docker_unavailable|image_pull|port_conflict|health_check|startup_timeout|cli_install|unknown)
+            docker_unavailable|image_pull|port_conflict|health_check|bootstrap_migration|startup_timeout|cli_install|unknown)
               exit 1
               ;;
             *)

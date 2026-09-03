@@ -24,7 +24,11 @@ if npx --yes supabase@2.116.0 start --exclude "$database_only_excludes" >"$log_f
 fi
 
 category="unknown"
-if grep -Eiq 'cannot connect to the docker daemon|docker daemon is not running|is the docker daemon running' "$log_file"; then
+if grep -Eiq 'applying migration|sqlstate|at statement:' "$log_file"; then
+  # Supabase applies local migrations during `start`; this must win over an
+  # earlier, transient image-pull warning in the same sealed CLI log.
+  category="bootstrap_migration"
+elif grep -Eiq 'cannot connect to the docker daemon|docker daemon is not running|is the docker daemon running' "$log_file"; then
   category="docker_unavailable"
 elif grep -Eiq 'failed to pull|pull access denied|manifest unknown|unable to find image' "$log_file"; then
   category="image_pull"
