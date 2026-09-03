@@ -27,6 +27,12 @@ select ok(
 );
 
 select is(
+  ingest.bluesky_worker_runtime_ready_v1(),
+  true,
+  'the dedicated Bluesky runtime readiness function compiles and accepts the reviewed endpoint contract'
+);
+
+select is(
   jsonb_typeof(ingest.get_runtime_release_evidence_v1(
     now() - interval '1 minute', 21600, 180, 'tcgdex-bluesky'
   )),

@@ -552,6 +552,23 @@ class IngestMigrationContractTests(unittest.TestCase):
             11,
             "all Bluesky worker SECURITY DEFINER functions use pg_temp explicitly",
         )
+        runtime_ready = lowered.split(
+            "create or replace function ingest.bluesky_worker_runtime_ready_v1()",
+            1,
+        )[1].split("$function$;", 1)[0]
+        runtime_ready_compact = " ".join(runtime_ready.split())
+        self.assertIn(
+            "policies.id, expected.base_url as expected_base_url,",
+            runtime_ready_compact,
+        )
+        self.assertIn(
+            "checkpoints.endpoint = policy.expected_base_url",
+            runtime_ready_compact,
+        )
+        self.assertNotIn(
+            "checkpoints.endpoint = policy.base_url",
+            runtime_ready_compact,
+        )
         self.assertIn("worker_id !~ '^bluesky-collector-", lowered)
         self.assertIn("from ingest.enqueue_scheduled_job_v1(", lowered)
         self.assertIn("'source.bluesky.jetstream'", lowered)

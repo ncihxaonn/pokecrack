@@ -186,6 +186,7 @@ with expected_policy as (
 policy_contract as (
   select
     policies.id,
+    expected.base_url as expected_base_url,
     policies.source_key = expected.source_key
       and policies.display_name = expected.display_name
       and policies.source_kind = expected.source_kind
@@ -216,7 +217,7 @@ checkpoint_contract as (
   select
     policy.id is not null
       and checkpoints.source_policy_id = policy.id
-      and checkpoints.endpoint = policy.base_url
+      and checkpoints.endpoint = policy.expected_base_url
       and checkpoints.protocol = 'xrpc.v1.json'
       and checkpoints.collection = 'app.bsky.feed.post'
       and (
