@@ -15,8 +15,14 @@ on:
         options:
           - tcgdex
           - tcgdex-nostr
+          - tcgdex-bluesky
       retire_nostr:
         description: Explicitly retire the managed Nostr container (tcgdex only)
+        required: true
+        default: false
+        type: boolean
+      retire_bluesky:
+        description: Explicitly retire the managed Bluesky container (tcgdex only)
         required: true
         default: false
         type: boolean
@@ -37,12 +43,14 @@ jobs:
       REQUESTED_SHA: ${{ inputs.confirm_sha }}
       REQUESTED_SERVICE_SET: ${{ inputs.service_set }}
       REQUESTED_RETIRE_NOSTR: ${{ inputs.retire_nostr }}
+      REQUESTED_RETIRE_BLUESKY: ${{ inputs.retire_bluesky }}
       VPS_HOST: ${{ vars.VPS_HOST }}
       VPS_USER: ${{ vars.VPS_USER }}
       VPS_PORT: ${{ vars.VPS_PORT || '22' }}
       VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH }}
       VPS_ENV_FILE: ${{ vars.VPS_ENV_FILE || '/etc/pokecrack/production.env' }}
       VPS_NOSTR_ENV_FILE: ${{ vars.VPS_NOSTR_ENV_FILE || '/etc/pokecrack/nostr.env' }}
+      VPS_BLUESKY_ENV_FILE: ${{ vars.VPS_BLUESKY_ENV_FILE || '/etc/pokecrack/bluesky.env' }}
       SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
       SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
     steps:
@@ -57,11 +65,15 @@ jobs:
               exit 1
             }
             case "$REQUESTED_SERVICE_SET" in
-              tcgdex|tcgdex-nostr) ;;
+              tcgdex|tcgdex-nostr|tcgdex-bluesky) ;;
               *) printf 'unsupported service_set\n' >&2; exit 1 ;;
             esac
             [[ "$REQUESTED_RETIRE_NOSTR" == true || "$REQUESTED_RETIRE_NOSTR" == false ]]
+            [[ "$REQUESTED_RETIRE_BLUESKY" == true || "$REQUESTED_RETIRE_BLUESKY" == false ]]
             if [[ "$REQUESTED_RETIRE_NOSTR" == true ]]; then
+              [[ "$REQUESTED_SERVICE_SET" == tcgdex ]]
+            fi
+            if [[ "$REQUESTED_RETIRE_BLUESKY" == true ]]; then
               [[ "$REQUESTED_SERVICE_SET" == tcgdex ]]
             fi
           fi
@@ -75,6 +87,7 @@ jobs:
           [[ "$VPS_DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_DEPLOY_PATH" != *'..'* ]]
           [[ "$VPS_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_ENV_FILE" != *'..'* ]]
           [[ "$VPS_NOSTR_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_NOSTR_ENV_FILE" != *'..'* ]]
+          [[ "$VPS_BLUESKY_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_BLUESKY_ENV_FILE" != *'..'* ]]
           [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]]
           install -d -m 0700 "$HOME/.ssh"
           install -m 0600 /dev/null "$HOME/.ssh/id_ed25519"
@@ -85,10 +98,11 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          printf -v remote_command 'bash -s -- %q %q %q %q %q %q' \
+          printf -v remote_command 'bash -s -- %q %q %q %q %q %q %q %q' \
             "$GITHUB_SHA" "$VPS_DEPLOY_PATH" "$VPS_ENV_FILE" \
-            "$VPS_NOSTR_ENV_FILE" "$REQUESTED_SERVICE_SET" \
-            "$REQUESTED_RETIRE_NOSTR"
+            "$VPS_NOSTR_ENV_FILE" "$VPS_BLUESKY_ENV_FILE" \
+            "$REQUESTED_SERVICE_SET" "$REQUESTED_RETIRE_NOSTR" \
+            "$REQUESTED_RETIRE_BLUESKY"
           ssh -i "$HOME/.ssh/id_ed25519" \
             -p "$VPS_PORT" \
             -o BatchMode=yes \
@@ -100,15 +114,21 @@ jobs:
           repository=$2
           env_file=$3
           nostr_env_file=$4
-          service_set=$5
-          retire_nostr=$6
+          bluesky_env_file=$5
+          service_set=$6
+          retire_nostr=$7
+          retire_bluesky=$8
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
           case "$service_set" in
-            tcgdex|tcgdex-nostr) ;;
+            tcgdex|tcgdex-nostr|tcgdex-bluesky) ;;
             *) exit 2 ;;
           esac
           [[ "$retire_nostr" == true || "$retire_nostr" == false ]]
+          [[ "$retire_bluesky" == true || "$retire_bluesky" == false ]]
           if [[ "$retire_nostr" == true ]]; then
+            [[ "$service_set" == tcgdex ]]
+          fi
+          if [[ "$retire_bluesky" == true ]]; then
             [[ "$service_set" == tcgdex ]]
           fi
           [[ -d "$repository/.git" ]]
@@ -127,9 +147,14 @@ jobs:
           )
           if [[ "$service_set" == tcgdex-nostr ]]; then
             deploy_args+=(--nostr-env-file "$nostr_env_file")
+          elif [[ "$service_set" == tcgdex-bluesky ]]; then
+            deploy_args+=(--bluesky-env-file "$bluesky_env_file")
           fi
           if [[ "$retire_nostr" == true ]]; then
             deploy_args+=(--retire-nostr)
+          fi
+          if [[ "$retire_bluesky" == true ]]; then
+            deploy_args+=(--retire-bluesky)
           fi
           "$repository/deploy/scripts/deploy.sh" "$sha" "${deploy_args[@]}"
           actual=$(git -C "$repository" rev-parse --verify HEAD)

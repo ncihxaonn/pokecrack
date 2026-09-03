@@ -15,7 +15,7 @@ from pokecrack_worker.jobs import LeaseLostError, QueryExecutor
 
 BEGIN_BLUESKY_JETSTREAM_SQL = """
 SELECT *
-FROM ingest.begin_bluesky_jetstream_job(
+FROM ingest.begin_bluesky_jetstream_job_v1(
     job_id => %(job_id)s::uuid,
     worker_id => %(worker_id)s,
     lease_generation => %(lease_generation)s::bigint
