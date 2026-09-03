@@ -75,7 +75,11 @@ sudoedit /etc/pokecrack/bluesky.env
 ```
 
 Set `BLUESKY_SUPABASE_DB_URL` to a fresh `NOINHERIT` login whose startup option
-selects only `pokecrack_bluesky_worker`; never put it in `production.env` or
+selects only `pokecrack_bluesky_worker`; it must use secure TLS and a positive
+`connect_timeout` no greater than 60 seconds. The host preflight accepts only
+the exact three assignments in this file, requires a regular non-symlink file
+with mode `0600`, and rejects `service_role`, `SUPABASE_DB_URL`, or unknown
+keys without printing secret values. Never put the DSN in `production.env` or
 reuse a `service_role` URL. The default source and Compose profile remain
 disabled. This repository contains deployment artifacts and verification
 instructions, not evidence of a production-ready Bluesky release.
@@ -125,6 +129,27 @@ deploy/scripts/deploy.sh 0123456789abcdef0123456789abcdef01234567 \
 The shared collector never receives the Nostr flag or worker DSN. The Nostr
 container receives only its dedicated DSN; the separate attestor URL is read by
 the host preflight before build/up and removed from the child environment.
+
+After the Bluesky migration and owner-provisioned login pass their contract,
+deploy the four-service set explicitly. The script validates the exact env
+file, runs the boolean-only hosted attestation before any replacement, and
+records the exact service list in the success marker once the runtime-release
+evidence verifier has an explicit `tcgdex-bluesky` implementation and declares
+the exact `RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky` capability sentinel:
+
+```bash
+deploy/scripts/deploy.sh 0123456789abcdef0123456789abcdef01234567 \
+  --env-file /etc/pokecrack/production.env \
+  --bluesky-env-file /etc/pokecrack/bluesky.env \
+  --service-set tcgdex-bluesky
+```
+
+The default `tcgdex` set remains unchanged. Existing `bluesky-collector`
+containers are rejected unless the explicit `--retire-bluesky` operation is
+selected on a `tcgdex` deployment; the script never uses `--remove-orphans`.
+Until that runtime verifier integration lands, the `tcgdex-bluesky` command is
+deliberately rejected before Compose or service replacement; a comment or
+unrelated service-set string cannot unlock it.
 
 Bluesky is an independent opt-in profile. Before enabling it, apply and verify
 the forward migration, provision the dedicated `NOLOGIN` capability plus a

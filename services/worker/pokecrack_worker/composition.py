@@ -9,6 +9,7 @@ AI and general URL collection remain unavailable.
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -1503,6 +1504,8 @@ _NOSTR_DATABASE_SSL_MODES = frozenset({"require", "verify-ca", "verify-full"})
 _BLUESKY_DATABASE_ROLE = "pokecrack_bluesky_worker"
 _BLUESKY_DATABASE_LOGIN = "pokecrack_bluesky_worker_login"
 _BLUESKY_DATABASE_SSL_MODES = _NOSTR_DATABASE_SSL_MODES
+_BLUESKY_DATABASE_CONNECT_TIMEOUT = re.compile(r"^[1-9][0-9]*$")
+_BLUESKY_DATABASE_MAX_CONNECT_TIMEOUT_SECONDS = 60
 
 
 def _dsn_with_fixed_nostr_role(dsn: str) -> str:
@@ -1676,6 +1679,18 @@ def _dsn_with_fixed_bluesky_role(dsn: str) -> str:
         raise LiveCompositionError(
             "bluesky_database_url_invalid",
             "BLUESKY_SUPABASE_DB_URL requires sslmode=require or stronger",
+        )
+    connect_timeout = query_values.get("connect_timeout")
+    if (
+        connect_timeout is None
+        or _BLUESKY_DATABASE_CONNECT_TIMEOUT.fullmatch(connect_timeout) is None
+        or len(connect_timeout)
+        > len(str(_BLUESKY_DATABASE_MAX_CONNECT_TIMEOUT_SECONDS))
+        or int(connect_timeout) > _BLUESKY_DATABASE_MAX_CONNECT_TIMEOUT_SECONDS
+    ):
+        raise LiveCompositionError(
+            "bluesky_database_url_invalid",
+            "BLUESKY_SUPABASE_DB_URL requires a positive bounded connect_timeout",
         )
     existing_options = [value for key, value in query if key == "options"]
     if existing_options and existing_options != [fixed_option]:

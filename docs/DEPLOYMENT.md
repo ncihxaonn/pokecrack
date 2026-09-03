@@ -74,6 +74,17 @@ the capability role only the fixed Bluesky enqueue/claim/heartbeat/fail/pause,
 typed begin/finalize/cursor-recovery, health, and read-only policy-snapshot RPCs.
 The generic queue RPCs and direct private activity tables are unavailable to
 that role, and generic `collector`/`scheduler` processes cannot claim Bluesky.
+The host preflight accepts exactly those three environment assignments, rejects
+`service_role`, `SUPABASE_DB_URL`, and every unknown key, and requires the
+dedicated file to be a regular non-symlink with exact mode `0600`. The
+`tcgdex-bluesky` deployment service set runs that preflight before Compose
+validation, build, or service replacement; `tcgdex` remains the default.
+On this branch it is additionally held fail closed until the runtime-release
+evidence verifier has an explicit `tcgdex-bluesky` implementation; a role
+attestation and healthy containers alone cannot create a verified success
+marker. The deploy script requires the executable verifier to declare the
+exact `RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky` capability sentinel before
+the service set can be enabled.
 Verify this with `docker compose --env-file /etc/pokecrack/production.env
 --env-file /etc/pokecrack/bluesky.env -f deploy/compose.prod.yml --profile
 bluesky config --quiet`, then inspect the rendered environments and migration
@@ -86,7 +97,7 @@ Import the private repository and use `apps/web` as the project root. Pin the pr
 
 ## 4. VPS
 
-Use a patched Linux host, dedicated non-root deploy user, SSH keys only, host firewall and Docker Engine/Compose. Clone the private repo to an absolute path; keep config/secrets outside it. Follow `deploy/README.md` to configure the mode-`0600` `/etc/pokecrack/production.env` and backup-marker directory. For Nostr, create a separate mode-`0600` `/etc/pokecrack/nostr.env` from the exact four-key template; do not add either Nostr DSN to the shared production file. Browser profile/noVNC/Bridge preparation is not part of these service sets.
+Use a patched Linux host, dedicated non-root deploy user, SSH keys only, host firewall and Docker Engine/Compose. Clone the private repo to an absolute path; keep config/secrets outside it. Follow `deploy/README.md` to configure the mode-`0600` `/etc/pokecrack/production.env` and backup-marker directory. For Nostr, create a separate mode-`0600` `/etc/pokecrack/nostr.env` from the exact four-key template; for Bluesky, create a separate exact mode-`0600` `/etc/pokecrack/bluesky.env` from the exact three-key template. Do not add either source's DSN to the shared production file. Browser profile/noVNC/Bridge preparation is not part of these service sets.
 
 Deploy an exact commit:
 
@@ -108,6 +119,7 @@ name, and exact services. The GitHub deploy workflow requires the same explicit
 choice and verifies remote `HEAD == GITHUB_SHA`; it never uses `git pull`.
 Protect `worker-production` and configure `VPS_HOST`, `VPS_USER`, `VPS_PORT`,
 `VPS_DEPLOY_PATH`, `VPS_ENV_FILE`, `VPS_NOSTR_ENV_FILE`,
+`VPS_BLUESKY_ENV_FILE`,
 `VPS_SSH_PRIVATE_KEY`, and pinned `VPS_KNOWN_HOSTS`.
 
 For a stronger post-deploy gate than container health, provision the dedicated

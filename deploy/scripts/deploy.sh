@@ -6,6 +6,7 @@ umask 077
 SCRIPT_DIR=$(CDPATH='' cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)
 PORTABILITY_HELPER="$SCRIPT_DIR/../lib/shell_portability.sh"
 NOSTR_PREFLIGHT="$SCRIPT_DIR/../lib/verify_nostr_release.py"
+BLUESKY_PREFLIGHT="$SCRIPT_DIR/../lib/verify_bluesky_release.py"
 RUNTIME_EVIDENCE_VERIFY="$SCRIPT_DIR/verify-runtime-release.sh"
 # shellcheck disable=SC1090
 source "$PORTABILITY_HELPER"
@@ -13,6 +14,7 @@ REPOSITORY_ROOT=$(CDPATH='' cd -- "$SCRIPT_DIR/../.." && pwd -P)
 COMPOSE_FILE="$REPOSITORY_ROOT/deploy/compose.prod.yml"
 ENV_FILE=${POKECRACK_ENV_FILE:-/etc/pokecrack/production.env}
 NOSTR_ENV_FILE=${POKECRACK_NOSTR_ENV_FILE:-}
+BLUESKY_ENV_FILE=${POKECRACK_BLUESKY_ENV_FILE:-}
 STATE_DIR=${POKECRACK_DEPLOY_STATE_DIR:-/var/lib/pokecrack/deploy}
 HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-180}
 RUNTIME_GRACE_SECONDS=${DEPLOY_RUNTIME_GRACE_SECONDS:-21600}
@@ -20,6 +22,7 @@ RUNTIME_EXEC_TIMEOUT_SECONDS=${DEPLOY_RUNTIME_EXEC_TIMEOUT_SECONDS:-60}
 SERVICE_SET=tcgdex
 RETIRE_NOSTR=false
 VERIFY_RUNTIME=false
+RETIRE_BLUESKY=false
 SERVICES=(collector scheduler watchdog)
 SERVICES_CSV=collector,scheduler,watchdog
 EXPECTED_CATALOG_SCHEDULE='0 2,14 * * *'
@@ -57,6 +60,8 @@ rollback_marker() {
           && $services_line == 'services=collector,scheduler,watchdog' ) \
         || ( $service_set_line == 'service_set=tcgdex-nostr' \
           && $services_line == 'services=collector,scheduler,watchdog,nostr-collector' ) \
+        || ( $service_set_line == 'service_set=tcgdex-bluesky' \
+          && $services_line == 'services=collector,scheduler,watchdog,bluesky-collector' ) \
       ) ]]
     then
       printf "Rollback commit: %s (%s; %s)\n" \
@@ -78,13 +83,15 @@ Usage: deploy.sh EXACT_40_CHARACTER_GIT_SHA [options]
 Options:
   --env-file ABSOLUTE_PATH    Compose interpolation file (default: /etc/pokecrack/production.env)
   --nostr-env-file PATH       Dedicated Nostr interpolation/preflight file (tcgdex-nostr only)
+  --bluesky-env-file PATH     Dedicated Bluesky interpolation/preflight file (tcgdex-bluesky only)
   --state-dir ABSOLUTE_PATH   Success-marker directory (default: /var/lib/pokecrack/deploy)
   --health-timeout SECONDS    Health deadline (default: 180)
   --verify-runtime             Run aggregate runtime evidence after health checks
   --runtime-grace-seconds SEC First-run warming-up window (default: 21600)
   --runtime-exec-timeout-seconds SEC Bound each runtime verifier probe (default: 60)
-  --service-set NAME          Exact release service set (tcgdex or tcgdex-nostr)
+  --service-set NAME          Exact release service set (tcgdex, tcgdex-nostr, or tcgdex-bluesky)
   --retire-nostr              Explicitly stop/remove only the managed Nostr container
+  --retire-bluesky            Explicitly stop/remove only the managed Bluesky container
 
 The full service set is intentionally unavailable: ai-worker and aggregator do
 not have safe live handlers in this release.
@@ -98,6 +105,7 @@ while (($#)); do
   case $1 in
     --env-file) (($# >= 2)) || die "--env-file requires a value"; ENV_FILE=$2; shift 2 ;;
     --nostr-env-file) (($# >= 2)) || die "--nostr-env-file requires a value"; NOSTR_ENV_FILE=$2; shift 2 ;;
+    --bluesky-env-file) (($# >= 2)) || die "--bluesky-env-file requires a value"; BLUESKY_ENV_FILE=$2; shift 2 ;;
     --state-dir) (($# >= 2)) || die "--state-dir requires a value"; STATE_DIR=$2; shift 2 ;;
     --health-timeout) (($# >= 2)) || die "--health-timeout requires a value"; HEALTH_TIMEOUT=$2; shift 2 ;;
     --verify-runtime) VERIFY_RUNTIME=true; shift ;;
@@ -105,6 +113,7 @@ while (($#)); do
     --runtime-exec-timeout-seconds) (($# >= 2)) || die "--runtime-exec-timeout-seconds requires a value"; RUNTIME_EXEC_TIMEOUT_SECONDS=$2; shift 2 ;;
     --service-set) (($# >= 2)) || die "--service-set requires a value"; SERVICE_SET=$2; shift 2 ;;
     --retire-nostr) RETIRE_NOSTR=true; shift ;;
+    --retire-bluesky) RETIRE_BLUESKY=true; shift ;;
     -h|--help) usage; exit 0 ;;
     *) die "unknown argument: $1" ;;
   esac
@@ -124,10 +133,16 @@ case $SERVICE_SET in
   tcgdex)
     [[ -z $NOSTR_ENV_FILE ]] || \
       die "the tcgdex service set does not accept a Nostr environment file"
+    [[ -z $BLUESKY_ENV_FILE ]] || \
+      die "the tcgdex service set does not accept a Bluesky environment file"
     ;;
   tcgdex-nostr)
     [[ $RETIRE_NOSTR == false ]] || \
       die "tcgdex-nostr cannot be combined with --retire-nostr"
+    [[ $RETIRE_BLUESKY == false ]] || \
+      die "tcgdex-nostr cannot be combined with --retire-bluesky"
+    [[ -z $BLUESKY_ENV_FILE ]] || \
+      die "the tcgdex-nostr service set does not accept a Bluesky environment file"
     SERVICES=(collector scheduler watchdog nostr-collector)
     SERVICES_CSV=collector,scheduler,watchdog,nostr-collector
     [[ -n $NOSTR_ENV_FILE && $NOSTR_ENV_FILE == /* ]] || \
@@ -139,11 +154,45 @@ case $SERVICE_SET in
     [[ -f $NOSTR_PREFLIGHT && ! -L $NOSTR_PREFLIGHT ]] || \
       die "Nostr release preflight is missing"
     ;;
+  tcgdex-bluesky)
+    # This branch is intentionally held behind the runtime-release-evidence
+    # integration. A role/health preflight alone must never create a success
+    # marker while the runtime verifier still knows only the older service set.
+    [[ -x $RUNTIME_EVIDENCE_VERIFY && ! -L $RUNTIME_EVIDENCE_VERIFY ]] || \
+      die "tcgdex-bluesky remains gated until runtime release evidence support is integrated"
+    runtime_verifier_supports_bluesky=false
+    while IFS= read -r runtime_verifier_line || [[ -n $runtime_verifier_line ]]; do
+      case $runtime_verifier_line in
+        RUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky)
+          runtime_verifier_supports_bluesky=true
+          break
+          ;;
+      esac
+    done < "$RUNTIME_EVIDENCE_VERIFY"
+    [[ $runtime_verifier_supports_bluesky == true ]] || \
+      die "tcgdex-bluesky remains gated until runtime verifier service-set support is integrated"
+    [[ $RETIRE_NOSTR == false ]] || \
+      die "tcgdex-bluesky cannot be combined with --retire-nostr"
+    [[ $RETIRE_BLUESKY == false ]] || \
+      die "tcgdex-bluesky cannot be combined with --retire-bluesky"
+    [[ -z $NOSTR_ENV_FILE ]] || \
+      die "the tcgdex-bluesky service set does not accept a Nostr environment file"
+    SERVICES=(collector scheduler watchdog bluesky-collector)
+    SERVICES_CSV=collector,scheduler,watchdog,bluesky-collector
+    [[ -n $BLUESKY_ENV_FILE && $BLUESKY_ENV_FILE == /* ]] || \
+      die "tcgdex-bluesky requires an absolute Bluesky environment file path"
+    [[ -f $BLUESKY_ENV_FILE && ! -L $BLUESKY_ENV_FILE ]] || \
+      die "Bluesky environment file must be a regular, non-symlink file"
+    [[ ! $ENV_FILE -ef $BLUESKY_ENV_FILE ]] || \
+      die "Bluesky environment file must be distinct from the production environment file"
+    [[ -f $BLUESKY_PREFLIGHT && ! -L $BLUESKY_PREFLIGHT ]] || \
+      die "Bluesky release preflight is missing"
+    ;;
   full) die "full service set is unavailable because ai-worker and aggregator fail closed in live mode" ;;
-  *) die "unsupported service set: $SERVICE_SET (allowed: tcgdex, tcgdex-nostr)" ;;
+  *) die "unsupported service set: $SERVICE_SET (allowed: tcgdex, tcgdex-nostr, tcgdex-bluesky)" ;;
 esac
 
-for command in date docker git install mktemp python3 stat; do
+for command in date docker env git install mktemp python3 stat; do
   command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
 done
 
@@ -159,6 +208,12 @@ if [[ $SERVICE_SET == tcgdex-nostr ]]; then
   nostr_env_permissions=$((8#$nostr_env_mode))
   (( (nostr_env_permissions & 0077) == 0 )) || \
     die "Nostr environment file must not be accessible by group or other users (use mode 0600)"
+fi
+if [[ $SERVICE_SET == tcgdex-bluesky ]]; then
+  bluesky_env_mode=$(pokecrack_stat_mode "$BLUESKY_ENV_FILE") || \
+    die "could not validate Bluesky environment file permissions"
+  [[ $bluesky_env_mode == 600 ]] || \
+    die "Bluesky environment file must have exact mode 0600"
 fi
 
 validate_catalog_schedule_override() {
@@ -228,6 +283,13 @@ if [[ $SERVICE_SET == tcgdex-nostr ]]; then
   python3 "$NOSTR_PREFLIGHT" \
     --env-file "$NOSTR_ENV_FILE" --require-enabled || \
     die "Nostr hosted contract preflight failed; existing services were left unchanged"
+elif [[ $SERVICE_SET == tcgdex-bluesky ]]; then
+  compose=(env "POKECRACK_BLUESKY_ENV_FILE=$BLUESKY_ENV_FILE" docker compose --project-name pokecrack \
+    --env-file "$ENV_FILE" --env-file "$BLUESKY_ENV_FILE" \
+    --profile bluesky -f "$COMPOSE_FILE")
+  python3 "$BLUESKY_PREFLIGHT" \
+    --env-file "$BLUESKY_ENV_FILE" --require-enabled || \
+    die "Bluesky hosted contract preflight failed; existing services were left unchanged"
 fi
 
 docker compose version >/dev/null
@@ -237,6 +299,7 @@ existing_services=$(docker ps --all \
   --format '{{.ID}}|{{.Label "com.docker.compose.service"}}') || \
   die "could not enumerate existing Pokecrack project containers"
 nostr_container_present=false
+bluesky_container_present=false
 while IFS='|' read -r existing_id existing_service extra_field; do
   [[ -n $existing_id ]] || continue
   [[ -n $existing_service && -z $extra_field ]] || \
@@ -252,6 +315,15 @@ while IFS='|' read -r existing_id existing_service extra_field; do
         die "Nostr collector exists but is excluded; repeat with explicit --retire-nostr"
       fi
       ;;
+    bluesky-collector)
+      if [[ $SERVICE_SET == tcgdex-bluesky ]]; then
+        :
+      elif [[ $RETIRE_BLUESKY == true ]]; then
+        bluesky_container_present=true
+      else
+        die "Bluesky collector exists but is excluded; repeat with explicit --retire-bluesky"
+      fi
+      ;;
     *) die \
       "unapproved service container exists: $existing_service; retire it through a separately approved operation" ;;
   esac
@@ -261,6 +333,12 @@ if [[ $nostr_container_present == true ]]; then
     die "could not stop the explicitly retired Nostr collector"
   "${compose[@]}" rm --force --stop nostr-collector || \
     die "could not remove the explicitly retired Nostr collector"
+fi
+if [[ $bluesky_container_present == true ]]; then
+  "${compose[@]}" stop bluesky-collector || \
+    die "could not stop the explicitly retired Bluesky collector"
+  "${compose[@]}" rm --force --stop bluesky-collector || \
+    die "could not remove the explicitly retired Bluesky collector"
 fi
 "${compose[@]}" build --pull "${SERVICES[@]}"
 "${compose[@]}" config --quiet

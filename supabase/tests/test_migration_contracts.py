@@ -82,6 +82,9 @@ BLUESKY_WORKER_ISOLATION = (
 BLUESKY_GENERIC_QUEUE_GUARD = (
     ROOT / "migrations/20260926000000_bluesky_generic_queue_guard.sql"
 ).read_text()
+BLUESKY_ROLE_DEPLOY_HARDENING = (
+    ROOT / "migrations/20260927000000_bluesky_role_and_deploy_hardening.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -596,6 +599,92 @@ class IngestMigrationContractTests(unittest.TestCase):
         ):
             self.assertIn(fragment, lowered)
         self.assertNotIn("revoke all on table", compact)
+
+    def test_bluesky_role_and_deploy_hardening_is_forward_only_and_drift_checked(
+        self,
+    ) -> None:
+        migration = BLUESKY_ROLE_DEPLOY_HARDENING
+        lowered = migration.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn(
+            "create role pokecrack_bluesky_worker nologin noinherit nosuperuser",
+            compact,
+        )
+        self.assertNotRegex(
+            compact,
+            r"create\s+role\s+pokecrack_bluesky_worker_login\b",
+        )
+        self.assertNotRegex(
+            compact,
+            r"alter\s+role\s+pokecrack_bluesky_worker_login\b",
+        )
+        self.assertNotRegex(
+            compact,
+            r"(?:create|alter)\s+role\s+[^;]*\bpassword\b",
+        )
+        self.assertIn(
+            "create or replace function ingest.verify_bluesky_release_v1()",
+            compact,
+        )
+        self.assertIn("verify_bluesky_release_v1:", DATABASE_TYPES)
+
+        attestation = lowered.split(
+            "create or replace function ingest.verify_bluesky_release_v1()", 1
+        )[1].split("alter function ingest.verify_bluesky_release_v1()", 1)[0]
+        for contract_key in (
+            "postgresql17",
+            "ledger_210",
+            "ledger_260",
+            "ledger_270",
+            "bluesky_worker_role_exact",
+            "bluesky_policy_exact",
+            "bluesky_acl_exact",
+        ):
+            self.assertIn(f"'{contract_key}'", attestation)
+        self.assertIn("returns jsonb", attestation)
+        self.assertIn("stable", attestation)
+        self.assertIn("security definer", attestation)
+        self.assertIn("set search_path = pg_catalog, pg_temp", attestation)
+        self.assertIn("jsonb_build_object", attestation)
+        self.assertIn("pg_catalog.pg_roles", attestation)
+        self.assertIn("rolconfig", attestation)
+        self.assertIn("pg_catalog.pg_auth_members", attestation)
+        self.assertIn("memberships.inherit_option", attestation)
+        self.assertIn("memberships.set_option", attestation)
+        self.assertIn("memberships.admin_option", attestation)
+        self.assertIn("pokecrack_bluesky_worker_login", attestation)
+        self.assertIn("memberships.member = 'postgres'::regrole", attestation)
+        self.assertIn("pg_catalog.pg_db_role_setting", attestation)
+        self.assertIn("owned_catalog_objects", attestation)
+        self.assertIn("pg_catalog.pg_default_acl", attestation)
+        self.assertIn("pg_catalog.pg_extension", attestation)
+        self.assertIn("aclexplode", attestation)
+        self.assertIn("ingest_column_acl_grants", attestation)
+        self.assertIn("bluesky_relation_acl_grants", attestation)
+        self.assertIn("bluesky_column_acl_grants", attestation)
+        self.assertIn("bluesky_sequence_acl_grants", attestation)
+        self.assertIn("worker_function_acl_grants", attestation)
+        self.assertIn("pg_has_role", attestation)
+        self.assertIn("has_sequence_privilege", attestation)
+        self.assertIn("has_any_column_privilege", attestation)
+        self.assertIn("functions.prosecdef", attestation)
+        self.assertIn("functions.proconfig", attestation)
+        self.assertIn("grants.is_grantable", attestation)
+        self.assertIn("'maintain'", attestation)
+        self.assertIn("source.bluesky.jetstream", lowered)
+        self.assertIn("stream_window_seconds", attestation)
+        self.assertIn("20260927000000", attestation)
+        self.assertIn(
+            "grant execute on function ingest.verify_bluesky_release_v1() to pokecrack_bluesky_worker",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function ingest.verify_bluesky_release_v1() to service_role",
+            compact,
+        )
+        self.assertNotIn("create role pokecrack_bluesky_worker_login", compact)
 
     def test_mastodon_public_hashtag_is_fixed_private_hashed_and_public_safe(self) -> None:
         historical = MASTODON_PUBLIC_HASHTAG

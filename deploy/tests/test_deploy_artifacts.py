@@ -53,6 +53,18 @@ def load_nostr_preflight_module():
     return module
 
 
+def load_bluesky_preflight_module():
+    database_url_module = load_database_url_module()
+    sys.modules["run_with_database_url"] = database_url_module
+    module_path = DEPLOY_ROOT / "lib" / "verify_bluesky_release.py"
+    spec = importlib.util.spec_from_file_location("verify_bluesky_release", module_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def write_executable(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
@@ -146,15 +158,21 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("service_set:", workflow)
         self.assertIn("- tcgdex", workflow)
         self.assertIn("- tcgdex-nostr", workflow)
+        self.assertIn("- tcgdex-bluesky", workflow)
         self.assertIn("retire_nostr:", workflow)
+        self.assertIn("retire_bluesky:", workflow)
         self.assertIn("REQUESTED_SHA: ${{ inputs.confirm_sha }}", workflow)
         self.assertIn("REQUESTED_SERVICE_SET: ${{ inputs.service_set }}", workflow)
         self.assertIn("REQUESTED_RETIRE_NOSTR: ${{ inputs.retire_nostr }}", workflow)
+        self.assertIn("REQUESTED_RETIRE_BLUESKY: ${{ inputs.retire_bluesky }}", workflow)
         self.assertIn('[[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]]', workflow)
         self.assertIn("tcgdex|tcgdex-nostr", workflow)
         self.assertIn("VPS_NOSTR_ENV_FILE:", workflow)
+        self.assertIn("VPS_BLUESKY_ENV_FILE:", workflow)
         self.assertIn('--nostr-env-file "$nostr_env_file"', workflow)
+        self.assertIn('--bluesky-env-file "$bluesky_env_file"', workflow)
         self.assertIn("deploy_args+=(--retire-nostr)", workflow)
+        self.assertIn("deploy_args+=(--retire-bluesky)", workflow)
         self.assertIn('--service-set "$service_set"', workflow)
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
         self.assertNotIn('[[ "${{ inputs.service_set }}"', workflow)
@@ -780,6 +798,142 @@ class NostrPreflightTests(unittest.TestCase):
             env_file.chmod(0o600)
             with self.assertRaises(preflight.NostrPreflightError):
                 preflight.run(type("Arguments", (), {"env_file": env_file})())
+
+
+class BlueskyPreflightTests(unittest.TestCase):
+    @staticmethod
+    def write_enabled_env(path: Path, database_url: str) -> None:
+        path.write_text(
+            "DATA_MODE=live\n"
+            "BLUESKY_COLLECTION_ENABLED=true\n"
+            f"BLUESKY_SUPABASE_DB_URL={database_url}\n",
+            encoding="utf-8",
+        )
+        path.chmod(0o600)
+
+    def test_disabled_bluesky_is_a_successful_noop_without_psql(self) -> None:
+        preflight = load_bluesky_preflight_module()
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            env_file = Path(temporary) / "bluesky.env"
+            env_file.write_text(
+                "DATA_MODE=live\nBLUESKY_COLLECTION_ENABLED=false\n",
+                encoding="utf-8",
+            )
+            env_file.chmod(0o600)
+            self.assertEqual(
+                preflight.run(type("Arguments", (), {"env_file": env_file})()), 0
+            )
+            with self.assertRaisesRegex(
+                preflight.BlueskyPreflightError,
+                "requires BLUESKY_COLLECTION_ENABLED=true",
+            ):
+                preflight.run(
+                    type(
+                        "Arguments",
+                        (),
+                        {"env_file": env_file, "require_enabled": True},
+                    )()
+                )
+
+    def test_bluesky_environment_is_exact_and_requires_mode_0600(self) -> None:
+        preflight = load_bluesky_preflight_module()
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            env_file = base / "bluesky.env"
+            self.write_enabled_env(
+                env_file,
+                "postgresql://pokecrack_bluesky_worker_login:secret@"
+                "db.example.invalid/pokecrack?sslmode=require&connect_timeout=15&"
+                "options=-c%20role%3Dpokecrack_bluesky_worker",
+            )
+            env_file.chmod(0o640)
+            with self.assertRaisesRegex(preflight.BlueskyPreflightError, "0600"):
+                preflight.run(type("Arguments", (), {"env_file": env_file})())
+
+            env_file.chmod(0o600)
+            env_file.write_text(
+                env_file.read_text(encoding="utf-8")
+                + "SUPABASE_DB_URL=service-role-secret\n",
+                encoding="utf-8",
+            )
+            with self.assertRaisesRegex(
+                preflight.BlueskyPreflightError,
+                "only the exact release variables",
+            ):
+                preflight.run(type("Arguments", (), {"env_file": env_file})())
+
+    def test_enabled_bluesky_requires_dedicated_role_timeout_and_tls(self) -> None:
+        preflight = load_bluesky_preflight_module()
+        base = (
+            "postgresql://pokecrack_bluesky_worker_login:secret@"
+            "db.example.invalid/pokecrack?"
+        )
+        for suffix in (
+            "sslmode=require&connect_timeout=15",
+            "sslmode=require&connect_timeout=0",
+            "sslmode=require&connect_timeout=61",
+            "sslmode=require&connect_timeout=999999999999999999999999999999999999999999",
+            "sslmode=prefer&connect_timeout=15",
+            "sslmode=require&connect_timeout=15&options=-c%20role%3Dservice_role",
+            "sslmode=require&connect_timeout=15&options=-c%20role%3Dpokecrack_bluesky_worker%20-c%20statement_timeout%3D0",
+        ):
+            with self.subTest(suffix=suffix), tempfile.TemporaryDirectory(
+                dir=DEPLOY_ROOT / "tests"
+            ) as temporary:
+                env_file = Path(temporary) / "bluesky.env"
+                self.write_enabled_env(env_file, base + suffix)
+                with self.assertRaises(preflight.BlueskyPreflightError):
+                    preflight.run(type("Arguments", (), {"env_file": env_file})())
+
+    def test_bluesky_contract_is_boolean_only_and_never_inherits_secret_urls(self) -> None:
+        preflight = load_bluesky_preflight_module()
+        database_url = (
+            "postgresql://pokecrack_bluesky_worker_login:fixture-secret@"
+            "db.example.invalid/pokecrack?sslmode=require&connect_timeout=15&"
+            "options=-c%20role%3Dpokecrack_bluesky_worker"
+        )
+        expected = {key: True for key in preflight.REQUIRED_CONTRACT_KEYS}
+        captured: dict[str, object] = {}
+
+        def fake_run(command: list[str], **kwargs: object):
+            captured["command"] = command
+            captured["environment"] = kwargs["env"]
+            return type(
+                "Result",
+                (),
+                {"returncode": 0, "stdout": json.dumps(expected) + "\n"},
+            )()
+
+        original_run = preflight.subprocess.run
+        inherited_url = os.environ.get("BLUESKY_SUPABASE_DB_URL")
+        os.environ["BLUESKY_SUPABASE_DB_URL"] = "must-not-reach-psql"
+        preflight.subprocess.run = fake_run
+        try:
+            self.assertEqual(
+                preflight._psql_contract(
+                    preflight._validated_target(database_url),
+                    psql_path="/fixture/psql",
+                ),
+                expected,
+            )
+        finally:
+            preflight.subprocess.run = original_run
+            if inherited_url is None:
+                os.environ.pop("BLUESKY_SUPABASE_DB_URL", None)
+            else:
+                os.environ["BLUESKY_SUPABASE_DB_URL"] = inherited_url
+
+        environment = captured["environment"]
+        self.assertIsInstance(environment, dict)
+        self.assertEqual(environment["PGUSER"], preflight.WORKER_LOGIN)
+        self.assertEqual(environment["PGOPTIONS"], preflight.WORKER_ROLE_OPTION)
+        self.assertEqual(environment["PGCONNECT_TIMEOUT"], "15")
+        self.assertNotIn("BLUESKY_SUPABASE_DB_URL", environment)
+        self.assertNotIn("SUPABASE_DB_URL", environment)
+        self.assertNotIn("fixture-secret", preflight.CONTRACT_QUERY)
+        self.assertIn("ingest.verify_bluesky_release_v1", preflight.CONTRACT_QUERY)
+        self.assertIn("session_user = 'pokecrack_bluesky_worker_login'", preflight.CONTRACT_QUERY)
+        self.assertIn("current_user = 'pokecrack_bluesky_worker'", preflight.CONTRACT_QUERY)
 
 
 class BackupScriptTests(unittest.TestCase):
@@ -2073,11 +2227,23 @@ AbCdEfGhI_1\t{policy}
 
 class DeployAndRollbackScriptTests(unittest.TestCase):
     @staticmethod
-    def deployment_manifest(sha: str, *, nostr: bool = False) -> str:
-        service_set = "tcgdex-nostr" if nostr else "tcgdex"
+    def deployment_manifest(
+        sha: str, *, nostr: bool = False, bluesky: bool = False
+    ) -> str:
+        if nostr and bluesky:
+            raise ValueError("fixture service sets are mutually exclusive")
+        service_set = (
+            "tcgdex-nostr"
+            if nostr
+            else "tcgdex-bluesky"
+            if bluesky
+            else "tcgdex"
+        )
         services = (
             "collector,scheduler,watchdog,nostr-collector"
             if nostr
+            else "collector,scheduler,watchdog,bluesky-collector"
+            if bluesky
             else "collector,scheduler,watchdog"
         )
         return (
@@ -2104,7 +2270,22 @@ class DeployAndRollbackScriptTests(unittest.TestCase):
         )
         path.chmod(0o600)
 
-    def setUpRepository(self, base: Path) -> tuple[Path, str]:
+    @staticmethod
+    def write_bluesky_env(path: Path) -> None:
+        path.write_text(
+            "DATA_MODE=live\n"
+            "BLUESKY_COLLECTION_ENABLED=true\n"
+            "BLUESKY_SUPABASE_DB_URL="
+            "postgresql://pokecrack_bluesky_worker_login:worker-secret@"
+            "db.example.invalid/pokecrack?sslmode=require&connect_timeout=15&"
+            "options=-c%20role%3Dpokecrack_bluesky_worker\n",
+            encoding="utf-8",
+        )
+        path.chmod(0o600)
+
+    def setUpRepository(
+        self, base: Path, *, runtime_verifier_support: bool = False
+    ) -> tuple[Path, str]:
         repository = base / "repository"
         deploy = repository / "deploy"
         scripts = deploy / "scripts"
@@ -2116,7 +2297,11 @@ class DeployAndRollbackScriptTests(unittest.TestCase):
             DEPLOY_ROOT / "lib" / "shell_portability.sh",
             library / "shell_portability.sh",
         )
-        for name in ("run_with_database_url.py", "verify_nostr_release.py"):
+        for name in (
+            "run_with_database_url.py",
+            "verify_nostr_release.py",
+            "verify_bluesky_release.py",
+        ):
             shutil.copy2(DEPLOY_ROOT / "lib" / name, library / name)
         for name in ("deploy.sh", "rollback.sh"):
             shutil.copy2(DEPLOY_ROOT / "scripts" / name, scripts / name)
@@ -2130,6 +2315,11 @@ class DeployAndRollbackScriptTests(unittest.TestCase):
             ["git", "config", "user.name", "Deploy test"], cwd=repository, check=True
         )
         (repository / "tracked.txt").write_text("fixture\n", encoding="utf-8")
+        if runtime_verifier_support:
+            write_executable(
+                scripts / "verify-runtime-release.sh",
+                "#!/usr/bin/env bash\nRUNTIME_EVIDENCE_SERVICE_SET=tcgdex-bluesky\nexit 0\n",
+            )
         subprocess.run(["git", "add", "."], cwd=repository, check=True)
         subprocess.run(
             ["git", "commit", "-q", "-m", "fixture"], cwd=repository, check=True
@@ -2446,6 +2636,136 @@ exit 97
             )
             self.assertNotIn("worker-secret", result.stdout + result.stderr)
             self.assertNotIn("attestor-secret", result.stdout + result.stderr)
+
+    def test_bluesky_service_set_uses_two_env_files_and_marks_four_healthy_services(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base, runtime_verifier_support=True)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            bluesky_env_file = base / "bluesky.env"
+            self.write_bluesky_env(bluesky_env_file)
+            contract = json.dumps(
+                {
+                    key: True
+                    for key in load_bluesky_preflight_module().REQUIRED_CONTRACT_KEYS
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            )
+            write_executable(
+                fake_bin / "psql",
+                "#!/usr/bin/env bash\n" + f"printf '%s\\n' '{contract}'\n",
+            )
+            state_dir = base / "state"
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--bluesky-env-file",
+                    str(bluesky_env_file),
+                    "--state-dir",
+                    str(state_dir),
+                    "--health-timeout",
+                    "2",
+                    "--service-set",
+                    "tcgdex-bluesky",
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(
+                (state_dir / "last-successful-deployment").read_text(),
+                self.deployment_manifest(sha, bluesky=True),
+            )
+            invocations = docker_log.read_text(encoding="utf-8").splitlines()
+            build = next(line for line in invocations if " build " in f" {line} ")
+            up = next(line for line in invocations if " up " in f" {line} ")
+            self.assertIn("--profile bluesky", build)
+            self.assertIn(
+                "build --pull collector scheduler watchdog bluesky-collector", build
+            )
+            self.assertIn(
+                "up --detach collector scheduler watchdog bluesky-collector", up
+            )
+            self.assertNotIn("worker-secret", result.stdout + result.stderr)
+
+    def test_bluesky_contract_failure_happens_before_any_service_replacement(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base, runtime_verifier_support=True)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            bluesky_env_file = base / "bluesky.env"
+            self.write_bluesky_env(bluesky_env_file)
+            write_executable(fake_bin / "psql", "#!/usr/bin/env bash\nexit 17\n")
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--bluesky-env-file",
+                    str(bluesky_env_file),
+                    "--service-set",
+                    "tcgdex-bluesky",
+                    "--state-dir",
+                    str(base / "state"),
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("existing services were left unchanged", result.stderr)
+            self.assertNotIn("worker-secret", result.stdout + result.stderr)
+            self.assertFalse((base / "state" / "last-successful-deployment").exists())
+            if docker_log.exists():
+                invocations = docker_log.read_text(encoding="utf-8")
+                self.assertNotIn(" build ", f" {invocations} ")
+                self.assertNotIn(" up ", f" {invocations} ")
+
+    def test_bluesky_service_set_stays_gated_without_runtime_verifier_support(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            bluesky_env_file = base / "bluesky.env"
+            self.write_bluesky_env(bluesky_env_file)
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--bluesky-env-file",
+                    str(bluesky_env_file),
+                    "--service-set",
+                    "tcgdex-bluesky",
+                    "--state-dir",
+                    str(base / "state"),
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("remains gated until runtime release evidence support is integrated", result.stderr)
+            self.assertFalse(docker_log.exists())
+            self.assertFalse((base / "state").exists())
 
     def test_failed_health_does_not_write_success_marker(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
@@ -2959,7 +3279,7 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
                 ["--env-file", str(DEPLOY_ROOT / "env" / "nostr.env.example")]
             )
         if enable_bluesky:
-            environment["BLUESKY_ENV_FILE"] = str(
+            environment["POKECRACK_BLUESKY_ENV_FILE"] = str(
                 DEPLOY_ROOT / "env" / "bluesky.env.example"
             )
             command.extend(

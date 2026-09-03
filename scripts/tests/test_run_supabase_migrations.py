@@ -145,6 +145,7 @@ commit;
             "20260910000000_nostr_worker_role_isolation.sql",
             "20260921000000_bluesky_worker_role_isolation.sql",
             "20260926000000_bluesky_generic_queue_guard.sql",
+            "20260927000000_bluesky_role_and_deploy_hardening.sql",
         ):
             with self.subTest(migration=migration_name):
                 source = Path("supabase/migrations", migration_name).read_text()
