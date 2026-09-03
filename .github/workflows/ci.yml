@@ -100,12 +100,20 @@ jobs:
           START_CATEGORY: ${{ steps.local-supabase-start.outputs.category }}
           START_MIGRATION_FILE: ${{ steps.local-supabase-start.outputs.migration_file }}
           START_SQLSTATE: ${{ steps.local-supabase-start.outputs.sqlstate }}
+          START_BOOTSTRAP_REASON: ${{ steps.local-supabase-start.outputs.bootstrap_reason }}
         run: |
           case "$START_CATEGORY" in
             started) exit 0 ;;
             bootstrap_migration)
-              printf 'Safe Supabase bootstrap migration metadata: migration=%s SQLSTATE=%s\n' \
-                "$START_MIGRATION_FILE" "$START_SQLSTATE"
+              case "$START_BOOTSTRAP_REASON" in
+                runtime_evidence_prerequisites|runtime_evidence_security_header|runtime_evidence_integration_points|runtime_evidence_replacement|unknown) ;;
+                *)
+                  printf 'Safe Supabase bootstrap migration reason was not recognised.\n'
+                  exit 1
+                  ;;
+              esac
+              printf 'Safe Supabase bootstrap migration metadata: migration=%s SQLSTATE=%s reason=%s\n' \
+                "$START_MIGRATION_FILE" "$START_SQLSTATE" "$START_BOOTSTRAP_REASON"
               exit 1
               ;;
             docker_unavailable|image_pull|port_conflict|health_check|startup_timeout|cli_install|unknown)
