@@ -72,11 +72,15 @@ $old$;
 begin
 $new$;
   old_monitor_transition constant text := $old$
+      raise exception 'runtime evidence monitor login has direct application grants';
+    end if;
   end if;
 
   with expected(worker_type) as (
 $old$;
   new_monitor_transition constant text := $new$
+      raise exception 'runtime evidence monitor login has direct application grants';
+    end if;
   end if;
 
   if p_service_set = 'tcgdex-bluesky' then
