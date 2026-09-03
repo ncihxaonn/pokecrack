@@ -6,6 +6,15 @@
 
 Before compression, the plain dump passes through a fail-closed retention sanitizer. It accepts only coherent migration states: the pre-YouTube schema has neither the exact policy nor the cache table; the post-YouTube schema has both the exact policy and exactly one supported `CREATE UNLOGGED TABLE ingest.youtube_discoveries`; the optional post-public-study state additionally has all five reviewed source policies plus one regular `ingest.public_study_observations` ledger; the Bluesky state requires its exact policy plus all three regular private tables; and the Nostr state introduced by migration `20260906000000` requires exactly three reviewed relay policies plus all three regular private tables (`ingest.nostr_relay_candidates`, `ingest.nostr_relay_observations`, and `ingest.nostr_relay_checkpoints`). In those final states, retained checkpoints must be non-demo rows bound to their exact preflight policy, relay key, endpoint, protocol, and canonical non-negative counters (one row per relay for Nostr). The public-study ledger's PostgreSQL column/type inventory, check-constraint inventory, exact `COPY` column order, reviewed study identities, source-policy binding, UUIDs, UTC timestamps, facts, versions, and SHA-256 evidence hashes are all validated before any dump byte is emitted. Any extra column (including raw HTML), unexpected study, escaped text, or row/schema drift fails closed. YouTube cache rows and all Bluesky/Nostr candidate and observation rows are removed while their schemas remain available from the dump; Bluesky and Nostr checkpoints are retained so a restore cannot silently replay an unbounded stream. Nostr candidate/observation data—including raw content, public keys, signatures, and event IDs—is never retained in a logical backup. The regular `ingest.source_request_gates` schema must appear exactly once with the exact PostgreSQL 17 columns, checks, primary key, forced/enabled RLS, and zero row-level security policies. `pg_dump` excludes that table's data plus all disposable Bluesky/Nostr activity rows; the sanitizer independently rejects any gate or private-activity `COPY`/`INSERT`, then inserts only the canonical TCGdex, YouTube, Bluesky, three Nostr relay, and five reviewed public-study source keys with null lease ownership immediately before the dump enables RLS. This prevents a restored database from inheriting a live or stale collector lock and does not require a restore role with `BYPASSRLS` for those canonical rows.
 
+When the reviewed global aggregate-cohort bridge is present, its three private
+analytics tables are an all-or-nothing retained bundle: explicit independent
+source domains, authorized-source bindings, and cross-ledger admissions. The
+preflight accepts either all three regular persistent relations or none; the
+sanitizer validates their exact DDL/COPY/index shapes, hashes, immutable
+references, and cross-table closure before retaining any row. A partial or
+malformed bridge dump produces no backup output. The bridge never retains raw
+authorization material, source identity, evidence, or social activity payloads.
+
 The current schema still grants PostgreSQL 17 `MAINTAIN` on the gate table to `service_role`, and the retention preflight continues to attest that legacy contract. The scoped owner-capable `pg_dump` no longer relies on the worker role to lock that table and does not require any broader `service_role` grant. Because `MAINTAIN` can perform table-maintenance operations, removing the compatibility grant and introducing a dedicated `NOINHERIT` backup login/role remains a separate forward-migration task; do not expand the worker credential to solve backup access.
 
 A partial state, logged/temporary/duplicate/unsupported target definition, any request-gate policy, missing/duplicate TCGdex policy, or preflight/dump mismatch fails before any output byte is produced. Generic `ingest.source_items` rows are not selected or removed. Provider authentication, object-storage, Realtime, extension, and platform migration data are outside the exact schema include list; only the Pokecrack application migration ledger is retained. The raw snapshot is spooled only to an unlinked mode-`0600` temporary file. Role-switched `psql` sessions independently validate the live state without putting the database URL in arguments; the dump mapping remains authoritative and any malformed policy, table, COPY/INSERT shape or command failure aborts the backup without advancing the success marker. Consequently, managed logical backups cannot extend the YouTube API cache beyond its 28-day database lifecycle or retain Nostr activity beyond its 30-day database lifecycle, and they never retain request-gate lease state.
@@ -14,6 +23,21 @@ Provider-managed automatic backups and point-in-time recovery are outside this
 filter. Revalidate their actual retention for the exact Supabase plan before
 enabling YouTube, Bluesky, or Nostr collection; keep each feature off if any
 retained snapshot could outlive its source-data retention boundary.
+
+## Bluesky isolated-lane enablement gate
+
+Bluesky remains disabled unless the forward worker-isolation migration has been
+applied and its fixed role/RPC/table ACL contract has been checked on the
+intended database. Use a separate mode-`0600` `/etc/pokecrack/bluesky.env`
+containing only the dedicated worker DSN and opt-in flag; never copy that DSN
+into `production.env` or use `service_role`. Before any service replacement,
+verify a backup/PITR retention window that does not outlive the 30-day private
+activity retention, complete an isolated restore drill, render the Compose
+`bluesky` profile, and confirm the generic collector/scheduler remain disabled.
+The retained logical backup strips Bluesky candidate/observation rows while
+preserving the durable checkpoint, so a restore cannot silently replay an
+unbounded Jetstream window. These checks are operational prerequisites, not
+evidence that this repository is production-ready.
 
 ## Nostr backup/PITR enablement gate
 
@@ -87,6 +111,17 @@ deploy/scripts/backup.sh
 ```
 
 Alert on nonzero exit, stale/missing marker, unexpected size change and low disk. A success marker proves local dump validation, not off-site durability or restorability.
+
+The watchdog-mounted `.last-successful-backup` marker is also included in the
+optional `deploy/scripts/verify-runtime-release.sh` check as an age-only
+aggregate. A fresh marker can support release evidence; a stale or malformed
+marker fails the verifier. The default backup directory and marker remain
+owner-only (`0700`/`0600`), so UID `10001` cannot read them; missing,
+unsupported, or unreadable marker evidence is `inconclusive` and exits `2`,
+including during first-run grace. Provision any marker-only read mount through
+a separately reviewed, narrow ownership/group contract rather than broadening
+backup confidentiality. The verifier never prints the backup filename or
+database URL.
 
 ## Off-site and profile policy
 

@@ -48,6 +48,11 @@ const registrySources = [
     lastCollectedAt: collectedAt,
     url: "https://comicbook.com/gaming/feature/pokemon-tcg-perfect-order-pull-rates-ex-illustration-rares-estimates",
     note: "Reviewed 55-pack public study attributed to the United States.",
+    coverage: {
+      packsObserved: 55,
+      countriesObserved: 1,
+      completeOpenings: 1,
+    },
   },
   {
     id: "wargamer_chaos_rising_study",
@@ -106,7 +111,12 @@ function validRegistryCoveragePayload() {
         updatedAt: collectedAt,
       },
     ],
-    sources: registrySources,
+    sources: registrySources.map((source) => ({
+      ...source,
+      ...("coverage" in source && source.coverage !== undefined
+        ? { coverage: { ...source.coverage } }
+        : {}),
+    })),
   };
 }
 
@@ -201,6 +211,37 @@ describe("reviewed public-study coverage merge", () => {
         expect.objectContaining({ id: "tcgtalk_perfect_order_study" }),
       ]),
     );
+    expect(
+      parsed.sources.find((source) => source.id === "comicbook_perfect_order_study")
+        ?.coverage,
+    ).toEqual({
+      packsObserved: 55,
+      countriesObserved: 1,
+      completeOpenings: 1,
+    });
+  });
+
+  it("accepts only complete public source coverage and rejects rate-like fields", () => {
+    const payload = validRegistryCoveragePayload();
+    const parsed = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(DEMO_PUBLIC_DATA, payload),
+    );
+    expect(
+      parsed.sources.find((source) => source.id === "comicbook_perfect_order_study")
+        ?.coverage?.packsObserved,
+    ).toBe(55);
+
+    const unsafe = validRegistryCoveragePayload();
+    unsafe.sources[0] = {
+      ...unsafe.sources[0]!,
+      coverage: {
+        packsObserved: 55,
+        countriesObserved: 1,
+        completeOpenings: 1,
+        hitRate: 0.02,
+      },
+    } as unknown as typeof unsafe.sources[number];
+    expect(mergePublicStudyCoverage(DEMO_PUBLIC_DATA, unsafe)).toBe(DEMO_PUBLIC_DATA);
   });
 
   it("allows an exact reviewed source identity to replace its legacy source health row", () => {

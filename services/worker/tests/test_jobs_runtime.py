@@ -752,6 +752,24 @@ def test_psycopg_query_executor_commits_and_returns_mapping_rows() -> None:
 
     assert rows == ({"id": "job-1"},)
     assert "commit" in events
+    assert (
+        "SELECT pg_catalog.set_config('statement_timeout', %s, true)",
+        ("30000",),
+    ) in events
+
+
+@pytest.mark.parametrize(
+    "kwargs",
+    (
+        {"statement_timeout_seconds": 0.0},
+        {"statement_timeout_seconds": 121.0},
+    ),
+)
+def test_psycopg_query_executor_rejects_unbounded_statement_timeouts(
+    kwargs: dict[str, float],
+) -> None:
+    with pytest.raises(ValueError):
+        PsycopgQueryExecutor(lambda: object(), **kwargs)
 
 
 def test_postgres_enqueue_is_atomic_and_respects_active_dedupe_constraint() -> None:

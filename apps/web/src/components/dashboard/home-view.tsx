@@ -9,6 +9,7 @@ import type { PublicDashboardData } from "@/data/types";
 import { formatDate, formatDateTime, formatProbability } from "@/lib/format";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { LiveDiscoveryPulse } from "./live-discovery-pulse";
+import { ReviewedEvidenceSources } from "./reviewed-evidence-sources";
 import { WorldHeatmap } from "./world-heatmap";
 import { DataModeNotice, MetricDisclaimer, Panel, SectionHeading, SignalBadge, TableFrame } from "@/components/ui/dashboard-ui";
 
@@ -66,6 +67,7 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
         observations={data.observations}
         initialMetric={worldMetric}
       />
+      <ReviewedEvidenceSources sources={data.sources} />
       <LiveDiscoveryPulse pulse={data.socialActivityPulse} sources={data.sources} />
 
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">

@@ -87,6 +87,28 @@ inference gate, so observed-rate, baseline, posterior, interval, delta, and
 numerator fields remain private or null in the public response. Counts may be
 shown only as verified coverage, never as a rate.
 
+## Authorized opening review and aggregate admission
+
+An accepted authorized-opening submission is not automatically a statistical
+input. Before it can enter a private aggregate cohort, an owner must record an
+immutable binding from the opaque authorized-source identity to one explicitly
+declared independent source domain, then admit the exact accepted observation
+through a separate immutable admission record. An authorized admission's
+canonical opening fingerprint must equal its immutable private provenance HMAC;
+the same collision namespace is reserved for reviewed public studies. A source
+identity mapped to conflicting independent domains fails closed rather than
+counting toward source diversity.
+
+The cohort resolver is evaluated **as of** a timestamp: it includes only an
+admitted observation whose authorization was valid when accepted, whose catalog
+and denominator contract still match, and which had not been retracted by that
+time. Retraction excludes the observation from later cohorts without mutating
+the accepted evidence needed to reproduce an earlier one. This bridge is a
+private input contract only; it does not calculate a posterior, publish a rate,
+or colour the country map. Bluesky, Nostr, Mastodon, YouTube, and other social
+discovery records remain discovery-only unless separately reviewed as complete
+opening evidence under this contract.
+
 ## Reproducibility
 
 Each result must retain configuration/catalog/methodology version, eligibility filters, observation window, counts, source diversity, prior/baseline identity and build SHA. Method changes create a new aggregate version; they do not silently rewrite the meaning of old screenshots/exports.
