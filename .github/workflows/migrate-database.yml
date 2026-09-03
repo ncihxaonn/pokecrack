@@ -70,10 +70,10 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
-          npx --yes supabase@2.115.0 start
-          npx --yes supabase@2.115.0 db reset
+          npx --yes supabase@2.116.0 start
+          npx --yes supabase@2.116.0 db reset
           install -d -m 0700 generated-types
-          npx --yes supabase@2.115.0 gen types typescript --local \
+          npx --yes supabase@2.116.0 gen types typescript --local \
             --schema public,catalog,ingest,analytics \
             > generated-types/database.generated.ts
           test -s generated-types/database.generated.ts
@@ -89,7 +89,7 @@ jobs:
           retention-days: 7
       - name: Stop local Supabase validation stack
         if: always()
-        run: npx --yes supabase@2.115.0 stop --no-backup
+        run: npx --yes supabase@2.116.0 stop --no-backup
       - name: Preview forward-only migrations through the Management API
         shell: bash
         env:
