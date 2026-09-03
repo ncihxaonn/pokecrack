@@ -53,7 +53,7 @@ Every persistent collector has its own transactional database boundary. Cleanup 
 3. Metadata/excerpts are normalized and deduplicated according to each source's exact contract. YouTube retains only the video identity, canonical URL, title, publication timestamp, and lifecycle fields; video, audio, captions, thumbnails, descriptions, query/rank associations, channel data, and derived classifications are not retained.
 4. Deterministic bounds and catalog checks precede any AI call.
 5. Independent extraction and validation must agree; one escalation can break a tie. Remaining conflict or low confidence is rejected.
-6. Only accepted, complete, nonduplicate tier A/B openings with a verified positive pack denominator and an eligible geography contribute to statistics.
+6. Only accepted, complete, nonduplicate tier A/B openings with a verified positive pack denominator and an eligible geography may be considered for statistics. Authorized submissions additionally require an immutable owner-reviewed source-domain binding and aggregate admission; ambiguity fails closed.
 7. Public v1 aggregation publishes only the reviewed Australia/English statistical slice. Global activity metadata stays private.
 8. Aggregation produces public-safe summaries; private URLs, payloads, prompts, author hashes, sessions, and worker state stay outside the browser surface.
 
@@ -62,6 +62,10 @@ Every persistent collector has its own transactional database boundary. Cleanup 
 - Browser code receives only publishable Supabase values; service-role and DB credentials are server/VPS only.
 - Private `catalog`, `ingest`, and `analytics` schemas are not browser APIs. Public grants/views are explicit and read-only. The server-only `service_role` may read application tables but mutates them only through audited, bounded RPC contracts.
 - Compose has an internal-only network plus a non-published bridge needed for outbound Internet/Supabase. No service binds a public host interface.
+- Bluesky Jetstream has its own opt-in worker role, database capability, Compose
+  profile/network, fixed source-only queue wrappers, and typed cursor lane. The
+  generic collector and scheduler keep Bluesky disabled; the public activity
+  redaction/eligibility contract is unchanged.
 - Host loopback `6080` is the sole published browser-support port. CDP, raw VNC, OpenCLI daemon, PostgreSQL, and Docker socket are not published/mounted.
 - Browser profiles/cookies live only in a mode-`0700` VPS volume and are account credentials, not project data.
 - The logical database backup stream strips all data rows from the dedicated
@@ -70,6 +74,9 @@ Every persistent collector has its own transactional database boundary. Cleanup 
   data, rejects any gate row that still appears, and restores only canonical
   idle gate keys. The sanitizer also uniquely verifies the cache's
   `CREATE UNLOGGED TABLE` and regular gate-table headers inside that same dump.
+  The optional aggregate-admission bridge is retained only as a coherent
+  three-table immutable bundle; partial, malformed, or unlinked rows abort the
+  backup.
   Provider-managed snapshot retention must be revalidated separately before the
   feature is enabled.
 

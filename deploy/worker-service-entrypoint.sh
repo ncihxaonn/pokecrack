@@ -11,7 +11,7 @@ fail() {
 role=$1
 
 case $role in
-  collector|nostr-collector|ai-worker|watchdog)
+  collector|nostr-collector|bluesky-collector|ai-worker|watchdog)
     command=(pokecrack-worker worker --forever)
     interval=${WORKER_POLL_SECONDS:-10}
     ;;

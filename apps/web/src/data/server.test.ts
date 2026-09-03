@@ -113,6 +113,38 @@ const v4SocialPayload = {
     },
   ],
 } as const;
+const v2CoveragePayload = {
+  schemaVersion: "2.0.0",
+  period: DEMO_PUBLIC_DATA.observations.period,
+  countries: [
+    {
+      countryCode: "BR",
+      countryName: "Brazil",
+      packsObserved: 91,
+      openings: 2,
+      independentSources: 2,
+      updatedAt: "2026-08-30T10:45:00Z",
+    },
+  ],
+  sets: [],
+  sources: [
+    {
+      id: "comicbook_perfect_order_study",
+      name: "ComicBook Perfect Order study",
+      kind: "community",
+      access: "public",
+      status: "operational",
+      lastCollectedAt: "2026-08-30T10:45:00Z",
+      url: "https://comicbook.com/gaming/feature/pokemon-tcg-perfect-order-pull-rates-ex-illustration-rares-estimates",
+      note: "Reviewed 55-pack public study attributed to the United States; its rate remains withheld until the independent-source threshold is met.",
+      coverage: {
+        packsObserved: 55,
+        countriesObserved: 1,
+        completeOpenings: 1,
+      },
+    },
+  ],
+} as const;
 
 describe("public live-data client", () => {
   beforeEach(() => mocks.rpc.mockReset());
@@ -129,12 +161,50 @@ describe("public live-data client", () => {
       .mockResolvedValueOnce({ data: snapshot, error: null })
       .mockRejectedValueOnce(new Error("coverage transport failed"))
       .mockRejectedValueOnce(new Error("social transport failed"))
+      .mockRejectedValueOnce(new Error("coverage fallback transport failed"))
       .mockRejectedValueOnce(new Error("social fallback transport failed"));
 
     await expect(getDashboardData()).resolves.toBe(snapshot);
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
+      "get_public_study_coverage_v2",
+      "get_public_social_discovery_v4",
       "get_public_study_coverage_v1",
+      "get_public_social_discovery_v3",
+    ]);
+  });
+
+  it("merges a valid registry-driven coverage v2 payload before social provenance", async () => {
+    mocks.rpc
+      .mockResolvedValueOnce({ data: DEMO_PUBLIC_DATA, error: null })
+      .mockResolvedValueOnce({ data: v2CoveragePayload, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "social unavailable" } })
+      .mockResolvedValueOnce({ data: null, error: { message: "social fallback unavailable" } });
+
+    const result = await getDashboardData();
+    const merged = result as unknown as typeof DEMO_PUBLIC_DATA;
+
+    expect(merged.mapCells.find((cell) => cell.countryCode === "BR")).toMatchObject({
+      packsObserved: 91,
+      openings: 2,
+      independentSources: 2,
+      hitRate: null,
+    });
+    expect(merged.sources).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "comicbook_perfect_order_study",
+          coverage: {
+            packsObserved: 55,
+            countriesObserved: 1,
+            completeOpenings: 1,
+          },
+        }),
+      ]),
+    );
+    expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
+      "get_public_dashboard_snapshot_v3",
+      "get_public_study_coverage_v2",
       "get_public_social_discovery_v4",
       "get_public_social_discovery_v3",
     ]);
@@ -155,7 +225,7 @@ describe("public live-data client", () => {
     });
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v1",
+      "get_public_study_coverage_v2",
       "get_public_social_discovery_v4",
       "get_public_social_discovery_v3",
     ]);
@@ -183,7 +253,7 @@ describe("public live-data client", () => {
     );
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v1",
+      "get_public_study_coverage_v2",
       "get_public_social_discovery_v4",
       "get_public_social_discovery_v3",
     ]);
@@ -201,7 +271,7 @@ describe("public live-data client", () => {
     await expect(getDashboardData()).resolves.toBe(DEMO_PUBLIC_DATA);
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v1",
+      "get_public_study_coverage_v2",
       "get_public_social_discovery_v4",
     ]);
   });
@@ -210,7 +280,8 @@ describe("public live-data client", () => {
     mocks.rpc
       .mockResolvedValueOnce({ data: DEMO_PUBLIC_DATA, error: null })
       .mockResolvedValueOnce({ data: null, error: { message: "coverage unavailable" } })
-      .mockResolvedValueOnce({ data: v2SocialPayload, error: null });
+      .mockResolvedValueOnce({ data: v2SocialPayload, error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
 
     await expect(getDashboardData()).resolves.toBe(DEMO_PUBLIC_DATA);
   });
@@ -219,7 +290,8 @@ describe("public live-data client", () => {
     mocks.rpc
       .mockResolvedValueOnce({ data: DEMO_PUBLIC_DATA, error: null })
       .mockResolvedValueOnce({ data: null, error: { message: "coverage unavailable" } })
-      .mockResolvedValueOnce({ data: v3SocialPayload, error: null });
+      .mockResolvedValueOnce({ data: v3SocialPayload, error: null })
+      .mockResolvedValueOnce({ data: null, error: null });
 
     const result = await getDashboardData();
     expect(result).not.toBe(DEMO_PUBLIC_DATA);

@@ -7,6 +7,7 @@ import {
   PUBLIC_DASHBOARD_RPC,
   PUBLIC_SOCIAL_DISCOVERY_FALLBACK_RPC,
   PUBLIC_SOCIAL_DISCOVERY_RPC,
+  PUBLIC_STUDY_COVERAGE_FALLBACK_RPC,
   PUBLIC_STUDY_COVERAGE_RPC,
   unwrapRpcSnapshot,
 } from "./rpc";
@@ -52,10 +53,19 @@ export async function getDashboardData() {
     ]);
     if (snapshotResult.status === "rejected") throw snapshotResult.reason;
     const snapshot = unwrapRpcSnapshot(snapshotResult.value);
-    const withCoverage =
+    const coveragePayload =
       coverageResult.status === "fulfilled" && coverageResult.value.error === null
-        ? mergePublicStudyCoverage(snapshot, coverageResult.value.data)
-        : snapshot;
+        ? coverageResult.value.data
+        : await (async () => {
+            try {
+              const fallback = await supabase.rpc(PUBLIC_STUDY_COVERAGE_FALLBACK_RPC);
+              return fallback.error === null ? fallback.data : null;
+            } catch {
+              return null;
+            }
+          })();
+    const withCoverage =
+      coveragePayload === null ? snapshot : mergePublicStudyCoverage(snapshot, coveragePayload);
     if (socialResult.status === "fulfilled" && socialResult.value.error === null) {
       const withPulse = mergePublicSocialDiscovery(withCoverage, socialResult.value.data);
       if (publicSocialDiscoveryV4Schema.safeParse(socialResult.value.data).success) {
