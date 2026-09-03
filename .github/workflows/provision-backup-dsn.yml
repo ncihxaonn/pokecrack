@@ -1,0 +1,357 @@
+name: Provision backup login and DSN
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_sha:
+        description: Exact GITHUB_SHA containing the reviewed provisioning contract
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pokecrack-backup-dsn
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: Production
+    env:
+      CONFIRM_SHA: ${{ inputs.confirm_sha }}
+      SUPABASE_PROJECT_REF: wohnphsxlquhhknuthrj
+      VPS_HOST: ${{ vars.VPS_HOST }}
+      VPS_USER: ${{ vars.VPS_USER }}
+      VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+      VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH }}
+      VPS_ENV_FILE: ${{ vars.VPS_ENV_FILE || '/etc/pokecrack/production.env' }}
+      SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+      SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+
+      - name: Verify exact checkout and protected inputs
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$CONFIRM_SHA" == "$GITHUB_SHA" ]] || {
+            printf 'confirm_sha must equal GITHUB_SHA (%s)\n' "$GITHUB_SHA" >&2
+            exit 1
+          }
+          [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
+          [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$VPS_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
+          [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ "$VPS_DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_DEPLOY_PATH" != *'..'* ]]
+          [[ "$VPS_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_ENV_FILE" != *'..'* ]]
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]]
+
+      - name: Configure pinned SSH identity
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          install -d -m 0700 "$HOME/.ssh"
+          install -m 0600 /dev/null "$HOME/.ssh/id_ed25519"
+          install -m 0600 /dev/null "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+
+      - name: Create backup login through Supabase API and stage its DSN
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          generated_value="$(openssl rand -hex 32)"
+          printf '::add-mask::%s\n' "$generated_value"
+          run_id="$GITHUB_RUN_ID"
+          password_file="/tmp/pokecrack-backup-dsn-password-${run_id}"
+          config_dir="/home/$VPS_USER/.config/pokecrack"
+          pending_file="$config_dir/.supabase-backup-db-url.pending-${run_id}"
+
+          cleanup_remote_password() {
+            ssh -i "$HOME/.ssh/id_ed25519" \
+              -p "$VPS_PORT" \
+              -o BatchMode=yes \
+              -o IdentitiesOnly=yes \
+              -o StrictHostKeyChecking=yes \
+              "$VPS_USER@$VPS_HOST" \
+              "rm -f -- '$password_file'" >/dev/null 2>&1 || true
+          }
+          trap cleanup_remote_password EXIT
+
+          printf -v password_file_command \
+            'umask 077; password_file=%q; [[ ! -e "$password_file" && ! -L "$password_file" ]]; install -m 0600 /dev/null "$password_file"; cat > "$password_file"; chmod 0600 "$password_file"' \
+            "$password_file"
+          printf '%s\n' "$generated_value" \
+            | ssh -i "$HOME/.ssh/id_ed25519" \
+                -p "$VPS_PORT" \
+                -o BatchMode=yes \
+                -o IdentitiesOnly=yes \
+                -o StrictHostKeyChecking=yes \
+                "$VPS_USER@$VPS_HOST" "$password_file_command"
+
+          printf -v stage_command 'bash -s -- %q %q %q' \
+            "$VPS_ENV_FILE" "$pending_file" "$password_file"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "$stage_command" <<'REMOTE'
+          set -Eeuo pipefail
+          env_file=$1
+          pending_file=$2
+          password_file=$3
+          [[ -f "$env_file" && ! -L "$env_file" ]]
+          [[ ! -e "$pending_file" && ! -L "$pending_file" ]]
+          [[ -f "$password_file" && ! -L "$password_file" ]]
+
+          python3 - "$env_file" "$pending_file" "$password_file" <<'PY'
+          from __future__ import annotations
+
+          import os
+          from pathlib import Path
+          import re
+          import sys
+          from urllib.parse import parse_qsl, quote, urlencode, urlsplit, urlunsplit
+
+          try:
+              env_path, pending_path, password_path = map(Path, sys.argv[1:])
+              worker_url = ""
+              for line in env_path.read_text(encoding="utf-8").splitlines():
+                  if line.startswith("SUPABASE_DB_URL="):
+                      worker_url = line.split("=", 1)[1].strip()
+                      break
+              password = password_path.read_text(encoding="utf-8").strip()
+              if not worker_url or re.fullmatch(r"[A-Za-z0-9._~-]{32,128}", password) is None:
+                  raise ValueError
+              parsed = urlsplit(worker_url)
+              if parsed.scheme not in {"postgres", "postgresql"} or parsed.hostname is None:
+                  raise ValueError
+              port = parsed.port or 5432
+              if not 1 <= port <= 65535 or not parsed.path.startswith("/") or parsed.path == "/":
+                  raise ValueError
+              query = [
+                  (key, value)
+                  for key, value in parse_qsl(parsed.query, keep_blank_values=True)
+                  if key not in {"options", "sslmode", "connect_timeout"}
+              ]
+              query.extend((("sslmode", "require"), ("connect_timeout", "10")))
+              host = parsed.hostname
+              host = f"[{host}]" if ":" in host and not host.startswith("[") else host
+              netloc = (
+                  f"pokecrack_backup_login:{quote(password, safe='')}@{host}:{port}"
+              )
+              dsn = urlunsplit((parsed.scheme, netloc, parsed.path, urlencode(query), ""))
+              fd = os.open(pending_path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+              with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                  stream.write(dsn + "\n")
+                  stream.flush()
+                  os.fsync(stream.fileno())
+              os.chmod(pending_path, 0o600)
+          except Exception:
+              print("remote DSN staging failed", file=sys.stderr)
+              raise SystemExit(1)
+          PY
+          REMOTE
+
+          export SUPABASE_BACKUP_DB_PASSWORD=$generated_value
+          python3 scripts/provision_backup_login.py \
+            --project-ref "$SUPABASE_PROJECT_REF"
+          unset SUPABASE_BACKUP_DB_PASSWORD generated_value
+
+      - name: Promote and verify the real backup DSN
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          config_dir="/home/$VPS_USER/.config/pokecrack"
+          pending_file="$config_dir/.supabase-backup-db-url.pending-${GITHUB_RUN_ID}"
+          final_file="$config_dir/supabase-backup-db-url"
+          printf -v promote_command 'bash -s -- %q %q' "$pending_file" "$final_file"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "$promote_command" <<'REMOTE'
+          set -Eeuo pipefail
+          pending_file=$1
+          final_file=$2
+          [[ -f "$pending_file" && ! -L "$pending_file" ]]
+          [[ ! -e "$final_file" && ! -L "$final_file" ]]
+          [[ "$(stat -c '%a' "$pending_file")" == 600 ]]
+          mv -- "$pending_file" "$final_file"
+          chmod 0600 "$final_file"
+          [[ "$(stat -c '%a' "$final_file")" == 600 ]]
+
+          pg_env="$(mktemp /tmp/pokecrack-backup-pg-env.XXXXXXXX)"
+          chmod 0600 "$pg_env"
+          cleanup() {
+            rm -f -- "$pg_env"
+          }
+          trap cleanup EXIT
+          python3 - "$final_file" "$pg_env" <<'PY'
+          from __future__ import annotations
+
+          import os
+          from pathlib import Path
+          import sys
+          from urllib.parse import parse_qsl, unquote, urlsplit
+
+          try:
+              dsn_path, env_path = map(Path, sys.argv[1:])
+              parsed = urlsplit(dsn_path.read_text(encoding="utf-8").strip())
+              if parsed.scheme not in {"postgres", "postgresql"} or parsed.hostname is None:
+                  raise ValueError
+              database = unquote(parsed.path.lstrip("/"))
+              username = unquote(parsed.username or "")
+              password = unquote(parsed.password or "")
+              port = parsed.port or 5432
+              if not database or not username or not password or not 1 <= port <= 65535:
+                  raise ValueError
+              query = dict(parse_qsl(parsed.query, keep_blank_values=True))
+              values = {
+                  "PGDATABASE": database,
+                  "PGHOST": parsed.hostname,
+                  "PGPASSWORD": password,
+                  "PGPORT": str(port),
+                  "PGUSER": username,
+                  "PGSSLMODE": query.get("sslmode", "require"),
+                  "PGCONNECT_TIMEOUT": query.get("connect_timeout", "10"),
+              }
+              fd = os.open(env_path, os.O_WRONLY | os.O_TRUNC, 0o600)
+              with os.fdopen(fd, "w", encoding="utf-8") as stream:
+                  for key, value in values.items():
+                      stream.write(f"{key}={value}\n")
+                  stream.flush()
+                  os.fsync(stream.fileno())
+          except Exception:
+              print("backup DSN verification setup failed", file=sys.stderr)
+              raise SystemExit(1)
+          PY
+
+          probe="$(docker run --rm --network host --env-file "$pg_env" postgres:17 \
+            psql -X -qAt -v ON_ERROR_STOP=1 <<'SQL'
+          select current_user;
+          set role service_role;
+          select current_user || E'\t'
+            || has_table_privilege(current_user, 'ingest.source_request_gates', 'select')::text
+            || E'\t'
+            || has_table_privilege(current_user, 'ingest.source_request_gates', 'maintain')::text;
+          SQL
+          )"
+          [[ "$probe" == $'pokecrack_backup_login\nservice_role\tf\tt' ]] || {
+            printf 'backup login privilege probe failed\n' >&2
+            exit 1
+          }
+
+          docker run --rm --network host --env-file "$pg_env" postgres:17 \
+            pg_dump \
+              --format=plain \
+              --no-owner \
+              --no-privileges \
+              --encoding=UTF8 \
+              --strict-names \
+              --schema=catalog \
+              --schema=ingest \
+              --schema=analytics \
+              --schema=public \
+              --schema=supabase_migrations \
+              --exclude-table-data=ingest.source_request_gates \
+              --exclude-table-data=ingest.bluesky_jetstream_candidates \
+              --exclude-table-data=ingest.bluesky_jetstream_observations \
+              --exclude-table-data=ingest.nostr_relay_candidates \
+              --exclude-table-data=ingest.nostr_relay_observations \
+              --exclude-table-data=ingest.mastodon_public_hashtag_candidates \
+              --exclude-table-data=ingest.mastodon_public_hashtag_observations \
+              >/dev/null
+          printf 'backup login authentication and pg_dump access verified\n'
+          REMOTE
+
+      - name: Run the real retention-sanitized backup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          final_file="/home/$VPS_USER/.config/pokecrack/supabase-backup-db-url"
+          printf -v backup_command 'bash -s -- %q %q %q' \
+            "$VPS_DEPLOY_PATH" "$GITHUB_SHA" "$final_file"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "$backup_command" <<'REMOTE'
+          set -Eeuo pipefail
+          repository=$1
+          sha=$2
+          dsn_file=$3
+          [[ -d "$repository/.git" ]]
+          [[ -f "$dsn_file" && ! -L "$dsn_file" ]]
+          [[ "$(stat -c '%a' "$dsn_file")" == 600 ]]
+          git -C "$repository" diff --quiet --ignore-submodules --
+          git -C "$repository" diff --cached --quiet --ignore-submodules --
+          [[ -z "$(git -C "$repository" status --porcelain --untracked-files=all)" ]]
+          if ! git -C "$repository" cat-file -e "${sha}^{commit}" 2>/dev/null; then
+            git -C "$repository" fetch --no-tags --no-write-fetch-head origin "$sha"
+          fi
+          [[ "$(git -C "$repository" rev-parse --verify "${sha}^{commit}")" == "$sha" ]]
+          git -C "$repository" checkout --detach "$sha"
+
+          wrapper_dir="$(mktemp -d /tmp/pokecrack-pg-tools.XXXXXXXX)"
+          chmod 0700 "$wrapper_dir"
+          cleanup() {
+            rm -f -- "$wrapper_dir/psql" "$wrapper_dir/pg_dump"
+            rmdir -- "$wrapper_dir"
+          }
+          trap cleanup EXIT
+          for command_name in psql pg_dump; do
+            cat > "$wrapper_dir/$command_name" <<'WRAPPER'
+          #!/usr/bin/env bash
+          set -Eeuo pipefail
+          env_file="$(mktemp /tmp/pokecrack-pg-client-env.XXXXXXXX)"
+          chmod 0600 "$env_file"
+          cleanup() {
+            rm -f -- "$env_file"
+          }
+          trap cleanup EXIT
+          for name in PGAPPNAME PGCHANNELBINDING PGCONNECT_TIMEOUT PGDATABASE \
+            PGGSSENCMODE PGHOST PGPASSWORD PGPORT PGREQUIREAUTH PGSSLCERT \
+            PGSSLCRL PGSSLCRLDIR PGSSLKEY PGSSLMODE PGSSLNEGOTIATION \
+            PGSSLROOTCERT PGTARGETSESSIONATTRS PGUSER PGOPTIONS; do
+            if [[ -n "${!name-}" ]]; then
+              printf '%s=%s\n' "$name" "${!name}" >> "$env_file"
+            fi
+          done
+          command_name="$(basename "$0")"
+          if docker run --rm --network host --env-file "$env_file" postgres:17 \
+            "$command_name" "$@"; then
+            status=0
+          else
+            status=$?
+          fi
+          exit "$status"
+          WRAPPER
+            chmod 0700 "$wrapper_dir/$command_name"
+          done
+
+          backup_dir="$(docker volume inspect --format '{{.Mountpoint}}' pokecrack_backups)"
+          [[ "$backup_dir" == /var/lib/docker/volumes/pokecrack_backups/_data ]]
+          PATH="$wrapper_dir:$PATH" \
+            SUPABASE_DB_URL_FILE="$dsn_file" \
+            BACKUP_DIR="$backup_dir" \
+            "$repository/deploy/scripts/backup.sh"
+          REMOTE
+
+      - name: Remove transient SSH key
+        if: always()
+        shell: bash
+        run: rm -f "$HOME/.ssh/id_ed25519"
