@@ -98,10 +98,17 @@ jobs:
         if: always()
         env:
           START_CATEGORY: ${{ steps.local-supabase-start.outputs.category }}
+          START_MIGRATION_FILE: ${{ steps.local-supabase-start.outputs.migration_file }}
+          START_SQLSTATE: ${{ steps.local-supabase-start.outputs.sqlstate }}
         run: |
           case "$START_CATEGORY" in
             started) exit 0 ;;
-            docker_unavailable|image_pull|port_conflict|health_check|bootstrap_migration|startup_timeout|cli_install|unknown)
+            bootstrap_migration)
+              printf 'Safe Supabase bootstrap migration metadata: migration=%s SQLSTATE=%s\n' \
+                "$START_MIGRATION_FILE" "$START_SQLSTATE"
+              exit 1
+              ;;
+            docker_unavailable|image_pull|port_conflict|health_check|startup_timeout|cli_install|unknown)
               exit 1
               ;;
             *)
