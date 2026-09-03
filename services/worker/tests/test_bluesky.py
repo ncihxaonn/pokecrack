@@ -43,6 +43,8 @@ from pokecrack_worker.collectors.official_api.postgres import (
 from pokecrack_worker.composition import (
     BLUESKY_JETSTREAM_JOB_TYPE,
     LIVE_ROLE_DEPENDENCIES_SQL,
+    LiveCompositionError,
+    _dsn_with_fixed_bluesky_role,
     build_live_worker_runtime,
     live_schedule_entries,
 )
@@ -848,6 +850,40 @@ def test_bluesky_repository_uses_only_source_scoped_queue_lifecycle_rpcs() -> No
         )
 
 
+def test_bluesky_dsn_requires_secure_tls_and_a_bounded_connect_timeout() -> None:
+    source = (
+        "postgresql://pokecrack_bluesky_worker_login:fixture-secret@"
+        "bluesky.example.invalid/pokecrack?sslmode=verify-full&connect_timeout=15"
+    )
+    dsn = _dsn_with_fixed_bluesky_role(source)
+
+    assert "sslmode=verify-full" in dsn
+    assert "connect_timeout=15" in dsn
+    assert dsn.count("options=") == 1
+    assert "role%3Dpokecrack_bluesky_worker" in dsn
+
+
+@pytest.mark.parametrize(
+    "query",
+    (
+        "sslmode=require",
+        "sslmode=require&connect_timeout=0",
+        "sslmode=require&connect_timeout=-1",
+        "sslmode=require&connect_timeout=1.5",
+        "sslmode=require&connect_timeout=01",
+        "sslmode=require&connect_timeout=61",
+        "sslmode=prefer&connect_timeout=15",
+    ),
+)
+def test_bluesky_dsn_rejects_missing_or_invalid_timeout_and_transport(query: str) -> None:
+    dsn = (
+        "postgresql://pokecrack_bluesky_worker_login:fixture-secret@"
+        f"bluesky.example.invalid/pokecrack?{query}"
+    )
+    with pytest.raises(LiveCompositionError, match="connect_timeout|sslmode"):
+        _dsn_with_fixed_bluesky_role(dsn)
+
+
 def test_websocket_transport_pins_protocol_query_and_proxy_boundary(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1097,7 +1133,7 @@ def test_live_composition_dedicated_lane_and_queue_only_scheduler() -> None:
         bluesky_collection_enabled=True,
         bluesky_supabase_db_url=(
             "postgresql://pokecrack_bluesky_worker_login:secret@"
-            "db.example.invalid/pokecrack?sslmode=require"
+            "db.example.invalid/pokecrack?sslmode=require&connect_timeout=15"
         ),
     )
     executor = RecordingExecutor(
@@ -1133,7 +1169,7 @@ def test_live_composition_recovers_only_a_nonnull_structured_stale_cursor() -> N
         bluesky_collection_enabled=True,
         bluesky_supabase_db_url=(
             "postgresql://pokecrack_bluesky_worker_login:secret@"
-            "db.example.invalid/pokecrack?sslmode=require"
+            "db.example.invalid/pokecrack?sslmode=require&connect_timeout=15"
         ),
     )
     executor = RecordingExecutor(
@@ -1167,7 +1203,7 @@ def test_live_composition_refuses_to_reset_a_nullable_checkpoint() -> None:
         bluesky_collection_enabled=True,
         bluesky_supabase_db_url=(
             "postgresql://pokecrack_bluesky_worker_login:secret@"
-            "db.example.invalid/pokecrack?sslmode=require"
+            "db.example.invalid/pokecrack?sslmode=require&connect_timeout=15"
         ),
     )
     executor = RecordingExecutor(
@@ -1198,7 +1234,7 @@ def test_bluesky_enablement_keeps_schedule_fixed() -> None:
             worker_role="bluesky-collector",
             bluesky_supabase_db_url=(
                 "postgresql://pokecrack_bluesky_worker_login:secret@"
-                "db.example.invalid/pokecrack?sslmode=require"
+                "db.example.invalid/pokecrack?sslmode=require&connect_timeout=15"
             ),
             schedule_bluesky_collection="*/5 * * * *",
         )

@@ -119,7 +119,7 @@ services:
     # must be provisioned with mode 0600 and contain only the dedicated login
     # DSN plus the opt-in Bluesky settings; see deploy/env/bluesky.env.example.
     env_file:
-      - "${BLUESKY_ENV_FILE:-/etc/pokecrack/bluesky.env}"
+      - "${POKECRACK_BLUESKY_ENV_FILE:-/etc/pokecrack/bluesky.env}"
     networks:
       - internal
       - bluesky-egress

@@ -154,6 +154,59 @@ ingest_column_acl_grants as (
     and columns.attnum > 0
     and not columns.attisdropped
 ),
+bluesky_relations as (
+  select relations.oid, relations.relowner, relations.relacl
+  from pg_catalog.pg_class as relations
+  join pg_catalog.pg_namespace as namespaces
+    on namespaces.oid = relations.relnamespace
+  where namespaces.nspname = 'ingest'
+    and relations.relname in (
+      'bluesky_jetstream_candidates',
+      'bluesky_jetstream_observations',
+      'bluesky_jetstream_checkpoints'
+    )
+),
+bluesky_relation_acl_grants as (
+  select
+    relations.oid,
+    relations.relowner,
+    grants.grantee,
+    grants.privilege_type,
+    grants.is_grantable
+  from bluesky_relations as relations
+  cross join lateral aclexplode(coalesce(
+    relations.relacl,
+    acldefault('r'::"char", relations.relowner)
+  )) as grants
+),
+bluesky_column_acl_grants as (
+  select columns.attrelid as oid, grants.grantee, grants.privilege_type
+  from pg_catalog.pg_attribute as columns
+  cross join lateral aclexplode(columns.attacl) as grants
+  where columns.attrelid in (select oid from bluesky_relations)
+    and columns.attnum > 0
+    and not columns.attisdropped
+),
+bluesky_sequences as (
+  select relations.oid, relations.relowner, relations.relacl
+  from pg_catalog.pg_class as relations
+  where relations.oid = pg_get_serial_sequence(
+    'ingest.bluesky_jetstream_observations', 'id'
+  )::regclass
+),
+bluesky_sequence_acl_grants as (
+  select
+    sequences.oid,
+    sequences.relowner,
+    grants.grantee,
+    grants.privilege_type,
+    grants.is_grantable
+  from bluesky_sequences as sequences
+  cross join lateral aclexplode(coalesce(
+    sequences.relacl,
+    acldefault('s'::"char", sequences.relowner)
+  )) as grants
+),
 owned_catalog_objects(owner_oid) as (
   select namespaces.nspowner from pg_catalog.pg_namespace as namespaces
   union all
@@ -454,10 +507,41 @@ select jsonb_build_object(
       select 1
       from ingest.source_policies as policies
       where policies.source_key = 'bluesky_jetstream'
+        and policies.display_name = 'Bluesky Jetstream discovery'
+        and policies.source_kind = 'official_api'
+        and policies.domain = 'jetstream.us-west.bsky.network'
+        and policies.base_url =
+          'wss://jetstream.us-west.bsky.network/xrpc/network.bsky.jetstream.subscribeEvents'
         and policies.enabled
         and policies.collector_type = 'bluesky_jetstream'
         and policies.access_mode = 'official_api'
-        and policies.base_url like 'wss://jetstream.%'
+        and policies.robots_policy = 'not_applicable'
+        and policies.routes = array['bluesky_jetstream']::text[]
+        and not policies.include_subdomains
+        and policies.min_delay_seconds = 1
+        and policies.max_pages_per_run = 1
+        and policies.max_items_per_run = 100
+        and policies.max_concurrency = 1
+        and policies.browser_profile is null
+        and not policies.statistics_eligible_default
+        and policies.retention_days = 30
+        and policies.config = '{
+          "endpoint":"wss://jetstream.us-west.bsky.network/xrpc/network.bsky.jetstream.subscribeEvents",
+          "collection":"app.bsky.feed.post",
+          "operations":["create","update","delete"],
+          "kinds":["commit"],
+          "subprotocol":"xrpc.v1.json",
+          "stream_window_seconds":10,
+          "max_events":10000,
+          "max_message_bytes":262144,
+          "max_stream_bytes":2097152,
+          "max_candidates":100,
+          "max_deletions":100,
+          "max_excerpt_chars":500,
+          "keyword_registry":"bluesky-keywords-v1",
+          "statistics_eligible":false
+        }'::jsonb
+        and policies.version = 'bluesky-jetstream-v1'
         and policies.expected_interval_seconds = 60
         and not policies.is_demo
     )
@@ -470,19 +554,67 @@ select jsonb_build_object(
         and gates.active_until is null)
   ),
   'bluesky_acl_exact', (
+    -- The three private tables retain PostgreSQL's complete owner ACL plus
+    -- the historical service_role SELECT-only projection.  This categorical
+    -- ACL proof rejects every unexpected table/column grant or owner drift.
     (select count(*) = 3
-      from pg_catalog.pg_class as relations
-      join pg_catalog.pg_namespace as namespaces
-        on namespaces.oid = relations.relnamespace
-      where namespaces.nspname = 'ingest'
-        and relations.relname in (
+      and count(*) filter (
+        where relations.relkind = 'r'
+          and relations.relrowsecurity
+          and relations.relforcerowsecurity
+          and pg_get_userbyid(relations.relowner) = 'postgres'
+      ) = 3
+      from bluesky_relations as relations)
+    and (select count(*) = 27
+      and count(*) filter (where grants.grantee = grants.relowner) = 24
+      and count(*) filter (
+        where grants.grantee = 'service_role'::regrole
+          and grants.privilege_type = 'SELECT'
+      ) = 3
+      and count(distinct grants.privilege_type) filter (
+        where grants.grantee = grants.relowner
+      ) = 8
+      and bool_and(not grants.is_grantable)
+      from bluesky_relation_acl_grants as grants)
+    and (select count(*) = 0 from bluesky_column_acl_grants)
+    and (select count(*) = 3
+      and count(*) filter (where grants.grantee = grants.relowner) = 3
+      and count(distinct grants.privilege_type) = 3
+      and bool_and(not grants.is_grantable)
+      from bluesky_sequence_acl_grants as grants)
+    and not exists (
+      select 1
+      from bluesky_relation_acl_grants as grants
+      where grants.grantee not in (grants.relowner, 'service_role'::regrole)
+    )
+    and (select count(*) = 3 and bool_and(
+      has_table_privilege('service_role', relations.oid, 'SELECT')
+        and not has_table_privilege('service_role', relations.oid, 'INSERT')
+        and not has_table_privilege('service_role', relations.oid, 'UPDATE')
+        and not has_table_privilege('service_role', relations.oid, 'DELETE')
+        and not has_table_privilege('anon', relations.oid, 'SELECT')
+        and not has_table_privilege('authenticated', relations.oid, 'SELECT')
+    ) from bluesky_relations as relations)
+    and not exists (
+      select 1
+      from bluesky_sequences as sequences
+      cross join unnest(array[
+        'service_role', 'anon', 'authenticated',
+        'pokecrack_bluesky_worker', 'pokecrack_bluesky_worker_login'
+      ]::name[]) as checked_roles(role_name)
+      where has_sequence_privilege(checked_roles.role_name, sequences.oid, 'USAGE')
+        or has_sequence_privilege(checked_roles.role_name, sequences.oid, 'SELECT')
+        or has_sequence_privilege(checked_roles.role_name, sequences.oid, 'UPDATE')
+        or pg_has_role(checked_roles.role_name, sequences.relowner, 'USAGE')
+    )
+    and (select count(*) = 3
+      from pg_catalog.pg_policies as policies
+      where policies.schemaname = 'ingest'
+        and policies.tablename in (
           'bluesky_jetstream_candidates',
           'bluesky_jetstream_observations',
           'bluesky_jetstream_checkpoints'
-        )
-        and relations.relkind = 'r'
-        and relations.relrowsecurity
-        and relations.relforcerowsecurity)
+        ))
     and (select count(*) = 3 and bool_and(
       policies.policyname = expected.policy_name
         and policies.cmd = 'SELECT'
@@ -498,44 +630,6 @@ select jsonb_build_object(
       left join pg_catalog.pg_policies as policies
         on policies.schemaname = 'ingest'
         and policies.tablename = expected.table_name)
-    and (select count(*) = 3
-      from pg_catalog.pg_policies as policies
-      where policies.schemaname = 'ingest'
-        and policies.tablename in (
-          'bluesky_jetstream_candidates',
-          'bluesky_jetstream_observations',
-          'bluesky_jetstream_checkpoints'
-        ))
-    and not exists (
-      select 1
-      from pg_catalog.pg_class as relations
-      join pg_catalog.pg_namespace as namespaces
-        on namespaces.oid = relations.relnamespace
-      cross join unnest(array[
-        'service_role', 'anon', 'authenticated',
-        'pokecrack_bluesky_worker', 'pokecrack_bluesky_worker_login'
-      ]::name[]) as checked_roles(role_name)
-      where namespaces.nspname = 'ingest'
-        and relations.relname in (
-          'bluesky_jetstream_candidates',
-          'bluesky_jetstream_observations',
-          'bluesky_jetstream_checkpoints'
-        )
-        and (
-          has_table_privilege(checked_roles.role_name, relations.oid, 'SELECT')
-          or has_table_privilege(checked_roles.role_name, relations.oid, 'INSERT')
-          or has_table_privilege(checked_roles.role_name, relations.oid, 'UPDATE')
-          or has_table_privilege(checked_roles.role_name, relations.oid, 'DELETE')
-          or has_table_privilege(checked_roles.role_name, relations.oid, 'TRUNCATE')
-          or has_table_privilege(checked_roles.role_name, relations.oid, 'REFERENCES')
-          or has_table_privilege(checked_roles.role_name, relations.oid, 'TRIGGER')
-          or has_table_privilege(checked_roles.role_name, relations.oid, 'MAINTAIN')
-          or has_any_column_privilege(
-            checked_roles.role_name, relations.oid,
-            'SELECT,INSERT,UPDATE,REFERENCES'
-          )
-        )
-    )
   )
 );
 $attestation$;
