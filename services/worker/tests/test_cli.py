@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import json
 from datetime import UTC, datetime
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from typer.testing import CliRunner
 
 from pokecrack_worker import cli, composition
 from pokecrack_worker.cli import app
+from pokecrack_worker.config.settings import DataMode
 from pokecrack_worker.runtime import CycleResult, RuntimeStatus, WorkerRunResult
 from pokecrack_worker.scheduler import SchedulerResult
 
@@ -19,6 +22,7 @@ runner = CliRunner()
     [
         ["--help"],
         ["health", "--help"],
+        ["verify-release", "--help"],
         ["worker", "--help"],
         ["scheduler", "--help"],
         ["aggregate", "all", "--help"],
@@ -51,6 +55,73 @@ def test_health_is_structured_and_uses_fixture_boundaries_by_default() -> None:
     assert payload["data_mode"] == "demo"
     assert payload["ai_provider"] == "fixture"
     assert payload["database"] == "in_memory_fixture"
+
+
+def test_verify_release_is_inconclusive_in_fixture_mode() -> None:
+    result = runner.invoke(app, ["verify-release"])
+
+    assert result.exit_code == 2, result.output
+    assert json.loads(result.stdout) == {
+        "reason": "live_mode_required",
+        "status": "inconclusive",
+    }
+
+
+def test_verify_release_requires_bounded_start_in_live_mode(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_settings",
+        lambda: SimpleNamespace(data_mode=DataMode.LIVE, backup_dir=tmp_path),
+    )
+
+    def unexpected_executor(_settings: object) -> object:
+        raise AssertionError("release verifier must reject a missing timestamp before querying")
+
+    monkeypatch.setattr(cli.composition, "runtime_release_evidence_executor", unexpected_executor)
+
+    result = runner.invoke(app, ["verify-release"])
+
+    assert result.exit_code == 2, result.output
+    assert json.loads(result.stdout) == {
+        "reason": "invalid_release_timestamp",
+        "status": "inconclusive",
+    }
+
+
+def test_verify_release_rejects_unknown_service_set_before_querying(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    monkeypatch.setattr(
+        cli,
+        "_settings",
+        lambda: SimpleNamespace(data_mode=DataMode.LIVE, backup_dir=tmp_path),
+    )
+
+    def unexpected_executor(_settings: object) -> object:
+        raise AssertionError("release verifier must reject an unknown service set before querying")
+
+    monkeypatch.setattr(cli.composition, "runtime_release_evidence_executor", unexpected_executor)
+
+    result = runner.invoke(
+        app,
+        [
+            "verify-release",
+            "--service-set",
+            "tcgdex-unknown",
+            "--release-started-at",
+            "2026-09-03T00:00:00Z",
+        ],
+    )
+
+    assert result.exit_code == 2, result.output
+    assert json.loads(result.stdout) == {
+        "reason": "invalid_runtime_options",
+        "status": "inconclusive",
+    }
 
 
 @pytest.mark.parametrize(

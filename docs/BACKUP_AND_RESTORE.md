@@ -24,6 +24,21 @@ filter. Revalidate their actual retention for the exact Supabase plan before
 enabling YouTube, Bluesky, or Nostr collection; keep each feature off if any
 retained snapshot could outlive its source-data retention boundary.
 
+## Bluesky isolated-lane enablement gate
+
+Bluesky remains disabled unless the forward worker-isolation migration has been
+applied and its fixed role/RPC/table ACL contract has been checked on the
+intended database. Use a separate mode-`0600` `/etc/pokecrack/bluesky.env`
+containing only the dedicated worker DSN and opt-in flag; never copy that DSN
+into `production.env` or use `service_role`. Before any service replacement,
+verify a backup/PITR retention window that does not outlive the 30-day private
+activity retention, complete an isolated restore drill, render the Compose
+`bluesky` profile, and confirm the generic collector/scheduler remain disabled.
+The retained logical backup strips Bluesky candidate/observation rows while
+preserving the durable checkpoint, so a restore cannot silently replay an
+unbounded Jetstream window. These checks are operational prerequisites, not
+evidence that this repository is production-ready.
+
 ## Nostr backup/PITR enablement gate
 
 Nostr migration `20260906000000` creates the private three-relay ledgers and
@@ -96,6 +111,17 @@ deploy/scripts/backup.sh
 ```
 
 Alert on nonzero exit, stale/missing marker, unexpected size change and low disk. A success marker proves local dump validation, not off-site durability or restorability.
+
+The watchdog-mounted `.last-successful-backup` marker is also included in the
+optional `deploy/scripts/verify-runtime-release.sh` check as an age-only
+aggregate. A fresh marker can support release evidence; a stale or malformed
+marker fails the verifier. The default backup directory and marker remain
+owner-only (`0700`/`0600`), so UID `10001` cannot read them; missing,
+unsupported, or unreadable marker evidence is `inconclusive` and exits `2`,
+including during first-run grace. Provision any marker-only read mount through
+a separately reviewed, narrow ownership/group contract rather than broadening
+backup confidentiality. The verifier never prints the backup filename or
+database URL.
 
 ## Off-site and profile policy
 

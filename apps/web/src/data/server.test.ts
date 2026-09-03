@@ -137,6 +137,11 @@ const v2CoveragePayload = {
       lastCollectedAt: "2026-08-30T10:45:00Z",
       url: "https://comicbook.com/gaming/feature/pokemon-tcg-perfect-order-pull-rates-ex-illustration-rares-estimates",
       note: "Reviewed 55-pack public study attributed to the United States; its rate remains withheld until the independent-source threshold is met.",
+      coverage: {
+        packsObserved: 55,
+        countriesObserved: 1,
+        completeOpenings: 1,
+      },
     },
   ],
 } as const;
@@ -187,7 +192,14 @@ describe("public live-data client", () => {
     });
     expect(merged.sources).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ id: "comicbook_perfect_order_study" }),
+        expect.objectContaining({
+          id: "comicbook_perfect_order_study",
+          coverage: {
+            packsObserved: 55,
+            countriesObserved: 1,
+            completeOpenings: 1,
+          },
+        }),
       ]),
     );
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([

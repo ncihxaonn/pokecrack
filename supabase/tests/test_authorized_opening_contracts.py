@@ -11,6 +11,9 @@ SUPABASE_ROOT = Path(__file__).resolve().parents[1]
 MIGRATION = (
     SUPABASE_ROOT / "migrations/20260918000000_authorized_opening_review.sql"
 ).read_text()
+ROLE_CONTRACT = (
+    SUPABASE_ROOT / "migrations/20260928000000_authorized_opening_role_contract.sql"
+).read_text()
 DATABASE_TYPES = (SUPABASE_ROOT / "types/database.ts").read_text()
 
 
@@ -41,7 +44,7 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         self.assertEqual(lowered.count("commit;"), 1)
         self.assertIn("create role pokecrack_authorized_opening_reviewer", lowered)
         self.assertIn(
-            "grant pokecrack_authorized_opening_reviewer\n        to postgres\n"
+            "grant pokecrack_authorized_opening_reviewer\n        to current_user\n"
             "        with admin true, inherit false, set false",
             lowered,
         )
@@ -154,7 +157,8 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         self.assertIn("is_grantable", lowered)
         self.assertIn("expected_review_functions", lowered)
         self.assertIn("reviewer_creator_membership_count", lowered)
-        self.assertIn("memberships.member = 'postgres'::regrole", lowered)
+        self.assertIn("grantor.rolsuper", lowered)
+        self.assertNotIn("memberships.member = 'postgres'::regrole", lowered)
         self.assertIn("not memberships.inherit_option", lowered)
         self.assertIn("not memberships.set_option", lowered)
         self.assertIn("dedicated reviewer login has direct application privileges", lowered)
@@ -175,6 +179,33 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
         self.assertIn("country_name: string;", DATABASE_TYPES)
         self.assertIn("requested_reason_code: string;", DATABASE_TYPES)
         self.assertIn("requested_reason_code text", MIGRATION)
+
+    def test_forward_role_contract_is_dynamic_and_fail_closed(self) -> None:
+        lowered = ROLE_CONTRACT.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for role_name in (
+            "pokecrack_authorized_opening_submitter",
+            "pokecrack_authorized_opening_reviewer",
+        ):
+            self.assertIn(role_name, lowered)
+        self.assertIn("not valid", lowered)
+        self.assertIn("grantor.rolsuper", lowered)
+        self.assertIn("owner.rolsuper or owner.rolcreaterole", lowered)
+        self.assertIn("admin_option", lowered)
+        self.assertIn("inherit_option", lowered)
+        self.assertIn("set_option", lowered)
+        self.assertIn("has_function_privilege", lowered)
+        self.assertIn("has_table_privilege", lowered)
+        self.assertIn("has_sequence_privilege", lowered)
+        self.assertIn("aclexplode", lowered)
+        self.assertIn("does not guess or replace that owner edge", lowered)
+        self.assertNotIn("memberships.member = 'postgres'::regrole", lowered)
+        self.assertIn(
+            "grant execute on function ingest.submit_authorized_opening_direct_v1(jsonb)",
+            compact,
+        )
 
 if __name__ == "__main__":
     unittest.main()

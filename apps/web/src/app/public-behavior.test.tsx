@@ -20,6 +20,7 @@ import {
 import { ObservationStats, PublicUnavailable } from "@/components/ui/dashboard-ui";
 import { DEMO_PUBLIC_DATA } from "@/data/demo";
 import { mergePublicSocialDiscovery } from "@/data/social-discovery";
+import type { PublicDashboardData } from "@/data/types";
 import { filterAndSortSets } from "./_lib/sets-query";
 
 afterEach(cleanup);
@@ -101,6 +102,53 @@ describe("public route behavior", () => {
       expect(link).toHaveAttribute("target", "_blank");
       expect(link).toHaveAttribute("rel", "noopener noreferrer");
     }
+  });
+
+  it("labels reviewed source coverage as denominator volume on the source page", () => {
+    const source = DEMO_PUBLIC_DATA.sources[0]!;
+    const data = {
+      ...DEMO_PUBLIC_DATA,
+      sources: [
+        {
+          ...source,
+          id: "reviewed-opening-study",
+          name: "Reviewed opening study",
+          kind: "community" as const,
+          coverage: {
+            packsObserved: 55,
+            countriesObserved: 1,
+            completeOpenings: 1,
+          },
+        },
+      ],
+    } satisfies PublicDashboardData;
+
+    render(<SourcesView data={data} synthetic={false} />);
+
+    expect(screen.getByText("Reviewed opening samples only — not a hit rate")).toBeVisible();
+    expect(screen.getByText("Observed packs")).toBeVisible();
+    expect(screen.getByText("Attributed countries")).toBeVisible();
+    expect(screen.getByText("Complete openings")).toBeVisible();
+  });
+
+  it("does not render accidental coverage metadata on a social source", () => {
+    const source = DEMO_PUBLIC_DATA.sources.find((item) => item.kind === "social")!;
+    const data = {
+      ...DEMO_PUBLIC_DATA,
+      sources: [{
+        ...source,
+        coverage: {
+          packsObserved: 55,
+          countriesObserved: 1,
+          completeOpenings: 1,
+        },
+      }],
+    } satisfies PublicDashboardData;
+
+    render(<SourcesView data={data} synthetic={false} />);
+
+    expect(screen.queryByText("Coverage")).not.toBeInTheDocument();
+    expect(screen.queryByText("Observed packs")).not.toBeInTheDocument();
   });
 
   it("renders Mastodon only from the safe activity-only source projection", () => {

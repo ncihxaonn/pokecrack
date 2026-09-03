@@ -67,11 +67,23 @@ AUTHORIZED_OPENING_AGGREGATE_COHORT_BRIDGE = (
 REVIEWED_GLOBAL_COVERAGE_PROJECTION_V2 = (
     ROOT / "migrations/20260917000000_reviewed_global_coverage_projection_v2.sql"
 ).read_text()
+PUBLIC_REVIEWED_SOURCE_COVERAGE = (
+    ROOT / "migrations/20260920000000_public_reviewed_source_coverage.sql"
+).read_text()
 SOCIAL_ACTIVITY_PULSE_V4 = (
     ROOT / "migrations/20260913000000_social_activity_pulse_v4.sql"
 ).read_text()
 BLUESKY_CURSOR_RECOVERY = (
     ROOT / "migrations/20260914000000_bluesky_cursor_recovery.sql"
+).read_text()
+BLUESKY_WORKER_ISOLATION = (
+    ROOT / "migrations/20260921000000_bluesky_worker_role_isolation.sql"
+).read_text()
+BLUESKY_GENERIC_QUEUE_GUARD = (
+    ROOT / "migrations/20260926000000_bluesky_generic_queue_guard.sql"
+).read_text()
+BLUESKY_ROLE_DEPLOY_HARDENING = (
+    ROOT / "migrations/20260927000000_bluesky_role_and_deploy_hardening.sql"
 ).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
@@ -508,6 +520,225 @@ class IngestMigrationContractTests(unittest.TestCase):
             "grant execute on function ingest.verify_nostr_release_v2() to service_role",
             compact,
         )
+
+    def test_bluesky_worker_isolation_is_source_scoped_and_forward_only(self) -> None:
+        lowered = BLUESKY_WORKER_ISOLATION.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn(
+            "create role pokecrack_bluesky_worker nologin noinherit nosuperuser",
+            compact,
+        )
+        for function_name in (
+            "enqueue_due_bluesky_jetstream_jobs_v1",
+            "claim_bluesky_jetstream_jobs_v1",
+            "heartbeat_bluesky_jetstream_job_v1",
+            "fail_bluesky_jetstream_job_v1",
+            "pause_bluesky_jetstream_job_v1",
+            "upsert_bluesky_worker_heartbeat_v1",
+            "bluesky_worker_runtime_ready_v1",
+            "get_bluesky_worker_policy_snapshot_v1",
+        ):
+            self.assertEqual(
+                lowered.count(f"create or replace function ingest.{function_name}"),
+                1,
+            )
+            self.assertIn(function_name, DATABASE_TYPES)
+        self.assertIn("recover_bluesky_cursor_too_old_job_v1", DATABASE_TYPES)
+        self.assertIn("set search_path = pg_catalog", lowered)
+        self.assertEqual(
+            lowered.count("set search_path = pg_catalog, pg_temp"),
+            11,
+            "all Bluesky worker SECURITY DEFINER functions use pg_temp explicitly",
+        )
+        runtime_ready = lowered.split(
+            "create or replace function ingest.bluesky_worker_runtime_ready_v1()",
+            1,
+        )[1].split("$function$;", 1)[0]
+        runtime_ready_compact = " ".join(runtime_ready.split())
+        self.assertIn(
+            "policies.id, expected.base_url as expected_base_url,",
+            runtime_ready_compact,
+        )
+        self.assertIn(
+            "checkpoints.endpoint = policy.expected_base_url",
+            runtime_ready_compact,
+        )
+        self.assertNotIn(
+            "checkpoints.endpoint = policy.base_url",
+            runtime_ready_compact,
+        )
+        self.assertIn("worker_id !~ '^bluesky-collector-", lowered)
+        self.assertIn("from ingest.enqueue_scheduled_job_v1(", lowered)
+        self.assertIn("'source.bluesky.jetstream'", lowered)
+        for function_name in (
+            "begin_bluesky_jetstream_job_v1",
+            "finalize_bluesky_jetstream_job_v1",
+            "recover_bluesky_cursor_too_old_job_v2",
+        ):
+            self.assertIn(f"create or replace function ingest.{function_name}", compact)
+            self.assertIn(f"revoke all on function ingest.{function_name}", compact)
+            self.assertIn(
+                f"grant execute on function ingest.{function_name}", compact
+            )
+        self.assertIn("revoke all on function ingest.begin_bluesky_jetstream_job", compact)
+        self.assertIn("revoke all on function ingest.finalize_bluesky_jetstream_job", compact)
+        self.assertIn("revoke all privileges on table ingest.bluesky_jetstream_candidates", compact)
+        self.assertIn("from public, anon, authenticated, service_role", compact)
+
+    def test_bluesky_generic_queue_guard_is_forward_only_and_drift_checked(self) -> None:
+        lowered = BLUESKY_GENERIC_QUEUE_GUARD.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn("do $generic_isolation$", lowered)
+        self.assertNotIn("create or replace function", lowered)
+        self.assertNotIn("grant", compact)
+        self.assertNotIn("on table", compact)
+        for function_name in (
+            "claim_jobs_v2",
+            "heartbeat_job_v2",
+            "fail_job_v2",
+            "pause_job_for_budget_v2",
+        ):
+            self.assertIn("pg_get_functiondef(", lowered)
+            self.assertIn(function_name, lowered)
+            self.assertIn(f"alter function ingest.{function_name}", compact)
+        for fragment in (
+            "exhausted.job_type <> 'source.nostr.relay'",
+            "exhausted.job_type <> 'source.bluesky.jetstream'",
+            "j.job_type <> 'source.nostr.relay'",
+            "j.job_type <> 'source.bluesky.jetstream'",
+            "leased_job.job_type = 'source.nostr.relay'",
+            "leased_job.job_type = 'source.bluesky.jetstream'",
+            "jobs.job_type <> 'source.nostr.relay'",
+            "jobs.job_type <> 'source.bluesky.jetstream'",
+            "length(definition) - length(replace(definition",
+            "position(old_claim_sweep in updated_definition)",
+            "position(new_claim_sweep in updated_definition)",
+            "execute updated_definition",
+        ):
+            self.assertIn(fragment, lowered)
+        self.assertNotIn("revoke all on table", compact)
+
+    def test_bluesky_role_and_deploy_hardening_is_forward_only_and_drift_checked(
+        self,
+    ) -> None:
+        migration = BLUESKY_ROLE_DEPLOY_HARDENING
+        lowered = migration.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        self.assertIn(
+            "create role pokecrack_bluesky_worker nologin noinherit nosuperuser",
+            compact,
+        )
+        self.assertNotRegex(
+            compact,
+            r"create\s+role\s+pokecrack_bluesky_worker_login\b",
+        )
+        self.assertNotRegex(
+            compact,
+            r"alter\s+role\s+pokecrack_bluesky_worker_login\b",
+        )
+        self.assertNotRegex(
+            compact,
+            r"(?:create|alter)\s+role\s+[^;]*\bpassword\b",
+        )
+        self.assertIn(
+            "create or replace function ingest.verify_bluesky_release_v1()",
+            compact,
+        )
+        self.assertIn("verify_bluesky_release_v1:", DATABASE_TYPES)
+
+        attestation = lowered.split(
+            "create or replace function ingest.verify_bluesky_release_v1()", 1
+        )[1].split("alter function ingest.verify_bluesky_release_v1()", 1)[0]
+        for contract_key in (
+            "postgresql17",
+            "ledger_210",
+            "ledger_260",
+            "ledger_270",
+            "bluesky_worker_role_exact",
+            "bluesky_policy_exact",
+            "bluesky_acl_exact",
+        ):
+            self.assertIn(f"'{contract_key}'", attestation)
+        self.assertIn("returns jsonb", attestation)
+        self.assertIn("stable", attestation)
+        self.assertIn("security definer", attestation)
+        self.assertIn("set search_path = pg_catalog, pg_temp", attestation)
+        self.assertIn("jsonb_build_object", attestation)
+        self.assertIn("pg_catalog.pg_roles", attestation)
+        self.assertIn("rolconfig", attestation)
+        self.assertIn("pg_catalog.pg_auth_members", attestation)
+        self.assertIn("memberships.inherit_option", attestation)
+        self.assertIn("memberships.set_option", attestation)
+        self.assertIn("memberships.admin_option", attestation)
+        self.assertIn("pokecrack_bluesky_worker_login", attestation)
+        self.assertIn("login_role.oid is null or (", " ".join(attestation.split()))
+        self.assertIn("worker_memberships", attestation)
+        self.assertIn("creator_edge_valid", attestation)
+        self.assertIn("dedicated_login_edge_valid", attestation)
+        membership_count_expression = (
+            "case when bool_or(roles.login_oid is null) then 0 else 1 end"
+        )
+        self.assertEqual(attestation.count(membership_count_expression), 2)
+        self.assertNotIn(
+            "case when roles.login_oid is null then 0 else 1 end",
+            attestation,
+        )
+        self.assertNotIn("memberships.member = 'postgres'::regrole", attestation)
+        self.assertIn("pg_catalog.pg_db_role_setting", attestation)
+        self.assertIn("owned_catalog_objects", attestation)
+        self.assertIn("pg_catalog.pg_default_acl", attestation)
+        self.assertIn("pg_catalog.pg_extension", attestation)
+        self.assertIn("aclexplode", attestation)
+        self.assertIn("ingest_column_acl_grants", attestation)
+        self.assertIn("bluesky_relation_acl_grants", attestation)
+        self.assertIn("bluesky_column_acl_grants", attestation)
+        self.assertIn("bluesky_sequence_acl_grants", attestation)
+        bluesky_relations_contract = attestation.split(
+            "bluesky_relations as (", 1
+        )[1].split("),\nbluesky_relation_acl_grants as (", 1)[0]
+        for relation_field in (
+            "relations.oid",
+            "relations.relowner",
+            "relations.relacl",
+            "relations.relkind",
+            "relations.relrowsecurity",
+            "relations.relforcerowsecurity",
+        ):
+            self.assertIn(relation_field, bluesky_relations_contract)
+        self.assertIn("worker_function_acl_grants", attestation)
+        self.assertIn("pg_has_role", attestation)
+        self.assertIn("has_sequence_privilege", attestation)
+        self.assertIn("has_any_column_privilege", attestation)
+        self.assertIn("functions.prosecdef", attestation)
+        self.assertIn("functions.proconfig", attestation)
+        self.assertIn("grants.is_grantable", attestation)
+        self.assertIn("'maintain'", attestation)
+        self.assertIn("source.bluesky.jetstream", lowered)
+        self.assertIn("statement_timestamp()", attestation)
+        self.assertIn("jobs.status = 'running'", attestation)
+        self.assertIn("jobs.job_type = 'source.bluesky.jetstream'", attestation)
+        self.assertIn("jobs.attempts < jobs.max_attempts", attestation)
+        self.assertIn("jobs.locked_at <= as_of.observed_at", attestation)
+        self.assertIn("jobs.lock_expires_at = gates.active_until", attestation)
+        self.assertIn("coalesce(bool_and", attestation)
+        self.assertIn("search_path=pg_catalog, pg_temp", attestation)
+        self.assertIn("stream_window_seconds", attestation)
+        self.assertIn("20260927000000", attestation)
+        self.assertIn(
+            "grant execute on function ingest.verify_bluesky_release_v1() to pokecrack_bluesky_worker",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function ingest.verify_bluesky_release_v1() to service_role",
+            compact,
+        )
+        self.assertNotIn("create role pokecrack_bluesky_worker_login", compact)
 
     def test_mastodon_public_hashtag_is_fixed_private_hashed_and_public_safe(self) -> None:
         historical = MASTODON_PUBLIC_HASHTAG
@@ -1388,6 +1619,65 @@ class IngestMigrationContractTests(unittest.TestCase):
             compact,
         )
         self.assertIn("get_public_study_coverage_v2:", DATABASE_TYPES)
+
+    def test_public_reviewed_source_coverage_is_current_period_and_denominator_only(
+        self,
+    ) -> None:
+        lowered = PUBLIC_REVIEWED_SOURCE_COVERAGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        projection = lowered.split(
+            "create or replace function public.get_public_study_coverage_v2", 1
+        )[1].split(
+            "alter function public.get_public_study_coverage_v2", 1
+        )[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "source_coverage as (",
+            "from valid_rows as rows",
+            "group by rows.public_id",
+            "count(distinct rows.country_code)",
+            "openings.eligible_for_statistics",
+            "openings.complete_opening",
+            "openings.validation_status = 'accepted'",
+            "openings.public_status = 'verified'",
+            "<= statement_timestamp()",
+            "contracts.config ->> 'denominator_complete' = 'true'",
+            "when source_coverage.public_id is null then '{}'::jsonb",
+            "'packsobserved', source_coverage.packs_observed",
+            "'countriesobserved', source_coverage.countries_observed",
+            "'completeopenings', source_coverage.complete_openings",
+            "'schemaversion', '2.0.0'",
+        ):
+            self.assertIn(fragment, projection)
+        for forbidden_json_key in (
+            "'evidenceexcerpt'",
+            "'evidencesha256'",
+            "'qualifyinghitpackcount'",
+            "'policyid'",
+            "'studykey'",
+            "'sourcepolicy'",
+            "'hitrate'",
+            "'posteriormean'",
+            "'baselinerate'",
+            "'credibleinterval'",
+            "'deltafrombaseline'",
+        ):
+            self.assertNotIn(forbidden_json_key, projection)
+        self.assertIn(
+            "revoke all on function public.get_public_study_coverage_v2() from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_study_coverage_v2() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_study_coverage_v2() to service_role",
+            compact,
+        )
 
     def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()

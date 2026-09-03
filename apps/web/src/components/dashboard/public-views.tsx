@@ -6,6 +6,7 @@ import type {
   BatchMetric,
   ObservedMetric,
   PublicDashboardData,
+  PublicSource,
   RegionMetric,
   RetailerMetric,
   SetMetric,
@@ -31,6 +32,27 @@ interface MetricRow {
   name: string;
   meta: string;
   metric: ObservedMetric;
+}
+
+function sourceDetails(source: PublicSource) {
+  const details = [
+    { term: "Kind", value: source.kind },
+    { term: "Access", value: source.access },
+    { term: "Status", value: source.status },
+    { term: "Last collected", value: formatDateTime(source.lastCollectedAt) },
+  ];
+  const coverage = source.kind === "community" && source.access === "public"
+    ? source.coverage
+    : undefined;
+  if (coverage !== undefined) {
+    details.push(
+      { term: "Coverage", value: "Reviewed opening samples only — not a hit rate" },
+      { term: "Observed packs", value: formatCompactNumber(coverage.packsObserved) },
+      { term: "Attributed countries", value: formatCompactNumber(coverage.countriesObserved) },
+      { term: "Complete openings", value: formatCompactNumber(coverage.completeOpenings) },
+    );
+  }
+  return details;
 }
 
 function MetricTable({ rows, label, emptyMessage }: { rows: readonly MetricRow[]; label: string; emptyMessage: string }) {
@@ -219,7 +241,7 @@ export function SourcesView({ data, synthetic }: { data: PublicDashboardData; sy
       <PageIntro eyebrow="Public provenance" title="Sources and collection boundaries" description="Only public-safe source classes and operational notes are shown; private evidence, accounts and payloads stay outside the public dashboard." />
       <Panel className="policy-panel"><h2>Collection policy</h2><p>Official sources and bounded structured metadata are preferred. Every source needs an exact, versioned policy covering routes, fields, terms, robots behavior, limits, retention, owner, review date and kill switch. Unknown domains and disabled routes fail closed.</p><div className="source-type-grid">{sourceTypes.map(([name, detail]) => <div key={name}><h3>{name}</h3><p>{detail}</p></div>)}</div></Panel>
       <Panel className="policy-panel policy-panel--warning"><h2>Explicitly outside scope</h2><ul className="policy-list"><li>No login or CAPTCHA bypass; an access challenge stops automated collection.</li><li>No proxy pools, stealth rotation, credential sharing or collection after access denial.</li><li>No long-term full third-party video retention, full-content rehosting or third-party content archive.</li><li>No private-message collection, hidden account creation or automated purchasing.</li></ul></Panel>
-      <section className="dashboard-section"><SectionHeading title="Registered public source classes" detail="Status reflects the aggregate snapshot, not a promise of future availability." /><div className="card-grid">{data.sources.length === 0 ? <Panel><p className="empty-cell">No public source status is available.</p></Panel> : data.sources.map((source) => <Panel key={source.id}><div className="card-heading"><span className={`status-dot status-dot--${source.status}`} /><h3>{source.name}</h3></div><DefinitionList items={[{ term: "Kind", value: source.kind }, { term: "Access", value: source.access }, { term: "Status", value: source.status }, { term: "Last collected", value: formatDateTime(source.lastCollectedAt) }]} /><p>{source.note}</p><a className="external-link" href={source.url} target="_blank" rel="noopener noreferrer">Source reference ↗<span className="sr-only"> (opens in a new tab)</span></a></Panel>)}</div></section>
+      <section className="dashboard-section"><SectionHeading title="Registered public source classes" detail="Status reflects the aggregate snapshot, not a promise of future availability. Reviewed coverage counts are opening-sample volume, never a hit rate." /><div className="card-grid">{data.sources.length === 0 ? <Panel><p className="empty-cell">No public source status is available.</p></Panel> : data.sources.map((source) => <Panel key={source.id}><div className="card-heading"><span className={`status-dot status-dot--${source.status}`} /><h3>{source.name}</h3></div><DefinitionList items={sourceDetails(source)} /><p>{source.note}</p><a className="external-link" href={source.url} target="_blank" rel="noopener noreferrer">Source reference ↗<span className="sr-only"> (opens in a new tab)</span></a></Panel>)}</div></section>
     </PublicPage>
   );
 }

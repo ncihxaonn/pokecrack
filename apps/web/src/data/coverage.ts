@@ -68,6 +68,30 @@ const coverageSet = coverageMetric.extend({
   releaseDate: isoDate,
 });
 
+const reviewedSourceCoverage = z
+  .object({
+    packsObserved: z.number().int().positive().max(1_000_000),
+    countriesObserved: z.number().int().positive().max(249),
+    completeOpenings: z.number().int().positive().max(1_000_000),
+  })
+  .strict()
+  .superRefine((coverage, context) => {
+    if (coverage.completeOpenings > coverage.packsObserved) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Reviewed source openings cannot exceed observed packs",
+        path: ["completeOpenings"],
+      });
+    }
+    if (coverage.countriesObserved > coverage.completeOpenings) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Reviewed source countries cannot exceed complete openings",
+        path: ["countriesObserved"],
+      });
+    }
+  });
+
 const reviewedCoverageSource = z
   .object({
     id: z.string().regex(/^[a-z][a-z0-9_-]{0,119}$/),
@@ -78,10 +102,12 @@ const reviewedCoverageSource = z
     lastCollectedAt: isoDateTime.nullable(),
     url: publicHttpUrl,
     note: z.string().min(1).max(500),
+    coverage: reviewedSourceCoverage.optional(),
   })
   .strict();
 
 const legacyCoverageSource = reviewedCoverageSource
+  .omit({ coverage: true })
   .extend({ id: z.enum(coverageSourceIds) })
   .superRefine((source, context) => {
     const expected = coverageSourceIdentity[source.id];
