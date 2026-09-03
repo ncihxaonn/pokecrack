@@ -133,11 +133,14 @@ select ok(
 select ok(
   (select count(*) = 1
    from pg_auth_members as memberships
+   join pg_roles as owner on owner.oid = memberships.member
+   join pg_roles as grantor on grantor.oid = memberships.grantor
    where memberships.roleid = 'pokecrack_authorized_opening_submitter'::regrole
-     and memberships.member = 'postgres'::regrole
      and memberships.admin_option
      and not memberships.inherit_option
-     and not memberships.set_option),
+     and not memberships.set_option
+     and grantor.rolsuper
+     and (owner.rolsuper or owner.rolcreaterole)),
   'submitter capability retains one owner-only creator membership edge'
 );
 

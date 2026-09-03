@@ -28,17 +28,46 @@ begin
     from pg_catalog.pg_roles as roles
     where roles.rolname = 'pokecrack_authorized_opening_submitter';
 
-    -- PostgreSQL 17 records the creating postgres role as an ADMIN-only edge
-    -- when the migration actor is a non-superuser CREATEROLE role.  Keep the
-    -- same exact creator edge when a local reset runs as a superuser.
-    if not exists (
+    -- PostgreSQL automatically creates one creator-admin membership for a
+    -- non-superuser CREATEROLE actor. The member is the migration actor, not
+    -- a fixed account, and the bootstrap grantor is the stable marker
+    -- for that implicit owner edge. A superuser creates no automatic edge, so
+    -- add the reviewed owner edge only when no exact creator edge exists.
+    if exists (
       select 1
       from pg_catalog.pg_auth_members as memberships
       where memberships.roleid = submitter_oid
-        and memberships.member = 'postgres'::regrole
+        and memberships.admin_option
+        and not memberships.inherit_option
+        and not memberships.set_option
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as grantor
+          where grantor.oid = memberships.grantor
+            and grantor.rolsuper
+        )
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as owner
+          where owner.oid = memberships.member
+            and (owner.rolsuper or owner.rolcreaterole)
+        )
     ) then
+      null;
+    elsif exists (
+      select 1
+      from pg_catalog.pg_auth_members as memberships
+      where memberships.roleid = submitter_oid
+        and memberships.admin_option
+        and not memberships.inherit_option
+        and not memberships.set_option
+    ) then
+      raise exception using
+        errcode = '55000',
+        message = 'fresh authorized opening submitter creator edge is not isolated';
+    else
       grant pokecrack_authorized_opening_submitter
-        to postgres
+        to current_user
         with admin true, inherit false, set false;
     end if;
   else
@@ -53,6 +82,11 @@ begin
       and not roles.rolbypassrls
       and roles.rolconnlimit = -1
       and roles.rolconfig is null
+      and not exists (
+        select 1
+        from pg_catalog.pg_db_role_setting as settings
+        where settings.setrole = roles.oid
+      )
     into submitter_oid, role_is_exact
     from pg_catalog.pg_roles as roles
     where roles.rolname = 'pokecrack_authorized_opening_submitter';
@@ -73,10 +107,21 @@ begin
     into role_creator_membership_count
     from pg_catalog.pg_auth_members as memberships
     where memberships.roleid = submitter_oid
-      and memberships.member = 'postgres'::regrole
       and memberships.admin_option
       and not memberships.inherit_option
-      and not memberships.set_option;
+      and not memberships.set_option
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as grantor
+        where grantor.oid = memberships.grantor
+          and grantor.rolsuper
+      )
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as owner
+        where owner.oid = memberships.member
+          and (owner.rolsuper or owner.rolcreaterole)
+      );
 
     select count(*)::integer
     into role_dedicated_login_count
@@ -94,6 +139,11 @@ begin
       and not login.rolbypassrls
       and login.rolconnlimit = 2
       and login.rolconfig is null
+      and not exists (
+        select 1
+        from pg_catalog.pg_db_role_setting as settings
+        where settings.setrole = login.oid
+      )
       and not memberships.admin_option
       and not memberships.inherit_option
       and memberships.set_option
@@ -110,7 +160,23 @@ begin
     join pg_catalog.pg_roles as login
       on login.oid = memberships.member
     where memberships.roleid = submitter_oid
-      and memberships.member <> 'postgres'::regrole
+      and not (
+        memberships.admin_option
+        and not memberships.inherit_option
+        and not memberships.set_option
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as grantor
+          where grantor.oid = memberships.grantor
+            and grantor.rolsuper
+        )
+        and exists (
+          select 1
+          from pg_catalog.pg_roles as owner
+          where owner.oid = memberships.member
+            and (owner.rolsuper or owner.rolcreaterole)
+        )
+      )
       and login.rolname = 'pokecrack_authorized_opening_submitter_login';
 
     select exists (
@@ -121,13 +187,40 @@ begin
       where memberships.roleid = submitter_oid
         and not (
           (
-            memberships.member = 'postgres'::regrole
-            and memberships.admin_option
+            memberships.admin_option
             and not memberships.inherit_option
             and not memberships.set_option
+            and exists (
+              select 1
+              from pg_catalog.pg_roles as grantor
+              where grantor.oid = memberships.grantor
+                and grantor.rolsuper
+            )
+            and exists (
+              select 1
+              from pg_catalog.pg_roles as owner
+              where owner.oid = memberships.member
+                and (owner.rolsuper or owner.rolcreaterole)
+            )
           )
           or (
-            memberships.member <> 'postgres'::regrole
+            not (
+              memberships.admin_option
+              and not memberships.inherit_option
+              and not memberships.set_option
+              and exists (
+                select 1
+                from pg_catalog.pg_roles as grantor
+                where grantor.oid = memberships.grantor
+                  and grantor.rolsuper
+              )
+              and exists (
+                select 1
+                from pg_catalog.pg_roles as owner
+                where owner.oid = memberships.member
+                  and (owner.rolsuper or owner.rolcreaterole)
+              )
+            )
             and login.rolname = 'pokecrack_authorized_opening_submitter_login'
             and login.rolcanlogin
             and not login.rolinherit
@@ -138,6 +231,11 @@ begin
             and not login.rolbypassrls
             and login.rolconnlimit = 2
             and login.rolconfig is null
+            and not exists (
+              select 1
+              from pg_catalog.pg_db_role_setting as settings
+              where settings.setrole = login.oid
+            )
             and not memberships.admin_option
             and not memberships.inherit_option
             and memberships.set_option
@@ -231,16 +329,44 @@ begin
   into submitter_creator_membership_count
   from pg_catalog.pg_auth_members as memberships
   where memberships.roleid = submitter_oid
-    and memberships.member = 'postgres'::regrole
     and memberships.admin_option
     and not memberships.inherit_option
-    and not memberships.set_option;
+    and not memberships.set_option
+    and exists (
+      select 1
+      from pg_catalog.pg_roles as grantor
+      where grantor.oid = memberships.grantor
+        and grantor.rolsuper
+    )
+    and exists (
+      select 1
+      from pg_catalog.pg_roles as owner
+      where owner.oid = memberships.member
+        and (owner.rolsuper or owner.rolcreaterole)
+    );
 
   select memberships.member
   into submitter_login_oid
   from pg_catalog.pg_auth_members as memberships
   join pg_catalog.pg_roles as login on login.oid = memberships.member
   where memberships.roleid = submitter_oid
+    and not (
+      memberships.admin_option
+      and not memberships.inherit_option
+      and not memberships.set_option
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as grantor
+        where grantor.oid = memberships.grantor
+          and grantor.rolsuper
+      )
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as owner
+        where owner.oid = memberships.member
+          and (owner.rolsuper or owner.rolcreaterole)
+      )
+    )
     and login.rolname = 'pokecrack_authorized_opening_submitter_login';
 
   select count(*)::integer
@@ -248,7 +374,23 @@ begin
   from pg_catalog.pg_auth_members as memberships
   join pg_catalog.pg_roles as login on login.oid = memberships.member
   where memberships.roleid = submitter_oid
-    and memberships.member <> 'postgres'::regrole
+    and not (
+      memberships.admin_option
+      and not memberships.inherit_option
+      and not memberships.set_option
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as grantor
+        where grantor.oid = memberships.grantor
+          and grantor.rolsuper
+      )
+      and exists (
+        select 1
+        from pg_catalog.pg_roles as owner
+        where owner.oid = memberships.member
+          and (owner.rolsuper or owner.rolcreaterole)
+      )
+    )
     and login.rolname = 'pokecrack_authorized_opening_submitter_login'
     and login.rolcanlogin
     and not login.rolinherit
@@ -259,6 +401,11 @@ begin
     and not login.rolbypassrls
     and login.rolconnlimit = 2
     and login.rolconfig is null
+    and not exists (
+      select 1
+      from pg_catalog.pg_db_role_setting as settings
+      where settings.setrole = login.oid
+    )
     and not memberships.admin_option
     and not memberships.inherit_option
     and memberships.set_option
@@ -276,13 +423,40 @@ begin
     where memberships.roleid = submitter_oid
       and not (
         (
-          memberships.member = 'postgres'::regrole
-          and memberships.admin_option
+          memberships.admin_option
           and not memberships.inherit_option
           and not memberships.set_option
+          and exists (
+            select 1
+            from pg_catalog.pg_roles as grantor
+            where grantor.oid = memberships.grantor
+              and grantor.rolsuper
+          )
+          and exists (
+            select 1
+            from pg_catalog.pg_roles as owner
+            where owner.oid = memberships.member
+              and (owner.rolsuper or owner.rolcreaterole)
+          )
         )
         or (
-          memberships.member <> 'postgres'::regrole
+          not (
+            memberships.admin_option
+            and not memberships.inherit_option
+            and not memberships.set_option
+            and exists (
+              select 1
+              from pg_catalog.pg_roles as grantor
+              where grantor.oid = memberships.grantor
+                and grantor.rolsuper
+            )
+            and exists (
+              select 1
+              from pg_catalog.pg_roles as owner
+              where owner.oid = memberships.member
+                and (owner.rolsuper or owner.rolcreaterole)
+            )
+          )
           and login.rolname = 'pokecrack_authorized_opening_submitter_login'
           and login.rolcanlogin
           and not login.rolinherit
@@ -293,6 +467,11 @@ begin
           and not login.rolbypassrls
           and login.rolconnlimit = 2
           and login.rolconfig is null
+          and not exists (
+            select 1
+            from pg_catalog.pg_db_role_setting as settings
+            where settings.setrole = login.oid
+          )
           and not memberships.admin_option
           and not memberships.inherit_option
           and memberships.set_option

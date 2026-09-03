@@ -40,7 +40,7 @@ REVIEWER_ROLE = "pokecrack_authorized_opening_reviewer"
 REVIEWER_LOGIN = "pokecrack_authorized_opening_reviewer_login"
 
 _SHA256 = re.compile(r"^[0-9a-f]{64}$")
-_KEY = re.compile(r"^[a-z0-9][a-z0-9._:-]{0,159}$")
+_KEY = re.compile(r"^[a-z0-9][a-z0-9._-]{0,159}$")
 _COUNTRY = re.compile(r"^[A-Z]{2}$")
 _LANGUAGE = re.compile(r"^[a-z]{2,3}(-[A-Z][a-z]{3})?(-([A-Z]{2}|[0-9]{3}))?$")
 _SET_ID = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,159}$")
@@ -162,8 +162,18 @@ def _has_control_characters(value: str) -> bool:
 def _reject_url_or_uri(value: str, field_name: str) -> None:
     """Reject URL/URI syntax without including the raw value in an error."""
 
-    if _URL_OR_URI.search(value) is not None:
-        _operator_error("invalid_envelope", f"{field_name} cannot contain a URL or URI")
+    # Decode repeatedly so a value such as ``https%253A%252F%252F...`` cannot
+    # hide a URL behind two percent-encoding layers.  The fixed bound keeps
+    # this validation deterministic while covering the nested encodings used
+    # by common form and JSON serializers.
+    candidate = value
+    for _ in range(3):
+        if _URL_OR_URI.search(candidate) is not None:
+            _operator_error("invalid_envelope", f"{field_name} cannot contain a URL or URI")
+        decoded = unquote(candidate)
+        if decoded == candidate:
+            break
+        candidate = decoded
 
 
 def _canonical_text(value: str, *, max_length: int, field_name: str) -> str:
@@ -527,48 +537,409 @@ from ingest.retract_authorized_opening_v1(
   %(requested_reason_code)s
 )
 """
-REVIEWER_CONNECTION_ATTESTATION_SQL = """
-select
-  current_user::text = 'pokecrack_authorized_opening_reviewer' as capability_active,
-  (
-    pg_catalog.pg_has_role(
-      session_user,
+_CONNECTION_ATTESTATION_FIELDS = frozenset(
+    {
+        "session_identity",
+        "capability_active",
+        "capability_contract",
+        "capability_membership",
+        "capability_membership_contract",
+        "login_contract",
+        "capability_acl_clean",
+        "login_acl_clean",
+        "object_ownership_clean",
+    }
+)
+
+
+def _connection_attestation_sql(*, capability_role: str, expected_login: str | None) -> str:
+    """Build SQL for one of the two fixed post-connect capability checks.
+
+    The arguments are module constants below, never operator input. Keeping
+    the query shared makes the submitter and reviewer checks fail closed on
+    the same role, membership, ACL, and ownership contract.
+    """
+
+    if capability_role not in {SUBMITTER_ROLE, REVIEWER_ROLE}:
+        raise ValueError("unsupported capability role")
+
+    if expected_login is None:
+        session_identity = """
+    session_user::text <> current_user::text
+    and session_user::text ~ '^[A-Za-z_][A-Za-z0-9_]{0,62}$'
+    and lower(session_user::text) not in (
+      'anon',
+      'authenticated',
+      'postgres',
+      'service_role',
       'pokecrack_authorized_opening_reviewer',
-      'member'
+      'pokecrack_authorized_opening_submitter'
     )
-    and exists (
+"""
+    else:
+        session_identity = f"""
+    session_user::text = '{expected_login}'
+    and session_user::text <> current_user::text
+"""
+
+    if capability_role == SUBMITTER_ROLE:
+        expected_functions = (
+            "array['ingest.submit_authorized_opening_direct_v1(jsonb)'::regprocedure]"
+        )
+    else:
+        expected_functions = (
+            "array["
+            "'ingest.list_authorized_opening_reviews_v1(text,integer)'::regprocedure,"
+            "'ingest.review_authorized_opening_v1(uuid,bigint,text,text,text)'::regprocedure,"
+            "'ingest.retract_authorized_opening_v1(uuid,text,text)'::regprocedure"
+            "]"
+        )
+
+    return f"""
+with capability as (
+  select roles.*
+  from pg_catalog.pg_roles as roles
+  where roles.rolname = '{capability_role}'
+),
+login as (
+  select roles.*
+  from pg_catalog.pg_roles as roles
+  where roles.rolname = session_user
+)
+select
+  ({session_identity}) as session_identity,
+  current_user::text = '{capability_role}' as capability_active,
+  coalesce((
+    select not roles.rolsuper
+      and not roles.rolcanlogin
+      and not roles.rolinherit
+      and not roles.rolcreatedb
+      and not roles.rolcreaterole
+      and not roles.rolreplication
+      and not roles.rolbypassrls
+      and roles.rolconnlimit = -1
+      and roles.rolconfig is null
+      and not exists (
+        select 1
+        from pg_catalog.pg_db_role_setting as settings
+        where settings.setrole = roles.oid
+      )
+    from capability as roles
+  ), false) as capability_contract,
+  coalesce((
+    select
+      pg_catalog.pg_has_role(
+        session_user,
+        '{capability_role}',
+        'member'
+      )
+      and exists (
+        select 1
+        from pg_catalog.pg_auth_members as memberships
+        join capability as roles on roles.oid = memberships.roleid
+        join login on login.oid = memberships.member
+        where not memberships.admin_option
+          and not memberships.inherit_option
+          and memberships.set_option
+          and not exists (
+            select 1
+            from pg_catalog.pg_auth_members as other_memberships
+            where other_memberships.member = memberships.member
+              and other_memberships.roleid <> memberships.roleid
+          )
+      )
+  ), false) as capability_membership,
+  coalesce((
+    select
+      (select count(*) = 1 + (
+         select count(*)
+         from pg_catalog.pg_auth_members as login_memberships
+         join login as dedicated_login
+           on dedicated_login.oid = login_memberships.member
+         where login_memberships.roleid = roles.oid
+           and not login_memberships.admin_option
+           and not login_memberships.inherit_option
+           and login_memberships.set_option
+       )
+       from pg_catalog.pg_auth_members as memberships
+       where memberships.roleid = roles.oid)
+      and exists (
+        select 1
+        from pg_catalog.pg_auth_members as memberships
+        join pg_catalog.pg_roles as owner
+          on owner.oid = memberships.member
+        where memberships.roleid = roles.oid
+          and memberships.admin_option
+          and not memberships.inherit_option
+          and not memberships.set_option
+          and exists (
+            select 1
+            from pg_catalog.pg_roles as grantor
+            where grantor.oid = memberships.grantor
+              and grantor.rolsuper
+          )
+          and (owner.rolsuper or owner.rolcreaterole)
+      )
+      and (select count(*) = 1
+           from pg_catalog.pg_auth_members as login_memberships
+           join login on login.oid = login_memberships.member
+           where login_memberships.roleid = roles.oid
+             and not login_memberships.admin_option
+             and not login_memberships.inherit_option
+             and login_memberships.set_option)
+      and not exists (
+        select 1
+        from pg_catalog.pg_auth_members as memberships
+        where memberships.roleid = roles.oid
+          and not (
+            (
+              memberships.admin_option
+              and not memberships.inherit_option
+              and not memberships.set_option
+              and exists (
+                select 1
+                from pg_catalog.pg_roles as grantor
+                where grantor.oid = memberships.grantor
+                  and grantor.rolsuper
+              )
+              and exists (
+                select 1
+                from pg_catalog.pg_roles as owner
+                where owner.oid = memberships.member
+                  and (owner.rolsuper or owner.rolcreaterole)
+              )
+            )
+            or (
+              memberships.member = (select login.oid from login)
+              and not memberships.admin_option
+              and not memberships.inherit_option
+              and memberships.set_option
+            )
+          )
+      )
+    from capability as roles
+  ), false) as capability_membership_contract,
+  coalesce((
+    select roles.rolcanlogin
+      and not roles.rolinherit
+      and not roles.rolsuper
+      and not roles.rolcreatedb
+      and not roles.rolcreaterole
+      and not roles.rolreplication
+      and not roles.rolbypassrls
+      and roles.rolconnlimit = 2
+      and roles.rolconfig is null
+      and not exists (
+        select 1
+        from pg_catalog.pg_db_role_setting as settings
+        where settings.setrole = roles.oid
+      )
+    from login as roles
+  ), false) as login_contract,
+  (
+    pg_catalog.has_schema_privilege(
+      '{capability_role}', 'ingest', 'USAGE'
+    )
+    and not exists (
       select 1
-      from pg_catalog.pg_auth_members as membership
-      join pg_catalog.pg_roles as login
-        on login.oid = membership.member
-      where login.rolname = session_user
-        and membership.roleid = 'pokecrack_authorized_opening_reviewer'::regrole
-        and not membership.admin_option
-        and not membership.inherit_option
-        and membership.set_option
-        and not exists (
-          select 1
-          from pg_catalog.pg_auth_members as other_membership
-          where other_membership.member = membership.member
-            and other_membership.roleid <> membership.roleid
+      from pg_catalog.pg_namespace as namespaces
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and pg_catalog.has_schema_privilege(
+          '{capability_role}', namespaces.oid, 'CREATE'
         )
     )
-  ) as capability_membership,
-  exists (
-    select 1
-    from pg_catalog.pg_roles as login
-    where login.rolname = session_user
-      and login.rolcanlogin
-      and not login.rolinherit
-      and not login.rolsuper
-      and not login.rolcreatedb
-      and not login.rolcreaterole
-      and not login.rolreplication
-      and not login.rolbypassrls
-      and login.rolconnlimit = 2
-      and login.rolconfig is null
-  ) as login_contract
+    and not exists (
+      select 1
+      from pg_catalog.pg_class as relations
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = relations.relnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and relations.relkind in ('r', 'p', 'v', 'm', 'f')
+        and (
+          pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'SELECT')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'INSERT')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'UPDATE')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'DELETE')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, concat('TRUN', 'CATE'))
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'REFERENCES')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'TRIGGER')
+          or pg_catalog.has_table_privilege('{capability_role}', relations.oid, 'MAINTAIN')
+          or pg_catalog.has_any_column_privilege(
+            '{capability_role}', relations.oid, 'SELECT,INSERT,UPDATE,REFERENCES'
+          )
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_class as sequences
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = sequences.relnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and sequences.relkind = 'S'
+        and (
+          pg_catalog.has_sequence_privilege('{capability_role}', sequences.oid, 'USAGE')
+          or pg_catalog.has_sequence_privilege('{capability_role}', sequences.oid, 'SELECT')
+          or pg_catalog.has_sequence_privilege('{capability_role}', sequences.oid, 'UPDATE')
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_proc as procedures
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = procedures.pronamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and pg_catalog.has_function_privilege(
+          '{capability_role}', procedures.oid, 'EXECUTE'
+        )
+        and procedures.oid <> all({expected_functions})
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_proc as procedures
+      where procedures.oid = any({expected_functions})
+        and (
+          procedures.proowner <> 'postgres'::regrole
+          or not procedures.prosecdef
+          or procedures.proconfig is distinct from array['search_path=pg_catalog, pg_temp']::text[]
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_proc as procedures
+      cross join lateral pg_catalog.aclexplode(
+        coalesce(
+          procedures.proacl,
+          pg_catalog.acldefault('f'::"char", procedures.proowner)
+        )
+      ) as grants
+      cross join capability as roles
+      where procedures.oid = any({expected_functions})
+        and (
+          grants.privilege_type <> 'EXECUTE'
+          or grants.is_grantable
+          or grants.grantee not in (procedures.proowner, roles.oid)
+        )
+    )
+    and coalesce((
+      select bool_and(
+        pg_catalog.has_function_privilege(
+          '{capability_role}', procedures.oid, 'EXECUTE'
+        )
+      )
+      from pg_catalog.pg_proc as procedures
+      where procedures.oid = any({expected_functions})
+    ), false)
+  ) as capability_acl_clean,
+  (
+    not exists (
+      select 1
+      from pg_catalog.pg_namespace as namespaces
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and pg_catalog.has_schema_privilege(
+          session_user, namespaces.oid, 'CREATE'
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_class as relations
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = relations.relnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and relations.relkind in ('r', 'p', 'v', 'm', 'f')
+        and (
+          pg_catalog.has_table_privilege(session_user, relations.oid, 'SELECT')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'INSERT')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'UPDATE')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'DELETE')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, concat('TRUN', 'CATE'))
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'REFERENCES')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'TRIGGER')
+          or pg_catalog.has_table_privilege(session_user, relations.oid, 'MAINTAIN')
+          or pg_catalog.has_any_column_privilege(
+            session_user, relations.oid, 'SELECT,INSERT,UPDATE,REFERENCES'
+          )
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_class as sequences
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = sequences.relnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and sequences.relkind = 'S'
+        and (
+          pg_catalog.has_sequence_privilege(session_user, sequences.oid, 'USAGE')
+          or pg_catalog.has_sequence_privilege(session_user, sequences.oid, 'SELECT')
+          or pg_catalog.has_sequence_privilege(session_user, sequences.oid, 'UPDATE')
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_proc as procedures
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = procedures.pronamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and pg_catalog.has_function_privilege(
+          session_user, procedures.oid, 'EXECUTE'
+        )
+    )
+  ) as login_acl_clean,
+  (
+    not exists (
+      select 1
+      from pg_catalog.pg_namespace as namespaces
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and namespaces.nspowner in (
+          (select roles.oid from capability as roles),
+          (select roles.oid from login as roles)
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_class as relations
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = relations.relnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and relations.relowner in (
+          (select roles.oid from capability as roles),
+          (select roles.oid from login as roles)
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_proc as procedures
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = procedures.pronamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and procedures.proowner in (
+          (select roles.oid from capability as roles),
+          (select roles.oid from login as roles)
+        )
+    )
+    and not exists (
+      select 1
+      from pg_catalog.pg_type as types
+      join pg_catalog.pg_namespace as namespaces
+        on namespaces.oid = types.typnamespace
+      where namespaces.nspname in ('catalog', 'ingest', 'analytics', 'public')
+        and types.typowner in (
+          (select roles.oid from capability as roles),
+          (select roles.oid from login as roles)
+        )
+    )
+  ) as object_ownership_clean
+from (select 1) as singleton
 """
+
+
+SUBMITTER_CONNECTION_ATTESTATION_SQL = _connection_attestation_sql(
+    capability_role=SUBMITTER_ROLE,
+    expected_login=SUBMITTER_LOGIN,
+)
+REVIEWER_CONNECTION_ATTESTATION_SQL = _connection_attestation_sql(
+    capability_role=REVIEWER_ROLE,
+    expected_login=None,
+)
 
 
 def _uuid(value: object) -> UUID:
@@ -625,32 +996,43 @@ class AuthorizedOpeningRpcClient:
             del error
             _operator_error("database_unavailable", "the authorized-opening database call failed")
 
-    def attest_reviewer_connection(self) -> None:
-        """Require the connected login to hold only the reviewed role shape."""
+    def _attest_connection(
+        self, *, sql: str, connection_name: Literal["submitter", "reviewer"]
+    ) -> None:
+        """Require every post-connect identity, role, membership, and ACL check."""
 
         try:
-            rows = self._executor.query(REVIEWER_CONNECTION_ATTESTATION_SQL, {})
+            rows = self._executor.query(sql, {})
+            if len(rows) != 1:
+                raise ValueError("attestation returned an unexpected row count")
+            row = rows[0]
+            fields = frozenset(row.keys())
+            if fields != _CONNECTION_ATTESTATION_FIELDS or any(
+                row.get(field) is not True for field in _CONNECTION_ATTESTATION_FIELDS
+            ):
+                raise ValueError("attestation returned an unsafe contract")
         except Exception as error:
             del error
             _operator_error(
                 "invalid_configuration",
-                "the reviewer database connection could not be attested",
+                f"the {connection_name} database connection could not be attested",
             )
-        if len(rows) != 1:
-            _operator_error(
-                "invalid_configuration",
-                "the reviewer database connection could not be attested",
-            )
-        row = rows[0]
-        if (
-            row.get("capability_active") is not True
-            or row.get("capability_membership") is not True
-            or row.get("login_contract") is not True
-        ):
-            _operator_error(
-                "invalid_configuration",
-                "the reviewer database connection is not an attested dedicated login",
-            )
+
+    def attest_submitter_connection(self) -> None:
+        """Require the submitter login to acquire only its SET ROLE capability."""
+
+        self._attest_connection(
+            sql=SUBMITTER_CONNECTION_ATTESTATION_SQL,
+            connection_name="submitter",
+        )
+
+    def attest_reviewer_connection(self) -> None:
+        """Require the reviewer login to acquire only its SET ROLE capability."""
+
+        self._attest_connection(
+            sql=REVIEWER_CONNECTION_ATTESTATION_SQL,
+            connection_name="reviewer",
+        )
 
     @staticmethod
     def _submission_result(row: Mapping[str, Any]) -> SubmissionResult:
@@ -760,6 +1142,8 @@ def build_operator_client(*, reviewer: bool) -> AuthorizedOpeningRpcClient:
         client = AuthorizedOpeningRpcClient(PsycopgQueryExecutor.from_dsn(dsn))
         if reviewer:
             client.attest_reviewer_connection()
+        else:
+            client.attest_submitter_connection()
         return client
     except AuthorizedOpeningOperatorError:
         raise
@@ -891,6 +1275,7 @@ __all__ = [
     "ENVELOPE_FILE_MODE",
     "LIST_AUTHORIZED_OPENING_REVIEWS_SQL",
     "MAX_ENVELOPE_BYTES",
+    "SUBMITTER_CONNECTION_ATTESTATION_SQL",
     "REVIEWER_CONNECTION_ATTESTATION_SQL",
     "RETRACT_AUTHORIZED_OPENING_SQL",
     "REVIEW_AUTHORIZED_OPENING_SQL",
