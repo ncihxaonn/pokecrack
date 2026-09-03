@@ -58,9 +58,6 @@ begin
         select 1
         from pg_catalog.pg_auth_members as memberships
         where memberships.roleid = bluesky_role_oid
-          and memberships.admin_option
-          and not memberships.inherit_option
-          and not memberships.set_option
       ) then
         raise exception using
           errcode = '55000',
