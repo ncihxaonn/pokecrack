@@ -124,6 +124,12 @@ export interface TrendPoint {
 export type SourceAccess = "public" | "api-key" | "browser-auth-required";
 export type SourceStatus = "operational" | "delayed" | "attention" | "paused";
 
+export interface PublicSourceCoverage {
+  readonly packsObserved: number;
+  readonly countriesObserved: number;
+  readonly completeOpenings: number;
+}
+
 export interface PublicSource {
   readonly id: string;
   readonly name: string;
@@ -133,6 +139,10 @@ export interface PublicSource {
   readonly lastCollectedAt: string | null;
   readonly url: string;
   readonly note: string;
+  // Present only for an approved reviewed-opening source with a valid row in
+  // the current public coverage period. These are denominator facts, never a
+  // hit numerator or a published rate.
+  readonly coverage?: PublicSourceCoverage;
 }
 
 export type SocialPulseFreshness = "fresh" | "delayed" | "attention" | "paused";

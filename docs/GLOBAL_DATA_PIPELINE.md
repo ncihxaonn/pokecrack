@@ -46,6 +46,21 @@ in which packs were opened. The private reviewed ledgers retain any qualifying
 numerator for audit, while the public cell exposes only pack/opening/source
 counts until all publication thresholds are met.
 
+## Authorized opening aggregate-admission boundary
+
+An authorized creator submission that passes review is still not an aggregate
+input by default. An owner must separately bind its opaque source identity to
+one declared independent domain and make an immutable admission record. The
+admission fingerprint must equal the observation's private provenance-dedupe
+HMAC; a conflicting domain mapping for the same identity excludes the affected
+records. Retractions are evaluated as of the requested cohort timestamp, so
+later retractions remove the input without rewriting historical evidence.
+
+This private bridge has no worker promotion from Bluesky, Nostr, Mastodon,
+YouTube, catalog, or other social discovery ledgers. It does not calculate a
+rate, baseline, posterior, interval, or map colour. Those require the separate
+reviewed publisher and exact statistical implementation.
+
 ## YouTube discovery boundary
 
 The network-capable adapter uses only the official YouTube Data API. Each job

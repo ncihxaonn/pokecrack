@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NoReturn
@@ -13,6 +14,19 @@ import typer
 from pydantic import ValidationError
 
 from pokecrack_worker import composition
+from pokecrack_worker.authorized_opening_operator import (
+    AuthorizedOpeningOperatorError,
+    build_operator_client,
+    parse_uuid,
+    read_authorized_opening_envelope,
+    safe_retraction_payload,
+    safe_review_queue_payload,
+    safe_submission_payload,
+    validate_retraction_request,
+    validate_review_list_request,
+    validate_review_request,
+    validate_reviewer_reference,
+)
 from pokecrack_worker.collectors.manual_import import (
     ImportFormatError,
     import_csv_candidates,
@@ -26,6 +40,16 @@ from pokecrack_worker.config.source_policy import (
     SourcePolicyRegistry,
 )
 from pokecrack_worker.jobs import InMemoryJobRepository
+from pokecrack_worker.release_evidence import (
+    RUNTIME_RELEASE_SERVICE_SETS,
+    bound_release_started_at,
+    exit_code_for_status,
+    inconclusive_result,
+    parse_release_started_at,
+    query_runtime_release_evidence,
+    read_backup_marker,
+    with_backup_marker,
+)
 from pokecrack_worker.runtime import RuntimeStatus
 from pokecrack_worker.scheduler import Scheduler
 
@@ -41,9 +65,14 @@ app = typer.Typer(
 aggregate_app = typer.Typer(no_args_is_help=True, help="Build aggregate statistics.")
 collect_app = typer.Typer(no_args_is_help=True, help="Run official metadata collectors.")
 sync_catalog_app = typer.Typer(no_args_is_help=True, help="Synchronize card catalogs.")
+authorized_opening_app = typer.Typer(
+    no_args_is_help=True,
+    help="Submit explicitly authorized opening envelopes and review the private queue.",
+)
 app.add_typer(aggregate_app, name="aggregate")
 app.add_typer(collect_app, name="collect")
 app.add_typer(sync_catalog_app, name="sync-catalog")
+app.add_typer(authorized_opening_app, name="authorized-opening")
 
 _QUEUE: list[dict[str, Any]] = []
 
@@ -130,6 +159,107 @@ def _deny(error: PolicyDeniedError) -> None:
     raise typer.Exit(code=2)
 
 
+def _fail_authorized_opening(error: AuthorizedOpeningOperatorError) -> NoReturn:
+    """Render only a fixed safe code/message; never stringify a database error."""
+
+    _json({"error": error.code, "message": error.safe_message}, err=True)
+    raise typer.Exit(code=1 if error.code.startswith("database_") else 2)
+
+
+@authorized_opening_app.command("submit")
+def authorized_opening_submit(
+    envelope: Path = typer.Argument(
+        ...,
+        help="Mode-0600 owner/creator evidence-envelope JSON file; it is not retained.",
+    ),
+) -> None:
+    """Submit one explicit owner envelope through the typed submit RPC."""
+
+    try:
+        validated = read_authorized_opening_envelope(envelope)
+        result = build_operator_client(reviewer=False).submit(validated)
+    except AuthorizedOpeningOperatorError as error:
+        _fail_authorized_opening(error)
+    _json(safe_submission_payload(result))
+
+
+@authorized_opening_app.command("list-reviews")
+def authorized_opening_list_reviews(
+    state: str = typer.Option("queued", "--state", help="Exact queue state or all."),
+    limit: int = typer.Option(50, "--limit", min=1, max=100, help="Maximum rows (1-100)."),
+) -> None:
+    """List a bounded redacted queue projection through the reviewer RPC."""
+
+    try:
+        validated_state = validate_review_list_request(state=state, limit=limit)
+        items = build_operator_client(reviewer=True).list_reviews(validated_state, limit)
+    except AuthorizedOpeningOperatorError as error:
+        _fail_authorized_opening(error)
+    _json(safe_review_queue_payload(items))
+
+
+@authorized_opening_app.command("review")
+def authorized_opening_review(
+    submission_id: str = typer.Argument(..., help="Canonical submission UUID from list-reviews."),
+    expected_revision: int = typer.Option(
+        ..., "--expected-revision", min=1, help="Revision fence."
+    ),
+    target_state: str = typer.Option(..., "--target-state", help="Reviewed target state."),
+    reviewer_reference_sha256: str = typer.Option(
+        ...,
+        "--reviewer-reference-sha256",
+        help="Owner-produced opaque reviewer reference; never printed.",
+    ),
+    reason_code: str = typer.Option(..., "--reason-code", help="Exact reason for the state."),
+) -> None:
+    """Apply one revision-fenced reviewer decision through the review RPC."""
+
+    try:
+        parsed_submission_id = parse_uuid(submission_id)
+        reviewer_reference = validate_reviewer_reference(reviewer_reference_sha256)
+        parsed_state, parsed_reason = validate_review_request(
+            target_state=target_state,
+            reason_code=reason_code,
+            expected_revision=expected_revision,
+        )
+        result = build_operator_client(reviewer=True).review(
+            parsed_submission_id,
+            expected_revision,
+            parsed_state,
+            reviewer_reference,
+            parsed_reason,
+        )
+    except AuthorizedOpeningOperatorError as error:
+        _fail_authorized_opening(error)
+    _json(safe_submission_payload(result))
+
+
+@authorized_opening_app.command("retract")
+def authorized_opening_retract(
+    observation_id: str = typer.Argument(..., help="Canonical accepted observation UUID."),
+    reviewer_reference_sha256: str = typer.Option(
+        ...,
+        "--reviewer-reference-sha256",
+        help="Owner-produced opaque reviewer reference; never printed.",
+    ),
+    reason_code: str = typer.Option(..., "--reason-code", help="Exact retraction reason."),
+) -> None:
+    """Retract one accepted observation through the immutable reviewer RPC."""
+
+    try:
+        parsed_observation_id = parse_uuid(observation_id)
+        reviewer_reference = validate_reviewer_reference(reviewer_reference_sha256)
+        parsed_reason = validate_retraction_request(reason_code)
+        result = build_operator_client(reviewer=True).retract(
+            parsed_observation_id,
+            reviewer_reference,
+            parsed_reason,
+        )
+    except AuthorizedOpeningOperatorError as error:
+        _fail_authorized_opening(error)
+    _json(safe_retraction_payload(result))
+
+
 @app.command("health")
 def health() -> None:
     """Report fixture health or probe PostgreSQL and update a live heartbeat."""
@@ -174,6 +304,107 @@ def health() -> None:
             ),
             "network_calls": False,
         }
+    )
+
+
+@app.command("verify-release")
+def verify_release(
+    service_set: str = typer.Option(
+        "tcgdex",
+        "--service-set",
+        help="Exact deployed service set (tcgdex, tcgdex-nostr, or tcgdex-bluesky).",
+    ),
+    require_healthy: bool = typer.Option(
+        False,
+        "--require-healthy",
+        help="Return non-success until every required post-release signal is healthy.",
+    ),
+    release_started_at: str | None = typer.Option(
+        None,
+        "--release-started-at",
+        help="UTC ISO-8601 timestamp at which the release became runnable.",
+    ),
+    grace_seconds: int = typer.Option(
+        21600,
+        "--grace-seconds",
+        help="First-run warming-up window in seconds.",
+    ),
+    heartbeat_stale_seconds: int = typer.Option(
+        180,
+        "--heartbeat-stale-seconds",
+        help="Worker heartbeat age considered stale.",
+    ),
+    backup_marker_path: Path | None = typer.Option(
+        None,
+        "--backup-marker-path",
+        help="Optional local/container backup marker path.",
+    ),
+    backup_max_age_seconds: int = typer.Option(
+        172800,
+        "--backup-max-age-seconds",
+        help="Backup marker age considered stale.",
+    ),
+) -> None:
+    """Verify aggregate runtime evidence after a release without mutating state."""
+
+    settings = _settings()
+    if settings.data_mode is not DataMode.LIVE:
+        _json(inconclusive_result("live_mode_required"))
+        raise typer.Exit(code=2)
+    if service_set not in RUNTIME_RELEASE_SERVICE_SETS:
+        _json(inconclusive_result("invalid_runtime_options"))
+        raise typer.Exit(code=2)
+    if (
+        grace_seconds < 0
+        or grace_seconds > 172800
+        or heartbeat_stale_seconds < 30
+        or heartbeat_stale_seconds > 3600
+        or backup_max_age_seconds < 0
+        or backup_max_age_seconds > 2_592_000
+    ):
+        _json(inconclusive_result("invalid_runtime_options"))
+        raise typer.Exit(code=2)
+    if release_started_at is None or not release_started_at.strip():
+        _json(inconclusive_result("invalid_release_timestamp"))
+        raise typer.Exit(code=2)
+    try:
+        parsed_release_started_at = parse_release_started_at(release_started_at)
+        parsed_release_started_at = bound_release_started_at(parsed_release_started_at)
+    except ValueError:
+        _json(inconclusive_result("invalid_release_timestamp"))
+        raise typer.Exit(code=2) from None
+
+    marker_path = backup_marker_path
+    if marker_path is None:
+        configured_marker_path = os.environ.get("BACKUP_MARKER_PATH", "").strip()
+        if configured_marker_path:
+            marker_path = Path(configured_marker_path)
+        elif settings.backup_dir.exists():
+            marker_path = settings.backup_dir / ".last-successful-backup"
+    try:
+        evidence = query_runtime_release_evidence(
+            composition.runtime_release_evidence_executor(settings),
+            release_started_at=parsed_release_started_at,
+            grace_seconds=grace_seconds,
+            heartbeat_stale_seconds=heartbeat_stale_seconds,
+            service_set=service_set,
+        )
+    except Exception:
+        _json(inconclusive_result())
+        raise typer.Exit(code=2) from None
+    try:
+        marker = read_backup_marker(
+            marker_path,
+            now=datetime.now(UTC),
+            max_age_seconds=backup_max_age_seconds,
+        )
+        evidence = with_backup_marker(evidence, marker)
+    except Exception:
+        _json(inconclusive_result("backup_marker_unavailable"))
+        raise typer.Exit(code=2) from None
+    _json(evidence)
+    raise typer.Exit(
+        code=exit_code_for_status(str(evidence.get("status")), require_healthy=require_healthy)
     )
 
 

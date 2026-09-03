@@ -5,7 +5,7 @@ import { getDashboardData } from "@/data/server";
 
 const cachedDashboard = unstable_cache(
   getDashboardData,
-  ["public-dashboard-v3-coverage-v3-social-v4-live60"],
+  ["public-dashboard-v3-coverage-v4-source-coverage-v1-social-v4-live60"],
   {
     revalidate: 60,
     tags: ["public-dashboard"],

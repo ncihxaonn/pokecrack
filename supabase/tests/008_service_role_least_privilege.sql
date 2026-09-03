@@ -16,7 +16,10 @@ select is(
          schemas.nspname = 'analytics'
          and relations.relname in (
            'reviewed_global_aggregate_baselines',
-           'reviewed_global_aggregate_audit'
+           'reviewed_global_aggregate_audit',
+           'reviewed_global_aggregate_independent_sources',
+           'reviewed_global_aggregate_authorized_source_bindings',
+           'reviewed_global_aggregate_input_admissions'
          )
        )
        or (
@@ -44,7 +47,10 @@ select is(
          schemas.nspname = 'analytics'
          and relations.relname in (
            'reviewed_global_aggregate_baselines',
-           'reviewed_global_aggregate_audit'
+           'reviewed_global_aggregate_audit',
+           'reviewed_global_aggregate_independent_sources',
+           'reviewed_global_aggregate_authorized_source_bindings',
+           'reviewed_global_aggregate_input_admissions'
          )
        )
        or (
@@ -63,14 +69,17 @@ select is(
 );
 
 select ok(
-  (select count(*) = 2
+  (select count(*) = 5
    from pg_class as relations
    join pg_namespace as schemas on schemas.oid = relations.relnamespace
    where schemas.nspname = 'analytics'
      and relations.relkind in ('r', 'p')
      and relations.relname in (
        'reviewed_global_aggregate_baselines',
-       'reviewed_global_aggregate_audit'
+       'reviewed_global_aggregate_audit',
+       'reviewed_global_aggregate_independent_sources',
+       'reviewed_global_aggregate_authorized_source_bindings',
+       'reviewed_global_aggregate_input_admissions'
      ))
   and (select bool_and(relations.relrowsecurity and relations.relforcerowsecurity)
        from pg_class as relations
@@ -78,14 +87,20 @@ select ok(
        where schemas.nspname = 'analytics'
          and relations.relname in (
            'reviewed_global_aggregate_baselines',
-           'reviewed_global_aggregate_audit'
+           'reviewed_global_aggregate_audit',
+           'reviewed_global_aggregate_independent_sources',
+           'reviewed_global_aggregate_authorized_source_bindings',
+           'reviewed_global_aggregate_input_admissions'
          ))
   and (select count(*) = 0
        from pg_policies as policies
        where policies.schemaname = 'analytics'
          and policies.tablename in (
            'reviewed_global_aggregate_baselines',
-           'reviewed_global_aggregate_audit'
+           'reviewed_global_aggregate_audit',
+           'reviewed_global_aggregate_independent_sources',
+           'reviewed_global_aggregate_authorized_source_bindings',
+           'reviewed_global_aggregate_input_admissions'
          ))
   and not exists (
     select 1
@@ -94,7 +109,10 @@ select ok(
     where schemas.nspname = 'analytics'
       and relations.relname in (
         'reviewed_global_aggregate_baselines',
-        'reviewed_global_aggregate_audit'
+        'reviewed_global_aggregate_audit',
+        'reviewed_global_aggregate_independent_sources',
+        'reviewed_global_aggregate_authorized_source_bindings',
+        'reviewed_global_aggregate_input_admissions'
       )
       and (
         has_table_privilege('service_role', relations.oid, 'select')
@@ -114,7 +132,10 @@ select ok(
     where schemas.nspname = 'analytics'
       and relations.relname in (
         'reviewed_global_aggregate_baselines',
-        'reviewed_global_aggregate_audit'
+        'reviewed_global_aggregate_audit',
+        'reviewed_global_aggregate_independent_sources',
+        'reviewed_global_aggregate_authorized_source_bindings',
+        'reviewed_global_aggregate_input_admissions'
       )
       and (
         has_table_privilege('anon', relations.oid, 'select')
@@ -122,7 +143,7 @@ select ok(
         or has_table_privilege('public', relations.oid, 'select')
       )
   ),
-  'reviewed global aggregate foundation is explicit private force-RLS with no direct application access'
+  'reviewed global aggregate inputs and foundation are explicit private force-RLS with no direct application access'
 );
 
 select ok(
@@ -275,7 +296,10 @@ select is(
          schemaname = 'analytics'
          and tablename in (
            'reviewed_global_aggregate_baselines',
-           'reviewed_global_aggregate_audit'
+           'reviewed_global_aggregate_audit',
+           'reviewed_global_aggregate_independent_sources',
+           'reviewed_global_aggregate_authorized_source_bindings',
+           'reviewed_global_aggregate_input_admissions'
          )
        )
        or (

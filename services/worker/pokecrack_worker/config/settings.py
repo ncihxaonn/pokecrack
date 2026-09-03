@@ -33,6 +33,7 @@ YOUTUBE_CLEANUP_SCHEDULE = "30 3 * * *"
 PUBLIC_STUDY_SCHEDULE = "15 4 * * *"
 BLUESKY_DISCOVERY_SCHEDULE = "* * * * *"
 NOSTR_WORKER_ID_PATTERN = re.compile(r"^nostr-collector-[a-z0-9][a-z0-9_.-]{0,63}$")
+BLUESKY_WORKER_ID_PATTERN = re.compile(r"^bluesky-collector-[a-z0-9][a-z0-9_.-]{0,63}$")
 MASTODON_DISCOVERY_SCHEDULE = "*/5 * * * *"
 # Keep a second daily UTC window so a transient upstream failure does not
 # leave the catalog stale until the next day. The scheduler's durable slot
@@ -53,6 +54,16 @@ class Settings(BaseSettings):
     data_mode: DataMode = DataMode.DEMO
     supabase_db_url: SecretStr | None = None
     nostr_supabase_db_url: SecretStr | None = None
+    # Optional dedicated NOINHERIT monitor login. It is only consumed by the
+    # read-only release verifier and is intentionally separate from worker DSNs.
+    runtime_release_evidence_db_url: SecretStr | None = None
+    # These are intentionally separate from the worker/service DSN. The
+    # authorized-opening CLI validates and reads them through its isolated
+    # operator settings, but keeping the fields here also makes accidental
+    # generic-environment reuse visible to configuration consumers.
+    authorized_opening_submitter_db_url: SecretStr | None = None
+    authorized_opening_reviewer_db_url: SecretStr | None = None
+    bluesky_supabase_db_url: SecretStr | None = None
 
     ai_provider: AIProviderName = AIProviderName.FIXTURE
     ai_base_url: str = "https://api.openai.com/v1"
@@ -139,6 +150,10 @@ class Settings(BaseSettings):
     @field_validator(
         "supabase_db_url",
         "nostr_supabase_db_url",
+        "runtime_release_evidence_db_url",
+        "authorized_opening_submitter_db_url",
+        "authorized_opening_reviewer_db_url",
+        "bluesky_supabase_db_url",
         "ai_api_key",
         "youtube_api_key",
         "maton_api_key",
@@ -176,6 +191,30 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def validate_live_boundaries(self) -> Self:
+        if self.worker_role != "bluesky-collector" and self.bluesky_collection_enabled:
+            raise ValueError(
+                "BLUESKY_COLLECTION_ENABLED is reserved for WORKER_ROLE=bluesky-collector; "
+                "use WORKER_ROLE=bluesky-collector"
+            )
+        if self.worker_role == "bluesky-collector":
+            if not self.bluesky_collection_enabled:
+                raise ValueError(
+                    "WORKER_ROLE=bluesky-collector requires BLUESKY_COLLECTION_ENABLED=true"
+                )
+            if BLUESKY_WORKER_ID_PATTERN.fullmatch(self.worker_id) is None:
+                raise ValueError(
+                    "WORKER_ROLE=bluesky-collector requires WORKER_ID matching "
+                    "^bluesky-collector-[a-z0-9][a-z0-9_.-]{0,63}$"
+                )
+            if (
+                self.youtube_collection_enabled
+                or self.public_study_collection_enabled
+                or self.nostr_collection_enabled
+                or self.mastodon_collection_enabled
+            ):
+                raise ValueError(
+                    "WORKER_ROLE=bluesky-collector allows only BLUESKY_COLLECTION_ENABLED"
+                )
         if self.worker_role != "nostr-collector" and self.nostr_collection_enabled:
             raise ValueError(
                 "NOSTR_COLLECTION_ENABLED is reserved for WORKER_ROLE=nostr-collector; "
@@ -195,6 +234,7 @@ class Settings(BaseSettings):
                 self.youtube_collection_enabled
                 or self.bluesky_collection_enabled
                 or self.public_study_collection_enabled
+                or self.mastodon_collection_enabled
             ):
                 raise ValueError("WORKER_ROLE=nostr-collector allows only NOSTR_COLLECTION_ENABLED")
         if self.data_mode is DataMode.LIVE:
@@ -202,6 +242,11 @@ class Settings(BaseSettings):
                 if self.nostr_supabase_db_url is None:
                     raise ValueError(
                         "live WORKER_ROLE=nostr-collector requires NOSTR_SUPABASE_DB_URL"
+                    )
+            elif self.worker_role == "bluesky-collector":
+                if self.bluesky_supabase_db_url is None:
+                    raise ValueError(
+                        "live WORKER_ROLE=bluesky-collector requires BLUESKY_SUPABASE_DB_URL"
                     )
             elif self.supabase_db_url is None:
                 raise ValueError("live DATA_MODE requires SUPABASE_DB_URL")
