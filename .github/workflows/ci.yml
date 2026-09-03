@@ -87,10 +87,13 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22.13.0"
-      - name: Start local Supabase and run migrations
-        run: |
-          npx --yes supabase@2.115.0 start
-          npx --yes supabase@2.115.0 db reset
+      # Keep startup and migration failures independently observable through
+      # the Actions step state. This is intentionally safe diagnostic output:
+      # it never prints a database URL, payload, policy, or migration SQL.
+      - name: Start local Supabase
+        run: npx --yes supabase@2.115.0 start
+      - name: Reset local database and apply migrations
+        run: npx --yes supabase@2.115.0 db reset
       - name: Run pgTAP database tests
         run: |
           regular_tests=()
