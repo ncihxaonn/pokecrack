@@ -48,6 +48,7 @@ jobs:
       VPS_USER: ${{ vars.VPS_USER }}
       VPS_PORT: ${{ vars.VPS_PORT || '22' }}
       VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH }}
+      VPS_DEPLOY_STATE_DIR: ${{ vars.VPS_DEPLOY_STATE_DIR || '/var/lib/pokecrack/deploy' }}
       VPS_ENV_FILE: ${{ vars.VPS_ENV_FILE || '/etc/pokecrack/production.env' }}
       VPS_NOSTR_ENV_FILE: ${{ vars.VPS_NOSTR_ENV_FILE || '/etc/pokecrack/nostr.env' }}
       VPS_BLUESKY_ENV_FILE: ${{ vars.VPS_BLUESKY_ENV_FILE || '/etc/pokecrack/bluesky.env' }}
@@ -89,6 +90,7 @@ jobs:
           [[ "$VPS_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
           [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]]
           [[ "$VPS_DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_DEPLOY_PATH" != *'..'* ]]
+          [[ "$VPS_DEPLOY_STATE_DIR" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_DEPLOY_STATE_DIR" != *'..'* ]]
           [[ "$VPS_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_ENV_FILE" != *'..'* ]]
           [[ "$VPS_NOSTR_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_NOSTR_ENV_FILE" != *'..'* ]]
           [[ "$VPS_BLUESKY_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_BLUESKY_ENV_FILE" != *'..'* ]]
@@ -142,11 +144,11 @@ jobs:
             -o StrictHostKeyChecking=yes \
             "$VPS_USER@$VPS_HOST" "$upload_command" < "$bundle_file"
 
-          printf -v remote_command 'bash -s -- %q %q %q %q %q %q %q %q %q' \
+          printf -v remote_command 'bash -s -- %q %q %q %q %q %q %q %q %q %q' \
             "$GITHUB_SHA" "$VPS_DEPLOY_PATH" "$VPS_ENV_FILE" \
             "$VPS_NOSTR_ENV_FILE" "$VPS_BLUESKY_ENV_FILE" \
             "$REQUESTED_SERVICE_SET" "$REQUESTED_RETIRE_NOSTR" \
-            "$REQUESTED_RETIRE_BLUESKY" "$remote_bundle"
+            "$REQUESTED_RETIRE_BLUESKY" "$remote_bundle" "$VPS_DEPLOY_STATE_DIR"
           ssh -i "$HOME/.ssh/id_ed25519" \
             -p "$VPS_PORT" \
             -o BatchMode=yes \
@@ -163,6 +165,7 @@ jobs:
           retire_nostr=$7
           retire_bluesky=$8
           bundle=$9
+          state_dir=${10}
           cleanup_bundle() {
             rm -f -- "$bundle"
           }
@@ -171,6 +174,7 @@ jobs:
           [[ "$bundle" =~ ^/tmp/pokecrack-deploy-bundle\.[A-Za-z0-9]{8}$ ]]
           [[ -f "$bundle" && ! -L "$bundle" ]]
           [[ "$(stat -c '%a' "$bundle")" == 600 ]]
+          [[ "$state_dir" =~ ^/[A-Za-z0-9._/-]+$ && "$state_dir" != *'..'* ]]
           case "$service_set" in
             tcgdex|tcgdex-nostr|tcgdex-bluesky) ;;
             *) exit 2 ;;
@@ -198,6 +202,7 @@ jobs:
           git -C "$repository" checkout --detach "$sha"
           deploy_args=(
             --env-file "$env_file"
+            --state-dir "$state_dir"
             --service-set "$service_set"
           )
           if [[ "$service_set" == tcgdex-nostr ]]; then
