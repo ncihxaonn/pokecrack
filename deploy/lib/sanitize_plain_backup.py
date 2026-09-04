@@ -112,13 +112,25 @@ NOSTR_APPROVED_TAGS_COPY = (
     b"}"
 )
 NOSTR_PROTOCOL = b"nip01"
-PUBLIC_STUDY_SOURCE_KEYS = (
+PUBLIC_STUDY_SOURCE_KEYS_V1 = (
     b"public_study_comicbook_us_55",
     b"public_study_wargamer_gb_17",
     b"public_study_cardchill_gb_90",
     b"public_study_bleedingcool_us_36",
     b"public_study_tcgtalk_sg_54",
 )
+POKESUP_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pokesup_jp_30"
+PUBLIC_STUDY_SOURCE_KEYS_V2 = PUBLIC_STUDY_SOURCE_KEYS_V1 + (
+    POKESUP_PUBLIC_STUDY_SOURCE_KEY,
+)
+# The migration adds one reviewed coverage source after the pre-apply backup.
+# Keep both complete source-policy profiles exact: accepting a union or a
+# partially migrated set would make the backup ambiguous and restore-unsafe.
+PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
+    PUBLIC_STUDY_SOURCE_KEYS_V1,
+    PUBLIC_STUDY_SOURCE_KEYS_V2,
+)
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V2
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(
@@ -1724,6 +1736,7 @@ class PlainBackupSanitizer:
         self.public_study_policy_ids = {
             source_key: [] for source_key in PUBLIC_STUDY_SOURCE_KEYS
         }
+        self.public_study_source_keys: tuple[bytes, ...] = ()
         self.public_study_rows: dict[bytes, tuple[bytes, str]] = {}
         self.public_study_object_ids = {
             column: set()
@@ -2050,6 +2063,10 @@ class PlainBackupSanitizer:
                         fields[block.column_indexes["id"]],
                         field="public-study policy id",
                     )
+                )
+            elif source_key.startswith(b"public_study_"):
+                raise SanitizationError(
+                    "source policy uses an unapproved public-study source key"
                 )
             return
         if block.header.table == PUBLIC_STUDY_OBSERVATIONS:
@@ -2755,13 +2772,31 @@ class PlainBackupSanitizer:
                 "dump contains Mastodon cooldown without the exact table set"
             )
         expected_public_policy_rows = int(self.expected[PUBLIC_STUDY_OBSERVATIONS])
-        if any(
-            len(policy_ids) != expected_public_policy_rows
-            for policy_ids in self.public_study_policy_ids.values()
-        ):
-            raise SanitizationError(
-                "dump public-study policies do not match the database preflight"
-            )
+        if expected_public_policy_rows:
+            matching_profiles = [
+                profile
+                for profile in PUBLIC_STUDY_SOURCE_KEY_PROFILES
+                if all(
+                    len(self.public_study_policy_ids[source_key]) == 1
+                    for source_key in profile
+                )
+                and all(
+                    len(self.public_study_policy_ids[source_key]) == 0
+                    for source_key in PUBLIC_STUDY_SOURCE_KEYS
+                    if source_key not in profile
+                )
+            ]
+            if len(matching_profiles) != 1:
+                raise SanitizationError(
+                    "dump public-study policies do not match an exact reviewed source profile"
+                )
+            self.public_study_source_keys = matching_profiles[0]
+        else:
+            if any(self.public_study_policy_ids.values()):
+                raise SanitizationError(
+                    "dump contains public-study policies without public-study observations"
+                )
+            self.public_study_source_keys = ()
         retained_public_policy_ids = [
             policy_ids[0]
             for policy_ids in self.public_study_policy_ids.values()
@@ -3017,7 +3052,8 @@ class PlainBackupSanitizer:
                     destination.write(MASTODON_SOURCE_KEY + b"\n")
                 if self.expected[PUBLIC_STUDY_OBSERVATIONS]:
                     destination.writelines(
-                        source_key + b"\n" for source_key in PUBLIC_STUDY_SOURCE_KEYS
+                        source_key + b"\n"
+                        for source_key in self.public_study_source_keys
                     )
                 destination.write(b"\\.\n\n")
                 gate_seed_written = True
