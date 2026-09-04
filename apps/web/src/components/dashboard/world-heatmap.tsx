@@ -26,7 +26,23 @@ export interface WorldHeatRow {
 }
 
 export interface GlobalFocusCountry {
-  readonly countryCode: "JP" | "AU" | "CN" | "RU" | "CA" | "MX" | "BR";
+  readonly countryCode:
+    | "JP"
+    | "AU"
+    | "CN"
+    | "RU"
+    | "CA"
+    | "MX"
+    | "BR"
+    | "KR"
+    | "TW"
+    | "HK"
+    | "TH"
+    | "ID"
+    | "MY"
+    | "PH"
+    | "VN"
+    | "IN";
   readonly countryName: string;
 }
 
@@ -38,6 +54,15 @@ export const GLOBAL_FOCUS_COUNTRIES: readonly GlobalFocusCountry[] = [
   { countryCode: "CA", countryName: "Canada" },
   { countryCode: "MX", countryName: "Mexico" },
   { countryCode: "BR", countryName: "Brazil" },
+  { countryCode: "KR", countryName: "South Korea" },
+  { countryCode: "TW", countryName: "Taiwan" },
+  { countryCode: "HK", countryName: "Hong Kong" },
+  { countryCode: "TH", countryName: "Thailand" },
+  { countryCode: "ID", countryName: "Indonesia" },
+  { countryCode: "MY", countryName: "Malaysia" },
+  { countryCode: "PH", countryName: "Philippines" },
+  { countryCode: "VN", countryName: "Vietnam" },
+  { countryCode: "IN", countryName: "India" },
 ];
 
 export const WORLD_MAP_PALETTE = {
@@ -71,6 +96,17 @@ const worldMapCssVariables = {
 const globalFocusCountryCodes: ReadonlySet<string> = new Set(
   GLOBAL_FOCUS_COUNTRIES.map((country) => country.countryCode),
 );
+const mapGeometryCountryCodes: ReadonlySet<string> = new Set(
+  [...mapData.countries, ...mapData.tinyCountries]
+    .map((country) => country.countryCode)
+    .filter((countryCode): countryCode is string => countryCode !== null),
+);
+const globalFocusCountriesWithoutGeometry = GLOBAL_FOCUS_COUNTRIES.filter(
+  (country) => !mapGeometryCountryCodes.has(country.countryCode),
+);
+const globalFocusGeometryCount = GLOBAL_FOCUS_COUNTRIES.length
+  - globalFocusCountriesWithoutGeometry.length;
+const focusGeometryNote = `${globalFocusGeometryCount} collection targets have gold outlines. ${globalFocusCountriesWithoutGeometry.map((country) => country.countryName).join(", ")} ${globalFocusCountriesWithoutGeometry.length === 1 ? "is" : "are"} listed below but ${globalFocusCountriesWithoutGeometry.length === 1 ? "has" : "have"} no separate geometry in this map.`;
 
 const integer = new Intl.NumberFormat("en-US");
 const metricOptions: readonly { value: WorldHeatMetric; label: string }[] = [
@@ -200,11 +236,17 @@ export function WorldHeatmap({
     const row = cellsByCountry.get(country.countryCode);
     return {
       ...country,
+      attribution: row === undefined
+        ? null
+        : formatCoverageAttribution(row.cell.coverageAttributionBases, "Country"),
+      geometryAvailable: mapGeometryCountryCodes.has(country.countryCode),
       state: row === undefined
         ? "awaiting"
-        : row.cell.hitRate === null
-          ? "observed"
-          : "published",
+        : row.cell.state === "pending"
+          ? "pending"
+          : row.cell.hitRate === null
+            ? "observed"
+            : "published",
     } as const;
   });
   const publishedRateCount = cells.filter((cell) => cell.hitRate !== null).length;
@@ -224,10 +266,10 @@ export function WorldHeatmap({
       ? "Collection in progress"
       : "Published";
   const mapDescription = rows.length === 0
-    ? `No verified country or product-market coverage buckets are published. ${GLOBAL_FOCUS_COUNTRIES.length} countries have gold outlines as collection targets only; their neutral fill does not contain inferred data.`
+    ? `No verified country or product-market coverage buckets are published. ${focusGeometryNote} Neutral fill does not contain inferred data.`
     : metric === "coverage"
-      ? `${rows.length} country or product-market coverage buckets have verified pack-opening observations. Colour shows fixed-scale sample volume only, not a hit rate or representative demand. Gold-outlined countries are collection targets; neutral fill means they remain unobserved.`
-      : `${rows.length} country or product-market coverage buckets have verified observations: ${publishedRateCount} publish a rate, ${pendingCount} await reviewed publication, and ${withheldCount - pendingCount} remain below the evidence threshold. Gold-outlined countries are collection targets; neutral fill means they remain unobserved.`;
+      ? `${rows.length} country or product-market coverage buckets have verified pack-opening observations. Colour shows fixed-scale sample volume only, not a hit rate or representative demand. ${focusGeometryNote} Neutral fill means unobserved.`
+      : `${rows.length} country or product-market coverage buckets have verified observations: ${publishedRateCount} publish a rate, ${pendingCount} await reviewed publication, and ${withheldCount - pendingCount} remain below the evidence threshold. ${focusGeometryNote} Neutral fill means unobserved.`;
 
   const selectMetric = (nextMetric: WorldHeatMetric) => {
     setMetric(nextMetric);
@@ -393,7 +435,7 @@ export function WorldHeatmap({
             </div>
             <p id={`world-map-caveat-${instanceId}`}>
               {metric === "coverage"
-                ? "Fixed absolute 0–1,500 pack colour scale; this shows sample volume, not a hit rate or representative demand. Gold outlines mark collection targets; neutral fill means unobserved."
+                ? `Fixed absolute 0–1,500 pack colour scale; this shows sample volume, not a hit rate or representative demand. ${focusGeometryNote} Neutral fill means unobserved.`
                 : "Fixed absolute colour scale; values are never rescaled to the current snapshot. Higher historical observations do not predict future packs, products, stores or countries."}
             </p>
           </figcaption>
@@ -426,11 +468,11 @@ export function WorldHeatmap({
         <div className={styles.focusHeading}>
           <div>
             <span>Expanded collection focus</span>
-            <h3 id={`collection-focus-${instanceId}`}>Collection focus</h3>
+            <h3 id={`collection-focus-${instanceId}`}>Countries / product markets</h3>
           </div>
-          <p>The map visualises fixed-scale verified metrics where available. This list shows collection status; the table provides exact values.</p>
+          <p>The map visualises fixed-scale verified metrics where available. This list shows collection status; the table provides exact values. Hong Kong remains listed but has no separate geometry in this map.</p>
         </div>
-        <ul className={styles.focusList} aria-label="Countries in the expanded collection focus">
+        <ul className={styles.focusList} aria-label="Countries and product markets in the expanded collection focus">
           {focusCountries.map((country) => (
             <li key={country.countryCode}>
               <i className={styles[`focus${country.state}`]} aria-hidden="true" />
@@ -438,9 +480,17 @@ export function WorldHeatmap({
                 <strong>{country.countryName}</strong>
                 <small>{country.countryCode} · {country.state === "published"
                   ? "Rate published"
+                  : country.state === "pending"
+                    ? "Publication pending"
                   : country.state === "observed"
                     ? "Sample observed"
                     : "Awaiting observations"}</small>
+                {country.attribution === null ? null : (
+                  <small>Attribution · {country.attribution}</small>
+                )}
+                {country.geometryAvailable ? null : (
+                  <small>List/table only · no separate map geometry</small>
+                )}
               </span>
             </li>
           ))}

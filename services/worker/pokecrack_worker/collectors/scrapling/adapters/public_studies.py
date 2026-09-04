@@ -435,6 +435,100 @@ POKESUP_EVIDENCE_EXCERPT = (
 )
 POKESUP_EVIDENCE_SHA256 = "e9e87b7bbab8483200fef8ffd7d927f339138f742876ca222af1f133f7523b08"
 
+LIMITSEND_IDENTITY = PUBLIC_STUDIES_BY_KEY["limitsend-inferno-x-kr-30-v1"]
+LIMITSEND_POLICY_CONFIG: dict[str, object] = {
+    "study_key": LIMITSEND_IDENTITY.study_key,
+    "canonical_url": LIMITSEND_IDENTITY.source_url,
+    "collector_version": LIMITSEND_IDENTITY.collector_version,
+    "parser_version": LIMITSEND_IDENTITY.parser_version,
+    "country_code": "KR",
+    "country_name": "South Korea",
+    "geography_basis": "product_market",
+    "geography_confidence": "tier_b",
+    "set_external_id": "M2",
+    "set_language": "ko",
+    "set_name": "인페르노X",
+    "product_scope": "booster_box",
+    "pack_count": 30,
+    "observed_at": "2026-08-20T14:20:28Z",
+    "denominator_complete": True,
+    "set_official_url": "https://pokemoncard.co.kr/card/838",
+    "robots_url": "https://limitsend.tistory.com/robots.txt",
+    "robots_checked_at": "2026-09-04",
+    "terms_checked_at": "2026-09-04",
+    "terms_status": "cc_by_nc_nd",
+    "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse",
+}
+LIMITSEND_TITLE = "포켓몬카드 낱개팩 구매를 조심해야 하는 이유｜인페르노X 직접 개봉해보니"
+LIMITSEND_BOX_EVIDENCE = "인페르노X의 공식 구성은 다음과 같습니다. 1팩 : 5장 1박스 : 30팩 총 150장"
+LIMITSEND_COMPLETE_EVIDENCE = (
+    "특히 직접 한 박스를 처음부터 끝까지 개봉하면서 팩의 상태와 나온 카드를 같이 "
+    "비교해보니 상당히 재미있는 경험이었습니다."
+)
+LIMITSEND_EVIDENCE_EXCERPT = f"{LIMITSEND_BOX_EVIDENCE}\n{LIMITSEND_COMPLETE_EVIDENCE}"
+LIMITSEND_EVIDENCE_SHA256 = "4af8a17aec4489a0f3fdd6a3e4c8fb8f7a77a60092825fba3279323b6c654406"
+
+BUYFUNLIFE_IDENTITY = PUBLIC_STUDIES_BY_KEY["buyfunlife-ninja-spinner-tw-40-v1"]
+BUYFUNLIFE_POLICY_CONFIG: dict[str, object] = {
+    "study_key": BUYFUNLIFE_IDENTITY.study_key,
+    "canonical_url": BUYFUNLIFE_IDENTITY.source_url,
+    "collector_version": BUYFUNLIFE_IDENTITY.collector_version,
+    "parser_version": BUYFUNLIFE_IDENTITY.parser_version,
+    "country_code": "TW",
+    "country_name": "Taiwan",
+    "geography_basis": "product_market",
+    "geography_confidence": "tier_b",
+    "set_external_id": "M4",
+    "set_language": "zh-TW",
+    "set_name": "忍者飛旋",
+    "product_scope": "value_bundle",
+    "pack_count": 40,
+    "observed_at": "2026-04-03T13:49:13Z",
+    "denominator_complete": True,
+    "set_official_url": "https://asia.pokemon-card.com/tw/archive/special/card/m4/",
+    "robots_url": "https://buyfunlife.com/robots.txt",
+    "robots_checked_at": "2026-09-04",
+    "terms_checked_at": "2026-09-04",
+    "terms_status": "site_disclaimer_reviewed",
+    "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse",
+}
+BUYFUNLIFE_TITLE = "噴4000元大虧！寶可夢忍者飛旋加值組合開箱｜MUR機率多低？卡價分析（新手懶人包）"
+BUYFUNLIFE_EVIDENCE_EXCERPT = "我買了一整盒《忍者飛旋》加值組合（售價 $2025），拆了 40 包"
+BUYFUNLIFE_EVIDENCE_SHA256 = "2fd4475765c44e61e9603f0603ddf8b8ba7a1d9ff234726c5d6dd631d8937a3d"
+
+ALLONLINE_IDENTITY = PUBLIC_STUDIES_BY_KEY["allonline-mega-dream-ex-th-10-v1"]
+ALLONLINE_POLICY_CONFIG: dict[str, object] = {
+    "study_key": ALLONLINE_IDENTITY.study_key,
+    "canonical_url": ALLONLINE_IDENTITY.source_url,
+    "collector_version": ALLONLINE_IDENTITY.collector_version,
+    "parser_version": ALLONLINE_IDENTITY.parser_version,
+    "country_code": "TH",
+    "country_name": "Thailand",
+    "geography_basis": "product_market",
+    "geography_confidence": "tier_b",
+    "set_external_id": "MA3",
+    "set_language": "th",
+    "set_name": "วิวัฒนาการเมก้า ดรีมex",
+    "product_scope": "booster_box",
+    "pack_count": 10,
+    "observed_at": "2026-01-29T10:10:35Z",
+    "denominator_complete": True,
+    "set_official_url": "https://asia.pokemon-card.com/th/archives/6828/",
+    "robots_url": "https://blog.allonline.7eleven.co.th/robots.txt",
+    "robots_checked_at": "2026-09-04",
+    "terms_checked_at": "2026-09-04",
+    "terms_status": "allonline_terms_reviewed",
+    "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse",
+}
+ALLONLINE_TITLE = "รีวิว การ์ดโปเกมอน วิวัฒนาการดรีมex ตามล่าหาความแรร์ เติมเด็คให้แข็งแกร่ง"
+ALLONLINE_OPENING_EVIDENCE = "วันนี้จะขออาสาพาทุกคนไปเปิดกล่องรีวิว การ์ดเกม ชุด วิวัฒนาการดรีมex ซีรีส์ใหม่ล่าสุดนี้"
+ALLONLINE_RESULT_EVIDENCE = "มาดูกันว่าตัวตึงที่ผมเปิดเจอมีตัวไหนบ้าง"
+ALLONLINE_BOX_EVIDENCE = "1 กล่อง = 10 ซอง >> 1 ซอง = 10 ใบ รวมเป็น 100 ใบ ราคา 1,600 บาท"
+ALLONLINE_EVIDENCE_EXCERPT = "\n".join(
+    (ALLONLINE_OPENING_EVIDENCE, ALLONLINE_RESULT_EVIDENCE, ALLONLINE_BOX_EVIDENCE)
+)
+ALLONLINE_EVIDENCE_SHA256 = "5c4dfcf632018a5f56489b5e158885086c118c13edf5b129dfc530bd25d93478"
+
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
@@ -535,13 +629,72 @@ def pokesup_abyss_eye_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapt
     )
 
 
+def limitsend_inferno_x_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
+    return ReviewedPublicStudyAdapter(
+        client=client,
+        identity=LIMITSEND_IDENTITY,
+        expected_policy_config=LIMITSEND_POLICY_CONFIG,
+        title_tokens=("포켓몬카드 낱개팩 구매", "인페르노X 직접 개봉해보니"),
+        evidence_patterns=(
+            re.compile(re.escape(LIMITSEND_BOX_EVIDENCE)),
+            re.compile(re.escape(LIMITSEND_COMPLETE_EVIDENCE)),
+        ),
+        expected_evidence_sha256=LIMITSEND_EVIDENCE_SHA256,
+        allow_document_title=True,
+        content_tags=("article",),
+    )
+
+
+def buyfunlife_ninja_spinner_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
+    return ReviewedPublicStudyAdapter(
+        client=client,
+        identity=BUYFUNLIFE_IDENTITY,
+        expected_policy_config=BUYFUNLIFE_POLICY_CONFIG,
+        title_tokens=("寶可夢忍者飛旋加值組合開箱", "MUR機率多低"),
+        evidence_patterns=(re.compile(re.escape(BUYFUNLIFE_EVIDENCE_EXCERPT)),),
+        expected_evidence_sha256=BUYFUNLIFE_EVIDENCE_SHA256,
+        content_tags=("body",),
+    )
+
+
+def allonline_mega_dream_ex_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
+    return ReviewedPublicStudyAdapter(
+        client=client,
+        identity=ALLONLINE_IDENTITY,
+        expected_policy_config=ALLONLINE_POLICY_CONFIG,
+        title_tokens=("รีวิว การ์ดโปเกมอน", "วิวัฒนาการดรีมex", "เติมเด็คให้แข็งแกร่ง"),
+        evidence_patterns=(
+            re.compile(re.escape(ALLONLINE_OPENING_EVIDENCE)),
+            re.compile(re.escape(ALLONLINE_RESULT_EVIDENCE)),
+            re.compile(re.escape(ALLONLINE_BOX_EVIDENCE)),
+        ),
+        expected_evidence_sha256=ALLONLINE_EVIDENCE_SHA256,
+        content_tags=("body",),
+    )
+
+
 __all__ = [
+    "ALLONLINE_EVIDENCE_EXCERPT",
+    "ALLONLINE_EVIDENCE_SHA256",
+    "ALLONLINE_IDENTITY",
+    "ALLONLINE_POLICY_CONFIG",
+    "ALLONLINE_TITLE",
     "BLEEDINGCOOL_IDENTITY",
     "BLEEDINGCOOL_POLICY_CONFIG",
+    "BUYFUNLIFE_EVIDENCE_EXCERPT",
+    "BUYFUNLIFE_EVIDENCE_SHA256",
+    "BUYFUNLIFE_IDENTITY",
+    "BUYFUNLIFE_POLICY_CONFIG",
+    "BUYFUNLIFE_TITLE",
     "CARDCHILL_IDENTITY",
     "CARDCHILL_POLICY_CONFIG",
     "COMICBOOK_IDENTITY",
     "COMICBOOK_POLICY_CONFIG",
+    "LIMITSEND_EVIDENCE_EXCERPT",
+    "LIMITSEND_EVIDENCE_SHA256",
+    "LIMITSEND_IDENTITY",
+    "LIMITSEND_POLICY_CONFIG",
+    "LIMITSEND_TITLE",
     "POKESUP_EVIDENCE_EXCERPT",
     "POKESUP_EVIDENCE_SHA256",
     "POKESUP_IDENTITY",
@@ -557,9 +710,12 @@ __all__ = [
     "TCGTALK_POLICY_CONFIG",
     "WARGAMER_IDENTITY",
     "WARGAMER_POLICY_CONFIG",
+    "allonline_mega_dream_ex_adapter",
     "bleedingcool_phantasmal_flames_adapter",
+    "buyfunlife_ninja_spinner_adapter",
     "cardchill_ascended_heroes_adapter",
     "comicbook_perfect_order_adapter",
+    "limitsend_inferno_x_adapter",
     "pokesup_abyss_eye_adapter",
     "tcgtalk_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",

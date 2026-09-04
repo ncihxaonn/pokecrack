@@ -105,8 +105,8 @@ select ok(
 
 select is(
   (select count(*)::integer from ingest.reviewed_public_study_contracts()),
-  6,
-  'the reviewed registry retains Singapore at ordinal 5 after the sixth contract is appended'
+  9,
+  'the reviewed registry retains Singapore at ordinal 5 after the Asian contracts are appended'
 );
 select is(
   (select ordinal from ingest.reviewed_public_study_contracts()
@@ -184,7 +184,7 @@ select is(
       pg_get_functiondef('public.get_public_study_coverage_v1()'::regprocedure)
     ]) as definitions(definition)
     where position('contracts.ordinal in (3, 4, 5)' in definition) > 0
-      or position('contracts.ordinal in (3, 4, 5, 6)' in definition) > 0
+      or position('contracts.ordinal in (3, 4, 5, 6, 7, 8, 9)' in definition) > 0
   ),
   5,
   'all five coverage boundaries continue to accept ordinal 5'

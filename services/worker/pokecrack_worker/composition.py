@@ -517,6 +517,9 @@ public_study_dependencies AS (
     AND to_regprocedure(
       'ingest.finalize_public_study_coverage_job_v1(uuid,text,bigint,text,jsonb)'
     ) IS NOT NULL
+    AND to_regprocedure(
+      'ingest.reviewed_public_study_gates_ready_v1()'
+    ) IS NOT NULL
     AND has_function_privilege(
       current_user,
       to_regprocedure('ingest.begin_public_study_job(uuid,text,bigint)'),
@@ -539,6 +542,12 @@ public_study_dependencies AS (
       ),
       'EXECUTE'
     )
+    AND has_function_privilege(
+      current_user,
+      to_regprocedure('ingest.reviewed_public_study_gates_ready_v1()'),
+      'EXECUTE'
+    )
+    AND ingest.reviewed_public_study_gates_ready_v1()
     AND has_table_privilege(
       current_user,
       'ingest.public_study_observations',
@@ -581,7 +590,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 6
+        count(*) = 9
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -698,6 +707,96 @@ public_study_dependencies AS (
               "rights_scope":"minimal_noncreative_facts_no_media_or_body_reuse"
             }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_limitsend_kr_30'
+            AND policies.display_name = 'LimitSend Inferno X 30-pack study'
+            AND policies.domain = 'limitsend.tistory.com'
+            AND policies.base_url = 'https://limitsend.tistory.com/entry/%ED%8F%AC%EC%BC%93%EB%AA%AC%EC%B9%B4%EB%93%9C-%EB%82%B1%EA%B0%9C%ED%8C%A9-%EA%B5%AC%EB%A7%A4%EB%A5%BC-%EC%A1%B0%EC%8B%AC%ED%95%B4%EC%95%BC-%ED%95%98%EB%8A%94-%EC%9D%B4%EC%9C%A0%EF%BD%9C%EC%9D%B8%ED%8E%98%EB%A5%B4%EB%85%B8X-%EC%A7%81%EC%A0%91-%EA%B0%9C%EB%B4%89%ED%95%B4%EB%B3%B4%EB%8B%88'
+            AND policies.version = 'public-study-limitsend-inferno-x-v1'
+            AND policies.config = '{
+              "study_key":"limitsend-inferno-x-kr-30-v1",
+              "canonical_url":"https://limitsend.tistory.com/entry/%ED%8F%AC%EC%BC%93%EB%AA%AC%EC%B9%B4%EB%93%9C-%EB%82%B1%EA%B0%9C%ED%8C%A9-%EA%B5%AC%EB%A7%A4%EB%A5%BC-%EC%A1%B0%EC%8B%AC%ED%95%B4%EC%95%BC-%ED%95%98%EB%8A%94-%EC%9D%B4%EC%9C%A0%EF%BD%9C%EC%9D%B8%ED%8E%98%EB%A5%B4%EB%85%B8X-%EC%A7%81%EC%A0%91-%EA%B0%9C%EB%B4%89%ED%95%B4%EB%B3%B4%EB%8B%88",
+              "collector_version":"public-study-limitsend-inferno-x-v1",
+              "parser_version":"limitsend-inferno-x-evidence-v1",
+              "country_code":"KR",
+              "country_name":"South Korea",
+              "geography_basis":"product_market",
+              "geography_confidence":"tier_b",
+              "set_external_id":"M2",
+              "set_language":"ko",
+              "set_name":"인페르노X",
+              "product_scope":"booster_box",
+              "pack_count":30,
+              "observed_at":"2026-08-20T14:20:28Z",
+              "denominator_complete":true,
+              "set_official_url":"https://pokemoncard.co.kr/card/838",
+              "robots_url":"https://limitsend.tistory.com/robots.txt",
+              "robots_checked_at":"2026-09-04",
+              "terms_checked_at":"2026-09-04",
+              "terms_status":"cc_by_nc_nd",
+              "rights_scope":"minimal_noncreative_facts_no_media_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_buyfunlife_tw_40'
+            AND policies.display_name = 'BuyFunLife Ninja Spinner 40-pack study'
+            AND policies.domain = 'buyfunlife.com'
+            AND policies.base_url = 'https://buyfunlife.com/pokemon-ninja-spinner-price-mur-guide/'
+            AND policies.version = 'public-study-buyfunlife-ninja-spinner-v1'
+            AND policies.config = '{
+              "study_key":"buyfunlife-ninja-spinner-tw-40-v1",
+              "canonical_url":"https://buyfunlife.com/pokemon-ninja-spinner-price-mur-guide/",
+              "collector_version":"public-study-buyfunlife-ninja-spinner-v1",
+              "parser_version":"buyfunlife-ninja-spinner-evidence-v1",
+              "country_code":"TW",
+              "country_name":"Taiwan",
+              "geography_basis":"product_market",
+              "geography_confidence":"tier_b",
+              "set_external_id":"M4",
+              "set_language":"zh-TW",
+              "set_name":"忍者飛旋",
+              "product_scope":"value_bundle",
+              "pack_count":40,
+              "observed_at":"2026-04-03T13:49:13Z",
+              "denominator_complete":true,
+              "set_official_url":"https://asia.pokemon-card.com/tw/archive/special/card/m4/",
+              "robots_url":"https://buyfunlife.com/robots.txt",
+              "robots_checked_at":"2026-09-04",
+              "terms_checked_at":"2026-09-04",
+              "terms_status":"site_disclaimer_reviewed",
+              "rights_scope":"minimal_noncreative_facts_no_media_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_allonline_th_10'
+            AND policies.display_name = 'ALL ONLINE Mega Dream ex 10-pack study'
+            AND policies.domain = 'blog.allonline.7eleven.co.th'
+            AND policies.base_url = 'https://blog.allonline.7eleven.co.th/collectibles-zone/pokemon-card-review-dream-evolution-ex-all-online/'
+            AND policies.version = 'public-study-allonline-mega-dream-ex-v1'
+            AND policies.config = '{
+              "study_key":"allonline-mega-dream-ex-th-10-v1",
+              "canonical_url":"https://blog.allonline.7eleven.co.th/collectibles-zone/pokemon-card-review-dream-evolution-ex-all-online/",
+              "collector_version":"public-study-allonline-mega-dream-ex-v1",
+              "parser_version":"allonline-mega-dream-ex-evidence-v1",
+              "country_code":"TH",
+              "country_name":"Thailand",
+              "geography_basis":"product_market",
+              "geography_confidence":"tier_b",
+              "set_external_id":"MA3",
+              "set_language":"th",
+              "set_name":"วิวัฒนาการเมก้า ดรีมex",
+              "product_scope":"booster_box",
+              "pack_count":10,
+              "observed_at":"2026-01-29T10:10:35Z",
+              "denominator_complete":true,
+              "set_official_url":"https://asia.pokemon-card.com/th/archives/6828/",
+              "robots_url":"https://blog.allonline.7eleven.co.th/robots.txt",
+              "robots_checked_at":"2026-09-04",
+              "terms_checked_at":"2026-09-04",
+              "terms_status":"allonline_terms_reviewed",
+              "rights_scope":"minimal_noncreative_facts_no_media_or_body_reuse"
+            }'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
@@ -705,7 +804,10 @@ public_study_dependencies AS (
         'public_study_cardchill_gb_90',
         'public_study_bleedingcool_us_36',
         'public_study_tcgtalk_sg_54',
-        'public_study_pokesup_jp_30'
+        'public_study_pokesup_jp_30',
+        'public_study_limitsend_kr_30',
+        'public_study_buyfunlife_tw_40',
+        'public_study_allonline_th_10'
       )
     ),
     false
