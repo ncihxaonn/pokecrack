@@ -87,6 +87,7 @@ jobs:
             --schema public,catalog,ingest,analytics \
             > generated-types/database.generated.ts
           test -s generated-types/database.generated.ts
+          python3 -c 'from pathlib import Path; path = Path("generated-types/database.generated.ts"); data = path.read_bytes(); path.write_bytes(data.rstrip(b"\n") + b"\n")'
       - name: Reject generated TypeScript type drift before migration
         run: diff --unified supabase/types/database.ts generated-types/database.generated.ts
       - name: Upload generated database types for review
