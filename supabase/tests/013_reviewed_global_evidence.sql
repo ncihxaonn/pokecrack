@@ -91,8 +91,8 @@ select matches(
   pg_get_functiondef(
     'ingest.begin_public_study_job_v2(uuid,text,bigint,text)'::regprocedure
   ),
-  'contracts\.ordinal in \(3, 4, 5, 6\)',
-  'coverage preflight accepts the four reviewed coverage contracts'
+  'contracts\.ordinal in \(3, 4, 5, 6, 7, 8, 9\)',
+  'coverage preflight accepts all seven reviewed coverage contracts'
 );
 select has_function(
   'ingest',

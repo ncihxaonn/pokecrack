@@ -31,7 +31,18 @@ POKESUP_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pokesup_jp_30"
 PUBLIC_STUDY_SOURCE_KEYS_V2 = PUBLIC_STUDY_SOURCE_KEYS_V1 + (
     POKESUP_PUBLIC_STUDY_SOURCE_KEY,
 )
+ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_limitsend_kr_30",
+    b"public_study_buyfunlife_tw_40",
+    b"public_study_allonline_th_10",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V3 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V2 + ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS
+)
 POKESUP_POLICY = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+LIMITSEND_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1"
+BUYFUNLIFE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2"
+ALLONLINE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3"
 
 
 def load_retention_module():
@@ -1260,7 +1271,14 @@ COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
         )
 
     @classmethod
-    def post_public_study_dump(cls, *, include_pokesup: bool = False) -> bytes:
+    def post_public_study_dump(
+        cls,
+        *,
+        include_pokesup: bool = False,
+        include_asia_phase_one: bool = False,
+    ) -> bytes:
+        if include_asia_phase_one:
+            include_pokesup = True
         base = (
             cls.gate_schema_dump(youtube=True)
             + b"""CREATE UNLOGGED TABLE ingest.youtube_discoveries (
@@ -1327,6 +1345,20 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
                 tcgtalk_policy_row
                 + POKESUP_POLICY.encode()
                 + b"\tpublic_study_pokesup_jp_30\n",
+                1,
+            )
+        if include_asia_phase_one:
+            pokesup_policy_row = (
+                POKESUP_POLICY.encode() + b"\tpublic_study_pokesup_jp_30\n"
+            )
+            asia_policy_rows = (
+                LIMITSEND_POLICY.encode() + b"\tpublic_study_limitsend_kr_30\n"
+                + BUYFUNLIFE_POLICY.encode() + b"\tpublic_study_buyfunlife_tw_40\n"
+                + ALLONLINE_POLICY.encode() + b"\tpublic_study_allonline_th_10\n"
+            )
+            base = base.replace(
+                pokesup_policy_row,
+                pokesup_policy_row + asia_policy_rows,
                 1,
             )
         return base
@@ -2021,6 +2053,55 @@ cache-second\t{youtube_policy}\t{second_video}
             self.assertNotEqual(result.returncode, 0)
             self.assertEqual(
                 backup_dir.joinpath("pokecrack-20261002T010204Z.sql.gz").exists(),
+                False,
+            )
+
+    def test_backup_accepts_exact_asia_phase_one_profile_and_rejects_partial_profile(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(
+                include_asia_phase_one=True
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261003T010203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261003T010203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V3,
+            )
+            self.assertIn(post_seed, sanitized)
+            for source_key in ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS:
+                self.assertEqual(sanitized.count(source_key + b"\n"), 2)
+
+            partial_dump = post_migration_dump.replace(
+                BUYFUNLIFE_POLICY.encode() + b"\tpublic_study_buyfunlife_tw_40\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261003T010204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(
+                backup_dir.joinpath("pokecrack-20261003T010204Z.sql.gz").exists(),
                 False,
             )
 

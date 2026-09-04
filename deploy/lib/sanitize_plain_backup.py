@@ -123,14 +123,23 @@ POKESUP_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pokesup_jp_30"
 PUBLIC_STUDY_SOURCE_KEYS_V2 = PUBLIC_STUDY_SOURCE_KEYS_V1 + (
     POKESUP_PUBLIC_STUDY_SOURCE_KEY,
 )
-# The migration adds one reviewed coverage source after the pre-apply backup.
-# Keep both complete source-policy profiles exact: accepting a union or a
-# partially migrated set would make the backup ambiguous and restore-unsafe.
+ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_limitsend_kr_30",
+    b"public_study_buyfunlife_tw_40",
+    b"public_study_allonline_th_10",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V3 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V2 + ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS
+)
+# Each migration adds an exact append-only reviewed source profile. Keep every
+# complete transition profile available for pre-apply backups, while rejecting
+# unions and partially migrated sets as ambiguous and restore-unsafe.
 PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V1,
     PUBLIC_STUDY_SOURCE_KEYS_V2,
+    PUBLIC_STUDY_SOURCE_KEYS_V3,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V2
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V3
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(

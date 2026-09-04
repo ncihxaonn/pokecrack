@@ -63,6 +63,14 @@ POKESUP_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pokesup_jp_30"
 PUBLIC_STUDY_SOURCE_KEYS_V2 = PUBLIC_STUDY_SOURCE_KEYS_V1 + (
     POKESUP_PUBLIC_STUDY_SOURCE_KEY,
 )
+ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_limitsend_kr_30",
+    b"public_study_buyfunlife_tw_40",
+    b"public_study_allonline_th_10",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V3 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V2 + ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS
+)
 PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V1
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
@@ -70,6 +78,9 @@ CARDCHILL_POLICY = "77777777-7777-4777-8777-777777777770"
 BLEEDINGCOOL_POLICY = "88888888-8888-4888-8888-888888888880"
 TCGTALK_POLICY = "99999999-9999-4999-8999-999999999990"
 POKESUP_POLICY = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+LIMITSEND_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1"
+BUYFUNLIFE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2"
+ALLONLINE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
     "country_code, country_name, geography_basis, geography_confidence, "
@@ -121,6 +132,10 @@ POST_PUBLIC_STUDY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
 POST_PUBLIC_STUDY_GATE_SEED_V2 = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
     b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V2) + b"\n",
+)
+POST_PUBLIC_STUDY_GATE_SEED_V3 = POST_YOUTUBE_GATE_SEED.replace(
+    b"youtube_discovery\n",
+    b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V3) + b"\n",
 )
 POST_BLUESKY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
@@ -312,6 +327,9 @@ class BackupSanitizerTests(unittest.TestCase):
             b"public_study_bleedingcool_us_36": BLEEDINGCOOL_POLICY,
             b"public_study_tcgtalk_sg_54": TCGTALK_POLICY,
             POKESUP_PUBLIC_STUDY_SOURCE_KEY: POKESUP_POLICY,
+            b"public_study_limitsend_kr_30": LIMITSEND_POLICY,
+            b"public_study_buyfunlife_tw_40": BUYFUNLIFE_POLICY,
+            b"public_study_allonline_th_10": ALLONLINE_POLICY,
         }
         policy_rows = b"".join(
             f"{policy_ids[source_key]}\t{source_key.decode()}\tpolicy\n".encode()
@@ -443,6 +461,29 @@ class BackupSanitizerTests(unittest.TestCase):
 
         partial_profile = dump.replace(
             f"{TCGTALK_POLICY}\tpublic_study_tcgtalk_sg_54\tpolicy\n".encode(),
+            b"",
+            1,
+        )
+        result = self.run_sanitizer(partial_profile, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+    def test_public_study_accepts_exact_asia_phase_one_profile_only(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V3,
+        )
+
+        result = self.run_sanitizer(dump, public_studies="present")
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(POST_PUBLIC_STUDY_GATE_SEED_V3, result.stdout)
+        for source_key in ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS:
+            self.assertEqual(result.stdout.count(source_key + b"\n"), 1)
+
+        partial_profile = dump.replace(
+            f"{BUYFUNLIFE_POLICY}\tpublic_study_buyfunlife_tw_40\tpolicy\n".encode(),
             b"",
             1,
         )

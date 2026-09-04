@@ -11,9 +11,12 @@ from pokecrack_worker.collectors.base import (
 from .adapters.dynamic_fixture import DynamicFixtureAdapter
 from .adapters.example_public import ExamplePublicAdapter
 from .adapters.public_studies import (
+    allonline_mega_dream_ex_adapter,
     bleedingcool_phantasmal_flames_adapter,
+    buyfunlife_ninja_spinner_adapter,
     cardchill_ascended_heroes_adapter,
     comicbook_perfect_order_adapter,
+    limitsend_inferno_x_adapter,
     pokesup_abyss_eye_adapter,
     tcgtalk_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
@@ -59,6 +62,18 @@ def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistr
     static_registry.register(
         "pokesup_abyss_eye_study",
         pokesup_abyss_eye_adapter(client=http_client),
+    )
+    static_registry.register(
+        "limitsend_inferno_x_study",
+        limitsend_inferno_x_adapter(client=http_client),
+    )
+    static_registry.register(
+        "buyfunlife_ninja_spinner_study",
+        buyfunlife_ninja_spinner_adapter(client=http_client),
+    )
+    static_registry.register(
+        "allonline_mega_dream_ex_study",
+        allonline_mega_dream_ex_adapter(client=http_client),
     )
     return static_registry
 
