@@ -14,7 +14,6 @@ from pokecrack_worker.collectors.base import (
 from pokecrack_worker.collectors.scrapling.adapters.public_studies import (
     POKESUP_EVIDENCE_EXCERPT,
     POKESUP_EVIDENCE_SHA256,
-    POKESUP_OPENING_EXCERPT,
     POKESUP_PACK_LABELS,
     POKESUP_POLICY_CONFIG,
     POKESUP_SECTION_HEADING,
@@ -185,7 +184,6 @@ def _html(url: str, body: str) -> FetchResponse:
             POKESUP_FIXTURE,
             (
                 POKESUP_TITLE,
-                POKESUP_OPENING_EXCERPT,
                 POKESUP_SECTION_HEADING + " " + " ".join(POKESUP_PACK_LABELS),
             ),
         ),
@@ -252,7 +250,7 @@ def test_pokesup_policy_is_exact_coverage_only_contract() -> None:
     assert "kill switch" in reason
 
 
-def test_pokesup_br_intro_normalizes_to_canonical_evidence() -> None:
+def test_pokesup_br_intro_is_unretained_surrounding_body() -> None:
     policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
         POKESUP_FETCH_URL
     )
@@ -263,9 +261,12 @@ def test_pokesup_br_intro_normalizes_to_canonical_evidence() -> None:
     )
     candidate = adapter.collect(POKESUP_FETCH_URL, policy)[0]
 
-    assert candidate.text.startswith(POKESUP_TITLE + "\n" + POKESUP_OPENING_EXCERPT + "\n")
-    assert "になります。 箱開封から" in candidate.text
-    assert "になります。箱開封から" not in candidate.text
+    assert candidate.text == POKESUP_EVIDENCE_EXCERPT
+    assert "拡張パック「アビスアイ」の開封結果になります。" not in candidate.text
+    assert (
+        "箱開封から、順序変えずに開封していますので並び順の参考などにどうぞ。" not in candidate.text
+    )
+    assert "<br>" not in candidate.text
     assert candidate.content_sha256 == POKESUP_EVIDENCE_SHA256
 
 

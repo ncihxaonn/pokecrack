@@ -408,10 +408,6 @@ POKESUP_POLICY_CONFIG: dict[str, object] = {
 }
 
 POKESUP_TITLE = "ポケモンカード 拡張パック「アビスアイ」開封結果！レアリティ封入率検証（その1）"
-POKESUP_OPENING_EXCERPT = (
-    "拡張パック「アビスアイ」の開封結果になります。 "
-    "箱開封から、順序変えずに開封していますので並び順の参考などにどうぞ。"
-)
 POKESUP_SECTION_HEADING = "アビスアイ開封（1箱目）"
 POKESUP_PACK_LABELS = tuple(
     [f"左{index}パック" for index in range(1, 16)] + [f"右{index}パック" for index in range(1, 16)]
@@ -435,11 +431,9 @@ def _validate_pokesup_pack_sequence(text: str) -> None:
 
 
 POKESUP_EVIDENCE_EXCERPT = (
-    f"{POKESUP_TITLE}\n"
-    f"{POKESUP_OPENING_EXCERPT}\n"
-    f"{POKESUP_SECTION_HEADING} {' '.join(POKESUP_PACK_LABELS)}"
+    f"{POKESUP_TITLE}\n{POKESUP_SECTION_HEADING} {' '.join(POKESUP_PACK_LABELS)}"
 )
-POKESUP_EVIDENCE_SHA256 = "254f7c0959b4e3fee4cde46391e69b3e9956b6205e1c49c4aee3089b0a3fea36"
+POKESUP_EVIDENCE_SHA256 = "e9e87b7bbab8483200fef8ffd7d927f339138f742876ca222af1f133f7523b08"
 
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
@@ -533,7 +527,6 @@ def pokesup_abyss_eye_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapt
         title_tokens=(POKESUP_TITLE,),
         evidence_patterns=(
             re.compile(re.escape(POKESUP_TITLE)),
-            re.compile(re.escape(POKESUP_OPENING_EXCERPT)),
             _pokesup_pack_sequence_pattern(),
         ),
         expected_evidence_sha256=POKESUP_EVIDENCE_SHA256,
@@ -552,7 +545,6 @@ __all__ = [
     "POKESUP_EVIDENCE_EXCERPT",
     "POKESUP_EVIDENCE_SHA256",
     "POKESUP_IDENTITY",
-    "POKESUP_OPENING_EXCERPT",
     "POKESUP_PACK_LABELS",
     "POKESUP_POLICY_CONFIG",
     "POKESUP_SECTION_HEADING",
