@@ -3,8 +3,10 @@ title = "PokeCrack gitleaks configuration"
 [extend]
 useDefault = true
 
-[[allowlists]]
+[[rules]]
+id = "generic-api-key"
+
+[[rules.allowlists]]
 description = "The reviewed PokeSup study key is a public identifier, not a credential."
-targetRules = ["generic-api-key"]
 regexTarget = "secret"
 regexes = ['''^pokesup-abyss-eye-jp-30-v1$''']
