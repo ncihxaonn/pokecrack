@@ -430,11 +430,75 @@ class SupabaseManagementAPI:
     def query(self, sql: str) -> object:
         return self._request(method="POST", path="/database/query", body=sql)
 
+    def list_backups(self) -> object:
+        return self._request(method="GET", path="/database/backups")
+
 
 def _rows(payload: object, *, query_name: str) -> list[dict[str, object]]:
     if not isinstance(payload, list) or any(not isinstance(row, dict) for row in payload):
         raise MigrationRunnerError(f"Supabase {query_name} response had an ambiguous shape")
     return [row for row in payload if isinstance(row, dict)]
+
+
+def _backup_status_summary(api: SupabaseManagementAPI) -> dict[str, object]:
+    payload = api.list_backups()
+    if not isinstance(payload, dict):
+        raise MigrationRunnerError("Supabase backup response had an ambiguous shape")
+    pitr_enabled = payload.get("pitr_enabled")
+    walg_enabled = payload.get("walg_enabled")
+    backups = payload.get("backups")
+    physical_value = payload.get("physical_backup_data")
+    physical = {} if physical_value is None else physical_value
+    if (
+        not isinstance(pitr_enabled, bool)
+        or not isinstance(walg_enabled, bool)
+        or not isinstance(backups, list)
+        or any(not isinstance(item, dict) for item in backups)
+        or not isinstance(physical, dict)
+    ):
+        raise MigrationRunnerError("Supabase backup response had an ambiguous shape")
+
+    completed: list[dict[str, object]] = []
+    for item in backups:
+        if not isinstance(item, dict) or item.get("status") != "COMPLETED":
+            continue
+        backup_id = item.get("id")
+        inserted_at = item.get("inserted_at")
+        is_physical = item.get("is_physical_backup")
+        if (
+            not isinstance(backup_id, (int, str))
+            or isinstance(backup_id, bool)
+            or not isinstance(inserted_at, str)
+            or not inserted_at
+            or not isinstance(is_physical, bool)
+        ):
+            raise MigrationRunnerError(
+                "Supabase completed backup response had an ambiguous shape"
+            )
+        completed.append(
+            {
+                "id": str(backup_id),
+                "inserted_at": inserted_at,
+                "is_physical_backup": is_physical,
+            }
+        )
+    completed.sort(key=lambda item: str(item["inserted_at"]))
+
+    latest_physical = physical.get("latest_physical_backup_date_unix")
+    earliest_physical = physical.get("earliest_physical_backup_date_unix")
+    for value in (latest_physical, earliest_physical):
+        if value is not None and (not isinstance(value, int) or isinstance(value, bool)):
+            raise MigrationRunnerError(
+                "Supabase physical backup response had an ambiguous shape"
+            )
+    return {
+        "completed_backup_count": len(completed),
+        "earliest_physical_backup_date_unix": earliest_physical,
+        "latest_completed_backup": completed[-1] if completed else None,
+        "latest_physical_backup_date_unix": latest_physical,
+        "pitr_enabled": pitr_enabled,
+        "walg_enabled": walg_enabled,
+    }
 
 
 def _server_version(api: SupabaseManagementAPI) -> int:
@@ -505,6 +569,9 @@ def run(arguments: argparse.Namespace) -> int:
 
     api = SupabaseManagementAPI(token=token, project_ref=project_ref)
     api.verify_project()
+    if arguments.mode == "backup-status":
+        print(json.dumps(_backup_status_summary(api), sort_keys=True))
+        return 0
     applied, pending = _state(api, migrations)
 
     if arguments.mode == "list":
@@ -535,7 +602,9 @@ def run(arguments: argparse.Namespace) -> int:
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "mode", choices=("list", "preview", "apply", "verify"), help="read or advance the hosted ledger"
+        "mode",
+        choices=("backup-status", "list", "preview", "apply", "verify"),
+        help="inspect backups, read the hosted ledger, or advance migrations",
     )
     parser.add_argument(
         "--migrations-dir", type=Path, default=Path("supabase/migrations"), help="local migration directory"

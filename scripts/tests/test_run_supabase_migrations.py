@@ -32,6 +32,14 @@ class _API:
         raise AssertionError(sql)
 
 
+class _BackupAPI:
+    def __init__(self, payload: object) -> None:
+        self.payload = payload
+
+    def list_backups(self) -> object:
+        return self.payload
+
+
 class _Opener:
     def __init__(self, payload: object) -> None:
         self.payload = payload
@@ -43,6 +51,75 @@ class _Opener:
 
 
 class SupabaseMigrationRunnerTests(unittest.TestCase):
+    def test_backup_status_returns_only_reviewed_safe_metadata(self) -> None:
+        summary = runner._backup_status_summary(
+            _BackupAPI(
+                {
+                    "region": "secret-unneeded-region",
+                    "pitr_enabled": False,
+                    "walg_enabled": True,
+                    "backups": [
+                        {
+                            "id": 41,
+                            "inserted_at": "2026-09-03T01:02:03Z",
+                            "is_physical_backup": True,
+                            "unreviewed": "must-not-be-forwarded",
+                            "status": "COMPLETED",
+                        },
+                        {
+                            "id": 42,
+                            "inserted_at": "2026-09-04T01:02:03Z",
+                            "is_physical_backup": True,
+                            "status": "COMPLETED",
+                        },
+                    ],
+                    "physical_backup_data": {
+                        "earliest_physical_backup_date_unix": 1788397323,
+                        "latest_physical_backup_date_unix": 1788483723,
+                    },
+                }
+            )
+        )
+
+        self.assertEqual(summary["completed_backup_count"], 2)
+        self.assertEqual(
+            summary["latest_completed_backup"],
+            {
+                "id": "42",
+                "inserted_at": "2026-09-04T01:02:03Z",
+                "is_physical_backup": True,
+            },
+        )
+        self.assertNotIn("region", summary)
+        self.assertNotIn("unreviewed", json.dumps(summary))
+        without_physical_history = runner._backup_status_summary(
+            _BackupAPI(
+                {
+                    "pitr_enabled": False,
+                    "walg_enabled": False,
+                    "backups": [],
+                    "physical_backup_data": None,
+                }
+            )
+        )
+        self.assertIsNone(without_physical_history["latest_physical_backup_date_unix"])
+
+    def test_backup_status_rejects_ambiguous_provider_shapes(self) -> None:
+        for payload in (
+            [],
+            {"pitr_enabled": False},
+            {
+                "pitr_enabled": False,
+                "walg_enabled": True,
+                "backups": [{"status": "COMPLETED"}],
+                "physical_backup_data": {},
+            },
+        ):
+            with self.subTest(payload=payload), self.assertRaises(
+                runner.MigrationRunnerError
+            ):
+                runner._backup_status_summary(_BackupAPI(payload))
+
     def test_management_api_request_keeps_token_out_of_query_payload(self) -> None:
         token = "sbp_fixture_owner_token_123456"
         project_ref = "a" * 20
