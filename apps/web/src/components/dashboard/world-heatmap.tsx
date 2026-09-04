@@ -463,7 +463,7 @@ export function WorldHeatmap({
                 <tr><td colSpan={8} className={styles.empty}>No verified country or product-market coverage is published yet.</td></tr>
               ) : rows.map((row) => (
                 <tr key={row.cell.countryCode}>
-                  <td data-label="Bucket"><strong>{row.cell.countryName}</strong><small>{row.cell.countryCode} · {formatCoverageAttribution(row.cell.coverageAttributionBases)}</small></td>
+                  <td data-label="Bucket"><strong>{row.cell.countryName}</strong><small>{row.cell.countryCode} · {formatCoverageAttribution(row.cell.coverageAttributionBases, "Country")}</small></td>
                   <td data-label="Packs">{integer.format(row.cell.packsObserved)}</td>
                   <td data-label="Sources">{integer.format(row.cell.independentSources)}</td>
                   <td className={styles.dataVersionCell} data-label="Data version">

@@ -68,7 +68,7 @@ const coverageCountry = coverageMetric.extend({
   coverageAttributionBases: coverageAttributionBasesSchema.optional(),
 });
 
-const coverageCountryV2 = coverageCountry.extend({
+const coverageCountryV2 = coverageCountry.safeExtend({
   collectionClass: z.literal("coverage_only"),
   coverageAttributionBases: coverageAttributionBasesSchema,
 });
