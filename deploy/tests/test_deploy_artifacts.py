@@ -294,6 +294,47 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn('backup_reference=%s\\n', workflow)
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
 
+    def test_api_backup_workflow_uses_a_reviewed_short_lived_login(self) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "backup-production-api.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("environment: Production", workflow)
+        self.assertIn("REQUESTED_SHA: ${{ inputs.confirm_sha }}", workflow)
+        self.assertIn('[[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]]', workflow)
+        self.assertIn('[[ "$GITHUB_REF" == "refs/heads/main" ]]', workflow)
+        self.assertIn("persist-credentials: false", workflow)
+        self.assertIn(
+            "SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}", workflow
+        )
+        self.assertIn("SUPABASE_PROJECT_REF: wohnphsxlquhhknuthrj", workflow)
+        self.assertIn('[[ "$GITHUB_REPOSITORY" == "ncihxaonn/pokecrack" ]]', workflow)
+        self.assertIn('[[ "$REPOSITORY_VISIBILITY" == "private" ]]', workflow)
+        self.assertIn("scripts/create_supabase_backup_credential.py create", workflow)
+        self.assertIn("scripts/create_supabase_backup_credential.py delete", workflow)
+        self.assertIn('--role-output "$role_file"', workflow)
+        self.assertIn('--expected-role-file "$role_file"', workflow)
+        self.assertNotIn("login_created", workflow)
+        self.assertIn("trap cleanup EXIT HUP INT TERM", workflow)
+        self.assertNotIn("VPS_SSH_PRIVATE_KEY", workflow)
+        self.assertNotIn("VPS_KNOWN_HOSTS", workflow)
+        self.assertNotIn("ssh ", workflow)
+        self.assertIn("deploy/scripts/backup.sh", workflow)
+        self.assertIn("deploy/lib/sanitize_plain_backup.py", workflow)
+        self.assertIn("deploy/lib/run_backup_from_env.py", workflow)
+        self.assertIn("deploy/lib/run_postgres_client_container.sh", workflow)
+        self.assertIn('--postgres-client-directory "$client_dir"', workflow)
+        self.assertIn('--dedicated-db-url-file "$database_url_file"', workflow)
+        self.assertIn("BACKUP_PREFLIGHT_ROLE=postgres", workflow)
+        self.assertIn("left(session_user, 10) = 'cli_login_'", workflow)
+        self.assertIn("current_user = 'postgres'", workflow)
+        self.assertIn("for attempt in 1 2 3 4 5 6 7 8", workflow)
+        self.assertIn("actions/upload-artifact@ea165f8", workflow)
+        self.assertIn("retention-days: 7", workflow)
+        self.assertIn("ARTIFACT_DIGEST", workflow)
+        self.assertGreaterEqual(workflow.count('! -L "$reviewed_path"'), 1)
+        self.assertIn('backup_reference=%s\\n', workflow)
+        self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
+
 
 class BackupRetentionTests(unittest.TestCase):
     def test_keeps_seven_daily_and_four_weekly_representatives(self) -> None:
@@ -1660,8 +1701,9 @@ for argument in "$@"; do
   [[ $argument != *'very-secret'* ]]
 done
 set_role_count=0
+expected_preflight_role=${FAKE_EXPECTED_PREFLIGHT_ROLE:-service_role}
 for argument in "$@"; do
-  if [[ $argument == 'set role service_role;'$'\n''select '* ]]; then
+  if [[ $argument == "set role ${expected_preflight_role};"$'\n''select '* ]]; then
     set_role_count=$((set_role_count + 1))
   fi
 done
@@ -1720,6 +1762,7 @@ fi
         nostr_policy_output: str = "",
         mastodon_policy_output: str = "",
         psql_fail: bool = False,
+        preflight_role: str | None = None,
     ) -> subprocess.CompletedProcess[str]:
         environment = os.environ.copy()
         environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
@@ -1737,6 +1780,11 @@ fi
         environment["FAKE_NOSTR_POLICY_OUTPUT"] = nostr_policy_output
         environment["FAKE_MASTODON_POLICY_OUTPUT"] = mastodon_policy_output
         environment["FAKE_PSQL_LOG"] = str(fake_bin.parent / "psql-preflight.log")
+        environment["FAKE_EXPECTED_PREFLIGHT_ROLE"] = (
+            preflight_role or "service_role"
+        )
+        if preflight_role is not None:
+            environment["BACKUP_PREFLIGHT_ROLE"] = preflight_role
         if empty:
             environment["FAKE_EMPTY_DUMP"] = "1"
         effective_dump = (
@@ -1776,6 +1824,33 @@ fi
                     "nostr-policy-lookup:set-role",
                 ],
             )
+
+    def test_owner_session_can_keep_preflights_in_postgres_role(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=base / "backups",
+                timestamp="20260729T020000Z",
+                preflight_role="postgres",
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertNotIn("very-secret", result.stdout + result.stderr)
+
+    def test_unknown_preflight_role_fails_before_database_access(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=base / "backups",
+                timestamp="20260729T020000Z",
+                preflight_role="not-a-role",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertIn("BACKUP_PREFLIGHT_ROLE", result.stderr)
+            self.assertNotIn("very-secret", result.stdout + result.stderr)
 
     def test_coherent_pre_youtube_schema_is_backed_up_without_policy_id(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:

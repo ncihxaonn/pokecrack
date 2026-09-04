@@ -12,6 +12,7 @@ BACKUP_DIR=${BACKUP_DIR:-/opt/pokecrack/backups}
 DAILY=${BACKUP_RETENTION_DAILY:-7}
 WEEKLY=${BACKUP_RETENTION_WEEKLY:-4}
 DATABASE_URL_FILE=${SUPABASE_DB_URL_FILE:-}
+PREFLIGHT_ROLE=${BACKUP_PREFLIGHT_ROLE:-service_role}
 
 die() {
   printf 'backup: %s\n' "$*" >&2
@@ -25,6 +26,11 @@ done
 [[ $DAILY =~ ^[0-9]+$ ]] || die "BACKUP_RETENTION_DAILY must be a non-negative integer"
 [[ $WEEKLY =~ ^[0-9]+$ ]] || die "BACKUP_RETENTION_WEEKLY must be a non-negative integer"
 [[ ! -L $BACKUP_DIR ]] || die "BACKUP_DIR must not be a symbolic link"
+case "$PREFLIGHT_ROLE" in
+  service_role) preflight_role_statement='set role service_role;' ;;
+  postgres) preflight_role_statement='set role postgres;' ;;
+  *) die "BACKUP_PREFLIGHT_ROLE must be service_role or postgres" ;;
+esac
 
 if [[ -n $DATABASE_URL_FILE ]]; then
   [[ $DATABASE_URL_FILE == /* && -f $DATABASE_URL_FILE && ! -L $DATABASE_URL_FILE ]] || die "SUPABASE_DB_URL_FILE must name an absolute regular, non-symlink file"
@@ -56,7 +62,7 @@ fi
 # the expected physical shape without placing the database URL in argv or
 # output. The sanitizer checks the same policy/table pair inside the dump, so
 # a schema race fails instead of retaining cache rows.
-table_state_query="set role service_role;
+table_state_query="$preflight_role_statement
 select concat_ws(E'\\t',
   coalesce((
     select relkind::text || relpersistence::text
@@ -296,14 +302,14 @@ case "$table_state" in
 esac
 fi
 
-policy_query="set role service_role;
+policy_query="$preflight_role_statement
 select id::text from ingest.source_policies where source_key = 'youtube_discovery' order by id::text;"
 if ! youtube_policy_id=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$policy_query" 2>/dev/null); then
   unset database_url
   die "database retention policy lookup failed"
 fi
 
-bluesky_policy_query="set role service_role;
+bluesky_policy_query="$preflight_role_statement
 select id::text from ingest.source_policies where source_key = 'bluesky_jetstream' order by id::text;"
 if ! bluesky_policy_id=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$bluesky_policy_query" 2>/dev/null); then
   unset database_url
@@ -315,7 +321,7 @@ if [[ $bluesky_policy_id == *$'\n'* ]]; then
 fi
 
 nostr_policy_ids=()
-nostr_policy_query="set role service_role;
+nostr_policy_query="$preflight_role_statement
 select source_key || E'\\t' || id::text from ingest.source_policies
 where source_key in ('nostr_relay_primal', 'nostr_relay_nos_lol', 'nostr_relay_nostr_net')
 order by case source_key
@@ -364,7 +370,7 @@ fi
 
 mastodon_policy_id=''
 if [[ $mastodon_public_hashtag == present ]]; then
-  mastodon_policy_query="set role service_role;
+  mastodon_policy_query="$preflight_role_statement
 select id::text from ingest.source_policies where source_key = 'mastodon_social' order by id::text;"
   if ! mastodon_policy_id=$(run_database_command psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet --command "$mastodon_policy_query" 2>/dev/null); then
     unset database_url

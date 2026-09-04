@@ -103,6 +103,7 @@ with gzip.open(backup_dir / filename, "wb") as stream:
                         f"BACKUP_DIR={backup_dir}",
                         "BACKUP_RETENTION_DAILY=7",
                         "BACKUP_RETENTION_WEEKLY=4",
+                        "BACKUP_PREFLIGHT_ROLE=postgres",
                         "SUPABASE_DB_URL='postgresql://fixture.invalid/db?sslmode=require&connect_timeout=5'",
                         "AI_API_KEY=must-not-reach-child",
                         "SCHEDULE_CATALOG_SYNC=0 2,14 * * *",
@@ -124,6 +125,7 @@ with gzip.open(backup_dir / filename, "wb") as stream:
                 (backup_dir / "child-environment.json").read_text(encoding="utf-8")
             )
             self.assertIn("SUPABASE_DB_URL", child_keys)
+            self.assertIn("BACKUP_PREFLIGHT_ROLE", child_keys)
             self.assertNotIn("AI_API_KEY", child_keys)
             self.assertNotIn("SCHEDULE_CATALOG_SYNC", child_keys)
             self.assertNotIn("UNRELATED_COMMAND", child_keys)
