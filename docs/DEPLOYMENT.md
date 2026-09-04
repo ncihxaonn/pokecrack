@@ -125,10 +125,20 @@ Nostr container requires the explicit `--retire-nostr` rollback flag; it never
 uses `--remove-orphans`. The atomic success manifest records SHA, service-set
 name, and exact services. The GitHub deploy workflow requires the same explicit
 choice and verifies remote `HEAD == GITHUB_SHA`; it never uses `git pull`.
-Protect `worker-production` and configure `VPS_HOST`, `VPS_USER`, `VPS_PORT`,
+Protect `worker-production` with a custom deployment-branch policy matching
+only `main`, then configure `VPS_HOST`, `VPS_USER`, `VPS_PORT`,
 `VPS_DEPLOY_PATH`, `VPS_ENV_FILE`, `VPS_NOSTR_ENV_FILE`,
 `VPS_BLUESKY_ENV_FILE`,
-`VPS_SSH_PRIVATE_KEY`, and pinned `VPS_KNOWN_HOSTS`.
+`VPS_SSH_PRIVATE_KEY`, pinned `VPS_KNOWN_HOSTS`, and the protected
+`WORKER_SUPABASE_DB_URL` secret. The worker URL must use the persistent
+`pokecrack_worker` login and this project's primary Sydney session pooler on
+port `5432`, with `application_name=pokecrack-worker`, `connect_timeout=10`,
+`sslmode=verify-full`, and the container CA path
+`/run/supabase-prod-ca-2021.crt`. Before deploying the exact commit, the
+workflow validates that complete contract and atomically replaces only the
+single `SUPABASE_DB_URL` assignment in the owner-readable `VPS_ENV_FILE`; it
+does not print the URL or leave its transfer files behind. Never use a
+short-lived backup login as the worker credential.
 
 For a stronger post-deploy gate than container health, provision the dedicated
 `pokecrack_runtime_monitor` capability role from migrations
