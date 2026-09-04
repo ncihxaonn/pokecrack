@@ -6,7 +6,6 @@ from __future__ import annotations
 import argparse
 import os
 from pathlib import Path
-import re
 import secrets
 import stat
 import urllib.parse
@@ -14,7 +13,7 @@ import urllib.parse
 
 PROJECT_REF = "wohnphsxlquhhknuthrj"
 EXPECTED_USERNAME = f"pokecrack_worker.{PROJECT_REF}"
-POOLER_HOST = re.compile(r"^aws-[0-9]+-ap-southeast-2\.pooler\.supabase\.com$")
+EXPECTED_POOLER_HOST = "aws-0-ap-northeast-1.pooler.supabase.com"
 MAX_ENV_BYTES = 64 * 1024
 MAX_DATABASE_URL_BYTES = 4096
 EXPECTED_QUERY = {
@@ -114,9 +113,8 @@ def validate_database_url(value: str) -> str:
     if (
         parsed.scheme != "postgresql"
         or parsed.fragment
-        or parsed.hostname is None
-        or POOLER_HOST.fullmatch(parsed.hostname) is None
-        or port != 5432
+        or parsed.hostname != EXPECTED_POOLER_HOST
+        or port != 6543
         or parsed.path != "/postgres"
         or username != EXPECTED_USERNAME
         or not password

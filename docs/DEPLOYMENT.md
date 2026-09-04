@@ -131,8 +131,9 @@ only `main`, then configure `VPS_HOST`, `VPS_USER`, `VPS_PORT`,
 `VPS_BLUESKY_ENV_FILE`,
 `VPS_SSH_PRIVATE_KEY`, pinned `VPS_KNOWN_HOSTS`, and the protected
 `WORKER_SUPABASE_DB_URL` secret. The worker URL must use the persistent
-`pokecrack_worker` login and this project's primary Sydney session pooler on
-port `5432`, with `application_name=pokecrack-worker`, `connect_timeout=10`,
+`pokecrack_worker` login and the exact primary Tokyo transaction pooler returned
+by the Management API on port `6543`, with
+`application_name=pokecrack-worker`, `connect_timeout=10`,
 `sslmode=verify-full`, and the container CA path
 `/run/supabase-prod-ca-2021.crt`. Before deploying the exact commit, the
 workflow validates that complete contract and atomically replaces only the

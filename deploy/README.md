@@ -55,8 +55,8 @@ The generic collector, scheduler, and watchdog database URL is stored as the
 `WORKER_SUPABASE_DB_URL` secret in the protected `worker-production` GitHub
 environment. Its custom deployment-branch policy must match only `main`; the
 workflow also refuses every non-`main` ref before checkout. The URL must target
-this project's persistent `pokecrack_worker` login through the primary Sydney
-session pooler on port `5432`, with
+this project's persistent `pokecrack_worker` login through the exact primary
+Tokyo transaction pooler returned by the Management API on port `6543`, with
 `application_name=pokecrack-worker`, `connect_timeout=10`,
 `sslmode=verify-full`, and
 `sslrootcert=/run/supabase-prod-ca-2021.crt`. The deployment workflow transfers
