@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import json
+import os
 import socket
+import subprocess
+import sys
 from collections.abc import Callable, Mapping
 from datetime import datetime
 from urllib.parse import parse_qsl, urlsplit
@@ -30,6 +33,29 @@ _PRODUCTION_QUERY = {
     "sslmode": "verify-full",
     "sslrootcert": "/run/supabase-prod-ca-2021.crt",
 }
+_PROBE_TIMEOUT_SECONDS = 30
+_ALLOWED_STAGES = frozenset(
+    {"configuration", "dns", "tcp", "database", "dependencies", "heartbeat", "runtime"}
+)
+_ALLOWED_REASONS = frozenset(
+    {
+        "authentication_failed",
+        "authorization_failed",
+        "capacity_unavailable",
+        "connection_unavailable",
+        "contract_unavailable",
+        "invalid_dsn",
+        "invalid_runtime",
+        "probe_failed",
+        "probe_timed_out",
+        "query_failed",
+        "ready",
+        "tls_failed",
+        "unavailable",
+        "unreachable",
+        "validation_failed",
+    }
+)
 
 
 def _dsn_and_dependency(
@@ -250,7 +276,7 @@ def render(payload: Diagnostic) -> str:
     return " ".join(fields)
 
 
-def main() -> int:
+def _child_main() -> int:
     try:
         settings = Settings(_env_file=None)
         payload = diagnose(settings)
@@ -262,6 +288,66 @@ def main() -> int:
         }
     print(render(payload))
     return 0 if payload.get("status") == "ok" else 1
+
+
+def _allowlisted_child_output(output: str, returncode: int) -> bool:
+    if len(output) > 256 or "\n" in output or "\r" in output:
+        return False
+    fields = output.split(" ")
+    if len(fields) not in {3, 4}:
+        return False
+    expected_names = ["status", "stage", "reason"]
+    if len(fields) == 4:
+        expected_names.append("worker_role")
+    values: dict[str, str] = {}
+    for field, expected_name in zip(fields, expected_names, strict=True):
+        name, separator, value = field.partition("=")
+        if name != expected_name or separator != "=" or not value:
+            return False
+        values[name] = value
+    status = values["status"]
+    if status not in {"failed", "ok"}:
+        return False
+    if values["stage"] not in _ALLOWED_STAGES or values["reason"] not in _ALLOWED_REASONS:
+        return False
+    role = values.get("worker_role")
+    if role is not None and role not in {item.value for item in _BROAD_WORKER_ROLES}:
+        return False
+    return (status == "ok" and returncode == 0) or (status == "failed" and returncode == 1)
+
+
+def _bounded_parent_main() -> int:
+    try:
+        completed = subprocess.run(
+            [sys.executable, "-m", "pokecrack_worker.safe_health_diagnostics", "--probe-child"],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=_PROBE_TIMEOUT_SECONDS,
+            start_new_session=True,
+            env=os.environ.copy(),
+        )
+    except subprocess.TimeoutExpired:
+        print("status=failed stage=runtime reason=probe_timed_out")
+        return 1
+    output = completed.stdout.strip()
+    if not _allowlisted_child_output(output, completed.returncode):
+        print("status=failed stage=runtime reason=probe_failed")
+        return 1
+    print(output)
+    return completed.returncode
+
+
+def main() -> int:
+    if sys.argv[1:] == ["--probe-child"]:
+        return _child_main()
+    if sys.argv[1:]:
+        print("status=failed stage=runtime reason=probe_failed")
+        return 1
+    # DNS resolution and libpq execute only in this bounded child. If libc,
+    # NSS, or libpq ignores its own timeout, subprocess.run kills and reaps the
+    # whole probe before the outer Docker exec deadline.
+    return _bounded_parent_main()
 
 
 if __name__ == "__main__":

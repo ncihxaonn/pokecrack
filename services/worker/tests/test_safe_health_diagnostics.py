@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import subprocess
+from types import SimpleNamespace
+
 import pytest
 
 from pokecrack_worker.config.settings import Settings
 from pokecrack_worker.safe_health_diagnostics import (
+    _allowlisted_child_output,
+    _bounded_parent_main,
     _database_failure_reason,
     diagnose,
     render,
@@ -190,3 +195,56 @@ def test_heartbeat_failure_is_distinct_and_secret_free() -> None:
         "reason": "authorization_failed",
     }
     assert "do-not-log" not in render(payload)
+
+
+def test_parent_kills_and_sanitizes_a_timed_out_probe(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    def timeout(*_args: object, **_kwargs: object) -> object:
+        raise subprocess.TimeoutExpired("postgresql://user:do-not-log@db", 30)
+
+    monkeypatch.setattr(subprocess, "run", timeout)
+
+    assert _bounded_parent_main() == 1
+    output = capsys.readouterr().out
+    assert output == "status=failed stage=runtime reason=probe_timed_out\n"
+    assert "do-not-log" not in output
+
+
+def test_parent_forwards_only_allowlisted_child_output(
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *_args, **_kwargs: SimpleNamespace(
+            stdout="postgresql://user:do-not-log@db\n",
+            returncode=1,
+        ),
+    )
+
+    assert _bounded_parent_main() == 1
+    output = capsys.readouterr().out
+    assert output == "status=failed stage=runtime reason=probe_failed\n"
+    assert "do-not-log" not in output
+
+
+@pytest.mark.parametrize(
+    ("output", "returncode", "accepted"),
+    (
+        ("status=ok stage=heartbeat reason=ready worker_role=collector", 0, True),
+        ("status=failed stage=dns reason=unavailable worker_role=watchdog", 1, True),
+        ("status=failed stage=runtime reason=probe_timed_out", 1, True),
+        ("status=ok stage=heartbeat reason=ready worker_role=collector", 1, False),
+        ("status=failed stage=dns reason=secret", 1, False),
+        ("status=failed stage=dns reason=unavailable\nsecret", 1, False),
+    ),
+)
+def test_child_output_allowlist(
+    output: str,
+    returncode: int,
+    accepted: bool,
+) -> None:
+    assert _allowlisted_child_output(output, returncode) is accepted
