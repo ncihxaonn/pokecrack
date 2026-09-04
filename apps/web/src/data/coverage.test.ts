@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { DEMO_PUBLIC_DATA } from "./demo";
-import { mergePublicStudyCoverage } from "./coverage";
-import { publicDashboardDataSchema } from "./schema";
+import { mergePublicStudyCoverage, publicStudyCoverageSchema } from "./coverage";
+import { countryDataVersionsSchema, publicDashboardDataSchema } from "./schema";
 
 const collectedAt = "2026-08-25T02:58:00.000Z";
+const syntheticJapanDataVersion = "ja · M3 · ムニキスゼロ · booster box";
 const sources = [
   {
     id: "cardchill_ascended_heroes_study",
@@ -105,6 +106,8 @@ function validRegistryCoveragePayload() {
       {
         countryCode: "BR",
         countryName: "Brazil",
+        collectionClass: "coverage_only" as const,
+        coverageAttributionBases: ["publisher_country"] as const,
         packsObserved: 91,
         openings: 2,
         independentSources: 2,
@@ -120,7 +123,170 @@ function validRegistryCoveragePayload() {
   };
 }
 
+function emptyPublicSnapshot() {
+  return publicDashboardDataSchema.parse({
+    ...DEMO_PUBLIC_DATA,
+    summary: {
+      ...DEMO_PUBLIC_DATA.summary,
+      observedPacks: 0,
+      completeOpenings: 0,
+      aiValidatedSources: 0,
+      trackedRegions: 0,
+      baselineHitRate: null,
+      globalCoverage: "No verified country observations are published yet.",
+    },
+    observations: {
+      ...DEMO_PUBLIC_DATA.observations,
+      status: "empty",
+      period: null,
+      observedPacks: 0,
+      completeOpenings: 0,
+      sourceCountryContributions: 0,
+      countriesObserved: 0,
+      countriesWithPublishedRate: 0,
+      asOf: null,
+      methodologyVersion: null,
+    },
+    mapCells: [],
+    regions: [],
+  });
+}
+
+function validSyntheticJapanCoveragePayload() {
+  return {
+    schemaVersion: "2.0.0" as const,
+    period: { start: "2025-09-05", end: "2026-09-04" },
+    countries: [
+      {
+        countryCode: "JP",
+        countryName: "Japan",
+        dataVersions: [syntheticJapanDataVersion],
+        collectionClass: "coverage_only" as const,
+        coverageAttributionBases: ["product_market"] as const,
+        packsObserved: 30,
+        openings: 1,
+        independentSources: 1,
+        updatedAt: collectedAt,
+      },
+    ],
+    sets: [],
+    sources: [
+      {
+        id: "synthetic_japan_parser_fixture",
+        name: "Synthetic Japan parser fixture",
+        kind: "community" as const,
+        access: "public" as const,
+        status: "paused" as const,
+        lastCollectedAt: null,
+        url: "https://example.com/synthetic-japan-parser-fixture",
+        note: "Synthetic parser/UI fixture only; not reviewed or published evidence.",
+      },
+    ],
+  };
+}
+
 describe("reviewed public-study coverage merge", () => {
+  it("keeps payloads and snapshots without data versions backward compatible", () => {
+    const coverage = publicStudyCoverageSchema.parse(validCoveragePayload());
+    const snapshot = publicDashboardDataSchema.parse(DEMO_PUBLIC_DATA);
+
+    expect(coverage.countries[0]).not.toHaveProperty("dataVersions");
+    expect(snapshot.mapCells.every((cell) => cell.dataVersions === undefined)).toBe(true);
+  });
+
+  it("parses a synthetic Japanese data-version fixture without publishing a rate", () => {
+    const base = emptyPublicSnapshot();
+    const parsed = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(base, validSyntheticJapanCoveragePayload()),
+    );
+    const japan = parsed.mapCells.find((cell) => cell.countryCode === "JP");
+
+    expect(japan).toMatchObject({
+      countryName: "Japan",
+      dataVersions: [syntheticJapanDataVersion],
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["product_market"],
+      packsObserved: 30,
+      openings: 1,
+      independentSources: 1,
+      baselineRate: null,
+      hitRate: null,
+      posteriorMean: null,
+      credibleInterval: null,
+      deltaFromBaseline: null,
+      state: "insufficient",
+    });
+    expect(japan?.sampleNote).toContain("30 observed packs across 1 independent sources");
+    expect(parsed.observations.countriesWithPublishedRate).toBe(0);
+    expect(parsed.sets.some((set) => set.slug.toLowerCase() === "m3")).toBe(false);
+    expect(parsed.regions.find((region) => region.countryCode === "JP")).toMatchObject({
+      dataVersions: [syntheticJapanDataVersion],
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["product_market"],
+    });
+    expect(parsed.sources.find((source) => source.id === "synthetic_japan_parser_fixture"))
+      .toMatchObject({
+        status: "paused",
+        note: "Synthetic parser/UI fixture only; not reviewed or published evidence.",
+      });
+  });
+
+  it("rejects duplicate or malformed data-version labels", () => {
+    const base = emptyPublicSnapshot();
+    const duplicate = validSyntheticJapanCoveragePayload();
+    duplicate.countries[0]!.dataVersions = [
+      syntheticJapanDataVersion,
+      syntheticJapanDataVersion,
+    ];
+    const padded = validSyntheticJapanCoveragePayload();
+    padded.countries[0]!.dataVersions = [` ${syntheticJapanDataVersion}`];
+
+    expect(mergePublicStudyCoverage(base, duplicate)).toBe(base);
+    expect(mergePublicStudyCoverage(base, padded)).toBe(base);
+  });
+
+  it("accepts Japanese and Chinese labels while rejecting non-NFC or invisible text", () => {
+    expect(countryDataVersionsSchema.parse([
+      "ja · M5 · アビスアイ · booster box",
+      "zh-Hans · M5 · 深渊之眼 · 盒",
+    ])).toEqual([
+      "ja · M5 · アビスアイ · booster box",
+      "zh-Hans · M5 · 深渊之眼 · 盒",
+    ]);
+    expect(countryDataVersionsSchema.safeParse(["ja · M5 · bad\u0000label"]).success).toBe(false);
+    expect(countryDataVersionsSchema.safeParse(["ja · M5 · bad\u202elabel"]).success).toBe(false);
+    expect(countryDataVersionsSchema.safeParse(["ja · M5 · Cafe\u0301"]).success).toBe(false);
+    expect(countryDataVersionsSchema.safeParse(["😀".repeat(240)]).success).toBe(true);
+    expect(countryDataVersionsSchema.safeParse(["😀".repeat(241)]).success).toBe(false);
+  });
+
+  it("preserves and de-duplicates data versions across additive coverage merges", () => {
+    const first = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(
+        emptyPublicSnapshot(),
+        validSyntheticJapanCoveragePayload(),
+      ),
+    );
+    const secondPayload = {
+      ...validSyntheticJapanCoveragePayload(),
+      schemaVersion: "1.0.0",
+      sources,
+      countries: [
+        {
+          ...validSyntheticJapanCoveragePayload().countries[0]!,
+          dataVersions: [syntheticJapanDataVersion],
+        },
+      ],
+    };
+    const second = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(first, secondPayload),
+    );
+
+    expect(second.mapCells.find((cell) => cell.countryCode === "JP")?.dataVersions).toEqual([
+      syntheticJapanDataVersion,
+    ]);
+  });
+
   it("keeps a published country aggregate while adding a coverage-only set", () => {
     const originalGb = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "GB");
     expect(originalGb).toBeDefined();
@@ -199,6 +365,8 @@ describe("reviewed public-study coverage merge", () => {
       mergePublicStudyCoverage(DEMO_PUBLIC_DATA, validRegistryCoveragePayload()),
     );
     expect(parsed.mapCells.find((cell) => cell.countryCode === "BR")).toMatchObject({
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["publisher_country"],
       packsObserved: 91,
       openings: 2,
       independentSources: 2,
@@ -218,6 +386,39 @@ describe("reviewed public-study coverage merge", () => {
       packsObserved: 55,
       countriesObserved: 1,
       completeOpenings: 1,
+    });
+  });
+
+  it("replaces only a mentioned v2 coverage row and preserves unrelated cells and inference", () => {
+    const originalBrazil = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "BR");
+    const originalGermany = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "DE");
+    expect(originalBrazil).toBeDefined();
+    expect(originalGermany).toBeDefined();
+
+    const payload = validRegistryCoveragePayload();
+    const merged = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(DEMO_PUBLIC_DATA, payload),
+    );
+    const brazil = merged.mapCells.find((cell) => cell.countryCode === "BR");
+    const germany = merged.mapCells.find((cell) => cell.countryCode === "DE");
+
+    expect(merged.mapCells).toHaveLength(DEMO_PUBLIC_DATA.mapCells.length);
+    expect(germany).toEqual(originalGermany);
+    expect(brazil).toMatchObject({
+      packsObserved: 91,
+      openings: 2,
+      independentSources: 2,
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["publisher_country"],
+      baselineRate: originalBrazil?.baselineRate,
+      hitRate: originalBrazil?.hitRate,
+      posteriorMean: originalBrazil?.posteriorMean,
+      credibleInterval: originalBrazil?.credibleInterval,
+      deltaFromBaseline: originalBrazil?.deltaFromBaseline,
+    });
+    expect(merged.regions.find((region) => region.countryCode === "BR")).toMatchObject({
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["publisher_country"],
     });
   });
 

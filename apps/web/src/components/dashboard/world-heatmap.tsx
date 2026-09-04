@@ -10,6 +10,10 @@ import {
   formatProbability,
   formatSignedProbability,
 } from "@/lib/format";
+import {
+  formatCoverageAttribution,
+  sourceNativeLanguageTag,
+} from "@/lib/coverage-attribution";
 import styles from "./world-heatmap.module.css";
 
 export type { WorldHeatMetric } from "@/app/_lib/world-map-query";
@@ -220,10 +224,10 @@ export function WorldHeatmap({
       ? "Collection in progress"
       : "Published";
   const mapDescription = rows.length === 0
-    ? `No verified country-level pack-opening observations are published. ${GLOBAL_FOCUS_COUNTRIES.length} countries have gold outlines as collection targets only; their neutral fill does not contain inferred data.`
+    ? `No verified country or product-market coverage buckets are published. ${GLOBAL_FOCUS_COUNTRIES.length} countries have gold outlines as collection targets only; their neutral fill does not contain inferred data.`
     : metric === "coverage"
-      ? `${rows.length} countries have verified pack-opening observations. Colour shows fixed-scale sample volume only, not a hit rate or representative demand. Gold-outlined countries are collection targets; neutral fill means they remain unobserved.`
-      : `${rows.length} countries have verified observations: ${publishedRateCount} publish a rate, ${pendingCount} await reviewed publication, and ${withheldCount - pendingCount} remain below the evidence threshold. Gold-outlined countries are collection targets; neutral fill means they remain unobserved.`;
+      ? `${rows.length} country or product-market coverage buckets have verified pack-opening observations. Colour shows fixed-scale sample volume only, not a hit rate or representative demand. Gold-outlined countries are collection targets; neutral fill means they remain unobserved.`
+      : `${rows.length} country or product-market coverage buckets have verified observations: ${publishedRateCount} publish a rate, ${pendingCount} await reviewed publication, and ${withheldCount - pendingCount} remain below the evidence threshold. Gold-outlined countries are collection targets; neutral fill means they remain unobserved.`;
 
   const selectMetric = (nextMetric: WorldHeatMetric) => {
     setMetric(nextMetric);
@@ -257,8 +261,8 @@ export function WorldHeatmap({
           </h2>
           <p>
             {metric === "coverage"
-              ? "Verified pack-opening sample volume by country. This coverage view is not a hit-rate comparison."
-              : "Country-level qualifying-hit rates from verified pack-opening samples. Catalog records and discovery activity never enter the denominator."}
+              ? "Verified pack-opening sample volume by country or product-market coverage bucket. This view is not a hit-rate comparison."
+              : "Qualifying-hit rates by attributed country or product-market bucket from verified pack-opening samples. Catalog records and discovery activity never enter the denominator."}
           </p>
         </div>
         <div className={styles.toggle} role="group" aria-label="World heat map metric">
@@ -349,12 +353,12 @@ export function WorldHeatmap({
               <div className={styles.emptyMapMessage} role="note">
                 <strong>{metric === "coverage"
                   ? "No verified pack coverage yet"
-                  : "No country-level rates published yet"}</strong>
+                  : "No attributed bucket rates published yet"}</strong>
                 <span>{rows.length === 0
                   ? "Gold outlines mark collection focus; fill remains reserved for verified evidence."
                   : pendingCount > 0
-                    ? `${rows.length} ${rows.length === 1 ? "country is" : "countries are"} observed; ${pendingCount} ${pendingCount === 1 ? "has" : "have"} met the evidence threshold and await reviewed publication.`
-                    : `${rows.length} ${rows.length === 1 ? "country is" : "countries are"} observed; all remain below the publication threshold.`}</span>
+                    ? `${rows.length} ${rows.length === 1 ? "coverage bucket is" : "coverage buckets are"} observed; ${pendingCount} ${pendingCount === 1 ? "has" : "have"} met the evidence threshold and await reviewed publication.`
+                    : `${rows.length} ${rows.length === 1 ? "coverage bucket is" : "coverage buckets are"} observed; all remain below the publication threshold.`}</span>
               </div>
             ) : null}
           </div>
@@ -402,15 +406,15 @@ export function WorldHeatmap({
             <small>{period}</small>
           </div>
           <dl className={styles.readinessList}>
-            <div><dt>Countries observed</dt><dd>{integer.format(observations.countriesObserved)}</dd></div>
+            <div><dt>Coverage buckets observed</dt><dd>{integer.format(observations.countriesObserved)}</dd></div>
             <div><dt>Published rates</dt><dd>{integer.format(observations.countriesWithPublishedRate)}</dd></div>
             <div><dt>Observed packs</dt><dd>{integer.format(observations.observedPacks)}</dd></div>
             <div><dt>Complete openings</dt><dd>{integer.format(observations.completeOpenings)}</dd></div>
           </dl>
           <p className={styles.coverageSummary}>{coverageSummary}</p>
           <p className={styles.sourceNote}>{observations.sourceCountryContributions === 0
-            ? "No verified source-country contributions have reached publication yet."
-            : `${integer.format(observations.sourceCountryContributions)} source-country contributions. A source may appear in more than one country, so this is not a global independent-source count.`}
+            ? "No verified source-attribution contributions have reached publication yet."
+            : `${integer.format(observations.sourceCountryContributions)} source-attribution contributions. A source may appear in more than one coverage bucket, so this is not a global independent-source count.`}
           </p>
           <p className="sr-only" role="status" aria-live="polite">
             {metricLabel} selected. The world map has updated.
@@ -445,23 +449,44 @@ export function WorldHeatmap({
 
       <div className={styles.tableBlock}>
         <div className={styles.tableHeading}>
-          <strong>Country observations</strong>
+          <strong>Country / product-market coverage</strong>
           <small>Alphabetical, not a ranking</small>
         </div>
-        <div className={styles.tableFrame} role="region" aria-label="Exact global country values" tabIndex={0}>
+        <div className={styles.tableFrame} role="region" aria-label="Exact country and product-market coverage values" tabIndex={0}>
           <table>
-            <caption className="sr-only">Exact country-level values for {period}</caption>
+            <caption className="sr-only">Exact country and product-market coverage values for {period}</caption>
             <thead>
-              <tr><th scope="col">Country</th><th scope="col">Packs</th><th scope="col">Sources</th><th scope="col">Observed</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Status</th></tr>
+              <tr><th scope="col">Bucket</th><th scope="col">Packs</th><th scope="col">Sources</th><th scope="col">Data version</th><th scope="col">Observed</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Status</th></tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={7} className={styles.empty}>No verified country observations are published yet.</td></tr>
+                <tr><td colSpan={8} className={styles.empty}>No verified country or product-market coverage is published yet.</td></tr>
               ) : rows.map((row) => (
                 <tr key={row.cell.countryCode}>
-                  <td data-label="Country"><strong>{row.cell.countryName}</strong><small>{row.cell.countryCode}</small></td>
+                  <td data-label="Bucket"><strong>{row.cell.countryName}</strong><small>{row.cell.countryCode} · {formatCoverageAttribution(row.cell.coverageAttributionBases, "Country")}</small></td>
                   <td data-label="Packs">{integer.format(row.cell.packsObserved)}</td>
                   <td data-label="Sources">{integer.format(row.cell.independentSources)}</td>
+                  <td className={styles.dataVersionCell} data-label="Data version">
+                    {row.cell.dataVersions === undefined ? (
+                      <span className={styles.dataVersionEmpty}>Not provided</span>
+                    ) : (
+                      <span className={styles.dataVersionList}>
+                        {row.cell.dataVersions.map((version) => {
+                          const lang = sourceNativeLanguageTag(version);
+                          return (
+                            <span
+                              className={styles.dataVersion}
+                              dir="auto"
+                              key={version}
+                              {...(lang === undefined ? {} : { lang })}
+                            >
+                              {version}
+                            </span>
+                          );
+                        })}
+                      </span>
+                    )}
+                  </td>
                   <td data-label="Observed">{formatProbability(row.cell.hitRate)}</td>
                   <td data-label="Baseline">{formatProbability(row.cell.baselineRate)}</td>
                   <td data-label="Delta">{formatSignedProbability(row.cell.deltaFromBaseline)}</td>

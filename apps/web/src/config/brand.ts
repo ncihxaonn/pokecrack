@@ -5,9 +5,9 @@ const batchDisclaimer =
 const footerDisclaimer =
   "Pokecrack is an unofficial research dashboard and is not affiliated with, endorsed by, or sponsored by The Pokémon Company, Nintendo, Game Freak or Creatures.";
 const projectDescription =
-  "An unofficial global dashboard for country-level Pokémon TCG pack-opening observations, set-catalog coverage and conservative qualifying-hit estimates.";
+  "An unofficial global dashboard for country and product-market Pokémon TCG coverage buckets, set-catalog coverage and conservative qualifying-hit estimates.";
 const projectScope =
-  "Free, personal, experimental and non-commercial; worldwide country-level aggregation of verified English-language evidence for physical Pokémon TCG Booster Boxes, ETBs and Booster Bundles.";
+  "Free, personal, experimental and non-commercial; worldwide aggregation of verified Pokémon TCG evidence by declared country or product-market coverage bucket, with each source-native data version labelled, for Booster Boxes, ETBs and Booster Bundles.";
 
 export const BRAND = {
   name: "Pokecrack",

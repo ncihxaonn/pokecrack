@@ -21,6 +21,52 @@ const evidenceState = z.enum([
   "insufficient",
 ]);
 const productType = z.enum(["Booster Box", "ETB", "Booster Bundle"]);
+export const coverageAttributionBasisSchema = z.enum([
+  "publisher_country",
+  "author_public_residence",
+  "product_market",
+]);
+export const coverageAttributionBasesSchema = z
+  .array(coverageAttributionBasisSchema)
+  .min(1)
+  .max(3)
+  .superRefine((bases, context) => {
+    if (new Set(bases).size !== bases.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Coverage attribution bases must be unique",
+      });
+    }
+  });
+export const countryDataVersionsSchema = z
+  .array(
+    z
+      .string()
+      .min(1)
+      .refine((value) => value === value.trim(), "Data versions cannot have surrounding whitespace")
+      .refine(
+        (value) => value === value.normalize("NFC"),
+        "Data versions must be NFC-normalized",
+      )
+      .refine(
+        (value) => Array.from(value).length <= 240,
+        "Data versions cannot exceed 240 Unicode code points",
+      )
+      .refine(
+        (value) => !/[\p{Cc}\p{Cf}]/u.test(value),
+        "Data versions cannot contain control or invisible formatting characters",
+      ),
+  )
+  .min(1)
+  .max(32)
+  .superRefine((versions, context) => {
+    if (new Set(versions).size !== versions.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Data versions must be unique",
+      });
+    }
+  });
 const interval = z
   .object({ low: probability, high: probability })
   .strict()
@@ -121,12 +167,18 @@ const setMetric = observedMetric
     signal: z.string().min(1).max(500),
   })
   .superRefine(validateObservedMetric);
+const coverageAttributionMetadata = {
+  dataVersions: countryDataVersionsSchema.optional(),
+  collectionClass: z.literal("coverage_only").optional(),
+  coverageAttributionBases: coverageAttributionBasesSchema.optional(),
+} as const;
 const regionMetric = observedMetric
   .extend({
     slug: z.string().min(1).max(128),
     name: z.string().min(1).max(160),
     countryCode: z.string().refine(isIsoAlpha2, "Country code must be an official ISO alpha-2 code"),
     coverage: z.string().min(1).max(300),
+    ...coverageAttributionMetadata,
   })
   .superRefine(validateObservedMetric);
 const retailerMetric = observedMetric
@@ -259,6 +311,7 @@ const countryMapCell = observedMetric
   .extend({
     countryCode: z.string().refine(isIsoAlpha2, "Country code must be an official ISO alpha-2 code"),
     countryName: z.string().min(1).max(160),
+    ...coverageAttributionMetadata,
     periodStart: isoDate,
     periodEnd: isoDate,
     setScope: z.literal("all"),

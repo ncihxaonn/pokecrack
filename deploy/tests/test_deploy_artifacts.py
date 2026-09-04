@@ -20,6 +20,19 @@ from deploy.tests.test_reviewed_global_aggregate_backup import bridge_dump
 REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
 DEPLOY_ROOT = REPOSITORY_ROOT / "deploy"
 
+PUBLIC_STUDY_SOURCE_KEYS_V1 = (
+    b"public_study_comicbook_us_55",
+    b"public_study_wargamer_gb_17",
+    b"public_study_cardchill_gb_90",
+    b"public_study_bleedingcool_us_36",
+    b"public_study_tcgtalk_sg_54",
+)
+POKESUP_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pokesup_jp_30"
+PUBLIC_STUDY_SOURCE_KEYS_V2 = PUBLIC_STUDY_SOURCE_KEYS_V1 + (
+    POKESUP_PUBLIC_STUDY_SOURCE_KEY,
+)
+POKESUP_POLICY = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+
 
 def load_retention_module():
     module_path = DEPLOY_ROOT / "lib" / "prune_backups.py"
@@ -1179,6 +1192,7 @@ ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
         *,
         youtube: bool,
         public_studies: bool = False,
+        public_study_source_keys: tuple[bytes, ...] = PUBLIC_STUDY_SOURCE_KEYS_V1,
         bluesky: bool = False,
         nostr: bool = False,
         mastodon: bool = False,
@@ -1194,11 +1208,7 @@ ALTER TABLE ingest.source_request_gates ENABLE ROW LEVEL SECURITY;
         )
         mastodon_row = b"mastodon_social\n" if mastodon else b""
         public_rows = (
-            b"public_study_comicbook_us_55\n"
-            b"public_study_wargamer_gb_17\n"
-            b"public_study_cardchill_gb_90\n"
-            b"public_study_bleedingcool_us_36\n"
-            b"public_study_tcgtalk_sg_54\n"
+            b"".join(source_key + b"\n" for source_key in public_study_source_keys)
             if public_studies
             else b""
         )
@@ -1250,8 +1260,8 @@ COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
         )
 
     @classmethod
-    def post_public_study_dump(cls) -> bytes:
-        return (
+    def post_public_study_dump(cls, *, include_pokesup: bool = False) -> bytes:
+        base = (
             cls.gate_schema_dump(youtube=True)
             + b"""CREATE UNLOGGED TABLE ingest.youtube_discoveries (
 );
@@ -1307,6 +1317,19 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
 \\.
 """
         )
+        if include_pokesup:
+            tcgtalk_policy_row = (
+                b"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb0\t"
+                b"public_study_tcgtalk_sg_54\n"
+            )
+            base = base.replace(
+                tcgtalk_policy_row,
+                tcgtalk_policy_row
+                + POKESUP_POLICY.encode()
+                + b"\tpublic_study_pokesup_jp_30\n",
+                1,
+            )
+        return base
 
     @classmethod
     def post_bluesky_dump(cls) -> bytes:
@@ -1946,6 +1969,59 @@ cache-second\t{youtube_policy}\t{second_video}
             self.assertIn(
                 self.canonical_gate_seed(youtube=True, public_studies=True),
                 sanitized,
+            )
+
+    def test_backup_accepts_exact_post_migration_profile_and_rejects_partial_profile(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(
+                include_pokesup=True
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261002T010203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261002T010203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V2,
+            )
+            self.assertIn(post_seed, sanitized)
+            self.assertIn(
+                POKESUP_POLICY.encode() + b"\tpublic_study_pokesup_jp_30\n",
+                sanitized,
+            )
+            self.assertEqual(sanitized.count(post_seed), 1)
+
+            partial_dump = post_migration_dump.replace(
+                b"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb0\t"
+                b"public_study_tcgtalk_sg_54\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261002T010204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(
+                backup_dir.joinpath("pokecrack-20261002T010204Z.sql.gz").exists(),
+                False,
             )
 
     def test_backup_retains_the_complete_reviewed_aggregate_bridge_bundle(

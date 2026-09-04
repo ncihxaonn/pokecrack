@@ -581,7 +581,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 5
+        count(*) = 6
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -668,13 +668,44 @@ public_study_dependencies AS (
               "denominator_complete":true
             }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pokesup_jp_30'
+            AND policies.display_name = 'PokeSup Abyss Eye 30-pack study'
+            AND policies.domain = 'pokesup.com'
+            AND policies.base_url = 'https://pokesup.com/blog/unboxing-m5/'
+            AND policies.version = 'public-study-pokesup-abyss-eye-v1'
+            AND policies.config = '{
+              "study_key":"pokesup-abyss-eye-jp-30-v1",
+              "canonical_url":"https://pokesup.com/blog/unboxing-m5/",
+              "collector_version":"public-study-pokesup-abyss-eye-v1",
+              "parser_version":"pokesup-abyss-eye-evidence-v1",
+              "country_code":"JP",
+              "country_name":"Japan",
+              "geography_basis":"product_market",
+              "geography_confidence":"tier_b",
+              "set_external_id":"M5",
+              "set_language":"ja",
+              "set_name":"アビスアイ",
+              "product_scope":"booster_box",
+              "pack_count":30,
+              "observed_at":"2026-05-22T12:01:44Z",
+              "denominator_complete":true,
+              "set_official_url":"https://www.pokemon-card.com/ex/m5/",
+              "robots_url":"https://pokesup.com/robots.txt",
+              "robots_checked_at":"2026-09-04",
+              "terms_checked_at":"2026-09-04",
+              "terms_status":"no_independent_terms_page",
+              "rights_scope":"minimal_noncreative_facts_no_media_or_body_reuse"
+            }'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
         'public_study_wargamer_gb_17',
         'public_study_cardchill_gb_90',
         'public_study_bleedingcool_us_36',
-        'public_study_tcgtalk_sg_54'
+        'public_study_tcgtalk_sg_54',
+        'public_study_pokesup_jp_30'
       )
     ),
     false

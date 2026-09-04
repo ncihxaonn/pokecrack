@@ -7,7 +7,7 @@ describe("BRAND", () => {
     expect(BRAND.name).toBe("Pokecrack");
     expect(BRAND.tagline).toBe("Crack open the data behind every pack.");
     expect(BRAND.description).toBe(
-      "An unofficial global dashboard for country-level Pokémon TCG pack-opening observations, set-catalog coverage and conservative qualifying-hit estimates.",
+      "An unofficial global dashboard for country and product-market Pokémon TCG coverage buckets, set-catalog coverage and conservative qualifying-hit estimates.",
     );
     expect(BRAND.scope).toMatch(/free.*experimental.*non-commercial/i);
     expect(BRAND.scope).toMatch(/worldwide/i);

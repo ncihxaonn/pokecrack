@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import pytest
 
 from pokecrack_worker.collectors.official_api import PostgresPublicStudyGate
+from pokecrack_worker.config.public_studies import PublicStudyIdentity
 from pokecrack_worker.db import PsycopgQueryExecutor
 from pokecrack_worker.db.postgres import _is_transient_connection_error
 from pokecrack_worker.deduplication.fingerprints import content_sha256
@@ -25,8 +26,29 @@ from pokecrack_worker.jobs import (
     YouTubeDiscoveryCompletion,
     YouTubeSourceItemWrite,
 )
+from pokecrack_worker.jobs import models as job_models
+from pokecrack_worker.jobs import postgres as postgres_jobs
 
 NOW = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
+POKESUP_STUDY_KEY = "pokesup-abyss-eye-jp-30-v1"
+POKESUP_IDENTITY = PublicStudyIdentity(
+    study_key=POKESUP_STUDY_KEY,
+    source_url="https://pokesup.com/blog/unboxing-m5/",
+    fetch_url="https://pokesup.com/blog/unboxing-m5/",
+    domain="pokesup.com",
+    adapter="pokesup_abyss_eye_study",
+    collector_version="public-study-pokesup-abyss-eye-v1",
+    parser_version="pokesup-abyss-eye-evidence-v1",
+)
+
+
+def _enable_pokesup_coverage_routes(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        postgres_jobs,
+        "PUBLIC_STUDY_COVERAGE_KEYS",
+        frozenset((*postgres_jobs.PUBLIC_STUDY_COVERAGE_KEYS, POKESUP_STUDY_KEY)),
+    )
+    monkeypatch.setitem(job_models.PUBLIC_STUDIES_BY_KEY, POKESUP_STUDY_KEY, POKESUP_IDENTITY)
 
 
 def test_lease_claims_one_due_job_by_priority_without_double_claim() -> None:
@@ -1120,6 +1142,52 @@ def test_new_reviewed_study_uses_the_exact_scheduled_coverage_rpc() -> None:
     }
 
 
+def test_pokesup_reviewed_study_uses_the_exact_scheduled_coverage_rpc(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _enable_pokesup_coverage_routes(monkeypatch)
+    row: dict[str, object] = {
+        "id": "job-pokesup-coverage",
+        "job_type": "source.public_study.opening",
+        "payload": {"study_key": POKESUP_STUDY_KEY},
+        "status": "pending",
+        "available_at": NOW,
+        "lease_generation": 0,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+    class Executor:
+        def __init__(self) -> None:
+            self.sql = ""
+            self.params: dict[str, object] = {}
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            self.sql = sql
+            self.params = params
+            return [row]
+
+    executor = Executor()
+    PostgresJobRepository(executor).enqueue_scheduled(
+        "source.public_study.opening",
+        {"study_key": POKESUP_STUDY_KEY},
+        schedule_name=f"public_study_{POKESUP_STUDY_KEY}",
+        scheduled_for=NOW,
+        priority=14,
+        now=NOW,
+        max_attempts=3,
+    )
+
+    assert "ingest.enqueue_scheduled_public_study_coverage_job_v1" in executor.sql
+    assert executor.params == {
+        "schedule_name": f"public_study_{POKESUP_STUDY_KEY}",
+        "scheduled_for": NOW,
+        "study_key": POKESUP_STUDY_KEY,
+        "priority": 14,
+        "max_attempts": 3,
+    }
+
+
 def test_public_study_gate_routes_only_new_studies_to_denominator_coverage() -> None:
     class Executor:
         def __init__(self) -> None:
@@ -1495,6 +1563,77 @@ def test_new_reviewed_study_completion_uses_denominator_only_finalizer() -> None
     }
     assert "pack_count" not in persisted
     assert "qualifying_hit_pack_count" not in persisted
+
+
+def test_pokesup_completion_uses_denominator_only_finalizer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _enable_pokesup_coverage_routes(monkeypatch)
+    completed_row: dict[str, object] = {
+        "id": "job-pokesup-coverage",
+        "job_type": "source.public_study.opening",
+        "payload": {"study_key": POKESUP_STUDY_KEY},
+        "status": "completed",
+        "available_at": NOW,
+        "lease_generation": 2,
+        "completed_at": NOW,
+        "created_at": NOW,
+        "updated_at": NOW,
+    }
+
+    class Executor:
+        def __init__(self) -> None:
+            self.calls: list[tuple[str, dict[str, object]]] = []
+
+        def query(self, sql: str, params: dict[str, object]) -> list[dict[str, object]]:
+            self.calls.append((sql, params))
+            return [completed_row]
+
+    evidence = "M5 アビスアイの開封について、確認できた事実だけを記録。"
+    completion = PublicStudyCompletion(
+        study_key=POKESUP_STUDY_KEY,
+        source_url="https://pokesup.com/blog/unboxing-m5/",
+        title="PokeSup M5 アビスアイ opening",
+        evidence_excerpt=evidence,
+        evidence_sha256=content_sha256(evidence),
+        collector_version="public-study-pokesup-abyss-eye-v1",
+        parser_version="pokesup-abyss-eye-evidence-v1",
+        source_policy_version="public-study-pokesup-abyss-eye-v1",
+    )
+
+    executor = Executor()
+    PostgresJobRepository(executor).complete(
+        "job-pokesup-coverage",
+        worker_id="collector-1",
+        lease_generation=2,
+        now=NOW,
+        effect=completion,
+    )
+
+    sql, params = executor.calls[0]
+    assert "ingest.finalize_public_study_coverage_job_v1" in sql
+    assert params["study_key"] == POKESUP_STUDY_KEY
+    persisted = json.loads(str(params["result"]))
+    assert set(persisted) == {
+        "version",
+        "study_key",
+        "source_url",
+        "title",
+        "evidence_excerpt",
+        "evidence_sha256",
+        "collector_version",
+        "parser_version",
+        "source_policy_version",
+    }
+    serialized = json.dumps(persisted)
+    for forbidden in (
+        "country_code",
+        "pack_count",
+        "qualifying_",
+        "metric_version",
+        "observed_rate",
+    ):
+        assert forbidden not in serialized
 
 
 def test_public_study_completion_rejects_identity_or_version_drift() -> None:
