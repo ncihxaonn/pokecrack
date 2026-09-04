@@ -50,7 +50,8 @@ credential. `.github/workflows/backup-production-api.yml` runs in the protected
 `Production` environment and uses its owner-scoped Supabase access token to
 mint the official short-lived CLI login through the Management API. The helper
 accepts only the project's primary `*.pooler.supabase.com` connection, forces
-IPv4 session mode, and starts each database connection as `postgres`. The URL
+the API-provided IPv4 pooler port, and uses the same tenant-suffixed temporary
+role username as the official CLI. The URL
 is written only to an owner-only runner temp file and is removed after use; the
 temporary login is deleted through the Management API on both success and
 failure, deletion failure fails the workflow, and the accepted API TTL must be
@@ -59,8 +60,10 @@ queries the active `cli_login_*` roles and proceeds only when the exact temporar
 role is the sole match. No other CLI session may run against this project
 concurrently because Supabase's deletion endpoint revokes project CLI logins
 collectively.
-TLS verifies both the public certificate chain and the pooler hostname. The
-token and database credential never appear in command arguments or logs. The
+TLS uses the `prod-ca-2021.crt` public root from a pinned Supabase CLI commit;
+the wrapper verifies its SHA-256 before mounting it read-only, then libpq
+verifies both the certificate chain and pooler hostname. The token and database
+credential never appear in command arguments or logs. The
 same reviewed retention preflights, exact schema scope, sanitizer,
 gzip validation, and immutable PostgreSQL 17 container used by the manual
 backup path then produce one consistent logical dump. The private repository's

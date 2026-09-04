@@ -86,6 +86,7 @@ jobs:
 
           reviewed_paths=(
             scripts/create_supabase_backup_credential.py
+            deploy/certs/supabase-prod-ca-2021.crt
             deploy/scripts/backup.sh
             deploy/lib/prune_backups.py
             deploy/lib/run_backup_from_env.py
@@ -106,6 +107,9 @@ jobs:
           install -m 0500 \
             deploy/lib/run_postgres_client_container.sh \
             "$client_dir/pg_dump"
+          install -m 0400 \
+            deploy/certs/supabase-prod-ca-2021.crt \
+            "$client_dir/supabase-prod-ca-2021.crt"
           PATH="$client_dir:$PATH" psql --version >/dev/null
           printf 'BACKUP_DIR=%s\nBACKUP_RETENTION_DAILY=1\nBACKUP_RETENTION_WEEKLY=0\nBACKUP_PREFLIGHT_ROLE=postgres\n' \
             "$backup_dir" > "$env_file"
@@ -122,7 +126,7 @@ jobs:
               PATH="$client_dir:$PATH" python3 \
                 deploy/lib/run_with_database_url.py -- \
                 psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet \
-                --command "select (left(session_user, 10) = 'cli_login_' and current_user = 'postgres')::text;" \
+                --command "select (left(session_user, 10) = 'cli_login_' and current_user = session_user)::text;" \
                 < "$database_url_file" 2>/dev/null
             )" && [[ "$role_state" == true ]]; then
               pooler_ready=true
