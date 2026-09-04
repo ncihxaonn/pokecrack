@@ -24,6 +24,12 @@ from .models import (
 from .repository import LeaseLostError
 
 
+def _is_public_study_coverage_key(study_key: object) -> bool:
+    """Keep enqueue and completion routing on the reviewed coverage allowlist."""
+
+    return isinstance(study_key, str) and study_key in PUBLIC_STUDY_COVERAGE_KEYS
+
+
 class QueryExecutor(Protocol):
     """Small injectable contract used by psycopg and deterministic tests."""
 
@@ -390,8 +396,7 @@ class PostgresJobRepository:
         coverage_enqueue = (
             kind == "source.public_study.opening"
             and set(job_payload) == {"study_key"}
-            and isinstance(coverage_study_key, str)
-            and coverage_study_key in PUBLIC_STUDY_COVERAGE_KEYS
+            and _is_public_study_coverage_key(coverage_study_key)
         )
         if coverage_enqueue:
             sql = ENQUEUE_PUBLIC_STUDY_COVERAGE_SQL
@@ -434,8 +439,7 @@ class PostgresJobRepository:
         coverage_enqueue = (
             kind == "source.public_study.opening"
             and set(job_payload) == {"study_key"}
-            and isinstance(coverage_study_key, str)
-            and coverage_study_key in PUBLIC_STUDY_COVERAGE_KEYS
+            and _is_public_study_coverage_key(coverage_study_key)
         )
         if coverage_enqueue:
             sql = ENQUEUE_SCHEDULED_PUBLIC_STUDY_COVERAGE_SQL
@@ -548,7 +552,7 @@ class PostgresJobRepository:
         elif isinstance(effect, PublicStudyCompletion):
             sql = (
                 FINALIZE_PUBLIC_STUDY_COVERAGE_SQL
-                if effect.study_key in PUBLIC_STUDY_COVERAGE_KEYS
+                if _is_public_study_coverage_key(effect.study_key)
                 else FINALIZE_PUBLIC_STUDY_SQL
             )
             params["study_key"] = effect.study_key
