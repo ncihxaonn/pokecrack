@@ -435,7 +435,7 @@ print_bounded_health_diagnostics() {
       "${compose[@]}" exec -T "$service" \
       python -m pokecrack_worker.safe_health_diagnostics 2>/dev/null || true)
     if (( ${#diagnostic} <= 256 )) \
-      && [[ $diagnostic =~ ^status=(failed|ok)\ stage=(configuration|dns|tcp|database|dependencies|heartbeat)\ reason=(invalid_dsn|invalid_runtime|validation_failed|unavailable|unreachable|authentication_failed|capacity_unavailable|authorization_failed|tls_failed|connection_unavailable|query_failed|contract_unavailable|ready)(\ worker_role=(collector|scheduler|watchdog|nostr-collector|bluesky-collector))?$ ]]
+      && [[ $diagnostic =~ ^status=(failed|ok)\ stage=(configuration|dns|tcp|database|dependencies|heartbeat|runtime)\ reason=(invalid_dsn|invalid_runtime|validation_failed|unavailable|unreachable|authentication_failed|capacity_unavailable|authorization_failed|tls_failed|connection_unavailable|query_failed|contract_unavailable|ready|probe_failed|probe_timed_out)(\ worker_role=(collector|scheduler|watchdog))?$ ]]
     then
       printf 'service=%s diagnostic=%s\n' "$service" "$diagnostic" >&2
     else
