@@ -7,19 +7,29 @@ import pytest
 
 from pokecrack_worker.collectors.base import (
     PUBLIC_COLLECTOR_USER_AGENT,
+    CollectionService,
     CollectorError,
     FetchResponse,
 )
 from pokecrack_worker.collectors.scrapling.adapters.public_studies import (
+    POKESUP_EVIDENCE_EXCERPT,
+    POKESUP_EVIDENCE_SHA256,
+    POKESUP_OPENING_EXCERPT,
+    POKESUP_PACK_LABELS,
+    POKESUP_POLICY_CONFIG,
+    POKESUP_SECTION_HEADING,
+    POKESUP_TITLE,
     TCGTALK_EVIDENCE_EXCERPT,
     TCGTALK_EVIDENCE_SHA256,
     RobotsTxtChecker,
     bleedingcool_phantasmal_flames_adapter,
     cardchill_ascended_heroes_adapter,
     comicbook_perfect_order_adapter,
+    pokesup_abyss_eye_adapter,
     tcgtalk_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
+from pokecrack_worker.collectors.scrapling.registry import build_live_static_registry
 from pokecrack_worker.config.public_studies import PUBLIC_STUDIES
 from pokecrack_worker.config.source_policy import SourcePolicyRegistry
 
@@ -34,6 +44,11 @@ BLEEDINGCOOL_SOURCE_URL = PUBLIC_STUDIES[3].source_url
 BLEEDINGCOOL_FETCH_URL = PUBLIC_STUDIES[3].fetch_url
 TCGTALK_SOURCE_URL = PUBLIC_STUDIES[4].source_url
 TCGTALK_FETCH_URL = PUBLIC_STUDIES[4].fetch_url
+POKESUP_SOURCE_URL = PUBLIC_STUDIES[5].source_url
+POKESUP_FETCH_URL = PUBLIC_STUDIES[5].fetch_url
+POKESUP_FIXTURE = (ROOT / "services" / "worker" / "fixtures" / "pokesup_abyss_eye.html").read_text(
+    encoding="utf-8"
+)
 
 
 class FixtureHTTPClient:
@@ -162,6 +177,18 @@ def _html(url: str, body: str) -> FetchResponse:
                 "Out of 54 packs opened, the community pull rate held roughly true: 1 SIR per 54 packs in this particular opening, with the Meowth EX SIR being the pull.",
             ),
         ),
+        (
+            POKESUP_FETCH_URL,
+            POKESUP_SOURCE_URL,
+            "pokesup.com",
+            pokesup_abyss_eye_adapter,
+            POKESUP_FIXTURE,
+            (
+                POKESUP_TITLE,
+                POKESUP_OPENING_EXCERPT,
+                POKESUP_SECTION_HEADING + " " + " ".join(POKESUP_PACK_LABELS),
+            ),
+        ),
     ),
 )
 def test_reviewed_public_study_parsers_emit_only_bounded_provenance(
@@ -191,10 +218,97 @@ def test_reviewed_public_study_parsers_emit_only_bounded_provenance(
     assert len(candidate.content_sha256) == 64
     if domain == "tcgtalk.com":
         assert candidate.content_sha256 == TCGTALK_EVIDENCE_SHA256
+    if domain == "pokesup.com":
+        assert candidate.text == POKESUP_EVIDENCE_EXCERPT
+        assert candidate.content_sha256 == POKESUP_EVIDENCE_SHA256
     assert candidate.metadata == {
         "study_key": policy.config["study_key"],
         "parser_version": policy.config["parser_version"],
     }
+
+
+def test_pokesup_policy_is_exact_coverage_only_contract() -> None:
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        POKESUP_FETCH_URL
+    )
+
+    assert policy.config == POKESUP_POLICY_CONFIG
+    assert policy.config["set_language"] == "ja"
+    assert "language" not in policy.config
+    assert (
+        not {
+            "qualifying_hit_pack_count",
+            "qualifying_metric",
+            "metric_version",
+        }
+        & policy.config.keys()
+    )
+    assert policy.terms_url is None
+    reason = policy.reason.casefold()
+    assert "no independent terms page" in reason
+    assert "all rights reserved" in reason
+    assert "limited factual extraction" in reason
+    assert "no image or body reuse" in reason
+    assert "kill switch" in reason
+
+
+def test_pokesup_br_intro_normalizes_to_canonical_evidence() -> None:
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        POKESUP_FETCH_URL
+    )
+    assert "<br>" in POKESUP_FIXTURE
+
+    adapter = pokesup_abyss_eye_adapter(
+        client=FixtureHTTPClient({POKESUP_FETCH_URL: _html(POKESUP_FETCH_URL, POKESUP_FIXTURE)})
+    )
+    candidate = adapter.collect(POKESUP_FETCH_URL, policy)[0]
+
+    assert candidate.text.startswith(POKESUP_TITLE + "\n" + POKESUP_OPENING_EXCERPT + "\n")
+    assert "になります。 箱開封から" in candidate.text
+    assert "になります。箱開封から" not in candidate.text
+    assert candidate.content_sha256 == POKESUP_EVIDENCE_SHA256
+
+
+def test_pokesup_sequence_rejects_duplicate_pack_labels() -> None:
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        POKESUP_FETCH_URL
+    )
+    duplicate = POKESUP_FIXTURE.replace(
+        "  <div>右15パック</div>\n",
+        "  <div>右15パック</div>\n  <div>右15パック</div>\n",
+    )
+    adapter = pokesup_abyss_eye_adapter(
+        client=FixtureHTTPClient({POKESUP_FETCH_URL: _html(POKESUP_FETCH_URL, duplicate)})
+    )
+
+    with pytest.raises(CollectorError, match="sequence"):
+        adapter.collect(POKESUP_FETCH_URL, policy)
+
+
+def test_pokesup_collection_requests_only_robots_and_article_html() -> None:
+    robots_url = "https://pokesup.com/robots.txt"
+    client = FixtureHTTPClient(
+        {
+            robots_url: FetchResponse(
+                status_code=200,
+                url=robots_url,
+                headers={"content-type": "text/plain; charset=utf-8"},
+                body=b"User-agent: *\nAllow: /\n",
+            ),
+            POKESUP_FETCH_URL: _html(POKESUP_FETCH_URL, POKESUP_FIXTURE),
+        }
+    )
+    service = CollectionService(
+        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+        http_adapters=build_live_static_registry(http_client=client),
+        robots=RobotsTxtChecker(client=client, followup_delay_seconds=0),
+    )
+
+    candidates = service.collect_url(POKESUP_FETCH_URL, route="static")
+
+    assert len(candidates) == 1
+    assert candidates[0].media_urls == ()
+    assert client.calls == [(robots_url, 30.0), (POKESUP_FETCH_URL, 30.0)]
 
 
 def test_public_study_adapter_rejects_policy_or_evidence_drift() -> None:
