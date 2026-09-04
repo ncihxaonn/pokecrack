@@ -106,6 +106,7 @@ jobs:
           install -m 0500 \
             deploy/lib/run_postgres_client_container.sh \
             "$client_dir/pg_dump"
+          PATH="$client_dir:$PATH" psql --version >/dev/null
           printf 'BACKUP_DIR=%s\nBACKUP_RETENTION_DAILY=1\nBACKUP_RETENTION_WEEKLY=0\nBACKUP_PREFLIGHT_ROLE=postgres\n' \
             "$backup_dir" > "$env_file"
           chmod 0600 "$env_file"

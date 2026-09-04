@@ -54,7 +54,7 @@ IPv4 session mode, and starts each database connection as `postgres`. The URL
 is written only to an owner-only runner temp file and is removed after use; the
 temporary login is deleted through the Management API on both success and
 failure, deletion failure fails the workflow, and the accepted API TTL must be
-between 30 and 60 minutes. Before creating or deleting anything, the helper
+between 5 and 60 minutes. Before creating or deleting anything, the helper
 queries the active `cli_login_*` roles and proceeds only when the exact temporary
 role is the sole match. No other CLI session may run against this project
 concurrently because Supabase's deletion endpoint revokes project CLI logins

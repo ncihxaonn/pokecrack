@@ -328,6 +328,11 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("left(session_user, 10) = 'cli_login_'", workflow)
         self.assertIn("current_user = 'postgres'", workflow)
         self.assertIn("for attempt in 1 2 3 4 5 6 7 8", workflow)
+        self.assertIn('PATH="$client_dir:$PATH" psql --version', workflow)
+        self.assertLess(
+            workflow.index('PATH="$client_dir:$PATH" psql --version'),
+            workflow.index("scripts/create_supabase_backup_credential.py create"),
+        )
         self.assertIn("actions/upload-artifact@ea165f8", workflow)
         self.assertIn("retention-days: 7", workflow)
         self.assertIn("ARTIFACT_DIGEST", workflow)
