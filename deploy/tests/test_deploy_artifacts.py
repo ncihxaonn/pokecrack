@@ -241,6 +241,45 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertNotIn("db push", workflow)
         self.assertNotIn("--db-url", workflow)
 
+    def test_production_backup_workflow_uses_reviewed_code_and_scoped_ssh(self) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "backup-production.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn("environment: worker-production", workflow)
+        self.assertIn("REQUESTED_SHA: ${{ inputs.confirm_sha }}", workflow)
+        self.assertIn('[[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]]', workflow)
+        self.assertIn('[[ "$GITHUB_REF" == "refs/heads/main" ]]', workflow)
+        self.assertIn('[[ "$VPS_USER" != root ]]', workflow)
+        self.assertIn('[[ "$EUID" -ne 0 ]]', workflow)
+        self.assertIn('[[ $(id -u) -ne 0 ]]', workflow)
+        self.assertIn("persist-credentials: false", workflow)
+        self.assertIn("VPS_ENV_FILE: ${{ vars.VPS_ENV_FILE }}", workflow)
+        self.assertNotIn("VPS_ENV_FILE: ${{ vars.VPS_ENV_FILE ||", workflow)
+        job_environment = workflow.split("    env:\n", 1)[1].split("    steps:\n", 1)[0]
+        self.assertNotIn("VPS_SSH_PRIVATE_KEY", job_environment)
+        self.assertNotIn("VPS_KNOWN_HOSTS", job_environment)
+        ssh_setup = workflow.split(
+            "      - name: Configure pinned SSH host identity\n", 1
+        )[1].split("      - name: Create and validate a fresh production backup\n", 1)[0]
+        self.assertIn("SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}", ssh_setup)
+        self.assertIn("SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}", ssh_setup)
+        self.assertIn("StrictHostKeyChecking=yes", workflow)
+        self.assertNotIn("ssh-keyscan", workflow)
+        self.assertIn("deploy/scripts/backup.sh", workflow)
+        self.assertIn("deploy/lib/sanitize_plain_backup.py", workflow)
+        self.assertIn("deploy/lib/run_backup_from_env.py", workflow)
+        self.assertNotIn('source "$env_file"', workflow)
+        self.assertIn('for reviewed_path in "${bundle_paths[@]}"', workflow)
+        self.assertGreaterEqual(workflow.count('! -L "$reviewed_path"'), 1)
+        self.assertIn('! -L "$backup_code_root/$reviewed_path"', workflow)
+        self.assertIn("trap cleanup_remote EXIT HUP INT TERM", workflow)
+        self.assertIn("remote_root_created=false", workflow)
+        self.assertIn('[[ "$remote_root_created" == true', workflow)
+        self.assertIn("remote_root_created=true", workflow)
+        self.assertIn("/tmp/pokecrack-backup-code.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}", workflow)
+        self.assertIn('backup_reference=%s\\n', workflow)
+        self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
+
 
 class BackupRetentionTests(unittest.TestCase):
     def test_keeps_seven_daily_and_four_weekly_representatives(self) -> None:

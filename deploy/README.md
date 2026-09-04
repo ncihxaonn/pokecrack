@@ -45,6 +45,21 @@ confidentiality and never treats an unavailable marker as a successful backup.
 
 Put real secrets only in the root-readable environment file, never in Git, Compose YAML, command history, issues, prompts, or logs. Set `DATA_MODE=live` only after a real Supabase database is migrated and tested. Use a dedicated TLS database URL with bounded connection timeout, keep `WORKER_MAX_CONCURRENCY=1`, `YOUTUBE_COLLECTION_ENABLED=false`, `AI_PROVIDER=fixture`, and `OPENCLI_ENABLED=false`. The TCGdex catalog does not require an API key.
 
+The GitHub-managed backup path is intentionally a separate non-root contract.
+For `.github/workflows/backup-production.yml`, set the `worker-production`
+`VPS_ENV_FILE` variable explicitly to a regular, non-symlink file inside the
+dedicated `VPS_USER` account's private configuration directory. That file must
+be owned by `VPS_USER` and inaccessible to group or other users (mode `0600` is
+recommended). The workflow has no `/etc` fallback: it fails closed if the
+variable, owner, or permissions drift, uploads only the reviewed backup
+implementation from the confirmed GitHub SHA, and returns only the validated
+backup filename. It never sources the Compose dotenv file: a non-executable
+parser projects only `BACKUP_DIR`, the two retention settings, and exactly one
+Supabase database credential source into a sanitized child environment. Other
+production secrets and shell-like content never reach the backup process. A
+root-owned `/etc/pokecrack/production.env` remains suitable for a manual
+root-operated backup, but must not be selected for the non-root GitHub workflow.
+
 The browser profile, extension directory, and long unique noVNC secret described
 below are not prerequisites for the TCGdex core. Prepare them only under a
 separately reviewed browser release.
