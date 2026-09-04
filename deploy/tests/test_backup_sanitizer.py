@@ -52,18 +52,24 @@ POST_YOUTUBE_GATE_SEED = (
     b"youtube_discovery\n"
     b"\\.\n\n"
 )
-PUBLIC_STUDY_SOURCE_KEYS = (
+PUBLIC_STUDY_SOURCE_KEYS_V1 = (
     b"public_study_comicbook_us_55",
     b"public_study_wargamer_gb_17",
     b"public_study_cardchill_gb_90",
     b"public_study_bleedingcool_us_36",
     b"public_study_tcgtalk_sg_54",
 )
+POKESUP_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pokesup_jp_30"
+PUBLIC_STUDY_SOURCE_KEYS_V2 = PUBLIC_STUDY_SOURCE_KEYS_V1 + (
+    POKESUP_PUBLIC_STUDY_SOURCE_KEY,
+)
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V1
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
 CARDCHILL_POLICY = "77777777-7777-4777-8777-777777777770"
 BLEEDINGCOOL_POLICY = "88888888-8888-4888-8888-888888888880"
 TCGTALK_POLICY = "99999999-9999-4999-8999-999999999990"
+POKESUP_POLICY = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
     "country_code, country_name, geography_basis, geography_confidence, "
@@ -111,6 +117,10 @@ PUBLIC_STUDY_DDL = b"""CREATE TABLE ingest.public_study_observations (
 POST_PUBLIC_STUDY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
     b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS) + b"\n",
+)
+POST_PUBLIC_STUDY_GATE_SEED_V2 = POST_YOUTUBE_GATE_SEED.replace(
+    b"youtube_discovery\n",
+    b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V2) + b"\n",
 )
 POST_BLUESKY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
@@ -292,15 +302,21 @@ class BackupSanitizerTests(unittest.TestCase):
         *rows: bytes,
         ddl: bytes = PUBLIC_STUDY_DDL,
         columns: str = PUBLIC_STUDY_COLUMNS,
+        source_keys: tuple[bytes, ...] = PUBLIC_STUDY_SOURCE_KEYS,
     ) -> bytes:
         youtube_row = f"{YOUTUBE_POLICY}\tyoutube_discovery\tpolicy\n".encode()
-        policy_rows = (
-            f"{COMICBOOK_POLICY}\tpublic_study_comicbook_us_55\tpolicy\n"
-            f"{WARGAMER_POLICY}\tpublic_study_wargamer_gb_17\tpolicy\n"
-            f"{CARDCHILL_POLICY}\tpublic_study_cardchill_gb_90\tpolicy\n"
-            f"{BLEEDINGCOOL_POLICY}\tpublic_study_bleedingcool_us_36\tpolicy\n"
-            f"{TCGTALK_POLICY}\tpublic_study_tcgtalk_sg_54\tpolicy\n"
-        ).encode()
+        policy_ids = {
+            b"public_study_comicbook_us_55": COMICBOOK_POLICY,
+            b"public_study_wargamer_gb_17": WARGAMER_POLICY,
+            b"public_study_cardchill_gb_90": CARDCHILL_POLICY,
+            b"public_study_bleedingcool_us_36": BLEEDINGCOOL_POLICY,
+            b"public_study_tcgtalk_sg_54": TCGTALK_POLICY,
+            POKESUP_PUBLIC_STUDY_SOURCE_KEY: POKESUP_POLICY,
+        }
+        policy_rows = b"".join(
+            f"{policy_ids[source_key]}\t{source_key.decode()}\tpolicy\n".encode()
+            for source_key in source_keys
+        )
         ledger = ddl + copy_block(
             "ingest.public_study_observations",
             columns,
@@ -409,6 +425,45 @@ class BackupSanitizerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr.decode())
         self.assertIn(b"comicbook-perfect-order-us-55-v1", result.stdout)
         self.assertIn(POST_PUBLIC_STUDY_GATE_SEED, result.stdout)
+
+    def test_public_study_accepts_exact_post_migration_profile_only(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V2,
+        )
+
+        result = self.run_sanitizer(dump, public_studies="present")
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(POST_PUBLIC_STUDY_GATE_SEED_V2, result.stdout)
+        self.assertEqual(
+            result.stdout.count(POKESUP_PUBLIC_STUDY_SOURCE_KEY + b"\n"), 1
+        )
+
+        partial_profile = dump.replace(
+            f"{TCGTALK_POLICY}\tpublic_study_tcgtalk_sg_54\tpolicy\n".encode(),
+            b"",
+            1,
+        )
+        result = self.run_sanitizer(partial_profile, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+    def test_pokesup_study_key_is_not_promoted_to_the_statistical_ledger(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(
+                study_key=b"pokesup-abyss-eye-jp-30-v1",
+                source_policy_id=POKESUP_POLICY.encode(),
+            ),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V2,
+        )
+
+        result = self.run_sanitizer(dump, public_studies="present")
+
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
 
     def test_public_study_schema_copy_header_and_rows_are_fail_closed(self) -> None:
         base = self.with_public_study_ledger(
