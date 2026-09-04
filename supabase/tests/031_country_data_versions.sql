@@ -177,8 +177,11 @@ select ok(
 select ok(
   not exists (
     select 1
-    from ingest.reviewed_public_study_contracts() as contract
+    from ingest.public_study_coverage_observations as coverage
+    join ingest.reviewed_public_study_contracts() as contract
+      on contract.study_key = coverage.study_key
     where contract.config ->> 'geography_basis' = 'product_market'
+      and not coverage.is_demo
   )
   or exists (
     select 1
@@ -188,7 +191,7 @@ select ok(
     where country.item ->> 'countryCode' = 'JP'
       and country.item -> 'coverageAttributionBases' ? 'product_market'
   ),
-  'a reviewed product-market contract is exposed as the JP product-market bucket'
+  'a verified product-market observation is exposed as the JP product-market bucket'
 );
 
 select ok(
