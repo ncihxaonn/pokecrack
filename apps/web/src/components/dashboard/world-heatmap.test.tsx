@@ -12,6 +12,8 @@ import {
   WorldHeatmap,
 } from "./world-heatmap";
 
+const syntheticJapanDataVersion = "ja · M3 · ムニキスゼロ · booster box";
+
 describe("WorldHeatmap", () => {
   it("renders a global fixed-scale map with exact accessible values", () => {
     render(
@@ -31,6 +33,72 @@ describe("WorldHeatmap", () => {
     expect(screen.getByRole("cell", { name: "Brazil BR" })).toBeVisible();
     expect(screen.getAllByText("Withheld").length).toBeGreaterThan(0);
     expect(screen.getByText(/not a global independent-source count/i)).toBeVisible();
+  });
+
+  it("renders a synthetic localized UI fixture without publishing a Japan rate", () => {
+    const syntheticJapan = {
+      ...DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "BR")!,
+      countryCode: "JP",
+      countryName: "Japan",
+      dataVersions: [syntheticJapanDataVersion],
+      packsObserved: 30,
+      openings: 1,
+      independentSources: 1,
+      state: "insufficient" as const,
+      sampleNote: "Synthetic parser/UI fixture only; no published evidence or rate.",
+    };
+    render(
+      <WorldHeatmap
+        cells={[syntheticJapan]}
+        coverageSummary="Synthetic parser/UI fixture only; this is not published evidence."
+        initialMetric="coverage"
+        observations={{
+          ...DEMO_PUBLIC_DATA.observations,
+          status: "collecting",
+          observedPacks: 30,
+          completeOpenings: 1,
+          sourceCountryContributions: 1,
+          countriesObserved: 1,
+          countriesWithPublishedRate: 0,
+        }}
+      />,
+    );
+
+    expect(screen.getByRole("columnheader", { name: "Data version" })).toBeVisible();
+    const version = screen.getByText(syntheticJapanDataVersion);
+    expect(version).toBeVisible();
+    expect(version.closest("td")).toHaveAttribute("data-label", "Data version");
+    const japanRow = screen.getByRole("row", { name: /Japan JP/ });
+    expect(japanRow.querySelector('td[data-label="Observed"]')).toHaveTextContent("Withheld");
+    expect(japanRow.querySelector('td[data-label="Baseline"]')).toHaveTextContent("Withheld");
+    expect(japanRow.querySelector('td[data-label="Delta"]')).toHaveTextContent("N/A");
+    expect(japanRow.querySelector('td[data-label="Status"]')).toHaveTextContent("Withheld");
+    expect(within(japanRow).queryByText(/\d+(?:\.\d+)?%/)).not.toBeInTheDocument();
+    expect(screen.getByText("JP · Sample observed")).toBeVisible();
+  });
+
+  it("renders a clear fallback for legacy cells without data versions", () => {
+    const legacy = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "BR")!;
+    render(
+      <WorldHeatmap
+        cells={[legacy]}
+        coverageSummary="One legacy country sample."
+        initialMetric="coverage"
+        observations={{
+          ...DEMO_PUBLIC_DATA.observations,
+          status: "collecting",
+          observedPacks: legacy.packsObserved,
+          completeOpenings: legacy.openings,
+          sourceCountryContributions: legacy.independentSources,
+          countriesObserved: 1,
+          countriesWithPublishedRate: 0,
+        }}
+      />,
+    );
+
+    const fallback = screen.getByText("Not provided");
+    expect(fallback).toBeVisible();
+    expect(fallback.closest("td")).toHaveAttribute("data-label", "Data version");
   });
 
   it("highlights the seven expanded collection countries without inventing observations", () => {

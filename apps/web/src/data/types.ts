@@ -44,6 +44,7 @@ export interface RegionMetric extends ObservedMetric {
 export interface CountryMapCell extends ObservedMetric {
   readonly countryCode: string;
   readonly countryName: string;
+  readonly dataVersions?: readonly string[];
   readonly periodStart: string;
   readonly periodEnd: string;
   readonly setScope: "all";

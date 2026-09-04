@@ -452,16 +452,27 @@ export function WorldHeatmap({
           <table>
             <caption className="sr-only">Exact country-level values for {period}</caption>
             <thead>
-              <tr><th scope="col">Country</th><th scope="col">Packs</th><th scope="col">Sources</th><th scope="col">Observed</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Status</th></tr>
+              <tr><th scope="col">Country</th><th scope="col">Packs</th><th scope="col">Sources</th><th scope="col">Data version</th><th scope="col">Observed</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Status</th></tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={7} className={styles.empty}>No verified country observations are published yet.</td></tr>
+                <tr><td colSpan={8} className={styles.empty}>No verified country observations are published yet.</td></tr>
               ) : rows.map((row) => (
                 <tr key={row.cell.countryCode}>
                   <td data-label="Country"><strong>{row.cell.countryName}</strong><small>{row.cell.countryCode}</small></td>
                   <td data-label="Packs">{integer.format(row.cell.packsObserved)}</td>
                   <td data-label="Sources">{integer.format(row.cell.independentSources)}</td>
+                  <td className={styles.dataVersionCell} data-label="Data version">
+                    {row.cell.dataVersions === undefined ? (
+                      <span className={styles.dataVersionEmpty}>Not provided</span>
+                    ) : (
+                      <span className={styles.dataVersionList}>
+                        {row.cell.dataVersions.map((version) => (
+                          <span className={styles.dataVersion} key={version}>{version}</span>
+                        ))}
+                      </span>
+                    )}
+                  </td>
                   <td data-label="Observed">{formatProbability(row.cell.hitRate)}</td>
                   <td data-label="Baseline">{formatProbability(row.cell.baselineRate)}</td>
                   <td data-label="Delta">{formatSignedProbability(row.cell.deltaFromBaseline)}</td>
