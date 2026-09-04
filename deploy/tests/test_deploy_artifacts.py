@@ -239,6 +239,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn('docker pull "$postgres_meta_source"', workflow)
         self.assertIn('docker tag "$postgres_meta_source" "$postgres_meta_target"', workflow)
         self.assertLess(workflow.index(source), workflow.index("supabase@2.116.0 start"))
+        self.assertIn('data.rstrip(b"\\n") + b"\\n"', workflow)
 
     def test_database_migration_workflow_uses_only_the_scoped_management_api_token(
         self,
