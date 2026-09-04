@@ -3033,10 +3033,29 @@ class DeployAndRollbackScriptTests(unittest.TestCase):
         fake_bin = base / "bin"
         fake_bin.mkdir()
         write_executable(
+            fake_bin / "timeout",
+            """#!/usr/bin/env bash
+set -Eeuo pipefail
+if [[ -n ${FAKE_TIMEOUT_LOG:-} ]]; then
+  printf '%s\n' "$*" >> "$FAKE_TIMEOUT_LOG"
+fi
+while [[ ${1:-} == --* ]]; do shift; done
+shift
+exec "$@"
+""",
+        )
+        write_executable(
             fake_bin / "docker",
             """#!/usr/bin/env bash
 set -Eeuo pipefail
 printf '%s\n' "$*" >> "$FAKE_DOCKER_LOG"
+if [[ ${FAKE_CAPTURE_DATABASE_ENV:-0} == 1 ]]; then
+  printf 'db-env=%s|%s|%s|%s\n' \
+    "${SUPABASE_DB_URL-unset}" \
+    "${NOSTR_SUPABASE_DB_URL-unset}" \
+    "${BLUESKY_SUPABASE_DB_URL-unset}" \
+    "${RUNTIME_RELEASE_EVIDENCE_DB_URL-unset}" >> "$FAKE_DOCKER_LOG"
+fi
 if [[ ${1:-} == 'compose' ]]; then
   if [[ " $* " == *' ps -q '* ]]; then
     printf 'container-%s\n' "${*: -1}"
@@ -3256,6 +3275,44 @@ exit 97
             self.assertIn("inherited environment pins the retired", result.stderr)
             self.assertFalse(docker_log.exists())
             self.assertFalse(state_dir.exists())
+
+    def test_deploy_scrubs_inherited_database_urls_before_compose(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            repository, sha = self.setUpRepository(base)
+            fake_bin = self.make_fake_docker(base)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
+            environment.update(
+                {
+                    "SUPABASE_DB_URL": "must-not-reach-compose",
+                    "NOSTR_SUPABASE_DB_URL": "must-not-reach-compose",
+                    "BLUESKY_SUPABASE_DB_URL": "must-not-reach-compose",
+                    "RUNTIME_RELEASE_EVIDENCE_DB_URL": "must-not-reach-compose",
+                    "FAKE_CAPTURE_DATABASE_ENV": "1",
+                }
+            )
+            result = subprocess.run(
+                [
+                    str(repository / "deploy" / "scripts" / "deploy.sh"),
+                    sha,
+                    "--env-file",
+                    str(env_file),
+                    "--state-dir",
+                    str(base / "state"),
+                    "--health-timeout",
+                    "2",
+                ],
+                cwd=repository,
+                check=False,
+                text=True,
+                capture_output=True,
+                env=environment,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            invocations = docker_log.read_text(encoding="utf-8")
+            self.assertIn("db-env=unset|unset|unset|unset", invocations)
+            self.assertNotIn("must-not-reach-compose", invocations)
 
     def test_deploy_keeps_a_deliberate_catalog_schedule_override(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
@@ -3725,8 +3782,10 @@ exit 97
             base = Path(temporary)
             repository, sha = self.setUpRepository(base)
             fake_bin = self.make_fake_docker(base)
-            environment, env_file, _ = self.environment(base, fake_bin)
+            environment, env_file, docker_log = self.environment(base, fake_bin)
             environment["FAKE_UNHEALTHY"] = "1"
+            timeout_log = base / "timeout.log"
+            environment["FAKE_TIMEOUT_LOG"] = str(timeout_log)
             state_dir = base / "state"
             state_dir.mkdir()
             previous = "1" * 40
@@ -3756,6 +3815,32 @@ exit 97
                 self.deployment_manifest(previous),
             )
             self.assertIn(f"Rollback commit: {previous}", result.stderr)
+            self.assertIn("bounded worker health diagnostics begin", result.stderr)
+            self.assertIn("service=collector", result.stderr)
+            self.assertIn("bounded worker health diagnostics end", result.stderr)
+            invocations = docker_log.read_text(encoding="utf-8")
+            self.assertNotIn("logs --no-color", invocations)
+            self.assertIn(
+                "exec -T collector python -m pokecrack_worker.safe_health_diagnostics",
+                invocations,
+            )
+            self.assertIn(
+                "exec -T scheduler python -m pokecrack_worker.safe_health_diagnostics",
+                invocations,
+            )
+            self.assertIn(
+                "exec -T watchdog python -m pokecrack_worker.safe_health_diagnostics",
+                invocations,
+            )
+            bounded = timeout_log.read_text(encoding="utf-8")
+            self.assertIn("--foreground --kill-after=5 30 docker ps --all", bounded)
+            self.assertIn("--foreground --kill-after=5 1200 docker compose", bounded)
+            self.assertIn("--foreground --kill-after=5 180 docker compose", bounded)
+            self.assertIn("--foreground --kill-after=2 10 docker compose", bounded)
+            self.assertIn(
+                "--foreground --kill-after=2 35 docker compose",
+                bounded,
+            )
 
     def test_nostr_contract_failure_happens_before_any_service_replacement(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
