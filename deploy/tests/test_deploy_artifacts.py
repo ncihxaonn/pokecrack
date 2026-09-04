@@ -115,7 +115,7 @@ class WorkerDatabaseUrlUpdaterTests(unittest.TestCase):
     def database_url() -> str:
         return (
             "postgresql://pokecrack_worker.wohnphsxlquhhknuthrj:secret-value@"
-            "aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres?"
+            "aws-0-ap-northeast-1.pooler.supabase.com:6543/postgres?"
             "sslmode=verify-full&sslrootcert=%2Frun%2Fsupabase-prod-ca-2021.crt&"
             "connect_timeout=10&application_name=pokecrack-worker"
         )
@@ -149,11 +149,11 @@ class WorkerDatabaseUrlUpdaterTests(unittest.TestCase):
         invalid = (
             valid.replace("pokecrack_worker.wohnphsxlquhhknuthrj", "postgres"),
             valid.replace(
-                "aws-0-ap-southeast-2.pooler.supabase.com",
+                "aws-0-ap-northeast-1.pooler.supabase.com",
                 "attacker.example",
             ),
             valid.replace("sslmode=verify-full", "sslmode=require"),
-            valid.replace(":5432/postgres", ":6543/postgres"),
+            valid.replace(":6543/postgres", ":5432/postgres"),
             valid.replace("&application_name=pokecrack-worker", ""),
         )
         for value in invalid:
