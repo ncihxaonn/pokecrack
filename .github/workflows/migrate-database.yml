@@ -70,6 +70,14 @@ jobs:
         shell: bash
         run: |
           set -Eeuo pipefail
+          # `gen types --local` currently resolves only the public ECR name and
+          # can exhaust that registry's shared-runner rate limit. Pull the same
+          # official multi-platform image from GHCR by immutable digest, then
+          # provide the exact ECR tag expected by the pinned Supabase CLI.
+          postgres_meta_source='ghcr.io/supabase/postgres-meta@sha256:cef71ba901751dcc242cc685cf13786935ea8926820fb342f23bb0fbef77de5a'
+          postgres_meta_target='public.ecr.aws/supabase/postgres-meta:v0.98.0'
+          docker pull "$postgres_meta_source"
+          docker tag "$postgres_meta_source" "$postgres_meta_target"
           # Schema build and type generation use the local PostgreSQL port;
           # exclude unrelated API/UI services from this database-only check.
           npx --yes supabase@2.116.0 start --exclude gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor

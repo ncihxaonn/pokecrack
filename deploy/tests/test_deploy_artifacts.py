@@ -225,6 +225,21 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
         self.assertNotIn('[[ -n "${{ inputs.backup_reference }}"', workflow)
 
+    def test_database_migration_workflow_pins_the_postgres_meta_fallback(self) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "migrate-database.yml"
+        ).read_text(encoding="utf-8")
+        source = (
+            "ghcr.io/supabase/postgres-meta@sha256:"
+            "cef71ba901751dcc242cc685cf13786935ea8926820fb342f23bb0fbef77de5a"
+        )
+        target = "public.ecr.aws/supabase/postgres-meta:v0.98.0"
+        self.assertIn(source, workflow)
+        self.assertIn(target, workflow)
+        self.assertIn('docker pull "$postgres_meta_source"', workflow)
+        self.assertIn('docker tag "$postgres_meta_source" "$postgres_meta_target"', workflow)
+        self.assertLess(workflow.index(source), workflow.index("supabase@2.116.0 start"))
+
     def test_database_migration_workflow_uses_only_the_scoped_management_api_token(
         self,
     ) -> None:
