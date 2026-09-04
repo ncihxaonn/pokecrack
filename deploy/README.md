@@ -55,8 +55,10 @@ variable, owner, or permissions drift, uploads only the reviewed backup
 implementation from the confirmed GitHub SHA, and returns only the validated
 backup filename. It never sources the Compose dotenv file: a non-executable
 parser projects only `BACKUP_DIR`, the two retention settings, and exactly one
-Supabase database credential source into a sanitized child environment. Other
-production secrets and shell-like content never reach the backup process. A
+Supabase database credential source into a sanitized child environment. The
+GitHub workflow always selects the owner-capable `supabase-db-url` file beside
+`VPS_ENV_FILE`; it never substitutes the worker DSN from the Compose environment.
+Other production secrets and shell-like content never reach the backup process. A
 private wrapper supplies `psql` and `pg_dump` from an immutable official
 PostgreSQL 17 container when the VPS host does not install those clients; the
 database credential is forwarded only as allowlisted container environment

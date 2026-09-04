@@ -272,6 +272,9 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn(
             '--postgres-client-directory "$postgres_client_directory"', workflow
         )
+        self.assertIn(
+            '--dedicated-db-url-file "${env_file%/*}/supabase-db-url"', workflow
+        )
         postgres_wrapper = (
             DEPLOY_ROOT / "lib" / "run_postgres_client_container.sh"
         ).read_text(encoding="utf-8")
