@@ -34,7 +34,7 @@
 .tinyCountry { stroke: var(--map-background); stroke-width: .85; vector-effect: non-scaling-stroke; transition: fill 180ms ease, r 180ms ease; }
 .observedCountry { stroke: var(--map-quantitative-high); stroke-width: 1.25; }
 .focusCountry { stroke: var(--map-focus); stroke-width: 1.8; stroke-dasharray: 4 2; }
-.emptyMapMessage { position: absolute; left: 50%; bottom: 6%; display: flex; width: min(340px, calc(100% - 2rem)); flex-direction: column; gap: .2rem; border: 1px solid rgba(125, 211, 252, .42); border-radius: 12px; padding: .72rem .8rem; background: rgba(7, 23, 43, .92); box-shadow: 0 12px 32px rgba(0, 0, 0, .22); color: #b9c9dd; text-align: center; transform: translateX(-50%); pointer-events: none; }
+.emptyMapMessage { position: absolute; left: 50%; bottom: 6%; display: flex; width: min(340px, calc(100% - 2rem)); flex-direction: column; gap: .2rem; border: 1px solid rgba(125, 211, 252, .42); border-radius: 12px; padding: .72rem .8rem; background: rgba(3, 17, 31, .94); box-shadow: 0 12px 32px rgba(0, 0, 0, .22); color: #b9c9dd; text-align: center; transform: translateX(-50%); pointer-events: none; }
 .emptyMapMessage strong { color: #f8fafc; font-size: .82rem; }
 .emptyMapMessage span { font-size: .72rem; line-height: 1.35; }
 
@@ -97,7 +97,7 @@
 .tableFrame td:first-child small { color: var(--faint); font: 600 10px var(--mono); }
 .dataVersionCell { min-width: 220px; max-width: 340px; }
 .dataVersionList { display: flex; flex-wrap: wrap; gap: .3rem; }
-.dataVersion { display: inline-flex; max-width: 100%; border: 1px solid var(--line); border-radius: 999px; padding: .24rem .46rem; background: var(--surface-raised); color: var(--map-quantitative-low); font: 700 10px/1.35 var(--sans); overflow-wrap: anywhere; }
+.dataVersion { display: inline-flex; max-width: 100%; border: 1px solid var(--line); border-radius: 999px; padding: .24rem .46rem; background: var(--surface-raised); color: var(--map-label-accent); font: 700 10px/1.35 var(--sans); overflow-wrap: anywhere; }
 .dataVersionEmpty { color: var(--faint); font: 600 10px/1.35 var(--sans); }
 .status { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: .25rem .42rem; background: var(--surface-raised); color: var(--muted); font: 700 10px var(--mono); white-space: nowrap; }
 .statusready { border-color: rgba(20, 138, 84, .22); background: rgba(20, 138, 84, .08); color: var(--accent); }
