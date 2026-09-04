@@ -132,7 +132,7 @@ export function RegionsView({ data, synthetic }: { data: PublicDashboardData; sy
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
       <PageIntro eyebrow="Worldwide coverage detail" title="Country / product-market coverage" description="Browse the same verified country and product-market coverage buckets shown in the global atlas. Rates remain withheld until reviewed publication thresholds are satisfied." />
-      <div className="coverage-grid coverage-grid--list">{data.regions.map((region, index) => <Link className={`coverage-cell coverage-cell--${(index % 4) + 1}`} href={`/regions/${region.slug}` as Route} key={region.slug}><span className="coverage-cell__index">{region.countryCode}.{String(index + 1).padStart(2, "0")}</span><strong>{region.name}</strong><span>{formatCoverageAttribution(region.coverageAttributionBases)} · {region.coverage}</span><SignalBadge metric={region} /></Link>)}</div>
+      <div className="coverage-grid coverage-grid--list">{data.regions.map((region, index) => <Link className={`coverage-cell coverage-cell--${(index % 4) + 1}`} href={`/regions/${region.slug}` as Route} key={region.slug}><span className="coverage-cell__index">{region.countryCode}.{String(index + 1).padStart(2, "0")}</span><strong>{region.name}</strong><span>{formatCoverageAttribution(region.coverageAttributionBases, "Country")} · {region.coverage}</span><SignalBadge metric={region} /></Link>)}</div>
       <MetricTable rows={rows} label="Country and product-market coverage comparison" emptyMessage="No country or product-market coverage buckets are published in this snapshot." />
       <MetricDisclaimer />
     </PublicPage>

@@ -30,7 +30,7 @@ describe("WorldHeatmap", () => {
       "xMidYMid meet",
     );
     expect(screen.getByRole("region", { name: "Exact country and product-market coverage values" })).toBeVisible();
-    expect(screen.getByRole("cell", { name: "Brazil BR" })).toBeVisible();
+    expect(screen.getByRole("cell", { name: "Brazil BR · Country" })).toBeVisible();
     expect(screen.getAllByText("Withheld").length).toBeGreaterThan(0);
     expect(screen.getByText(/not a global independent-source count/i)).toBeVisible();
   });
@@ -391,7 +391,7 @@ describe("WorldHeatmap", () => {
     );
     expect(screen.getByText("Awaiting observations")).toBeVisible();
     expect(screen.getByText("No verified pack coverage yet")).toBeVisible();
-    expect(screen.getByText("No verified country observations are published yet.")).toBeVisible();
+    expect(screen.getByText("No verified country or product-market coverage is published yet.")).toBeVisible();
     expect(screen.getByRole("img", { name: "Observed pack coverage across the world" })).toHaveAccessibleDescription(
       /7 countries have gold outlines as collection targets only/i,
     );
