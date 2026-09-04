@@ -268,6 +268,17 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("deploy/scripts/backup.sh", workflow)
         self.assertIn("deploy/lib/sanitize_plain_backup.py", workflow)
         self.assertIn("deploy/lib/run_backup_from_env.py", workflow)
+        self.assertIn("deploy/lib/run_postgres_client_container.sh", workflow)
+        self.assertIn(
+            '--postgres-client-directory "$postgres_client_directory"', workflow
+        )
+        postgres_wrapper = (
+            DEPLOY_ROOT / "lib" / "run_postgres_client_container.sh"
+        ).read_text(encoding="utf-8")
+        self.assertIn("postgres:17.6-bookworm@sha256:", postgres_wrapper)
+        self.assertIn("--pull=missing", postgres_wrapper)
+        self.assertIn("file-based TLS option %s is unsupported", postgres_wrapper)
+        self.assertIn("$PGSSLROOTCERT != system", postgres_wrapper)
         self.assertNotIn('source "$env_file"', workflow)
         self.assertIn('for reviewed_path in "${bundle_paths[@]}"', workflow)
         self.assertGreaterEqual(workflow.count('! -L "$reviewed_path"'), 1)
