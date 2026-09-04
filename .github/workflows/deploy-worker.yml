@@ -108,16 +108,23 @@ jobs:
           [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
           bundle_file="$RUNNER_TEMP/pokecrack-deploy-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.bundle"
           remote_bundle=''
+          # deploy.sh can spend several minutes in a silent, bounded health loop.
+          # Protocol keepalives prevent an idle network path from dropping that SSH session.
+          ssh_options=(
+            -i "$HOME/.ssh/id_ed25519"
+            -p "$VPS_PORT"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o ServerAliveInterval=30
+            -o ServerAliveCountMax=3
+          )
 
           cleanup_bundle() {
             rm -f -- "$bundle_file"
             if [[ -n "$remote_bundle" ]]; then
               printf -v cleanup_command 'rm -f -- %q' "$remote_bundle"
-              ssh -i "$HOME/.ssh/id_ed25519" \
-                -p "$VPS_PORT" \
-                -o BatchMode=yes \
-                -o IdentitiesOnly=yes \
-                -o StrictHostKeyChecking=yes \
+              ssh "${ssh_options[@]}" \
                 "$VPS_USER@$VPS_HOST" "$cleanup_command" >/dev/null 2>&1 || true
             fi
           }
@@ -126,22 +133,14 @@ jobs:
           git bundle create "$bundle_file" HEAD
           git bundle verify "$bundle_file" >/dev/null
           chmod 0600 "$bundle_file"
-          remote_bundle_candidate="$(ssh -i "$HOME/.ssh/id_ed25519" \
-            -p "$VPS_PORT" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
+          remote_bundle_candidate="$(ssh "${ssh_options[@]}" \
             "$VPS_USER@$VPS_HOST" \
             'umask 077; mktemp /tmp/pokecrack-deploy-bundle.XXXXXXXX')"
           [[ "$remote_bundle_candidate" =~ ^/tmp/pokecrack-deploy-bundle\.[A-Za-z0-9]{8}$ ]]
           remote_bundle=$remote_bundle_candidate
           unset remote_bundle_candidate
           printf -v upload_command 'cat > %q' "$remote_bundle"
-          ssh -i "$HOME/.ssh/id_ed25519" \
-            -p "$VPS_PORT" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
+          ssh "${ssh_options[@]}" \
             "$VPS_USER@$VPS_HOST" "$upload_command" < "$bundle_file"
 
           printf -v remote_command 'bash -s -- %q %q %q %q %q %q %q %q %q %q' \
@@ -149,11 +148,7 @@ jobs:
             "$VPS_NOSTR_ENV_FILE" "$VPS_BLUESKY_ENV_FILE" \
             "$REQUESTED_SERVICE_SET" "$REQUESTED_RETIRE_NOSTR" \
             "$REQUESTED_RETIRE_BLUESKY" "$remote_bundle" "$VPS_DEPLOY_STATE_DIR"
-          ssh -i "$HOME/.ssh/id_ed25519" \
-            -p "$VPS_PORT" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
+          ssh "${ssh_options[@]}" \
             "$VPS_USER@$VPS_HOST" "$remote_command" <<'REMOTE'
           set -Eeuo pipefail
           sha=$1
