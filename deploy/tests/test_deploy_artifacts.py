@@ -282,6 +282,12 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("--pull=missing", postgres_wrapper)
         self.assertIn("file-based TLS option %s is unsupported", postgres_wrapper)
         self.assertIn("$PGSSLROOTCERT != system", postgres_wrapper)
+        self.assertIn(
+            "700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7",
+            postgres_wrapper,
+        )
+        self.assertIn("supabase-prod-ca-2021.crt", postgres_wrapper)
+        self.assertIn("type=bind,src=", postgres_wrapper)
         self.assertNotIn('source "$env_file"', workflow)
         self.assertIn('for reviewed_path in "${bundle_paths[@]}"', workflow)
         self.assertGreaterEqual(workflow.count('! -L "$reviewed_path"'), 1)
@@ -322,11 +328,21 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("deploy/lib/sanitize_plain_backup.py", workflow)
         self.assertIn("deploy/lib/run_backup_from_env.py", workflow)
         self.assertIn("deploy/lib/run_postgres_client_container.sh", workflow)
+        self.assertIn("deploy/certs/supabase-prod-ca-2021.crt", workflow)
+        certificate = (
+            DEPLOY_ROOT / "certs" / "supabase-prod-ca-2021.crt"
+        ).read_bytes()
+        self.assertEqual(
+            hashlib.sha256(certificate).hexdigest(),
+            "700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7",
+        )
+        self.assertIn(b"BEGIN CERTIFICATE", certificate)
+        self.assertNotIn(b"PRIVATE KEY", certificate)
         self.assertIn('--postgres-client-directory "$client_dir"', workflow)
         self.assertIn('--dedicated-db-url-file "$database_url_file"', workflow)
         self.assertIn("BACKUP_PREFLIGHT_ROLE=postgres", workflow)
         self.assertIn("left(session_user, 10) = 'cli_login_'", workflow)
-        self.assertIn("current_user = 'postgres'", workflow)
+        self.assertIn("current_user = session_user", workflow)
         self.assertIn("for attempt in 1 2 3 4 5 6 7 8", workflow)
         self.assertIn('PATH="$client_dir:$PATH" psql --version', workflow)
         self.assertLess(
