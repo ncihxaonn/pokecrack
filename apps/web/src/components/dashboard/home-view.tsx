@@ -35,7 +35,7 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
         <div className="dashboard-intro__copy">
           <span className="eyebrow">{heroEyebrow}</span>
           <h1 id="hero-title">{BRAND.tagline}</h1>
-          <p>Verified Pokémon TCG opening evidence, mapped by country and kept separate from catalog activity.</p>
+          <p>Verified Pokémon TCG opening evidence, mapped by declared country or product-market coverage bucket and kept separate from catalog activity.</p>
           <div className="dashboard-intro__actions">
             <Link className="button" href="/sets">Explore sets <ArrowUpRight aria-hidden="true" size={15} /></Link>
             <Link className="button button--secondary" href="/methodology">How we measure</Link>
@@ -72,8 +72,8 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
 
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
         <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>
-        <div><dt>Countries observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>latest shared period</small></dd></div>
-        <div><dt>Published rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>threshold-qualified countries</small></dd></div>
+        <div><dt>Coverage buckets observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>latest shared period</small></dd></div>
+        <div><dt>Published rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>threshold-qualified buckets</small></dd></div>
         <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>eligible denominator</small></dd></div>
         <div><dt>Complete openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>verified observations</small></dd></div>
         <div><dt>Source contributions</dt><dd>{integer.format(data.observations.sourceCountryContributions)}<small>not globally deduplicated</small></dd></div>

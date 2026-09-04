@@ -1,7 +1,11 @@
 import { z } from "zod";
 
 import { isIsoAlpha2 } from "./iso-alpha2";
-import { countryDataVersionsSchema, publicDashboardDataSchema } from "./schema";
+import {
+  countryDataVersionsSchema,
+  coverageAttributionBasesSchema,
+  publicDashboardDataSchema,
+} from "./schema";
 import type {
   CountryMapCell,
   PublicDashboardData,
@@ -60,6 +64,13 @@ const coverageCountry = coverageMetric.extend({
   ),
   countryName: z.string().min(1).max(160),
   dataVersions: countryDataVersionsSchema.optional(),
+  collectionClass: z.literal("coverage_only").optional(),
+  coverageAttributionBases: coverageAttributionBasesSchema.optional(),
+});
+
+const coverageCountryV2 = coverageCountry.extend({
+  collectionClass: z.literal("coverage_only"),
+  coverageAttributionBases: coverageAttributionBasesSchema,
 });
 
 const coverageSet = coverageMetric.extend({
@@ -143,6 +154,7 @@ const publicStudyCoverageV1Schema = coverageEnvelope.extend({
 
 const publicStudyCoverageV2Schema = coverageEnvelope.extend({
   schemaVersion: z.literal("2.0.0"),
+  countries: z.array(coverageCountryV2).max(249),
   sources: z.array(reviewedCoverageSource).min(1).max(100),
 });
 
@@ -207,57 +219,98 @@ function mergeDataVersions(
   return [...new Set([...(current ?? []), ...incoming])];
 }
 
+type CoverageOverlay = Pick<
+  CountryMapCell,
+  "dataVersions" | "collectionClass" | "coverageAttributionBases"
+>;
+
+function mergeCoverageOverlay(
+  current: CoverageOverlay | undefined,
+  coverage: PublicStudyCoverage["countries"][number],
+  replaceCoverageOverlay: boolean,
+): CoverageOverlay {
+  const dataVersions = mergeDataVersions(
+    current?.dataVersions,
+    coverage.dataVersions,
+    replaceCoverageOverlay,
+  );
+  const coverageAttributionBases = coverage.coverageAttributionBases === undefined
+    ? current?.coverageAttributionBases
+    : replaceCoverageOverlay
+      ? [...coverage.coverageAttributionBases]
+      : [...new Set([
+        ...(current?.coverageAttributionBases ?? []),
+        ...coverage.coverageAttributionBases,
+      ])];
+  return {
+    ...(dataVersions === undefined ? {} : { dataVersions }),
+    ...(coverage.collectionClass === undefined
+      ? current?.collectionClass === undefined
+        ? {}
+        : { collectionClass: current.collectionClass }
+      : { collectionClass: coverage.collectionClass }),
+    ...(coverageAttributionBases === undefined
+      ? {}
+      : { coverageAttributionBases }),
+  };
+}
+
 function mergeCountry(
   current: CountryMapCell | undefined,
   coverage: PublicStudyCoverage["countries"][number],
   period: PublicStudyCoverage["period"],
-  replaceWithAuthoritativeCoverage: boolean,
+  replaceCoverageOverlay: boolean,
 ): CountryMapCell {
   // The aggregate publisher owns every inference field and its matching
   // denominator. Coverage-only evidence may populate a missing/withheld row,
   // but it must never rewrite an already-published aggregate.
-  const mergedDataVersions = mergeDataVersions(
-    current?.dataVersions,
-    coverage.dataVersions,
-    replaceWithAuthoritativeCoverage,
+  const coverageOverlay = mergeCoverageOverlay(
+    current,
+    coverage,
+    replaceCoverageOverlay,
   );
   if (current !== undefined && current.hitRate !== null) {
-    return mergedDataVersions === undefined
-      ? current
-      : { ...current, dataVersions: mergedDataVersions };
+    return { ...current, ...coverageOverlay };
   }
-  const packsObserved = replaceWithAuthoritativeCoverage
+  const packsObserved = replaceCoverageOverlay
     ? coverage.packsObserved
     : (current?.packsObserved ?? 0) + coverage.packsObserved;
-  const openings = replaceWithAuthoritativeCoverage
+  const openings = replaceCoverageOverlay
     ? coverage.openings
     : (current?.openings ?? 0) + coverage.openings;
-  const independentSources = replaceWithAuthoritativeCoverage
+  const independentSources = replaceCoverageOverlay
     ? coverage.independentSources
     : (current?.independentSources ?? 0) + coverage.independentSources;
-  return {
-    countryCode: coverage.countryCode,
-    countryName: current?.countryName ?? coverage.countryName,
-    ...(mergedDataVersions === undefined
-      ? {}
-      : { dataVersions: mergedDataVersions }),
+  const base = current ?? {
     periodStart: period.start,
     periodEnd: period.end,
-    setScope: "all",
-    productScope: "all",
-    metricKey: "qualifying_hit_pack_rate",
+    setScope: "all" as const,
+    productScope: "all" as const,
+    metricKey: "qualifying_hit_pack_rate" as const,
     metricVersion: "global-sir-v1",
     methodologyVersion: "global-observation-v1",
-    packsObserved,
-    openings,
-    independentSources,
     baselineRate: null,
     hitRate: null,
     posteriorMean: null,
     credibleInterval: null,
     deltaFromBaseline: null,
-    state: withheldState(packsObserved, independentSources),
-    sampleNote: sampleNote(packsObserved, independentSources),
+  };
+  return {
+    ...base,
+    countryCode: coverage.countryCode,
+    countryName: current?.countryName ?? coverage.countryName,
+    ...coverageOverlay,
+    periodStart: current?.periodStart ?? period.start,
+    periodEnd: current?.periodEnd ?? period.end,
+    packsObserved,
+    openings,
+    independentSources,
+    state: current?.hitRate !== null && current?.hitRate !== undefined
+      ? current.state
+      : withheldState(packsObserved, independentSources),
+    sampleNote: current?.hitRate !== null && current?.hitRate !== undefined
+      ? current.sampleNote
+      : sampleNote(packsObserved, independentSources),
     updatedAt: laterTimestamp(current?.updatedAt ?? null, coverage.updatedAt),
   };
 }
@@ -307,7 +360,7 @@ export function mergePublicStudyCoverage(
 
   const base = snapshotResult.data;
   const coverage = coverageResult.data;
-  const replaceWithAuthoritativeCoverage = coverage.schemaVersion === "2.0.0";
+  const replaceV2CoverageRows = coverage.schemaVersion === "2.0.0";
   if (
     base.observations.period !== null &&
     (base.observations.period.start !== coverage.period.start ||
@@ -322,7 +375,7 @@ export function mergePublicStudyCoverage(
     const current = sourceById.get(source.id);
     if (
       current !== undefined &&
-      (!replaceWithAuthoritativeCoverage ||
+      (!replaceV2CoverageRows ||
         current.name !== source.name ||
         current.kind !== source.kind ||
         current.access !== source.access ||
@@ -333,7 +386,7 @@ export function mergePublicStudyCoverage(
     sourceById.set(source.id, source);
   }
 
-  if (coverage.countries.length === 0 && !replaceWithAuthoritativeCoverage) {
+  if (coverage.countries.length === 0 && !replaceV2CoverageRows) {
     return { ...base, sources: [...sourceById.values()] } satisfies PublicDashboardData;
   }
 
@@ -347,7 +400,7 @@ export function mergePublicStudyCoverage(
         countryByCode.get(row.countryCode),
         row,
         coverage.period,
-        replaceWithAuthoritativeCoverage,
+        replaceV2CoverageRows,
       ),
     );
   }
@@ -361,7 +414,7 @@ export function mergePublicStudyCoverage(
   for (const row of coverage.sets) {
     setBySlug.set(
       row.slug,
-      mergeSet(setBySlug.get(row.slug), row, replaceWithAuthoritativeCoverage),
+      mergeSet(setBySlug.get(row.slug), row, replaceV2CoverageRows),
     );
   }
   const sets = [...setBySlug.values()].sort(
@@ -390,6 +443,11 @@ export function mergePublicStudyCoverage(
     packsObserved: cell.packsObserved,
     openings: cell.openings,
     independentSources: cell.independentSources,
+    ...(cell.dataVersions === undefined ? {} : { dataVersions: cell.dataVersions }),
+    ...(cell.collectionClass === undefined ? {} : { collectionClass: cell.collectionClass }),
+    ...(cell.coverageAttributionBases === undefined
+      ? {}
+      : { coverageAttributionBases: cell.coverageAttributionBases }),
     baselineRate: cell.baselineRate,
     hitRate: cell.hitRate,
     posteriorMean: cell.posteriorMean,
@@ -409,7 +467,7 @@ export function mergePublicStudyCoverage(
       trackedSets: sets.length,
       trackedRegions: mapCells.length,
       baselineHitRate: countriesWithPublishedRate === 0 ? null : base.summary.baselineHitRate,
-      globalCoverage: `${mapCells.length} countries have verified observations in the current global period; ${countriesWithPublishedRate} publish a rate.`,
+      globalCoverage: `${mapCells.length} country or product-market coverage buckets have verified observations in the current global period; ${countriesWithPublishedRate} publish a rate.`,
       methodologyVersion: "global-observation-v1",
     },
     observations: {

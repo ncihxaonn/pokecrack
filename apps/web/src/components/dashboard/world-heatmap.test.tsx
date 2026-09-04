@@ -29,7 +29,7 @@ describe("WorldHeatmap", () => {
       "preserveAspectRatio",
       "xMidYMid meet",
     );
-    expect(screen.getByRole("region", { name: "Exact global country values" })).toBeVisible();
+    expect(screen.getByRole("region", { name: "Exact country and product-market coverage values" })).toBeVisible();
     expect(screen.getByRole("cell", { name: "Brazil BR" })).toBeVisible();
     expect(screen.getAllByText("Withheld").length).toBeGreaterThan(0);
     expect(screen.getByText(/not a global independent-source count/i)).toBeVisible();
@@ -41,6 +41,8 @@ describe("WorldHeatmap", () => {
       countryCode: "JP",
       countryName: "Japan",
       dataVersions: [syntheticJapanDataVersion],
+      collectionClass: "coverage_only" as const,
+      coverageAttributionBases: ["product_market"] as const,
       packsObserved: 30,
       openings: 1,
       independentSources: 1,
@@ -67,6 +69,8 @@ describe("WorldHeatmap", () => {
     expect(screen.getByRole("columnheader", { name: "Data version" })).toBeVisible();
     const version = screen.getByText(syntheticJapanDataVersion);
     expect(version).toBeVisible();
+    expect(version).toHaveAttribute("dir", "auto");
+    expect(version).toHaveAttribute("lang", "ja");
     expect(version.closest("td")).toHaveAttribute("data-label", "Data version");
     const japanRow = screen.getByRole("row", { name: /Japan JP/ });
     expect(japanRow.querySelector('td[data-label="Observed"]')).toHaveTextContent("Withheld");
@@ -75,6 +79,7 @@ describe("WorldHeatmap", () => {
     expect(japanRow.querySelector('td[data-label="Status"]')).toHaveTextContent("Withheld");
     expect(within(japanRow).queryByText(/\d+(?:\.\d+)?%/)).not.toBeInTheDocument();
     expect(screen.getByText("JP · Sample observed")).toBeVisible();
+    expect(screen.getByText("JP · Product market")).toBeVisible();
   });
 
   it("renders a clear fallback for legacy cells without data versions", () => {
@@ -127,7 +132,7 @@ describe("WorldHeatmap", () => {
     const brazilShape = container.querySelector('[data-country-code="BR"]');
     expect(brazilShape).toHaveAttribute("data-focus-country", "true");
     expect(brazilShape?.getAttribute("fill")).toMatch(/^url\(#world-withheld-/);
-    expect(screen.getByRole("region", { name: "Exact global country values" }))
+    expect(screen.getByRole("region", { name: "Exact country and product-market coverage values" }))
       .not.toHaveTextContent("China CN");
   });
 
@@ -306,7 +311,7 @@ describe("WorldHeatmap", () => {
     expect(screen.getByText("Observed pack sample uses scale")).toBeVisible();
     expect(screen.getByRole("group", { name: "Observed pack coverage map legend" }))
       .toHaveTextContent(/0 packs.*750.*≥ 1,500/);
-    expect(screen.queryByText("No country-level rates published yet")).not.toBeInTheDocument();
+    expect(screen.queryByText("No attributed bucket rates published yet")).not.toBeInTheDocument();
   });
 
   it("records the selected metric in the URL", () => {

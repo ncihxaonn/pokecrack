@@ -120,6 +120,8 @@ const v2CoveragePayload = {
     {
       countryCode: "BR",
       countryName: "Brazil",
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["publisher_country"],
       packsObserved: 91,
       openings: 2,
       independentSources: 2,

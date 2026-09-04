@@ -8,10 +8,10 @@ import { createPageMetadata } from "../_lib/metadata";
 
 export const revalidate = 900;
 
-export const metadata: Metadata = createPageMetadata("Country observations", "Worldwide country-level samples from the current public observation period.", "/regions");
+export const metadata: Metadata = createPageMetadata("Country / product-market coverage", "Worldwide country and product-market coverage buckets from the current public observation period.", "/regions");
 
 export default async function RegionsPage() {
   const result = await loadDashboard();
-  if (result.status === "unavailable") return <PublicUnavailable title="Country data is unavailable" message={result.message} code={result.code} />;
+  if (result.status === "unavailable") return <PublicUnavailable title="Coverage data is unavailable" message={result.message} code={result.code} />;
   return <RegionsView data={result.data} synthetic={result.synthetic} />;
 }
