@@ -4462,6 +4462,7 @@ export type Database = {
           title_fragments: string[]
         }[]
       }
+      reviewed_public_study_gates_ready_v1: { Args: never; Returns: boolean }
       submit_authorized_opening_direct_v1: {
         Args: { payload: Json }
         Returns: {
@@ -5409,4 +5410,3 @@ export const Constants = {
     Enums: {},
   },
 } as const
-
