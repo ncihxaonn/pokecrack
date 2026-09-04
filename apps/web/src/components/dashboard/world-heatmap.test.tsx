@@ -14,6 +14,25 @@ import {
 
 const syntheticJapanDataVersion = "ja · M3 · ムニキスゼロ · booster box";
 
+function relativeLuminance(hex: string) {
+  const channels = [1, 3, 5].map((offset) => {
+    const value = Number.parseInt(hex.slice(offset, offset + 2), 16) / 255;
+    return value <= 0.04045
+      ? value / 12.92
+      : ((value + 0.055) / 1.055) ** 2.4;
+  });
+  return (channels[0] ?? 0) * 0.2126
+    + (channels[1] ?? 0) * 0.7152
+    + (channels[2] ?? 0) * 0.0722;
+}
+
+function contrastRatio(first: string, second: string) {
+  const firstLuminance = relativeLuminance(first);
+  const secondLuminance = relativeLuminance(second);
+  return (Math.max(firstLuminance, secondLuminance) + 0.05)
+    / (Math.min(firstLuminance, secondLuminance) + 0.05);
+}
+
 describe("WorldHeatmap", () => {
   it("renders a global fixed-scale map with exact accessible values", () => {
     render(
@@ -339,6 +358,29 @@ describe("WorldHeatmap", () => {
     expect(screen.getByRole("group", { name: "Observed pack coverage map legend" }))
       .toHaveTextContent(/0 packs.*750.*≥ 1,500/);
     expect(screen.queryByText("No attributed bucket rates published yet")).not.toBeInTheDocument();
+  });
+
+  it("keeps low-volume observations vivid while preserving a distinct no-data state", () => {
+    expect(WORLD_MAP_PALETTE).toMatchObject({
+      background: "#03111f",
+      noData: "#526987",
+      quantitativeLow: "#22d3ee",
+      quantitativeMid: "#67e8f9",
+      quantitativeHigh: "#cffafe",
+      withheldBase: "#0e7490",
+      withheldStripe: "#a5f3fc",
+      focus: "#facc15",
+      labelAccent: "#075985",
+    });
+    expect(getWorldMapFill(10, "coverage")).not.toBe(WORLD_MAP_PALETTE.noData);
+    expect(contrastRatio(WORLD_MAP_PALETTE.noData, WORLD_MAP_PALETTE.background))
+      .toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(WORLD_MAP_PALETTE.quantitativeLow, WORLD_MAP_PALETTE.noData))
+      .toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(WORLD_MAP_PALETTE.withheldBase, WORLD_MAP_PALETTE.background))
+      .toBeGreaterThanOrEqual(3);
+    expect(contrastRatio(WORLD_MAP_PALETTE.labelAccent, "#f3f6f3"))
+      .toBeGreaterThanOrEqual(4.5);
   });
 
   it("records the selected metric in the URL", () => {
