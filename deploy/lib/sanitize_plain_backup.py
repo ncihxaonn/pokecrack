@@ -589,7 +589,6 @@ REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CHECK_TOKENS = {
             "btrim(canonical_domain)",
             "normalize(canonical_domain, nfkc)",
             "char_length(canonical_domain)",
-            "between 3 and 253",
             "^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\\.[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?)+$",
             "[[:cntrl:]]",
         ),
@@ -1434,6 +1433,20 @@ def _validate_reviewed_global_aggregate_bridge_check(
         raise SanitizationError(
             f"unsupported {table[1]} inline constraint schema"
         )
+    if (
+        table == REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES
+        and name == "reviewed_global_aggregate_independent_sources_domain_check"
+    ):
+        pg16_range = "char_length(canonical_domain) between 3 and 253"
+        pg17_range = re.search(
+            r"char_length\(canonical_domain\) >= 3\)* and "
+            r"\(*char_length\(canonical_domain\) <= 253",
+            normalized,
+        )
+        if pg16_range not in normalized and pg17_range is None:
+            raise SanitizationError(
+                f"unsupported {table[1]} inline constraint schema"
+            )
 
 
 def _validate_reviewed_global_aggregate_bridge_create(
