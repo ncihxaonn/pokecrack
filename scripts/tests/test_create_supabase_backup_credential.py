@@ -109,19 +109,21 @@ class TemporaryBackupCredentialTests(unittest.TestCase):
             )
         )
 
-    def test_database_url_uses_session_pooler_and_connection_time_postgres_role(self) -> None:
+    def test_database_url_preserves_the_primary_pooler_and_tenant_role(self) -> None:
         database_url = credential.build_database_url(
             pooler_connection=POOLER,
             project_ref=PROJECT_REF,
             role="cli_login_postgres",
             password="fixture:/?#[]@ secret",
         )
-        self.assertIn("aws-0-ap-southeast-2.pooler.supabase.com:5432", database_url)
+        self.assertIn("aws-0-ap-southeast-2.pooler.supabase.com:6543", database_url)
         self.assertIn(f"cli_login_postgres.{PROJECT_REF}", database_url)
         self.assertIn("fixture%3A%2F%3F%23%5B%5D%40%20secret", database_url)
         self.assertIn("sslmode=verify-full", database_url)
-        self.assertIn("sslrootcert=system", database_url)
-        self.assertIn("options=-c%20role%3Dpostgres", database_url)
+        self.assertIn(
+            "sslrootcert=%2Frun%2Fsupabase-prod-ca-2021.crt", database_url
+        )
+        self.assertNotIn("options=", database_url)
         self.assertNotIn("[YOUR-PASSWORD]", database_url)
 
     def test_database_url_rejects_untrusted_or_ambiguous_pooler_shapes(self) -> None:
