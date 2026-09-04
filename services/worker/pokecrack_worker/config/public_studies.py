@@ -95,6 +95,53 @@ PUBLIC_STUDIES: tuple[PublicStudyIdentity, ...] = (
         collector_version="public-study-pokesup-abyss-eye-v1",
         parser_version="pokesup-abyss-eye-evidence-v1",
     ),
+    PublicStudyIdentity(
+        study_key="limitsend-inferno-x-kr-30-v1",
+        source_url=(
+            "https://limitsend.tistory.com/entry/"
+            "%ED%8F%AC%EC%BC%93%EB%AA%AC%EC%B9%B4%EB%93%9C-"
+            "%EB%82%B1%EA%B0%9C%ED%8C%A9-%EA%B5%AC%EB%A7%A4%EB%A5%BC-"
+            "%EC%A1%B0%EC%8B%AC%ED%95%B4%EC%95%BC-%ED%95%98%EB%8A%94-"
+            "%EC%9D%B4%EC%9C%A0%EF%BD%9C%EC%9D%B8%ED%8E%98%EB%A5%B4%EB%85%B8X-"
+            "%EC%A7%81%EC%A0%91-%EA%B0%9C%EB%B4%89%ED%95%B4%EB%B3%B4%EB%8B%88"
+        ),
+        fetch_url=(
+            "https://limitsend.tistory.com/entry/"
+            "%ED%8F%AC%EC%BC%93%EB%AA%AC%EC%B9%B4%EB%93%9C-"
+            "%EB%82%B1%EA%B0%9C%ED%8C%A9-%EA%B5%AC%EB%A7%A4%EB%A5%BC-"
+            "%EC%A1%B0%EC%8B%AC%ED%95%B4%EC%95%BC-%ED%95%98%EB%8A%94-"
+            "%EC%9D%B4%EC%9C%A0%EF%BD%9C%EC%9D%B8%ED%8E%98%EB%A5%B4%EB%85%B8X-"
+            "%EC%A7%81%EC%A0%91-%EA%B0%9C%EB%B4%89%ED%95%B4%EB%B3%B4%EB%8B%88"
+        ),
+        domain="limitsend.tistory.com",
+        adapter="limitsend_inferno_x_study",
+        collector_version="public-study-limitsend-inferno-x-v1",
+        parser_version="limitsend-inferno-x-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="buyfunlife-ninja-spinner-tw-40-v1",
+        source_url="https://buyfunlife.com/pokemon-ninja-spinner-price-mur-guide/",
+        fetch_url="https://buyfunlife.com/pokemon-ninja-spinner-price-mur-guide/",
+        domain="buyfunlife.com",
+        adapter="buyfunlife_ninja_spinner_study",
+        collector_version="public-study-buyfunlife-ninja-spinner-v1",
+        parser_version="buyfunlife-ninja-spinner-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="allonline-mega-dream-ex-th-10-v1",
+        source_url=(
+            "https://blog.allonline.7eleven.co.th/collectibles-zone/"
+            "pokemon-card-review-dream-evolution-ex-all-online/"
+        ),
+        fetch_url=(
+            "https://blog.allonline.7eleven.co.th/collectibles-zone/"
+            "pokemon-card-review-dream-evolution-ex-all-online/"
+        ),
+        domain="blog.allonline.7eleven.co.th",
+        adapter="allonline_mega_dream_ex_study",
+        collector_version="public-study-allonline-mega-dream-ex-v1",
+        parser_version="allonline-mega-dream-ex-evidence-v1",
+    ),
 )
 
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
@@ -106,6 +153,9 @@ PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
         "bleedingcool-phantasmal-flames-us-36-v1",
         "tcgtalk-perfect-order-sg-54-v1",
         "pokesup-abyss-eye-jp-30-v1",
+        "limitsend-inferno-x-kr-30-v1",
+        "buyfunlife-ninja-spinner-tw-40-v1",
+        "allonline-mega-dream-ex-th-10-v1",
     }
 )
 

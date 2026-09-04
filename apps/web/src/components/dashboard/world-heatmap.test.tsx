@@ -106,7 +106,7 @@ describe("WorldHeatmap", () => {
     expect(fallback.closest("td")).toHaveAttribute("data-label", "Data version");
   });
 
-  it("highlights the seven expanded collection countries without inventing observations", () => {
+  it("highlights the sixteen expanded collection countries without inventing observations", () => {
     const { container } = render(
       <WorldHeatmap
         cells={DEMO_PUBLIC_DATA.mapCells}
@@ -116,17 +116,22 @@ describe("WorldHeatmap", () => {
     );
 
     const focusList = screen.getByRole("list", {
-      name: "Countries in the expanded collection focus",
+      name: "Countries and product markets in the expanded collection focus",
     });
     for (const country of GLOBAL_FOCUS_COUNTRIES) {
       expect(within(focusList).getByText(country.countryName)).toBeVisible();
     }
+    expect(focusList.querySelectorAll("li")).toHaveLength(16);
     expect(within(focusList).getByText("CN · Awaiting observations")).toBeVisible();
     expect(within(focusList).getByText("MX · Awaiting observations")).toBeVisible();
     expect(within(focusList).getByText("BR · Sample observed")).toBeVisible();
+    for (const countryCode of ["KR", "TW", "HK", "TH", "ID", "MY", "PH", "VN", "IN"]) {
+      expect(within(focusList).getByText(`${countryCode} · Awaiting observations`)).toBeVisible();
+    }
 
     const focusShapes = container.querySelectorAll('[data-focus-country="true"]');
-    expect(focusShapes).toHaveLength(7);
+    expect(focusShapes).toHaveLength(15);
+    expect(within(focusList).getByText("List/table only · no separate map geometry")).toBeVisible();
     expect(container.querySelector('[data-country-code="CN"]'))
       .toHaveAttribute("fill", WORLD_MAP_PALETTE.noData);
     const brazilShape = container.querySelector('[data-country-code="BR"]');
@@ -142,15 +147,25 @@ describe("WorldHeatmap", () => {
       const expectedGeometryName = countryCode === "CN"
         ? "People's Republic of China"
         : countryName;
-      expect(
-        mapData.countries.filter((country) => country.countryCode === countryCode),
-      ).toEqual([
-        expect.objectContaining({
-          countryCode,
-          countryName: expectedGeometryName,
-          path: expect.stringMatching(/^M/),
-        }),
-      ]);
+      const mapCountries = mapData.countries.filter((country) => country.countryCode === countryCode);
+      const tinyCountries = mapData.tinyCountries.filter(
+        (country) => country.countryCode === countryCode,
+      );
+      const geometryCount = mapCountries.length + tinyCountries.length;
+      if (geometryCount === 0) {
+        expect(countryCode).toBe("HK");
+      } else {
+        expect(geometryCount).toBe(1);
+        if (mapCountries.length === 1) {
+          expect(mapCountries).toEqual([
+            expect.objectContaining({
+              countryCode,
+              countryName: expectedGeometryName,
+              path: expect.stringMatching(/^M/),
+            }),
+          ]);
+        }
+      }
 
       const emptyRender = render(
         <WorldHeatmap
@@ -174,11 +189,15 @@ describe("WorldHeatmap", () => {
       const unobservedShape = emptyRender.container.querySelector(
         `[data-country-code="${countryCode}"]`,
       );
-      expect(unobservedShape).toHaveAttribute("data-focus-country", "true");
-      expect(unobservedShape).toHaveAttribute("fill", WORLD_MAP_PALETTE.noData);
+      if (geometryCount === 0) {
+        expect(unobservedShape).toBeNull();
+      } else {
+        expect(unobservedShape).toHaveAttribute("data-focus-country", "true");
+        expect(unobservedShape).toHaveAttribute("fill", WORLD_MAP_PALETTE.noData);
+      }
       expect(
         within(screen.getByRole("list", {
-          name: "Countries in the expanded collection focus",
+          name: "Countries and product markets in the expanded collection focus",
         })).getByText(`${countryCode} · Awaiting observations`),
       ).toBeVisible();
       emptyRender.unmount();
@@ -210,11 +229,15 @@ describe("WorldHeatmap", () => {
       const withheldShape = withheldRender.container.querySelector(
         `[data-country-code="${countryCode}"]`,
       );
-      expect(withheldShape).toHaveAttribute("data-focus-country", "true");
-      expect(withheldShape?.getAttribute("fill")).toMatch(/^url\(#world-withheld-/);
+      if (geometryCount === 0) {
+        expect(withheldShape).toBeNull();
+      } else {
+        expect(withheldShape).toHaveAttribute("data-focus-country", "true");
+        expect(withheldShape?.getAttribute("fill")).toMatch(/^url\(#world-withheld-/);
+      }
       expect(
         within(screen.getByRole("list", {
-          name: "Countries in the expanded collection focus",
+          name: "Countries and product markets in the expanded collection focus",
         })).getByText(`${countryCode} · Sample observed`),
       ).toBeVisible();
       withheldRender.unmount();
@@ -245,14 +268,18 @@ describe("WorldHeatmap", () => {
       const observedShape = observedRender.container.querySelector(
         `[data-country-code="${countryCode}"]`,
       );
-      expect(observedShape).toHaveAttribute("data-focus-country", "true");
-      expect(observedShape).toHaveAttribute(
-        "fill",
-        getWorldMapFill(publishedCell.packsObserved, "coverage"),
-      );
+      if (geometryCount === 0) {
+        expect(observedShape).toBeNull();
+      } else {
+        expect(observedShape).toHaveAttribute("data-focus-country", "true");
+        expect(observedShape).toHaveAttribute(
+          "fill",
+          getWorldMapFill(publishedCell.packsObserved, "coverage"),
+        );
+      }
       expect(
         within(screen.getByRole("list", {
-          name: "Countries in the expanded collection focus",
+          name: "Countries and product markets in the expanded collection focus",
         })).getByText(`${countryCode} · Rate published`),
       ).toBeVisible();
     },
@@ -367,6 +394,8 @@ describe("WorldHeatmap", () => {
     );
 
     expect(screen.getByText("Publication pending")).toBeVisible();
+    expect(screen.getByText("BR · Publication pending")).toBeVisible();
+    expect(screen.queryByText("BR · Sample observed")).not.toBeInTheDocument();
     expect(screen.getByText(/met the evidence threshold and await reviewed publication/i)).toBeVisible();
   });
 
@@ -393,7 +422,7 @@ describe("WorldHeatmap", () => {
     expect(screen.getByText("No verified pack coverage yet")).toBeVisible();
     expect(screen.getByText("No verified country or product-market coverage is published yet.")).toBeVisible();
     expect(screen.getByRole("img", { name: "Observed pack coverage across the world" })).toHaveAccessibleDescription(
-      /7 countries have gold outlines as collection targets only/i,
+      /15 collection targets have gold outlines.*Hong Kong.*no separate geometry/i,
     );
   });
 });

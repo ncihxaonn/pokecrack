@@ -1225,7 +1225,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_all_six_reviewed_daily_jobs(
+def test_public_study_flag_registers_all_nine_reviewed_daily_jobs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _ensure_pokesup_schedule_identity(monkeypatch)
@@ -1239,6 +1239,9 @@ def test_public_study_flag_registers_all_six_reviewed_daily_jobs(
         {"study_key": "bleedingcool-phantasmal-flames-us-36-v1"},
         {"study_key": "tcgtalk-perfect-order-sg-54-v1"},
         {"study_key": POKESUP_STUDY_KEY},
+        {"study_key": "limitsend-inferno-x-kr-30-v1"},
+        {"study_key": "buyfunlife-ninja-spinner-tw-40-v1"},
+        {"study_key": "allonline-mega-dream-ex-th-10-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1261,16 +1264,20 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 6" in sql
+    assert "count(*) = 9" in sql
     assert "ingest.public_study_observations" in sql
     assert "ingest.begin_public_study_job" in sql
     assert "ingest.finalize_public_study_job" in sql
+    assert "ingest.reviewed_public_study_gates_ready_v1()" in sql
     assert "public_study_comicbook_us_55" in sql
     assert "public_study_wargamer_gb_17" in sql
     assert "public_study_cardchill_gb_90" in sql
     assert "public_study_bleedingcool_us_36" in sql
     assert "public_study_tcgtalk_sg_54" in sql
     assert "public_study_pokesup_jp_30" in sql
+    assert "public_study_limitsend_kr_30" in sql
+    assert "public_study_buyfunlife_tw_40" in sql
+    assert "public_study_allonline_th_10" in sql
     pokesup_clause_start = sql.index("WHERE policies.source_key = 'public_study_pokesup_jp_30'")
     pokesup_clause = sql[pokesup_clause_start : sql.index(") = 1", pokesup_clause_start)]
     for expected in (
@@ -1299,6 +1306,41 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         assert expected in pokesup_clause
     assert "qualifying_" not in pokesup_clause
     assert "metric_version" not in pokesup_clause
+    for source_key, expected_fields in (
+        (
+            "public_study_limitsend_kr_30",
+            (
+                '"country_code":"KR"',
+                '"set_language":"ko"',
+                '"set_external_id":"M2"',
+                '"pack_count":30',
+            ),
+        ),
+        (
+            "public_study_buyfunlife_tw_40",
+            (
+                '"country_code":"TW"',
+                '"set_language":"zh-TW"',
+                '"set_external_id":"M4"',
+                '"pack_count":40',
+            ),
+        ),
+        (
+            "public_study_allonline_th_10",
+            (
+                '"country_code":"TH"',
+                '"set_language":"th"',
+                '"set_external_id":"MA3"',
+                '"pack_count":10',
+            ),
+        ),
+    ):
+        clause_start = sql.index(f"WHERE policies.source_key = '{source_key}'")
+        clause = sql[clause_start : sql.index(") = 1", clause_start)]
+        for expected in expected_fields:
+            assert expected in clause
+        assert "qualifying_" not in clause
+        assert "metric_version" not in clause
     assert "NOT has_table_privilege" in sql
 
 

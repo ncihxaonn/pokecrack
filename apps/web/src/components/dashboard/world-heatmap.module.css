@@ -70,14 +70,17 @@
 .focusHeading span { color: #075fe4; font: 800 10px/1.3 var(--sans); letter-spacing: .08em; text-transform: uppercase; }
 .focusHeading h3 { margin-top: .2rem; font-size: 1.05rem; }
 .focusHeading p { max-width: 600px; color: var(--muted); font-size: .75rem; text-align: right; }
-.focusList { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); margin-top: .8rem; list-style: none; border-block: 1px solid #cfdaea; }
+.focusList { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin-top: .8rem; list-style: none; border-block: 1px solid #cfdaea; }
 .focusList li { display: flex; min-width: 0; align-items: center; gap: .55rem; padding: .7rem .65rem; }
-.focusList li + li { border-left: 1px solid #dbe4f0; }
+.focusList li + li { border-left: 0; }
+.focusList li:not(:nth-child(4n + 1)) { border-left: 1px solid #dbe4f0; }
+.focusList li:nth-child(n + 5) { border-top: 1px solid #dbe4f0; }
 .focusList li > i { width: 14px; height: 14px; flex: 0 0 auto; border: 1px solid transparent; border-radius: 4px; }
 .focusList li > span { display: flex; min-width: 0; flex-direction: column; }
 .focusList strong { overflow-wrap: anywhere; font-size: .82rem; line-height: 1.25; }
 .focusList small { margin-top: .16rem; color: var(--muted); font: 650 12px/1.4 var(--sans); }
 .focusList i.focusawaiting { border: 2px dashed #d97706; background: #fef3c7; }
+.focusList i.focuspending { border: 2px solid var(--amber-ink); background: #fde68a; }
 .focusList i.focusobserved { border-color: var(--map-quantitative-mid); background: repeating-linear-gradient(125deg, var(--map-withheld-base) 0 3px, var(--map-withheld-stripe) 3px 5px); }
 .focusList i.focuspublished { border-color: var(--map-quantitative-low); background: linear-gradient(135deg, var(--map-quantitative-low), var(--map-quantitative-high)); }
 
@@ -98,9 +101,9 @@
 .dataVersionEmpty { color: var(--faint); font: 600 10px/1.35 var(--sans); }
 .status { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; padding: .25rem .42rem; background: var(--surface-raised); color: var(--muted); font: 700 10px var(--mono); white-space: nowrap; }
 .statusready { border-color: rgba(20, 138, 84, .22); background: rgba(20, 138, 84, .08); color: var(--accent); }
-.statuswatch { border-color: rgba(185, 109, 11, .24); background: rgba(185, 109, 11, .07); color: var(--amber); }
+.statuswatch { border-color: rgba(185, 109, 11, .24); background: rgba(185, 109, 11, .07); color: var(--amber-ink); }
 .statusanomaly { border-color: rgba(206, 66, 80, .24); background: rgba(206, 66, 80, .07); color: var(--red); }
-.statuspending { border-color: rgba(185, 109, 11, .24); background: rgba(185, 109, 11, .07); color: var(--amber); }
+.statuspending { border-color: rgba(185, 109, 11, .24); background: rgba(185, 109, 11, .07); color: var(--amber-ink); }
 .statusinsufficient { color: var(--faint); }
 .empty { padding: 1.6rem; color: var(--muted); text-align: center; }
 
@@ -109,10 +112,6 @@
   .body { grid-template-columns: 1fr; }
   .rail { border-top: 1px solid var(--line); border-left: 0; }
   .sourceNote { margin-top: .75rem; }
-  .focusList { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .focusList li + li { border-left: 0; }
-  .focusList li:not(:nth-child(4n + 1)) { border-left: 1px solid #dbe4f0; }
-  .focusList li:nth-child(n + 5) { border-top: 1px solid #dbe4f0; }
 }
 
 @media (max-width: 600px) {
@@ -130,23 +129,13 @@
   .focusHeading { align-items: flex-start; flex-direction: column; gap: .35rem; }
   .focusHeading p { text-align: left; }
   .focusList { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .focusList li:not(:nth-child(4n + 1)) { border-left: 0; }
-  .focusList li:nth-child(n + 5) { border-top: 0; }
+  .focusList li:nth-child(odd) { border-left: 0; }
   .focusList li:nth-child(even) { border-left: 1px solid #dbe4f0; }
   .focusList li:nth-child(n + 3) { border-top: 1px solid #dbe4f0; }
   .tableBlock { padding-inline: .75rem; }
   .tableHeading { align-items: flex-start; flex-direction: column; }
-  .tableFrame { overflow: visible; max-height: none; border: 0; border-radius: 0; }
-  .tableFrame table, .tableFrame tbody { display: block; }
-  .tableFrame thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; }
-  .tableFrame tr { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .75rem 1rem; border-top: 1px solid var(--line); padding: 1rem 0; }
-  .tableFrame td { display: flex; min-width: 0; flex-direction: column; gap: .2rem; border: 0; padding: 0; font-family: var(--sans); }
-  .tableFrame td::before { content: attr(data-label); color: var(--faint); font: 700 9px/1.3 var(--sans); letter-spacing: .06em; text-transform: uppercase; }
-  .tableFrame td:first-child { grid-column: 1 / -1; }
-  .tableFrame td:first-child strong { font-size: 1rem; }
-  .tableFrame td:first-child small { margin-top: 0; }
-  .tableFrame .dataVersionCell { grid-column: 1 / -1; max-width: none; }
-  .tableFrame .empty { grid-column: 1 / -1; padding: 1rem 0; }
+  .tableFrame { overflow-x: auto; max-height: none; overscroll-behavior-inline: contain; }
+  .tableFrame table { min-width: 820px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
