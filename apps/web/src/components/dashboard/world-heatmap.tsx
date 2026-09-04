@@ -21,6 +21,53 @@ export interface WorldHeatRow {
   readonly status: "observed" | "published" | "withheld";
 }
 
+export interface GlobalFocusCountry {
+  readonly countryCode: "JP" | "AU" | "CN" | "RU" | "CA" | "MX" | "BR";
+  readonly countryName: string;
+}
+
+export const GLOBAL_FOCUS_COUNTRIES: readonly GlobalFocusCountry[] = [
+  { countryCode: "JP", countryName: "Japan" },
+  { countryCode: "AU", countryName: "Australia" },
+  { countryCode: "CN", countryName: "China" },
+  { countryCode: "RU", countryName: "Russia" },
+  { countryCode: "CA", countryName: "Canada" },
+  { countryCode: "MX", countryName: "Mexico" },
+  { countryCode: "BR", countryName: "Brazil" },
+];
+
+export const WORLD_MAP_PALETTE = {
+  background: "#07172b",
+  noData: "#526987",
+  quantitativeLow: "#0e7490",
+  quantitativeMid: "#0891b2",
+  quantitativeHigh: "#67e8f9",
+  deltaLow: "#d946ef",
+  deltaMid: "#94a3b8",
+  deltaHigh: "#22d3ee",
+  withheldBase: "#155e75",
+  withheldStripe: "#22d3ee",
+  focus: "#fde047",
+} as const;
+
+const worldMapCssVariables = {
+  "--map-background": WORLD_MAP_PALETTE.background,
+  "--map-no-data": WORLD_MAP_PALETTE.noData,
+  "--map-quantitative-low": WORLD_MAP_PALETTE.quantitativeLow,
+  "--map-quantitative-mid": WORLD_MAP_PALETTE.quantitativeMid,
+  "--map-quantitative-high": WORLD_MAP_PALETTE.quantitativeHigh,
+  "--map-delta-low": WORLD_MAP_PALETTE.deltaLow,
+  "--map-delta-mid": WORLD_MAP_PALETTE.deltaMid,
+  "--map-delta-high": WORLD_MAP_PALETTE.deltaHigh,
+  "--map-withheld-base": WORLD_MAP_PALETTE.withheldBase,
+  "--map-withheld-stripe": WORLD_MAP_PALETTE.withheldStripe,
+  "--map-focus": WORLD_MAP_PALETTE.focus,
+} as React.CSSProperties;
+
+const globalFocusCountryCodes: ReadonlySet<string> = new Set(
+  GLOBAL_FOCUS_COUNTRIES.map((country) => country.countryCode),
+);
+
 const integer = new Intl.NumberFormat("en-US");
 const metricOptions: readonly { value: WorldHeatMetric; label: string }[] = [
   { value: "coverage", label: "Pack coverage" },
@@ -45,24 +92,48 @@ export function getWorldMapFill(value: number, metric: WorldHeatMetric): string 
   if (metric === "coverage") {
     const bounded = clamp(value, 0, 1_500);
     if (bounded <= 750) {
-      return interpolateHex("#e7f2eb", "#43a475", bounded / 750);
+      return interpolateHex(
+        WORLD_MAP_PALETTE.quantitativeLow,
+        WORLD_MAP_PALETTE.quantitativeMid,
+        bounded / 750,
+      );
     }
-    return interpolateHex("#43a475", "#075f39", (bounded - 750) / 750);
+    return interpolateHex(
+      WORLD_MAP_PALETTE.quantitativeMid,
+      WORLD_MAP_PALETTE.quantitativeHigh,
+      (bounded - 750) / 750,
+    );
   }
 
   if (metric === "delta") {
     const bounded = clamp(value, -0.05, 0.05);
     if (bounded <= 0) {
-      return interpolateHex("#789388", "#edf2ee", (bounded + 0.05) / 0.05);
+      return interpolateHex(
+        WORLD_MAP_PALETTE.deltaLow,
+        WORLD_MAP_PALETTE.deltaMid,
+        (bounded + 0.05) / 0.05,
+      );
     }
-    return interpolateHex("#edf2ee", "#148a54", bounded / 0.05);
+    return interpolateHex(
+      WORLD_MAP_PALETTE.deltaMid,
+      WORLD_MAP_PALETTE.deltaHigh,
+      bounded / 0.05,
+    );
   }
 
   const bounded = clamp(value, 0, 0.3);
   if (bounded <= 0.15) {
-    return interpolateHex("#e7f2eb", "#43a475", bounded / 0.15);
+    return interpolateHex(
+      WORLD_MAP_PALETTE.quantitativeLow,
+      WORLD_MAP_PALETTE.quantitativeMid,
+      bounded / 0.15,
+    );
   }
-  return interpolateHex("#43a475", "#075f39", (bounded - 0.15) / 0.15);
+  return interpolateHex(
+    WORLD_MAP_PALETTE.quantitativeMid,
+    WORLD_MAP_PALETTE.quantitativeHigh,
+    (bounded - 0.15) / 0.15,
+  );
 }
 
 export function buildWorldHeatRows(
@@ -119,7 +190,19 @@ export function WorldHeatmap({
     [rows],
   );
   const instanceId = useId().replaceAll(":", "");
+  const titleId = `world-coverage-title-${instanceId}`;
   const withheldPatternId = `world-withheld-${instanceId}`;
+  const focusCountries = GLOBAL_FOCUS_COUNTRIES.map((country) => {
+    const row = cellsByCountry.get(country.countryCode);
+    return {
+      ...country,
+      state: row === undefined
+        ? "awaiting"
+        : row.cell.hitRate === null
+          ? "observed"
+          : "published",
+    } as const;
+  });
   const publishedRateCount = cells.filter((cell) => cell.hitRate !== null).length;
   const withheldCount = rows.length - publishedRateCount;
   const pendingCount = rows.filter((row) => row.cell.state === "pending").length;
@@ -137,10 +220,10 @@ export function WorldHeatmap({
       ? "Collection in progress"
       : "Published";
   const mapDescription = rows.length === 0
-    ? "No verified country-level pack-opening observations are published. Every country is shown in the neutral no-data colour."
+    ? `No verified country-level pack-opening observations are published. ${GLOBAL_FOCUS_COUNTRIES.length} countries have gold outlines as collection targets only; their neutral fill does not contain inferred data.`
     : metric === "coverage"
-      ? `${rows.length} countries have verified pack-opening observations. Colour shows fixed-scale sample volume only, not a hit rate or representative demand.`
-      : `${rows.length} countries have verified observations: ${publishedRateCount} publish a rate, ${pendingCount} await reviewed publication, and ${withheldCount - pendingCount} remain below the evidence threshold.`;
+      ? `${rows.length} countries have verified pack-opening observations. Colour shows fixed-scale sample volume only, not a hit rate or representative demand. Gold-outlined countries are collection targets; neutral fill means they remain unobserved.`
+      : `${rows.length} countries have verified observations: ${publishedRateCount} publish a rate, ${pendingCount} await reviewed publication, and ${withheldCount - pendingCount} remain below the evidence threshold. Gold-outlined countries are collection targets; neutral fill means they remain unobserved.`;
 
   const selectMetric = (nextMetric: WorldHeatMetric) => {
     setMetric(nextMetric);
@@ -150,18 +233,26 @@ export function WorldHeatmap({
   };
 
   const countryFill = (countryCode: string | null) => {
-    if (!countryCode) return "#dfe7e1";
+    if (!countryCode) return WORLD_MAP_PALETTE.noData;
     const row = cellsByCountry.get(countryCode);
-    if (!row) return "#dfe7e1";
+    if (!row) return WORLD_MAP_PALETTE.noData;
     return row.status === "withheld" ? `url(#${withheldPatternId})` : row.fill;
   };
 
+  const dataKeyClassName = metric === "delta"
+    ? styles.deltaDataKey
+    : styles.quantitativeDataKey;
+
   return (
-    <section className={styles.atlas} aria-labelledby="world-coverage-title">
+    <section
+      className={styles.atlas}
+      aria-labelledby={titleId}
+      style={worldMapCssVariables}
+    >
       <header className={styles.header}>
         <div>
           <span className={styles.kicker}>Global evidence map</span>
-          <h2 id="world-coverage-title">
+          <h2 id={titleId}>
             {metric === "coverage" ? "Worldwide evidence coverage" : "Worldwide qualifying-hit map"}
           </h2>
           <p>
@@ -206,33 +297,46 @@ export function WorldHeatmap({
                   patternUnits="userSpaceOnUse"
                   patternTransform="rotate(35)"
                 >
-                  <rect width="7" height="7" fill="#dbe4dd" />
-                  <path d="M0 0V7" stroke="#88978e" strokeWidth="2" />
+                  <rect width="7" height="7" fill={WORLD_MAP_PALETTE.withheldBase} />
+                  <path d="M0 0V7" stroke={WORLD_MAP_PALETTE.withheldStripe} strokeWidth="2" />
                 </pattern>
               </defs>
               <g aria-hidden="true">
-                {mapData.countries.map((country, index) => (
-                  <path
-                    className={styles.country}
-                    d={country.path}
-                    fill={countryFill(country.countryCode)}
-                    key={`${country.countryName}-${index}`}
-                  />
-                ))}
+                {mapData.countries.map((country, index) => {
+                  const isFocusCountry = country.countryCode !== null
+                    && globalFocusCountryCodes.has(country.countryCode);
+                  const row = country.countryCode
+                    ? cellsByCountry.get(country.countryCode)
+                    : undefined;
+                  return (
+                    <path
+                      className={`${styles.country} ${row ? styles.observedCountry : ""} ${isFocusCountry ? styles.focusCountry : ""}`}
+                      d={country.path}
+                      data-country-code={country.countryCode ?? undefined}
+                      data-focus-country={isFocusCountry ? "true" : undefined}
+                      fill={countryFill(country.countryCode)}
+                      key={`${country.countryName}-${index}`}
+                    />
+                  );
+                })}
                 {mapData.tinyCountries.map((country, index) => {
                   const row = country.countryCode
                     ? cellsByCountry.get(country.countryCode)
                     : undefined;
+                  const isFocusCountry = country.countryCode !== null
+                    && globalFocusCountryCodes.has(country.countryCode);
                   const fill = row?.status === "withheld"
                       ? `url(#${withheldPatternId})`
                       : row
                         ? row.fill
-                        : "#dfe7e1";
+                        : WORLD_MAP_PALETTE.noData;
                   return (
                     <circle
-                      className={styles.tinyCountry}
+                      className={`${styles.tinyCountry} ${row ? styles.observedCountry : ""} ${isFocusCountry ? styles.focusCountry : ""}`}
                       cx={country.x}
                       cy={country.y}
+                      data-country-code={country.countryCode ?? undefined}
+                      data-focus-country={isFocusCountry ? "true" : undefined}
                       fill={fill}
                       key={`${country.countryName}-${index}`}
                       r={row ? 2.8 : 1.8}
@@ -247,7 +351,7 @@ export function WorldHeatmap({
                   ? "No verified pack coverage yet"
                   : "No country-level rates published yet"}</strong>
                 <span>{rows.length === 0
-                  ? "The map stays neutral until verified samples meet the publication threshold."
+                  ? "Gold outlines mark collection focus; fill remains reserved for verified evidence."
                   : pendingCount > 0
                     ? `${rows.length} ${rows.length === 1 ? "country is" : "countries are"} observed; ${pendingCount} ${pendingCount === 1 ? "has" : "have"} met the evidence threshold and await reviewed publication.`
                     : `${rows.length} ${rows.length === 1 ? "country is" : "countries are"} observed; all remain below the publication threshold.`}</span>
@@ -256,12 +360,12 @@ export function WorldHeatmap({
           </div>
 
           <figcaption className={styles.caption}>
-            <div className={styles.legend}>
+            <div className={styles.legend} role="group" aria-label={`${metricLabel} map legend`}>
               <span
                 className={`${styles.legendScale} ${metric === "coverage" ? styles.coverageScale : metric === "delta" ? styles.deltaScale : styles.rateScale}`}
                 aria-hidden="true"
               />
-              <span className={styles.legendTicks} aria-hidden="true">
+              <span className={styles.legendTicks}>
                 {metric === "coverage" ? (
                   <><span>0 packs</span><span>750</span><span>≥ 1,500</span></>
                 ) : metric === "delta" ? (
@@ -272,19 +376,20 @@ export function WorldHeatmap({
               </span>
               <span className={styles.legendKeys}>
                 <span className={styles.noDataKey}><i aria-hidden="true" />Not observed</span>
+                <span className={styles.focusKey}><i aria-hidden="true" />Collection focus, awaiting observations</span>
                 {metric === "coverage" ? (
-                  <span className={styles.observedKey}><i aria-hidden="true" />Observed pack sample</span>
+                  <span className={styles.observedKey}><i className={dataKeyClassName} aria-hidden="true" />Observed pack sample uses scale</span>
                 ) : (
                   <>
                     <span className={styles.withheldKey}><i aria-hidden="true" />Observed, rate withheld</span>
-                    <span className={styles.publishedKey}><i aria-hidden="true" />Published rate</span>
+                    <span className={styles.publishedKey}><i className={dataKeyClassName} aria-hidden="true" />Published rate uses scale</span>
                   </>
                 )}
               </span>
             </div>
             <p id={`world-map-caveat-${instanceId}`}>
               {metric === "coverage"
-                ? "Fixed absolute 0–1,500 pack colour scale; this shows sample volume, not a hit rate or representative demand. Unobserved countries remain neutral."
+                ? "Fixed absolute 0–1,500 pack colour scale; this shows sample volume, not a hit rate or representative demand. Gold outlines mark collection targets; neutral fill means unobserved."
                 : "Fixed absolute colour scale; values are never rescaled to the current snapshot. Higher historical observations do not predict future packs, products, stores or countries."}
             </p>
           </figcaption>
@@ -312,6 +417,31 @@ export function WorldHeatmap({
           </p>
         </aside>
       </div>
+
+      <section className={styles.focusBlock} aria-labelledby={`collection-focus-${instanceId}`}>
+        <div className={styles.focusHeading}>
+          <div>
+            <span>Expanded collection focus</span>
+            <h3 id={`collection-focus-${instanceId}`}>Collection focus</h3>
+          </div>
+          <p>The map visualises fixed-scale verified metrics where available. This list shows collection status; the table provides exact values.</p>
+        </div>
+        <ul className={styles.focusList} aria-label="Countries in the expanded collection focus">
+          {focusCountries.map((country) => (
+            <li key={country.countryCode}>
+              <i className={styles[`focus${country.state}`]} aria-hidden="true" />
+              <span>
+                <strong>{country.countryName}</strong>
+                <small>{country.countryCode} · {country.state === "published"
+                  ? "Rate published"
+                  : country.state === "observed"
+                    ? "Sample observed"
+                    : "Awaiting observations"}</small>
+              </span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <div className={styles.tableBlock}>
         <div className={styles.tableHeading}>
