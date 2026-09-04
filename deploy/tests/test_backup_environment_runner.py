@@ -54,6 +54,7 @@ with gzip.open(backup_dir / filename, "wb") as stream:
         env_file: Path,
         backup_script: Path,
         default_db_url_file: Path,
+        dedicated_db_url_file: Path | None = None,
         postgres_client_directory: Path | None = None,
     ) -> subprocess.CompletedProcess[str]:
         command = [
@@ -69,6 +70,10 @@ with gzip.open(backup_dir / filename, "wb") as stream:
         if postgres_client_directory is not None:
             command.extend(
                 ["--postgres-client-directory", str(postgres_client_directory)]
+            )
+        if dedicated_db_url_file is not None:
+            command.extend(
+                ["--dedicated-db-url-file", str(dedicated_db_url_file)]
             )
         return subprocess.run(
             command,
@@ -285,6 +290,37 @@ with gzip.open(backup_dir / filename, "wb") as stream:
             )
             self.assertIn("SUPABASE_DB_URL", child_keys)
             self.assertNotIn("SUPABASE_DB_URL_FILE", child_keys)
+
+    def test_dedicated_database_url_file_overrides_inline_worker_url(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            root = Path(temporary).resolve()
+            backup_dir = root / "backups"
+            env_file = self.write_environment(
+                root,
+                f"BACKUP_DIR={backup_dir}\nSUPABASE_DB_URL=postgresql://worker.invalid/db?sslmode=require\n",
+            )
+            database_url_file = root / "supabase-db-url"
+            dedicated_url = (
+                "postgresql://backup.invalid/db?sslmode=require&connect_timeout=5"
+            )
+            database_url_file.write_text(dedicated_url + "\n", encoding="utf-8")
+            database_url_file.chmod(0o600)
+            backup_script = self.write_fake_backup(root)
+            backup_script.write_text(
+                backup_script.read_text(encoding="utf-8")
+                + "\nassert os.environ['SUPABASE_DB_URL'] == "
+                + repr(dedicated_url)
+                + "\n",
+                encoding="utf-8",
+            )
+            result = self.run_runner(
+                env_file=env_file,
+                backup_script=backup_script,
+                default_db_url_file=root / "unused-db-url",
+                dedicated_db_url_file=database_url_file,
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
 
 
 if __name__ == "__main__":

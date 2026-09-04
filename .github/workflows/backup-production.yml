@@ -178,6 +178,7 @@ jobs:
             --env-file "$env_file" \
             --backup-script "$backup_code_root/deploy/scripts/backup.sh" \
             --default-db-url-file "${env_file%/*}/supabase-db-url" \
+            --dedicated-db-url-file "${env_file%/*}/supabase-db-url" \
             --postgres-client-directory "$postgres_client_directory"
           REMOTE
           )"
