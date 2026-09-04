@@ -89,6 +89,43 @@ DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
 
+def _generated_named_block(schema: str, section: str, name: str) -> str:
+    """Return one canonical Supabase generated table or function block."""
+    schema_marker = f"  {schema}: {{\n"
+    self_contained = DATABASE_TYPES.split(schema_marker, 1)
+    if len(self_contained) != 2:
+        raise AssertionError(f"missing generated schema {schema}")
+    schema_tail = self_contained[1]
+    next_schema = re.search(
+        r"^  [a-z_][a-z0-9_]*: \{\n", schema_tail, flags=re.MULTILINE
+    )
+    schema_block = schema_tail[: next_schema.start()] if next_schema else schema_tail
+
+    section_marker = f"    {section}: {{\n"
+    section_parts = schema_block.split(section_marker, 1)
+    if len(section_parts) != 2:
+        raise AssertionError(f"missing generated section {schema}.{section}")
+    section_tail = section_parts[1]
+    next_section = re.search(
+        r"^    [A-Za-z_][A-Za-z0-9_]*: \{\n",
+        section_tail,
+        flags=re.MULTILINE,
+    )
+    section_block = (
+        section_tail[: next_section.start()] if next_section else section_tail
+    )
+
+    item_marker = f"      {name}: {{\n"
+    item_parts = section_block.split(item_marker, 1)
+    if len(item_parts) != 2:
+        raise AssertionError(f"missing generated {section[:-1].lower()} {schema}.{name}")
+    item_tail = item_parts[1]
+    next_item = re.search(
+        r"^      [a-z_][a-z0-9_]*: \{\n", item_tail, flags=re.MULTILINE
+    )
+    return item_tail[: next_item.start()] if next_item else item_tail
+
+
 def _split_sql_values(value_list: str) -> list[str]:
     values: list[str] = []
     start = 0
@@ -1520,13 +1557,15 @@ class IngestMigrationContractTests(unittest.TestCase):
             "rga_ia_binding_key_fkey",
         ):
             self.assertIn(f"constraint {constraint_name}", compact)
+        # Supabase CLI 2.116 emits same-schema relationships here. The
+        # cross-schema rga_ia_observation_fkey remains enforced and asserted
+        # from the migration above, but is not represented in generated types.
         for foreign_key_name in (
             "rga_asb_source_key_fkey",
-            "rga_ia_observation_fkey",
             "rga_ia_binding_key_fkey",
         ):
             self.assertIn(
-                f"foreignKeyName: '{foreign_key_name}'", DATABASE_TYPES
+                f'foreignKeyName: "{foreign_key_name}"', DATABASE_TYPES
             )
 
         cohort = lowered.split(
@@ -2055,14 +2094,12 @@ class IngestMigrationContractTests(unittest.TestCase):
             self.assertIn(generated_contract, DATABASE_TYPES)
 
     def test_generated_public_study_types_preserve_the_dedicated_ledger(self) -> None:
-        observations = DATABASE_TYPES.split(
-            "public_study_observations:", 1
-        )[1].split("schedule_slots:", 1)[0]
+        observations = _generated_named_block(
+            "ingest", "Tables", "public_study_observations"
+        )
         self.assertGreaterEqual(observations.count("qualifying_hit_pack_count"), 3)
         self.assertGreaterEqual(observations.count("geography_basis"), 3)
-        openings = DATABASE_TYPES.split("openings:", 1)[1].split(
-            "public_study_observations:", 1
-        )[0]
+        openings = _generated_named_block("ingest", "Tables", "openings")
         self.assertNotIn("qualifying_hit_pack_count", openings)
 
     def test_local_supabase_matches_the_postgresql_17_backup_contract(self) -> None:
@@ -2143,16 +2180,10 @@ class IngestMigrationContractTests(unittest.TestCase):
                 if match.group(1) not in ignored
             }
             columns.update(added_columns.get((schema, table), set()))
-            table_match = re.search(
-                rf"^      {table}: \{{\n(.*?)^      \}};$",
-                DATABASE_TYPES,
-                flags=re.MULTILINE | re.DOTALL,
-            )
-            self.assertIsNotNone(table_match, f"missing generated type for {schema}.{table}")
-            table_block = table_match.group(1) if table_match is not None else ""
+            table_block = _generated_named_block(schema, "Tables", table)
             for contract_name in ("Row", "Insert", "Update"):
                 contract_match = re.search(
-                    rf"^        {contract_name}: \{{\n(.*?)^        \}};$",
+                    rf"^        {contract_name}: \{{\n(.*?)^        \}}$",
                     table_block,
                     flags=re.MULTILINE | re.DOTALL,
                 )
@@ -2365,11 +2396,21 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("tcgdex completion lost its request gate ownership", finalizer)
         self.assertNotIn("delete from catalog.sets", finalizer)
         self.assertNotIn("is_active = false", finalizer)
-        self.assertIn("revision: number;", DATABASE_TYPES)
-        self.assertIn(
-            "acquired: boolean; retry_at: string | null; etag: string | null; content_sha256: string | null; item_count: number; revision: number",
-            DATABASE_TYPES,
+        tcgdex_types = _generated_named_block(
+            "ingest", "Functions", "begin_tcgdex_sets_job"
         )
+        for field_name, field_type in (
+            ("acquired", "boolean"),
+            ("retry_at", "string"),
+            ("etag", "string"),
+            ("content_sha256", "string"),
+            ("item_count", "number"),
+            ("revision", "number"),
+        ):
+            self.assertRegex(
+                tcgdex_types,
+                rf"(?m)^          {field_name}: {re.escape(field_type)}$",
+            )
 
     def test_fenced_job_lifecycle_rpcs_own_request_gate_mutation(self) -> None:
         lowered = TCGDEX_PIPELINE.casefold()
@@ -2473,16 +2514,16 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("on update restrict", duplicate_cluster_fk)
         self.assertIn("on delete set null (duplicate_cluster_id)", duplicate_cluster_fk)
         self.assertIn("source_items_duplicate_cluster_mode_fkey", DATABASE_TYPES)
-        self.assertIn("columns: ['duplicate_cluster_id', 'is_demo']", DATABASE_TYPES)
-        self.assertIn("referencedcolumns: ['id', 'is_demo']", DATABASE_TYPES.casefold())
+        self.assertIn('columns: ["duplicate_cluster_id", "is_demo"]', DATABASE_TYPES)
+        self.assertIn('referencedcolumns: ["id", "is_demo"]', DATABASE_TYPES.casefold())
         self.assertIn("youtube_discoveries:", DATABASE_TYPES)
         self.assertIn(
             "youtube_discoveries_source_policy_id_fkey",
             DATABASE_TYPES,
         )
-        youtube_types = DATABASE_TYPES.split("youtube_discoveries:", 1)[1].split(
-            "source_request_gates:", 1
-        )[0]
+        youtube_types = _generated_named_block(
+            "ingest", "Tables", "youtube_discoveries"
+        )
         for forbidden in (
             "source_item_id",
             "query_name",
@@ -2725,8 +2766,8 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("revoke all on function public.admin_control_and_audit_v1", migrations)
         self.assertIn("admin_control_and_audit_v1:", DATABASE_TYPES)
         self.assertIn("get_admin_dashboard_snapshot_v1:", DATABASE_TYPES)
-        self.assertIn("p_actor_id: string;", DATABASE_TYPES)
-        self.assertIn("p_actor_email: string;", DATABASE_TYPES)
+        self.assertRegex(DATABASE_TYPES, r"(?m)^          p_actor_id: string$")
+        self.assertRegex(DATABASE_TYPES, r"(?m)^          p_actor_email: string$")
 
     def test_admin_snapshot_is_service_only_bounded_telemetry(self) -> None:
         admin = (ROOT / "migrations/20260825000600_admin_control.sql").read_text().casefold()
@@ -2848,10 +2889,9 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertGreaterEqual(source_items.count("audio_fingerprint"), 3)
 
     def test_generated_public_activity_contract_tracks_statistics_eligibility(self) -> None:
-        activity = DATABASE_TYPES.split("recent_activity:", 1)[1].split("region_summaries:", 1)[0]
+        activity = _generated_named_block("public", "Tables", "recent_activity")
         self.assertGreaterEqual(activity.count("statistics_eligible"), 3)
-        self.assertIn("country_code: string;", activity)
-        self.assertNotIn("country_code: string | null;", activity)
+        self.assertRegex(activity, r"(?m)^          country_code: string$")
 
     def test_live_rpc_does_not_fabricate_an_empty_snapshot(self) -> None:
         self.assertIn("join dashboard_row d on true", RPC)
