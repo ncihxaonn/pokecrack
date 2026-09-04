@@ -711,11 +711,11 @@ public_study_dependencies AS (
           WHERE policies.source_key = 'public_study_limitsend_kr_30'
             AND policies.display_name = 'LimitSend Inferno X 30-pack study'
             AND policies.domain = 'limitsend.tistory.com'
-            AND policies.base_url = 'https://limitsend.tistory.com/entry/%ED%8F%AC%EC%BC%93%EB%AA%AC%EC%B9%B4%EB%93%9C-%EB%82%B1%EA%B0%9C%ED%8C%A9-%EA%B5%AC%EB%A7%A4%EB%A5%BC-%EC%A1%B0%EC%8B%AC%ED%95%B4%EC%95%BC-%ED%95%98%EB%8A%94-%EC%9D%B4%EC%9C%A0%EF%BD%9C%EC%9D%B8%ED%8E%98%EB%A5%B4%EB%85%B8X-%EC%A7%81%EC%A0%91-%EA%B0%9C%EB%B4%89%ED%95%B4%EB%B3%B4%EB%8B%88'
+            AND policies.base_url = 'https://limitsend.tistory.com/entry/%%ED%%8F%%AC%%EC%%BC%%93%%EB%%AA%%AC%%EC%%B9%%B4%%EB%%93%%9C-%%EB%%82%%B1%%EA%%B0%%9C%%ED%%8C%%A9-%%EA%%B5%%AC%%EB%%A7%%A4%%EB%%A5%%BC-%%EC%%A1%%B0%%EC%%8B%%AC%%ED%%95%%B4%%EC%%95%%BC-%%ED%%95%%98%%EB%%8A%%94-%%EC%%9D%%B4%%EC%%9C%%A0%%EF%%BD%%9C%%EC%%9D%%B8%%ED%%8E%%98%%EB%%A5%%B4%%EB%%85%%B8X-%%EC%%A7%%81%%EC%%A0%%91-%%EA%%B0%%9C%%EB%%B4%%89%%ED%%95%%B4%%EB%%B3%%B4%%EB%%8B%%88'
             AND policies.version = 'public-study-limitsend-inferno-x-v1'
             AND policies.config = '{
               "study_key":"limitsend-inferno-x-kr-30-v1",
-              "canonical_url":"https://limitsend.tistory.com/entry/%ED%8F%AC%EC%BC%93%EB%AA%AC%EC%B9%B4%EB%93%9C-%EB%82%B1%EA%B0%9C%ED%8C%A9-%EA%B5%AC%EB%A7%A4%EB%A5%BC-%EC%A1%B0%EC%8B%AC%ED%95%B4%EC%95%BC-%ED%95%98%EB%8A%94-%EC%9D%B4%EC%9C%A0%EF%BD%9C%EC%9D%B8%ED%8E%98%EB%A5%B4%EB%85%B8X-%EC%A7%81%EC%A0%91-%EA%B0%9C%EB%B4%89%ED%95%B4%EB%B3%B4%EB%8B%88",
+              "canonical_url":"https://limitsend.tistory.com/entry/%%ED%%8F%%AC%%EC%%BC%%93%%EB%%AA%%AC%%EC%%B9%%B4%%EB%%93%%9C-%%EB%%82%%B1%%EA%%B0%%9C%%ED%%8C%%A9-%%EA%%B5%%AC%%EB%%A7%%A4%%EB%%A5%%BC-%%EC%%A1%%B0%%EC%%8B%%AC%%ED%%95%%B4%%EC%%95%%BC-%%ED%%95%%98%%EB%%8A%%94-%%EC%%9D%%B4%%EC%%9C%%A0%%EF%%BD%%9C%%EC%%9D%%B8%%ED%%8E%%98%%EB%%A5%%B4%%EB%%85%%B8X-%%EC%%A7%%81%%EC%%A0%%91-%%EA%%B0%%9C%%EB%%B4%%89%%ED%%95%%B4%%EB%%B3%%B4%%EB%%8B%%88",
               "collector_version":"public-study-limitsend-inferno-x-v1",
               "parser_version":"limitsend-inferno-x-evidence-v1",
               "country_code":"KR",
