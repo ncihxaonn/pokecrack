@@ -6,6 +6,7 @@
 *.sql text eol=lf
 *.yaml text eol=lf
 *.yml text eol=lf
+supabase/types/database.ts whitespace=-blank-at-eof
 *.png binary
 *.jpg binary
 *.webp binary

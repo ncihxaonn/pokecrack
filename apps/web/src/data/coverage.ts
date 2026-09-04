@@ -270,7 +270,7 @@ function mergeCountry(
     replaceCoverageOverlay,
   );
   if (current !== undefined && current.hitRate !== null) {
-    return { ...current, ...coverageOverlay };
+    return current;
   }
   const packsObserved = replaceCoverageOverlay
     ? coverage.packsObserved

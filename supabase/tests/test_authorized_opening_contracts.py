@@ -176,8 +176,11 @@ class AuthorizedOpeningContractTests(unittest.TestCase):
             "retract_authorized_opening_v1:",
         ):
             self.assertIn(type_name, DATABASE_TYPES)
-        self.assertIn("country_name: string;", DATABASE_TYPES)
-        self.assertIn("requested_reason_code: string;", DATABASE_TYPES)
+        self.assertRegex(DATABASE_TYPES, r"(?m)^          country_name: string$")
+        self.assertRegex(
+            DATABASE_TYPES,
+            r"(?m)^          requested_reason_code: string$",
+        )
         self.assertIn("requested_reason_code text", MIGRATION)
 
     def test_forward_role_contract_is_dynamic_and_fail_closed(self) -> None:

@@ -314,6 +314,27 @@ describe("reviewed public-study coverage merge", () => {
     );
   });
 
+  it("keeps published country metadata authoritative on an overlapping v2 coverage row", () => {
+    const originalGb = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "GB");
+    expect(originalGb?.hitRate).not.toBeNull();
+    const payload = validRegistryCoveragePayload();
+    payload.countries[0] = {
+      ...payload.countries[0]!,
+      countryCode: "GB",
+      countryName: "United Kingdom",
+    };
+
+    const parsed = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(DEMO_PUBLIC_DATA, payload),
+    );
+
+    expect(parsed.mapCells.find((cell) => cell.countryCode === "GB")).toEqual(originalGb);
+    expect(parsed.regions.find((region) => region.countryCode === "GB")).not.toMatchObject({
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["publisher_country"],
+    });
+  });
+
   it("keeps a published set aggregate authoritative on an overlapping supplement", () => {
     const original = DEMO_PUBLIC_DATA.sets.find((set) => set.slug === "surging-sparks");
     expect(original).toBeDefined();
