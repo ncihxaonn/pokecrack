@@ -49,23 +49,42 @@ with gzip.open(backup_dir / filename, "wb") as stream:
         return path
 
     def run_runner(
-        self, *, env_file: Path, backup_script: Path, default_db_url_file: Path
+        self,
+        *,
+        env_file: Path,
+        backup_script: Path,
+        default_db_url_file: Path,
+        postgres_client_directory: Path | None = None,
     ) -> subprocess.CompletedProcess[str]:
+        command = [
+            sys.executable,
+            str(RUNNER),
+            "--env-file",
+            str(env_file),
+            "--backup-script",
+            str(backup_script),
+            "--default-db-url-file",
+            str(default_db_url_file),
+        ]
+        if postgres_client_directory is not None:
+            command.extend(
+                ["--postgres-client-directory", str(postgres_client_directory)]
+            )
         return subprocess.run(
-            [
-                sys.executable,
-                str(RUNNER),
-                "--env-file",
-                str(env_file),
-                "--backup-script",
-                str(backup_script),
-                "--default-db-url-file",
-                str(default_db_url_file),
-            ],
+            command,
             check=False,
             text=True,
             capture_output=True,
         )
+
+    def write_postgres_clients(self, root: Path, *, mode: int = 0o500) -> Path:
+        directory = root / "postgres-client"
+        directory.mkdir(mode=0o700)
+        for command in ("pg_dump", "psql"):
+            path = directory / command
+            path.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+            path.chmod(mode)
+        return directory
 
     def test_runs_with_allowlisted_dotenv_projection_only(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
@@ -103,6 +122,64 @@ with gzip.open(backup_dir / filename, "wb") as stream:
             self.assertNotIn("AI_API_KEY", child_keys)
             self.assertNotIn("SCHEDULE_CATALOG_SYNC", child_keys)
             self.assertNotIn("UNRELATED_COMMAND", child_keys)
+
+    def test_accepts_private_reviewed_postgres_clients(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            root = Path(temporary).resolve()
+            backup_dir = root / "backups"
+            env_file = self.write_environment(
+                root,
+                f"BACKUP_DIR={backup_dir}\nSUPABASE_DB_URL=postgresql://fixture.invalid/db?sslmode=require\n",
+            )
+            result = self.run_runner(
+                env_file=env_file,
+                backup_script=self.write_fake_backup(root),
+                default_db_url_file=root / "unused-db-url",
+                postgres_client_directory=self.write_postgres_clients(root),
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+
+    def test_rejects_group_accessible_postgres_clients(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            root = Path(temporary).resolve()
+            env_file = self.write_environment(
+                root,
+                f"BACKUP_DIR={root / 'backups'}\nSUPABASE_DB_URL=secret-value\n",
+            )
+            result = self.run_runner(
+                env_file=env_file,
+                backup_script=self.write_fake_backup(root),
+                default_db_url_file=root / "unused-db-url",
+                postgres_client_directory=self.write_postgres_clients(
+                    root, mode=0o550
+                ),
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, "")
+            self.assertNotIn("secret-value", result.stderr)
+
+    def test_rejects_postgres_client_path_separator_injection(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            root = Path(temporary).resolve()
+            env_file = self.write_environment(
+                root,
+                f"BACKUP_DIR={root / 'backups'}\nSUPABASE_DB_URL=secret-value\n",
+            )
+            client_directory = self.write_postgres_clients(root)
+            injected_directory = root / "postgres-client:unreviewed"
+            client_directory.rename(injected_directory)
+            result = self.run_runner(
+                env_file=env_file,
+                backup_script=self.write_fake_backup(root),
+                default_db_url_file=root / "unused-db-url",
+                postgres_client_directory=injected_directory,
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, "")
+            self.assertNotIn("secret-value", result.stderr)
 
     def test_rejects_group_readable_environment_file(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
