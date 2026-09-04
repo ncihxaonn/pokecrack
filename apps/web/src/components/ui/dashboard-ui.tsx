@@ -52,9 +52,9 @@ export function DataModeNotice({
   const message = synthetic
     ? BRAND.demoNotice
     : collecting
-      ? `Verified observations cover ${integer.format(observedCountryCount ?? 0)} countries and ${integer.format(observedPackCount ?? 0)} packs; country-level rates remain withheld until evidence thresholds and reviewed publication are satisfied.`
+      ? `Verified observations cover ${integer.format(observedCountryCount ?? 0)} country or product-market coverage buckets and ${integer.format(observedPackCount ?? 0)} packs; attributed-bucket rates remain withheld until evidence thresholds and reviewed publication are satisfied.`
       : catalogOnly
-        ? `${integer.format(catalogSetCount ?? 0)} catalog sets are live. Verified country observations are not published yet.`
+        ? `${integer.format(catalogSetCount ?? 0)} catalog sets are live. Verified country or product-market coverage is not published yet.`
         : "Live response with no demo fixtures.";
 
   return (

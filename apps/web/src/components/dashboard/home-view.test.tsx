@@ -112,7 +112,7 @@ describe("HomeView", () => {
 
     expect(screen.getByText("Worldwide catalog and observation readiness")).toBeVisible();
     expect(screen.getByText("Live catalog")).toBeVisible();
-    expect(screen.getByText("218 catalog sets are live. Verified country observations are not published yet.")).toBeVisible();
+    expect(screen.getByText("218 catalog sets are live. Verified country or product-market coverage is not published yet.")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Worldwide evidence coverage" })).toBeVisible();
     expect(screen.getByText("No verified pack coverage yet")).toBeVisible();
     expect(screen.queryByRole("heading", { name: "Trending sets" })).not.toBeInTheDocument();
@@ -162,10 +162,10 @@ describe("HomeView", () => {
     render(<HomeView data={liveCollecting} synthetic={false} />);
 
     expect(screen.getByText("Live observations")).toBeVisible();
-    expect(screen.getByText("Verified observations cover 3 countries and 252 packs; country-level rates remain withheld until evidence thresholds and reviewed publication are satisfied.")).toBeVisible();
+    expect(screen.getByText("Verified observations cover 3 country or product-market coverage buckets and 252 packs; attributed-bucket rates remain withheld until evidence thresholds and reviewed publication are satisfied.")).toBeVisible();
     expect(screen.getByText("Publication pending")).toBeVisible();
     expect(screen.getAllByText("Withheld").length).toBeGreaterThan(0);
-    expect(screen.queryByText(/Verified country observations are not published yet/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Verified country or product-market coverage is not published yet/)).not.toBeInTheDocument();
   });
 
   it("renders platform-specific social activity counts with explicit non-evidence labels", () => {

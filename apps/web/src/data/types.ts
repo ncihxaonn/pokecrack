@@ -34,17 +34,29 @@ export interface SetMetric extends ObservedMetric {
   readonly signal: string;
 }
 
+export type CoverageCollectionClass = "coverage_only";
+
+export type CoverageAttributionBasis =
+  | "publisher_country"
+  | "author_public_residence"
+  | "product_market";
+
 export interface RegionMetric extends ObservedMetric {
   readonly slug: string;
   readonly name: string;
   readonly countryCode: string;
   readonly coverage: string;
+  readonly dataVersions?: readonly string[];
+  readonly collectionClass?: CoverageCollectionClass;
+  readonly coverageAttributionBases?: readonly CoverageAttributionBasis[];
 }
 
 export interface CountryMapCell extends ObservedMetric {
   readonly countryCode: string;
   readonly countryName: string;
   readonly dataVersions?: readonly string[];
+  readonly collectionClass?: CoverageCollectionClass;
+  readonly coverageAttributionBases?: readonly CoverageAttributionBasis[];
   readonly periodStart: string;
   readonly periodEnd: string;
   readonly setScope: "all";

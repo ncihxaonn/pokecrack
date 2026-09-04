@@ -127,7 +127,7 @@ describe("public route behavior", () => {
 
     expect(screen.getByText("Reviewed opening samples only — not a hit rate")).toBeVisible();
     expect(screen.getByText("Observed packs")).toBeVisible();
-    expect(screen.getByText("Attributed countries")).toBeVisible();
+    expect(screen.getByText("Attributed coverage buckets")).toBeVisible();
     expect(screen.getByText("Complete openings")).toBeVisible();
   });
 

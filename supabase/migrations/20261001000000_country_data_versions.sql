@@ -159,6 +159,11 @@ valid_rows as (
     reviewed.canonical_url,
     reviewed.config ->> 'country_code' as country_code,
     reviewed.config ->> 'country_name' as country_name,
+    case reviewed.config ->> 'geography_basis'
+      when 'publisher_country' then 'publisher_country'
+      when 'author_public_residence' then 'author_public_residence'
+      when 'product_market' then 'product_market'
+    end as attribution_basis,
     coalesce(nullif(reviewed.config ->> 'set_language', ''), 'en')
       as set_language,
     nullif(reviewed.config ->> 'set_name', '') as configured_set_name,
@@ -181,6 +186,11 @@ valid_rows as (
       from catalog.iso_alpha2_codes as iso_codes
       where iso_codes.code = reviewed.config ->> 'country_code'
     )
+    and reviewed.config ->> 'geography_basis' in (
+      'publisher_country',
+      'author_public_residence',
+      'product_market'
+    )
     and (
       (case when reviewed.study_valid then reviewed.study_observed_at
         else reviewed.coverage_observed_at end) at time zone 'UTC'
@@ -192,26 +202,29 @@ data_version_rows as (
   select distinct
     rows.country_code,
     left(
-      concat_ws(
-        ' · ',
-        case
-          when rows.set_language ~ '^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$'
-            then rows.set_language
-          else 'und'
-        end,
-        rows.set_external_id,
-        coalesce(
-          rows.configured_set_name,
-          catalog_sets.name,
-          rows.set_external_id
+      normalize(
+        concat_ws(
+          ' · ',
+          case
+            when rows.set_language ~ '^[A-Za-z]{2,3}(-[A-Za-z0-9]{2,8})*$'
+              then rows.set_language
+            else 'und'
+          end,
+          rows.set_external_id,
+          coalesce(
+            rows.configured_set_name,
+            catalog_sets.name,
+            rows.set_external_id
+          ),
+          case rows.product_scope
+            when 'booster_box' then 'booster box'
+            when 'booster_bundle' then 'booster bundle'
+            when 'etb' then 'ETB'
+            when 'all' then 'all products'
+            else replace(rows.product_scope, '_', ' ')
+          end
         ),
-        case rows.product_scope
-          when 'booster_box' then 'booster box'
-          when 'booster_bundle' then 'booster bundle'
-          when 'etb' then 'ETB'
-          when 'all' then 'all products'
-          else replace(rows.product_scope, '_', ' ')
-        end
+        NFC
       ),
       240
     ) as data_version
@@ -230,6 +243,18 @@ country_data_versions as (
   from data_version_rows as rows
   group by rows.country_code
 ),
+coverage_attribution_bases as (
+  select
+    rows.country_code,
+    jsonb_agg(rows.attribution_basis order by rows.attribution_basis) as value
+  from (
+    select distinct
+      rows.country_code,
+      rows.attribution_basis
+    from valid_rows as rows
+  ) as rows
+  group by rows.country_code
+),
 source_coverage as (
   select
     rows.public_id,
@@ -246,6 +271,8 @@ countries as (
         'countryCode', rows.country_code,
         'countryName', rows.country_name,
         'dataVersions', versions.value,
+        'collectionClass', 'coverage_only',
+        'coverageAttributionBases', bases.value,
         'packsObserved', rows.packs_observed,
         'openings', rows.openings,
         'independentSources', rows.independent_sources,
@@ -267,6 +294,8 @@ countries as (
   ) as rows
   join country_data_versions as versions
     on versions.country_code = rows.country_code
+  join coverage_attribution_bases as bases
+    on bases.country_code = rows.country_code
 ),
 sets as (
   select coalesce(

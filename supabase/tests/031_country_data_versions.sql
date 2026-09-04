@@ -14,6 +14,15 @@ select ok(
   position('''dataVersions'', versions.value' in pg_get_functiondef(
     'public.get_public_study_coverage_v2()'::regprocedure
   )) > 0
+  and position('''collectionClass'', ''coverage_only''' in pg_get_functiondef(
+    'public.get_public_study_coverage_v2()'::regprocedure
+  )) > 0
+  and position('coverageAttributionBases' in pg_get_functiondef(
+    'public.get_public_study_coverage_v2()'::regprocedure
+  )) > 0
+  and position('config ->> ''geography_basis''' in pg_get_functiondef(
+    'public.get_public_study_coverage_v2()'::regprocedure
+  )) > 0
   and position('config ->> ''set_language''' in pg_get_functiondef(
     'public.get_public_study_coverage_v2()'::regprocedure
   )) > 0
@@ -110,6 +119,76 @@ select is(
   ),
   'en · me02.5 · Ascended Heroes · ETB',
   'the country row exposes its exact reviewed data version'
+);
+
+select is(
+  (
+    select country.item ->> 'collectionClass'
+    from jsonb_array_elements(
+      public.get_public_study_coverage_v2() -> 'countries'
+    ) as country(item)
+    where country.item ->> 'countryCode' = 'GB'
+  ),
+  'coverage_only',
+  'every v2 country row declares the coverage-only collection class'
+);
+
+select is(
+  (
+    select country.item -> 'coverageAttributionBases' ->> 0
+    from jsonb_array_elements(
+      public.get_public_study_coverage_v2() -> 'countries'
+    ) as country(item)
+    where country.item ->> 'countryCode' = 'GB'
+  ),
+  'publisher_country',
+  'the country row derives its attribution basis from the reviewed contract'
+);
+
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_public_study_coverage_v2() -> 'countries'
+    ) as country(item)
+    cross join lateral jsonb_array_elements_text(
+      country.item -> 'coverageAttributionBases'
+    ) as basis(value)
+    where basis.value not in (
+      'publisher_country',
+      'author_public_residence',
+      'product_market'
+    )
+  )
+  and not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_public_study_coverage_v2() -> 'countries'
+    ) as country(item)
+    cross join lateral jsonb_array_elements_text(
+      country.item -> 'coverageAttributionBases'
+    ) as basis(value)
+    group by country.item ->> 'countryCode'
+    having count(*) <> count(distinct basis.value)
+  ),
+  'coverage attribution bases are non-empty, allowlisted, and unique per country'
+);
+
+select ok(
+  not exists (
+    select 1
+    from ingest.reviewed_public_study_contracts() as contract
+    where contract.config ->> 'geography_basis' = 'product_market'
+  )
+  or exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_public_study_coverage_v2() -> 'countries'
+    ) as country(item)
+    where country.item ->> 'countryCode' = 'JP'
+      and country.item -> 'coverageAttributionBases' ? 'product_market'
+  ),
+  'a reviewed product-market contract is exposed as the JP product-market bucket'
 );
 
 select ok(
