@@ -1,0 +1,178 @@
+name: Backup production database
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_sha:
+        description: Exact GITHUB_SHA containing the reviewed backup implementation
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pokecrack-vps-production
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: worker-production
+    outputs:
+      backup_reference: ${{ steps.backup.outputs.backup_reference }}
+    env:
+      REQUESTED_SHA: ${{ inputs.confirm_sha }}
+      VPS_HOST: ${{ vars.VPS_HOST }}
+      VPS_USER: ${{ vars.VPS_USER }}
+      VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+      VPS_DEPLOY_PATH: ${{ vars.VPS_DEPLOY_PATH }}
+      VPS_ENV_FILE: ${{ vars.VPS_ENV_FILE }}
+    steps:
+      - name: Verify exact requested SHA
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_REF" == "refs/heads/main" ]]
+          [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]] || {
+            printf 'confirm_sha must equal GITHUB_SHA (%s)\n' "$GITHUB_SHA" >&2
+            exit 1
+          }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Configure pinned SSH host identity
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
+          [[ "$VPS_USER" =~ ^[A-Za-z_][A-Za-z0-9_-]*$ ]]
+          [[ "$VPS_USER" != root ]]
+          [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ "$VPS_DEPLOY_PATH" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_DEPLOY_PATH" != *'..'* ]]
+          [[ "$VPS_ENV_FILE" =~ ^/[A-Za-z0-9._/-]+$ && "$VPS_ENV_FILE" != *'..'* ]]
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]]
+          install -d -m 0700 "$HOME/.ssh"
+          install -m 0600 /dev/null "$HOME/.ssh/id_ed25519"
+          install -m 0600 /dev/null "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+      - name: Create and validate a fresh production backup
+        id: backup
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
+          [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$GITHUB_RUN_ATTEMPT" =~ ^[0-9]+$ ]]
+
+          bundle_file="$RUNNER_TEMP/pokecrack-backup-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.tar.gz"
+          remote_root="/tmp/pokecrack-backup-code.${GITHUB_RUN_ID}.${GITHUB_RUN_ATTEMPT}"
+          [[ "$remote_root" =~ ^/tmp/pokecrack-backup-code\.[0-9]+\.[0-9]+$ ]]
+          remote_root_created=false
+          cleanup() {
+            rm -f -- "$bundle_file"
+            if [[ "$remote_root_created" == true \
+              && "$remote_root" =~ ^/tmp/pokecrack-backup-code\.[0-9]+\.[0-9]+$ ]]; then
+              printf -v cleanup_command 'rm -rf -- %q' "$remote_root"
+              if ! ssh -i "$HOME/.ssh/id_ed25519" \
+                -p "$VPS_PORT" \
+                -o BatchMode=yes \
+                -o IdentitiesOnly=yes \
+                -o StrictHostKeyChecking=yes \
+                "$VPS_USER@$VPS_HOST" "$cleanup_command" >/dev/null 2>&1; then
+                printf 'warning: remote backup-code cleanup could not be confirmed\n' >&2
+              fi
+            fi
+          }
+          trap cleanup EXIT
+
+          bundle_paths=(
+            deploy/scripts/backup.sh
+            deploy/lib/prune_backups.py
+            deploy/lib/run_backup_from_env.py
+            deploy/lib/run_with_database_url.py
+            deploy/lib/sanitize_plain_backup.py
+            deploy/lib/shell_portability.sh
+          )
+          for reviewed_path in "${bundle_paths[@]}"; do
+            [[ -f "$reviewed_path" && ! -L "$reviewed_path" ]]
+          done
+          tar -czf "$bundle_file" "${bundle_paths[@]}"
+          chmod 0600 "$bundle_file"
+
+          printf -v prepare_command \
+            'set -Eeuo pipefail; umask 077; [[ $(id -u) -ne 0 ]]; [[ ! -e %q && ! -L %q ]]; mkdir -m 0700 -- %q' \
+            "$remote_root" "$remote_root" "$remote_root"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "$prepare_command"
+          remote_root_created=true
+
+          printf -v upload_command 'tar -xzf - -C %q' "$remote_root"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "$upload_command" < "$bundle_file"
+
+          printf -v remote_command 'bash -s -- %q %q %q' \
+            "$remote_root" "$VPS_DEPLOY_PATH" "$VPS_ENV_FILE"
+          backup_reference="$(ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "$remote_command" <<'REMOTE'
+          set -Eeuo pipefail
+          umask 077
+          backup_code_root=$1
+          repository=$2
+          env_file=$3
+
+          [[ "$EUID" -ne 0 ]]
+          [[ "$backup_code_root" =~ ^/tmp/pokecrack-backup-code\.[0-9]+\.[0-9]+$ ]]
+          [[ -d "$backup_code_root/deploy/scripts" && ! -L "$backup_code_root" ]]
+          cleanup_remote() {
+            rm -rf -- "$backup_code_root"
+          }
+          trap cleanup_remote EXIT HUP INT TERM
+          for reviewed_path in \
+            deploy/scripts/backup.sh \
+            deploy/lib/prune_backups.py \
+            deploy/lib/run_backup_from_env.py \
+            deploy/lib/run_with_database_url.py \
+            deploy/lib/sanitize_plain_backup.py \
+            deploy/lib/shell_portability.sh
+          do
+            [[ -f "$backup_code_root/$reviewed_path" && ! -L "$backup_code_root/$reviewed_path" ]]
+          done
+          [[ "$repository" =~ ^/[A-Za-z0-9._/-]+$ && "$repository" != *'..'* ]]
+          [[ -d "$repository/.git" ]]
+          [[ "$(git -C "$repository" remote get-url origin)" == "https://github.com/ncihxaonn/pokecrack.git" ]]
+          [[ "$env_file" =~ ^/[A-Za-z0-9._/-]+$ && "$env_file" != *'..'* ]]
+          python3 "$backup_code_root/deploy/lib/run_backup_from_env.py" \
+            --env-file "$env_file" \
+            --backup-script "$backup_code_root/deploy/scripts/backup.sh" \
+            --default-db-url-file "${env_file%/*}/supabase-db-url"
+          REMOTE
+          )"
+          [[ "$backup_reference" =~ ^pokecrack-[0-9]{8}T[0-9]{6}Z\.sql\.gz$ ]]
+          printf 'backup_reference=%s\n' "$backup_reference" >> "$GITHUB_OUTPUT"
+          printf 'Fresh production backup: %s\n' "$backup_reference"
+      - name: Remove transient SSH key
+        if: always()
+        run: rm -f "$HOME/.ssh/id_ed25519"
