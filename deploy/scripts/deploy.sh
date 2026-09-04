@@ -23,6 +23,9 @@ STATE_DIR=${POKECRACK_DEPLOY_STATE_DIR:-/var/lib/pokecrack/deploy}
 HEALTH_TIMEOUT=${DEPLOY_HEALTH_TIMEOUT_SECONDS:-420}
 RUNTIME_GRACE_SECONDS=${DEPLOY_RUNTIME_GRACE_SECONDS:-21600}
 RUNTIME_EXEC_TIMEOUT_SECONDS=${DEPLOY_RUNTIME_EXEC_TIMEOUT_SECONDS:-60}
+DOCKER_METADATA_TIMEOUT_SECONDS=30
+DOCKER_SERVICE_TIMEOUT_SECONDS=180
+DOCKER_BUILD_TIMEOUT_SECONDS=1200
 SERVICE_SET=tcgdex
 RETIRE_NOSTR=false
 VERIFY_RUNTIME=false
@@ -217,7 +220,7 @@ case $SERVICE_SET in
   *) die "unsupported service set: $SERVICE_SET (allowed: tcgdex, tcgdex-nostr, tcgdex-bluesky)" ;;
 esac
 
-for command in date docker env git install mktemp python3 stat; do
+for command in date docker env git install mktemp python3 stat timeout; do
   command -v "$command" >/dev/null 2>&1 || die "required command not found: $command"
 done
 
@@ -321,6 +324,11 @@ fi
 
 export DEPLOY_SHA=$target_sha
 export POKECRACK_ENV_FILE=$ENV_FILE
+# Compose gives inherited shell variables precedence over --env-file. The
+# reviewed owner-only files are authoritative for every database credential;
+# never let an SSH profile or operator shell silently substitute another DSN.
+unset SUPABASE_DB_URL NOSTR_SUPABASE_DB_URL BLUESKY_SUPABASE_DB_URL \
+  RUNTIME_RELEASE_EVIDENCE_DB_URL
 release_started_at=$(date -u '+%Y-%m-%dT%H:%M:%SZ')
 compose=(docker compose --project-name pokecrack --env-file "$ENV_FILE" -f "$COMPOSE_FILE")
 if [[ $SERVICE_SET == tcgdex-nostr ]]; then
@@ -339,9 +347,12 @@ elif [[ $SERVICE_SET == tcgdex-bluesky ]]; then
     die "Bluesky hosted contract preflight failed; existing services were left unchanged"
 fi
 
-docker compose version >/dev/null
-"${compose[@]}" config --quiet
-existing_services=$(docker ps --all \
+timeout --foreground --kill-after=5 "$DOCKER_METADATA_TIMEOUT_SECONDS" \
+  docker compose version >/dev/null || die "Docker Compose is unavailable"
+timeout --foreground --kill-after=5 "$DOCKER_METADATA_TIMEOUT_SECONDS" \
+  "${compose[@]}" config --quiet || die "Compose configuration is invalid"
+existing_services=$(timeout --foreground --kill-after=5 \
+  "$DOCKER_METADATA_TIMEOUT_SECONDS" docker ps --all \
   --filter label=com.docker.compose.project=pokecrack \
   --format '{{.ID}}|{{.Label "com.docker.compose.service"}}|{{.State}}') || \
   die "could not enumerate existing Pokecrack project containers"
@@ -380,31 +391,73 @@ while IFS='|' read -r existing_id existing_service existing_state extra_field; d
   esac
 done <<< "$existing_services"
 if [[ $nostr_container_present == true ]]; then
-  "${compose[@]}" stop nostr-collector || \
+  timeout --foreground --kill-after=5 "$DOCKER_SERVICE_TIMEOUT_SECONDS" \
+    "${compose[@]}" stop nostr-collector || \
     die "could not stop the explicitly retired Nostr collector"
-  "${compose[@]}" rm --force --stop nostr-collector || \
+  timeout --foreground --kill-after=5 "$DOCKER_SERVICE_TIMEOUT_SECONDS" \
+    "${compose[@]}" rm --force --stop nostr-collector || \
     die "could not remove the explicitly retired Nostr collector"
 fi
 if [[ $bluesky_container_present == true ]]; then
-  "${compose[@]}" stop bluesky-collector || \
+  timeout --foreground --kill-after=5 "$DOCKER_SERVICE_TIMEOUT_SECONDS" \
+    "${compose[@]}" stop bluesky-collector || \
     die "could not stop the explicitly retired Bluesky collector"
-  "${compose[@]}" rm --force --stop bluesky-collector || \
+  timeout --foreground --kill-after=5 "$DOCKER_SERVICE_TIMEOUT_SECONDS" \
+    "${compose[@]}" rm --force --stop bluesky-collector || \
     die "could not remove the explicitly retired Bluesky collector"
 fi
-"${compose[@]}" build --pull "${SERVICES[@]}"
-"${compose[@]}" config --quiet
-"${compose[@]}" up --detach "${SERVICES[@]}"
+timeout --foreground --kill-after=5 "$DOCKER_BUILD_TIMEOUT_SECONDS" \
+  "${compose[@]}" build --pull "${SERVICES[@]}" || die "worker image build failed or timed out"
+timeout --foreground --kill-after=5 "$DOCKER_METADATA_TIMEOUT_SECONDS" \
+  "${compose[@]}" config --quiet || die "post-build Compose configuration is invalid"
+timeout --foreground --kill-after=5 "$DOCKER_SERVICE_TIMEOUT_SECONDS" \
+  "${compose[@]}" up --detach "${SERVICES[@]}" || die "worker service startup failed or timed out"
+
+print_bounded_health_diagnostics() {
+  local service container_id state diagnostic
+  printf '%s\n' 'deploy: bounded worker health diagnostics begin' >&2
+  for service in "${SERVICES[@]}"; do
+    container_id=$(timeout --foreground --kill-after=2 10 \
+      "${compose[@]}" ps -q "$service" 2>/dev/null || true)
+    if [[ -z $container_id ]]; then
+      printf 'service=%s container=missing\n' "$service" >&2
+      continue
+    fi
+    state=$(timeout --foreground --kill-after=2 10 docker inspect --format \
+      'status={{.State.Status}} health={{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}} restart_count={{.RestartCount}} exit_code={{.State.ExitCode}} oom_killed={{.State.OOMKilled}}' \
+      "$container_id" 2>/dev/null || true)
+    if [[ $state =~ ^status=(created|running|paused|restarting|removing|exited|dead)\ health=(starting|healthy|unhealthy|none)\ restart_count=[0-9]+\ exit_code=[0-9]+\ oom_killed=(true|false)$ ]]; then
+      printf 'service=%s %s\n' "$service" "$state" >&2
+    else
+      printf 'service=%s state=inspect_unavailable\n' "$service" >&2
+    fi
+    diagnostic=$(timeout --foreground --kill-after=2 35 \
+      "${compose[@]}" exec -T "$service" \
+      python -m pokecrack_worker.safe_health_diagnostics 2>/dev/null || true)
+    if (( ${#diagnostic} <= 256 )) \
+      && [[ $diagnostic =~ ^status=(failed|ok)\ stage=(configuration|dns|tcp|database|dependencies|heartbeat)\ reason=(invalid_dsn|invalid_runtime|validation_failed|unavailable|unreachable|authentication_failed|capacity_unavailable|authorization_failed|tls_failed|connection_unavailable|query_failed|contract_unavailable|ready)(\ worker_role=(collector|scheduler|watchdog|nostr-collector|bluesky-collector))?$ ]]
+    then
+      printf 'service=%s diagnostic=%s\n' "$service" "$diagnostic" >&2
+    else
+      printf 'service=%s diagnostic=unavailable\n' "$service" >&2
+    fi
+  done
+  printf '%s\n' 'deploy: bounded worker health diagnostics end' >&2
+}
 
 deadline=$((SECONDS + HEALTH_TIMEOUT))
 while true; do
   all_healthy=true
   for service in "${SERVICES[@]}"; do
-    container_id=$("${compose[@]}" ps -q "$service")
+    container_id=$(timeout --foreground --kill-after=2 10 \
+      "${compose[@]}" ps -q "$service" 2>/dev/null || true)
     if [[ -z $container_id ]]; then
       all_healthy=false
       break
     fi
-    state=$(docker inspect --format '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container_id")
+    state=$(timeout --foreground --kill-after=2 10 docker inspect --format \
+      '{{.State.Status}} {{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' \
+      "$container_id" 2>/dev/null || true)
     if [[ $state != 'running healthy' ]]; then
       all_healthy=false
       break
@@ -414,7 +467,7 @@ while true; do
     break
   fi
   if (( SECONDS >= deadline )); then
-    "${compose[@]}" ps >&2 || true
+    print_bounded_health_diagnostics
     die "services did not become healthy within ${HEALTH_TIMEOUT} seconds; success marker was not advanced"
   fi
   sleep 1
