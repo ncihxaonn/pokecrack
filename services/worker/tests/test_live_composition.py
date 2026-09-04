@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -1342,6 +1343,21 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         assert "qualifying_" not in clause
         assert "metric_version" not in clause
     assert "NOT has_table_privilege" in sql
+
+
+def test_live_dependency_query_escapes_literal_percents_for_psycopg() -> None:
+    executor = RecordingExecutor([[{"ready": True}], [{"last_seen_at": NOW}]])
+
+    write_health_heartbeat(_public_study_settings(), executor=executor)
+
+    sql, _params = executor.calls[0]
+    without_placeholders = re.sub(
+        r"%%|%\([A-Za-z_][A-Za-z0-9_]*\)[sbt]",
+        "",
+        sql,
+    )
+    assert "%" not in without_placeholders
+    assert "limitsend.tistory.com/entry/%%ED%%8F%%AC" in sql
 
 
 def test_live_scheduler_validates_even_unwired_cron_configuration() -> None:
