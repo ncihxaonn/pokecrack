@@ -59,8 +59,8 @@ select ok(
 
 select is(
   (select count(*)::integer from ingest.reviewed_public_study_contracts()),
-  6,
-  'the reviewed registry preserves five rows and appends PokeSup as ordinal 6'
+  9,
+  'the reviewed registry preserves PokeSup at ordinal 6 and appends three Asian contracts'
 );
 select is(
   (
@@ -166,10 +166,10 @@ select is(
       pg_get_functiondef('ingest.enqueue_public_study_coverage_job_v1(text,integer,text,timestamptz,integer)'::regprocedure),
       pg_get_functiondef('ingest.enqueue_scheduled_public_study_coverage_job_v1(text,timestamptz,text,integer,integer)'::regprocedure)
     ]) as definitions(definition)
-    where position('contracts.ordinal in (3, 4, 5, 6)' in definition) > 0
+    where position('contracts.ordinal in (3, 4, 5, 6, 7, 8, 9)' in definition) > 0
   ),
   4,
-  'the four coverage ingestion boundaries accept ordinal 6'
+  'the four coverage ingestion boundaries continue to accept ordinal 6'
 );
 select is(
   (
