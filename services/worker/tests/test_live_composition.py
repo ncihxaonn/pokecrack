@@ -8,6 +8,7 @@ from typing import Any
 import pytest
 from pydantic import SecretStr
 
+from pokecrack_worker import composition as composition_module
 from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
 from pokecrack_worker.collectors.official_api.youtube import YouTubeRequestStateUnknown
 from pokecrack_worker.composition import (
@@ -24,11 +25,22 @@ from pokecrack_worker.composition import (
     require_worker_job_types,
     write_health_heartbeat,
 )
+from pokecrack_worker.config.public_studies import PublicStudyIdentity
 from pokecrack_worker.config.registries import REQUIRED_YOUTUBE_QUERIES
 from pokecrack_worker.config.settings import Settings
 from pokecrack_worker.runtime import RuntimeStatus
 
 NOW = datetime(2026, 8, 25, 12, 0, tzinfo=UTC)
+POKESUP_STUDY_KEY = "pokesup-abyss-eye-jp-30-v1"
+POKESUP_IDENTITY = PublicStudyIdentity(
+    study_key=POKESUP_STUDY_KEY,
+    source_url="https://pokesup.com/blog/unboxing-m5/",
+    fetch_url="https://pokesup.com/blog/unboxing-m5/",
+    domain="pokesup.com",
+    adapter="pokesup_abyss_eye_study",
+    collector_version="public-study-pokesup-abyss-eye-v1",
+    parser_version="pokesup-abyss-eye-evidence-v1",
+)
 
 
 class RecordingExecutor:
@@ -406,6 +418,16 @@ def _youtube_settings(role: str = "collector") -> Settings:
 
 def _public_study_settings(role: str = "collector") -> Settings:
     return _settings(role, public_study_collection_enabled=True)
+
+
+def _ensure_pokesup_schedule_identity(monkeypatch: pytest.MonkeyPatch) -> None:
+    if any(study.study_key == POKESUP_STUDY_KEY for study in composition_module.PUBLIC_STUDIES):
+        return
+    monkeypatch.setattr(
+        composition_module,
+        "PUBLIC_STUDIES",
+        (*composition_module.PUBLIC_STUDIES, POKESUP_IDENTITY),
+    )
 
 
 def _maton_youtube_settings() -> Settings:
@@ -1203,7 +1225,10 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_only_the_five_reviewed_daily_jobs() -> None:
+def test_public_study_flag_registers_all_six_reviewed_daily_jobs(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    _ensure_pokesup_schedule_identity(monkeypatch)
     entries = live_schedule_entries(_public_study_settings("scheduler"))
     studies = [entry for entry in entries if entry.job_type == PUBLIC_STUDY_JOB_TYPE]
 
@@ -1213,9 +1238,12 @@ def test_public_study_flag_registers_only_the_five_reviewed_daily_jobs() -> None
         {"study_key": "cardchill-ascended-heroes-gb-90-v1"},
         {"study_key": "bleedingcool-phantasmal-flames-us-36-v1"},
         {"study_key": "tcgtalk-perfect-order-sg-54-v1"},
+        {"study_key": POKESUP_STUDY_KEY},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
+    assert all(entry.catch_up_within == timedelta(hours=12) for entry in studies)
+    assert all(entry.catch_up_check_interval == timedelta(hours=1) for entry in studies)
 
 
 def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -> None:
@@ -1233,6 +1261,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
+    assert "count(*) = 6" in sql
     assert "ingest.public_study_observations" in sql
     assert "ingest.begin_public_study_job" in sql
     assert "ingest.finalize_public_study_job" in sql
@@ -1241,6 +1270,35 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert "public_study_cardchill_gb_90" in sql
     assert "public_study_bleedingcool_us_36" in sql
     assert "public_study_tcgtalk_sg_54" in sql
+    assert "public_study_pokesup_jp_30" in sql
+    pokesup_clause_start = sql.index("WHERE policies.source_key = 'public_study_pokesup_jp_30'")
+    pokesup_clause = sql[pokesup_clause_start : sql.index(") = 1", pokesup_clause_start)]
+    for expected in (
+        "PokeSup Abyss Eye 30-pack study",
+        "https://pokesup.com/blog/unboxing-m5/",
+        "public-study-pokesup-abyss-eye-v1",
+        "pokesup-abyss-eye-jp-30-v1",
+        '"country_code":"JP"',
+        '"country_name":"Japan"',
+        '"geography_basis":"product_market"',
+        '"geography_confidence":"tier_b"',
+        '"set_external_id":"M5"',
+        '"set_language":"ja"',
+        '"set_name":"アビスアイ"',
+        '"product_scope":"booster_box"',
+        '"pack_count":30',
+        '"observed_at":"2026-05-22T12:01:44Z"',
+        '"denominator_complete":true',
+        '"set_official_url":"https://www.pokemon-card.com/ex/m5/"',
+        '"robots_url":"https://pokesup.com/robots.txt"',
+        '"robots_checked_at":"2026-09-04"',
+        '"terms_checked_at":"2026-09-04"',
+        '"terms_status":"no_independent_terms_page"',
+        '"rights_scope":"minimal_noncreative_facts_no_media_or_body_reuse"',
+    ):
+        assert expected in pokesup_clause
+    assert "qualifying_" not in pokesup_clause
+    assert "metric_version" not in pokesup_clause
     assert "NOT has_table_privilege" in sql
 
 
