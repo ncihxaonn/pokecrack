@@ -66,17 +66,18 @@ export const GLOBAL_FOCUS_COUNTRIES: readonly GlobalFocusCountry[] = [
 ];
 
 export const WORLD_MAP_PALETTE = {
-  background: "#07172b",
-  noData: "#526987",
-  quantitativeLow: "#0e7490",
-  quantitativeMid: "#0891b2",
-  quantitativeHigh: "#67e8f9",
-  deltaLow: "#d946ef",
-  deltaMid: "#94a3b8",
+  background: "#03111f",
+  noData: "#405474",
+  quantitativeLow: "#06b6d4",
+  quantitativeMid: "#22d3ee",
+  quantitativeHigh: "#a5f3fc",
+  deltaLow: "#f43f5e",
+  deltaMid: "#cbd5e1",
   deltaHigh: "#22d3ee",
-  withheldBase: "#155e75",
-  withheldStripe: "#22d3ee",
-  focus: "#fde047",
+  withheldBase: "#075985",
+  withheldStripe: "#67e8f9",
+  focus: "#facc15",
+  labelAccent: "#075985",
 } as const;
 
 const worldMapCssVariables = {
@@ -91,6 +92,7 @@ const worldMapCssVariables = {
   "--map-withheld-base": WORLD_MAP_PALETTE.withheldBase,
   "--map-withheld-stripe": WORLD_MAP_PALETTE.withheldStripe,
   "--map-focus": WORLD_MAP_PALETTE.focus,
+  "--map-label-accent": WORLD_MAP_PALETTE.labelAccent,
 } as React.CSSProperties;
 
 const globalFocusCountryCodes: ReadonlySet<string> = new Set(

@@ -341,6 +341,21 @@ describe("WorldHeatmap", () => {
     expect(screen.queryByText("No attributed bucket rates published yet")).not.toBeInTheDocument();
   });
 
+  it("keeps low-volume observations vivid while preserving a distinct no-data state", () => {
+    expect(WORLD_MAP_PALETTE).toMatchObject({
+      background: "#03111f",
+      noData: "#405474",
+      quantitativeLow: "#06b6d4",
+      quantitativeMid: "#22d3ee",
+      quantitativeHigh: "#a5f3fc",
+      withheldBase: "#075985",
+      withheldStripe: "#67e8f9",
+      focus: "#facc15",
+      labelAccent: "#075985",
+    });
+    expect(getWorldMapFill(10, "coverage")).not.toBe(WORLD_MAP_PALETTE.noData);
+  });
+
   it("records the selected metric in the URL", () => {
     window.history.replaceState(null, "", "/?source=qa#map");
     render(
