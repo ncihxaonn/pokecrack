@@ -529,6 +529,48 @@ sources:
     cache_ttl_seconds: 86400
     retain_raw_html: false
     terms_url: https://tcgtalk.com/robots.txt
+  pokesup.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-pokesup-abyss-eye-v1
+    config:
+      study_key: pokesup-abyss-eye-jp-30-v1
+      canonical_url: https://pokesup.com/blog/unboxing-m5/
+      collector_version: public-study-pokesup-abyss-eye-v1
+      parser_version: pokesup-abyss-eye-evidence-v1
+      country_code: JP
+      country_name: Japan
+      geography_basis: product_market
+      geography_confidence: tier_b
+      set_external_id: M5
+      set_language: ja
+      set_name: アビスアイ
+      product_scope: booster_box
+      pack_count: 30
+      observed_at: "2026-05-22T12:01:44Z"
+      denominator_complete: true
+      set_official_url: https://www.pokemon-card.com/ex/m5/
+      robots_url: https://pokesup.com/robots.txt
+      robots_checked_at: "2026-09-04"
+      terms_checked_at: "2026-09-04"
+      terms_status: no_independent_terms_page
+      rights_scope: minimal_noncreative_facts_no_media_or_body_reuse
+    reason: No independent terms page; All Rights Reserved. Only limited factual extraction is allowed, with no image or body reuse; disabling this policy is the kill switch if the reviewed facts, robots, or rights scope changes.
+    routes: [static]
+    adapter: pokesup_abyss_eye_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
   dynamic.example:
     enabled: true
     collector: scrapling_dynamic

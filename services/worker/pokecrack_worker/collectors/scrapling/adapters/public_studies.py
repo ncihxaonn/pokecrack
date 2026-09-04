@@ -55,10 +55,11 @@ class _VisibleTextParser(HTMLParser):
         }
     )
 
-    def __init__(self) -> None:
+    def __init__(self, *, content_tags: Sequence[str] = ("article",)) -> None:
         super().__init__(convert_charrefs=True)
+        self.content_tags = frozenset(tag.casefold() for tag in content_tags)
         self.hidden_depth = 0
-        self.article_depth = 0
+        self.content_depth = 0
         self.heading_depth = 0
         self.document_title_depth = 0
         self.text_parts: list[str] = []
@@ -72,11 +73,11 @@ class _VisibleTextParser(HTMLParser):
             self.hidden_depth += 1
         elif not self.hidden_depth and normalized == "title":
             self.document_title_depth += 1
-        elif not self.hidden_depth and normalized == "article":
-            self.article_depth += 1
-        elif not self.hidden_depth and self.article_depth and normalized == "h1":
+        elif not self.hidden_depth and normalized in self.content_tags:
+            self.content_depth += 1
+        elif not self.hidden_depth and self.content_depth and normalized == "h1":
             self.heading_depth += 1
-        if not self.hidden_depth and self.article_depth and normalized == "br":
+        if not self.hidden_depth and self.content_depth and normalized == "br":
             self.text_parts.append("\n")
 
     def handle_endtag(self, tag: str) -> None:
@@ -90,14 +91,14 @@ class _VisibleTextParser(HTMLParser):
             self.document_title_depth -= 1
             self.document_title_parts.append("\n")
             return
-        if normalized == "article" and self.article_depth:
+        if normalized in self.content_tags and self.content_depth:
             self.text_parts.append("\n")
-            self.article_depth -= 1
+            self.content_depth -= 1
             return
-        if self.article_depth and normalized == "h1" and self.heading_depth:
+        if self.content_depth and normalized == "h1" and self.heading_depth:
             self.heading_depth -= 1
             self.heading_parts.append("\n")
-        if self.article_depth and normalized in self._BLOCK_TAGS:
+        if self.content_depth and normalized in self._BLOCK_TAGS:
             self.text_parts.append("\n")
 
     def handle_data(self, data: str) -> None:
@@ -105,7 +106,7 @@ class _VisibleTextParser(HTMLParser):
             return
         if self.document_title_depth:
             self.document_title_parts.append(data)
-        if not self.article_depth:
+        if not self.content_depth:
             return
         self.text_parts.append(data)
         if self.heading_depth:
@@ -192,6 +193,8 @@ class ReviewedPublicStudyAdapter:
         evidence_patterns: Sequence[re.Pattern[str]],
         expected_evidence_sha256: str | None = None,
         allow_document_title: bool = False,
+        content_tags: Sequence[str] = ("article",),
+        evidence_validator: Callable[[str], None] | None = None,
         timeout_seconds: float = 30.0,
         max_response_bytes: int = 1_000_000,
     ) -> None:
@@ -202,6 +205,8 @@ class ReviewedPublicStudyAdapter:
         self.evidence_patterns = tuple(evidence_patterns)
         self.expected_evidence_sha256 = expected_evidence_sha256
         self.allow_document_title = allow_document_title
+        self.content_tags = tuple(content_tags)
+        self.evidence_validator = evidence_validator
         self.timeout_seconds = timeout_seconds
         self.max_response_bytes = max_response_bytes
 
@@ -232,7 +237,7 @@ class ReviewedPublicStudyAdapter:
             document = response.body.decode("utf-8", errors="strict")
         except UnicodeDecodeError as error:
             raise CollectorError("public study must be strict UTF-8 HTML") from error
-        parser = _VisibleTextParser()
+        parser = _VisibleTextParser(content_tags=self.content_tags)
         parser.feed(document)
         parser.close()
         title = parser.title
@@ -243,6 +248,8 @@ class ReviewedPublicStudyAdapter:
         matches = [pattern.search(parser.text) for pattern in self.evidence_patterns]
         if any(match is None for match in matches):
             raise CollectorError("public study evidence no longer matches the reviewed facts")
+        if self.evidence_validator is not None:
+            self.evidence_validator(parser.text)
         evidence_excerpt = "\n".join(match.group(0) for match in matches if match is not None)
         evidence_sha256 = content_sha256(evidence_excerpt)
         if (
@@ -375,6 +382,65 @@ TCGTALK_EVIDENCE_EXCERPT = (
 )
 TCGTALK_EVIDENCE_SHA256 = "217f21e0de947139a96b6466563c1d005300598b1dde933264255627c8f0b096"
 
+POKESUP_IDENTITY = PUBLIC_STUDIES_BY_KEY["pokesup-abyss-eye-jp-30-v1"]
+POKESUP_POLICY_CONFIG: dict[str, object] = {
+    "study_key": POKESUP_IDENTITY.study_key,
+    "canonical_url": POKESUP_IDENTITY.source_url,
+    "collector_version": POKESUP_IDENTITY.collector_version,
+    "parser_version": POKESUP_IDENTITY.parser_version,
+    "country_code": "JP",
+    "country_name": "Japan",
+    "geography_basis": "product_market",
+    "geography_confidence": "tier_b",
+    "set_external_id": "M5",
+    "set_language": "ja",
+    "set_name": "アビスアイ",
+    "product_scope": "booster_box",
+    "pack_count": 30,
+    "observed_at": "2026-05-22T12:01:44Z",
+    "denominator_complete": True,
+    "set_official_url": "https://www.pokemon-card.com/ex/m5/",
+    "robots_url": "https://pokesup.com/robots.txt",
+    "robots_checked_at": "2026-09-04",
+    "terms_checked_at": "2026-09-04",
+    "terms_status": "no_independent_terms_page",
+    "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse",
+}
+
+POKESUP_TITLE = "ポケモンカード 拡張パック「アビスアイ」開封結果！レアリティ封入率検証（その1）"
+POKESUP_OPENING_EXCERPT = (
+    "拡張パック「アビスアイ」の開封結果になります。 "
+    "箱開封から、順序変えずに開封していますので並び順の参考などにどうぞ。"
+)
+POKESUP_SECTION_HEADING = "アビスアイ開封（1箱目）"
+POKESUP_PACK_LABELS = tuple(
+    [f"左{index}パック" for index in range(1, 16)] + [f"右{index}パック" for index in range(1, 16)]
+)
+_POKESUP_PACK_LABEL_PATTERN = re.compile(r"(?<!\d)(?:左|右)\d{1,2}パック(?!\d)")
+
+
+def _pokesup_pack_sequence_pattern() -> re.Pattern[str]:
+    return re.compile(
+        r"\s+".join(re.escape(label) for label in (POKESUP_SECTION_HEADING, *POKESUP_PACK_LABELS))
+    )
+
+
+def _validate_pokesup_pack_sequence(text: str) -> None:
+    headings = list(re.finditer(re.escape(POKESUP_SECTION_HEADING), text))
+    if len(headings) != 1:
+        raise CollectorError("Pokesup M5 opening section is not unique")
+    labels = tuple(_POKESUP_PACK_LABEL_PATTERN.findall(text[headings[0].end() :]))
+    if labels != POKESUP_PACK_LABELS:
+        raise CollectorError("Pokesup M5 pack sequence is incomplete or duplicated")
+
+
+POKESUP_EVIDENCE_EXCERPT = (
+    f"{POKESUP_TITLE}\n"
+    f"{POKESUP_OPENING_EXCERPT}\n"
+    f"{POKESUP_SECTION_HEADING} {' '.join(POKESUP_PACK_LABELS)}"
+)
+POKESUP_EVIDENCE_SHA256 = "254f7c0959b4e3fee4cde46391e69b3e9956b6205e1c49c4aee3089b0a3fea36"
+
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
@@ -459,6 +525,23 @@ def tcgtalk_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyA
     )
 
 
+def pokesup_abyss_eye_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
+    return ReviewedPublicStudyAdapter(
+        client=client,
+        identity=POKESUP_IDENTITY,
+        expected_policy_config=POKESUP_POLICY_CONFIG,
+        title_tokens=(POKESUP_TITLE,),
+        evidence_patterns=(
+            re.compile(re.escape(POKESUP_TITLE)),
+            re.compile(re.escape(POKESUP_OPENING_EXCERPT)),
+            _pokesup_pack_sequence_pattern(),
+        ),
+        expected_evidence_sha256=POKESUP_EVIDENCE_SHA256,
+        content_tags=("main",),
+        evidence_validator=_validate_pokesup_pack_sequence,
+    )
+
+
 __all__ = [
     "BLEEDINGCOOL_IDENTITY",
     "BLEEDINGCOOL_POLICY_CONFIG",
@@ -466,6 +549,14 @@ __all__ = [
     "CARDCHILL_POLICY_CONFIG",
     "COMICBOOK_IDENTITY",
     "COMICBOOK_POLICY_CONFIG",
+    "POKESUP_EVIDENCE_EXCERPT",
+    "POKESUP_EVIDENCE_SHA256",
+    "POKESUP_IDENTITY",
+    "POKESUP_OPENING_EXCERPT",
+    "POKESUP_PACK_LABELS",
+    "POKESUP_POLICY_CONFIG",
+    "POKESUP_SECTION_HEADING",
+    "POKESUP_TITLE",
     "ReviewedPublicStudyAdapter",
     "RobotsTxtChecker",
     "TCGTALK_EVIDENCE_EXCERPT",
@@ -477,6 +568,7 @@ __all__ = [
     "bleedingcool_phantasmal_flames_adapter",
     "cardchill_ascended_heroes_adapter",
     "comicbook_perfect_order_adapter",
+    "pokesup_abyss_eye_adapter",
     "tcgtalk_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",
 ]
