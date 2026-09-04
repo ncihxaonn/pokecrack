@@ -6,6 +6,43 @@ This file records what was actually exercised. Repository code, a rendered
 configuration, a fixture response, or a successful migration compile is not by
 itself evidence of a live collection run.
 
+## 2026-09-04 Pokesup M5 rollout preparation
+
+- The reviewed change prepares an exact live static-HTML source for
+  `https://pokesup.com/blog/unboxing-m5/`, with
+  `policy_review_date=2026-09-04`. Robots allowed the reviewed route. No
+  independent terms page was found, and the page footer states
+  `© ポケサプ All Rights Reserved`.
+- The copyright boundary permits only non-copyrightable minimum facts and short
+  pack labels needed to verify completeness. The collector must not copy article
+  body prose or images, fetch media, or retain raw HTML. The product version is
+  `ja/M5/アビスアイ/booster_box`; the official
+  [Japanese M5 product page](https://www.pokemon-card.com/ex/m5/) proves only
+  that product identity, not Pokesup's publisher location, an author address,
+  or the opening location.
+- This is a coverage-only denominator observation, not `activity_only` or pure
+  discovery metadata. Its real field is `pack_count=30`; `observed_at` is the
+  article publication timestamp. JP is a Tier-B product-market bucket
+  (`country_code=JP`, `geography_basis=product_market`,
+  `geography_confidence=tier_b`).
+- The policy intentionally uses `statistics_eligible_default=true` because the
+  existing fenced coverage pipeline requires that value. It does not make this
+  source rate-eligible. Reviewed contract ordinal 6 writes only to
+  `ingest.public_study_coverage_observations`, whose schema has no numerator; it
+  never enters `ingest.public_study_observations` and cannot be statistically
+  promoted. No qualifying-hit count, rate metric, posterior input, or `SAR` to
+  `SIR` mapping is permitted.
+- After the first verified live collection, the public coverage contract may
+  show exactly 30 packs, 1 opening, and 1 source, with no numerator, rate,
+  baseline, posterior, interval, delta, or signal. Migration files, worker code,
+  fixtures, tests, or deployment alone do not prove that observation exists:
+  the migration and worker must be released and the first persisted row and
+  public response independently verified before it is described as live.
+- Australia (`AU`), China (`CN`), Russia (`RU`), Canada (`CA`), Mexico (`MX`),
+  and Brazil (`BR`) have no qualified source in this M5 review. An outline does
+  not count as an observation. This rollout does not make PokeCrack
+  production-ready.
+
 ## Current 2026-08-30 branch audit
 
 - Production v2 was observed serving the live 218-set TCGdex catalog plus two

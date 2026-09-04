@@ -26,7 +26,7 @@ export function ReviewedEvidenceSources({ sources }: { sources: readonly PublicS
       <SectionHeading
         id="reviewed-evidence-title"
         title="Reviewed evidence sources"
-        detail="Verified opening-sample coverage only — not a hit rate. Country attribution follows each reviewed source's declared basis and is not necessarily an opening location. Social discovery is excluded from these counts."
+        detail="Verified opening-sample coverage only — not a hit rate. Coverage-bucket attribution follows each reviewed source's declared basis and is not necessarily an opening location. Social discovery is excluded from these counts."
         action={<Link className="text-link" href="/sources">Source boundaries →</Link>}
       />
       <ul className="reviewed-source-rail" aria-label="Reviewed evidence source coverage">
@@ -48,8 +48,8 @@ export function ReviewedEvidenceSources({ sources }: { sources: readonly PublicS
                 <dd>{plural(source.coverage.packsObserved, "pack")}</dd>
               </div>
               <div>
-                <dt>Attributed countries</dt>
-                <dd>{plural(source.coverage.countriesObserved, "country", "countries")}</dd>
+                <dt>Attributed coverage buckets</dt>
+                <dd>{plural(source.coverage.countriesObserved, "bucket", "buckets")}</dd>
               </div>
               <div>
                 <dt>Complete openings</dt>

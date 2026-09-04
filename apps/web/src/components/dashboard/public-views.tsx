@@ -25,6 +25,7 @@ import {
   TableFrame,
 } from "@/components/ui/dashboard-ui";
 import type { SetSort } from "@/app/_lib/sets-query";
+import { formatCoverageAttribution } from "@/lib/coverage-attribution";
 
 interface MetricRow {
   key: string;
@@ -48,7 +49,7 @@ function sourceDetails(source: PublicSource) {
     details.push(
       { term: "Coverage", value: "Reviewed opening samples only — not a hit rate" },
       { term: "Observed packs", value: formatCompactNumber(coverage.packsObserved) },
-      { term: "Attributed countries", value: formatCompactNumber(coverage.countriesObserved) },
+      { term: "Attributed coverage buckets", value: formatCompactNumber(coverage.countriesObserved) },
       { term: "Complete openings", value: formatCompactNumber(coverage.completeOpenings) },
     );
   }
@@ -130,9 +131,9 @@ export function RegionsView({ data, synthetic }: { data: PublicDashboardData; sy
   const rows = data.regions.map((region) => ({ key: region.slug, href: `/regions/${region.slug}` as Route, name: region.name, meta: region.coverage, metric: region }));
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
-      <PageIntro eyebrow="Worldwide country detail" title="Country observations" description="Browse the same verified country-level samples shown in the global atlas. Rates remain withheld until a country reaches both publication thresholds." />
-      <div className="coverage-grid coverage-grid--list">{data.regions.map((region, index) => <Link className={`coverage-cell coverage-cell--${(index % 4) + 1}`} href={`/regions/${region.slug}` as Route} key={region.slug}><span className="coverage-cell__index">{region.countryCode}.{String(index + 1).padStart(2, "0")}</span><strong>{region.name}</strong><span>{region.coverage}</span><SignalBadge metric={region} /></Link>)}</div>
-      <MetricTable rows={rows} label="Country observation comparison" emptyMessage="No country observations are published in this snapshot." />
+      <PageIntro eyebrow="Worldwide coverage detail" title="Country / product-market coverage" description="Browse the same verified country and product-market coverage buckets shown in the global atlas. Rates remain withheld until reviewed publication thresholds are satisfied." />
+      <div className="coverage-grid coverage-grid--list">{data.regions.map((region, index) => <Link className={`coverage-cell coverage-cell--${(index % 4) + 1}`} href={`/regions/${region.slug}` as Route} key={region.slug}><span className="coverage-cell__index">{region.countryCode}.{String(index + 1).padStart(2, "0")}</span><strong>{region.name}</strong><span>{formatCoverageAttribution(region.coverageAttributionBases, "Country")} · {region.coverage}</span><SignalBadge metric={region} /></Link>)}</div>
+      <MetricTable rows={rows} label="Country and product-market coverage comparison" emptyMessage="No country or product-market coverage buckets are published in this snapshot." />
       <MetricDisclaimer />
     </PublicPage>
   );
@@ -143,11 +144,11 @@ export function RegionDetailView({ data, region, synthetic }: { data: PublicDash
   const batches = data.batches.filter((batch) => batch.region === region.name);
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
-      <PageIntro eyebrow={`${region.countryCode} · country observation`} title={region.name} description={region.coverage}><div className="intro-meta"><span>Updated {formatDateTime(region.updatedAt)}</span></div></PageIntro>
+      <PageIntro eyebrow={`${region.countryCode} · ${formatCoverageAttribution(region.coverageAttributionBases, "Country")}`} title={region.name} description={region.coverage}><div className="intro-meta"><span>Updated {formatDateTime(region.updatedAt)}</span></div></PageIntro>
       <ObservationStats metric={region} />
-      <div className="detail-grid"><Panel><h2>Coverage note</h2><p>{region.sampleNote}</p><p>Country activity reflects the sources collected, not the underlying distribution of all purchases.</p></Panel><Panel><h2>Published scope</h2><DefinitionList items={[{ term: "Country", value: region.countryCode }, { term: "Country key", value: <code>{region.slug}</code> }, { term: "Retailer aggregates", value: retailers.length }, { term: "Visible batches", value: batches.length }]} /></Panel></div>
-      <section className="dashboard-section"><SectionHeading title="Retailer observations" detail="Aggregate retailer labels within this country snapshot." /><MetricTable rows={retailers.map((retailer) => ({ key: retailer.slug, href: `/retailers/${retailer.slug}` as Route, name: retailer.name, meta: retailer.channel, metric: retailer }))} label={`Retailer observations in ${region.name}`} emptyMessage="No retailer aggregates are linked to this country." /></section>
-      <section className="dashboard-section"><SectionHeading title="Visible batch observations" /><MetricTable rows={batches.map((batch) => ({ key: batch.code, href: `/batches/${encodeURIComponent(batch.code)}` as Route, name: batch.code, meta: `${batch.setName} · ${batch.productType}`, metric: batch }))} label={`Batch observations in ${region.name}`} emptyMessage="No visible batches are linked to this country." /></section>
+      <div className="detail-grid"><Panel><h2>Coverage note</h2><p>{region.sampleNote}</p><p>This coverage bucket reflects the declared attribution basis and collected sources, not a claim about the physical opening location or the underlying distribution of purchases.</p></Panel><Panel><h2>Published scope</h2><DefinitionList items={[{ term: "Attribution basis", value: formatCoverageAttribution(region.coverageAttributionBases, "Country") }, { term: "Country / market code", value: region.countryCode }, { term: "Coverage bucket key", value: <code>{region.slug}</code> }, { term: "Retailer aggregates", value: retailers.length }, { term: "Visible batches", value: batches.length }]} /></Panel></div>
+      <section className="dashboard-section"><SectionHeading title="Retailer observations" detail="Aggregate retailer labels within this coverage bucket snapshot." /><MetricTable rows={retailers.map((retailer) => ({ key: retailer.slug, href: `/retailers/${retailer.slug}` as Route, name: retailer.name, meta: retailer.channel, metric: retailer }))} label={`Retailer observations in ${region.name}`} emptyMessage="No retailer aggregates are linked to this coverage bucket." /></section>
+      <section className="dashboard-section"><SectionHeading title="Visible batch observations" /><MetricTable rows={batches.map((batch) => ({ key: batch.code, href: `/batches/${encodeURIComponent(batch.code)}` as Route, name: batch.code, meta: `${batch.setName} · ${batch.productType}`, metric: batch }))} label={`Batch observations in ${region.name}`} emptyMessage="No visible batches are linked to this coverage bucket." /></section>
       <MetricDisclaimer />
     </PublicPage>
   );

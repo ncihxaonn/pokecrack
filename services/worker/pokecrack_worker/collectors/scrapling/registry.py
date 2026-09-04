@@ -14,6 +14,7 @@ from .adapters.public_studies import (
     bleedingcool_phantasmal_flames_adapter,
     cardchill_ascended_heroes_adapter,
     comicbook_perfect_order_adapter,
+    pokesup_abyss_eye_adapter,
     tcgtalk_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
@@ -54,6 +55,10 @@ def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistr
     static_registry.register(
         "tcgtalk_perfect_order_study",
         tcgtalk_perfect_order_adapter(client=http_client),
+    )
+    static_registry.register(
+        "pokesup_abyss_eye_study",
+        pokesup_abyss_eye_adapter(client=http_client),
     )
     return static_registry
 

@@ -49,8 +49,8 @@ describe("ReviewedEvidenceSources", () => {
     expect(screen.getByRole("heading", { name: "Reviewed evidence sources" })).toBeVisible();
     expect(screen.getByText(/not a hit rate/i)).toBeVisible();
     expect(screen.getByText("55 packs")).toBeVisible();
-    expect(screen.getByText("Attributed countries")).toBeVisible();
-    expect(screen.getByText("1 country")).toBeVisible();
+    expect(screen.getByText("Attributed coverage buckets")).toBeVisible();
+    expect(screen.getByText("1 bucket")).toBeVisible();
     expect(screen.getByText("1 opening")).toBeVisible();
     expect(screen.getByText("03 Sep 2026, 01:00 UTC").tagName).toBe("TIME");
     expect(screen.getByRole("link", { name: /ComicBook Perfect Order study/ })).toHaveAttribute(
