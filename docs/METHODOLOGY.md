@@ -19,6 +19,40 @@ The denominator is packs observed, not posts, videos, boxes or hits. The public 
 
 Tier is evidence quality, not source popularity. Source policy, deterministic validation and AI agreement can only reduce eligibility, not promote unsupported evidence.
 
+## Coverage denominator versus rate eligibility
+
+A verified `pack_count` can be a real denominator for public coverage without
+being the denominator `n` of an observed-rate calculation. Coverage-only public
+studies persist to `ingest.public_study_coverage_observations`, whose schema has
+no numerator or inference fields. The public projection may sum their packs and
+count openings and independent source domains, but it cannot calculate a rate
+from those rows. Statistical rates require separate admission to
+`ingest.public_study_observations` with an exact qualifying metric and
+numerator.
+
+The Pokesup M5 contract is ordinal 6 and deliberately stops at the coverage
+ledger. Its source policy has `statistics_eligible_default=true` because that is
+an invariant of the existing fenced coverage preflight; the field does not
+grant statistical eligibility. Ordinal 6 is excluded from the statistical
+ledger and every promotion path, and its contract contains no qualifying-hit
+count, metric, or metric version. Its actual field is `pack_count=30`. After the
+first verified live collection, the coverage response may show 30 packs,
+1 opening, and 1 source, while numerator, observed rate, posterior, baseline,
+interval, delta, and signal remain absent. `SAR` is not mapped to `SIR`.
+
+The product version identity is `ja/M5/アビスアイ/booster_box` and
+`observed_at` is the article publication timestamp. JP is Tier-B product-market
+evidence (`country_code=JP`, `geography_basis=product_market`,
+`geography_confidence=tier_b`), not a publisher-country, author-address, or
+opening-location claim. The official
+[Japanese M5 product page](https://www.pokemon-card.com/ex/m5/) corroborates
+only the Japanese product identity and cannot establish any Pokesup location.
+
+Within this M5 review, Australia (`AU`), China (`CN`), Russia (`RU`), Canada
+(`CA`), Mexico (`MX`), and Brazil (`BR`) have no qualified observation. An
+outline is not an observation and cannot contribute to any coverage or rate
+count.
+
 ## Dedupe and quality
 
 Canonical URL/platform IDs prevent repeat ingestion; content fingerprints and normalized opening identities catch reposts/cross-posts. Suspected duplicates are linked and excluded. Catalog/set/product/rarity consistency, count bounds, date plausibility and source policy are checked before aggregation.
@@ -77,15 +111,16 @@ estimate of representative demand. It never relaxes the inference thresholds:
 rate and delta layers still withhold insufficient or pending inference, while
 countries without a reviewed observation remain neutral.
 
-Reviewed public-study inputs use publisher country as a coarse Tier-B geography
-basis. They do not assert the physical opening location and must not be shown
-as city/store evidence. The current reviewed registry spans five studies across
-US, GB, and SG publisher-country observations: 91 verified packs from two
-independent domains in the United States, 107 from two in the United Kingdom,
-and 54 from one in Singapore. All three countries remain below the three-domain
-inference gate, so observed-rate, baseline, posterior, interval, delta, and
-numerator fields remain private or null in the public response. Counts may be
-shown only as verified coverage, never as a rate.
+The existing five reviewed public-study inputs use publisher country as a
+coarse Tier-B geography basis. They do not assert the physical opening location
+and must not be shown as city/store evidence. They span US, GB, and SG: 91
+verified packs from two independent domains in the United States, 107 from two
+in the United Kingdom, and 54 from one in Singapore. Pokesup ordinal 6 is the
+separate product-market case: after first verified collection it may add 30
+coverage packs, 1 opening, and 1 source to a JP market bucket, but not to any
+statistical cohort. Every observed-rate, baseline, posterior, interval, delta,
+signal, and numerator field remains unavailable for that row regardless of the
+30-pack display threshold.
 
 ## Authorized opening review and aggregate admission
 

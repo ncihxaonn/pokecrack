@@ -15,8 +15,9 @@ Every source route uses one of the following exact values and no aliases: `offic
 5. Manual synthetic fixture import for tests.
 
 The current registry enables TCGdex catalog metadata, YouTube Data API metadata
-(credential required; no video download), and `example.com` only as a
-fixture-safe adapter. Live TCGdex collection accepts two independent daily UTC
+(credential required; no video download), exact reviewed public-study pages,
+and `example.com` only as a fixture-safe adapter. Live TCGdex collection accepts
+two independent daily UTC
 scheduled windows at 02:00 and 14:00 for
 `https://api.tcgdex.net/v2/en/sets`; each bounded attempt performs at most one
 fixed conditional GET, capped at 2 MiB and 1,000 sets, after both a local
@@ -38,6 +39,44 @@ arbitrary URL or fetches video, audio, captions, thumbnails, descriptions,
 channel metadata, cards, rarity, openings, or probability evidence. The
 disabled fixture proves fail-closed behavior. Real retailer domains are not
 enabled by default.
+
+### Pokesup M5 exact coverage source
+
+The `policy_review_date=2026-09-04` review prepares an exact live
+`scrapling_http` source for the static HTML page
+`https://pokesup.com/blog/unboxing-m5/`. Robots allowed the reviewed route. No
+independent terms page was found, and the page footer states
+`© ポケサプ All Rights Reserved`. The missing terms page is not a permission
+grant: the rights notice and this policy limit extraction to non-copyrightable
+minimum facts and short pack labels. Article body prose and images are not
+copied, media is not fetched, raw HTML is not retained, and any rights, robots,
+page-structure, or ownership drift disables the route pending review.
+
+This source is a coverage-only denominator observation, not `activity_only` or
+discovery metadata. Its reviewed facts are `pack_count=30`, one complete
+booster-box opening, one source, `observed_at` equal to the article publication
+timestamp, and product version identity `ja/M5/アビスアイ/booster_box`. The JP
+bucket is Tier-B product-market evidence (`country_code=JP`,
+`geography_basis=product_market`, `geography_confidence=tier_b`); it is not
+evidence of Pokesup's publisher country, an author address, or the physical
+opening location. The official
+[Japanese M5 product page](https://www.pokemon-card.com/ex/m5/) verifies only
+the Japanese product identity and proves none of those Pokesup location facts.
+
+The existing fenced coverage pipeline requires
+`statistics_eligible_default=true` for policy validity. Here that field permits
+admission to `ingest.public_study_coverage_observations` only; it does not make
+the observation rate-eligible. Reviewed contract ordinal 6 has no qualifying
+hit count or rate metric, never enters `ingest.public_study_observations`, and
+cannot be statistically promoted. The coverage ledger itself has no numerator.
+After a verified live collection, the public coverage projection may show only
+30 packs, 1 opening, and 1 source; it must expose no numerator, observed rate,
+posterior, interval, delta, or signal. Japanese `SAR` is not mapped to `SIR`.
+
+This is an exact source enablement being prepared for release, not evidence that
+collection has already happened. It becomes live-observed only after the
+coordinated migration and worker revision are deployed and the first collection
+and public coverage projection are independently verified.
 
 ### Mastodon public hashtag activity
 

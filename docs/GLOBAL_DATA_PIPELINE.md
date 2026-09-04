@@ -7,6 +7,9 @@ the United States, 17 and 90 packs for the United Kingdom, 36 packs for the
 United States, and 54 packs attributed to Singapore's publisher country. Each
 country remains below the three-source publication gate, so this does **not**
 establish representative worldwide coverage or a global pull-rate claim.
+The 2026-09-04 reviewed Pokesup change prepares ordinal 6 as a sixth exact
+denominator observation: 30 packs for the JP product market, coverage-only and
+not yet live-observed.
 
 ## Data classes
 
@@ -14,6 +17,7 @@ establish representative worldwide coverage or a global pull-rate claim.
 | --- | --- | --- |
 | `catalog` | TCGdex set metadata | Set/language identity and catalog matching only |
 | `activity_only` | Minimal YouTube search-result metadata; bounded Mastodon public hashtag activity | Private discovery coverage only |
+| Denominator coverage | Complete reviewed public-study opening persisted only in `ingest.public_study_coverage_observations` | Public pack/opening/source counts only; no numerator, rate, or inference |
 | `statistics` | Complete, nonduplicate opening with a verified pack denominator and tier A/B evidence | Observed-rate calculations after deterministic and independent validation |
 
 The tier-D YouTube discovery records defined here never create an opening, hit,
@@ -21,30 +25,74 @@ denominator, aggregate, or public signal. Other separately reviewed activity-onl
 opening records may contribute an explicitly labelled activity count, but never a
 pack denominator, hit rate, or anomaly claim. A popular video, a rare-card post,
 a listing, or a channel country is not evidence that a region has better packs.
+Denominator coverage is neither `activity_only` nor automatic statistical
+eligibility: the coverage ledger can retain a real `pack_count` while excluding
+the row from every numerator, rate, inference, and statistical-promotion path.
 
 ## Reviewed public-study boundary
 
-The statistics path accepts only five immutable study identities, URLs, policy
+The public-study path accepts only its immutable study identities, URLs, policy
 versions, article-title tokens, and exact evidence excerpts. The worker reads
 `robots.txt`, waits the policy's 30-second follow-up delay, requests one HTML
-page, and parses only text inside the page's `<article>` element. A redirect,
+page, and parses only the policy-selected static content container. A redirect,
 content-type drift, oversized body, changed title/evidence, malformed UTF-8, or
 robots denial fails closed. Raw HTML, media, author handles, comments, and exact
 addresses are never retained.
 
 The worker returns only the canonical URL, title, bounded evidence excerpt,
-SHA-256, and version identities. Country, observed date, set, pack denominator,
-qualifying-hit-pack count, product scope, and geography confidence come only
-from the exact database policy; a network result cannot override them. The
-typed finalizer atomically creates one source item, deterministic extraction
-audit, complete opening denominator, and immutable private ledger row.
-Aggregate studies never fabricate card-level `opening_hits`.
+SHA-256, and version identities. Country or product-market bucket, observed
+date, set, pack denominator, product scope, and geography confidence come only
+from the exact database policy; a network result cannot override them.
+Qualifying-hit facts exist only for contracts admitted to the statistical
+ledger. Coverage-only contracts instead use the fenced coverage finalizer,
+which writes only `ingest.public_study_coverage_observations`; aggregate studies
+never fabricate card-level `opening_hits`.
 
-All current countries use `geography_basis=publisher_country` and
+The existing five reviewed sources use `geography_basis=publisher_country` and
 `geography_confidence=tier_b`. This is coarse provenance, not proof of the room
-in which packs were opened. The private reviewed ledgers retain any qualifying
-numerator for audit, while the public cell exposes only pack/opening/source
-counts until all publication thresholds are met.
+in which packs were opened. Pokesup ordinal 6 instead uses
+`geography_basis=product_market` with the same Tier-B confidence. Its JP bucket
+identifies the Japanese product version, not publisher country, author address,
+or opening location.
+
+## Pokesup M5 denominator-coverage boundary
+
+The 2026-09-04 policy review prepares the exact static-HTML route
+`https://pokesup.com/blog/unboxing-m5/`. Robots allowed the reviewed route; no
+independent terms page was found; and the footer states
+`© ポケサプ All Rights Reserved`. Only non-copyrightable minimum facts and the
+short labels needed to verify all 30 packs may be extracted. Article prose and
+images are not copied, no media is fetched, and raw HTML is not retained.
+
+The immutable product identity is `ja/M5/アビスアイ/booster_box`, independently
+checked against the official
+[Japanese M5 product page](https://www.pokemon-card.com/ex/m5/). That official
+page proves only the Japanese product identity. It does not prove Pokesup's
+publisher location, an author address, or where the box was opened.
+
+Pokesup is a complete coverage-only denominator observation with
+`pack_count=30`, one opening, one independent source, and `observed_at` set to
+the article publication timestamp. The source policy must retain
+`statistics_eligible_default=true` because the existing fenced coverage
+preflight requires it. That policy field is not rate eligibility: ordinal 6 is
+accepted only by the coverage functions, persists only to
+`ingest.public_study_coverage_observations`, never enters
+`ingest.public_study_observations`, and has no promotion path. Its contract
+contains no qualifying-hit count, qualifying metric, or metric version, and the
+coverage ledger has no numerator column. `SAR` remains a Japanese rarity label
+and is not mapped to `SIR`.
+
+Once the migration and worker are deployed and the first collection is
+verified, the public coverage response may expose exactly 30 packs, 1 opening,
+and 1 source for the JP product-market bucket. It must not expose or derive a
+numerator, observed rate, posterior, baseline, interval, delta, or signal. Code,
+configuration, migrations, fixtures, or a successful build do not establish
+that this live observation exists.
+
+For this seven-market M5 review, Australia (`AU`), China (`CN`), Russia (`RU`),
+Canada (`CA`), Mexico (`MX`), and Brazil (`BR`) have no qualified source or
+observation. An outline is not an observation and contributes no pack count,
+opening, source, numerator, or rate evidence.
 
 ## Authorized opening aggregate-admission boundary
 
@@ -163,8 +211,8 @@ post-public-study/Bluesky schema. It removes every disposable
 candidate/observation row, while retaining the immutable public-study ledgers
 and exact Bluesky checkpoint.
 Request-gate data is excluded by `pg_dump`, independently rejected by the
-sanitizer, and replaced with the exact idle TCGdex, YouTube, Bluesky, and (when
-present) five public-study source keys immediately before RLS is enabled; live lease
+sanitizer, and replaced with the exact idle TCGdex, YouTube, Bluesky, and all
+present reviewed public-study source keys immediately before RLS is enabled; live lease
 ownership is never restored. The exact gate columns, constraints, primary key,
 forced/enabled RLS, policy identities, and ledger presence must match the
 preflight. Partial or ambiguous structure aborts without advancing the success
