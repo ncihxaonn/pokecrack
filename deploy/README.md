@@ -45,26 +45,34 @@ confidentiality and never treats an unavailable marker as a successful backup.
 
 Put real secrets only in the root-readable environment file, never in Git, Compose YAML, command history, issues, prompts, or logs. Set `DATA_MODE=live` only after a real Supabase database is migrated and tested. Use a dedicated TLS database URL with bounded connection timeout, keep `WORKER_MAX_CONCURRENCY=1`, `YOUTUBE_COLLECTION_ENABLED=false`, `AI_PROVIDER=fixture`, and `OPENCLI_ENABLED=false`. The TCGdex catalog does not require an API key.
 
-The GitHub-managed backup path is intentionally a separate non-root contract.
-For `.github/workflows/backup-production.yml`, set the `worker-production`
-`VPS_ENV_FILE` variable explicitly to a regular, non-symlink file inside the
-dedicated `VPS_USER` account's private configuration directory. That file must
-be owned by `VPS_USER` and inaccessible to group or other users (mode `0600` is
-recommended). The workflow has no `/etc` fallback: it fails closed if the
-variable, owner, or permissions drift, uploads only the reviewed backup
-implementation from the confirmed GitHub SHA, and returns only the validated
-backup filename. It never sources the Compose dotenv file: a non-executable
-parser projects only `BACKUP_DIR`, the two retention settings, and exactly one
-Supabase database credential source into a sanitized child environment. The
-GitHub workflow always selects the owner-capable `supabase-db-url` file beside
-`VPS_ENV_FILE`; it never substitutes the worker DSN from the Compose environment.
-Other production secrets and shell-like content never reach the backup process. A
-private wrapper supplies `psql` and `pg_dump` from an immutable official
-PostgreSQL 17 container when the VPS host does not install those clients; the
-database credential is forwarded only as allowlisted container environment
-fields and never as an argument. A
-root-owned `/etc/pokecrack/production.env` remains suitable for a manual
-root-operated backup, but must not be selected for the non-root GitHub workflow.
+The preferred GitHub-managed backup path is independent of the VPS worker
+credential. `.github/workflows/backup-production-api.yml` runs in the protected
+`Production` environment and uses its owner-scoped Supabase access token to
+mint the official short-lived CLI login through the Management API. The helper
+accepts only the project's primary `*.pooler.supabase.com` connection, forces
+IPv4 session mode, and starts each database connection as `postgres`. The URL
+is written only to an owner-only runner temp file and is removed after use; the
+temporary login is deleted through the Management API on both success and
+failure, deletion failure fails the workflow, and the accepted API TTL must be
+between 30 and 60 minutes. Before creating or deleting anything, the helper
+queries the active `cli_login_*` roles and proceeds only when the exact temporary
+role is the sole match. No other CLI session may run against this project
+concurrently because Supabase's deletion endpoint revokes project CLI logins
+collectively.
+TLS verifies both the public certificate chain and the pooler hostname. The
+token and database credential never appear in command arguments or logs. The
+same reviewed retention preflights, exact schema scope, sanitizer,
+gzip validation, and immutable PostgreSQL 17 container used by the manual
+backup path then produce one consistent logical dump. The private repository's
+Actions storage retains that dump plus its checksum as a seven-day rollback
+artifact. The workflow returns a `gha-run-<run-id>:<filename>` reference for the
+migration gate.
+
+`.github/workflows/backup-production.yml` is the legacy VPS retention path. It
+requires an owner-capable `supabase-db-url` file next to the explicitly selected
+`worker-production` `VPS_ENV_FILE`; it never substitutes the runtime worker DSN.
+A root-owned `/etc/pokecrack/production.env` remains suitable for a manual
+root-operated VPS backup.
 
 The browser profile, extension directory, and long unique noVNC secret described
 below are not prerequisites for the TCGdex core. Prepare them only under a

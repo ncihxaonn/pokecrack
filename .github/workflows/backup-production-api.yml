@@ -1,0 +1,180 @@
+name: Backup production database via Supabase API
+
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_sha:
+        description: Exact GITHUB_SHA containing the reviewed backup implementation
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pokecrack-database-Production
+  cancel-in-progress: false
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: Production
+    outputs:
+      backup_reference: ${{ steps.backup.outputs.backup_reference }}
+    env:
+      REQUESTED_SHA: ${{ inputs.confirm_sha }}
+      REPOSITORY_VISIBILITY: ${{ github.repository_visibility }}
+      SUPABASE_PROJECT_REF: wohnphsxlquhhknuthrj
+    steps:
+      - name: Verify exact requested SHA
+        shell: bash
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$GITHUB_REF" == "refs/heads/main" ]]
+          [[ "$GITHUB_REPOSITORY" == "ncihxaonn/pokecrack" ]]
+          [[ "$REPOSITORY_VISIBILITY" == "private" ]]
+          [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]] || {
+            printf 'confirm_sha must equal GITHUB_SHA (%s)\n' "$GITHUB_SHA" >&2
+            exit 1
+          }
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Create and validate a fresh production backup
+        id: backup
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
+          [[ "$GITHUB_RUN_ID" =~ ^[0-9]+$ ]]
+          [[ "$GITHUB_RUN_ATTEMPT" =~ ^[0-9]+$ ]]
+          [[ -n "$SUPABASE_ACCESS_TOKEN" ]]
+
+          run_root="$RUNNER_TEMP/pokecrack-backup-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          backup_dir="$run_root/artifact"
+          client_dir="$run_root/postgres-client"
+          env_file="$run_root/backup.env"
+          database_url_file="$run_root/database-url"
+          role_file="$run_root/login-role"
+          cleanup() {
+            status=$?
+            cleanup_failed=false
+            trap - EXIT HUP INT TERM
+            if [[ -e "$role_file" || -L "$role_file" ]]; then
+              if ! python3 scripts/create_supabase_backup_credential.py delete \
+                --project-ref "$SUPABASE_PROJECT_REF" \
+                --expected-role-file "$role_file"; then
+                cleanup_failed=true
+                printf 'temporary Supabase login cleanup could not be confirmed\n' >&2
+              fi
+            fi
+            rm -f -- "$database_url_file" "$role_file" "$env_file"
+            if [[ "$status" -eq 0 && "$cleanup_failed" == true ]]; then
+              status=1
+            fi
+            exit "$status"
+          }
+          trap cleanup EXIT HUP INT TERM
+
+          reviewed_paths=(
+            scripts/create_supabase_backup_credential.py
+            deploy/scripts/backup.sh
+            deploy/lib/prune_backups.py
+            deploy/lib/run_backup_from_env.py
+            deploy/lib/run_postgres_client_container.sh
+            deploy/lib/run_with_database_url.py
+            deploy/lib/sanitize_plain_backup.py
+            deploy/lib/shell_portability.sh
+          )
+          for reviewed_path in "${reviewed_paths[@]}"; do
+            [[ -f "$reviewed_path" && ! -L "$reviewed_path" ]]
+          done
+
+          [[ ! -e "$run_root" && ! -L "$run_root" ]]
+          install -d -m 0700 "$run_root" "$backup_dir" "$client_dir"
+          install -m 0500 \
+            deploy/lib/run_postgres_client_container.sh \
+            "$client_dir/psql"
+          install -m 0500 \
+            deploy/lib/run_postgres_client_container.sh \
+            "$client_dir/pg_dump"
+          printf 'BACKUP_DIR=%s\nBACKUP_RETENTION_DAILY=1\nBACKUP_RETENTION_WEEKLY=0\nBACKUP_PREFLIGHT_ROLE=postgres\n' \
+            "$backup_dir" > "$env_file"
+          chmod 0600 "$env_file"
+
+          python3 scripts/create_supabase_backup_credential.py create \
+            --project-ref "$SUPABASE_PROJECT_REF" \
+            --output "$database_url_file" \
+            --role-output "$role_file"
+
+          pooler_ready=false
+          for attempt in 1 2 3 4 5 6 7 8; do
+            if role_state="$(
+              PATH="$client_dir:$PATH" python3 \
+                deploy/lib/run_with_database_url.py -- \
+                psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet \
+                --command "select (left(session_user, 10) = 'cli_login_' and current_user = 'postgres')::text;" \
+                < "$database_url_file" 2>/dev/null
+            )" && [[ "$role_state" == true ]]; then
+              pooler_ready=true
+              break
+            fi
+            sleep "$attempt"
+          done
+          [[ "$pooler_ready" == true ]] || {
+            printf 'temporary Supabase login did not become ready before backup\n' >&2
+            exit 1
+          }
+
+          backup_reference="$(python3 deploy/lib/run_backup_from_env.py \
+            --env-file "$env_file" \
+            --backup-script deploy/scripts/backup.sh \
+            --default-db-url-file "$database_url_file" \
+            --dedicated-db-url-file "$database_url_file" \
+            --postgres-client-directory "$client_dir")"
+          [[ "$backup_reference" =~ ^pokecrack-[0-9]{8}T[0-9]{6}Z\.sql\.gz$ ]]
+          backup_file="$backup_dir/$backup_reference"
+          [[ -f "$backup_file" && ! -L "$backup_file" && -s "$backup_file" ]]
+          digest="$(sha256sum "$backup_file")"
+          digest="${digest%% *}"
+          [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
+          printf '%s  %s\n' "$digest" "$backup_reference" \
+            > "$backup_file.sha256"
+          chmod 0600 "$backup_file.sha256"
+
+          reference="gha-run-${GITHUB_RUN_ID}:${backup_reference}"
+          printf 'backup_reference=%s\n' "$reference" >> "$GITHUB_OUTPUT"
+          printf 'backup_file=%s\n' "$backup_file" >> "$GITHUB_OUTPUT"
+          printf 'checksum_file=%s\n' "$backup_file.sha256" >> "$GITHUB_OUTPUT"
+          printf 'Fresh production backup: %s\n' "$reference"
+      - name: Upload private rollback artifact
+        id: artifact
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: production-database-backup-${{ github.run_id }}
+          path: |
+            ${{ steps.backup.outputs.backup_file }}
+            ${{ steps.backup.outputs.checksum_file }}
+          if-no-files-found: error
+          retention-days: 7
+      - name: Record immutable artifact identity
+        shell: bash
+        env:
+          BACKUP_REFERENCE: ${{ steps.backup.outputs.backup_reference }}
+          ARTIFACT_ID: ${{ steps.artifact.outputs.artifact-id }}
+          ARTIFACT_DIGEST: ${{ steps.artifact.outputs.artifact-digest }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$BACKUP_REFERENCE" =~ ^gha-run-[0-9]+:pokecrack-[0-9]{8}T[0-9]{6}Z\.sql\.gz$ ]]
+          [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]
+          [[ "$ARTIFACT_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          printf 'Rollback artifact: id=%s digest=%s reference=%s\n' \
+            "$ARTIFACT_ID" "$ARTIFACT_DIGEST" "$BACKUP_REFERENCE"

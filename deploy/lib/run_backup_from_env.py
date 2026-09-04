@@ -20,6 +20,7 @@ from typing import cast
 ALLOWED_KEYS = frozenset(
     {
         "BACKUP_DIR",
+        "BACKUP_PREFLIGHT_ROLE",
         "BACKUP_RETENTION_DAILY",
         "BACKUP_RETENTION_WEEKLY",
         "SUPABASE_DB_URL",
@@ -236,7 +237,11 @@ def build_backup_environment(
         "PATH": path_value,
         "TMPDIR": "/tmp",
     }
-    for key in ("BACKUP_RETENTION_DAILY", "BACKUP_RETENTION_WEEKLY"):
+    for key in (
+        "BACKUP_PREFLIGHT_ROLE",
+        "BACKUP_RETENTION_DAILY",
+        "BACKUP_RETENTION_WEEKLY",
+    ):
         value = values.get(key, "")
         if value:
             child_environment[key] = value
