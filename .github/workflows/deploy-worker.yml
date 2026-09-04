@@ -77,6 +77,10 @@ jobs:
               [[ "$REQUESTED_SERVICE_SET" == tcgdex ]]
             fi
           fi
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
       - name: Configure pinned SSH host identity
         shell: bash
         run: |
@@ -96,21 +100,59 @@ jobs:
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
       - name: Deploy and verify the exact GITHUB_SHA
         shell: bash
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          [[ -n "$GITHUB_TOKEN" ]]
-          printf -v remote_command 'bash -s -- %q %q %q %q %q %q %q %q' \
+          umask 077
+          [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
+          bundle_file="$RUNNER_TEMP/pokecrack-deploy-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}.bundle"
+          remote_bundle=''
+
+          cleanup_bundle() {
+            rm -f -- "$bundle_file"
+            if [[ -n "$remote_bundle" ]]; then
+              printf -v cleanup_command 'rm -f -- %q' "$remote_bundle"
+              ssh -i "$HOME/.ssh/id_ed25519" \
+                -p "$VPS_PORT" \
+                -o BatchMode=yes \
+                -o IdentitiesOnly=yes \
+                -o StrictHostKeyChecking=yes \
+                "$VPS_USER@$VPS_HOST" "$cleanup_command" >/dev/null 2>&1 || true
+            fi
+          }
+          trap cleanup_bundle EXIT
+
+          git bundle create "$bundle_file" HEAD
+          git bundle verify "$bundle_file" >/dev/null
+          chmod 0600 "$bundle_file"
+          remote_bundle_candidate="$(ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            'umask 077; mktemp /tmp/pokecrack-deploy-bundle.XXXXXXXX')"
+          [[ "$remote_bundle_candidate" =~ ^/tmp/pokecrack-deploy-bundle\.[A-Za-z0-9]{8}$ ]]
+          remote_bundle=$remote_bundle_candidate
+          unset remote_bundle_candidate
+          printf -v upload_command 'cat > %q' "$remote_bundle"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "$upload_command" < "$bundle_file"
+
+          printf -v remote_command 'bash -s -- %q %q %q %q %q %q %q %q %q' \
             "$GITHUB_SHA" "$VPS_DEPLOY_PATH" "$VPS_ENV_FILE" \
             "$VPS_NOSTR_ENV_FILE" "$VPS_BLUESKY_ENV_FILE" \
             "$REQUESTED_SERVICE_SET" "$REQUESTED_RETIRE_NOSTR" \
-            "$REQUESTED_RETIRE_BLUESKY"
-          {
-            printf '%s\n' "$GITHUB_TOKEN"
-            cat <<'REMOTE'
-          IFS= read -r github_token
-          [[ -n "$github_token" ]]
+            "$REQUESTED_RETIRE_BLUESKY" "$remote_bundle"
+          ssh -i "$HOME/.ssh/id_ed25519" \
+            -p "$VPS_PORT" \
+            -o BatchMode=yes \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" "$remote_command" <<'REMOTE'
           set -Eeuo pipefail
           sha=$1
           repository=$2
@@ -120,7 +162,15 @@ jobs:
           service_set=$6
           retire_nostr=$7
           retire_bluesky=$8
+          bundle=$9
+          cleanup_bundle() {
+            rm -f -- "$bundle"
+          }
+          trap cleanup_bundle EXIT
           [[ "$sha" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$bundle" =~ ^/tmp/pokecrack-deploy-bundle\.[A-Za-z0-9]{8}$ ]]
+          [[ -f "$bundle" && ! -L "$bundle" ]]
+          [[ "$(stat -c '%a' "$bundle")" == 600 ]]
           case "$service_set" in
             tcgdex|tcgdex-nostr|tcgdex-bluesky) ;;
             *) exit 2 ;;
@@ -138,12 +188,11 @@ jobs:
           git -C "$repository" diff --cached --quiet --ignore-submodules --
           [[ -z $(git -C "$repository" status --porcelain --untracked-files=all) ]]
           [[ "$(git -C "$repository" remote get-url origin)" == "https://github.com/ncihxaonn/pokecrack.git" ]]
+          [[ "$(git -C "$repository" bundle list-heads "$bundle" | awk '$2 == "HEAD" { print $1 }')" == "$sha" ]]
+          git -C "$repository" bundle verify "$bundle" >/dev/null
           if ! git -C "$repository" cat-file -e "${sha}^{commit}" 2>/dev/null; then
-            git -C "$repository" \
-              -c "http.extraheader=Authorization: Bearer $github_token" \
-              fetch --no-tags --no-write-fetch-head origin "$sha"
+            git -C "$repository" fetch --no-tags --no-write-fetch-head "$bundle" HEAD
           fi
-          unset github_token
           resolved=$(git -C "$repository" rev-parse --verify "${sha}^{commit}")
           [[ "$resolved" == "$sha" ]]
           git -C "$repository" checkout --detach "$sha"
@@ -166,12 +215,6 @@ jobs:
           actual=$(git -C "$repository" rev-parse --verify HEAD)
           [[ "$actual" == "$sha" ]]
           REMOTE
-          } | ssh -i "$HOME/.ssh/id_ed25519" \
-            -p "$VPS_PORT" \
-            -o BatchMode=yes \
-            -o IdentitiesOnly=yes \
-            -o StrictHostKeyChecking=yes \
-            "$VPS_USER@$VPS_HOST" "$remote_command"
       - name: Remove transient SSH key
         if: always()
         run: rm -f "$HOME/.ssh/id_ed25519"
