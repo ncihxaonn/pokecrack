@@ -2527,21 +2527,18 @@ export type Database = {
           slot_at: string;
           job_id: string | null;
           created_at: string;
-          is_demo: boolean;
         };
         Insert: {
           schedule_name: string;
           slot_at: string;
           job_id?: string | null;
           created_at?: string;
-          is_demo?: boolean;
         };
         Update: {
           schedule_name?: string;
           slot_at?: string;
           job_id?: string | null;
           created_at?: string;
-          is_demo?: boolean;
         };
         Relationships: [
           {

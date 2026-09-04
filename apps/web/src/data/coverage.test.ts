@@ -1,10 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { DEMO_PUBLIC_DATA } from "./demo";
-import { mergePublicStudyCoverage } from "./coverage";
+import { mergePublicStudyCoverage, publicStudyCoverageSchema } from "./coverage";
 import { publicDashboardDataSchema } from "./schema";
 
 const collectedAt = "2026-08-25T02:58:00.000Z";
+const syntheticJapanDataVersion = "ja · M3 · ムニキスゼロ · booster box";
 const sources = [
   {
     id: "cardchill_ascended_heroes_study",
@@ -120,7 +121,146 @@ function validRegistryCoveragePayload() {
   };
 }
 
+function emptyPublicSnapshot() {
+  return publicDashboardDataSchema.parse({
+    ...DEMO_PUBLIC_DATA,
+    summary: {
+      ...DEMO_PUBLIC_DATA.summary,
+      observedPacks: 0,
+      completeOpenings: 0,
+      aiValidatedSources: 0,
+      trackedRegions: 0,
+      baselineHitRate: null,
+      globalCoverage: "No verified country observations are published yet.",
+    },
+    observations: {
+      ...DEMO_PUBLIC_DATA.observations,
+      status: "empty",
+      period: null,
+      observedPacks: 0,
+      completeOpenings: 0,
+      sourceCountryContributions: 0,
+      countriesObserved: 0,
+      countriesWithPublishedRate: 0,
+      asOf: null,
+      methodologyVersion: null,
+    },
+    mapCells: [],
+    regions: [],
+  });
+}
+
+function validSyntheticJapanCoveragePayload() {
+  return {
+    schemaVersion: "2.0.0" as const,
+    period: { start: "2025-09-05", end: "2026-09-04" },
+    countries: [
+      {
+        countryCode: "JP",
+        countryName: "Japan",
+        dataVersions: [syntheticJapanDataVersion],
+        packsObserved: 30,
+        openings: 1,
+        independentSources: 1,
+        updatedAt: collectedAt,
+      },
+    ],
+    sets: [],
+    sources: [
+      {
+        id: "synthetic_japan_parser_fixture",
+        name: "Synthetic Japan parser fixture",
+        kind: "community" as const,
+        access: "public" as const,
+        status: "paused" as const,
+        lastCollectedAt: null,
+        url: "https://example.com/synthetic-japan-parser-fixture",
+        note: "Synthetic parser/UI fixture only; not reviewed or published evidence.",
+      },
+    ],
+  };
+}
+
 describe("reviewed public-study coverage merge", () => {
+  it("keeps payloads and snapshots without data versions backward compatible", () => {
+    const coverage = publicStudyCoverageSchema.parse(validCoveragePayload());
+    const snapshot = publicDashboardDataSchema.parse(DEMO_PUBLIC_DATA);
+
+    expect(coverage.countries[0]).not.toHaveProperty("dataVersions");
+    expect(snapshot.mapCells.every((cell) => cell.dataVersions === undefined)).toBe(true);
+  });
+
+  it("parses a synthetic Japanese data-version fixture without publishing a rate", () => {
+    const base = emptyPublicSnapshot();
+    const parsed = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(base, validSyntheticJapanCoveragePayload()),
+    );
+    const japan = parsed.mapCells.find((cell) => cell.countryCode === "JP");
+
+    expect(japan).toMatchObject({
+      countryName: "Japan",
+      dataVersions: [syntheticJapanDataVersion],
+      packsObserved: 30,
+      openings: 1,
+      independentSources: 1,
+      baselineRate: null,
+      hitRate: null,
+      posteriorMean: null,
+      credibleInterval: null,
+      deltaFromBaseline: null,
+      state: "insufficient",
+    });
+    expect(japan?.sampleNote).toContain("30 observed packs across 1 independent sources");
+    expect(parsed.observations.countriesWithPublishedRate).toBe(0);
+    expect(parsed.sets.some((set) => set.slug.toLowerCase() === "m3")).toBe(false);
+    expect(parsed.sources.find((source) => source.id === "synthetic_japan_parser_fixture"))
+      .toMatchObject({
+        status: "paused",
+        note: "Synthetic parser/UI fixture only; not reviewed or published evidence.",
+      });
+  });
+
+  it("rejects duplicate or malformed data-version labels", () => {
+    const base = emptyPublicSnapshot();
+    const duplicate = validSyntheticJapanCoveragePayload();
+    duplicate.countries[0]!.dataVersions = [
+      syntheticJapanDataVersion,
+      syntheticJapanDataVersion,
+    ];
+    const padded = validSyntheticJapanCoveragePayload();
+    padded.countries[0]!.dataVersions = [` ${syntheticJapanDataVersion}`];
+
+    expect(mergePublicStudyCoverage(base, duplicate)).toBe(base);
+    expect(mergePublicStudyCoverage(base, padded)).toBe(base);
+  });
+
+  it("preserves and de-duplicates data versions across additive coverage merges", () => {
+    const first = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(
+        emptyPublicSnapshot(),
+        validSyntheticJapanCoveragePayload(),
+      ),
+    );
+    const secondPayload = {
+      ...validSyntheticJapanCoveragePayload(),
+      schemaVersion: "1.0.0",
+      sources,
+      countries: [
+        {
+          ...validSyntheticJapanCoveragePayload().countries[0]!,
+          dataVersions: [syntheticJapanDataVersion],
+        },
+      ],
+    };
+    const second = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(first, secondPayload),
+    );
+
+    expect(second.mapCells.find((cell) => cell.countryCode === "JP")?.dataVersions).toEqual([
+      syntheticJapanDataVersion,
+    ]);
+  });
+
   it("keeps a published country aggregate while adding a coverage-only set", () => {
     const originalGb = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "GB");
     expect(originalGb).toBeDefined();

@@ -21,6 +21,31 @@ const evidenceState = z.enum([
   "insufficient",
 ]);
 const productType = z.enum(["Booster Box", "ETB", "Booster Bundle"]);
+export const countryDataVersionsSchema = z
+  .array(
+    z
+      .string()
+      .min(1)
+      .max(240)
+      .refine((value) => value === value.trim(), "Data versions cannot have surrounding whitespace")
+      .refine(
+        (value) => Array.from(value).every((character) => {
+          const codePoint = character.codePointAt(0) ?? 0;
+          return codePoint >= 32 && codePoint !== 127;
+        }),
+        "Data versions cannot contain control characters",
+      ),
+  )
+  .min(1)
+  .max(32)
+  .superRefine((versions, context) => {
+    if (new Set(versions).size !== versions.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Data versions must be unique",
+      });
+    }
+  });
 const interval = z
   .object({ low: probability, high: probability })
   .strict()
@@ -259,6 +284,7 @@ const countryMapCell = observedMetric
   .extend({
     countryCode: z.string().refine(isIsoAlpha2, "Country code must be an official ISO alpha-2 code"),
     countryName: z.string().min(1).max(160),
+    dataVersions: countryDataVersionsSchema.optional(),
     periodStart: isoDate,
     periodEnd: isoDate,
     setScope: z.literal("all"),

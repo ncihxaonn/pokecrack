@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { isIsoAlpha2 } from "./iso-alpha2";
-import { publicDashboardDataSchema } from "./schema";
+import { countryDataVersionsSchema, publicDashboardDataSchema } from "./schema";
 import type {
   CountryMapCell,
   PublicDashboardData,
@@ -59,6 +59,7 @@ const coverageCountry = coverageMetric.extend({
     "Country code must be an official ISO alpha-2 code",
   ),
   countryName: z.string().min(1).max(160),
+  dataVersions: countryDataVersionsSchema.optional(),
 });
 
 const coverageSet = coverageMetric.extend({
@@ -196,6 +197,16 @@ function sampleNote(packs: number, sources: number): string {
   return "Coverage threshold met, but coverage-only evidence cannot publish a rate; statistical-ledger promotion and the reviewed aggregate publisher are still required.";
 }
 
+function mergeDataVersions(
+  current: readonly string[] | undefined,
+  incoming: readonly string[] | undefined,
+  replaceWithAuthoritativeCoverage: boolean,
+): readonly string[] | undefined {
+  if (incoming === undefined) return current;
+  if (replaceWithAuthoritativeCoverage) return [...incoming];
+  return [...new Set([...(current ?? []), ...incoming])];
+}
+
 function mergeCountry(
   current: CountryMapCell | undefined,
   coverage: PublicStudyCoverage["countries"][number],
@@ -205,7 +216,16 @@ function mergeCountry(
   // The aggregate publisher owns every inference field and its matching
   // denominator. Coverage-only evidence may populate a missing/withheld row,
   // but it must never rewrite an already-published aggregate.
-  if (current !== undefined && current.hitRate !== null) return current;
+  const mergedDataVersions = mergeDataVersions(
+    current?.dataVersions,
+    coverage.dataVersions,
+    replaceWithAuthoritativeCoverage,
+  );
+  if (current !== undefined && current.hitRate !== null) {
+    return mergedDataVersions === undefined
+      ? current
+      : { ...current, dataVersions: mergedDataVersions };
+  }
   const packsObserved = replaceWithAuthoritativeCoverage
     ? coverage.packsObserved
     : (current?.packsObserved ?? 0) + coverage.packsObserved;
@@ -218,6 +238,9 @@ function mergeCountry(
   return {
     countryCode: coverage.countryCode,
     countryName: current?.countryName ?? coverage.countryName,
+    ...(mergedDataVersions === undefined
+      ? {}
+      : { dataVersions: mergedDataVersions }),
     periodStart: period.start,
     periodEnd: period.end,
     setScope: "all",
