@@ -341,6 +341,16 @@ class ReviewedGlobalAggregateBackupTests(unittest.TestCase):
             with self.subTest(name=name):
                 self.assert_rejected(candidate, marker=b"private_marker")
 
+    def test_postgres_17_domain_length_deparse_is_accepted(self) -> None:
+        postgres_17_dump = bridge_dump().replace(
+            b"char_length(canonical_domain) BETWEEN 3 AND 253",
+            b"(char_length(canonical_domain) >= 3) AND "
+            b"(char_length(canonical_domain) <= 253)",
+            1,
+        )
+        result = self.run_sanitizer(postgres_17_dump)
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+
     def test_rows_and_cross_table_closure_are_fail_closed(self) -> None:
         dump = bridge_dump()
         cases = {
