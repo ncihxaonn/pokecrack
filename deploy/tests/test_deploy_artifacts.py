@@ -3409,7 +3409,9 @@ exit 97
             repository, sha = self.setUpRepository(base)
             fake_bin = self.make_fake_docker(base)
             environment, env_file, docker_log = self.environment(base, fake_bin)
-            environment["FAKE_PROJECT_ROWS"] = "container-nostr|nostr-collector"
+            environment["FAKE_PROJECT_ROWS"] = (
+                "container-nostr|nostr-collector|running"
+            )
 
             denied = subprocess.run(
                 [
@@ -3452,19 +3454,65 @@ exit 97
             self.assertIn(" rm --force --stop nostr-collector", f" {invocations}")
             self.assertNotIn("rm --force --stop collector", invocations)
 
+    def test_stopped_excluded_social_collectors_are_preserved(self) -> None:
+        cases = {
+            "nostr": (
+                "container-nostr|nostr-collector|exited",
+                "preserving stopped excluded Nostr collector",
+                "nostr-collector",
+            ),
+            "bluesky": (
+                "container-bluesky|bluesky-collector|exited",
+                "preserving stopped excluded Bluesky collector",
+                "bluesky-collector",
+            ),
+        }
+        for name, (project_row, expected_notice, service) in cases.items():
+            with (
+                self.subTest(name=name),
+                tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary,
+            ):
+                base = Path(temporary)
+                repository, sha = self.setUpRepository(base)
+                fake_bin = self.make_fake_docker(base)
+                environment, env_file, docker_log = self.environment(base, fake_bin)
+                environment["FAKE_PROJECT_ROWS"] = project_row
+
+                result = subprocess.run(
+                    [
+                        str(repository / "deploy" / "scripts" / "deploy.sh"),
+                        sha,
+                        "--env-file",
+                        str(env_file),
+                        "--state-dir",
+                        str(base / "state"),
+                    ],
+                    cwd=repository,
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                    env=environment,
+                )
+
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(expected_notice, result.stderr)
+                invocations = docker_log.read_text(encoding="utf-8")
+                self.assertNotIn(f" stop {service}", f" {invocations}")
+                self.assertNotIn(f" rm --force --stop {service}", f" {invocations}")
+
     def test_existing_non_tcgdex_container_blocks_without_removing_it(self) -> None:
         cases = {
             "auth-browser": (
-                "container-auth|auth-browser",
+                "container-auth|auth-browser|running",
                 "unapproved service container exists: auth-browser",
             ),
             "retired-worker": (
-                "container-retired|retired-worker",
+                "container-retired|retired-worker|exited",
                 "unapproved service container exists: retired-worker",
             ),
             "missing-label": (
-                "container-unknown|",
-                "Pokecrack project container is missing a valid Compose service label",
+                "container-unknown||exited",
+                "Pokecrack project container is missing a valid Compose service label or state",
             ),
         }
         for name, (project_row, expected_error) in cases.items():
