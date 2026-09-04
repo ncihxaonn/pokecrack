@@ -179,6 +179,7 @@ def build_backup_environment(
     values: dict[str, str],
     *,
     default_db_url_file: Path,
+    dedicated_db_url_file: Path | None = None,
     postgres_client_directory: Path | None = None,
 ) -> tuple[dict[str, str], Path]:
     backup_dir_value = values.get("BACKUP_DIR", "")
@@ -192,12 +193,19 @@ def build_backup_environment(
 
     database_url = values.get("SUPABASE_DB_URL", "")
     database_url_file = values.get("SUPABASE_DB_URL_FILE", "")
-    if database_url and database_url_file:
-        raise BackupEnvironmentError(
-            "configure only one Supabase database credential source"
-        )
-    if not database_url and not database_url_file:
-        database_url_file = str(default_db_url_file)
+    if dedicated_db_url_file is not None:
+        # A production worker DSN and an owner-capable backup DSN are distinct
+        # capabilities. An explicit dedicated file always wins and prevents an
+        # inline worker credential from being reused accidentally.
+        database_url = ""
+        database_url_file = str(dedicated_db_url_file)
+    else:
+        if database_url and database_url_file:
+            raise BackupEnvironmentError(
+                "configure only one Supabase database credential source"
+            )
+        if not database_url and not database_url_file:
+            database_url_file = str(default_db_url_file)
     if database_url_file:
         database_url_path = Path(database_url_file)
         try:
@@ -279,6 +287,7 @@ def run_backup(arguments: argparse.Namespace) -> str:
     child_environment, backup_dir = build_backup_environment(
         values,
         default_db_url_file=arguments.default_db_url_file,
+        dedicated_db_url_file=arguments.dedicated_db_url_file,
         postgres_client_directory=arguments.postgres_client_directory,
     )
     result = subprocess.run(
@@ -298,6 +307,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--env-file", required=True, type=Path)
     parser.add_argument("--backup-script", required=True, type=Path)
     parser.add_argument("--default-db-url-file", required=True, type=Path)
+    parser.add_argument("--dedicated-db-url-file", type=Path)
     parser.add_argument("--postgres-client-directory", type=Path)
     return parser.parse_args()
 
