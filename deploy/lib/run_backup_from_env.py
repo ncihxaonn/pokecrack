@@ -33,6 +33,7 @@ SAFE_PATH = (
     "/usr/lib/postgresql/17/bin:/usr/local/sbin:/usr/local/bin:"
     "/usr/sbin:/usr/bin:/sbin:/bin"
 )
+POSTGRES_CLIENT_COMMANDS = ("pg_dump", "psql")
 
 
 class BackupEnvironmentError(RuntimeError):
@@ -46,6 +47,46 @@ def _safe_directory(metadata: os.stat_result) -> bool:
     if permissions & 0o022 == 0:
         return True
     return metadata.st_uid == 0 and bool(permissions & stat.S_ISVTX)
+
+
+def _validate_postgres_client_directory(path: Path) -> None:
+    """Require a private directory containing only owner-controlled clients."""
+
+    path_text = str(path)
+    if (
+        not ABSOLUTE_PATH_PATTERN.fullmatch(path_text)
+        or ".." in path.parts
+        or len(path.parts) < 2
+    ):
+        raise BackupEnvironmentError(
+            "PostgreSQL client directory must use a safe absolute path"
+        )
+    try:
+        metadata = path.lstat()
+    except OSError as exc:
+        raise BackupEnvironmentError(
+            "PostgreSQL client directory is unavailable"
+        ) from exc
+    permissions = stat.S_IMODE(metadata.st_mode)
+    if (
+        not stat.S_ISDIR(metadata.st_mode)
+        or metadata.st_uid != os.geteuid()
+        or permissions & 0o077
+    ):
+        raise BackupEnvironmentError(
+            "PostgreSQL client directory must be a private owned directory"
+        )
+
+    for command in POSTGRES_CLIENT_COMMANDS:
+        candidate = path / command
+        with _open_owner_only_file(
+            candidate, label=f"reviewed PostgreSQL client {command}", binary=True
+        ) as stream:
+            command_permissions = stat.S_IMODE(os.fstat(stream.fileno()).st_mode)
+        if not command_permissions & stat.S_IXUSR:
+            raise BackupEnvironmentError(
+                f"reviewed PostgreSQL client is not private and executable: {command}"
+            )
 
 
 @contextmanager
@@ -135,7 +176,10 @@ def read_backup_environment(path: Path) -> dict[str, str]:
 
 
 def build_backup_environment(
-    values: dict[str, str], *, default_db_url_file: Path
+    values: dict[str, str],
+    *,
+    default_db_url_file: Path,
+    postgres_client_directory: Path | None = None,
 ) -> tuple[dict[str, str], Path]:
     backup_dir_value = values.get("BACKUP_DIR", "")
     if (
@@ -171,12 +215,17 @@ def build_backup_environment(
             )
         database_url = database_url_lines[0]
 
+    path_value = SAFE_PATH
+    if postgres_client_directory is not None:
+        _validate_postgres_client_directory(postgres_client_directory)
+        path_value = f"{postgres_client_directory}:{SAFE_PATH}"
+
     child_environment = {
         "BACKUP_DIR": backup_dir_value,
         "HOME": pwd.getpwuid(os.geteuid()).pw_dir,
         "LANG": "C.UTF-8",
         "LC_ALL": "C.UTF-8",
-        "PATH": SAFE_PATH,
+        "PATH": path_value,
         "TMPDIR": "/tmp",
     }
     for key in ("BACKUP_RETENTION_DAILY", "BACKUP_RETENTION_WEEKLY"):
@@ -230,6 +279,7 @@ def run_backup(arguments: argparse.Namespace) -> str:
     child_environment, backup_dir = build_backup_environment(
         values,
         default_db_url_file=arguments.default_db_url_file,
+        postgres_client_directory=arguments.postgres_client_directory,
     )
     result = subprocess.run(
         [str(backup_script)],
@@ -248,6 +298,7 @@ def parse_arguments() -> argparse.Namespace:
     parser.add_argument("--env-file", required=True, type=Path)
     parser.add_argument("--backup-script", required=True, type=Path)
     parser.add_argument("--default-db-url-file", required=True, type=Path)
+    parser.add_argument("--postgres-client-directory", type=Path)
     return parser.parse_args()
 
 

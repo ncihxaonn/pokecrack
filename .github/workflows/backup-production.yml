@@ -100,6 +100,7 @@ jobs:
             deploy/scripts/backup.sh
             deploy/lib/prune_backups.py
             deploy/lib/run_backup_from_env.py
+            deploy/lib/run_postgres_client_container.sh
             deploy/lib/run_with_database_url.py
             deploy/lib/sanitize_plain_backup.py
             deploy/lib/shell_portability.sh
@@ -154,6 +155,7 @@ jobs:
             deploy/scripts/backup.sh \
             deploy/lib/prune_backups.py \
             deploy/lib/run_backup_from_env.py \
+            deploy/lib/run_postgres_client_container.sh \
             deploy/lib/run_with_database_url.py \
             deploy/lib/sanitize_plain_backup.py \
             deploy/lib/shell_portability.sh
@@ -164,10 +166,19 @@ jobs:
           [[ -d "$repository/.git" ]]
           [[ "$(git -C "$repository" remote get-url origin)" == "https://github.com/ncihxaonn/pokecrack.git" ]]
           [[ "$env_file" =~ ^/[A-Za-z0-9._/-]+$ && "$env_file" != *'..'* ]]
+          postgres_client_directory="$backup_code_root/postgres-client"
+          install -d -m 0700 "$postgres_client_directory"
+          install -m 0500 \
+            "$backup_code_root/deploy/lib/run_postgres_client_container.sh" \
+            "$postgres_client_directory/psql"
+          install -m 0500 \
+            "$backup_code_root/deploy/lib/run_postgres_client_container.sh" \
+            "$postgres_client_directory/pg_dump"
           python3 "$backup_code_root/deploy/lib/run_backup_from_env.py" \
             --env-file "$env_file" \
             --backup-script "$backup_code_root/deploy/scripts/backup.sh" \
-            --default-db-url-file "${env_file%/*}/supabase-db-url"
+            --default-db-url-file "${env_file%/*}/supabase-db-url" \
+            --postgres-client-directory "$postgres_client_directory"
           REMOTE
           )"
           [[ "$backup_reference" =~ ^pokecrack-[0-9]{8}T[0-9]{6}Z\.sql\.gz$ ]]

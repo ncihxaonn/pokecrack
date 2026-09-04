@@ -57,6 +57,10 @@ backup filename. It never sources the Compose dotenv file: a non-executable
 parser projects only `BACKUP_DIR`, the two retention settings, and exactly one
 Supabase database credential source into a sanitized child environment. Other
 production secrets and shell-like content never reach the backup process. A
+private wrapper supplies `psql` and `pg_dump` from an immutable official
+PostgreSQL 17 container when the VPS host does not install those clients; the
+database credential is forwarded only as allowlisted container environment
+fields and never as an argument. A
 root-owned `/etc/pokecrack/production.env` remains suitable for a manual
 root-operated backup, but must not be selected for the non-root GitHub workflow.
 
