@@ -343,14 +343,14 @@ docker compose version >/dev/null
 "${compose[@]}" config --quiet
 existing_services=$(docker ps --all \
   --filter label=com.docker.compose.project=pokecrack \
-  --format '{{.ID}}|{{.Label "com.docker.compose.service"}}') || \
+  --format '{{.ID}}|{{.Label "com.docker.compose.service"}}|{{.State}}') || \
   die "could not enumerate existing Pokecrack project containers"
 nostr_container_present=false
 bluesky_container_present=false
-while IFS='|' read -r existing_id existing_service extra_field; do
+while IFS='|' read -r existing_id existing_service existing_state extra_field; do
   [[ -n $existing_id ]] || continue
-  [[ -n $existing_service && -z $extra_field ]] || \
-    die "Pokecrack project container is missing a valid Compose service label: $existing_id"
+  [[ -n $existing_service && $existing_state =~ ^[a-z]+$ && -z $extra_field ]] || \
+    die "Pokecrack project container is missing a valid Compose service label or state: $existing_id"
   case $existing_service in
     collector|scheduler|watchdog) ;;
     nostr-collector)
@@ -358,8 +358,10 @@ while IFS='|' read -r existing_id existing_service extra_field; do
         :
       elif [[ $RETIRE_NOSTR == true ]]; then
         nostr_container_present=true
+      elif [[ $existing_state == exited ]]; then
+        printf '%s\n' 'deploy: preserving stopped excluded Nostr collector' >&2
       else
-        die "Nostr collector exists but is excluded; repeat with explicit --retire-nostr"
+        die "Nostr collector exists in state $existing_state but is excluded; repeat with explicit --retire-nostr"
       fi
       ;;
     bluesky-collector)
@@ -367,8 +369,10 @@ while IFS='|' read -r existing_id existing_service extra_field; do
         :
       elif [[ $RETIRE_BLUESKY == true ]]; then
         bluesky_container_present=true
+      elif [[ $existing_state == exited ]]; then
+        printf '%s\n' 'deploy: preserving stopped excluded Bluesky collector' >&2
       else
-        die "Bluesky collector exists but is excluded; repeat with explicit --retire-bluesky"
+        die "Bluesky collector exists in state $existing_state but is excluded; repeat with explicit --retire-bluesky"
       fi
       ;;
     *) die \
