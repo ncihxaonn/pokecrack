@@ -15,6 +15,11 @@ on:
         description: Operator-confirmed fresh backup filename or provider snapshot ID
         required: true
         type: string
+      inspect_only:
+        description: Read provider backup status without starting migration validation or apply steps
+        required: true
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -24,7 +29,33 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  inspect-backups:
+    if: ${{ inputs.inspect_only }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: ${{ inputs.environment }}
+    env:
+      SUPABASE_PROJECT_REF: wohnphsxlquhhknuthrj
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          persist-credentials: false
+      - name: Inspect available provider backup coverage
+        shell: bash
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          [[ "$(git rev-parse --verify HEAD)" == "$GITHUB_SHA" ]]
+          [[ -n "$SUPABASE_ACCESS_TOKEN" ]]
+          python3 scripts/run_supabase_migrations.py backup-status \
+            --project-ref "$SUPABASE_PROJECT_REF"
+
   migrate:
+    if: ${{ ! inputs.inspect_only }}
     runs-on: ubuntu-latest
     timeout-minutes: 35
     environment: ${{ inputs.environment }}
