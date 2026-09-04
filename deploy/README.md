@@ -43,7 +43,29 @@ reports a missing, unsupported, or unreadable backup marker as `inconclusive`
 (exit `2`), including during first-run grace. This preserves backup
 confidentiality and never treats an unavailable marker as a successful backup.
 
-Put real secrets only in the root-readable environment file, never in Git, Compose YAML, command history, issues, prompts, or logs. Set `DATA_MODE=live` only after a real Supabase database is migrated and tested. Use a dedicated TLS database URL with bounded connection timeout, keep `WORKER_MAX_CONCURRENCY=1`, `YOUTUBE_COLLECTION_ENABLED=false`, `AI_PROVIDER=fixture`, and `OPENCLI_ENABLED=false`. The TCGdex catalog does not require an API key.
+Put runtime secrets only in the owner-readable environment file or the protected
+GitHub environment that installs that file; never put them in Git, Compose YAML,
+command history, issues, prompts, or logs. Set `DATA_MODE=live` only after a real
+Supabase database is migrated and tested. Use a dedicated TLS database URL with
+bounded connection timeout, keep `WORKER_MAX_CONCURRENCY=1`,
+`YOUTUBE_COLLECTION_ENABLED=false`, `AI_PROVIDER=fixture`, and
+`OPENCLI_ENABLED=false`. The TCGdex catalog does not require an API key.
+
+The generic collector, scheduler, and watchdog database URL is stored as the
+`WORKER_SUPABASE_DB_URL` secret in the protected `worker-production` GitHub
+environment. Its custom deployment-branch policy must match only `main`; the
+workflow also refuses every non-`main` ref before checkout. The URL must target
+this project's persistent `pokecrack_worker` login through the primary Sydney
+session pooler on port `5432`, with
+`application_name=pokecrack-worker`, `connect_timeout=10`,
+`sslmode=verify-full`, and
+`sslrootcert=/run/supabase-prod-ca-2021.crt`. The deployment workflow transfers
+the value only through owner-readable temporary files, validates the complete
+URL contract on the host, atomically replaces the single `SUPABASE_DB_URL`
+assignment in `VPS_ENV_FILE`, and removes the temporary files. The URL is never
+printed. Treat a password rotation, protected-secret update, and the following
+exact-SHA deployment as one operator-controlled change; do not reuse a
+short-lived backup login for this runtime credential.
 
 The preferred GitHub-managed backup path is independent of the VPS worker
 credential. `.github/workflows/backup-production-api.yml` runs in the protected

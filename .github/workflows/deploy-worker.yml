@@ -36,6 +36,7 @@ concurrency:
 
 jobs:
   deploy:
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     environment: worker-production
@@ -52,13 +53,12 @@ jobs:
       VPS_ENV_FILE: ${{ vars.VPS_ENV_FILE || '/etc/pokecrack/production.env' }}
       VPS_NOSTR_ENV_FILE: ${{ vars.VPS_NOSTR_ENV_FILE || '/etc/pokecrack/nostr.env' }}
       VPS_BLUESKY_ENV_FILE: ${{ vars.VPS_BLUESKY_ENV_FILE || '/etc/pokecrack/bluesky.env' }}
-      SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-      SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
     steps:
       - name: Verify exact requested SHA
         shell: bash
         run: |
           set -Eeuo pipefail
+          [[ "$GITHUB_REF" == refs/heads/main ]]
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
           if [[ "$GITHUB_EVENT_NAME" == workflow_dispatch ]]; then
             [[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]] || {
@@ -84,6 +84,9 @@ jobs:
           persist-credentials: false
       - name: Configure pinned SSH host identity
         shell: bash
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
         run: |
           set -Eeuo pipefail
           [[ "$VPS_HOST" =~ ^[A-Za-z0-9.-]+$ ]]
@@ -100,6 +103,87 @@ jobs:
           install -m 0600 /dev/null "$HOME/.ssh/known_hosts"
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$HOME/.ssh/id_ed25519"
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+      - name: Install protected worker database URL
+        shell: bash
+        env:
+          WORKER_SUPABASE_DB_URL: ${{ secrets.WORKER_SUPABASE_DB_URL }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          [[ -n "$WORKER_SUPABASE_DB_URL" ]]
+          local_database_url="$RUNNER_TEMP/pokecrack-worker-database-url-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          remote_temp_dir=''
+          remote_database_url=''
+          remote_updater=''
+          ssh_options=(
+            -i "$HOME/.ssh/id_ed25519"
+            -p "$VPS_PORT"
+            -o BatchMode=yes
+            -o IdentitiesOnly=yes
+            -o StrictHostKeyChecking=yes
+            -o ServerAliveInterval=30
+            -o ServerAliveCountMax=3
+          )
+
+          cleanup_remote_database_url() {
+            if [[ -n "$remote_temp_dir" ]]; then
+              printf -v cleanup_command 'rm -f -- %q %q && rmdir -- %q' \
+                "$remote_database_url" "$remote_updater" "$remote_temp_dir"
+              if ! ssh "${ssh_options[@]}" \
+                "$VPS_USER@$VPS_HOST" "$cleanup_command" >/dev/null; then
+                return 1
+              fi
+              remote_temp_dir=''
+              remote_database_url=''
+              remote_updater=''
+            fi
+          }
+          cleanup_database_url() {
+            exit_code=$?
+            trap - EXIT HUP INT TERM
+            rm -f -- "$local_database_url"
+            if ! cleanup_remote_database_url 2>/dev/null; then
+              if [[ "$exit_code" == 0 ]]; then
+                exit_code=1
+              fi
+            fi
+            exit "$exit_code"
+          }
+          trap cleanup_database_url EXIT
+          trap 'exit 129' HUP
+          trap 'exit 130' INT
+          trap 'exit 143' TERM
+
+          install -m 0600 /dev/null "$local_database_url"
+          printf '%s\n' "$WORKER_SUPABASE_DB_URL" > "$local_database_url"
+          unset WORKER_SUPABASE_DB_URL
+
+          remote_temp_dir_candidate="$(ssh "${ssh_options[@]}" \
+            "$VPS_USER@$VPS_HOST" \
+            'umask 077; mktemp -d /tmp/pokecrack-worker-database.XXXXXXXX')"
+          [[ "$remote_temp_dir_candidate" =~ ^/tmp/pokecrack-worker-database\.[A-Za-z0-9]{8}$ ]]
+          remote_temp_dir=$remote_temp_dir_candidate
+          unset remote_temp_dir_candidate
+          remote_database_url="$remote_temp_dir/database-url"
+          remote_updater="$remote_temp_dir/updater.py"
+
+          printf -v upload_database_url 'umask 077; cat > %q' "$remote_database_url"
+          ssh "${ssh_options[@]}" \
+            "$VPS_USER@$VPS_HOST" "$upload_database_url" < "$local_database_url"
+          printf -v upload_updater 'umask 077; cat > %q && chmod 0700 %q' \
+            "$remote_updater" "$remote_updater"
+          ssh "${ssh_options[@]}" \
+            "$VPS_USER@$VPS_HOST" "$upload_updater" \
+            < deploy/lib/update_worker_database_url.py
+
+          printf -v update_command \
+            'python3 %q --env-file %q --database-url-file %q' \
+            "$remote_updater" "$VPS_ENV_FILE" "$remote_database_url"
+          ssh "${ssh_options[@]}" \
+            "$VPS_USER@$VPS_HOST" "$update_command"
+          cleanup_remote_database_url
+          rm -f -- "$local_database_url"
+          trap - EXIT HUP INT TERM
       - name: Deploy and verify the exact GITHUB_SHA
         shell: bash
         run: |

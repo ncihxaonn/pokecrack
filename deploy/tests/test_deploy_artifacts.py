@@ -14,6 +14,7 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 from deploy.tests.test_reviewed_global_aggregate_backup import bridge_dump
 
@@ -89,9 +90,140 @@ def load_bluesky_preflight_module():
     return module
 
 
+def load_worker_database_url_updater():
+    module_path = DEPLOY_ROOT / "lib" / "update_worker_database_url.py"
+    spec = importlib.util.spec_from_file_location(
+        "update_worker_database_url", module_path
+    )
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"cannot load {module_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def write_executable(path: Path, content: str) -> None:
     path.write_text(content, encoding="utf-8")
     path.chmod(path.stat().st_mode | stat.S_IXUSR)
+
+
+class WorkerDatabaseUrlUpdaterTests(unittest.TestCase):
+    def setUp(self) -> None:
+        self.updater = load_worker_database_url_updater()
+
+    @staticmethod
+    def database_url() -> str:
+        return (
+            "postgresql://pokecrack_worker.wohnphsxlquhhknuthrj:secret-value@"
+            "aws-0-ap-southeast-2.pooler.supabase.com:5432/postgres?"
+            "sslmode=verify-full&sslrootcert=%2Frun%2Fsupabase-prod-ca-2021.crt&"
+            "connect_timeout=10&application_name=pokecrack-worker"
+        )
+
+    def test_atomically_replaces_only_the_worker_database_url(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            env_file = base / "production.env"
+            database_url_file = base / "database-url"
+            env_file.write_text(
+                "DATA_MODE=live\nSUPABASE_DB_URL=expired\nLOG_LEVEL=INFO\n",
+                encoding="utf-8",
+            )
+            database_url_file.write_text(self.database_url() + "\n", encoding="utf-8")
+            env_file.chmod(0o600)
+            database_url_file.chmod(0o600)
+
+            self.updater.update_worker_database_url(
+                env_file=env_file,
+                database_url_file=database_url_file,
+            )
+
+            self.assertEqual(
+                env_file.read_text(encoding="utf-8"),
+                f"DATA_MODE=live\nSUPABASE_DB_URL={self.database_url()}\nLOG_LEVEL=INFO\n",
+            )
+            self.assertEqual(stat.S_IMODE(env_file.stat().st_mode), 0o600)
+
+    def test_rejects_database_urls_outside_the_project_contract(self) -> None:
+        valid = self.database_url()
+        invalid = (
+            valid.replace("pokecrack_worker.wohnphsxlquhhknuthrj", "postgres"),
+            valid.replace(
+                "aws-0-ap-southeast-2.pooler.supabase.com",
+                "attacker.example",
+            ),
+            valid.replace("sslmode=verify-full", "sslmode=require"),
+            valid.replace(":5432/postgres", ":6543/postgres"),
+            valid.replace("&application_name=pokecrack-worker", ""),
+        )
+        for value in invalid:
+            with self.subTest(value=value):
+                with self.assertRaises(self.updater.WorkerDatabaseUrlError):
+                    self.updater.validate_database_url(value)
+
+    def test_refuses_duplicate_or_non_owner_only_inputs(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            env_file = base / "production.env"
+            database_url_file = base / "database-url"
+            database_url_file.write_text(self.database_url() + "\n", encoding="utf-8")
+            database_url_file.chmod(0o600)
+
+            env_file.write_text(
+                "SUPABASE_DB_URL=first\nSUPABASE_DB_URL=second\n",
+                encoding="utf-8",
+            )
+            env_file.chmod(0o600)
+            with self.assertRaises(self.updater.WorkerDatabaseUrlError):
+                self.updater.update_worker_database_url(
+                    env_file=env_file,
+                    database_url_file=database_url_file,
+                )
+
+            env_file.write_text("SUPABASE_DB_URL=expired\n", encoding="utf-8")
+            env_file.chmod(0o644)
+            with self.assertRaises(self.updater.WorkerDatabaseUrlError):
+                self.updater.update_worker_database_url(
+                    env_file=env_file,
+                    database_url_file=database_url_file,
+                )
+
+    def test_refuses_environment_identity_change_before_replace(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            env_file = base / "production.env"
+            database_url_file = base / "database-url"
+            original = "DATA_MODE=live\nSUPABASE_DB_URL=expired\n"
+            env_file.write_text(original, encoding="utf-8")
+            database_url_file.write_text(self.database_url() + "\n", encoding="utf-8")
+            env_file.chmod(0o600)
+            database_url_file.chmod(0o600)
+            real_stat = os.stat
+
+            def changed_stat(path, *, dir_fd=None, follow_symlinks=True):
+                result = real_stat(
+                    path,
+                    dir_fd=dir_fd,
+                    follow_symlinks=follow_symlinks,
+                )
+                if path == env_file.name and dir_fd is not None:
+                    fields = list(result)
+                    fields[1] += 1
+                    return os.stat_result(fields)
+                return result
+
+            with mock.patch.object(self.updater.os, "stat", side_effect=changed_stat):
+                with self.assertRaises(
+                    self.updater.WorkerDatabaseUrlError,
+                    msg="a replaced environment inode must fail closed",
+                ):
+                    self.updater.update_worker_database_url(
+                        env_file=env_file,
+                        database_url_file=database_url_file,
+                    )
+
+            self.assertEqual(env_file.read_text(encoding="utf-8"), original)
+            self.assertEqual(list(base.glob(".production.env.*")), [])
 
 
 class ShellPortabilityTests(unittest.TestCase):
@@ -189,6 +321,8 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("REQUESTED_SERVICE_SET: ${{ inputs.service_set }}", workflow)
         self.assertIn("REQUESTED_RETIRE_NOSTR: ${{ inputs.retire_nostr }}", workflow)
         self.assertIn("REQUESTED_RETIRE_BLUESKY: ${{ inputs.retire_bluesky }}", workflow)
+        self.assertIn("if: github.ref == 'refs/heads/main'", workflow)
+        self.assertIn('[[ "$GITHUB_REF" == refs/heads/main ]]', workflow)
         self.assertIn('[[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]]', workflow)
         self.assertIn("tcgdex|tcgdex-nostr", workflow)
         self.assertIn("VPS_NOSTR_ENV_FILE:", workflow)
@@ -203,6 +337,30 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("ServerAliveInterval=30", workflow)
         self.assertIn("ServerAliveCountMax=3", workflow)
         self.assertGreaterEqual(workflow.count('ssh "${ssh_options[@]}"'), 4)
+        self.assertIn(
+            "WORKER_SUPABASE_DB_URL: ${{ secrets.WORKER_SUPABASE_DB_URL }}",
+            workflow,
+        )
+        job_environment = workflow.split("    env:\n", 1)[1].split("    steps:\n", 1)[0]
+        self.assertNotIn("WORKER_SUPABASE_DB_URL", job_environment)
+        self.assertNotIn("VPS_SSH_PRIVATE_KEY", job_environment)
+        self.assertNotIn("VPS_KNOWN_HOSTS", job_environment)
+        ssh_step = workflow.split(
+            "      - name: Configure pinned SSH host identity\n", 1
+        )[1].split("      - name: Install protected worker database URL\n", 1)[0]
+        self.assertIn("SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}", ssh_step)
+        self.assertIn("SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}", ssh_step)
+        database_step = workflow.split(
+            "      - name: Install protected worker database URL\n", 1
+        )[1].split("      - name: Deploy and verify the exact GITHUB_SHA\n", 1)[0]
+        self.assertIn("update_worker_database_url.py", database_step)
+        self.assertIn("unset WORKER_SUPABASE_DB_URL", database_step)
+        self.assertIn("mktemp -d /tmp/pokecrack-worker-database.XXXXXXXX", database_step)
+        self.assertIn("rmdir -- %q", database_step)
+        self.assertIn("trap 'exit 143' TERM", database_step)
+        self.assertIn("cleanup_remote_database_url", database_step)
+        self.assertNotIn("|| true", database_step)
+        self.assertNotIn("echo $WORKER_SUPABASE_DB_URL", database_step)
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
         self.assertNotIn('[[ "${{ inputs.service_set }}"', workflow)
         self.assertNotIn('[[ "${{ inputs.retire_nostr }}"', workflow)
@@ -210,6 +368,15 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         deploy = workflow.index('"$repository/deploy/scripts/deploy.sh" "$sha"')
         self.assertLess(checkout, deploy)
         self.assertNotIn("- full", workflow)
+
+        worker_dockerfile = (
+            REPOSITORY_ROOT / "deploy" / "Dockerfile.worker"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            "COPY deploy/certs/supabase-prod-ca-2021.crt "
+            "/run/supabase-prod-ca-2021.crt",
+            worker_dockerfile,
+        )
 
     def test_database_migration_workflow_never_interpolates_dispatch_inputs_in_shell(
         self,
