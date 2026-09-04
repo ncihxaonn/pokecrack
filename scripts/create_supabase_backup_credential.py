@@ -33,7 +33,7 @@ POOLER_HOST = re.compile(
     r"^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.pooler\.supabase\.com$"
 )
 MAX_RESPONSE_BYTES = 1024 * 1024
-MINIMUM_TTL_SECONDS = 1800
+MINIMUM_TTL_SECONDS = 300
 MAXIMUM_TTL_SECONDS = 3600
 CLI_LOGIN_ROLES_SQL = (
     "select rolname::text as role from pg_catalog.pg_roles "

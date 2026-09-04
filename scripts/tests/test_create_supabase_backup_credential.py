@@ -191,7 +191,7 @@ class TemporaryBackupCredentialTests(unittest.TestCase):
     def test_login_shape_requires_a_long_enough_ttl(self) -> None:
         for payload in (
             {"role": "postgres", "password": "secret", "ttl_seconds": 3600},
-            {"role": "cli_login_postgres", "password": "secret", "ttl_seconds": 1799},
+            {"role": "cli_login_postgres", "password": "secret", "ttl_seconds": 299},
             {"role": "cli_login_postgres", "password": "secret", "ttl_seconds": 3601},
             {"role": "cli_login_postgres", "password": "bad\nsecret", "ttl_seconds": 3600},
         ):
@@ -208,7 +208,7 @@ class TemporaryBackupCredentialTests(unittest.TestCase):
             return {
                 "role": "cli_login_postgres",
                 "password": "secret",
-                "ttl_seconds": 1799,
+                "ttl_seconds": 299,
             }
 
         api.create_login_role = malformed_login
