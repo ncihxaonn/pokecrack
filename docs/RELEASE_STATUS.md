@@ -98,8 +98,14 @@ restore evidence and not an accepted new regression in the candidate.
    [33959142684](https://github.com/ncihxaonn/pokecrack/actions/runs/33959142684)
    was retried at attempt 2 on 2026-09-05. All seven jobs were refused before
    execution because of failed recent payments or the spending limit. The
-   account owner must resolve that condition. Do not bypass CI, fabricate checks,
-   or treat a local test pass as the missing required GitHub result.
+   account owner must resolve that condition. The candidate now contains the
+   versioned `scripts/run_ci_checks.sh` runner; `.github/workflows/ci.yml`
+   delegates all seven jobs to that same implementation, so an approved
+   disposable Docker-capable Linux runner can execute the equivalent checks
+   without consuming GitHub-hosted runner quota. The current Mac still has no
+   Docker-capable runtime, so this alternative has not yet produced a passing
+   full evidence manifest. Do not fabricate GitHub checks or treat a partial
+   local pass as release evidence.
 2. **Fresh, recoverable backup.** Verify the backup fix with a new backup and
    an isolated restore, including current migration/retention contracts. gzip
    is not encryption; follow the transfer/encryption rules in
@@ -115,18 +121,30 @@ Do not carry the completed review claim across subsequent source changes.
 Any accepted code fix needs its focused tests and independent review before
 being included in the release.
 
-### CI alternative assessment
+### CI alternative and release preflight
 
-No external CI configuration is present in this repository. The local candidate
-verification above is useful evidence, but the current Mac has no Docker CLI, so
-it cannot replace the repository's container, PostgreSQL/pgTAP, and image-build
-jobs. A safe non-GitHub execution path would need a disposable Docker-capable
-runner or an explicitly configured external CI provider to run the equivalent
-checks against the exact candidate SHA and retain its logs/artifacts. It must
-also cover dependency audits, migration replay, repository policy and deployment
-contracts. A manual green checklist cannot fabricate a GitHub check or turn a
-partial local run into release evidence; until that equivalent path exists,
-keep PR #75 as draft and do not merge or deploy.
+The repository now has an external execution path in
+[`CI_EXTERNAL_RUNNER.md`](CI_EXTERNAL_RUNNER.md). `scripts/run_ci_checks.sh`
+requires the exact checkout SHA, exact origin, clean status and a new private
+evidence directory; it records tool versions, stage exit codes, full logs,
+dependency-audit exports, generated types and resolved image digests. Every
+`.github/workflows/ci.yml` check job calls the same stage implementation. A
+passed external manifest is auditable evidence for that SHA, but it does not
+create a GitHub check or merge a pull request.
+
+The current Mac has no Docker-capable runtime, and no approved external CI
+provider or Personal/PokeCrack Linux runner is configured, so the full external
+run remains pending. The repository also includes the read-only
+`scripts/verify_release_preflight.py` gate. After main contains the exact
+release SHA, it verifies the external manifest plus operator-owned evidence for
+the approved Supabase project/VPS target, encrypted fresh backup, isolated
+restore, least-privilege credentials and separate owner approval. It performs no
+provider, SSH, Vercel or production mutation. The existing backup, migration and
+Worker deployment workflows still depend on `ubuntu-latest` for their protected
+state-changing steps; do not replace that dependency with the production VPS or
+the test runner until an owner-managed release host with the same isolation and
+approval controls exists. Keep PR #75 as draft and do not merge or deploy until
+the equivalent full checks and release gates pass.
 
 Keep failures separate: the GitHub `Production` environment has been used by
 both Vercel deployment and backup work. A later backup failure attached to that

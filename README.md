@@ -98,36 +98,19 @@ uv run pokecrack-browser doctor
 ## Verification
 
 ```bash
-pnpm install --frozen-lockfile
-pnpm lint
-pnpm typecheck
-pnpm test
-pnpm build
-
-cd services/worker
-uv sync --frozen
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy pokecrack_worker
-uv run pytest
-
-cd ../auth-browser
-uv sync --frozen
-uv run ruff check .
-uv run ruff format --check .
-uv run mypy src/pokecrack_browser
-uv run pytest
-
-cd ../..
-npx supabase@2.115.0 start
-npx supabase@2.115.0 db reset
-npx supabase@2.115.0 test db
-
-DEPLOY_SHA=0000000000000000000000000000000000000000 docker compose -f deploy/compose.prod.yml config --quiet
-docker compose -f deploy/compose.prod.yml build
+candidate_sha=$(git rev-parse --verify HEAD)
+scripts/run_ci_checks.sh all \
+  --expected-sha "$candidate_sha" \
+  --evidence-dir "/tmp/pokecrack-ci-${candidate_sha}"
 ```
 
-The Supabase and Docker build commands require a running Docker daemon. Never report them as passed when only static configuration validation ran.
+This is the canonical verification path for Web, Worker, auth-browser,
+Supabase/pgTAP, type drift, Docker images, repository policy and deployment
+contracts. It requires a clean checkout and a Docker-capable runner. Preserve
+the generated evidence manifest and logs; never report the Docker, Supabase or
+image checks as passed when only static configuration validation ran. See
+[`docs/CI_EXTERNAL_RUNNER.md`](docs/CI_EXTERNAL_RUNNER.md) for an isolated
+non-GitHub execution path.
 
 ## Live setup
 
@@ -145,6 +128,7 @@ Exact account-owner steps are in:
 - [`docs/BACKUP_AND_RESTORE.md`](docs/BACKUP_AND_RESTORE.md)
 - [`docs/SECURITY.md`](docs/SECURITY.md)
 - [`docs/OPERATIONS.md`](docs/OPERATIONS.md)
+- [`docs/CI_EXTERNAL_RUNNER.md`](docs/CI_EXTERNAL_RUNNER.md)
 
 ## Methodology summary
 
