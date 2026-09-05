@@ -23,13 +23,38 @@ Keep `DATA_MODE=demo`, `AI_PROVIDER=fixture`, `OPENCLI_ENABLED=false`, public si
 ## 2. Database
 
 1. Create a dedicated Supabase project; record region/project reference privately.
-2. Test all migrations and pgTAP locally in Docker-capable CI. For YouTube,
+2. Run `scripts/run_ci_checks.sh database --expected-sha EXACT_SHA` on the
+   isolated Docker-capable runner described in
+   [`CI_EXTERNAL_RUNNER.md`](CI_EXTERNAL_RUNNER.md); it covers migrations,
+   pgTAP and generated-type drift. For YouTube,
    verify the dedicated cache is `UNLOGGED`, forced-RLS, service-role read-only,
    and absent from public/Admin/analytics relations.
 3. Take/verify a backup before production changes.
-4. Before the lease-fencing migration, stop every legacy worker and verify that no old worker process or in-flight job remains. This protocol upgrade is not compatible with a rolling old/new worker deployment. Run `.github/workflows/migrate-database.yml` manually against a protected environment. `confirm_sha` must equal `GITHUB_SHA`; supply the fresh backup reference. Before any hosted change, the workflow requires hosted PostgreSQL 17 or newer, reads the applied migration versions through the owner-scoped Personal Supabase Management API token, audits only pending migrations, requires an exact reasoned fingerprint for every reviewed `DELETE`, rejects `DROP`/`TRUNCATE`, builds the schema locally on PostgreSQL 17, and rejects generated TypeScript drift. It previews and applies forward migrations only—no automatic destructive rollback/reset and no database URL in the workflow environment, argv, child process or logs. Deploy only generation-aware workers after the migration; never roll code back to the legacy claim/naked-cleanup protocol.
+4. Before the lease-fencing migration, stop every legacy worker and verify that no old worker process or in-flight job remains. This protocol upgrade is not compatible with a rolling old/new worker deployment. Run the repository's protected migration entry point manually against the approved environment after the independent runner has passed. `confirm_sha` must equal the exact checked-out main SHA; supply the fresh backup reference. Before any hosted change, the release path requires hosted PostgreSQL 17 or newer, reads the applied migration versions through the owner-scoped Personal Supabase Management API token, audits only pending migrations, requires an exact reasoned fingerprint for every reviewed `DELETE`, rejects `DROP`/`TRUNCATE`, builds the schema locally on PostgreSQL 17, and rejects generated TypeScript drift. It previews and applies forward migrations only—no automatic destructive rollback/reset and no database URL in the test environment, argv, child process or logs. Deploy only generation-aware workers after the migration; never roll code back to the legacy claim/naked-cleanup protocol. The independent runner never applies hosted migrations.
 5. Create the first admin account manually; disable public signup; configure redirect/email settings deliberately.
 6. Verify private-schema grants/RLS and query the intended public-safe API as anon. Create a dedicated `NOINHERIT` collector login with only queue access and execute permission on the fenced collector RPCs; do not reuse broad `service_role` membership as the steady-state worker permission model. Create a separate `NOINHERIT` backup login/role with only the required read/grant path and PostgreSQL 17 gate-table schema lock, then prove it cannot read gate rows. Never expose DB/service-role credentials to browser variables.
+
+Before any production mutation, run the read-only release gate with the exact
+`origin/main` SHA, the completed external CI manifest, and the operator-owned
+backup/restore evidence:
+
+```bash
+python3 scripts/verify_release_preflight.py \
+  --sha EXACT_MAIN_SHA \
+  --ci-manifest /secure/evidence/ci/manifest.json \
+  --release-evidence /secure/evidence/release-evidence.json \
+  --project-ref wohnphsxlquhhknuthrj \
+  --service-set tcgdex \
+  --vps-host-key-fingerprint SHA256:KNOWN_HOST_KEY_FINGERPRINT \
+  --vps-deploy-path /home/codex/pokecrack
+```
+
+This gate is read-only and does not grant approval. It binds the tested SHA to
+the approved target, fresh encrypted backup, isolated restore report, least-
+privilege evidence, and the separately recorded owner approval. The production
+backup, migration, Worker deployment, and GitHub-triggered Vercel operations
+remain distinct state-changing steps; the independent CI runner never performs
+them and never receives production secrets.
 
 For Nostr specifically, set `NOSTR_COLLECTION_ENABLED=true` only after the
 hosted ledger contains `060`, `090`, and `100`, the exact Nostr policy/gate/RLS/ACL and
