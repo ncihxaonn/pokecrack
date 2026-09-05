@@ -193,6 +193,33 @@ PUBLIC_STUDIES: tuple[PublicStudyIdentity, ...] = (
         collector_version="public-study-pokehanna-ascended-heroes-youtube-v1",
         parser_version="pokehanna-ascended-heroes-evidence-v1",
     ),
+    PublicStudyIdentity(
+        study_key="tcg-market-chaos-rising-pa-6-v1",
+        source_url="https://www.youtube.com/watch?v=fHQpNECg4y4",
+        fetch_url="https://www.youtube.com/watch?v=fHQpNECg4y4",
+        domain="www.youtube.com",
+        adapter="tcg_market_panama_chaos_rising_study",
+        collector_version="public-study-tcg-market-panama-chaos-rising-youtube-v1",
+        parser_version="tcg-market-panama-chaos-rising-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="tcg-market-pitch-black-pa-4-v1",
+        source_url="https://www.youtube.com/watch?v=6kb1MvcnMJE",
+        fetch_url="https://www.youtube.com/watch?v=6kb1MvcnMJE",
+        domain="www.youtube.com",
+        adapter="tcg_market_panama_pitch_black_study",
+        collector_version="public-study-tcg-market-panama-pitch-black-youtube-v1",
+        parser_version="tcg-market-panama-pitch-black-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="pokeshow-mega-evolution-gt-3-v1",
+        source_url="https://www.youtube.com/watch?v=DWRdhUuIUvI",
+        fetch_url="https://www.youtube.com/watch?v=DWRdhUuIUvI",
+        domain="www.youtube.com",
+        adapter="pokeshow_guatemala_megaevolution_study",
+        collector_version="public-study-pokeshow-guatemala-megaevolution-youtube-v1",
+        parser_version="pokeshow-guatemala-megaevolution-evidence-v1",
+    ),
 )
 
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
@@ -211,6 +238,9 @@ PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
         "richards-bricks-mega-evolution-box-pr-36-v1",
         "indigo-geek-megaevolucion-mx-50-v1",
         "pokehanna-ascended-heroes-ca-9-v1",
+        "tcg-market-chaos-rising-pa-6-v1",
+        "tcg-market-pitch-black-pa-4-v1",
+        "pokeshow-mega-evolution-gt-3-v1",
     }
 )
 

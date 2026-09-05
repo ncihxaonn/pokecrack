@@ -591,7 +591,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 14
+        count(*) = 17
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -984,6 +984,139 @@ public_study_dependencies AS (
               "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
             }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_tcg_market_panama_chaos_rising_6'
+            AND policies.display_name = 'TCG Market Panamá Chaos Rising 6-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=fHQpNECg4y4'
+            AND policies.version = 'public-study-tcg-market-panama-chaos-rising-youtube-v1'
+            AND policies.config = '{
+              "study_key":"tcg-market-chaos-rising-pa-6-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=fHQpNECg4y4",
+              "fetch_url":"https://www.youtube.com/watch?v=fHQpNECg4y4",
+              "collector_version":"public-study-tcg-market-panama-chaos-rising-youtube-v1",
+              "parser_version":"tcg-market-panama-chaos-rising-evidence-v1",
+              "country_code":"PA",
+              "country_name":"Panama",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/channel/UCa68xVUUIKE8dvcfxCcdyrQ/about",
+              "publisher_channel_id":"UCa68xVUUIKE8dvcfxCcdyrQ",
+              "publisher_country_evidence":"channel name: TCG Market Panamá; video description: Contenido exclusivo desde Panamá",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_watch_and_channel_name_review",
+              "set_external_id":"me04",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Chaos Rising",
+              "set_official_url":"https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-chaos-rising-booster-bundle",
+              "product_name":"Chaos Rising Booster Bundle",
+              "product_scope":"booster_bundle",
+              "pack_count":6,
+              "denominator_basis":"source_product_opening_plus_official_product_spec",
+              "denominator_derivation":"source_opening_plus_official_6_pack_bundle_spec",
+              "source_published_at":"2026-08-02T17:15:39-07:00",
+              "observed_at":"2026-08-03T00:15:39Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_tcg_market_panama_pitch_black_4'
+            AND policies.display_name = 'TCG Market Panamá Pitch Black 4-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=6kb1MvcnMJE'
+            AND policies.version = 'public-study-tcg-market-panama-pitch-black-youtube-v1'
+            AND policies.config = '{
+              "study_key":"tcg-market-pitch-black-pa-4-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=6kb1MvcnMJE",
+              "fetch_url":"https://www.youtube.com/watch?v=6kb1MvcnMJE",
+              "collector_version":"public-study-tcg-market-panama-pitch-black-youtube-v1",
+              "parser_version":"tcg-market-panama-pitch-black-evidence-v1",
+              "country_code":"PA",
+              "country_name":"Panama",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/channel/UCa68xVUUIKE8dvcfxCcdyrQ/about",
+              "publisher_channel_id":"UCa68xVUUIKE8dvcfxCcdyrQ",
+              "publisher_country_evidence":"channel name: TCG Market Panamá; video description: Contenido exclusivo desde Panamá",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_watch_and_channel_name_review",
+              "set_external_id":"me05",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Pitch Black",
+              "set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase",
+              "product_name":"Pitch Black Build & Battle Box",
+              "product_scope":"build_and_battle",
+              "pack_count":4,
+              "denominator_basis":"source_product_opening_plus_official_product_spec",
+              "denominator_derivation":"source_opening_plus_official_4_pack_build_and_battle_spec",
+              "source_published_at":"2026-08-05T12:09:10-07:00",
+              "observed_at":"2026-08-05T19:09:10Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pokeshow_guatemala_megaevolution_3'
+            AND policies.display_name = 'PokéShow Guatemala Mega Evolution 3-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=DWRdhUuIUvI'
+            AND policies.version = 'public-study-pokeshow-guatemala-megaevolution-youtube-v1'
+            AND policies.config = '{
+              "study_key":"pokeshow-mega-evolution-gt-3-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=DWRdhUuIUvI",
+              "fetch_url":"https://www.youtube.com/watch?v=DWRdhUuIUvI",
+              "collector_version":"public-study-pokeshow-guatemala-megaevolution-youtube-v1",
+              "parser_version":"pokeshow-guatemala-megaevolution-evidence-v1",
+              "country_code":"GT",
+              "country_name":"Guatemala",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@pokeshowdemaddi/about",
+              "publisher_channel_id":"UChG8m-xoKqrXJDCEoE2i9Jg",
+              "publisher_country_evidence":"country:\\"Guatemala\\"; video description: desde Guatemala",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me01",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Mega Evolution",
+              "set_official_url":"https://www.pokemoncenter.com/search/megacards",
+              "product_name":"Mega Evolution Tripack (promo variant unspecified)",
+              "product_scope":"three_pack_blister",
+              "pack_count":3,
+              "denominator_basis":"source_product_opening_plus_official_product_spec",
+              "denominator_derivation":"source_opening_plus_official_3_pack_tripack_spec",
+              "product_variant_claim":"not_claimed",
+              "source_published_at":"2025-10-06T10:21:33-07:00",
+              "observed_at":"2025-10-06T17:21:33Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
@@ -999,7 +1132,10 @@ public_study_dependencies AS (
         'public_study_richards_bricks_pr_18',
         'public_study_richards_bricks_pr_36',
         'public_study_indigo_geek_mx_50',
-        'public_study_pokehanna_ca_9'
+        'public_study_pokehanna_ca_9',
+        'public_study_tcg_market_panama_chaos_rising_6',
+        'public_study_tcg_market_panama_pitch_black_4',
+        'public_study_pokeshow_guatemala_megaevolution_3'
       )
     ),
     false

@@ -19,10 +19,13 @@ from .adapters.public_studies import (
     indigo_geek_megaevolucion_adapter,
     limitsend_inferno_x_adapter,
     pokehanna_ascended_heroes_adapter,
+    pokeshow_guatemala_megaevolution_adapter,
     pokesup_abyss_eye_adapter,
     pontocom_herois_excelsos_adapter,
     richards_bricks_charizard_upc_adapter,
     richards_bricks_mega_evolution_box_adapter,
+    tcg_market_panama_chaos_rising_adapter,
+    tcg_market_panama_pitch_black_adapter,
     tcgtalk_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
@@ -99,6 +102,18 @@ def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistr
     static_registry.register(
         "pokehanna_ascended_heroes_study",
         pokehanna_ascended_heroes_adapter(client=http_client),
+    )
+    static_registry.register(
+        "tcg_market_panama_chaos_rising_study",
+        tcg_market_panama_chaos_rising_adapter(client=http_client),
+    )
+    static_registry.register(
+        "tcg_market_panama_pitch_black_study",
+        tcg_market_panama_pitch_black_adapter(client=http_client),
+    )
+    static_registry.register(
+        "pokeshow_guatemala_megaevolution_study",
+        pokeshow_guatemala_megaevolution_adapter(client=http_client),
     )
     return static_registry
 

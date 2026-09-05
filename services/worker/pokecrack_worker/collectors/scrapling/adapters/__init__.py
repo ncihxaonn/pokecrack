@@ -10,8 +10,11 @@ from .public_studies import (
     comicbook_perfect_order_adapter,
     indigo_geek_megaevolucion_adapter,
     pokehanna_ascended_heroes_adapter,
+    pokeshow_guatemala_megaevolution_adapter,
     pokesup_abyss_eye_adapter,
     pontocom_herois_excelsos_adapter,
+    tcg_market_panama_chaos_rising_adapter,
+    tcg_market_panama_pitch_black_adapter,
     tcgtalk_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
@@ -27,7 +30,10 @@ __all__ = [
     "indigo_geek_megaevolucion_adapter",
     "pokesup_abyss_eye_adapter",
     "pokehanna_ascended_heroes_adapter",
+    "pokeshow_guatemala_megaevolution_adapter",
     "pontocom_herois_excelsos_adapter",
+    "tcg_market_panama_chaos_rising_adapter",
+    "tcg_market_panama_pitch_black_adapter",
     "tcgtalk_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",
 ]
