@@ -8,7 +8,7 @@ Pokecrack reports **observed openings in the collected sample**. It does not est
 
 Primary rates include an opening only if all are true: accepted validation; complete opening; known positive pack count; nonduplicate; evidence tier A/B; `statistics_eligible=true`; and the set/product/rarity maps to the versioned catalog. Tier C may support auxiliary activity; tier D is activity-only. Neither provides a denominator. Social sources default to ineligible until a documented validation proves otherwise.
 
-The denominator is packs observed, not posts, videos, boxes or hits. The public observed rate is exactly `hit_count / pack_count`; it must never be replaced by the empirical-Bayes posterior mean. Multi-pack products contribute their verified pack count. Ambiguous partial openings are excluded rather than imputed.
+The denominator is packs observed, not posts, videos, boxes or hits. A directly observed sample rate is exactly `hit_count / rate_pack_count`; it must never be replaced by the empirical-Bayes posterior mean or calculated from coverage rows that lack a normalized numerator. Multi-pack products contribute their verified pack count. Ambiguous partial openings are excluded rather than imputed.
 
 ## Evidence tiers
 
@@ -27,8 +27,11 @@ studies persist to `ingest.public_study_coverage_observations`, whose schema has
 no numerator or inference fields. The public projection may sum their packs and
 count openings and independent source domains, but it cannot calculate a rate
 from those rows. Statistical rates require separate admission to
-`ingest.public_study_observations` with an exact qualifying metric and
-numerator.
+`ingest.public_study_observations`, or an exact reviewed public-study contract
+whose current verified row carries the same immutable evidence hash, with an
+explicit `sir_pack` metric and qualifying-hit numerator. The public v3
+projection keeps `packsObserved` separate from `ratePacksObserved`, so rows
+without numerators can never dilute the displayed fraction.
 
 The Pokesup M5 contract is ordinal 6 and deliberately stops at the coverage
 ledger. Its source policy has `statistics_eligible_default=true` because that is
@@ -72,32 +75,35 @@ The baseline fallback order in `config/rarity-taxonomy.yaml` is `(set, language,
 
 ## Exact signal algorithm and environment
 
-Defaults are `MIN_RATE_DISPLAY_PACKS=30`, `MIN_SIGNAL_PACKS=200`, `MIN_SIGNAL_SOURCES=3`, `MIN_PRACTICAL_UPLIFT=0.20`, `MIN_WATCH_PROBABILITY=0.90`, and `MIN_ANOMALY_PROBABILITY=0.95`. The tested boundaries are exact: 29 packs or only 2 independent sources hides every inference field; 30 packs with 3 sources can display the observed rate and posterior context; 199 packs cannot signal; and 200 packs with 3 sources may proceed to the probability/uplift gates. Watch must not exceed anomaly.
+Defaults are `MIN_RATE_DISPLAY_PACKS=30`, `MIN_SIGNAL_PACKS=200`, `MIN_SIGNAL_SOURCES=3`, `MIN_PRACTICAL_UPLIFT=0.20`, `MIN_WATCH_PROBABILITY=0.90`, and `MIN_ANOMALY_PROBABILITY=0.95`. `MIN_RATE_DISPLAY_PACKS` remains the aggregate-inference publication gate; it does not suppress literal reviewed arithmetic. The tested boundaries are exact: 29 packs or only 2 independent sources may show an exact `hits / rate packs` sample fraction, but must hide baseline, posterior, interval, delta, and signal; 30 packs with 3 sources may proceed to reviewed posterior context; 199 packs cannot signal; and 200 packs with 3 sources may proceed to the probability/uplift gates. Watch must not exceed anomaly.
 
 For `p0>0`, set `delta=(posterior_mean-p0)/p0`, `cutoff=min(1,p0*(1+MIN_PRACTICAL_UPLIFT))`, and `q=P(p>=cutoff | Beta(alpha,beta)) = 1-BetaCDF(cutoff,alpha,beta)`.
 
 Apply labels in order:
 
-1. `n < MIN_RATE_DISPLAY_PACKS` or independent source count `< MIN_SIGNAL_SOURCES`: **Insufficient sample** and publish null observed rate, posterior mean, baseline, interval, and delta.
-2. Otherwise display the rate and posterior context. If `n < MIN_SIGNAL_PACKS`, baseline is missing/zero, or `delta < MIN_PRACTICAL_UPLIFT`: **No significant signal**.
-3. All gates pass and `q >= MIN_ANOMALY_PROBABILITY`: **Possible anomaly**.
-4. Else all gates pass and `q >= MIN_WATCH_PROBABILITY`: **Watch**.
-5. Otherwise: **No significant signal**.
+1. If an exact normalized numerator and denominator exist, publish their literal descriptive sample fraction and rate; otherwise publish no rate.
+2. `n < MIN_RATE_DISPLAY_PACKS` or independent source count `< MIN_SIGNAL_SOURCES`: **Insufficient sample** and publish null posterior mean, baseline, interval, delta, and signal even when the raw sample rate is visible.
+3. Otherwise the reviewed aggregate publisher may display posterior context. If `n < MIN_SIGNAL_PACKS`, baseline is missing/zero, or `delta < MIN_PRACTICAL_UPLIFT`: **No significant signal**.
+4. All gates pass and `q >= MIN_ANOMALY_PROBABILITY`: **Possible anomaly**.
+5. Else all gates pass and `q >= MIN_WATCH_PROBABILITY`: **Watch**.
+6. Otherwise: **No significant signal**.
 
 Multiple cuts and repeated monitoring increase false positives; labels are exploratory and must show the tested scope/window. Never turn a posterior probability into a guarantee. Settings/DTOs are static contracts until the aggregate implementation is run against a migrated database.
 
 ## Global country map
 
-The global v2 map is a country-level view of the same qualifying-hit metric, not
+The global v3 map is a country-level view of the same qualifying-hit metric, not
 a ranking of countries. It publishes at most one cell per official ISO alpha-2
 code and selects one shared latest complete period, so countries from different
 windows are never mixed. A missing cell means no public country observation; a
-present insufficient cell uses a withheld pattern and exposes counts but no rate,
-baseline, posterior, interval, delta, or hit numerator.
+present cell exposes verified coverage counts. It uses the quantitative rate
+scale only when an exact normalized numerator and separate rate denominator are
+available; otherwise it uses the no-numerator pattern. Baseline, posterior,
+interval, delta, and signal remain independently gated.
 
 A threshold-sufficient denominator does not become a published inference merely
 because its count gates are met. If the versioned baseline, posterior, and
-interval publisher has not completed, v3 keeps the row visible as **Publication
+interval publisher has not completed, v3 keeps the row visible as **Inference
 pending** and continues to return every inference field as null. The pending
 state is an operational publication state, not a fifth statistical signal.
 
@@ -107,20 +113,20 @@ global discovery activity never create a denominator or colour a country.
 
 The **Pack coverage** layer uses a fixed absolute 0–1,500 pack scale to show
 verified sample volume by country. It is not a hit-rate comparison or an
-estimate of representative demand. It never relaxes the inference thresholds:
-rate and delta layers still withhold insufficient or pending inference, while
-countries without a reviewed observation remain neutral.
+estimate of representative demand. The **Observed rate** layer shows direct
+sample arithmetic wherever exact counts exist, regardless of sample size. The
+**Baseline delta** layer still follows the inference thresholds, while countries
+without a reviewed observation remain neutral.
 
-The existing five reviewed public-study inputs use publisher country as a
+The original five reviewed public-study inputs use publisher country as a
 coarse Tier-B geography basis. They do not assert the physical opening location
 and must not be shown as city/store evidence. They span US, GB, and SG: 91
 verified packs from two independent domains in the United States, 107 from two
 in the United Kingdom, and 54 from one in Singapore. Pokesup ordinal 6 is the
-separate product-market case: after first verified collection it may add 30
-coverage packs, 1 opening, and 1 source to a JP market bucket, but not to any
-statistical cohort. Every observed-rate, baseline, posterior, interval, delta,
-signal, and numerator field remains unavailable for that row regardless of the
-30-pack display threshold.
+first product-market case. The phase-one Asia contracts also use product-market
+attribution for South Korea, Taiwan, and Thailand. Their verified denominators
+are JP 30, KR 30, TW 40, and TH 10 packs; none has a normalized SIR numerator,
+so none publishes a sample rate or enters a statistical cohort.
 
 ## Authorized opening review and aggregate admission
 

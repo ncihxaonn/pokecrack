@@ -205,8 +205,9 @@ export function buildWorldHeatRows(
 }
 
 function stateLabel(cell: CountryMapCell) {
-  if (cell.state === "insufficient") return "Withheld";
-  if (cell.state === "pending") return "Publication pending";
+  if (cell.hitRate !== null && cell.baselineRate === null) return "Observed sample";
+  if (cell.state === "insufficient") return "No exact numerator";
+  if (cell.state === "pending") return "Inference pending";
   if (cell.state === "anomaly") return "Possible anomaly";
   if (cell.state === "watch") return "Watch";
   return "Published";
@@ -244,21 +245,26 @@ export function WorldHeatmap({
       geometryAvailable: mapGeometryCountryCodes.has(country.countryCode),
       state: row === undefined
         ? "awaiting"
-        : row.cell.state === "pending"
-          ? "pending"
-          : row.cell.hitRate === null
-            ? "observed"
-            : "published",
+        : row.cell.hitRate !== null
+          ? "published"
+          : row.cell.state === "pending"
+            ? "pending"
+            : "observed",
     } as const;
   });
-  const publishedRateCount = cells.filter((cell) => cell.hitRate !== null).length;
-  const withheldCount = rows.length - publishedRateCount;
-  const pendingCount = rows.filter((row) => row.cell.state === "pending").length;
+  const observedRateCount = cells.filter((cell) => cell.hitRate !== null).length;
+  const publishedDeltaCount = cells.filter(
+    (cell) => cell.deltaFromBaseline !== null,
+  ).length;
+  const noRateCount = rows.length - observedRateCount;
+  const pendingCount = rows.filter(
+    (row) => row.cell.hitRate === null && row.cell.state === "pending",
+  ).length;
   const metricLabel = metric === "coverage"
     ? "Observed pack coverage"
     : metric === "delta"
       ? "Baseline delta"
-      : "Observed rate";
+      : "Observed sample rate";
   const period = observations.period
     ? `${formatDate(observations.period.start)} - ${formatDate(observations.period.end)}`
     : "No verified period yet";
@@ -266,12 +272,14 @@ export function WorldHeatmap({
     ? "Awaiting observations"
     : observations.status === "collecting"
       ? "Collection in progress"
-      : "Published";
+      : "Observed sample rates live";
   const mapDescription = rows.length === 0
     ? `No verified country or product-market coverage buckets are published. ${focusGeometryNote} Neutral fill does not contain inferred data.`
     : metric === "coverage"
       ? `${rows.length} country or product-market coverage buckets have verified pack-opening observations. Colour shows fixed-scale sample volume only, not a hit rate or representative demand. ${focusGeometryNote} Neutral fill means unobserved.`
-      : `${rows.length} country or product-market coverage buckets have verified observations: ${publishedRateCount} publish a rate, ${pendingCount} await reviewed publication, and ${withheldCount - pendingCount} remain below the evidence threshold. ${focusGeometryNote} Neutral fill means unobserved.`;
+      : metric === "rate"
+        ? `${rows.length} country or product-market coverage buckets have verified observations: ${observedRateCount} show an exact observed sample rate and ${noRateCount} have no exact normalized numerator. ${focusGeometryNote} Neutral fill means unobserved.`
+        : `${rows.length} country or product-market coverage buckets have verified observations: ${publishedDeltaCount} have a published baseline delta; raw sample rates remain separate from inference. ${focusGeometryNote} Neutral fill means unobserved.`;
 
   const selectMetric = (nextMetric: WorldHeatMetric) => {
     setMetric(nextMetric);
@@ -306,7 +314,9 @@ export function WorldHeatmap({
           <p>
             {metric === "coverage"
               ? "Verified pack-opening sample volume by country or product-market coverage bucket. This view is not a hit-rate comparison."
-              : "Qualifying-hit rates by attributed country or product-market bucket from verified pack-opening samples. Catalog records and discovery activity never enter the denominator."}
+              : metric === "rate"
+                ? "Direct qualifying-hit counts divided by their exact eligible pack counts. These descriptive samples are not representative probabilities or predictions."
+                : "Baseline comparisons are shown only after the separate inference publication gate. A raw observed sample rate does not automatically create a baseline delta."}
           </p>
         </div>
         <div className={styles.toggle} role="group" aria-label="World heat map metric">
@@ -393,16 +403,24 @@ export function WorldHeatmap({
                 })}
               </g>
             </svg>
-            {(metric === "coverage" ? rows.length === 0 : publishedRateCount === 0) ? (
+            {(metric === "coverage"
+              ? rows.length === 0
+              : metric === "rate"
+                ? observedRateCount === 0
+                : publishedDeltaCount === 0) ? (
               <div className={styles.emptyMapMessage} role="note">
                 <strong>{metric === "coverage"
                   ? "No verified pack coverage yet"
-                  : "No attributed bucket rates published yet"}</strong>
+                  : metric === "rate"
+                    ? "No exact sample rates available yet"
+                    : "No baseline deltas published yet"}</strong>
                 <span>{rows.length === 0
                   ? "Gold outlines mark collection focus; fill remains reserved for verified evidence."
                   : pendingCount > 0
-                    ? `${rows.length} ${rows.length === 1 ? "coverage bucket is" : "coverage buckets are"} observed; ${pendingCount} ${pendingCount === 1 ? "has" : "have"} met the evidence threshold and await reviewed publication.`
-                    : `${rows.length} ${rows.length === 1 ? "coverage bucket is" : "coverage buckets are"} observed; all remain below the publication threshold.`}</span>
+                    ? `${rows.length} ${rows.length === 1 ? "coverage bucket is" : "coverage buckets are"} observed; ${pendingCount} ${pendingCount === 1 ? "has" : "have"} no published inference yet.`
+                    : metric === "rate"
+                      ? `${rows.length} ${rows.length === 1 ? "coverage bucket has" : "coverage buckets have"} observations, but no exact normalized numerator is available.`
+                      : "Direct sample rates and baseline inference are published independently."}</span>
               </div>
             ) : null}
           </div>
@@ -427,10 +445,15 @@ export function WorldHeatmap({
                 <span className={styles.focusKey}><i aria-hidden="true" />Collection focus, awaiting observations</span>
                 {metric === "coverage" ? (
                   <span className={styles.observedKey}><i className={dataKeyClassName} aria-hidden="true" />Observed pack sample uses scale</span>
+                ) : metric === "rate" ? (
+                  <>
+                    <span className={styles.withheldKey}><i aria-hidden="true" />Observed, no exact numerator</span>
+                    <span className={styles.publishedKey}><i className={dataKeyClassName} aria-hidden="true" />Observed sample rate uses scale</span>
+                  </>
                 ) : (
                   <>
-                    <span className={styles.withheldKey}><i aria-hidden="true" />Observed, rate withheld</span>
-                    <span className={styles.publishedKey}><i className={dataKeyClassName} aria-hidden="true" />Published rate uses scale</span>
+                    <span className={styles.withheldKey}><i aria-hidden="true" />No published baseline delta</span>
+                    <span className={styles.publishedKey}><i className={dataKeyClassName} aria-hidden="true" />Published baseline delta uses scale</span>
                   </>
                 )}
               </span>
@@ -451,7 +474,7 @@ export function WorldHeatmap({
           </div>
           <dl className={styles.readinessList}>
             <div><dt>Coverage buckets observed</dt><dd>{integer.format(observations.countriesObserved)}</dd></div>
-            <div><dt>Published rates</dt><dd>{integer.format(observations.countriesWithPublishedRate)}</dd></div>
+            <div><dt>Observed sample rates</dt><dd>{integer.format(observations.countriesWithPublishedRate)}</dd></div>
             <div><dt>Observed packs</dt><dd>{integer.format(observations.observedPacks)}</dd></div>
             <div><dt>Complete openings</dt><dd>{integer.format(observations.completeOpenings)}</dd></div>
           </dl>
@@ -481,9 +504,9 @@ export function WorldHeatmap({
               <span>
                 <strong>{country.countryName}</strong>
                 <small>{country.countryCode} · {country.state === "published"
-                  ? "Rate published"
+                  ? "Sample rate available"
                   : country.state === "pending"
-                    ? "Publication pending"
+                    ? "Inference pending"
                   : country.state === "observed"
                     ? "Sample observed"
                     : "Awaiting observations"}</small>
@@ -508,11 +531,11 @@ export function WorldHeatmap({
           <table>
             <caption className="sr-only">Exact country and product-market coverage values for {period}</caption>
             <thead>
-              <tr><th scope="col">Bucket</th><th scope="col">Packs</th><th scope="col">Sources</th><th scope="col">Data version</th><th scope="col">Observed</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Status</th></tr>
+              <tr><th scope="col">Bucket</th><th scope="col">Packs</th><th scope="col">Sources</th><th scope="col">Data version</th><th scope="col">Hits / rate packs</th><th scope="col">Sample rate</th><th scope="col">Baseline</th><th scope="col">Delta</th><th scope="col">Status</th></tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
-                <tr><td colSpan={8} className={styles.empty}>No verified country or product-market coverage is published yet.</td></tr>
+                <tr><td colSpan={9} className={styles.empty}>No verified country or product-market coverage is published yet.</td></tr>
               ) : rows.map((row) => (
                 <tr key={row.cell.countryCode}>
                   <td data-label="Bucket"><strong>{row.cell.countryName}</strong><small>{row.cell.countryCode} · {formatCoverageAttribution(row.cell.coverageAttributionBases, "Country")}</small></td>
@@ -539,7 +562,10 @@ export function WorldHeatmap({
                       </span>
                     )}
                   </td>
-                  <td data-label="Observed">{formatProbability(row.cell.hitRate)}</td>
+                  <td data-label="Hits / rate packs">{row.cell.ratePacksObserved === undefined || row.cell.qualifyingHitPacks === undefined
+                    ? "Not available"
+                    : `${integer.format(row.cell.qualifyingHitPacks)} / ${integer.format(row.cell.ratePacksObserved)}`}</td>
+                  <td data-label="Sample rate">{formatProbability(row.cell.hitRate)}</td>
                   <td data-label="Baseline">{formatProbability(row.cell.baselineRate)}</td>
                   <td data-label="Delta">{formatSignedProbability(row.cell.deltaFromBaseline)}</td>
                   <td data-label="Status"><span className={`${styles.status} ${styles[`status${row.cell.state}`]}`}>{stateLabel(row.cell)}</span></td>

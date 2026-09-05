@@ -73,6 +73,75 @@ const coverageCountryV2 = coverageCountry.safeExtend({
   coverageAttributionBases: coverageAttributionBasesSchema,
 });
 
+const directObservedRate = {
+  ratePacksObserved: z.number().int().positive().max(1_000_000).optional(),
+  qualifyingHitPacks: z.number().int().nonnegative().max(1_000_000).optional(),
+  observedRate: z.number().min(0).max(1).optional(),
+} as const;
+
+function validateDirectObservedRate(
+  value: {
+    readonly packsObserved: number;
+    readonly ratePacksObserved?: number;
+    readonly qualifyingHitPacks?: number;
+    readonly observedRate?: number;
+  },
+  context: z.RefinementCtx,
+) {
+  const fields = [
+    value.ratePacksObserved,
+    value.qualifyingHitPacks,
+    value.observedRate,
+  ];
+  const present = fields.filter((field) => field !== undefined).length;
+  if (present !== 0 && present !== fields.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Direct observed rates require the complete raw-rate tuple",
+    });
+    return;
+  }
+  if (present === 0) return;
+  if (value.ratePacksObserved! > value.packsObserved) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Rate-sample packs cannot exceed all observed packs",
+      path: ["ratePacksObserved"],
+    });
+  }
+  if (value.qualifyingHitPacks! > value.ratePacksObserved!) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Qualifying-hit packs cannot exceed rate-sample packs",
+      path: ["qualifyingHitPacks"],
+    });
+  }
+  if (
+    Math.abs(
+      value.observedRate! -
+      value.qualifyingHitPacks! / value.ratePacksObserved!,
+    ) > 1e-12
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Observed rate must equal its exact numerator divided by denominator",
+      path: ["observedRate"],
+    });
+  }
+}
+
+const coverageCountryV3 = coverageMetric.extend({
+  countryCode: z.string().refine(
+    isIsoAlpha2,
+    "Country code must be an official ISO alpha-2 code",
+  ),
+  countryName: z.string().min(1).max(160),
+  dataVersions: countryDataVersionsSchema.optional(),
+  collectionClass: z.enum(["coverage_only", "observed_sample", "mixed"]),
+  coverageAttributionBases: coverageAttributionBasesSchema,
+  ...directObservedRate,
+}).superRefine(validateDirectObservedRate);
+
 const coverageSet = coverageMetric.extend({
   slug: z.string().min(1).max(160),
   name: z.string().min(1).max(160),
@@ -85,6 +154,7 @@ const reviewedSourceCoverage = z
     packsObserved: z.number().int().positive().max(1_000_000),
     countriesObserved: z.number().int().positive().max(249),
     completeOpenings: z.number().int().positive().max(1_000_000),
+    ...directObservedRate,
   })
   .strict()
   .superRefine((coverage, context) => {
@@ -102,6 +172,7 @@ const reviewedSourceCoverage = z
         path: ["countriesObserved"],
       });
     }
+    validateDirectObservedRate(coverage, context);
   });
 
 const reviewedCoverageSource = z
@@ -158,8 +229,18 @@ const publicStudyCoverageV2Schema = coverageEnvelope.extend({
   sources: z.array(reviewedCoverageSource).min(1).max(100),
 });
 
+const publicStudyCoverageV3Schema = coverageEnvelope.extend({
+  schemaVersion: z.literal("3.0.0"),
+  countries: z.array(coverageCountryV3).max(249),
+  sources: z.array(reviewedCoverageSource).min(1).max(100),
+});
+
 export const publicStudyCoverageSchema = z
-  .union([publicStudyCoverageV1Schema, publicStudyCoverageV2Schema])
+  .union([
+    publicStudyCoverageV1Schema,
+    publicStudyCoverageV2Schema,
+    publicStudyCoverageV3Schema,
+  ])
   .superRefine((value, context) => {
     if (value.period.start > value.period.end) {
       context.addIssue({
@@ -202,11 +283,19 @@ function withheldState(packs: number, sources: number): "insufficient" | "pendin
   return packs < 30 || sources < 3 ? "insufficient" : "pending";
 }
 
-function sampleNote(packs: number, sources: number): string {
-  if (packs < 30 || sources < 3) {
-    return `Rate withheld: ${packs} observed packs across ${sources} independent sources. Publication requires at least 30 packs and three sources; coverage-only reviews do not publish inference.`;
+function sampleNote(
+  packs: number,
+  sources: number,
+  rawRate?: Readonly<{ ratePacksObserved: number; qualifyingHitPacks: number }>,
+): string {
+  if (rawRate !== undefined) {
+    const rate = rawRate.qualifyingHitPacks / rawRate.ratePacksObserved;
+    return `Direct observed sample: ${rawRate.qualifyingHitPacks} qualifying-hit ${rawRate.qualifyingHitPacks === 1 ? "pack" : "packs"} among ${rawRate.ratePacksObserved} eligible rate-sample packs (${(rate * 100).toFixed(2)}%). This descriptive sample rate is not a representative probability, baseline comparison, posterior estimate, or anomaly signal.`;
   }
-  return "Coverage threshold met, but coverage-only evidence cannot publish a rate; statistical-ledger promotion and the reviewed aggregate publisher are still required.";
+  if (packs < 30 || sources < 3) {
+    return `No exact normalized numerator is available for these ${packs} observed packs across ${sources} independent ${sources === 1 ? "source" : "sources"}; no sample rate or inference is shown.`;
+  }
+  return "Coverage is verified, but no exact normalized numerator is available; no sample rate or inference is shown.";
 }
 
 function mergeDataVersions(
@@ -261,15 +350,22 @@ function mergeCountry(
   period: PublicStudyCoverage["period"],
   replaceCoverageOverlay: boolean,
 ): CountryMapCell {
-  // The aggregate publisher owns every inference field and its matching
-  // denominator. Coverage-only evidence may populate a missing/withheld row,
-  // but it must never rewrite an already-published aggregate.
+  // A fully published aggregate remains authoritative for every inference
+  // field. Coverage v3 may add only a descriptive, exact numerator/denominator
+  // rate to a row whose baseline/posterior signal is still unpublished.
   const coverageOverlay = mergeCoverageOverlay(
     current,
     coverage,
     replaceCoverageOverlay,
   );
-  if (current !== undefined && current.hitRate !== null) {
+  if (
+    current !== undefined &&
+    current.hitRate !== null &&
+    current.baselineRate !== null &&
+    current.posteriorMean !== null &&
+    current.credibleInterval !== null &&
+    current.deltaFromBaseline !== null
+  ) {
     return current;
   }
   const packsObserved = replaceCoverageOverlay
@@ -281,6 +377,27 @@ function mergeCountry(
   const independentSources = replaceCoverageOverlay
     ? coverage.independentSources
     : (current?.independentSources ?? 0) + coverage.independentSources;
+  const incomingRawRate = "observedRate" in coverage &&
+    coverage.observedRate !== undefined &&
+    coverage.ratePacksObserved !== undefined &&
+    coverage.qualifyingHitPacks !== undefined
+    ? {
+        observedRate: coverage.observedRate,
+        ratePacksObserved: coverage.ratePacksObserved,
+        qualifyingHitPacks: coverage.qualifyingHitPacks,
+      }
+    : undefined;
+  const existingRawRate = current?.hitRate !== null &&
+    current?.hitRate !== undefined &&
+    current.ratePacksObserved !== undefined &&
+    current.qualifyingHitPacks !== undefined
+    ? {
+        observedRate: current.hitRate,
+        ratePacksObserved: current.ratePacksObserved,
+        qualifyingHitPacks: current.qualifyingHitPacks,
+      }
+    : undefined;
+  const rawRate = incomingRawRate ?? existingRawRate;
   const base = current ?? {
     periodStart: period.start,
     periodEnd: period.end,
@@ -305,12 +422,15 @@ function mergeCountry(
     packsObserved,
     openings,
     independentSources,
-    state: current?.hitRate !== null && current?.hitRate !== undefined
-      ? current.state
-      : withheldState(packsObserved, independentSources),
-    sampleNote: current?.hitRate !== null && current?.hitRate !== undefined
-      ? current.sampleNote
-      : sampleNote(packsObserved, independentSources),
+    ...(rawRate === undefined
+      ? { hitRate: null }
+      : {
+          ratePacksObserved: rawRate.ratePacksObserved,
+          qualifyingHitPacks: rawRate.qualifyingHitPacks,
+          hitRate: rawRate.observedRate,
+        }),
+    state: withheldState(packsObserved, independentSources),
+    sampleNote: sampleNote(packsObserved, independentSources, rawRate),
     updatedAt: laterTimestamp(current?.updatedAt ?? null, coverage.updatedAt),
   };
 }
@@ -360,7 +480,7 @@ export function mergePublicStudyCoverage(
 
   const base = snapshotResult.data;
   const coverage = coverageResult.data;
-  const replaceV2CoverageRows = coverage.schemaVersion === "2.0.0";
+  const replaceRegistryCoverageRows = coverage.schemaVersion !== "1.0.0";
   if (
     base.observations.period !== null &&
     (base.observations.period.start !== coverage.period.start ||
@@ -375,7 +495,7 @@ export function mergePublicStudyCoverage(
     const current = sourceById.get(source.id);
     if (
       current !== undefined &&
-      (!replaceV2CoverageRows ||
+      (!replaceRegistryCoverageRows ||
         current.name !== source.name ||
         current.kind !== source.kind ||
         current.access !== source.access ||
@@ -386,7 +506,7 @@ export function mergePublicStudyCoverage(
     sourceById.set(source.id, source);
   }
 
-  if (coverage.countries.length === 0 && !replaceV2CoverageRows) {
+  if (coverage.countries.length === 0 && !replaceRegistryCoverageRows) {
     return { ...base, sources: [...sourceById.values()] } satisfies PublicDashboardData;
   }
 
@@ -400,7 +520,7 @@ export function mergePublicStudyCoverage(
         countryByCode.get(row.countryCode),
         row,
         coverage.period,
-        replaceV2CoverageRows,
+        replaceRegistryCoverageRows,
       ),
     );
   }
@@ -414,7 +534,7 @@ export function mergePublicStudyCoverage(
   for (const row of coverage.sets) {
     setBySlug.set(
       row.slug,
-      mergeSet(setBySlug.get(row.slug), row, replaceV2CoverageRows),
+      mergeSet(setBySlug.get(row.slug), row, replaceRegistryCoverageRows),
     );
   }
   const sets = [...setBySlug.values()].sort(
@@ -428,8 +548,15 @@ export function mergePublicStudyCoverage(
     (total, cell) => total + cell.independentSources,
     0,
   );
-  const countriesWithPublishedRate = mapCells.filter(
+  const countriesWithObservedRate = mapCells.filter(
     (cell) => cell.hitRate !== null,
+  ).length;
+  const countriesWithPublishedInference = mapCells.filter(
+    (cell) =>
+      cell.baselineRate !== null &&
+      cell.posteriorMean !== null &&
+      cell.credibleInterval !== null &&
+      cell.deltaFromBaseline !== null,
   ).length;
   const asOf = mapCells.reduce<string | null>(
     (latest, cell) => laterTimestamp(latest, cell.updatedAt),
@@ -448,6 +575,12 @@ export function mergePublicStudyCoverage(
     ...(cell.coverageAttributionBases === undefined
       ? {}
       : { coverageAttributionBases: cell.coverageAttributionBases }),
+    ...(cell.ratePacksObserved === undefined
+      ? {}
+      : { ratePacksObserved: cell.ratePacksObserved }),
+    ...(cell.qualifyingHitPacks === undefined
+      ? {}
+      : { qualifyingHitPacks: cell.qualifyingHitPacks }),
     baselineRate: cell.baselineRate,
     hitRate: cell.hitRate,
     posteriorMean: cell.posteriorMean,
@@ -466,19 +599,21 @@ export function mergePublicStudyCoverage(
       completeOpenings,
       trackedSets: sets.length,
       trackedRegions: mapCells.length,
-      baselineHitRate: countriesWithPublishedRate === 0 ? null : base.summary.baselineHitRate,
-      globalCoverage: `${mapCells.length} country or product-market coverage buckets have verified observations in the current global period; ${countriesWithPublishedRate} publish a rate.`,
+      baselineHitRate: countriesWithPublishedInference === 0
+        ? null
+        : base.summary.baselineHitRate,
+      globalCoverage: `${mapCells.length} country or product-market coverage buckets have verified observations in the current global period; ${countriesWithObservedRate} show an exact observed sample rate.`,
       methodologyVersion: "global-observation-v1",
     },
     observations: {
       ...base.observations,
-      status: countriesWithPublishedRate > 0 ? "published" : "collecting",
+      status: countriesWithObservedRate > 0 ? "published" : "collecting",
       period: coverage.period,
       observedPacks,
       completeOpenings,
       sourceCountryContributions,
       countriesObserved: mapCells.length,
-      countriesWithPublishedRate,
+      countriesWithPublishedRate: countriesWithObservedRate,
       asOf,
       methodologyVersion: "global-observation-v1",
     },

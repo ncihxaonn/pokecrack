@@ -137,7 +137,7 @@ Exact account-owner steps are in:
 
 ## Methodology summary
 
-Only records that are accepted, complete openings, statistics-eligible, non-duplicate, and evidence tier A/B enter primary pull-rate statistics. Activity-only records may support freshness, region activity, sightings, or batch mentions but never provide a denominator. Signals use configurable minimum samples, independent-source counts, empirical-Bayes shrinkage, 90% credible intervals, and probability thresholds. Labels are deliberately limited to **Insufficient sample**, **No significant signal**, **Watch**, and **Possible anomaly**.
+Only reviewed complete openings with an exact pack denominator can enter opening-sample coverage. When the same reviewed contract also contains an exact normalized qualifying-hit numerator, the public dashboard shows the literal descriptive fraction and observed sample rate at any sample size. Baselines, empirical-Bayes estimates, 90% credible intervals, comparisons, and signals still require the stricter statistical ledger, source-diversity gates, and sample thresholds. Activity-only records may support freshness, region activity, sightings, or batch mentions but never provide a denominator.
 
 See [`docs/METHODOLOGY.md`](docs/METHODOLOGY.md) and [`docs/AI_VALIDATION.md`](docs/AI_VALIDATION.md).
 

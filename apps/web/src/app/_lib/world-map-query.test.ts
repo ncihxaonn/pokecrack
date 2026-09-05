@@ -12,8 +12,8 @@ describe("world map query", () => {
     expect(normalizeWorldHeatMetric(undefined)).toBeUndefined();
   });
 
-  it("defaults to visible coverage until a country rate is published", () => {
+  it("defaults to visible coverage until an exact country sample rate is published", () => {
     expect(defaultWorldHeatMetric(0)).toBe("coverage");
-    expect(defaultWorldHeatMetric(1)).toBe("delta");
+    expect(defaultWorldHeatMetric(1)).toBe("rate");
   });
 });

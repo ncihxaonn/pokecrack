@@ -71,7 +71,7 @@ describe("HomeView", () => {
 
     expect(mapHeading.compareDocumentPosition(sourcesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(sourcesHeading.compareDocumentPosition(socialHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText(/not a hit rate/i)).toBeVisible();
+    expect(screen.getByText(/without implying a representative probability/i)).toBeVisible();
     expect(screen.getByText("55 packs")).toBeVisible();
   });
 
@@ -162,8 +162,8 @@ describe("HomeView", () => {
     render(<HomeView data={liveCollecting} synthetic={false} />);
 
     expect(screen.getByText("Live observations")).toBeVisible();
-    expect(screen.getByText("Verified observations cover 3 country or product-market coverage buckets and 252 packs; attributed-bucket rates remain withheld until evidence thresholds and reviewed publication are satisfied.")).toBeVisible();
-    expect(screen.getByText("Publication pending")).toBeVisible();
+    expect(screen.getByText("Verified observations cover 3 country or product-market coverage buckets and 252 packs. Exact sample rates appear only where a reviewed normalized numerator is also available; inference remains separately gated.")).toBeVisible();
+    expect(screen.getByText("Inference pending")).toBeVisible();
     expect(screen.getAllByText("Withheld").length).toBeGreaterThan(0);
     expect(screen.queryByText(/Verified country or product-market coverage is not published yet/)).not.toBeInTheDocument();
   });

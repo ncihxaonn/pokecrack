@@ -17,8 +17,8 @@ not yet live-observed.
 | --- | --- | --- |
 | `catalog` | TCGdex set metadata | Set/language identity and catalog matching only |
 | `activity_only` | Minimal YouTube search-result metadata; bounded Mastodon public hashtag activity | Private discovery coverage only |
-| Denominator coverage | Complete reviewed public-study opening persisted only in `ingest.public_study_coverage_observations` | Public pack/opening/source counts only; no numerator, rate, or inference |
-| `statistics` | Complete, nonduplicate opening with a verified pack denominator and tier A/B evidence | Observed-rate calculations after deterministic and independent validation |
+| Denominator coverage | Complete reviewed public-study opening persisted in `ingest.public_study_coverage_observations` | Public pack/opening/source counts; a sample rate only when the reviewed contract also has an exact normalized numerator |
+| `statistics` | Complete, nonduplicate opening with a verified pack denominator and tier A/B evidence | Aggregate inference after deterministic and independent validation |
 
 The tier-D YouTube discovery records defined here never create an opening, hit,
 denominator, aggregate, or public signal. Other separately reviewed activity-only
@@ -43,12 +43,15 @@ The worker returns only the canonical URL, title, bounded evidence excerpt,
 SHA-256, and version identities. Country or product-market bucket, observed
 date, set, pack denominator, product scope, and geography confidence come only
 from the exact database policy; a network result cannot override them.
-Qualifying-hit facts exist only for contracts admitted to the statistical
-ledger. Coverage-only contracts instead use the fenced coverage finalizer,
-which writes only `ingest.public_study_coverage_observations`; aggregate studies
-never fabricate card-level `opening_hits`.
+Qualifying-hit facts used for aggregate inference exist only in the statistical
+ledger. A coverage-ledger study may expose literal sample arithmetic only when
+its immutable reviewed contract separately fixes an exact `sir_pack` numerator,
+metric version, and complete denominator; the coverage table itself still has
+no numerator column. Other coverage-only contracts use the fenced coverage
+finalizer and publish no rate. Aggregate studies never fabricate card-level
+`opening_hits`.
 
-The existing five reviewed sources use `geography_basis=publisher_country` and
+The original five reviewed sources use `geography_basis=publisher_country` and
 `geography_confidence=tier_b`. This is coarse provenance, not proof of the room
 in which packs were opened. Pokesup ordinal 6 instead uses
 `geography_basis=product_market` with the same Tier-B confidence. Its JP bucket
@@ -225,16 +228,18 @@ country fact from any country. Missing geography is never defaulted to Australia
 and cannot become rate-eligible. Public v1 remains the frozen
 Australia/English-only contract. The forward global-dashboard migration adds a
 separate strict ISO country dimension, country-period publication table, and
-public v2 snapshot; it does not loosen v1. The dedicated reviewed-study
+public v3 snapshot; it does not loosen v1 or v2. The dedicated reviewed-study
 finalizer is the only current writer for real country denominators. YouTube and
 catalog metadata still have no route to that table. Historical rolling cells
 remain readable to the service boundary for audit, while browser RLS exposes
 only the current UTC-ending period so aged-out evidence cannot look fresh.
 
-The v2 map selects one latest complete period for all countries. A cell must
+The v3 map selects one latest complete period for all countries. A cell must
 contain a positive pack denominator and complete-opening/source counts. Every
-rate field is withheld below 30 observed packs or three independent sources;
-Watch and Possible anomaly remain unavailable below 200 packs. The browser also
+exact normalized numerator is displayed with its separate rate denominator at
+any sample size. Baseline, posterior, interval, and delta remain withheld below
+30 observed packs or three independent sources; Watch and Possible anomaly
+remain unavailable below 200 packs. The browser also
 receives a narrow TCGdex set-catalog projection, explicitly labelled catalog-only
 and never counted as opening evidence.
 
@@ -244,7 +249,9 @@ The statistical data product must obtain a real denominator. Preferred inputs
 are a first-party structured opening submission with continuous evidence, or an
 authorized creator submission that states and verifies every opened pack. Each
 candidate still requires catalog mapping, duplicate controls, evidence review,
-and the existing minimum pack/source thresholds.
+and the existing minimum pack/source thresholds for inference. Literal reviewed
+sample arithmetic does not require those thresholds, but is always labelled as
+descriptive and non-representative.
 
 Selection bias remains even after validation. Public wording must say “observed
 rate” and show the pack count, independent-source count, geography, language,

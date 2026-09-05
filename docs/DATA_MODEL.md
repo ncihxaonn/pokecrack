@@ -105,20 +105,25 @@ private audit data and cannot masquerade as fresh coverage.
 
 `get_public_dashboard_snapshot_v3()` preserves v2 as its catalog and reviewed
 published-map base, then adds a no-argument, bounded `SECURITY DEFINER`
-projection for data that already exists behind the browser boundary:
+projection for data that already exists behind the browser boundary. The
+separate `get_public_study_coverage_v3()` projection can add an exact descriptive
+`qualifyingHitPacks / ratePacksObserved` tuple when the immutable reviewed
+contract and its current observation both validate; this does not publish
+aggregate inference.
 
 - reviewed-study denominators grouped by TCGdex set and country for the current
   365-day UTC period; denominator rows never disappear when a threshold is
   crossed;
 - below-threshold rows use `insufficient`; threshold-sufficient rows without a
-  reviewed baseline/interval use `pending`. Both states keep every rate,
-  numerator, baseline, posterior, interval, and delta field null;
+  reviewed baseline/interval use `pending`. Both states keep baseline,
+  posterior, interval, delta, and signal null. A direct observed sample rate may
+  still be present only with its exact normalized numerator and denominator;
 - a published v2 country aggregate takes precedence over its reviewed
   denominator row, while exact reviewed rows keep the atlas and country detail
   routes populated before the aggregate publisher is ready;
 - an exact public source allowlist for TCGdex, YouTube metadata discovery, and
-  the five reviewed studies, exposing only status, freshness, a safe reference,
-  and bounded notes;
+  the registry of reviewed studies, exposing only status, freshness, a safe
+  reference, and bounded notes;
 - aggregate heartbeat status for the ready `collector`, `scheduler`, and
   `watchdog` roles, without host, worker, version, job, payload, or error detail.
 

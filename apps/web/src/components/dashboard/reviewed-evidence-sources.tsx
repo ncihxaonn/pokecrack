@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import type { PublicSource, PublicSourceCoverage } from "@/data/types";
-import { formatCompactNumber, formatDateTime } from "@/lib/format";
+import { formatCompactNumber, formatDateTime, formatProbability } from "@/lib/format";
 import { SectionHeading } from "@/components/ui/dashboard-ui";
 
 type ReviewedEvidenceSource = PublicSource & {
@@ -26,7 +26,7 @@ export function ReviewedEvidenceSources({ sources }: { sources: readonly PublicS
       <SectionHeading
         id="reviewed-evidence-title"
         title="Reviewed evidence sources"
-        detail="Verified opening-sample coverage only — not a hit rate. Coverage-bucket attribution follows each reviewed source's declared basis and is not necessarily an opening location. Social discovery is excluded from these counts."
+        detail="Verified opening-sample facts. When an exact normalized numerator and denominator are both available, their direct sample rate is shown without implying a representative probability or statistical signal."
         action={<Link className="text-link" href="/sources">Source boundaries →</Link>}
       />
       <ul className="reviewed-source-rail" aria-label="Reviewed evidence source coverage">
@@ -55,6 +55,23 @@ export function ReviewedEvidenceSources({ sources }: { sources: readonly PublicS
                 <dt>Complete openings</dt>
                 <dd>{plural(source.coverage.completeOpenings, "opening")}</dd>
               </div>
+              {source.coverage.observedRate === undefined ? (
+                <div>
+                  <dt>Rate sample</dt>
+                  <dd>No exact normalized numerator</dd>
+                </div>
+              ) : (
+                <>
+                  <div>
+                    <dt>Qualifying hits / rate packs</dt>
+                    <dd>{formatCompactNumber(source.coverage.qualifyingHitPacks!)} / {formatCompactNumber(source.coverage.ratePacksObserved!)}</dd>
+                  </div>
+                  <div>
+                    <dt>Observed sample rate</dt>
+                    <dd>{formatProbability(source.coverage.observedRate)}</dd>
+                  </div>
+                </>
+              )}
               <div>
                 <dt>Last collected</dt>
                 <dd>

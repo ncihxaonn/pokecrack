@@ -47,11 +47,19 @@ function sourceDetails(source: PublicSource) {
     : undefined;
   if (coverage !== undefined) {
     details.push(
-      { term: "Coverage", value: "Reviewed opening samples only — not a hit rate" },
+      { term: "Coverage", value: "Reviewed opening-sample facts" },
       { term: "Observed packs", value: formatCompactNumber(coverage.packsObserved) },
       { term: "Attributed coverage buckets", value: formatCompactNumber(coverage.countriesObserved) },
       { term: "Complete openings", value: formatCompactNumber(coverage.completeOpenings) },
     );
+    if (coverage.observedRate === undefined) {
+      details.push({ term: "Rate sample", value: "No exact normalized numerator" });
+    } else {
+      details.push(
+        { term: "Qualifying hits / rate packs", value: `${formatCompactNumber(coverage.qualifyingHitPacks!)} / ${formatCompactNumber(coverage.ratePacksObserved!)}` },
+        { term: "Observed sample rate", value: formatProbability(coverage.observedRate) },
+      );
+    }
   }
   return details;
 }
@@ -131,7 +139,7 @@ export function RegionsView({ data, synthetic }: { data: PublicDashboardData; sy
   const rows = data.regions.map((region) => ({ key: region.slug, href: `/regions/${region.slug}` as Route, name: region.name, meta: region.coverage, metric: region }));
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
-      <PageIntro eyebrow="Worldwide coverage detail" title="Country / product-market coverage" description="Browse the same verified country and product-market coverage buckets shown in the global atlas. Rates remain withheld until reviewed publication thresholds are satisfied." />
+      <PageIntro eyebrow="Worldwide coverage detail" title="Country / product-market coverage" description="Browse the same verified country and product-market coverage buckets shown in the global atlas. Exact raw sample rates are shown when both normalized counts exist; inference remains separately gated." />
       <div className="coverage-grid coverage-grid--list">{data.regions.map((region, index) => <Link className={`coverage-cell coverage-cell--${(index % 4) + 1}`} href={`/regions/${region.slug}` as Route} key={region.slug}><span className="coverage-cell__index">{region.countryCode}.{String(index + 1).padStart(2, "0")}</span><strong>{region.name}</strong><span>{formatCoverageAttribution(region.coverageAttributionBases, "Country")} · {region.coverage}</span><SignalBadge metric={region} /></Link>)}</div>
       <MetricTable rows={rows} label="Country and product-market coverage comparison" emptyMessage="No country or product-market coverage buckets are published in this snapshot." />
       <MetricDisclaimer />
@@ -215,7 +223,7 @@ export function MethodologyView({ data, synthetic }: { data: PublicDashboardData
         <Panel><span className="eyebrow">07 · Observed rate</span><h2>Count packs, not posts</h2><p>The observed rate is accepted observed hits divided by eligible packs observed. Posts, videos, products, boxes and reported hits are not used as the denominator.</p></Panel>
         <Panel><span className="eyebrow">08 · Baseline</span><h2>Versioned fallback</h2><p>A set/product/rarity baseline is preferred. Baseline fallback moves to a documented broader level only when the specific baseline is unavailable, and its identity is retained with the aggregate.</p></Panel>
         <Panel><span className="eyebrow">09 · Estimation</span><h2>Empirical Bayes interval</h2><p>A binomial/Beta empirical Bayes estimate stabilizes small samples against the versioned baseline. Published summaries include the center and a 90% credible interval alongside the observed sample size.</p></Panel>
-        <Panel><span className="eyebrow">10 · Thresholds</span><h2>Minimum samples and sources</h2><p>Rate display and comparative signals both require minimum source diversity. Rate display begins at 30 eligible packs from at least three independent sources. Comparative signals require at least 200 packs, practical uplift and configured posterior probability; below-threshold values are withheld.</p></Panel>
+        <Panel><span className="eyebrow">10 · Thresholds</span><h2>Raw counts versus inference</h2><p>An exact normalized hit count divided by its exact eligible pack count is displayed as a descriptive observed sample rate at any sample size. Baselines, posterior estimates, intervals and comparative signals remain withheld until their separate source-diversity and sample-size gates are satisfied.</p></Panel>
         <Panel><span className="eyebrow">11 · Bias</span><h2>Interpret context carefully</h2><p>Social selection bias means posted openings are not a random sample. Regional correlation does not establish causation. Retailer inventory or attribution is not pull evidence and cannot establish retailer influence.</p></Panel>
         <Panel><span className="eyebrow">12 · Reproducibility</span><h2>Version and update frequency</h2><p>Methodology version <strong>{data.summary.methodologyVersion}</strong> defines this snapshot. Aggregate update frequency follows the scheduled rollup after accepted observations; each page shows its generated and updated timestamps rather than implying continuous coverage.</p></Panel>
       </div>
@@ -242,7 +250,7 @@ export function SourcesView({ data, synthetic }: { data: PublicDashboardData; sy
       <PageIntro eyebrow="Public provenance" title="Sources and collection boundaries" description="Only public-safe source classes and operational notes are shown; private evidence, accounts and payloads stay outside the public dashboard." />
       <Panel className="policy-panel"><h2>Collection policy</h2><p>Official sources and bounded structured metadata are preferred. Every source needs an exact, versioned policy covering routes, fields, terms, robots behavior, limits, retention, owner, review date and kill switch. Unknown domains and disabled routes fail closed.</p><div className="source-type-grid">{sourceTypes.map(([name, detail]) => <div key={name}><h3>{name}</h3><p>{detail}</p></div>)}</div></Panel>
       <Panel className="policy-panel policy-panel--warning"><h2>Explicitly outside scope</h2><ul className="policy-list"><li>No login or CAPTCHA bypass; an access challenge stops automated collection.</li><li>No proxy pools, stealth rotation, credential sharing or collection after access denial.</li><li>No long-term full third-party video retention, full-content rehosting or third-party content archive.</li><li>No private-message collection, hidden account creation or automated purchasing.</li></ul></Panel>
-      <section className="dashboard-section"><SectionHeading title="Registered public source classes" detail="Status reflects the aggregate snapshot, not a promise of future availability. Reviewed coverage counts are opening-sample volume, never a hit rate." /><div className="card-grid">{data.sources.length === 0 ? <Panel><p className="empty-cell">No public source status is available.</p></Panel> : data.sources.map((source) => <Panel key={source.id}><div className="card-heading"><span className={`status-dot status-dot--${source.status}`} /><h3>{source.name}</h3></div><DefinitionList items={sourceDetails(source)} /><p>{source.note}</p><a className="external-link" href={source.url} target="_blank" rel="noopener noreferrer">Source reference ↗<span className="sr-only"> (opens in a new tab)</span></a></Panel>)}</div></section>
+      <section className="dashboard-section"><SectionHeading title="Registered public source classes" detail="Status reflects the aggregate snapshot, not a promise of future availability. Reviewed sources show exact sample-rate counts only when both a normalized numerator and denominator are verified." /><div className="card-grid">{data.sources.length === 0 ? <Panel><p className="empty-cell">No public source status is available.</p></Panel> : data.sources.map((source) => <Panel key={source.id}><div className="card-heading"><span className={`status-dot status-dot--${source.status}`} /><h3>{source.name}</h3></div><DefinitionList items={sourceDetails(source)} /><p>{source.note}</p><a className="external-link" href={source.url} target="_blank" rel="noopener noreferrer">Source reference ↗<span className="sr-only"> (opens in a new tab)</span></a></Panel>)}</div></section>
     </PublicPage>
   );
 }

@@ -43,7 +43,11 @@ itself evidence of a live collection run.
   not count as an observation. This rollout does not make PokeCrack
   production-ready.
 
-## Current 2026-08-30 branch audit
+## Historical 2026-08-30 branch audit
+
+This section records the state observed on 2026-08-30. It is not a description
+of the current production contract; later migrations add reviewed country
+coverage and the v3 direct observed-sample projection.
 
 - Production v2 was observed serving the live 218-set TCGdex catalog plus two
   current country observations: 72 reviewed packs across the United States and

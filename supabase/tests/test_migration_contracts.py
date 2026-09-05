@@ -85,6 +85,9 @@ BLUESKY_GENERIC_QUEUE_GUARD = (
 BLUESKY_ROLE_DEPLOY_HARDENING = (
     ROOT / "migrations/20260927000000_bluesky_role_and_deploy_hardening.sql"
 ).read_text()
+PUBLIC_OBSERVED_SAMPLE_RATES = (
+    ROOT / "migrations/20261004000000_public_observed_sample_rates.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -1717,6 +1720,62 @@ class IngestMigrationContractTests(unittest.TestCase):
             "grant execute on function public.get_public_study_coverage_v2() to service_role",
             compact,
         )
+
+    def test_public_observed_sample_rates_are_exact_and_inference_free(self) -> None:
+        lowered = PUBLIC_OBSERVED_SAMPLE_RATES.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        projection = lowered.split(
+            "create or replace function public.get_public_study_coverage_v3", 1
+        )[1].split(
+            "alter function public.get_public_study_coverage_v3", 1
+        )[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "public.get_public_study_coverage_v2()",
+            "ingest.reviewed_public_study_contracts()",
+            "ingest.public_study_observations",
+            "ingest.public_study_coverage_observations",
+            "openings.eligible_for_statistics",
+            "openings.complete_opening",
+            "openings.validation_status = 'accepted'",
+            "openings.public_status = 'verified'",
+            "config ->> 'qualifying_metric' = 'sir_pack'",
+            "config ->> 'metric_version' = 'global-sir-v1'",
+            "'ratepacksobserved'",
+            "'qualifyinghitpacks'",
+            "'observedrate'",
+            "'{schemaversion}'",
+            "to_jsonb('3.0.0'::text)",
+        ):
+            self.assertIn(fragment, projection)
+        for forbidden_json_key in (
+            "'evidenceexcerpt'",
+            "'evidencesha256'",
+            "'policyid'",
+            "'studykey'",
+            "'sourcepolicy'",
+            "'baselinerate'",
+            "'posteriormean'",
+            "'credibleinterval'",
+            "'deltafrombaseline'",
+        ):
+            self.assertNotIn(forbidden_json_key, projection)
+        self.assertIn(
+            "revoke all on function public.get_public_study_coverage_v3() from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_study_coverage_v3() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_study_coverage_v3() to service_role",
+            compact,
+        )
+        self.assertIn("get_public_study_coverage_v3:", DATABASE_TYPES)
 
     def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()
