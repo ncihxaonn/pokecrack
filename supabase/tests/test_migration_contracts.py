@@ -94,6 +94,9 @@ BRAZIL_OBSERVED_SAMPLE = (
 PUERTO_RICO_YOUTUBE_COVERAGE = (
     ROOT / "migrations/20261007000000_puerto_rico_youtube_coverage.sql"
 ).read_text()
+CANADA_MEXICO_YOUTUBE_COVERAGE = (
+    ROOT / "migrations/20261008000000_canada_mexico_youtube_coverage.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -1858,6 +1861,53 @@ class IngestMigrationContractTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden_config_field, lowered)
         self.assertIn("count(*) = 12", compact)
+        self.assertNotIn(
+            "insert into ingest.public_study_observations",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant select on table ingest.public_study_coverage_observations to anon",
+            compact,
+        )
+
+    def test_canada_mexico_youtube_coverage_is_exact_and_rate_free(self) -> None:
+        lowered = CANADA_MEXICO_YOUTUBE_COVERAGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for fragment in (
+            "indigo-geek-megaevolucion-mx-50-v1",
+            "pokehanna-ascended-heroes-ca-9-v1",
+            "public_study_indigo_geek_mx_50",
+            "public_study_pokehanna_ca_9",
+            '"publisher_channel_id":"ucgri3bovzarwiyczg8meqjw"',
+            '"publisher_channel_id":"uc6stwagoj-9rseozyv56ftq"',
+            '"country_code":"mx"',
+            '"country_code":"ca"',
+            '"set_language":"es-mx"',
+            '"set_language":"en"',
+            '"set_external_id":"me01"',
+            '"set_external_id":"me02.5"',
+            '"pack_count":50',
+            '"pack_count":9',
+            '"denominator_basis":"source_declared_complete_opening"',
+            '"denominator_derivation":"one_standard_etb_x_9"',
+            "c270707bfa43c79b8362a4cf5cab1bad377f0da4402904e0af02fe62c7bdb1d2",
+            "d9c012acf1e003942eebdefda80058358f85ca1c718e59e5edd4dcd25b9c3ce9",
+            "insert into ingest.public_study_coverage_observations",
+            "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14)",
+            "https://tcg.pokemon.com/es-mx/expansions/mega-evolution/",
+            "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-ascended-heroes-elite-trainer-box",
+        ):
+            self.assertIn(fragment, lowered)
+        for forbidden_config_field in (
+            '"qualifying_hit_pack_count"',
+            '"qualifying_metric"',
+            '"metric_version"',
+            '"observed_rate"',
+        ):
+            self.assertNotIn(forbidden_config_field, lowered)
+        self.assertIn("count(*) = 14", compact)
         self.assertNotIn(
             "insert into ingest.public_study_observations",
             lowered,

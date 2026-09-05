@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -30,6 +32,12 @@ from pokecrack_worker.config.source_policy import SourcePolicy, SourcePolicyRegi
 
 ROOT = Path(__file__).resolve().parents[3]
 ROBOTS_URL = "https://www.youtube.com/robots.txt"
+DATABASE_MIGRATION = (
+    ROOT
+    / "supabase"
+    / "migrations"
+    / "20261008000000_canada_mexico_youtube_coverage.sql"
+).read_text(encoding="utf-8")
 
 
 class FixtureHTTPClient:
@@ -148,6 +156,16 @@ def test_youtube_duplicate_domain_config_uses_explicit_exact_fetch_urls() -> Non
         assert sources[key]["domain"] == "www.youtube.com"
         assert sources[key]["config"]["fetch_url"] == fetch_url
     assert len({sources[key]["config"]["fetch_url"] for key in expected}) == 2
+
+
+def test_youtube_worker_configs_are_pinned_in_database_migration() -> None:
+    migration_configs = [
+        json.loads(match.group(1))
+        for match in re.finditer(r"'(\{.*?\})'::jsonb", DATABASE_MIGRATION, re.DOTALL)
+    ]
+    for study in YOUTUBE_STUDIES:
+        policy = _policy(str(study["source_key"]))
+        assert policy.config in migration_configs
 
 
 @pytest.mark.parametrize("study", YOUTUBE_STUDIES, ids=lambda study: str(study["study_key"]))
