@@ -12,6 +12,7 @@ from urllib.parse import urlsplit, urlunsplit
 import yaml
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from pokecrack_worker.deduplication.urls import canonicalize_url
 from pokecrack_worker.models import CollectorType
 
 
@@ -234,7 +235,13 @@ class PolicyAuditEvent(BaseModel):
     domain: str
     route: str
     outcome: Literal["allowed", "denied"]
-    reason: Literal["allowed", "unknown_domain", "source_disabled", "route_not_allowed"]
+    reason: Literal[
+        "allowed",
+        "unknown_domain",
+        "source_disabled",
+        "route_not_allowed",
+        "source_url_not_allowed",
+    ]
     policy_domain: str | None = None
     policy_version: str | None = None
     collector: CollectorType | None = None
@@ -371,6 +378,10 @@ class SourcePolicyRegistry:
             reason = "source_disabled"
         elif normalized_route is None or normalized_route not in policy.routes:
             reason = "route_not_allowed"
+        elif isinstance(policy.config.get("fetch_url"), str) and canonicalize_url(
+            source
+        ) != canonicalize_url(str(policy.config["fetch_url"])):
+            reason = "source_url_not_allowed"
         else:
             event = PolicyAuditEvent(
                 source=self._audit_source(source),

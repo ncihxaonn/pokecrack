@@ -2,9 +2,11 @@
 
 from __future__ import annotations
 
+import json
 import re
 import time
 from collections.abc import Callable, Mapping, Sequence
+from datetime import UTC, datetime
 from html.parser import HTMLParser
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
@@ -150,13 +152,18 @@ class RobotsTxtChecker:
             requested_url = url.strip()
             canonicalize_url(requested_url)
             parsed = urlsplit(requested_url)
+            youtube_watch_query = bool(
+                parsed.hostname in {"www.youtube.com", "m.youtube.com"}
+                and parsed.path == "/watch"
+                and re.fullmatch(r"v=[A-Za-z0-9_-]{6,64}", parsed.query)
+            )
             if (
                 parsed.scheme != "https"
                 or parsed.hostname is None
                 or parsed.port not in {None, 443}
                 or parsed.username is not None
                 or parsed.password is not None
-                or parsed.query
+                or (parsed.query and not youtube_watch_query)
                 or parsed.fragment
             ):
                 return False
@@ -269,6 +276,131 @@ class ReviewedPublicStudyAdapter:
                 source_url=identity.source_url,
                 title=title,
                 text=evidence_excerpt,
+                metadata={
+                    "study_key": identity.study_key,
+                    "parser_version": identity.parser_version,
+                },
+                collector=CollectorType.SCRAPLING_HTTP,
+                collector_version=identity.collector_version,
+                source_policy_version=policy.version,
+            ),
+        )
+
+
+def _youtube_json_strings(document: str, key: str) -> tuple[str, ...]:
+    pattern = re.compile(
+        rf'"{re.escape(key)}"\s*:\s*"((?:\\.|[^"\\])*)"',
+        re.DOTALL,
+    )
+    values: list[str] = []
+    for raw_value in pattern.findall(document):
+        try:
+            value = json.loads(f'"{raw_value}"')
+        except json.JSONDecodeError as error:
+            raise CollectorError(f"YouTube {key} metadata is not valid JSON") from error
+        if not isinstance(value, str):
+            raise CollectorError(f"YouTube {key} metadata is not text")
+        values.append(value)
+    return tuple(values)
+
+
+class YouTubeWatchCoverageAdapter:
+    """Parse only immutable metadata facts from one reviewed YouTube watch page."""
+
+    def __init__(
+        self,
+        *,
+        client: HTTPClient,
+        identity: PublicStudyIdentity,
+        expected_policy_config: Mapping[str, object],
+        expected_title: str,
+        evidence_lines: Sequence[str],
+        evidence_pattern: re.Pattern[str],
+        expected_video_id: str,
+        expected_channel_id: str,
+        expected_observed_at: datetime,
+        expected_evidence_sha256: str,
+        timeout_seconds: float = 30.0,
+        max_response_bytes: int = 1_000_000,
+    ) -> None:
+        self.client = client
+        self.identity = identity
+        self.expected_policy_config = dict(expected_policy_config)
+        self.expected_title = expected_title
+        self.evidence_lines = tuple(evidence_lines)
+        self.evidence_pattern = evidence_pattern
+        self.expected_video_id = expected_video_id
+        self.expected_channel_id = expected_channel_id
+        self.expected_observed_at = expected_observed_at.astimezone(UTC)
+        self.expected_evidence_sha256 = expected_evidence_sha256
+        self.timeout_seconds = timeout_seconds
+        self.max_response_bytes = max_response_bytes
+
+    def collect(self, url: str, policy: SourcePolicy) -> tuple[SourceItemCandidate, ...]:
+        identity = self.identity
+        if (
+            policy.domain != identity.domain
+            or policy.collector is not CollectorType.SCRAPLING_HTTP
+            or policy.version != identity.collector_version
+            or policy.adapter != identity.adapter
+            or policy.config != self.expected_policy_config
+            or policy.statistics_eligible_default is not True
+            or policy.metadata_only is not False
+            or policy.retain_raw_html is not False
+        ):
+            raise CollectorError("public study source policy does not match the reviewed contract")
+        requested_url = _require_exact_url(url, identity.fetch_url)
+        response = self.client.get(requested_url, timeout_seconds=self.timeout_seconds)
+        _require_exact_url(response.url, identity.fetch_url)
+        if response.status_code != 200:
+            raise CollectorError(f"public study HTTP status {response.status_code}")
+        if len(response.body) > self.max_response_bytes:
+            raise CollectorError("public study response exceeds configured byte cap")
+        if "text/html" not in _header(response.headers, "content-type").casefold():
+            raise CollectorError("public study expected text/html")
+        try:
+            document = response.body.decode("utf-8", errors="strict")
+        except UnicodeDecodeError as error:
+            raise CollectorError("public study must be strict UTF-8 HTML") from error
+
+        video_ids = _youtube_json_strings(document, "videoId")
+        if self.expected_video_id not in video_ids:
+            raise CollectorError("public study video identity no longer matches the review")
+        channel_ids = _youtube_json_strings(document, "channelId")
+        if self.expected_channel_id not in channel_ids:
+            raise CollectorError("public study publisher identity no longer matches the review")
+        titles = _youtube_json_strings(document, "title")
+        if self.expected_title not in titles:
+            raise CollectorError("public study title no longer proves the reviewed scope")
+        descriptions = _youtube_json_strings(document, "shortDescription")
+        if not any(self.evidence_pattern.search(description) for description in descriptions):
+            raise CollectorError("public study evidence no longer matches the reviewed facts")
+        published_values = _youtube_json_strings(document, "publishDate")
+        parsed_dates: list[datetime] = []
+        for value in published_values:
+            try:
+                parsed = datetime.fromisoformat(value)
+            except ValueError as error:
+                raise CollectorError("public study publication date is not ISO-8601") from error
+            if parsed.tzinfo is None or parsed.utcoffset() is None:
+                raise CollectorError("public study publication date must include an offset")
+            parsed_dates.append(parsed.astimezone(UTC))
+        if self.expected_observed_at not in parsed_dates:
+            raise CollectorError("public study publication date no longer matches the review")
+
+        evidence_excerpt = "\n".join(self.evidence_lines)
+        if content_sha256(evidence_excerpt) != self.expected_evidence_sha256:
+            raise CollectorError("public study evidence hash no longer matches the reviewed facts")
+        return (
+            SourceItemCandidate(
+                platform="web",
+                # Keep the emitted item on the exact authorized fetch host.
+                # The reviewed canonical identity remains in policy/config and
+                # in the completion payload; this avoids cross-host aliasing.
+                source_url=identity.fetch_url,
+                title=self.expected_title,
+                text=evidence_excerpt,
+                published_at=self.expected_observed_at,
                 metadata={
                     "study_key": identity.study_key,
                     "parser_version": identity.parser_version,
@@ -652,6 +784,90 @@ def _validate_pontocom_static_document(document: str) -> None:
         raise CollectorError("PontoCOM article does not contain the exact reviewed YouTube embed")
 
 
+RICHARDS_BRICKS_CHARIZARD_IDENTITY = PUBLIC_STUDIES_BY_KEY["richards-bricks-charizard-upc-pr-18-v1"]
+RICHARDS_BRICKS_CHARIZARD_POLICY_CONFIG: dict[str, object] = {
+    "study_key": RICHARDS_BRICKS_CHARIZARD_IDENTITY.study_key,
+    "canonical_url": RICHARDS_BRICKS_CHARIZARD_IDENTITY.source_url,
+    "fetch_url": RICHARDS_BRICKS_CHARIZARD_IDENTITY.fetch_url,
+    "collector_version": RICHARDS_BRICKS_CHARIZARD_IDENTITY.collector_version,
+    "parser_version": RICHARDS_BRICKS_CHARIZARD_IDENTITY.parser_version,
+    "country_code": "PR",
+    "country_name": "Puerto Rico",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@Richards_Bricks/about",
+    "publisher_channel_id": "UCP2PM8ZRJ_fiKlzJNGc02pQ",
+    "publisher_country_evidence": 'country:"Puerto Rico"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "mixed-tpci-2025",
+    "set_scope": "mixed_multi_expansion",
+    "set_name": "Mixed English TPCI expansions",
+    "product_name": "Mega Charizard X ex Ultra-Premium Collection",
+    "product_scope": "all",
+    "pack_count": 18,
+    "observed_at": "2025-12-24T11:03:10Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+RICHARDS_BRICKS_CHARIZARD_TITLE = "Abriendo el Mega Charizard X ex Ultra-Premium Collection"
+RICHARDS_BRICKS_CHARIZARD_EVIDENCE_EXCERPT = f"{RICHARDS_BRICKS_CHARIZARD_TITLE}\nBooster Pack (18)"
+RICHARDS_BRICKS_CHARIZARD_EVIDENCE_SHA256 = (
+    "ee0ec8cb243d26d0fc8d46b4788bb8eff2205353466c0d8e0c3c2d7cd48293f1"
+)
+
+RICHARDS_BRICKS_MEGA_EVOLUTION_IDENTITY = PUBLIC_STUDIES_BY_KEY[
+    "richards-bricks-mega-evolution-box-pr-36-v1"
+]
+RICHARDS_BRICKS_MEGA_EVOLUTION_POLICY_CONFIG: dict[str, object] = {
+    "study_key": RICHARDS_BRICKS_MEGA_EVOLUTION_IDENTITY.study_key,
+    "canonical_url": RICHARDS_BRICKS_MEGA_EVOLUTION_IDENTITY.source_url,
+    "fetch_url": RICHARDS_BRICKS_MEGA_EVOLUTION_IDENTITY.fetch_url,
+    "collector_version": RICHARDS_BRICKS_MEGA_EVOLUTION_IDENTITY.collector_version,
+    "parser_version": RICHARDS_BRICKS_MEGA_EVOLUTION_IDENTITY.parser_version,
+    "country_code": "PR",
+    "country_name": "Puerto Rico",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@Richards_Bricks/about",
+    "publisher_channel_id": "UCP2PM8ZRJ_fiKlzJNGc02pQ",
+    "publisher_country_evidence": 'country:"Puerto Rico"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me01",
+    "set_scope": "single_expansion",
+    "set_name": "Mega Evolution",
+    "product_name": "Mega Evolution Booster Box",
+    "product_scope": "booster_box",
+    "pack_count": 36,
+    "observed_at": "2025-10-20T15:30:33Z",
+    "denominator_complete": True,
+    "robots_url": "https://m.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+RICHARDS_BRICKS_MEGA_EVOLUTION_TITLE = "Mega Evolution Booster Box unboxing"
+RICHARDS_BRICKS_MEGA_EVOLUTION_EVIDENCE_EXCERPT = (
+    f"{RICHARDS_BRICKS_MEGA_EVOLUTION_TITLE}\n"
+    "36 booster packs from the Pokémon TCG: Mega Evolution expansion"
+)
+RICHARDS_BRICKS_MEGA_EVOLUTION_EVIDENCE_SHA256 = (
+    "97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c"
+)
+
+
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
         client=client,
@@ -807,6 +1023,40 @@ def pontocom_herois_excelsos_adapter(*, client: HTTPClient) -> ReviewedPublicStu
     )
 
 
+def richards_bricks_charizard_upc_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=RICHARDS_BRICKS_CHARIZARD_IDENTITY,
+        expected_policy_config=RICHARDS_BRICKS_CHARIZARD_POLICY_CONFIG,
+        expected_title=RICHARDS_BRICKS_CHARIZARD_TITLE,
+        evidence_lines=RICHARDS_BRICKS_CHARIZARD_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(r"(?m)^Booster Pack \(18\)$"),
+        expected_video_id="OON-ICjlrd4",
+        expected_channel_id="UCP2PM8ZRJ_fiKlzJNGc02pQ",
+        expected_observed_at=datetime(2025, 12, 24, 11, 3, 10, tzinfo=UTC),
+        expected_evidence_sha256=RICHARDS_BRICKS_CHARIZARD_EVIDENCE_SHA256,
+    )
+
+
+def richards_bricks_mega_evolution_box_adapter(
+    *, client: HTTPClient
+) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=RICHARDS_BRICKS_MEGA_EVOLUTION_IDENTITY,
+        expected_policy_config=RICHARDS_BRICKS_MEGA_EVOLUTION_POLICY_CONFIG,
+        expected_title=RICHARDS_BRICKS_MEGA_EVOLUTION_TITLE,
+        evidence_lines=RICHARDS_BRICKS_MEGA_EVOLUTION_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"36 booster packs from the Pokémon TCG: Mega Evolution expansion"
+        ),
+        expected_video_id="p_8k9ZkHV_0",
+        expected_channel_id="UCP2PM8ZRJ_fiKlzJNGc02pQ",
+        expected_observed_at=datetime(2025, 10, 20, 15, 30, 33, tzinfo=UTC),
+        expected_evidence_sha256=RICHARDS_BRICKS_MEGA_EVOLUTION_EVIDENCE_SHA256,
+    )
+
+
 __all__ = [
     "ALLONLINE_EVIDENCE_EXCERPT",
     "ALLONLINE_EVIDENCE_SHA256",
@@ -844,6 +1094,16 @@ __all__ = [
     "PONTOCOM_TITLE",
     "ReviewedPublicStudyAdapter",
     "RobotsTxtChecker",
+    "RICHARDS_BRICKS_CHARIZARD_EVIDENCE_EXCERPT",
+    "RICHARDS_BRICKS_CHARIZARD_EVIDENCE_SHA256",
+    "RICHARDS_BRICKS_CHARIZARD_IDENTITY",
+    "RICHARDS_BRICKS_CHARIZARD_POLICY_CONFIG",
+    "RICHARDS_BRICKS_CHARIZARD_TITLE",
+    "RICHARDS_BRICKS_MEGA_EVOLUTION_EVIDENCE_EXCERPT",
+    "RICHARDS_BRICKS_MEGA_EVOLUTION_EVIDENCE_SHA256",
+    "RICHARDS_BRICKS_MEGA_EVOLUTION_IDENTITY",
+    "RICHARDS_BRICKS_MEGA_EVOLUTION_POLICY_CONFIG",
+    "RICHARDS_BRICKS_MEGA_EVOLUTION_TITLE",
     "TCGTALK_EVIDENCE_EXCERPT",
     "TCGTALK_EVIDENCE_SHA256",
     "TCGTALK_IDENTITY",
@@ -858,6 +1118,9 @@ __all__ = [
     "limitsend_inferno_x_adapter",
     "pokesup_abyss_eye_adapter",
     "pontocom_herois_excelsos_adapter",
+    "richards_bricks_charizard_upc_adapter",
+    "richards_bricks_mega_evolution_box_adapter",
     "tcgtalk_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",
+    "YouTubeWatchCoverageAdapter",
 ]

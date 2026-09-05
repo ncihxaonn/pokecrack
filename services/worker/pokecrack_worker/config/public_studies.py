@@ -157,6 +157,24 @@ PUBLIC_STUDIES: tuple[PublicStudyIdentity, ...] = (
         collector_version="public-study-pontocom-herois-excelsos-v1",
         parser_version="pontocom-herois-excelsos-evidence-v1",
     ),
+    PublicStudyIdentity(
+        study_key="richards-bricks-charizard-upc-pr-18-v1",
+        source_url="https://www.youtube.com/watch?v=OON-ICjlrd4",
+        fetch_url="https://www.youtube.com/watch?v=OON-ICjlrd4",
+        domain="www.youtube.com",
+        adapter="richards_bricks_charizard_upc_study",
+        collector_version="public-study-richards-bricks-youtube-v1",
+        parser_version="richards-bricks-charizard-upc-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="richards-bricks-mega-evolution-box-pr-36-v1",
+        source_url="https://m.youtube.com/watch?v=p_8k9ZkHV_0",
+        fetch_url="https://m.youtube.com/watch?v=p_8k9ZkHV_0",
+        domain="m.youtube.com",
+        adapter="richards_bricks_mega_evolution_box_study",
+        collector_version="public-study-richards-bricks-youtube-v1",
+        parser_version="richards-bricks-mega-evolution-box-evidence-v1",
+    ),
 )
 
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
@@ -171,6 +189,8 @@ PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
         "limitsend-inferno-x-kr-30-v1",
         "buyfunlife-ninja-spinner-tw-40-v1",
         "allonline-mega-dream-ex-th-10-v1",
+        "richards-bricks-charizard-upc-pr-18-v1",
+        "richards-bricks-mega-evolution-box-pr-36-v1",
     }
 )
 

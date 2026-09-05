@@ -794,6 +794,110 @@ sources:
     requests_per_minute: 2
     cache_ttl_seconds: 86400
     retain_raw_html: false
+  www.youtube.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-richards-bricks-youtube-v1
+    config:
+      study_key: richards-bricks-charizard-upc-pr-18-v1
+      canonical_url: https://www.youtube.com/watch?v=OON-ICjlrd4
+      fetch_url: https://www.youtube.com/watch?v=OON-ICjlrd4
+      collector_version: public-study-richards-bricks-youtube-v1
+      parser_version: richards-bricks-charizard-upc-evidence-v1
+      country_code: PR
+      country_name: Puerto Rico
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      publisher_country_url: https://www.youtube.com/@Richards_Bricks/about
+      publisher_channel_id: UCP2PM8ZRJ_fiKlzJNGc02pQ
+      publisher_country_evidence: 'country:"Puerto Rico"'
+      publisher_country_checked_at: "2026-09-05"
+      geography_review_method: manual_static_channel_about_review
+      set_external_id: mixed-tpci-2025
+      set_scope: mixed_multi_expansion
+      set_name: Mixed English TPCI expansions
+      product_name: Mega Charizard X ex Ultra-Premium Collection
+      product_scope: all
+      pack_count: 18
+      observed_at: "2025-12-24T11:03:10Z"
+      denominator_complete: true
+      robots_url: https://www.youtube.com/robots.txt
+      robots_checked_at: "2026-09-05"
+      robots_decision: watch_route_not_disallowed
+      terms_url: https://www.youtube.com/static?template=terms
+      terms_checked_at: "2026-09-05"
+      terms_effective_date: "2023-12-15"
+      terms_status: public_browse_static_metadata_only
+      rights_scope: minimal_noncreative_facts_no_media_transcript_or_body_reuse
+    reason: Exact static YouTube watch metadata proves an 18-pack opening and publication date; Puerto Rico is publisher-country evidence only, with no physical opening location claim or media/transcript reuse.
+    routes: [static]
+    adapter: richards_bricks_charizard_upc_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://www.youtube.com/static?template=terms
+  m.youtube.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-richards-bricks-youtube-v1
+    config:
+      study_key: richards-bricks-mega-evolution-box-pr-36-v1
+      canonical_url: https://m.youtube.com/watch?v=p_8k9ZkHV_0
+      fetch_url: https://m.youtube.com/watch?v=p_8k9ZkHV_0
+      collector_version: public-study-richards-bricks-youtube-v1
+      parser_version: richards-bricks-mega-evolution-box-evidence-v1
+      country_code: PR
+      country_name: Puerto Rico
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      publisher_country_url: https://www.youtube.com/@Richards_Bricks/about
+      publisher_channel_id: UCP2PM8ZRJ_fiKlzJNGc02pQ
+      publisher_country_evidence: 'country:"Puerto Rico"'
+      publisher_country_checked_at: "2026-09-05"
+      geography_review_method: manual_static_channel_about_review
+      set_external_id: me01
+      set_scope: single_expansion
+      set_name: Mega Evolution
+      product_name: Mega Evolution Booster Box
+      product_scope: booster_box
+      pack_count: 36
+      observed_at: "2025-10-20T15:30:33Z"
+      denominator_complete: true
+      robots_url: https://m.youtube.com/robots.txt
+      robots_checked_at: "2026-09-05"
+      robots_decision: watch_route_not_disallowed
+      terms_url: https://www.youtube.com/static?template=terms
+      terms_checked_at: "2026-09-05"
+      terms_effective_date: "2023-12-15"
+      terms_status: public_browse_static_metadata_only
+      rights_scope: minimal_noncreative_facts_no_media_transcript_or_body_reuse
+    reason: Exact static YouTube watch metadata proves a complete 36-pack booster-box opening and publication date; Puerto Rico remains publisher-country evidence only, with no physical opening location claim or media/transcript reuse.
+    routes: [static]
+    adapter: richards_bricks_mega_evolution_box_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://www.youtube.com/static?template=terms
   dynamic.example:
     enabled: true
     collector: scrapling_dynamic
