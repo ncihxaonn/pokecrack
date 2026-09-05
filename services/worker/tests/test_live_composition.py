@@ -1226,7 +1226,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_all_nine_reviewed_daily_jobs(
+def test_public_study_flag_registers_all_ten_reviewed_daily_jobs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _ensure_pokesup_schedule_identity(monkeypatch)
@@ -1243,6 +1243,7 @@ def test_public_study_flag_registers_all_nine_reviewed_daily_jobs(
         {"study_key": "limitsend-inferno-x-kr-30-v1"},
         {"study_key": "buyfunlife-ninja-spinner-tw-40-v1"},
         {"study_key": "allonline-mega-dream-ex-th-10-v1"},
+        {"study_key": "pontocom-herois-excelsos-br-48-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1265,7 +1266,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 9" in sql
+    assert "count(*) = 10" in sql
     assert "ingest.public_study_observations" in sql
     assert "ingest.begin_public_study_job" in sql
     assert "ingest.finalize_public_study_job" in sql
@@ -1279,6 +1280,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert "public_study_limitsend_kr_30" in sql
     assert "public_study_buyfunlife_tw_40" in sql
     assert "public_study_allonline_th_10" in sql
+    assert "public_study_pontocom_br_48" in sql
     pokesup_clause_start = sql.index("WHERE policies.source_key = 'public_study_pokesup_jp_30'")
     pokesup_clause = sql[pokesup_clause_start : sql.index(") = 1", pokesup_clause_start)]
     for expected in (
@@ -1342,6 +1344,26 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
             assert expected in clause
         assert "qualifying_" not in clause
         assert "metric_version" not in clause
+    brazil_clause_start = sql.index("WHERE policies.source_key = 'public_study_pontocom_br_48'")
+    brazil_clause = sql[brazil_clause_start : sql.index(") = 1", brazil_clause_start)]
+    for expected in (
+        "PontoCOM Heróis Excelsos Brazil 48-pack study",
+        "policies.config ->> 'country_code' = 'BR'",
+        "policies.config ->> 'set_language' = 'pt-BR'",
+        "policies.config ->> 'set_name' = 'Heróis Excelsos'",
+        "policies.config ->> 'product_scope' = 'four_pack_blister'",
+        "policies.config ->> 'pack_count' = '48'",
+        "policies.config ->> 'qualifying_hit_pack_count' = '1'",
+        "policies.config ->> 'qualifying_metric' = 'sir_pack'",
+        "policies.config ->> 'metric_version' = 'global-sir-v1'",
+        "policies.config ->> 'observed_at' = '2026-01-26T23:29:00Z'",
+        "policies.config ->> 'denominator_complete' = 'true'",
+        "policies.config ->> 'denominator_derivation' = '12×4'",
+        "policies.config ->> 'video_id' = 'idfg-A54S1k'",
+        "policies.config ->> 'video_review_method' = 'manual_timestamped_video_review'",
+        "policies.config ->> 'robots_status' = '404_not_found_live_collection_blocked'",
+    ):
+        assert expected in brazil_clause
     assert "NOT has_table_privilege" in sql
 
 

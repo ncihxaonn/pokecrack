@@ -18,6 +18,11 @@ from pokecrack_worker.collectors.scrapling.adapters.public_studies import (
     POKESUP_POLICY_CONFIG,
     POKESUP_SECTION_HEADING,
     POKESUP_TITLE,
+    PONTOCOM_CARD_RARITY_MAPPING,
+    PONTOCOM_EVIDENCE_EXCERPT,
+    PONTOCOM_EVIDENCE_SHA256,
+    PONTOCOM_POLICY_CONFIG,
+    PONTOCOM_TITLE,
     TCGTALK_EVIDENCE_EXCERPT,
     TCGTALK_EVIDENCE_SHA256,
     RobotsTxtChecker,
@@ -25,6 +30,7 @@ from pokecrack_worker.collectors.scrapling.adapters.public_studies import (
     cardchill_ascended_heroes_adapter,
     comicbook_perfect_order_adapter,
     pokesup_abyss_eye_adapter,
+    pontocom_herois_excelsos_adapter,
     tcgtalk_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
@@ -45,6 +51,8 @@ TCGTALK_SOURCE_URL = PUBLIC_STUDIES[4].source_url
 TCGTALK_FETCH_URL = PUBLIC_STUDIES[4].fetch_url
 POKESUP_SOURCE_URL = PUBLIC_STUDIES[5].source_url
 POKESUP_FETCH_URL = PUBLIC_STUDIES[5].fetch_url
+PONTOCOM_SOURCE_URL = PUBLIC_STUDIES[9].source_url
+PONTOCOM_FETCH_URL = PUBLIC_STUDIES[9].fetch_url
 POKESUP_FIXTURE = (ROOT / "services" / "worker" / "fixtures" / "pokesup_abyss_eye.html").read_text(
     encoding="utf-8"
 )
@@ -187,6 +195,22 @@ def _html(url: str, body: str) -> FetchResponse:
                 POKESUP_SECTION_HEADING + " " + " ".join(POKESUP_PACK_LABELS),
             ),
         ),
+        (
+            PONTOCOM_FETCH_URL,
+            PONTOCOM_SOURCE_URL,
+            "pontocomdesenvolvimento.net",
+            pontocom_herois_excelsos_adapter,
+            """
+            <html><body><article>
+              <h1>Heróis Excelsos: Vale a Pena ABRIR Uma CASE LACRADA?</h1>
+              <p>ABRI uma CASE com 12 Blisters Quadruplos de Pokémon TCG – Heróis Excelsos ANTES DO LANÇAMENTO OFICIAL!</p>
+              <iframe src="https://www.youtube.com/embed/idfg-A54S1k?rel=0"></iframe>
+            </article></body></html>
+            """,
+            (
+                "ABRI uma CASE com 12 Blisters Quadruplos de Pokémon TCG – Heróis Excelsos ANTES DO LANÇAMENTO OFICIAL!",
+            ),
+        ),
     ),
 )
 def test_reviewed_public_study_parsers_emit_only_bounded_provenance(
@@ -219,6 +243,8 @@ def test_reviewed_public_study_parsers_emit_only_bounded_provenance(
     if domain == "pokesup.com":
         assert candidate.text == POKESUP_EVIDENCE_EXCERPT
         assert candidate.content_sha256 == POKESUP_EVIDENCE_SHA256
+    if domain == "pontocomdesenvolvimento.net":
+        assert candidate.content_sha256 == PONTOCOM_EVIDENCE_SHA256
     assert candidate.metadata == {
         "study_key": policy.config["study_key"],
         "parser_version": policy.config["parser_version"],
@@ -248,6 +274,62 @@ def test_pokesup_policy_is_exact_coverage_only_contract() -> None:
     assert "limited factual extraction" in reason
     assert "no image or body reuse" in reason
     assert "kill switch" in reason
+
+
+def test_pontocom_policy_records_the_manual_brazil_sir_mapping() -> None:
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        PONTOCOM_FETCH_URL
+    )
+
+    assert policy.config == PONTOCOM_POLICY_CONFIG
+    assert policy.config["set_language"] == "pt-BR"
+    assert policy.config["set_name"] == "Heróis Excelsos"
+    assert policy.config["denominator_derivation"] == "12×4"
+    assert policy.config["pack_count"] == 48
+    assert policy.config["qualifying_hit_pack_count"] == 1
+    assert policy.config["card_rarity_mapping"] == PONTOCOM_CARD_RARITY_MAPPING
+    assert policy.config["video_id"] == "idfg-A54S1k"
+    assert "404_not_found_live_collection_blocked" in str(policy.config["robots_status"])
+
+
+def test_pontocom_static_adapter_requires_the_exact_reviewed_embed() -> None:
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        PONTOCOM_FETCH_URL
+    )
+    body = (
+        "<article><h1>"
+        + PONTOCOM_TITLE
+        + "</h1><p>"
+        + PONTOCOM_EVIDENCE_EXCERPT
+        + '</p><iframe src="https://www.youtube.com/embed/other-id"></iframe></article>'
+    )
+    with pytest.raises(CollectorError, match="exact reviewed YouTube embed"):
+        pontocom_herois_excelsos_adapter(
+            client=FixtureHTTPClient({PONTOCOM_FETCH_URL: _html(PONTOCOM_FETCH_URL, body)})
+        ).collect(PONTOCOM_FETCH_URL, policy)
+
+
+def test_pontocom_live_collection_is_blocked_when_robots_is_not_available() -> None:
+    robots_url = "https://pontocomdesenvolvimento.net/robots.txt"
+    client = FixtureHTTPClient(
+        {
+            robots_url: FetchResponse(
+                status_code=404,
+                url=robots_url,
+                headers={"content-type": "text/html"},
+                body=b"not found",
+            ),
+        }
+    )
+    service = CollectionService(
+        policies=SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml"),
+        http_adapters=build_live_static_registry(http_client=client),
+        robots=RobotsTxtChecker(client=client, followup_delay_seconds=0),
+    )
+
+    with pytest.raises(CollectorError, match="robots"):
+        service.collect_url(PONTOCOM_FETCH_URL, route="static")
+    assert client.calls == [(robots_url, 30.0)]
 
 
 def test_pokesup_br_intro_is_unretained_surrounding_body() -> None:

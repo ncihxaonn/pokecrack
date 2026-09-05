@@ -131,6 +131,10 @@ ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V3 = (
     PUBLIC_STUDY_SOURCE_KEYS_V2 + ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS
 )
+BRAZIL_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pontocom_br_48"
+PUBLIC_STUDY_SOURCE_KEYS_V4 = PUBLIC_STUDY_SOURCE_KEYS_V3 + (
+    BRAZIL_PUBLIC_STUDY_SOURCE_KEY,
+)
 # Each migration adds an exact append-only reviewed source profile. Keep every
 # complete transition profile available for pre-apply backups, while rejecting
 # unions and partially migrated sets as ambiguous and restore-unsafe.
@@ -138,8 +142,9 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V1,
     PUBLIC_STUDY_SOURCE_KEYS_V2,
     PUBLIC_STUDY_SOURCE_KEYS_V3,
+    PUBLIC_STUDY_SOURCE_KEYS_V4,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V3
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V4
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(
@@ -807,7 +812,7 @@ PUBLIC_STUDY_CHECK_DECLARATIONS = frozenset(
         "constraint public_study_observations_key_check check ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text))",
         "constraint public_study_observations_live_only_check check ((not is_demo))",
         "constraint public_study_observations_metric_check check (((metric_key = 'qualifying_hit_pack_rate'::text) and (metric_version = 'global-sir-v1'::text)))",
-        "constraint public_study_observations_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text])))",
+        "constraint public_study_observations_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'four_pack_blister'::text])))",
         "constraint public_study_observations_set_check check (((btrim(set_external_id) <> ''::text) and (char_length(set_external_id) <= 160)))",
         "constraint public_study_observations_time_check check ((last_verified_at >= first_verified_at))",
         "constraint public_study_observations_version_check check (((btrim(collector_version) <> ''::text) and (char_length(collector_version) <= 120) and (btrim(parser_version) <> ''::text) and (char_length(parser_version) <= 120) and (btrim(source_policy_version) <> ''::text) and (char_length(source_policy_version) <= 120)))",
@@ -816,6 +821,7 @@ PUBLIC_STUDY_CHECK_DECLARATIONS = frozenset(
 PUBLIC_STUDY_POLICY_SOURCE_KEY = {
     b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
     b"wargamer-chaos-rising-gb-17-v1": b"public_study_wargamer_gb_17",
+    b"pontocom-herois-excelsos-br-48-v1": b"public_study_pontocom_br_48",
 }
 PUBLIC_STUDY_EXACT_FIELDS = {
     b"comicbook-perfect-order-us-55-v1": {
@@ -850,10 +856,27 @@ PUBLIC_STUDY_EXACT_FIELDS = {
         "source_policy_version": b"public-study-wargamer-chaos-rising-v1",
         "is_demo": b"f",
     },
+    b"pontocom-herois-excelsos-br-48-v1": {
+        "country_code": b"BR",
+        "country_name": b"Brazil",
+        "geography_basis": b"publisher_country",
+        "geography_confidence": b"tier_b",
+        "pack_count": b"48",
+        "qualifying_hit_pack_count": b"1",
+        "set_external_id": b"me02.5",
+        "product_scope": b"four_pack_blister",
+        "metric_key": b"qualifying_hit_pack_rate",
+        "metric_version": b"global-sir-v1",
+        "collector_version": b"public-study-pontocom-herois-excelsos-v1",
+        "parser_version": b"pontocom-herois-excelsos-evidence-v1",
+        "source_policy_version": b"public-study-pontocom-herois-excelsos-v1",
+        "is_demo": b"f",
+    },
 }
 PUBLIC_STUDY_OBSERVED_AT = {
     b"comicbook-perfect-order-us-55-v1": datetime(2026, 3, 19, 21, tzinfo=UTC),
     b"wargamer-chaos-rising-gb-17-v1": datetime(2026, 5, 11, tzinfo=UTC),
+    b"pontocom-herois-excelsos-br-48-v1": datetime(2026, 1, 26, 23, 29, tzinfo=UTC),
 }
 
 

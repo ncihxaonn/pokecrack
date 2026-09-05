@@ -71,6 +71,10 @@ ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V3 = (
     PUBLIC_STUDY_SOURCE_KEYS_V2 + ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS
 )
+BRAZIL_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pontocom_br_48"
+PUBLIC_STUDY_SOURCE_KEYS_V4 = PUBLIC_STUDY_SOURCE_KEYS_V3 + (
+    BRAZIL_PUBLIC_STUDY_SOURCE_KEY,
+)
 PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V1
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
@@ -81,6 +85,7 @@ POKESUP_POLICY = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
 LIMITSEND_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1"
 BUYFUNLIFE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2"
 ALLONLINE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3"
+BRAZIL_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff1"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
     "country_code, country_name, geography_basis, geography_confidence, "
@@ -119,7 +124,7 @@ PUBLIC_STUDY_DDL = b"""CREATE TABLE ingest.public_study_observations (
     CONSTRAINT public_study_observations_key_check CHECK ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text)),
     CONSTRAINT public_study_observations_live_only_check CHECK ((NOT is_demo)),
     CONSTRAINT public_study_observations_metric_check CHECK (((metric_key = 'qualifying_hit_pack_rate'::text) AND (metric_version = 'global-sir-v1'::text))),
-    CONSTRAINT public_study_observations_product_check CHECK ((product_scope = ANY (ARRAY['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text]))),
+    CONSTRAINT public_study_observations_product_check CHECK ((product_scope = ANY (ARRAY['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'four_pack_blister'::text]))),
     CONSTRAINT public_study_observations_set_check CHECK (((btrim(set_external_id) <> ''::text) AND (char_length(set_external_id) <= 160))),
     CONSTRAINT public_study_observations_time_check CHECK ((last_verified_at >= first_verified_at)),
     CONSTRAINT public_study_observations_version_check CHECK (((btrim(collector_version) <> ''::text) AND (char_length(collector_version) <= 120) AND (btrim(parser_version) <> ''::text) AND (char_length(parser_version) <= 120) AND (btrim(source_policy_version) <> ''::text) AND (char_length(source_policy_version) <= 120)))
@@ -136,6 +141,10 @@ POST_PUBLIC_STUDY_GATE_SEED_V2 = POST_YOUTUBE_GATE_SEED.replace(
 POST_PUBLIC_STUDY_GATE_SEED_V3 = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
     b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V3) + b"\n",
+)
+POST_PUBLIC_STUDY_GATE_SEED_V4 = POST_YOUTUBE_GATE_SEED.replace(
+    b"youtube_discovery\n",
+    b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V4) + b"\n",
 )
 POST_BLUESKY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
@@ -330,6 +339,7 @@ class BackupSanitizerTests(unittest.TestCase):
             b"public_study_limitsend_kr_30": LIMITSEND_POLICY,
             b"public_study_buyfunlife_tw_40": BUYFUNLIFE_POLICY,
             b"public_study_allonline_th_10": ALLONLINE_POLICY,
+            BRAZIL_PUBLIC_STUDY_SOURCE_KEY: BRAZIL_POLICY,
         }
         policy_rows = b"".join(
             f"{policy_ids[source_key]}\t{source_key.decode()}\tpolicy\n".encode()
@@ -484,6 +494,43 @@ class BackupSanitizerTests(unittest.TestCase):
 
         partial_profile = dump.replace(
             f"{BUYFUNLIFE_POLICY}\tpublic_study_buyfunlife_tw_40\tpolicy\n".encode(),
+            b"",
+            1,
+        )
+        result = self.run_sanitizer(partial_profile, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+    def test_public_study_accepts_exact_brazil_profile_only(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(
+                study_key=b"pontocom-herois-excelsos-br-48-v1",
+                source_policy_id=BRAZIL_POLICY.encode(),
+                source_observed_at=b"2026-01-26 23:29:00+00",
+                country_code=b"BR",
+                country_name=b"Brazil",
+                pack_count=b"48",
+                qualifying_hit_pack_count=b"1",
+                set_external_id=b"me02.5",
+                product_scope=b"four_pack_blister",
+                collector_version=b"public-study-pontocom-herois-excelsos-v1",
+                parser_version=b"pontocom-herois-excelsos-evidence-v1",
+                source_policy_version=b"public-study-pontocom-herois-excelsos-v1",
+            ),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V4,
+        )
+
+        result = self.run_sanitizer(dump, public_studies="present")
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(POST_PUBLIC_STUDY_GATE_SEED_V4, result.stdout)
+        self.assertEqual(
+            result.stdout.count(BRAZIL_PUBLIC_STUDY_SOURCE_KEY + b"\n"), 1
+        )
+
+        partial_profile = dump.replace(
+            f"{BRAZIL_POLICY}\tpublic_study_pontocom_br_48\tpolicy\n".encode(),
             b"",
             1,
         )

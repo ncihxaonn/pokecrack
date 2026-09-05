@@ -40,10 +40,15 @@ ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V3 = (
     PUBLIC_STUDY_SOURCE_KEYS_V2 + ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS
 )
+BRAZIL_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pontocom_br_48"
+PUBLIC_STUDY_SOURCE_KEYS_V4 = PUBLIC_STUDY_SOURCE_KEYS_V3 + (
+    BRAZIL_PUBLIC_STUDY_SOURCE_KEY,
+)
 POKESUP_POLICY = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
 LIMITSEND_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1"
 BUYFUNLIFE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2"
 ALLONLINE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3"
+BRAZIL_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff1"
 
 
 def load_retention_module():
@@ -1577,7 +1582,10 @@ COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
         *,
         include_pokesup: bool = False,
         include_asia_phase_one: bool = False,
+        include_brazil: bool = False,
     ) -> bytes:
+        if include_brazil:
+            include_asia_phase_one = True
         if include_asia_phase_one:
             include_pokesup = True
         base = (
@@ -1615,7 +1623,7 @@ CREATE TABLE ingest.public_study_observations (
     CONSTRAINT public_study_observations_key_check CHECK ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text)),
     CONSTRAINT public_study_observations_live_only_check CHECK ((NOT is_demo)),
     CONSTRAINT public_study_observations_metric_check CHECK (((metric_key = 'qualifying_hit_pack_rate'::text) AND (metric_version = 'global-sir-v1'::text))),
-    CONSTRAINT public_study_observations_product_check CHECK ((product_scope = ANY (ARRAY['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text]))),
+    CONSTRAINT public_study_observations_product_check CHECK ((product_scope = ANY (ARRAY['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'four_pack_blister'::text]))),
     CONSTRAINT public_study_observations_set_check CHECK (((btrim(set_external_id) <> ''::text) AND (char_length(set_external_id) <= 160))),
     CONSTRAINT public_study_observations_time_check CHECK ((last_verified_at >= first_verified_at)),
     CONSTRAINT public_study_observations_version_check CHECK (((btrim(collector_version) <> ''::text) AND (char_length(collector_version) <= 120) AND (btrim(parser_version) <> ''::text) AND (char_length(parser_version) <= 120) AND (btrim(source_policy_version) <> ''::text) AND (char_length(source_policy_version) <= 120)))
@@ -1660,6 +1668,17 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
             base = base.replace(
                 pokesup_policy_row,
                 pokesup_policy_row + asia_policy_rows,
+                1,
+            )
+        if include_brazil:
+            allonline_policy_row = (
+                ALLONLINE_POLICY.encode() + b"\tpublic_study_allonline_th_10\n"
+            )
+            base = base.replace(
+                allonline_policy_row,
+                allonline_policy_row
+                + BRAZIL_POLICY.encode()
+                + b"\tpublic_study_pontocom_br_48\n",
                 1,
             )
         return base
@@ -2438,6 +2457,51 @@ cache-second\t{youtube_policy}\t{second_video}
             self.assertEqual(
                 backup_dir.joinpath("pokecrack-20261003T010204Z.sql.gz").exists(),
                 False,
+            )
+
+    def test_backup_accepts_exact_brazil_profile_and_rejects_partial_profile(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(include_brazil=True)
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261006T010203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261006T010203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V4,
+            )
+            self.assertIn(post_seed, sanitized)
+            self.assertEqual(sanitized.count(BRAZIL_PUBLIC_STUDY_SOURCE_KEY + b"\n"), 2)
+
+            partial_dump = post_migration_dump.replace(
+                ALLONLINE_POLICY.encode() + b"\tpublic_study_allonline_th_10\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261006T010204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261006T010204Z.sql.gz").exists()
             )
 
     def test_backup_retains_the_complete_reviewed_aggregate_bridge_bundle(

@@ -142,6 +142,21 @@ PUBLIC_STUDIES: tuple[PublicStudyIdentity, ...] = (
         collector_version="public-study-allonline-mega-dream-ex-v1",
         parser_version="allonline-mega-dream-ex-evidence-v1",
     ),
+    PublicStudyIdentity(
+        study_key="pontocom-herois-excelsos-br-48-v1",
+        source_url=(
+            "https://pontocomdesenvolvimento.net/postagem/1028/"
+            "herois-excelsos-vale-a-pena-abrir-uma-case-lacrada"
+        ),
+        fetch_url=(
+            "https://pontocomdesenvolvimento.net/postagem/1028/"
+            "herois-excelsos-vale-a-pena-abrir-uma-case-lacrada"
+        ),
+        domain="pontocomdesenvolvimento.net",
+        adapter="pontocom_herois_excelsos_study",
+        collector_version="public-study-pontocom-herois-excelsos-v1",
+        parser_version="pontocom-herois-excelsos-evidence-v1",
+    ),
 )
 
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}

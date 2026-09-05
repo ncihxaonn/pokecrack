@@ -195,6 +195,7 @@ class ReviewedPublicStudyAdapter:
         allow_document_title: bool = False,
         content_tags: Sequence[str] = ("article",),
         evidence_validator: Callable[[str], None] | None = None,
+        document_validator: Callable[[str], None] | None = None,
         timeout_seconds: float = 30.0,
         max_response_bytes: int = 1_000_000,
     ) -> None:
@@ -207,6 +208,7 @@ class ReviewedPublicStudyAdapter:
         self.allow_document_title = allow_document_title
         self.content_tags = tuple(content_tags)
         self.evidence_validator = evidence_validator
+        self.document_validator = document_validator
         self.timeout_seconds = timeout_seconds
         self.max_response_bytes = max_response_bytes
 
@@ -237,6 +239,8 @@ class ReviewedPublicStudyAdapter:
             document = response.body.decode("utf-8", errors="strict")
         except UnicodeDecodeError as error:
             raise CollectorError("public study must be strict UTF-8 HTML") from error
+        if self.document_validator is not None:
+            self.document_validator(document)
         parser = _VisibleTextParser(content_tags=self.content_tags)
         parser.feed(document)
         parser.close()
@@ -529,6 +533,124 @@ ALLONLINE_EVIDENCE_EXCERPT = "\n".join(
 )
 ALLONLINE_EVIDENCE_SHA256 = "5c4dfcf632018a5f56489b5e158885086c118c13edf5b129dfc530bd25d93478"
 
+PONTOCOM_IDENTITY = PUBLIC_STUDIES_BY_KEY["pontocom-herois-excelsos-br-48-v1"]
+PONTOCOM_CARD_RARITY_MAPPING = [
+    {
+        "card_name": "Mega Meganium ex",
+        "card_number": "272/217",
+        "official_url": (
+            "https://www.pokemon.com/br/pokemon-estampas-ilustradas/"
+            "cartas-de-pokemon/series/me2pt5/272/"
+        ),
+        "official_rarity_en": "Special Illustration Rare",
+        "official_rarity_pt_br": "Ilustração Rara Especial",
+        "normalized_rarity": "SIR",
+        "counts_as_sir": True,
+    },
+    {
+        "card_name": "Mawile",
+        "card_number": "246/217",
+        "official_url": (
+            "https://www.pokemon.com/br/pokemon-estampas-ilustradas/"
+            "cartas-de-pokemon/series/me2pt5/246/"
+        ),
+        "official_rarity_en": "Illustration Rare",
+        "official_rarity_pt_br": "Ilustração Rara",
+        "normalized_rarity": "IR",
+        "counts_as_sir": False,
+    },
+    {
+        "card_name": "Heliolisk",
+        "card_number": "229/217",
+        "official_url": (
+            "https://www.pokemon.com/br/pokemon-estampas-ilustradas/"
+            "cartas-de-pokemon/series/me2pt5/229/"
+        ),
+        "official_rarity_en": "Illustration Rare",
+        "official_rarity_pt_br": "Ilustração Rara",
+        "normalized_rarity": "IR",
+        "counts_as_sir": False,
+    },
+]
+PONTOCOM_POLICY_CONFIG: dict[str, object] = {
+    "study_key": PONTOCOM_IDENTITY.study_key,
+    "canonical_url": PONTOCOM_IDENTITY.source_url,
+    "collector_version": PONTOCOM_IDENTITY.collector_version,
+    "parser_version": PONTOCOM_IDENTITY.parser_version,
+    "country_code": "BR",
+    "country_name": "Brazil",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "set_external_id": "me02.5",
+    "set_language": "pt-BR",
+    "set_name": "Heróis Excelsos",
+    "set_official_url": (
+        "https://www.pokemon.com/br/pokemon-estampas-ilustradas/cartas-de-pokemon/series/me2pt5/"
+    ),
+    "product_scope": "four_pack_blister",
+    "product_name": "Blister Quádruplo",
+    "source_native_product": "12 Blisters Quadruplos",
+    "pack_count": 48,
+    "denominator_derivation": "12×4",
+    "qualifying_hit_pack_count": 1,
+    "qualifying_metric": "sir_pack",
+    "metric_version": "global-sir-v1",
+    "source_published_at": "2026-01-26T20:29:00-03:00",
+    "observed_at": "2026-01-26T23:29:00Z",
+    "denominator_complete": True,
+    "video_url": "https://www.youtube.com/watch?v=idfg-A54S1k",
+    "video_id": "idfg-A54S1k",
+    "video_embed_url": "https://www.youtube.com/embed/idfg-A54S1k",
+    "video_review_method": "manual_timestamped_video_review",
+    "video_reviewed_at": "2026-09-05",
+    "video_review_timestamps": [
+        {"at": "00:07", "finding": "12 Blisters Quadruplos"},
+        {
+            "at": "02:34-02:58",
+            "card_name": "Mega Meganium ex",
+            "card_number": "272/217",
+            "normalized_rarity": "SIR",
+        },
+        {
+            "at": "16:49-16:56",
+            "card_name": "Mawile",
+            "card_number": "246/217",
+            "normalized_rarity": "IR",
+        },
+        {
+            "at": "19:49-20:08",
+            "card_name": "Heliolisk",
+            "card_number": "229/217",
+            "normalized_rarity": "IR",
+        },
+        {"at": "22:07", "finding": "manual summary of two generic art cards"},
+    ],
+    "card_rarity_mapping": PONTOCOM_CARD_RARITY_MAPPING,
+    "robots_url": "https://pontocomdesenvolvimento.net/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_status": "404_not_found_live_collection_blocked",
+    "terms_checked_at": "2026-09-05",
+    "terms_status": "publisher_terms_not_found_in_review",
+    "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse",
+}
+PONTOCOM_TITLE = "Heróis Excelsos: Vale a Pena ABRIR Uma CASE LACRADA?"
+PONTOCOM_EVIDENCE_EXCERPT = (
+    "ABRI uma CASE com 12 Blisters Quadruplos de Pokémon TCG – Heróis Excelsos "
+    "ANTES DO LANÇAMENTO OFICIAL!"
+)
+PONTOCOM_EVIDENCE_SHA256 = "4788f28b2e61c0b1879d287da82e4c45712ba7ba0a84cb1599c32611e1968da6"
+_PONTOCOM_YOUTUBE_EMBED = re.compile(
+    r"<iframe\b[^>]*\bsrc\s*=\s*[\"']"
+    r"https://(?:www\.)?youtube(?:-nocookie)?\.com/embed/idfg-A54S1k"
+    r"(?:[?&#\"'\s])",
+    re.IGNORECASE,
+)
+
+
+def _validate_pontocom_static_document(document: str) -> None:
+    if _PONTOCOM_YOUTUBE_EMBED.search(document) is None:
+        raise CollectorError("PontoCOM article does not contain the exact reviewed YouTube embed")
+
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
@@ -673,6 +795,18 @@ def allonline_mega_dream_ex_adapter(*, client: HTTPClient) -> ReviewedPublicStud
     )
 
 
+def pontocom_herois_excelsos_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
+    return ReviewedPublicStudyAdapter(
+        client=client,
+        identity=PONTOCOM_IDENTITY,
+        expected_policy_config=PONTOCOM_POLICY_CONFIG,
+        title_tokens=(PONTOCOM_TITLE,),
+        evidence_patterns=(re.compile(re.escape(PONTOCOM_EVIDENCE_EXCERPT)),),
+        expected_evidence_sha256=PONTOCOM_EVIDENCE_SHA256,
+        document_validator=_validate_pontocom_static_document,
+    )
+
+
 __all__ = [
     "ALLONLINE_EVIDENCE_EXCERPT",
     "ALLONLINE_EVIDENCE_SHA256",
@@ -702,6 +836,12 @@ __all__ = [
     "POKESUP_POLICY_CONFIG",
     "POKESUP_SECTION_HEADING",
     "POKESUP_TITLE",
+    "PONTOCOM_CARD_RARITY_MAPPING",
+    "PONTOCOM_EVIDENCE_EXCERPT",
+    "PONTOCOM_EVIDENCE_SHA256",
+    "PONTOCOM_IDENTITY",
+    "PONTOCOM_POLICY_CONFIG",
+    "PONTOCOM_TITLE",
     "ReviewedPublicStudyAdapter",
     "RobotsTxtChecker",
     "TCGTALK_EVIDENCE_EXCERPT",
@@ -717,6 +857,7 @@ __all__ = [
     "comicbook_perfect_order_adapter",
     "limitsend_inferno_x_adapter",
     "pokesup_abyss_eye_adapter",
+    "pontocom_herois_excelsos_adapter",
     "tcgtalk_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",
 ]

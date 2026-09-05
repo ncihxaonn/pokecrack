@@ -590,7 +590,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 9
+        count(*) = 10
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -797,6 +797,28 @@ public_study_dependencies AS (
               "rights_scope":"minimal_noncreative_facts_no_media_or_body_reuse"
             }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pontocom_br_48'
+            AND policies.display_name = 'PontoCOM Heróis Excelsos Brazil 48-pack study'
+            AND policies.domain = 'pontocomdesenvolvimento.net'
+            AND policies.base_url = 'https://pontocomdesenvolvimento.net/postagem/1028/herois-excelsos-vale-a-pena-abrir-uma-case-lacrada'
+            AND policies.version = 'public-study-pontocom-herois-excelsos-v1'
+            AND policies.config ->> 'study_key' = 'pontocom-herois-excelsos-br-48-v1'
+            AND policies.config ->> 'country_code' = 'BR'
+            AND policies.config ->> 'set_language' = 'pt-BR'
+            AND policies.config ->> 'set_name' = 'Heróis Excelsos'
+            AND policies.config ->> 'product_scope' = 'four_pack_blister'
+            AND policies.config ->> 'pack_count' = '48'
+            AND policies.config ->> 'qualifying_hit_pack_count' = '1'
+            AND policies.config ->> 'qualifying_metric' = 'sir_pack'
+            AND policies.config ->> 'metric_version' = 'global-sir-v1'
+            AND policies.config ->> 'observed_at' = '2026-01-26T23:29:00Z'
+            AND policies.config ->> 'denominator_complete' = 'true'
+            AND policies.config ->> 'denominator_derivation' = '12×4'
+            AND policies.config ->> 'video_id' = 'idfg-A54S1k'
+            AND policies.config ->> 'video_review_method' = 'manual_timestamped_video_review'
+            AND policies.config ->> 'robots_status' = '404_not_found_live_collection_blocked'
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
@@ -807,7 +829,8 @@ public_study_dependencies AS (
         'public_study_pokesup_jp_30',
         'public_study_limitsend_kr_30',
         'public_study_buyfunlife_tw_40',
-        'public_study_allonline_th_10'
+        'public_study_allonline_th_10',
+        'public_study_pontocom_br_48'
       )
     ),
     false
