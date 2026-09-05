@@ -115,6 +115,19 @@ Do not carry the completed review claim across subsequent source changes.
 Any accepted code fix needs its focused tests and independent review before
 being included in the release.
 
+### CI alternative assessment
+
+No external CI configuration is present in this repository. The local candidate
+verification above is useful evidence, but the current Mac has no Docker CLI, so
+it cannot replace the repository's container, PostgreSQL/pgTAP, and image-build
+jobs. A safe non-GitHub execution path would need a disposable Docker-capable
+runner or an explicitly configured external CI provider to run the equivalent
+checks against the exact candidate SHA and retain its logs/artifacts. It must
+also cover dependency audits, migration replay, repository policy and deployment
+contracts. A manual green checklist cannot fabricate a GitHub check or turn a
+partial local run into release evidence; until that equivalent path exists,
+keep PR #75 as draft and do not merge or deploy.
+
 Keep failures separate: the GitHub `Production` environment has been used by
 both Vercel deployment and backup work. A later backup failure attached to that
 environment does not by itself mean the Vercel site deployment failed.
