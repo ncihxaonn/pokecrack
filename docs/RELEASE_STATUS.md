@@ -153,8 +153,14 @@ environment does not by itself mean the Vercel site deployment failed.
   separate checkout based on main, usually detached HEAD.
 - Implement on one task-owned `codex/*` branch per worktree. Use Codex Handoff
   to move a task; never steal a branch checked out by another worktree.
-- Preserve Recovery's older uncommitted work until a recoverable snapshot and
-  exact disposition are approved. It is not the release source and must not
+- The saved Local checkout at `/Users/nixon/Documents/Codex/Personal/PokeCrack`
+  is now on `main`, clean, and equal to `origin/main` at
+  `b3afeeb35f6fe91f76af44cbace0efe2d502bfbc`. Its local `AGENTS.md` and
+  `.codex/company-profile` remain on disk and are ignored only through the
+  repository-local `.git/info/exclude`; they were not committed or deleted.
+- Recovery's older 17-path state is preserved by local-only commit `6d0b22f`
+  on `codex/supabase-type-contract-tests`. It was not pushed and is not the
+  release source; the branch remains deliberately separate and must not
   overwrite later main or Americas implementations.
 - Keep `AGENTS.md` and the local company-profile marker deliberately managed;
   do not delete safety rules, commit credentials/backups, or use blanket Git
@@ -177,4 +183,6 @@ Do not replace this with "complete" until all of the following have evidence:
 - Required CI and independent review passed for the shipped tree.
 - Enabled sources collected and persisted reviewed data; unsupported roles
   remain explicitly gated.
-- Old working copies and tasks have a recoverable, documented disposition.
+- Recovery and Local have a recoverable, documented disposition. Remaining
+  stale worktree registrations and old task entries still require individual
+  review before any prune, archive, branch deletion, or worktree deletion.
