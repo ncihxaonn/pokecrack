@@ -399,14 +399,14 @@ select ok(
   ),
   'country sample arithmetic never smuggles in inference fields'
 );
-select unlike(
+select doesnt_match(
   public.get_public_study_coverage_v3()::text,
-  '%evidenceExcerpt%',
+  '(?i)evidenceExcerpt',
   'the v3 payload never exposes evidence text'
 );
-select unlike(
+select doesnt_match(
   public.get_public_study_coverage_v3()::text,
-  '%studyKey%',
+  '(?i)studyKey',
   'the v3 payload never exposes private study identity'
 );
 select ok(

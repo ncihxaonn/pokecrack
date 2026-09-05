@@ -81,12 +81,16 @@ select ok(
 );
 select ok(
   ingest.reviewed_public_study_gates_ready_v1(),
-  'all ten reviewed public-study gates are ready'
+  'all current reviewed public-study gates are ready'
 );
 select is(
-  (select count(*)::integer from ingest.reviewed_public_study_contracts()),
+  (
+    select count(*)::integer
+    from ingest.reviewed_public_study_contracts()
+    where ordinal between 1 and 10
+  ),
   10,
-  'reviewed public-study registry has ten ordered contracts'
+  'reviewed public-study registry retains its ten-contract Brazil prefix'
 );
 select ok(
   exists (

@@ -104,9 +104,13 @@ select ok(
 );
 
 select is(
-  (select count(*)::integer from ingest.reviewed_public_study_contracts()),
+  (
+    select count(*)::integer
+    from ingest.reviewed_public_study_contracts()
+    where ordinal between 1 and 9
+  ),
   9,
-  'the reviewed registry retains Singapore at ordinal 5 after the Asian contracts are appended'
+  'the reviewed registry retains its original nine-contract prefix'
 );
 select is(
   (select ordinal from ingest.reviewed_public_study_contracts()
@@ -183,8 +187,7 @@ select is(
       pg_get_functiondef('ingest.enqueue_scheduled_public_study_coverage_job_v1(text,timestamptz,text,integer,integer)'::regprocedure),
       pg_get_functiondef('public.get_public_study_coverage_v1()'::regprocedure)
     ]) as definitions(definition)
-    where position('contracts.ordinal in (3, 4, 5)' in definition) > 0
-      or position('contracts.ordinal in (3, 4, 5, 6, 7, 8, 9)' in definition) > 0
+    where position('contracts.ordinal in (3, 4, 5' in definition) > 0
   ),
   5,
   'all five coverage boundaries continue to accept ordinal 5'
@@ -490,7 +493,11 @@ $sg_runtime$;
 reset role;
 
 select is(
-  (select count(*)::integer from ingest.public_study_coverage_observations),
+  (
+    select count(*)::integer
+    from ingest.public_study_coverage_observations
+    where study_key = 'tcgtalk-perfect-order-sg-54-v1'
+  ),
   1,
   'the SG finalizer persists one coverage row'
 );
