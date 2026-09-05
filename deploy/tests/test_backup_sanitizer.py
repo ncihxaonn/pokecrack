@@ -75,6 +75,13 @@ BRAZIL_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pontocom_br_48"
 PUBLIC_STUDY_SOURCE_KEYS_V4 = PUBLIC_STUDY_SOURCE_KEYS_V3 + (
     BRAZIL_PUBLIC_STUDY_SOURCE_KEY,
 )
+PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_richards_bricks_pr_18",
+    b"public_study_richards_bricks_pr_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V5 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V4 + PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS
+)
 PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V1
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
@@ -86,11 +93,18 @@ LIMITSEND_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1"
 BUYFUNLIFE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2"
 ALLONLINE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3"
 BRAZIL_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff1"
+PUERTO_RICO_18_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff2"
+PUERTO_RICO_36_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff3"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
     "country_code, country_name, geography_basis, geography_confidence, "
     "source_observed_at, pack_count, qualifying_hit_pack_count, set_external_id, "
     "product_scope, metric_key, metric_version, collector_version, parser_version, "
+    "source_policy_version, evidence_sha256, first_verified_at, last_verified_at, is_demo"
+)
+PUBLIC_STUDY_COVERAGE_COLUMNS = (
+    "study_key, source_policy_id, country_code, country_name, source_observed_at, "
+    "pack_count, set_external_id, product_scope, collector_version, parser_version, "
     "source_policy_version, evidence_sha256, first_verified_at, last_verified_at, is_demo"
 )
 PUBLIC_STUDY_DDL = b"""CREATE TABLE ingest.public_study_observations (
@@ -124,10 +138,37 @@ PUBLIC_STUDY_DDL = b"""CREATE TABLE ingest.public_study_observations (
     CONSTRAINT public_study_observations_key_check CHECK ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text)),
     CONSTRAINT public_study_observations_live_only_check CHECK ((NOT is_demo)),
     CONSTRAINT public_study_observations_metric_check CHECK (((metric_key = 'qualifying_hit_pack_rate'::text) AND (metric_version = 'global-sir-v1'::text))),
-    CONSTRAINT public_study_observations_product_check CHECK ((product_scope = ANY (ARRAY['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'four_pack_blister'::text]))),
+    CONSTRAINT public_study_observations_product_check CHECK ((product_scope = ANY (ARRAY[{product_values}]))),
     CONSTRAINT public_study_observations_set_check CHECK (((btrim(set_external_id) <> ''::text) AND (char_length(set_external_id) <= 160))),
     CONSTRAINT public_study_observations_time_check CHECK ((last_verified_at >= first_verified_at)),
     CONSTRAINT public_study_observations_version_check CHECK (((btrim(collector_version) <> ''::text) AND (char_length(collector_version) <= 120) AND (btrim(parser_version) <> ''::text) AND (char_length(parser_version) <= 120) AND (btrim(source_policy_version) <> ''::text) AND (char_length(source_policy_version) <= 120)))
+);
+"""
+PUBLIC_STUDY_COVERAGE_DDL = b"""CREATE TABLE ingest.public_study_coverage_observations (
+    study_key text NOT NULL,
+    source_policy_id uuid NOT NULL,
+    country_code text NOT NULL,
+    country_name text NOT NULL,
+    source_observed_at timestamp with time zone NOT NULL,
+    pack_count integer NOT NULL,
+    set_external_id text NOT NULL,
+    product_scope text NOT NULL,
+    collector_version text NOT NULL,
+    parser_version text NOT NULL,
+    source_policy_version text NOT NULL,
+    evidence_sha256 text NOT NULL,
+    first_verified_at timestamp with time zone NOT NULL,
+    last_verified_at timestamp with time zone NOT NULL,
+    is_demo boolean DEFAULT false NOT NULL,
+    CONSTRAINT public_study_coverage_country_check CHECK (((country_code ~ '^[A-Z]{2}$'::text) AND (btrim(country_name) <> ''::text) AND (char_length(country_name) <= 160))),
+    CONSTRAINT public_study_coverage_hash_check CHECK ((evidence_sha256 ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT public_study_coverage_key_check CHECK ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text)),
+    CONSTRAINT public_study_coverage_live_only_check CHECK ((NOT is_demo)),
+    CONSTRAINT public_study_coverage_pack_check CHECK (((pack_count >= 1) AND (pack_count <= 100000))),
+    CONSTRAINT public_study_coverage_product_check CHECK ((product_scope = ANY (ARRAY[{product_values}]))),
+    CONSTRAINT public_study_coverage_set_check CHECK (((btrim(set_external_id) <> ''::text) AND (char_length(set_external_id) <= 160))),
+    CONSTRAINT public_study_coverage_time_check CHECK ((last_verified_at >= first_verified_at)),
+    CONSTRAINT public_study_coverage_version_check CHECK (((btrim(collector_version) <> ''::text) AND (char_length(collector_version) <= 120) AND (btrim(parser_version) <> ''::text) AND (char_length(parser_version) <= 120) AND (btrim(source_policy_version) <> ''::text) AND (char_length(source_policy_version) <= 120)))
 );
 """
 POST_PUBLIC_STUDY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
@@ -145,6 +186,10 @@ POST_PUBLIC_STUDY_GATE_SEED_V3 = POST_YOUTUBE_GATE_SEED.replace(
 POST_PUBLIC_STUDY_GATE_SEED_V4 = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
     b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V4) + b"\n",
+)
+POST_PUBLIC_STUDY_GATE_SEED_V5 = POST_YOUTUBE_GATE_SEED.replace(
+    b"youtube_discovery\n",
+    b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V5) + b"\n",
 )
 POST_BLUESKY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
@@ -191,6 +236,138 @@ def comicbook_ledger_row(**overrides: bytes) -> bytes:
     }
     values.update(overrides)
     return b"\t".join(values[column.strip()] for column in PUBLIC_STUDY_COLUMNS.split(","))
+
+
+def public_study_ddl(source_keys: tuple[bytes, ...]) -> bytes:
+    product_values = b"'all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text"
+    if source_keys in (PUBLIC_STUDY_SOURCE_KEYS_V4, PUBLIC_STUDY_SOURCE_KEYS_V5):
+        product_values += b", 'four_pack_blister'::text"
+    return PUBLIC_STUDY_DDL.replace(b"{product_values}", product_values)
+
+
+def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
+    product_values = b"'all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text"
+    if source_keys in (PUBLIC_STUDY_SOURCE_KEYS_V3,):
+        product_values += b", 'value_bundle'::text"
+    elif source_keys in (PUBLIC_STUDY_SOURCE_KEYS_V4, PUBLIC_STUDY_SOURCE_KEYS_V5):
+        product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
+    return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
+
+
+PUBLIC_STUDY_COVERAGE_FACTS = {
+    b"public_study_cardchill_gb_90": (
+        b"cardchill-ascended-heroes-gb-90-v1", CARDCHILL_POLICY.encode(), b"GB",
+        b"United Kingdom", b"2026-03-03 11:26:21+00", b"90", b"me02.5", b"etb",
+        b"public-study-cardchill-ascended-heroes-v1",
+        b"cardchill-ascended-heroes-evidence-v1",
+        b"828293f936003eae257223efdbe5cd2a8fe8f799d6ca4bba9063e01fd476a9be",
+    ),
+    b"public_study_bleedingcool_us_36": (
+        b"bleedingcool-phantasmal-flames-us-36-v1", BLEEDINGCOOL_POLICY.encode(), b"US",
+        b"United States", b"2026-01-03 16:12:04+00", b"36", b"me02", b"booster_box",
+        b"public-study-bleedingcool-phantasmal-flames-v1",
+        b"bleedingcool-phantasmal-flames-evidence-v1",
+        b"0572292f60b2dfb48d081bb5b65913153ea2afa69430eb218d86272c3056f4bd",
+    ),
+    b"public_study_tcgtalk_sg_54": (
+        b"tcgtalk-perfect-order-sg-54-v1", TCGTALK_POLICY.encode(), b"SG", b"Singapore",
+        b"2026-03-25 12:40:00+00", b"54", b"me03", b"booster_bundle",
+        b"public-study-tcgtalk-perfect-order-v1", b"tcgtalk-perfect-order-evidence-v1",
+        b"217f21e0de947139a96b6466563c1d005300598b1dde933264255627c8f0b096",
+    ),
+    POKESUP_PUBLIC_STUDY_SOURCE_KEY: (
+        b"pokesup-abyss-eye-jp-30-v1", POKESUP_POLICY.encode(), b"JP", b"Japan",
+        b"2026-05-22 12:01:44+00", b"30", b"M5", b"booster_box",
+        b"public-study-pokesup-abyss-eye-v1", b"pokesup-abyss-eye-evidence-v1",
+        b"e9e87b7bbab8483200fef8ffd7d927f339138f742876ca222af1f133f7523b08",
+    ),
+    b"public_study_limitsend_kr_30": (
+        b"limitsend-inferno-x-kr-30-v1", LIMITSEND_POLICY.encode(), b"KR", b"South Korea",
+        b"2026-08-20 14:20:28+00", b"30", b"M2", b"booster_box",
+        b"public-study-limitsend-inferno-x-v1", b"limitsend-inferno-x-evidence-v1",
+        b"4af8a17aec4489a0f3fdd6a3e4c8fb8f7a77a60092825fba3279323b6c654406",
+    ),
+    b"public_study_buyfunlife_tw_40": (
+        b"buyfunlife-ninja-spinner-tw-40-v1", BUYFUNLIFE_POLICY.encode(), b"TW", b"Taiwan",
+        b"2026-04-03 13:49:13+00", b"40", b"M4", b"value_bundle",
+        b"public-study-buyfunlife-ninja-spinner-v1", b"buyfunlife-ninja-spinner-evidence-v1",
+        b"2fd4475765c44e61e9603f0603ddf8b8ba7a1d9ff234726c5d6dd631d8937a3d",
+    ),
+    b"public_study_allonline_th_10": (
+        b"allonline-mega-dream-ex-th-10-v1", ALLONLINE_POLICY.encode(), b"TH", b"Thailand",
+        b"2026-01-29 10:10:35+00", b"10", b"MA3", b"booster_box",
+        b"public-study-allonline-mega-dream-ex-v1", b"allonline-mega-dream-ex-evidence-v1",
+        b"5c4dfcf632018a5f56489b5e158885086c118c13edf5b129dfc530bd25d93478",
+    ),
+    BRAZIL_PUBLIC_STUDY_SOURCE_KEY: (
+        b"pontocom-herois-excelsos-br-48-v1", BRAZIL_POLICY.encode(), b"BR", b"Brazil",
+        b"2026-01-26 23:29:00+00", b"48", b"me02.5", b"four_pack_blister",
+        b"public-study-pontocom-herois-excelsos-v1",
+        b"pontocom-herois-excelsos-evidence-v1",
+        b"4788f28b2e61c0b1879d287da82e4c45712ba7ba0a84cb1599c32611e1968da6",
+    ),
+    b"public_study_richards_bricks_pr_18": (
+        b"richards-bricks-charizard-upc-pr-18-v1", PUERTO_RICO_18_POLICY.encode(), b"PR",
+        b"Puerto Rico", b"2025-12-24 11:03:10+00", b"18", b"mixed-tpci-2025", b"all",
+        b"public-study-richards-bricks-youtube-v1",
+        b"richards-bricks-charizard-upc-evidence-v1",
+        b"ee0ec8cb243d26d0fc8d46b4788bb8eff2205353466c0d8e0c3c2d7cd48293f1",
+    ),
+    b"public_study_richards_bricks_pr_36": (
+        b"richards-bricks-mega-evolution-box-pr-36-v1", PUERTO_RICO_36_POLICY.encode(),
+        b"PR", b"Puerto Rico", b"2025-10-20 15:30:33+00", b"36", b"me01",
+        b"booster_box", b"public-study-richards-bricks-youtube-v1",
+        b"richards-bricks-mega-evolution-box-evidence-v1",
+        b"97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c",
+    ),
+}
+
+
+def public_study_coverage_row(source_key: bytes, **overrides: bytes) -> bytes:
+    (
+        study_key, source_policy_id, country_code, country_name, source_observed_at,
+        pack_count, set_external_id, product_scope, collector_version, parser_version,
+        evidence_sha256,
+    ) = PUBLIC_STUDY_COVERAGE_FACTS[source_key]
+    values = {
+        "study_key": study_key,
+        "source_policy_id": source_policy_id,
+        "country_code": country_code,
+        "country_name": country_name,
+        "source_observed_at": source_observed_at,
+        "pack_count": pack_count,
+        "set_external_id": set_external_id,
+        "product_scope": product_scope,
+        "collector_version": collector_version,
+        "parser_version": parser_version,
+        "source_policy_version": collector_version,
+        "evidence_sha256": evidence_sha256,
+        "first_verified_at": b"2026-09-05 01:02:03+00",
+        "last_verified_at": b"2026-09-05 01:02:03+00",
+        "is_demo": b"f",
+    }
+    values.update(overrides)
+    return b"\t".join(
+        values[column.strip()]
+        for column in PUBLIC_STUDY_COVERAGE_COLUMNS.split(",")
+    )
+
+
+def public_study_coverage_rows(source_keys: tuple[bytes, ...]) -> tuple[bytes, ...]:
+    return tuple(
+        public_study_coverage_row(source_key)
+        for source_key in source_keys
+        if source_key in PUBLIC_STUDY_COVERAGE_FACTS
+    )
+
+
+def puerto_rico_coverage_row(*, second: bool = False, **overrides: bytes) -> bytes:
+    source_key = (
+        b"public_study_richards_bricks_pr_36"
+        if second
+        else b"public_study_richards_bricks_pr_18"
+    )
+    return public_study_coverage_row(source_key, **overrides)
 
 
 def copy_block(table: str, columns: str, *rows: bytes, crlf: bool = False) -> bytes:
@@ -324,11 +501,14 @@ class BackupSanitizerTests(unittest.TestCase):
         self,
         dump: bytes,
         *rows: bytes,
-        ddl: bytes = PUBLIC_STUDY_DDL,
+        ddl: bytes | None = None,
         columns: str = PUBLIC_STUDY_COLUMNS,
         source_keys: tuple[bytes, ...] = PUBLIC_STUDY_SOURCE_KEYS,
+        coverage_rows: tuple[bytes, ...] | None = None,
     ) -> bytes:
         youtube_row = f"{YOUTUBE_POLICY}\tyoutube_discovery\tpolicy\n".encode()
+        if ddl is None:
+            ddl = public_study_ddl(source_keys)
         policy_ids = {
             b"public_study_comicbook_us_55": COMICBOOK_POLICY,
             b"public_study_wargamer_gb_17": WARGAMER_POLICY,
@@ -340,15 +520,23 @@ class BackupSanitizerTests(unittest.TestCase):
             b"public_study_buyfunlife_tw_40": BUYFUNLIFE_POLICY,
             b"public_study_allonline_th_10": ALLONLINE_POLICY,
             BRAZIL_PUBLIC_STUDY_SOURCE_KEY: BRAZIL_POLICY,
+            b"public_study_richards_bricks_pr_18": PUERTO_RICO_18_POLICY,
+            b"public_study_richards_bricks_pr_36": PUERTO_RICO_36_POLICY,
         }
         policy_rows = b"".join(
             f"{policy_ids[source_key]}\t{source_key.decode()}\tpolicy\n".encode()
             for source_key in source_keys
         )
+        if coverage_rows is None:
+            coverage_rows = public_study_coverage_rows(source_keys)
         ledger = ddl + copy_block(
             "ingest.public_study_observations",
             columns,
             *rows,
+        ) + public_study_coverage_ddl(source_keys) + copy_block(
+            "ingest.public_study_coverage_observations",
+            PUBLIC_STUDY_COVERAGE_COLUMNS,
+            *coverage_rows,
         )
         return dump.replace(youtube_row, youtube_row + policy_rows) + ledger
 
@@ -538,6 +726,40 @@ class BackupSanitizerTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, b"")
 
+    def test_public_study_accepts_exact_puerto_rico_profile_only(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V5,
+        )
+
+        result = self.run_sanitizer(dump, public_studies="present")
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(POST_PUBLIC_STUDY_GATE_SEED_V5, result.stdout)
+        self.assertIn(b"richards-bricks-charizard-upc-pr-18-v1", result.stdout)
+        self.assertIn(b"richards-bricks-mega-evolution-box-pr-36-v1", result.stdout)
+        for source_key in PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS:
+            self.assertEqual(result.stdout.count(source_key + b"\n"), 1)
+
+        partial_profile = dump.replace(
+            f"{PUERTO_RICO_36_POLICY}\tpublic_study_richards_bricks_pr_36\tpolicy\n".encode(),
+            b"",
+            1,
+        )
+        result = self.run_sanitizer(partial_profile, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+        drifted_coverage = dump.replace(
+            b"\t18\tmixed-tpci-2025\tall\t",
+            b"\t19\tmixed-tpci-2025\tall\t",
+            1,
+        )
+        result = self.run_sanitizer(drifted_coverage, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
     def test_pokesup_study_key_is_not_promoted_to_the_statistical_ledger(self) -> None:
         dump = self.with_public_study_ledger(
             self.complete_dump(),
@@ -554,15 +776,20 @@ class BackupSanitizerTests(unittest.TestCase):
         self.assertEqual(result.stdout, b"")
 
     def test_public_study_schema_copy_header_and_rows_are_fail_closed(self) -> None:
+        statistical_ddl = public_study_ddl(PUBLIC_STUDY_SOURCE_KEYS_V1)
         base = self.with_public_study_ledger(
             self.complete_dump(),
             comicbook_ledger_row(),
         )
         cases = {
-            "missing-create": base.replace(PUBLIC_STUDY_DDL, b""),
+            "missing-create": base.replace(statistical_ddl, b""),
             "duplicate-create": base.replace(
-                PUBLIC_STUDY_DDL,
-                PUBLIC_STUDY_DDL + PUBLIC_STUDY_DDL,
+                statistical_ddl,
+                statistical_ddl + statistical_ddl,
+            ),
+            "future-product-schema-on-v1": base.replace(
+                statistical_ddl,
+                public_study_ddl(PUBLIC_STUDY_SOURCE_KEYS_V4),
             ),
             "unlogged-table": base.replace(
                 b"CREATE TABLE ingest.public_study_observations",
@@ -616,6 +843,74 @@ class BackupSanitizerTests(unittest.TestCase):
                 WARGAMER_POLICY.encode(),
                 COMICBOOK_POLICY.encode(),
             ),
+        }
+        for name, dump in cases.items():
+            with self.subTest(name=name):
+                result = self.run_sanitizer(dump, public_studies="present")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+                self.assertNotIn(b"sensitive", result.stderr)
+
+    def test_public_study_coverage_schema_copy_and_rows_are_fail_closed(self) -> None:
+        coverage_ddl = public_study_coverage_ddl(PUBLIC_STUDY_SOURCE_KEYS_V5)
+        first_row = puerto_rico_coverage_row()
+        second_row = puerto_rico_coverage_row(second=True)
+        base = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V5,
+        )
+        coverage_header = (
+            f"COPY ingest.public_study_coverage_observations "
+            f"({PUBLIC_STUDY_COVERAGE_COLUMNS})"
+        ).encode()
+        cases = {
+            "missing-create": base.replace(coverage_ddl, b""),
+            "duplicate-create": base.replace(
+                coverage_ddl,
+                coverage_ddl + coverage_ddl,
+            ),
+            "unlogged-table": base.replace(
+                b"CREATE TABLE ingest.public_study_coverage_observations",
+                b"CREATE UNLOGGED TABLE ingest.public_study_coverage_observations",
+            ),
+            "wrong-product-schema-for-profile": base.replace(
+                b", 'value_bundle'::text, 'four_pack_blister'::text",
+                b", 'value_bundle'::text",
+                1,
+            ),
+            "extra-copy-column": base.replace(
+                coverage_header,
+                coverage_header[:-1] + b", raw_html)",
+            ).replace(first_row + b"\n", first_row + b"\t<html>sensitive</html>\n"),
+            "unknown-study": base.replace(
+                first_row + b"\n",
+                puerto_rico_coverage_row(study_key=b"unreviewed-pr-study") + b"\n",
+            ),
+            "wrong-source-policy": base.replace(
+                first_row + b"\n",
+                puerto_rico_coverage_row(
+                    source_policy_id=PUERTO_RICO_36_POLICY.encode()
+                )
+                + b"\n",
+            ),
+            "wrong-evidence-hash": base.replace(
+                first_row + b"\n",
+                puerto_rico_coverage_row(evidence_sha256=b"0" * 64) + b"\n",
+            ),
+            "non-utc-verification-time": base.replace(
+                first_row + b"\n",
+                puerto_rico_coverage_row(
+                    first_verified_at=b"2026-09-05 11:02:03+10"
+                )
+                + b"\n",
+            ),
+            "duplicate-study": base.replace(
+                second_row + b"\n",
+                first_row + b"\n",
+            ),
+            "missing-first-reviewed-row": base.replace(first_row + b"\n", b"", 1),
+            "missing-second-reviewed-row": base.replace(second_row + b"\n", b"", 1),
         }
         for name, dump in cases.items():
             with self.subTest(name=name):

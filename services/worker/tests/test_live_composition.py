@@ -1370,6 +1370,15 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
             assert expected in clause
         assert "qualifying_" not in clause
         assert "metric_version" not in clause
+        if source_key.startswith("public_study_richards_bricks"):
+            config_match = re.search(
+                r"policies\.config = '(\{.*\})'::jsonb",
+                clause,
+                flags=re.DOTALL,
+            )
+            assert config_match is not None
+            config = json.loads(config_match.group(1))
+            assert config["publisher_country_evidence"] == 'country:"Puerto Rico"'
     brazil_clause_start = sql.index("WHERE policies.source_key = 'public_study_pontocom_br_48'")
     brazil_clause = sql[brazil_clause_start : sql.index(") = 1", brazil_clause_start)]
     for expected in (

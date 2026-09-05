@@ -526,6 +526,10 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
     assert youtube_identity.retention_days == 730
     assert youtube_identity.adapter == "richards_bricks_charizard_upc_study"
     assert not sources.allows("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "static")
+    assert not sources.allows(
+        "https://www.youtube.com/watch?v=OON-ICjlrd4&si=unreviewed",
+        "static",
+    )
     assert sources.allows("https://www.youtube.com/watch?v=OON-ICjlrd4", "static")
 
     assert queries.default_enabled is False

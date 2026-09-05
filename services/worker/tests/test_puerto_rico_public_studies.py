@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -277,6 +278,136 @@ def test_puerto_rico_youtube_adapters_fail_closed_on_identity_drift(
     )
 
     with pytest.raises(CollectorError, match=error):
+        adapter.collect(identity.fetch_url, policy)
+
+
+def test_puerto_rico_youtube_metadata_cannot_be_spliced_across_objects() -> None:
+    study_key = "richards-bricks-charizard-upc-pr-18-v1"
+    identity = PUBLIC_STUDIES_BY_KEY[study_key]
+    body = """
+    <script>
+      const a = {"videoDetails":{"videoId":"OON-ICjlrd4"}};
+      const b = {"videoDetails":{"channelId":"UCP2PM8ZRJ_fiKlzJNGc02pQ"}};
+      const c = {"videoDetails":{"title":"Abriendo el Mega Charizard X ex Ultra-Premium Collection"}};
+      const d = {"videoDetails":{"shortDescription":"Booster Pack (18)"}};
+      const e = {"videoDetails":{"publishDate":"2025-12-24T03:03:10-08:00"}};
+    </script>
+    """
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        identity.fetch_url
+    )
+    adapter = richards_bricks_charizard_upc_adapter(
+        client=FixtureHTTPClient(
+            {identity.fetch_url: _response(identity.fetch_url, body, "text/html")}
+        )
+    )
+
+    with pytest.raises(CollectorError, match="publisher identity"):
+        adapter.collect(identity.fetch_url, policy)
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "error"),
+    (
+        ("channelId", "unreviewed-channel", "publisher identity"),
+        ("title", "Unreviewed title", "title"),
+        ("shortDescription", "Booster Pack (17)", "evidence"),
+        ("publishDate", "2024-12-24T03:03:10-08:00", "publication date"),
+    ),
+)
+def test_puerto_rico_youtube_conflicting_duplicate_metadata_is_rejected(
+    field: str,
+    value: str,
+    error: str,
+) -> None:
+    study_key = "richards-bricks-charizard-upc-pr-18-v1"
+    identity = PUBLIC_STUDIES_BY_KEY[study_key]
+    fixture = (
+        ROOT / "services" / "worker" / "fixtures" / "richards_bricks_charizard_upc.html"
+    ).read_text(encoding="utf-8")
+    duplicate = {
+        "videoId": "OON-ICjlrd4",
+        "channelId": "UCP2PM8ZRJ_fiKlzJNGc02pQ",
+        "title": "Abriendo el Mega Charizard X ex Ultra-Premium Collection",
+        "shortDescription": "Booster Pack (18)",
+        "publishDate": "2025-12-24T03:03:10-08:00",
+    }
+    duplicate[field] = value
+    body = fixture + f'<script>{{"videoDetails":{json.dumps(duplicate)}}}</script>'
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        identity.fetch_url
+    )
+    adapter = richards_bricks_charizard_upc_adapter(
+        client=FixtureHTTPClient(
+            {identity.fetch_url: _response(identity.fetch_url, body, "text/html")}
+        )
+    )
+
+    with pytest.raises(CollectorError, match=error):
+        adapter.collect(identity.fetch_url, policy)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    (
+        ("publishDate", "2024-12-24T03:03:10-08:00"),
+        ("uploadDate", "2024-12-24T03:03:10-08:00"),
+    ),
+)
+def test_puerto_rico_youtube_conflicting_duplicate_microformat_is_rejected(
+    field: str,
+    value: str,
+) -> None:
+    study_key = "richards-bricks-charizard-upc-pr-18-v1"
+    identity = PUBLIC_STUDIES_BY_KEY[study_key]
+    fixture = (
+        ROOT / "services" / "worker" / "fixtures" / "richards_bricks_charizard_upc.html"
+    ).read_text(encoding="utf-8")
+    duplicate = {
+        "externalVideoId": "OON-ICjlrd4",
+        "publishDate": "2025-12-24T03:03:10-08:00",
+        "uploadDate": "2025-12-24T03:03:10-08:00",
+    }
+    duplicate[field] = value
+    body = fixture + (f'<script>{{"playerMicroformatRenderer":{json.dumps(duplicate)}}}</script>')
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        identity.fetch_url
+    )
+    adapter = richards_bricks_charizard_upc_adapter(
+        client=FixtureHTTPClient(
+            {identity.fetch_url: _response(identity.fetch_url, body, "text/html")}
+        )
+    )
+
+    with pytest.raises(CollectorError, match="publication date"):
+        adapter.collect(identity.fetch_url, policy)
+
+
+def test_puerto_rico_youtube_watch_page_has_bounded_response_headroom() -> None:
+    study_key = "richards-bricks-charizard-upc-pr-18-v1"
+    identity = PUBLIC_STUDIES_BY_KEY[study_key]
+    fixture = (
+        ROOT / "services" / "worker" / "fixtures" / "richards_bricks_charizard_upc.html"
+    ).read_text(encoding="utf-8")
+    policy = SourcePolicyRegistry.from_yaml(ROOT / "config" / "sources.yaml").resolve(
+        identity.fetch_url
+    )
+
+    within_cap = fixture + (" " * (1_200_000 - len(fixture.encode("utf-8"))))
+    adapter = richards_bricks_charizard_upc_adapter(
+        client=FixtureHTTPClient(
+            {identity.fetch_url: _response(identity.fetch_url, within_cap, "text/html")}
+        )
+    )
+    assert adapter.collect(identity.fetch_url, policy)[0].external_id == "OON-ICjlrd4"
+
+    over_cap = within_cap + (" " * 800_001)
+    adapter = richards_bricks_charizard_upc_adapter(
+        client=FixtureHTTPClient(
+            {identity.fetch_url: _response(identity.fetch_url, over_cap, "text/html")}
+        )
+    )
+    with pytest.raises(CollectorError, match="byte cap"):
         adapter.collect(identity.fetch_url, policy)
 
 

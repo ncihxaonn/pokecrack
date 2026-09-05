@@ -91,6 +91,9 @@ PUBLIC_OBSERVED_SAMPLE_RATES = (
 BRAZIL_OBSERVED_SAMPLE = (
     ROOT / "migrations/20261006000000_brazil_pontocom_observed_sample.sql"
 ).read_text()
+PUERTO_RICO_YOUTUBE_COVERAGE = (
+    ROOT / "migrations/20261007000000_puerto_rico_youtube_coverage.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -1818,6 +1821,51 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("count(*) = 10", compact)
         self.assertIn("'four_pack_blister'", lowered)
         self.assertNotIn("grant select on table ingest.public_study_coverage_observations to anon", compact)
+
+    def test_puerto_rico_youtube_coverage_is_exact_and_rate_free(self) -> None:
+        lowered = PUERTO_RICO_YOUTUBE_COVERAGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for fragment in (
+            "richards-bricks-charizard-upc-pr-18-v1",
+            "richards-bricks-mega-evolution-box-pr-36-v1",
+            "public_study_richards_bricks_pr_18",
+            "public_study_richards_bricks_pr_36",
+            '"publisher_channel_id":"ucp2pm8zrj_fiklzjngc02pq"',
+            '"country_code":"pr"',
+            '"pack_count":18',
+            '"pack_count":36',
+            '"set_external_id":"mixed-tpci-2025"',
+            '"set_external_id":"me01"',
+            "ee0ec8cb243d26d0fc8d46b4788bb8eff2205353466c0d8e0c3c2d7cd48293f1",
+            "97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c",
+            "insert into ingest.public_study_coverage_observations",
+            "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12)",
+            "publisher_identity",
+            "count(distinct rows.publisher_identity)::integer",
+            "mixed_multi_expansion",
+            "reviewed.study_key = 'richards-bricks-mega-evolution-box-pr-36-v1'",
+            "reviewed.config ->> 'set_external_id' = 'me01'",
+            "reviewed.config ->> 'set_scope' = 'single_expansion'",
+        ):
+            self.assertIn(fragment, lowered)
+        for forbidden_config_field in (
+            '"qualifying_hit_pack_count"',
+            '"qualifying_metric"',
+            '"metric_version"',
+            '"observed_rate"',
+        ):
+            self.assertNotIn(forbidden_config_field, lowered)
+        self.assertIn("count(*) = 12", compact)
+        self.assertNotIn(
+            "insert into ingest.public_study_observations",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant select on table ingest.public_study_coverage_observations to anon",
+            compact,
+        )
 
     def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()

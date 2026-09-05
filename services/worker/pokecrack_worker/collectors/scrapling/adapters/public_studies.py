@@ -287,21 +287,46 @@ class ReviewedPublicStudyAdapter:
         )
 
 
-def _youtube_json_strings(document: str, key: str) -> tuple[str, ...]:
-    pattern = re.compile(
-        rf'"{re.escape(key)}"\s*:\s*"((?:\\.|[^"\\])*)"',
-        re.DOTALL,
-    )
-    values: list[str] = []
-    for raw_value in pattern.findall(document):
+def _youtube_video_details(document: str) -> tuple[Mapping[str, object], ...]:
+    decoder = json.JSONDecoder()
+    values: list[Mapping[str, object]] = []
+    for match in re.finditer(r'"videoDetails"\s*:\s*', document):
         try:
-            value = json.loads(f'"{raw_value}"')
+            value, _end = decoder.raw_decode(document, match.end())
         except json.JSONDecodeError as error:
-            raise CollectorError(f"YouTube {key} metadata is not valid JSON") from error
-        if not isinstance(value, str):
-            raise CollectorError(f"YouTube {key} metadata is not text")
+            raise CollectorError("YouTube videoDetails metadata is not valid JSON") from error
+        if not isinstance(value, dict):
+            raise CollectorError("YouTube videoDetails metadata is not an object")
+        values.append(value)
+    if not values:
+        raise CollectorError("YouTube videoDetails metadata is missing")
+    return tuple(values)
+
+
+def _youtube_player_microformats(document: str) -> tuple[Mapping[str, object], ...]:
+    decoder = json.JSONDecoder()
+    values: list[Mapping[str, object]] = []
+    for match in re.finditer(r'"playerMicroformatRenderer"\s*:\s*', document):
+        try:
+            value, _end = decoder.raw_decode(document, match.end())
+        except json.JSONDecodeError as error:
+            raise CollectorError("YouTube player microformat metadata is not valid JSON") from error
+        if not isinstance(value, dict):
+            raise CollectorError("YouTube player microformat metadata is not an object")
         values.append(value)
     return tuple(values)
+
+
+def _youtube_publication_date(value: object) -> datetime:
+    if not isinstance(value, str):
+        raise CollectorError("public study publication date is missing")
+    try:
+        parsed = datetime.fromisoformat(value)
+    except ValueError as error:
+        raise CollectorError("public study publication date is not ISO-8601") from error
+    if parsed.tzinfo is None or parsed.utcoffset() is None:
+        raise CollectorError("public study publication date must include an offset")
+    return parsed.astimezone(UTC)
 
 
 class YouTubeWatchCoverageAdapter:
@@ -321,7 +346,7 @@ class YouTubeWatchCoverageAdapter:
         expected_observed_at: datetime,
         expected_evidence_sha256: str,
         timeout_seconds: float = 30.0,
-        max_response_bytes: int = 1_000_000,
+        max_response_bytes: int = 2_000_000,
     ) -> None:
         self.client = client
         self.identity = identity
@@ -363,29 +388,41 @@ class YouTubeWatchCoverageAdapter:
         except UnicodeDecodeError as error:
             raise CollectorError("public study must be strict UTF-8 HTML") from error
 
-        video_ids = _youtube_json_strings(document, "videoId")
-        if self.expected_video_id not in video_ids:
+        details = _youtube_video_details(document)
+        matching_video = tuple(
+            item for item in details if item.get("videoId") == self.expected_video_id
+        )
+        if not matching_video:
             raise CollectorError("public study video identity no longer matches the review")
-        channel_ids = _youtube_json_strings(document, "channelId")
-        if self.expected_channel_id not in channel_ids:
+        if any(item.get("channelId") != self.expected_channel_id for item in matching_video):
             raise CollectorError("public study publisher identity no longer matches the review")
-        titles = _youtube_json_strings(document, "title")
-        if self.expected_title not in titles:
+        if any(item.get("title") != self.expected_title for item in matching_video):
             raise CollectorError("public study title no longer proves the reviewed scope")
-        descriptions = _youtube_json_strings(document, "shortDescription")
-        if not any(self.evidence_pattern.search(description) for description in descriptions):
+        if any(
+            not isinstance(item.get("shortDescription"), str)
+            or self.evidence_pattern.search(str(item["shortDescription"])) is None
+            for item in matching_video
+        ):
             raise CollectorError("public study evidence no longer matches the reviewed facts")
-        published_values = _youtube_json_strings(document, "publishDate")
         parsed_dates: list[datetime] = []
-        for value in published_values:
-            try:
-                parsed = datetime.fromisoformat(value)
-            except ValueError as error:
-                raise CollectorError("public study publication date is not ISO-8601") from error
-            if parsed.tzinfo is None or parsed.utcoffset() is None:
-                raise CollectorError("public study publication date must include an offset")
-            parsed_dates.append(parsed.astimezone(UTC))
-        if self.expected_observed_at not in parsed_dates:
+        for item in matching_video:
+            if "publishDate" in item:
+                parsed_dates.append(_youtube_publication_date(item["publishDate"]))
+
+        matching_microformats = tuple(
+            item
+            for item in _youtube_player_microformats(document)
+            if item.get("externalVideoId") == self.expected_video_id
+        )
+        for item in matching_microformats:
+            published = _youtube_publication_date(item.get("publishDate"))
+            uploaded = _youtube_publication_date(item.get("uploadDate"))
+            if uploaded != published:
+                raise CollectorError("public study publication date metadata conflicts")
+            parsed_dates.append(published)
+        if not parsed_dates:
+            raise CollectorError("public study publication date is missing")
+        if any(value != self.expected_observed_at for value in parsed_dates):
             raise CollectorError("public study publication date no longer matches the review")
 
         evidence_excerpt = "\n".join(self.evidence_lines)
@@ -394,9 +431,6 @@ class YouTubeWatchCoverageAdapter:
         return (
             SourceItemCandidate(
                 platform="web",
-                # Keep the emitted item on the exact authorized fetch host.
-                # The reviewed canonical identity remains in policy/config and
-                # in the completion payload; this avoids cross-host aliasing.
                 source_url=identity.fetch_url,
                 title=self.expected_title,
                 text=evidence_excerpt,
