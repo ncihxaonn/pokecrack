@@ -49,6 +49,13 @@ class ReleasePreflightTests(unittest.TestCase):
             log.write_text(f"{stage} passed\n", encoding="utf-8")
             log.chmod(0o600)
             stages.append({"name": stage, "exit_code": 0, "log": log.name})
+        for name, value in (
+            ("postgres-meta-image.txt", MODULE.POSTGRES_META_IMAGE),
+            ("gitleaks-image.txt", MODULE.GITLEAKS_TOOL.removeprefix("docker-image:")),
+        ):
+            image = manifest_dir / name
+            image.write_text(f"{value}\n", encoding="utf-8")
+            image.chmod(0o600)
         payload = {
             "schema_version": 1,
             "runner_version": 1,
@@ -58,7 +65,23 @@ class ReleasePreflightTests(unittest.TestCase):
             "actual_sha": self.sha,
             "repository": MODULE.REPOSITORY,
             "stages": stages,
-            "tools": {name: "available" for name in ("bash", "git", "python3", "node", "pnpm", "npx", "uv", "docker", "shellcheck", "gitleaks")},
+            "tools": {
+                **{
+                    name: "available"
+                    for name in (
+                        "bash",
+                        "git",
+                        "python3",
+                        "node",
+                        "pnpm",
+                        "npx",
+                        "uv",
+                        "docker",
+                        "shellcheck",
+                    )
+                },
+                "gitleaks": MODULE.GITLEAKS_TOOL,
+            },
         }
         path = manifest_dir / "manifest.json"
         path.write_text(json.dumps(payload), encoding="utf-8")
@@ -178,6 +201,11 @@ class ReleasePreflightTests(unittest.TestCase):
             "vercel --prod",
         ):
             self.assertNotIn(forbidden, source)
+
+    def test_release_gate_requires_the_approved_scanner_digest(self) -> None:
+        source = (ROOT / "scripts" / "run_ci_checks.sh").read_text(encoding="utf-8")
+        self.assertIn(MODULE.GITLEAKS_TOOL.removeprefix("docker-image:"), source)
+        self.assertNotIn("POKECRACK_GITLEAKS_IMAGE", source)
 
 
 if __name__ == "__main__":

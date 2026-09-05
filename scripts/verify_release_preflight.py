@@ -29,6 +29,8 @@ REPOSITORY = "ncihxaonn/pokecrack"
 ORIGIN = "https://github.com/ncihxaonn/pokecrack.git"
 PROJECT_REF = "wohnphsxlquhhknuthrj"
 VPS_DEPLOY_PATH = "/home/codex/pokecrack"
+POSTGRES_META_IMAGE = "ghcr.io/supabase/postgres-meta@sha256:cef71ba901751dcc242cc685cf13786935ea8926820fb342f23bb0fbef77de5a"
+GITLEAKS_TOOL = "docker-image:ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f"
 SERVICE_SETS = frozenset({"tcgdex", "tcgdex-nostr", "tcgdex-bluesky"})
 CI_STAGES = (
     "web",
@@ -168,11 +170,22 @@ def validate_ci_manifest(path: Path, checkout: Path, sha: str) -> tuple[dict[str
         _private_file(log_path, f"CI stage log {entry.get('name')}", nonempty=True)
         _outside_checkout(log_path, checkout, "CI stage log")
 
+    image_evidence = {
+        "database": ("postgres-meta-image.txt", POSTGRES_META_IMAGE),
+        "repository-policy": ("gitleaks-image.txt", GITLEAKS_TOOL.removeprefix("docker-image:")),
+    }
+    for stage_name, (filename, expected) in image_evidence.items():
+        image_path = manifest_directory / filename
+        _private_file(image_path, f"{stage_name} image evidence", nonempty=True)
+        _outside_checkout(image_path, checkout, f"{stage_name} image evidence")
+        _require(image_path.read_text(encoding="utf-8").strip() == expected, f"{stage_name} image evidence is not pinned")
+
     tools = payload.get("tools")
     _require(isinstance(tools, dict), "CI manifest tools must be an object")
     required_tools = {"bash", "git", "python3", "node", "pnpm", "npx", "uv", "docker", "shellcheck", "gitleaks"}
     _require(required_tools <= tools.keys(), "CI manifest is missing tool versions")
     _require(all(isinstance(tools[name], str) and tools[name] != "unavailable" for name in required_tools), "CI manifest has unavailable tools")
+    _require(tools["gitleaks"] == GITLEAKS_TOOL, "CI manifest does not prove the approved Gitleaks image")
     return payload, _sha256_file(manifest_path, "CI manifest"), manifest_path
 
 
