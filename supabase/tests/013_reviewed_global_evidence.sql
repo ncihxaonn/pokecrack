@@ -91,8 +91,8 @@ select matches(
   pg_get_functiondef(
     'ingest.begin_public_study_job_v2(uuid,text,bigint,text)'::regprocedure
   ),
-  'contracts\.ordinal in \(3, 4, 5, 6, 7, 8, 9\)',
-  'coverage preflight accepts all seven reviewed coverage contracts'
+  'contracts\.ordinal in \(3, 4, 5, 6, 7, 8, 9',
+  'coverage preflight retains the original seven reviewed coverage contracts'
 );
 select has_function(
   'ingest',
@@ -376,12 +376,20 @@ $coverage_runtime$;
 reset role;
 
 select is(
-  (select count(*)::integer from ingest.public_study_coverage_observations),
+  (
+    select count(*)::integer
+    from ingest.public_study_coverage_observations
+    where study_key = 'cardchill-ascended-heroes-gb-90-v1'
+  ),
   1,
   'the fenced verifier persists one immutable coverage observation'
 );
 select is(
-  (select sum(pack_count)::integer from ingest.public_study_coverage_observations),
+  (
+    select sum(pack_count)::integer
+    from ingest.public_study_coverage_observations
+    where study_key = 'cardchill-ascended-heroes-gb-90-v1'
+  ),
   90,
   'the coverage ledger persists only the reviewed denominator'
 );

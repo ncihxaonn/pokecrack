@@ -234,7 +234,13 @@ class PolicyAuditEvent(BaseModel):
     domain: str
     route: str
     outcome: Literal["allowed", "denied"]
-    reason: Literal["allowed", "unknown_domain", "source_disabled", "route_not_allowed"]
+    reason: Literal[
+        "allowed",
+        "unknown_domain",
+        "source_disabled",
+        "route_not_allowed",
+        "source_url_not_allowed",
+    ]
     policy_domain: str | None = None
     policy_version: str | None = None
     collector: CollectorType | None = None
@@ -371,6 +377,11 @@ class SourcePolicyRegistry:
             reason = "source_disabled"
         elif normalized_route is None or normalized_route not in policy.routes:
             reason = "route_not_allowed"
+        elif (
+            isinstance(policy.config.get("fetch_url"), str)
+            and source.strip() != str(policy.config["fetch_url"]).strip()
+        ):
+            reason = "source_url_not_allowed"
         else:
             event = PolicyAuditEvent(
                 source=self._audit_source(source),

@@ -44,7 +44,7 @@ describe("WorldHeatmap", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Worldwide qualifying-hit map" })).toBeVisible();
-    expect(screen.getByRole("img", { name: "Baseline delta across the world" })).toHaveAttribute(
+    expect(screen.getByRole("img", { name: "Observed sample rate across the world" })).toHaveAttribute(
       "preserveAspectRatio",
       "xMidYMid meet",
     );
@@ -92,10 +92,11 @@ describe("WorldHeatmap", () => {
     expect(version).toHaveAttribute("lang", "ja");
     expect(version.closest("td")).toHaveAttribute("data-label", "Data version");
     const japanRow = screen.getByRole("row", { name: /Japan JP/ });
-    expect(japanRow.querySelector('td[data-label="Observed"]')).toHaveTextContent("Withheld");
+    expect(japanRow.querySelector('td[data-label="Sample rate"]')).toHaveTextContent("Withheld");
+    expect(japanRow.querySelector('td[data-label="Hits / rate packs"]')).toHaveTextContent("Not available");
     expect(japanRow.querySelector('td[data-label="Baseline"]')).toHaveTextContent("Withheld");
     expect(japanRow.querySelector('td[data-label="Delta"]')).toHaveTextContent("N/A");
-    expect(japanRow.querySelector('td[data-label="Status"]')).toHaveTextContent("Withheld");
+    expect(japanRow.querySelector('td[data-label="Status"]')).toHaveTextContent("No exact numerator");
     expect(within(japanRow).queryByText(/\d+(?:\.\d+)?%/)).not.toBeInTheDocument();
     expect(screen.getByText("JP · Sample observed")).toBeVisible();
     expect(screen.getByText("JP · Product market")).toBeVisible();
@@ -299,7 +300,7 @@ describe("WorldHeatmap", () => {
       expect(
         within(screen.getByRole("list", {
           name: "Countries and product markets in the expanded collection focus",
-        })).getByText(`${countryCode} · Rate published`),
+        })).getByText(`${countryCode} · Sample rate available`),
       ).toBeVisible();
     },
   );
@@ -315,7 +316,7 @@ describe("WorldHeatmap", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Observed rate" }));
     expect(screen.getByRole("button", { name: "Observed rate" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("img", { name: "Observed rate across the world" })).toBeVisible();
+    expect(screen.getByRole("img", { name: "Observed sample rate across the world" })).toBeVisible();
     expect(screen.getByText("15%")).toBeVisible();
 
     expect(getWorldMapFill(-1, "delta")).toBe(getWorldMapFill(-0.05, "delta"));
@@ -358,6 +359,58 @@ describe("WorldHeatmap", () => {
     expect(screen.getByRole("group", { name: "Observed pack coverage map legend" }))
       .toHaveTextContent(/0 packs.*750.*≥ 1,500/);
     expect(screen.queryByText("No attributed bucket rates published yet")).not.toBeInTheDocument();
+  });
+
+  it("colours and labels an exact low-sample observed rate without inference", () => {
+    const rawSample = {
+      ...DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "BR")!,
+      packsObserved: 91,
+      openings: 2,
+      independentSources: 2,
+      ratePacksObserved: 91,
+      qualifyingHitPacks: 2,
+      hitRate: 2 / 91,
+      baselineRate: null,
+      posteriorMean: null,
+      credibleInterval: null,
+      deltaFromBaseline: null,
+      state: "insufficient" as const,
+      sampleNote: "Direct observed sample: 2 qualifying-hit packs among 91.",
+    };
+    const { container } = render(
+      <WorldHeatmap
+        cells={[rawSample]}
+        coverageSummary="One exact observed sample rate."
+        initialMetric="rate"
+        observations={{
+          ...DEMO_PUBLIC_DATA.observations,
+          status: "published",
+          observedPacks: 91,
+          completeOpenings: 2,
+          sourceCountryContributions: 2,
+          countriesObserved: 1,
+          countriesWithPublishedRate: 1,
+        }}
+      />,
+    );
+
+    expect(container.querySelector('[data-country-code="BR"]')).toHaveAttribute(
+      "fill",
+      getWorldMapFill(2 / 91, "rate"),
+    );
+    const brazilRow = screen.getByRole("row", { name: /Brazil BR/ });
+    expect(brazilRow.querySelector('td[data-label="Hits / rate packs"]')).toHaveTextContent("2 / 91");
+    expect(brazilRow.querySelector('td[data-label="Sample rate"]')).toHaveTextContent("2.2%");
+    expect(brazilRow.querySelector('td[data-label="Baseline"]')).toHaveTextContent("Withheld");
+    expect(brazilRow.querySelector('td[data-label="Delta"]')).toHaveTextContent("N/A");
+    expect(brazilRow.querySelector('td[data-label="Status"]')).toHaveTextContent("Observed sample");
+    expect(screen.getByText("BR · Sample rate available")).toBeVisible();
+    expect(screen.getByText("Observed sample rate uses scale")).toBeVisible();
+
+    fireEvent.click(screen.getByRole("button", { name: "Baseline delta" }));
+    expect(screen.getByText("No baseline deltas published yet")).toBeVisible();
+    expect(screen.getByRole("img", { name: "Baseline delta across the world" }))
+      .toHaveAccessibleDescription(/0 have a published baseline delta/i);
   });
 
   it("keeps low-volume observations vivid while preserving a distinct no-data state", () => {
@@ -435,10 +488,10 @@ describe("WorldHeatmap", () => {
       />,
     );
 
-    expect(screen.getByText("Publication pending")).toBeVisible();
-    expect(screen.getByText("BR · Publication pending")).toBeVisible();
+    expect(screen.getByText("Inference pending")).toBeVisible();
+    expect(screen.getByText("BR · Inference pending")).toBeVisible();
     expect(screen.queryByText("BR · Sample observed")).not.toBeInTheDocument();
-    expect(screen.getByText(/met the evidence threshold and await reviewed publication/i)).toBeVisible();
+    expect(screen.getByText(/has no published inference yet/i)).toBeVisible();
   });
 
   it("shows an honest neutral empty state", () => {

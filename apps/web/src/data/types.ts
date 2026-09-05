@@ -16,6 +16,10 @@ export interface ObservedMetric {
   readonly packsObserved: number;
   readonly openings: number;
   readonly independentSources: number;
+  /** Exact denominator for a directly observed sample rate, when available. */
+  readonly ratePacksObserved?: number;
+  /** Exact qualifying-hit pack numerator paired with ratePacksObserved. */
+  readonly qualifyingHitPacks?: number;
   readonly baselineRate: number | null;
   readonly hitRate: number | null;
   readonly posteriorMean: number | null;
@@ -34,7 +38,10 @@ export interface SetMetric extends ObservedMetric {
   readonly signal: string;
 }
 
-export type CoverageCollectionClass = "coverage_only";
+export type CoverageCollectionClass =
+  | "coverage_only"
+  | "observed_sample"
+  | "mixed";
 
 export type CoverageAttributionBasis =
   | "publisher_country"
@@ -141,6 +148,9 @@ export interface PublicSourceCoverage {
   readonly packsObserved: number;
   readonly countriesObserved: number;
   readonly completeOpenings: number;
+  readonly ratePacksObserved?: number;
+  readonly qualifyingHitPacks?: number;
+  readonly observedRate?: number;
 }
 
 export interface PublicSource {
@@ -153,8 +163,8 @@ export interface PublicSource {
   readonly url: string;
   readonly note: string;
   // Present only for an approved reviewed-opening source with a valid row in
-  // the current public coverage period. These are denominator facts, never a
-  // hit numerator or a published rate.
+  // the current public coverage period. The optional raw-rate tuple is emitted
+  // only when both an exact normalized numerator and denominator were reviewed.
   readonly coverage?: PublicSourceCoverage;
 }
 

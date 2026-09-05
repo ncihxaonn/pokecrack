@@ -10,5 +10,5 @@ export function normalizeWorldHeatMetric(
 }
 
 export function defaultWorldHeatMetric(countriesWithPublishedRate: number): WorldHeatMetric {
-  return countriesWithPublishedRate === 0 ? "coverage" : "delta";
+  return countriesWithPublishedRate === 0 ? "coverage" : "rate";
 }

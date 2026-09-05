@@ -522,13 +522,15 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
         "query_allowlist": [name for name, _query in REQUIRED_YOUTUBE_QUERIES],
     }
     youtube_identity = sources.resolve("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
-    assert youtube_identity.enabled is False
-    assert youtube_identity.retention_days == 28
-    assert youtube_identity.version == "youtube-global-discovery-v1"
-    assert youtube_identity.config == {
-        "metadata_only": True,
-        "media_download": False,
-    }
+    assert youtube_identity.enabled is True
+    assert youtube_identity.retention_days == 730
+    assert youtube_identity.adapter == "richards_bricks_charizard_upc_study"
+    assert not sources.allows("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "static")
+    assert not sources.allows(
+        "https://www.youtube.com/watch?v=OON-ICjlrd4&si=unreviewed",
+        "static",
+    )
+    assert sources.allows("https://www.youtube.com/watch?v=OON-ICjlrd4", "static")
 
     assert queries.default_enabled is False
     assert len(queries.queries) == 5

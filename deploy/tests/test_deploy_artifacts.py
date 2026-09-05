@@ -40,10 +40,161 @@ ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V3 = (
     PUBLIC_STUDY_SOURCE_KEYS_V2 + ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS
 )
+BRAZIL_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pontocom_br_48"
+PUBLIC_STUDY_SOURCE_KEYS_V4 = PUBLIC_STUDY_SOURCE_KEYS_V3 + (
+    BRAZIL_PUBLIC_STUDY_SOURCE_KEY,
+)
+PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_richards_bricks_pr_18",
+    b"public_study_richards_bricks_pr_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V5 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V4 + PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS
+)
 POKESUP_POLICY = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
+CARDCHILL_POLICY = "99999999-9999-4999-8999-999999999990"
+BLEEDINGCOOL_POLICY = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa0"
+TCGTALK_POLICY = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb0"
 LIMITSEND_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee1"
 BUYFUNLIFE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee2"
 ALLONLINE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3"
+BRAZIL_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff1"
+PUERTO_RICO_18_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff2"
+PUERTO_RICO_36_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff3"
+PUBLIC_STUDY_COVERAGE_COLUMNS = (
+    b"study_key, source_policy_id, country_code, country_name, source_observed_at, "
+    b"pack_count, set_external_id, product_scope, collector_version, parser_version, "
+    b"source_policy_version, evidence_sha256, first_verified_at, last_verified_at, is_demo"
+)
+PUBLIC_STUDY_COVERAGE_DDL = b"""CREATE TABLE ingest.public_study_coverage_observations (
+    study_key text NOT NULL,
+    source_policy_id uuid NOT NULL,
+    country_code text NOT NULL,
+    country_name text NOT NULL,
+    source_observed_at timestamp with time zone NOT NULL,
+    pack_count integer NOT NULL,
+    set_external_id text NOT NULL,
+    product_scope text NOT NULL,
+    collector_version text NOT NULL,
+    parser_version text NOT NULL,
+    source_policy_version text NOT NULL,
+    evidence_sha256 text NOT NULL,
+    first_verified_at timestamp with time zone NOT NULL,
+    last_verified_at timestamp with time zone NOT NULL,
+    is_demo boolean DEFAULT false NOT NULL,
+    CONSTRAINT public_study_coverage_country_check CHECK (((country_code ~ '^[A-Z]{2}$'::text) AND (btrim(country_name) <> ''::text) AND (char_length(country_name) <= 160))),
+    CONSTRAINT public_study_coverage_hash_check CHECK ((evidence_sha256 ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT public_study_coverage_key_check CHECK ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text)),
+    CONSTRAINT public_study_coverage_live_only_check CHECK ((NOT is_demo)),
+    CONSTRAINT public_study_coverage_pack_check CHECK (((pack_count >= 1) AND (pack_count <= 100000))),
+    CONSTRAINT public_study_coverage_product_check CHECK ((product_scope = ANY (ARRAY[{product_values}]))),
+    CONSTRAINT public_study_coverage_set_check CHECK (((btrim(set_external_id) <> ''::text) AND (char_length(set_external_id) <= 160))),
+    CONSTRAINT public_study_coverage_time_check CHECK ((last_verified_at >= first_verified_at)),
+    CONSTRAINT public_study_coverage_version_check CHECK (((btrim(collector_version) <> ''::text) AND (char_length(collector_version) <= 120) AND (btrim(parser_version) <> ''::text) AND (char_length(parser_version) <= 120) AND (btrim(source_policy_version) <> ''::text) AND (char_length(source_policy_version) <= 120)))
+);
+"""
+
+
+def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
+    product_values = b"'all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text"
+    if source_keys == PUBLIC_STUDY_SOURCE_KEYS_V3:
+        product_values += b", 'value_bundle'::text"
+    elif source_keys in (PUBLIC_STUDY_SOURCE_KEYS_V4, PUBLIC_STUDY_SOURCE_KEYS_V5):
+        product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
+    return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
+
+
+PUBLIC_STUDY_COVERAGE_FACTS = {
+    b"public_study_cardchill_gb_90": (
+        b"cardchill-ascended-heroes-gb-90-v1", CARDCHILL_POLICY.encode(), b"GB",
+        b"United Kingdom", b"2026-03-03 11:26:21+00", b"90", b"me02.5", b"etb",
+        b"public-study-cardchill-ascended-heroes-v1",
+        b"cardchill-ascended-heroes-evidence-v1",
+        b"828293f936003eae257223efdbe5cd2a8fe8f799d6ca4bba9063e01fd476a9be",
+    ),
+    b"public_study_bleedingcool_us_36": (
+        b"bleedingcool-phantasmal-flames-us-36-v1", BLEEDINGCOOL_POLICY.encode(), b"US",
+        b"United States", b"2026-01-03 16:12:04+00", b"36", b"me02", b"booster_box",
+        b"public-study-bleedingcool-phantasmal-flames-v1",
+        b"bleedingcool-phantasmal-flames-evidence-v1",
+        b"0572292f60b2dfb48d081bb5b65913153ea2afa69430eb218d86272c3056f4bd",
+    ),
+    b"public_study_tcgtalk_sg_54": (
+        b"tcgtalk-perfect-order-sg-54-v1", TCGTALK_POLICY.encode(), b"SG", b"Singapore",
+        b"2026-03-25 12:40:00+00", b"54", b"me03", b"booster_bundle",
+        b"public-study-tcgtalk-perfect-order-v1", b"tcgtalk-perfect-order-evidence-v1",
+        b"217f21e0de947139a96b6466563c1d005300598b1dde933264255627c8f0b096",
+    ),
+    POKESUP_PUBLIC_STUDY_SOURCE_KEY: (
+        b"pokesup-abyss-eye-jp-30-v1", POKESUP_POLICY.encode(), b"JP", b"Japan",
+        b"2026-05-22 12:01:44+00", b"30", b"M5", b"booster_box",
+        b"public-study-pokesup-abyss-eye-v1", b"pokesup-abyss-eye-evidence-v1",
+        b"e9e87b7bbab8483200fef8ffd7d927f339138f742876ca222af1f133f7523b08",
+    ),
+    b"public_study_limitsend_kr_30": (
+        b"limitsend-inferno-x-kr-30-v1", LIMITSEND_POLICY.encode(), b"KR", b"South Korea",
+        b"2026-08-20 14:20:28+00", b"30", b"M2", b"booster_box",
+        b"public-study-limitsend-inferno-x-v1", b"limitsend-inferno-x-evidence-v1",
+        b"4af8a17aec4489a0f3fdd6a3e4c8fb8f7a77a60092825fba3279323b6c654406",
+    ),
+    b"public_study_buyfunlife_tw_40": (
+        b"buyfunlife-ninja-spinner-tw-40-v1", BUYFUNLIFE_POLICY.encode(), b"TW", b"Taiwan",
+        b"2026-04-03 13:49:13+00", b"40", b"M4", b"value_bundle",
+        b"public-study-buyfunlife-ninja-spinner-v1", b"buyfunlife-ninja-spinner-evidence-v1",
+        b"2fd4475765c44e61e9603f0603ddf8b8ba7a1d9ff234726c5d6dd631d8937a3d",
+    ),
+    b"public_study_allonline_th_10": (
+        b"allonline-mega-dream-ex-th-10-v1", ALLONLINE_POLICY.encode(), b"TH", b"Thailand",
+        b"2026-01-29 10:10:35+00", b"10", b"MA3", b"booster_box",
+        b"public-study-allonline-mega-dream-ex-v1", b"allonline-mega-dream-ex-evidence-v1",
+        b"5c4dfcf632018a5f56489b5e158885086c118c13edf5b129dfc530bd25d93478",
+    ),
+    BRAZIL_PUBLIC_STUDY_SOURCE_KEY: (
+        b"pontocom-herois-excelsos-br-48-v1", BRAZIL_POLICY.encode(), b"BR", b"Brazil",
+        b"2026-01-26 23:29:00+00", b"48", b"me02.5", b"four_pack_blister",
+        b"public-study-pontocom-herois-excelsos-v1",
+        b"pontocom-herois-excelsos-evidence-v1",
+        b"4788f28b2e61c0b1879d287da82e4c45712ba7ba0a84cb1599c32611e1968da6",
+    ),
+    b"public_study_richards_bricks_pr_18": (
+        b"richards-bricks-charizard-upc-pr-18-v1", PUERTO_RICO_18_POLICY.encode(), b"PR",
+        b"Puerto Rico", b"2025-12-24 11:03:10+00", b"18", b"mixed-tpci-2025", b"all",
+        b"public-study-richards-bricks-youtube-v1",
+        b"richards-bricks-charizard-upc-evidence-v1",
+        b"ee0ec8cb243d26d0fc8d46b4788bb8eff2205353466c0d8e0c3c2d7cd48293f1",
+    ),
+    b"public_study_richards_bricks_pr_36": (
+        b"richards-bricks-mega-evolution-box-pr-36-v1", PUERTO_RICO_36_POLICY.encode(),
+        b"PR", b"Puerto Rico", b"2025-10-20 15:30:33+00", b"36", b"me01",
+        b"booster_box", b"public-study-richards-bricks-youtube-v1",
+        b"richards-bricks-mega-evolution-box-evidence-v1",
+        b"97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c",
+    ),
+}
+
+
+def public_study_coverage_row(source_key: bytes) -> bytes:
+    (
+        study_key, source_policy_id, country_code, country_name, source_observed_at,
+        pack_count, set_external_id, product_scope, collector_version, parser_version,
+        evidence_sha256,
+    ) = PUBLIC_STUDY_COVERAGE_FACTS[source_key]
+    return b"\t".join(
+        (
+            study_key, source_policy_id, country_code, country_name, source_observed_at,
+            pack_count, set_external_id, product_scope, collector_version, parser_version,
+            collector_version, evidence_sha256, b"2026-09-05 01:02:03+00",
+            b"2026-09-05 01:02:03+00", b"f",
+        )
+    )
+
+
+def public_study_coverage_rows(source_keys: tuple[bytes, ...]) -> bytes:
+    return b"".join(
+        public_study_coverage_row(source_key) + b"\n"
+        for source_key in source_keys
+        if source_key in PUBLIC_STUDY_COVERAGE_FACTS
+    )
 
 
 def load_retention_module():
@@ -1577,7 +1728,13 @@ COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
         *,
         include_pokesup: bool = False,
         include_asia_phase_one: bool = False,
+        include_brazil: bool = False,
+        include_puerto_rico: bool = False,
     ) -> bytes:
+        if include_puerto_rico:
+            include_brazil = True
+        if include_brazil:
+            include_asia_phase_one = True
         if include_asia_phase_one:
             include_pokesup = True
         base = (
@@ -1615,7 +1772,7 @@ CREATE TABLE ingest.public_study_observations (
     CONSTRAINT public_study_observations_key_check CHECK ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text)),
     CONSTRAINT public_study_observations_live_only_check CHECK ((NOT is_demo)),
     CONSTRAINT public_study_observations_metric_check CHECK (((metric_key = 'qualifying_hit_pack_rate'::text) AND (metric_version = 'global-sir-v1'::text))),
-    CONSTRAINT public_study_observations_product_check CHECK ((product_scope = ANY (ARRAY['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text]))),
+    CONSTRAINT public_study_observations_product_check CHECK ((product_scope = ANY (ARRAY['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'four_pack_blister'::text]))),
     CONSTRAINT public_study_observations_set_check CHECK (((btrim(set_external_id) <> ''::text) AND (char_length(set_external_id) <= 160))),
     CONSTRAINT public_study_observations_time_check CHECK ((last_verified_at >= first_verified_at)),
     CONSTRAINT public_study_observations_version_check CHECK (((btrim(collector_version) <> ''::text) AND (char_length(collector_version) <= 120) AND (btrim(parser_version) <> ''::text) AND (char_length(parser_version) <= 120) AND (btrim(source_policy_version) <> ''::text) AND (char_length(source_policy_version) <= 120)))
@@ -1636,6 +1793,8 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
 \\.
 """
         )
+        if not include_brazil:
+            base = base.replace(b", 'four_pack_blister'::text", b"", 1)
         if include_pokesup:
             tcgtalk_policy_row = (
                 b"bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb0\t"
@@ -1662,7 +1821,51 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
                 pokesup_policy_row + asia_policy_rows,
                 1,
             )
-        return base
+        if include_brazil:
+            allonline_policy_row = (
+                ALLONLINE_POLICY.encode() + b"\tpublic_study_allonline_th_10\n"
+            )
+            base = base.replace(
+                allonline_policy_row,
+                allonline_policy_row
+                + BRAZIL_POLICY.encode()
+                + b"\tpublic_study_pontocom_br_48\n",
+                1,
+            )
+        if include_puerto_rico:
+            brazil_policy_row = (
+                BRAZIL_POLICY.encode() + b"\tpublic_study_pontocom_br_48\n"
+            )
+            puerto_rico_policy_rows = (
+                PUERTO_RICO_18_POLICY.encode()
+                + b"\tpublic_study_richards_bricks_pr_18\n"
+                + PUERTO_RICO_36_POLICY.encode()
+                + b"\tpublic_study_richards_bricks_pr_36\n"
+            )
+            base = base.replace(
+                brazil_policy_row,
+                brazil_policy_row + puerto_rico_policy_rows,
+                1,
+            )
+        source_keys = PUBLIC_STUDY_SOURCE_KEYS_V1
+        if include_pokesup:
+            source_keys = PUBLIC_STUDY_SOURCE_KEYS_V2
+        if include_asia_phase_one:
+            source_keys = PUBLIC_STUDY_SOURCE_KEYS_V3
+        if include_brazil:
+            source_keys = PUBLIC_STUDY_SOURCE_KEYS_V4
+        if include_puerto_rico:
+            source_keys = PUBLIC_STUDY_SOURCE_KEYS_V5
+        coverage_rows = public_study_coverage_rows(source_keys)
+        return (
+            base
+            + public_study_coverage_ddl(source_keys)
+            + b"COPY ingest.public_study_coverage_observations ("
+            + PUBLIC_STUDY_COVERAGE_COLUMNS
+            + b") FROM stdin;\n"
+            + coverage_rows
+            + b"\\.\n"
+        )
 
     @classmethod
     def post_bluesky_dump(cls) -> bytes:
@@ -2438,6 +2641,144 @@ cache-second\t{youtube_policy}\t{second_video}
             self.assertEqual(
                 backup_dir.joinpath("pokecrack-20261003T010204Z.sql.gz").exists(),
                 False,
+            )
+
+    def test_backup_accepts_exact_brazil_profile_and_rejects_partial_profile(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(include_brazil=True)
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261006T010203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261006T010203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V4,
+            )
+            self.assertIn(post_seed, sanitized)
+            self.assertEqual(sanitized.count(BRAZIL_PUBLIC_STUDY_SOURCE_KEY + b"\n"), 2)
+
+            partial_dump = post_migration_dump.replace(
+                ALLONLINE_POLICY.encode() + b"\tpublic_study_allonline_th_10\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261006T010204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261006T010204Z.sql.gz").exists()
+            )
+
+    def test_backup_accepts_exact_puerto_rico_profile_and_rejects_partial_profile(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(
+                include_puerto_rico=True
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261007T010203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261007T010203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V5,
+            )
+            self.assertIn(post_seed, sanitized)
+            for source_key in PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS:
+                self.assertEqual(sanitized.count(source_key + b"\n"), 2)
+            self.assertIn(
+                b"richards-bricks-charizard-upc-pr-18-v1",
+                sanitized,
+            )
+            self.assertIn(
+                b"richards-bricks-mega-evolution-box-pr-36-v1",
+                sanitized,
+            )
+
+            partial_dump = post_migration_dump.replace(
+                PUERTO_RICO_36_POLICY.encode()
+                + b"\tpublic_study_richards_bricks_pr_36\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261007T010204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261007T010204Z.sql.gz").exists()
+            )
+
+            drifted_dump = post_migration_dump.replace(
+                b"\t36\tme01\tbooster_box\t",
+                b"\t35\tme01\tbooster_box\t",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261007T010205Z",
+                dump=drifted_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261007T010205Z.sql.gz").exists()
+            )
+
+            missing_coverage_dump = post_migration_dump.replace(
+                public_study_coverage_row(
+                    b"public_study_richards_bricks_pr_36"
+                ) + b"\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261007T010206Z",
+                dump=missing_coverage_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261007T010206Z.sql.gz").exists()
             )
 
     def test_backup_retains_the_complete_reviewed_aggregate_bridge_bundle(

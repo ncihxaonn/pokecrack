@@ -77,6 +77,8 @@ const observedMetric = z
     packsObserved: z.number().int().nonnegative(),
     openings: z.number().int().nonnegative(),
     independentSources: z.number().int().nonnegative(),
+    ratePacksObserved: z.number().int().positive().optional(),
+    qualifyingHitPacks: z.number().int().nonnegative().optional(),
     baselineRate: probability.nullable(),
     hitRate: probability.nullable(),
     posteriorMean: probability.nullable(),
@@ -100,6 +102,27 @@ const validateObservedMetric = (
   if (value.independentSources > value.openings) {
     addIssue("Independent sources cannot exceed complete openings");
   }
+  const hasRatePacks = value.ratePacksObserved !== undefined;
+  const hasQualifyingHits = value.qualifyingHitPacks !== undefined;
+  const hasDirectObservedRate = hasRatePacks && hasQualifyingHits;
+  if (hasRatePacks !== hasQualifyingHits) {
+    addIssue("Direct observed rates require both an exact numerator and denominator");
+  } else if (hasDirectObservedRate) {
+    if (value.ratePacksObserved! > value.packsObserved) {
+      addIssue("Rate-sample packs cannot exceed all observed packs");
+    }
+    if (value.qualifyingHitPacks! > value.ratePacksObserved!) {
+      addIssue("Qualifying-hit packs cannot exceed rate-sample packs");
+    }
+    if (
+      value.hitRate === null ||
+      Math.abs(
+        value.hitRate - value.qualifyingHitPacks! / value.ratePacksObserved!,
+      ) > 1e-12
+    ) {
+      addIssue("Direct observed rate must equal qualifying-hit packs divided by rate-sample packs");
+    }
+  }
   const insufficientEvidence =
     value.packsObserved < 30 || value.independentSources < 3;
   if (insufficientEvidence) {
@@ -108,22 +131,26 @@ const validateObservedMetric = (
     }
     if (
       value.baselineRate !== null ||
-      value.hitRate !== null ||
       value.posteriorMean !== null ||
       value.credibleInterval !== null ||
       value.deltaFromBaseline !== null
     ) {
-      addIssue("Insufficient samples must withhold rate estimates");
+      addIssue("Insufficient samples must withhold inference fields");
+    }
+    if (value.hitRate !== null && !hasDirectObservedRate) {
+      addIssue("An insufficient sample rate requires an exact numerator and denominator");
     }
   } else if (value.state === "pending") {
     if (
       value.baselineRate !== null ||
-      value.hitRate !== null ||
       value.posteriorMean !== null ||
       value.credibleInterval !== null ||
       value.deltaFromBaseline !== null
     ) {
       addIssue("Publication-pending samples must withhold every inference field");
+    }
+    if (value.hitRate !== null && !hasDirectObservedRate) {
+      addIssue("A publication-pending sample rate requires an exact numerator and denominator");
     }
   } else {
     if (value.state === "insufficient") {
@@ -169,7 +196,7 @@ const setMetric = observedMetric
   .superRefine(validateObservedMetric);
 const coverageAttributionMetadata = {
   dataVersions: countryDataVersionsSchema.optional(),
-  collectionClass: z.literal("coverage_only").optional(),
+  collectionClass: z.enum(["coverage_only", "observed_sample", "mixed"]).optional(),
   coverageAttributionBases: coverageAttributionBasesSchema.optional(),
 } as const;
 const regionMetric = observedMetric
@@ -366,6 +393,9 @@ const sourceCoverage = z
     packsObserved: z.number().int().positive().max(1_000_000),
     countriesObserved: z.number().int().positive().max(249),
     completeOpenings: z.number().int().positive().max(1_000_000),
+    ratePacksObserved: z.number().int().positive().max(1_000_000).optional(),
+    qualifyingHitPacks: z.number().int().nonnegative().max(1_000_000).optional(),
+    observedRate: probability.optional(),
   })
   .strict()
   .superRefine((coverage, context) => {
@@ -382,6 +412,46 @@ const sourceCoverage = z
         message: "Reviewed source countries cannot exceed complete openings",
         path: ["countriesObserved"],
       });
+    }
+    const rawRateFields = [
+      coverage.ratePacksObserved,
+      coverage.qualifyingHitPacks,
+      coverage.observedRate,
+    ];
+    const presentRawRateFields = rawRateFields.filter((field) => field !== undefined).length;
+    if (presentRawRateFields !== 0 && presentRawRateFields !== rawRateFields.length) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Reviewed source rates require the complete raw-rate tuple",
+        path: ["observedRate"],
+      });
+    } else if (presentRawRateFields === rawRateFields.length) {
+      if (coverage.ratePacksObserved! > coverage.packsObserved) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Source rate-sample packs cannot exceed observed packs",
+          path: ["ratePacksObserved"],
+        });
+      }
+      if (coverage.qualifyingHitPacks! > coverage.ratePacksObserved!) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Source qualifying-hit packs cannot exceed rate-sample packs",
+          path: ["qualifyingHitPacks"],
+        });
+      }
+      if (
+        Math.abs(
+          coverage.observedRate! -
+          coverage.qualifyingHitPacks! / coverage.ratePacksObserved!,
+        ) > 1e-12
+      ) {
+        context.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Source observed rate must equal its exact numerator divided by denominator",
+          path: ["observedRate"],
+        });
+      }
     }
   });
 

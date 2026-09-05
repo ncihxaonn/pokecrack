@@ -73,7 +73,7 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
         <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>
         <div><dt>Coverage buckets observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>latest shared period</small></dd></div>
-        <div><dt>Published rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>threshold-qualified buckets</small></dd></div>
+        <div><dt>Observed sample rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>exact numerator + denominator</small></dd></div>
         <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>eligible denominator</small></dd></div>
         <div><dt>Complete openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>verified observations</small></dd></div>
         <div><dt>Source contributions</dt><dd>{integer.format(data.observations.sourceCountryContributions)}<small>not globally deduplicated</small></dd></div>
@@ -174,13 +174,13 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
       </section> : null}
 
       <section className="dashboard-section methodology-glance" aria-labelledby="methodology-title">
-        <SectionHeading id="methodology-title" title="Methodology at a glance" detail="Conservative publication thresholds keep incomplete observations out of rate denominators." />
+        <SectionHeading id="methodology-title" title="Methodology at a glance" detail="Exact raw sample rates are descriptive; baselines, intervals and signals remain separately threshold-gated." />
         <ol className="method-steps">
           {[
             ["Collect", "Allowlisted, bounded discovery and metadata only."],
             ["Validate", "Complete, nonduplicate tier A/B observations qualify."],
             ["Aggregate", "Packs observed form the denominator; no missing counts are imputed."],
-            ["Publish", "Intervals, sample sizes, freshness and restrained signal labels."],
+            ["Publish", "Exact counts first; inference, intervals and signals only when qualified."],
           ].map(([title, detail]) => <li key={title}><h3>{title}</h3><p>{detail}</p></li>)}
         </ol>
         <Link className="button button--secondary" href="/methodology">Full methodology</Link>

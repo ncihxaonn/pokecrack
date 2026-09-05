@@ -249,6 +249,7 @@ select ok(
         'get_public_dashboard_snapshot_v3',
         'get_public_study_coverage_v1',
         'get_public_study_coverage_v2',
+        'get_public_study_coverage_v3',
         'get_public_social_discovery_v1',
         'get_public_social_discovery_v2',
         'get_public_social_discovery_v3',

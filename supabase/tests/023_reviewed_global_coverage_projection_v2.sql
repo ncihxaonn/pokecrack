@@ -96,13 +96,13 @@ select ok(
   and position('ingest.public_study_coverage_observations' in pg_get_functiondef(
     'public.get_public_study_coverage_v2()'::regprocedure
   )) > 0
-  and position('count(distinct rows.domain)' in pg_get_functiondef(
+  and position('count(distinct rows.publisher_identity)' in pg_get_functiondef(
     'public.get_public_study_coverage_v2()'::regprocedure
   )) > 0
   and position('catalog.iso_alpha2_codes' in pg_get_functiondef(
     'public.get_public_study_coverage_v2()'::regprocedure
   )) > 0,
-  'coverage v2 uses the full reviewed registry, both ledgers, valid ISO countries, and server-side distinct-domain aggregation'
+  'coverage v2 uses the full reviewed registry, both ledgers, valid ISO countries, and server-side publisher aggregation'
 );
 
 set local role anon;

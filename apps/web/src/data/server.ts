@@ -1,13 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 
 import { getEnv, type AppEnv } from "@/config/env";
-import { mergePublicStudyCoverage } from "./coverage";
+import {
+  mergePublicStudyCoverage,
+  publicStudyCoverageSchema,
+} from "./coverage";
 import { resolveDashboardData } from "./resolver";
 import {
   PUBLIC_DASHBOARD_RPC,
   PUBLIC_SOCIAL_DISCOVERY_FALLBACK_RPC,
   PUBLIC_SOCIAL_DISCOVERY_RPC,
   PUBLIC_STUDY_COVERAGE_FALLBACK_RPC,
+  PUBLIC_STUDY_COVERAGE_LEGACY_RPC,
   PUBLIC_STUDY_COVERAGE_RPC,
   unwrapRpcSnapshot,
 } from "./rpc";
@@ -54,14 +58,34 @@ export async function getDashboardData() {
     if (snapshotResult.status === "rejected") throw snapshotResult.reason;
     const snapshot = unwrapRpcSnapshot(snapshotResult.value);
     const coveragePayload =
-      coverageResult.status === "fulfilled" && coverageResult.value.error === null
+      coverageResult.status === "fulfilled" &&
+        coverageResult.value.error === null &&
+        (coverageResult.value.data === null ||
+          publicStudyCoverageSchema.safeParse(coverageResult.value.data).success)
         ? coverageResult.value.data
         : await (async () => {
             try {
               const fallback = await supabase.rpc(PUBLIC_STUDY_COVERAGE_FALLBACK_RPC);
-              return fallback.error === null ? fallback.data : null;
+              if (
+                fallback.error === null &&
+                (fallback.data === null ||
+                  publicStudyCoverageSchema.safeParse(fallback.data).success)
+              ) return fallback.data;
+              const legacy = await supabase.rpc(PUBLIC_STUDY_COVERAGE_LEGACY_RPC);
+              return legacy.error === null &&
+                  publicStudyCoverageSchema.safeParse(legacy.data).success
+                ? legacy.data
+                : null;
             } catch {
-              return null;
+              try {
+                const legacy = await supabase.rpc(PUBLIC_STUDY_COVERAGE_LEGACY_RPC);
+                return legacy.error === null &&
+                    publicStudyCoverageSchema.safeParse(legacy.data).success
+                  ? legacy.data
+                  : null;
+              } catch {
+                return null;
+              }
             }
           })();
     const withCoverage =

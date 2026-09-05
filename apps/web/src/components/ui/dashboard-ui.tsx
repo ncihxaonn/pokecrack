@@ -52,7 +52,7 @@ export function DataModeNotice({
   const message = synthetic
     ? BRAND.demoNotice
     : collecting
-      ? `Verified observations cover ${integer.format(observedCountryCount ?? 0)} country or product-market coverage buckets and ${integer.format(observedPackCount ?? 0)} packs; attributed-bucket rates remain withheld until evidence thresholds and reviewed publication are satisfied.`
+      ? `Verified observations cover ${integer.format(observedCountryCount ?? 0)} country or product-market coverage buckets and ${integer.format(observedPackCount ?? 0)} packs. Exact sample rates appear only where a reviewed normalized numerator is also available; inference remains separately gated.`
       : catalogOnly
         ? `${integer.format(catalogSetCount ?? 0)} catalog sets are live. Verified country or product-market coverage is not published yet.`
         : "Live response with no demo fixtures.";
@@ -101,6 +101,7 @@ export function ObservationStats({ metric }: { metric: ObservedMetric }) {
       <div><dt>Complete openings</dt><dd>{formatCompactNumber(metric.openings)}</dd></div>
       <div><dt>Independent sources</dt><dd>{formatCompactNumber(metric.independentSources)}</dd></div>
       <div><dt>Baseline rate</dt><dd>{formatProbability(metric.baselineRate)}</dd></div>
+      <div><dt>Qualifying hits / rate packs</dt><dd>{metric.ratePacksObserved === undefined || metric.qualifyingHitPacks === undefined ? "Not available" : `${formatCompactNumber(metric.qualifyingHitPacks)} / ${formatCompactNumber(metric.ratePacksObserved)}`}</dd></div>
       <div><dt>Observed rate</dt><dd>{formatProbability(metric.hitRate)}</dd></div>
       <div><dt>Posterior mean</dt><dd>{formatProbability(metric.posteriorMean)}</dd></div>
       <div><dt>90% interval</dt><dd>{interval}</dd></div>

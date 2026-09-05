@@ -85,6 +85,15 @@ BLUESKY_GENERIC_QUEUE_GUARD = (
 BLUESKY_ROLE_DEPLOY_HARDENING = (
     ROOT / "migrations/20260927000000_bluesky_role_and_deploy_hardening.sql"
 ).read_text()
+PUBLIC_OBSERVED_SAMPLE_RATES = (
+    ROOT / "migrations/20261004000000_public_observed_sample_rates.sql"
+).read_text()
+BRAZIL_OBSERVED_SAMPLE = (
+    ROOT / "migrations/20261006000000_brazil_pontocom_observed_sample.sql"
+).read_text()
+PUERTO_RICO_YOUTUBE_COVERAGE = (
+    ROOT / "migrations/20261007000000_puerto_rico_youtube_coverage.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -1715,6 +1724,146 @@ class IngestMigrationContractTests(unittest.TestCase):
         )
         self.assertNotIn(
             "grant execute on function public.get_public_study_coverage_v2() to service_role",
+            compact,
+        )
+
+    def test_public_observed_sample_rates_are_exact_and_inference_free(self) -> None:
+        lowered = PUBLIC_OBSERVED_SAMPLE_RATES.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        projection = lowered.split(
+            "create or replace function public.get_public_study_coverage_v3", 1
+        )[1].split(
+            "alter function public.get_public_study_coverage_v3", 1
+        )[0]
+        for fragment in (
+            "security definer",
+            "set search_path = pg_catalog",
+            "public.get_public_study_coverage_v2()",
+            "ingest.reviewed_public_study_contracts()",
+            "ingest.public_study_observations",
+            "ingest.public_study_coverage_observations",
+            "openings.eligible_for_statistics",
+            "openings.complete_opening",
+            "openings.validation_status = 'accepted'",
+            "openings.public_status = 'verified'",
+            "config ->> 'qualifying_metric' = 'sir_pack'",
+            "config ->> 'metric_version' = 'global-sir-v1'",
+            "'ratepacksobserved'",
+            "'qualifyinghitpacks'",
+            "'observedrate'",
+            "'{schemaversion}'",
+            "to_jsonb('3.0.0'::text)",
+        ):
+            self.assertIn(fragment, projection)
+        for forbidden_json_key in (
+            "'evidenceexcerpt'",
+            "'evidencesha256'",
+            "'policyid'",
+            "'studykey'",
+            "'sourcepolicy'",
+            "'baselinerate'",
+            "'posteriormean'",
+            "'credibleinterval'",
+            "'deltafrombaseline'",
+        ):
+            self.assertNotIn(forbidden_json_key, projection)
+        self.assertIn(
+            "revoke all on function public.get_public_study_coverage_v3() from public, anon, authenticated, service_role",
+            compact,
+        )
+        self.assertIn(
+            "grant execute on function public.get_public_study_coverage_v3() to anon, authenticated",
+            compact,
+        )
+        self.assertNotIn(
+            "grant execute on function public.get_public_study_coverage_v3() to service_role",
+            compact,
+        )
+        self.assertIn("get_public_study_coverage_v3:", DATABASE_TYPES)
+
+    def test_brazil_observed_sample_is_reviewed_exact_and_bootstrapped_as_coverage(
+        self,
+    ) -> None:
+        lowered = BRAZIL_OBSERVED_SAMPLE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for fragment in (
+            "pontocom-herois-excelsos-br-48-v1",
+            "public_study_pontocom_br_48",
+            "public-study-pontocom-herois-excelsos-v1",
+            '"country_code":"br"',
+            '"set_language":"pt-br"',
+            '"pack_count":48',
+            '"denominator_derivation":"12×4"',
+            '"qualifying_hit_pack_count":1',
+            '"qualifying_metric":"sir_pack"',
+            '"metric_version":"global-sir-v1"',
+            '"video_review_method":"manual_timestamped_video_review"',
+            '"robots_status":"404_not_found_live_collection_blocked"',
+            "mega meganium ex",
+            "special illustration rare",
+            "mawile",
+            "heliolisk",
+            "illustration rare",
+            "insert into ingest.public_study_coverage_observations",
+            "4788f28b2e61c0b1879d287da82e4c45712ba7ba0a84cb1599c32611e1968da6",
+            "public v3 observed sample is 1/48",
+        ):
+            self.assertIn(fragment, lowered)
+        self.assertNotIn(
+            "insert into ingest.public_study_observations",
+            lowered,
+            "the migration must not pretend the robots-blocked manual review was a live statistical collection",
+        )
+        self.assertIn("count(*) = 10", compact)
+        self.assertIn("'four_pack_blister'", lowered)
+        self.assertNotIn("grant select on table ingest.public_study_coverage_observations to anon", compact)
+
+    def test_puerto_rico_youtube_coverage_is_exact_and_rate_free(self) -> None:
+        lowered = PUERTO_RICO_YOUTUBE_COVERAGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for fragment in (
+            "richards-bricks-charizard-upc-pr-18-v1",
+            "richards-bricks-mega-evolution-box-pr-36-v1",
+            "public_study_richards_bricks_pr_18",
+            "public_study_richards_bricks_pr_36",
+            '"publisher_channel_id":"ucp2pm8zrj_fiklzjngc02pq"',
+            '"country_code":"pr"',
+            '"pack_count":18',
+            '"pack_count":36',
+            '"set_external_id":"mixed-tpci-2025"',
+            '"set_external_id":"me01"',
+            "ee0ec8cb243d26d0fc8d46b4788bb8eff2205353466c0d8e0c3c2d7cd48293f1",
+            "97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c",
+            "insert into ingest.public_study_coverage_observations",
+            "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12)",
+            "publisher_identity",
+            "count(distinct rows.publisher_identity)::integer",
+            "mixed_multi_expansion",
+            "reviewed.study_key = 'richards-bricks-mega-evolution-box-pr-36-v1'",
+            "reviewed.config ->> 'set_external_id' = 'me01'",
+            "reviewed.config ->> 'set_scope' = 'single_expansion'",
+        ):
+            self.assertIn(fragment, lowered)
+        for forbidden_config_field in (
+            '"qualifying_hit_pack_count"',
+            '"qualifying_metric"',
+            '"metric_version"',
+            '"observed_rate"',
+        ):
+            self.assertNotIn(forbidden_config_field, lowered)
+        self.assertIn("count(*) = 12", compact)
+        self.assertNotIn(
+            "insert into ingest.public_study_observations",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant select on table ingest.public_study_coverage_observations to anon",
             compact,
         )
 

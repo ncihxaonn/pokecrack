@@ -58,9 +58,13 @@ select ok(
 );
 
 select is(
-  (select count(*)::integer from ingest.reviewed_public_study_contracts()),
+  (
+    select count(*)::integer
+    from ingest.reviewed_public_study_contracts()
+    where ordinal between 1 and 9
+  ),
   9,
-  'the reviewed registry preserves PokeSup at ordinal 6 and appends three Asian contracts'
+  'the reviewed registry preserves its original nine-contract prefix'
 );
 select is(
   (
@@ -166,7 +170,7 @@ select is(
       pg_get_functiondef('ingest.enqueue_public_study_coverage_job_v1(text,integer,text,timestamptz,integer)'::regprocedure),
       pg_get_functiondef('ingest.enqueue_scheduled_public_study_coverage_job_v1(text,timestamptz,text,integer,integer)'::regprocedure)
     ]) as definitions(definition)
-    where position('contracts.ordinal in (3, 4, 5, 6, 7, 8, 9)' in definition) > 0
+    where position('contracts.ordinal in (3, 4, 5, 6' in definition) > 0
   ),
   4,
   'the four coverage ingestion boundaries continue to accept ordinal 6'
@@ -423,10 +427,36 @@ select ok(
   ),
   'v2 never fabricates an English catalog set for the Japanese contract'
 );
-select doesnt_match(
-  public.get_public_study_coverage_v2()::text,
-  '(?i)(qualifyingHitPackCount|qualifyingMetric|metricVersion|hitRate|observedRate|numerator)',
-  'the v2 public projection exposes no numerator, rate, or metric field'
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_public_study_coverage_v2() -> 'countries'
+    ) as country(item)
+    where country.item ->> 'countryCode' = 'JP'
+      and country.item ?| array[
+        'ratePacksObserved', 'qualifyingHitPacks', 'observedRate',
+        'qualifyingMetric', 'metricVersion', 'numerator'
+      ]
+  )
+  and not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_public_study_coverage_v2() -> 'sources'
+    ) as source(item)
+    where source.item ->> 'id' = 'pokesup_abyss_eye_study'
+      and (
+        source.item ?| array[
+          'ratePacksObserved', 'qualifyingHitPacks', 'observedRate',
+          'qualifyingMetric', 'metricVersion', 'numerator'
+        ]
+        or (source.item -> 'coverage') ?| array[
+          'ratePacksObserved', 'qualifyingHitPacks', 'observedRate',
+          'qualifyingMetric', 'metricVersion', 'numerator'
+        ]
+      )
+  ),
+  'the PokeSup v2 projection exposes no numerator, rate, or metric field'
 );
 
 update ingest.source_policies

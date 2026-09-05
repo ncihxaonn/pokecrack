@@ -24,6 +24,10 @@ from uuid import UUID
 SOURCE_POLICIES = ("ingest", "source_policies")
 YOUTUBE_DISCOVERIES = ("ingest", "youtube_discoveries")
 PUBLIC_STUDY_OBSERVATIONS = ("ingest", "public_study_observations")
+PUBLIC_STUDY_COVERAGE_OBSERVATIONS = (
+    "ingest",
+    "public_study_coverage_observations",
+)
 SOURCE_REQUEST_GATES = ("ingest", "source_request_gates")
 BLUESKY_CANDIDATES = ("ingest", "bluesky_jetstream_candidates")
 BLUESKY_OBSERVATIONS = ("ingest", "bluesky_jetstream_observations")
@@ -65,6 +69,7 @@ RETENTION_CONTROL_TABLES = frozenset(
         SOURCE_POLICIES,
         YOUTUBE_DISCOVERIES,
         PUBLIC_STUDY_OBSERVATIONS,
+        PUBLIC_STUDY_COVERAGE_OBSERVATIONS,
         BLUESKY_CHECKPOINTS,
         NOSTR_CHECKPOINTS,
         MASTODON_CHECKPOINTS,
@@ -131,6 +136,17 @@ ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V3 = (
     PUBLIC_STUDY_SOURCE_KEYS_V2 + ASIA_PHASE_ONE_PUBLIC_STUDY_SOURCE_KEYS
 )
+BRAZIL_PUBLIC_STUDY_SOURCE_KEY = b"public_study_pontocom_br_48"
+PUBLIC_STUDY_SOURCE_KEYS_V4 = PUBLIC_STUDY_SOURCE_KEYS_V3 + (
+    BRAZIL_PUBLIC_STUDY_SOURCE_KEY,
+)
+PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_richards_bricks_pr_18",
+    b"public_study_richards_bricks_pr_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V5 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V4 + PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS
+)
 # Each migration adds an exact append-only reviewed source profile. Keep every
 # complete transition profile available for pre-apply backups, while rejecting
 # unions and partially migrated sets as ambiguous and restore-unsafe.
@@ -138,8 +154,10 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V1,
     PUBLIC_STUDY_SOURCE_KEYS_V2,
     PUBLIC_STUDY_SOURCE_KEYS_V3,
+    PUBLIC_STUDY_SOURCE_KEYS_V4,
+    PUBLIC_STUDY_SOURCE_KEYS_V5,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V3
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V5
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(
@@ -399,6 +417,21 @@ PUBLIC_STUDY_CREATE = re.compile(
     r'(?:public_study_observations(?![A-Za-z0-9_$])|"public_study_observations")\s*\(',
     re.IGNORECASE,
 )
+PUBLIC_STUDY_COVERAGE_CREATE_REFERENCE = re.compile(
+    r"^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+"
+    r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
+    r'(?:public_study_coverage_observations(?![A-Za-z0-9_$])|'
+    r'"public_study_coverage_observations")'
+    r"(?:\s|\()",
+    re.IGNORECASE,
+)
+PUBLIC_STUDY_COVERAGE_CREATE = re.compile(
+    r"^\s*CREATE\s+TABLE\s+"
+    r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
+    r'(?:public_study_coverage_observations(?![A-Za-z0-9_$])|'
+    r'"public_study_coverage_observations")\s*\(',
+    re.IGNORECASE,
+)
 
 
 def _aggregate_bridge_table_expression(table: tuple[str, str]) -> str:
@@ -445,6 +478,23 @@ PUBLIC_STUDY_COPY_COLUMNS = (
     "product_scope",
     "metric_key",
     "metric_version",
+    "collector_version",
+    "parser_version",
+    "source_policy_version",
+    "evidence_sha256",
+    "first_verified_at",
+    "last_verified_at",
+    "is_demo",
+)
+PUBLIC_STUDY_COVERAGE_COPY_COLUMNS = (
+    "study_key",
+    "source_policy_id",
+    "country_code",
+    "country_name",
+    "source_observed_at",
+    "pack_count",
+    "set_external_id",
+    "product_scope",
     "collector_version",
     "parser_version",
     "source_policy_version",
@@ -798,7 +848,7 @@ PUBLIC_STUDY_COLUMN_DECLARATIONS = (
     "last_verified_at timestamp with time zone not null",
     "is_demo boolean default false not null",
 )
-PUBLIC_STUDY_CHECK_DECLARATIONS = frozenset(
+PUBLIC_STUDY_COMMON_CHECK_DECLARATIONS = frozenset(
     {
         "constraint public_study_observations_country_name_check check (((btrim(country_name) <> ''::text) and (char_length(country_name) <= 160)))",
         "constraint public_study_observations_counts_check check ((((pack_count >= 1) and (pack_count <= 100000)) and ((qualifying_hit_pack_count >= 0) and (qualifying_hit_pack_count <= pack_count))))",
@@ -807,15 +857,67 @@ PUBLIC_STUDY_CHECK_DECLARATIONS = frozenset(
         "constraint public_study_observations_key_check check ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text))",
         "constraint public_study_observations_live_only_check check ((not is_demo))",
         "constraint public_study_observations_metric_check check (((metric_key = 'qualifying_hit_pack_rate'::text) and (metric_version = 'global-sir-v1'::text)))",
-        "constraint public_study_observations_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text])))",
         "constraint public_study_observations_set_check check (((btrim(set_external_id) <> ''::text) and (char_length(set_external_id) <= 160)))",
         "constraint public_study_observations_time_check check ((last_verified_at >= first_verified_at))",
         "constraint public_study_observations_version_check check (((btrim(collector_version) <> ''::text) and (char_length(collector_version) <= 120) and (btrim(parser_version) <> ''::text) and (char_length(parser_version) <= 120) and (btrim(source_policy_version) <> ''::text) and (char_length(source_policy_version) <= 120)))",
     }
 )
+PUBLIC_STUDY_PRODUCT_CHECK_DECLARATIONS = {
+    "v1_v3": "constraint public_study_observations_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text])))",
+    "v4_v5": "constraint public_study_observations_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'four_pack_blister'::text])))",
+}
+PUBLIC_STUDY_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
+    PUBLIC_STUDY_SOURCE_KEYS_V1: "v1_v3",
+    PUBLIC_STUDY_SOURCE_KEYS_V2: "v1_v3",
+    PUBLIC_STUDY_SOURCE_KEYS_V3: "v1_v3",
+    PUBLIC_STUDY_SOURCE_KEYS_V4: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V5: "v4_v5",
+}
+PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS = (
+    "study_key text not null",
+    "source_policy_id uuid not null",
+    "country_code text not null",
+    "country_name text not null",
+    "source_observed_at timestamp with time zone not null",
+    "pack_count integer not null",
+    "set_external_id text not null",
+    "product_scope text not null",
+    "collector_version text not null",
+    "parser_version text not null",
+    "source_policy_version text not null",
+    "evidence_sha256 text not null",
+    "first_verified_at timestamp with time zone not null",
+    "last_verified_at timestamp with time zone not null",
+    "is_demo boolean default false not null",
+)
+PUBLIC_STUDY_COVERAGE_COMMON_CHECK_DECLARATIONS = frozenset(
+    {
+        "constraint public_study_coverage_country_check check (((country_code ~ '^[a-z]{2}$'::text) and (btrim(country_name) <> ''::text) and (char_length(country_name) <= 160)))",
+        "constraint public_study_coverage_hash_check check ((evidence_sha256 ~ '^[0-9a-f]{64}$'::text))",
+        "constraint public_study_coverage_key_check check ((study_key ~ '^[a-z0-9][a-z0-9-]{0,119}$'::text))",
+        "constraint public_study_coverage_live_only_check check ((not is_demo))",
+        "constraint public_study_coverage_pack_check check (((pack_count >= 1) and (pack_count <= 100000)))",
+        "constraint public_study_coverage_set_check check (((btrim(set_external_id) <> ''::text) and (char_length(set_external_id) <= 160)))",
+        "constraint public_study_coverage_time_check check ((last_verified_at >= first_verified_at))",
+        "constraint public_study_coverage_version_check check (((btrim(collector_version) <> ''::text) and (char_length(collector_version) <= 120) and (btrim(parser_version) <> ''::text) and (char_length(parser_version) <= 120) and (btrim(source_policy_version) <> ''::text) and (char_length(source_policy_version) <= 120)))",
+    }
+)
+PUBLIC_STUDY_COVERAGE_PRODUCT_CHECK_DECLARATIONS = {
+    "v1_v2": "constraint public_study_coverage_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text])))",
+    "v3": "constraint public_study_coverage_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'value_bundle'::text])))",
+    "v4_v5": "constraint public_study_coverage_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'value_bundle'::text, 'four_pack_blister'::text])))",
+}
+PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
+    PUBLIC_STUDY_SOURCE_KEYS_V1: "v1_v2",
+    PUBLIC_STUDY_SOURCE_KEYS_V2: "v1_v2",
+    PUBLIC_STUDY_SOURCE_KEYS_V3: "v3",
+    PUBLIC_STUDY_SOURCE_KEYS_V4: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V5: "v4_v5",
+}
 PUBLIC_STUDY_POLICY_SOURCE_KEY = {
     b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
     b"wargamer-chaos-rising-gb-17-v1": b"public_study_wargamer_gb_17",
+    b"pontocom-herois-excelsos-br-48-v1": b"public_study_pontocom_br_48",
 }
 PUBLIC_STUDY_EXACT_FIELDS = {
     b"comicbook-perfect-order-us-55-v1": {
@@ -850,10 +952,181 @@ PUBLIC_STUDY_EXACT_FIELDS = {
         "source_policy_version": b"public-study-wargamer-chaos-rising-v1",
         "is_demo": b"f",
     },
+    b"pontocom-herois-excelsos-br-48-v1": {
+        "country_code": b"BR",
+        "country_name": b"Brazil",
+        "geography_basis": b"publisher_country",
+        "geography_confidence": b"tier_b",
+        "pack_count": b"48",
+        "qualifying_hit_pack_count": b"1",
+        "set_external_id": b"me02.5",
+        "product_scope": b"four_pack_blister",
+        "metric_key": b"qualifying_hit_pack_rate",
+        "metric_version": b"global-sir-v1",
+        "collector_version": b"public-study-pontocom-herois-excelsos-v1",
+        "parser_version": b"pontocom-herois-excelsos-evidence-v1",
+        "source_policy_version": b"public-study-pontocom-herois-excelsos-v1",
+        "is_demo": b"f",
+    },
 }
 PUBLIC_STUDY_OBSERVED_AT = {
     b"comicbook-perfect-order-us-55-v1": datetime(2026, 3, 19, 21, tzinfo=UTC),
     b"wargamer-chaos-rising-gb-17-v1": datetime(2026, 5, 11, tzinfo=UTC),
+    b"pontocom-herois-excelsos-br-48-v1": datetime(2026, 1, 26, 23, 29, tzinfo=UTC),
+}
+PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
+    b"cardchill-ascended-heroes-gb-90-v1": b"public_study_cardchill_gb_90",
+    b"bleedingcool-phantasmal-flames-us-36-v1": b"public_study_bleedingcool_us_36",
+    b"tcgtalk-perfect-order-sg-54-v1": b"public_study_tcgtalk_sg_54",
+    b"pokesup-abyss-eye-jp-30-v1": b"public_study_pokesup_jp_30",
+    b"limitsend-inferno-x-kr-30-v1": b"public_study_limitsend_kr_30",
+    b"buyfunlife-ninja-spinner-tw-40-v1": b"public_study_buyfunlife_tw_40",
+    b"allonline-mega-dream-ex-th-10-v1": b"public_study_allonline_th_10",
+    b"pontocom-herois-excelsos-br-48-v1": b"public_study_pontocom_br_48",
+    b"richards-bricks-charizard-upc-pr-18-v1": b"public_study_richards_bricks_pr_18",
+    b"richards-bricks-mega-evolution-box-pr-36-v1": b"public_study_richards_bricks_pr_36",
+}
+PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
+    b"cardchill-ascended-heroes-gb-90-v1": {
+        "country_code": b"GB",
+        "country_name": b"United Kingdom",
+        "pack_count": b"90",
+        "set_external_id": b"me02.5",
+        "product_scope": b"etb",
+        "collector_version": b"public-study-cardchill-ascended-heroes-v1",
+        "parser_version": b"cardchill-ascended-heroes-evidence-v1",
+        "source_policy_version": b"public-study-cardchill-ascended-heroes-v1",
+        "evidence_sha256": b"828293f936003eae257223efdbe5cd2a8fe8f799d6ca4bba9063e01fd476a9be",
+        "is_demo": b"f",
+    },
+    b"bleedingcool-phantasmal-flames-us-36-v1": {
+        "country_code": b"US",
+        "country_name": b"United States",
+        "pack_count": b"36",
+        "set_external_id": b"me02",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-bleedingcool-phantasmal-flames-v1",
+        "parser_version": b"bleedingcool-phantasmal-flames-evidence-v1",
+        "source_policy_version": b"public-study-bleedingcool-phantasmal-flames-v1",
+        "evidence_sha256": b"0572292f60b2dfb48d081bb5b65913153ea2afa69430eb218d86272c3056f4bd",
+        "is_demo": b"f",
+    },
+    b"tcgtalk-perfect-order-sg-54-v1": {
+        "country_code": b"SG",
+        "country_name": b"Singapore",
+        "pack_count": b"54",
+        "set_external_id": b"me03",
+        "product_scope": b"booster_bundle",
+        "collector_version": b"public-study-tcgtalk-perfect-order-v1",
+        "parser_version": b"tcgtalk-perfect-order-evidence-v1",
+        "source_policy_version": b"public-study-tcgtalk-perfect-order-v1",
+        "evidence_sha256": b"217f21e0de947139a96b6466563c1d005300598b1dde933264255627c8f0b096",
+        "is_demo": b"f",
+    },
+    b"pokesup-abyss-eye-jp-30-v1": {
+        "country_code": b"JP",
+        "country_name": b"Japan",
+        "pack_count": b"30",
+        "set_external_id": b"M5",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-pokesup-abyss-eye-v1",
+        "parser_version": b"pokesup-abyss-eye-evidence-v1",
+        "source_policy_version": b"public-study-pokesup-abyss-eye-v1",
+        "evidence_sha256": b"e9e87b7bbab8483200fef8ffd7d927f339138f742876ca222af1f133f7523b08",
+        "is_demo": b"f",
+    },
+    b"limitsend-inferno-x-kr-30-v1": {
+        "country_code": b"KR",
+        "country_name": b"South Korea",
+        "pack_count": b"30",
+        "set_external_id": b"M2",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-limitsend-inferno-x-v1",
+        "parser_version": b"limitsend-inferno-x-evidence-v1",
+        "source_policy_version": b"public-study-limitsend-inferno-x-v1",
+        "evidence_sha256": b"4af8a17aec4489a0f3fdd6a3e4c8fb8f7a77a60092825fba3279323b6c654406",
+        "is_demo": b"f",
+    },
+    b"buyfunlife-ninja-spinner-tw-40-v1": {
+        "country_code": b"TW",
+        "country_name": b"Taiwan",
+        "pack_count": b"40",
+        "set_external_id": b"M4",
+        "product_scope": b"value_bundle",
+        "collector_version": b"public-study-buyfunlife-ninja-spinner-v1",
+        "parser_version": b"buyfunlife-ninja-spinner-evidence-v1",
+        "source_policy_version": b"public-study-buyfunlife-ninja-spinner-v1",
+        "evidence_sha256": b"2fd4475765c44e61e9603f0603ddf8b8ba7a1d9ff234726c5d6dd631d8937a3d",
+        "is_demo": b"f",
+    },
+    b"allonline-mega-dream-ex-th-10-v1": {
+        "country_code": b"TH",
+        "country_name": b"Thailand",
+        "pack_count": b"10",
+        "set_external_id": b"MA3",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-allonline-mega-dream-ex-v1",
+        "parser_version": b"allonline-mega-dream-ex-evidence-v1",
+        "source_policy_version": b"public-study-allonline-mega-dream-ex-v1",
+        "evidence_sha256": b"5c4dfcf632018a5f56489b5e158885086c118c13edf5b129dfc530bd25d93478",
+        "is_demo": b"f",
+    },
+    b"pontocom-herois-excelsos-br-48-v1": {
+        "country_code": b"BR",
+        "country_name": b"Brazil",
+        "pack_count": b"48",
+        "set_external_id": b"me02.5",
+        "product_scope": b"four_pack_blister",
+        "collector_version": b"public-study-pontocom-herois-excelsos-v1",
+        "parser_version": b"pontocom-herois-excelsos-evidence-v1",
+        "source_policy_version": b"public-study-pontocom-herois-excelsos-v1",
+        "evidence_sha256": b"4788f28b2e61c0b1879d287da82e4c45712ba7ba0a84cb1599c32611e1968da6",
+        "is_demo": b"f",
+    },
+    b"richards-bricks-charizard-upc-pr-18-v1": {
+        "country_code": b"PR",
+        "country_name": b"Puerto Rico",
+        "pack_count": b"18",
+        "set_external_id": b"mixed-tpci-2025",
+        "product_scope": b"all",
+        "collector_version": b"public-study-richards-bricks-youtube-v1",
+        "parser_version": b"richards-bricks-charizard-upc-evidence-v1",
+        "source_policy_version": b"public-study-richards-bricks-youtube-v1",
+        "evidence_sha256": b"ee0ec8cb243d26d0fc8d46b4788bb8eff2205353466c0d8e0c3c2d7cd48293f1",
+        "is_demo": b"f",
+    },
+    b"richards-bricks-mega-evolution-box-pr-36-v1": {
+        "country_code": b"PR",
+        "country_name": b"Puerto Rico",
+        "pack_count": b"36",
+        "set_external_id": b"me01",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-richards-bricks-youtube-v1",
+        "parser_version": b"richards-bricks-mega-evolution-box-evidence-v1",
+        "source_policy_version": b"public-study-richards-bricks-youtube-v1",
+        "evidence_sha256": b"97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c",
+        "is_demo": b"f",
+    },
+}
+PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
+    b"cardchill-ascended-heroes-gb-90-v1": datetime(2026, 3, 3, 11, 26, 21, tzinfo=UTC),
+    b"bleedingcool-phantasmal-flames-us-36-v1": datetime(2026, 1, 3, 16, 12, 4, tzinfo=UTC),
+    b"tcgtalk-perfect-order-sg-54-v1": datetime(2026, 3, 25, 12, 40, tzinfo=UTC),
+    b"pokesup-abyss-eye-jp-30-v1": datetime(2026, 5, 22, 12, 1, 44, tzinfo=UTC),
+    b"limitsend-inferno-x-kr-30-v1": datetime(2026, 8, 20, 14, 20, 28, tzinfo=UTC),
+    b"buyfunlife-ninja-spinner-tw-40-v1": datetime(2026, 4, 3, 13, 49, 13, tzinfo=UTC),
+    b"allonline-mega-dream-ex-th-10-v1": datetime(2026, 1, 29, 10, 10, 35, tzinfo=UTC),
+    b"pontocom-herois-excelsos-br-48-v1": datetime(2026, 1, 26, 23, 29, tzinfo=UTC),
+    b"richards-bricks-charizard-upc-pr-18-v1": datetime(2025, 12, 24, 11, 3, 10, tzinfo=UTC),
+    b"richards-bricks-mega-evolution-box-pr-36-v1": datetime(2025, 10, 20, 15, 30, 33, tzinfo=UTC),
+}
+PUBLIC_STUDY_COVERAGE_KEYS_BY_SOURCE_PROFILE = {
+    profile: frozenset(
+        study_key
+        for study_key, source_key in PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY.items()
+        if source_key in profile
+    )
+    for profile in PUBLIC_STUDY_SOURCE_KEY_PROFILES
 }
 
 
@@ -1280,6 +1553,24 @@ def parse_public_study_create(line: bytes) -> bool | None:
     return True
 
 
+def parse_public_study_coverage_create(line: bytes) -> bool | None:
+    """Identify the one regular denominator-only coverage ledger definition."""
+
+    try:
+        text = line.decode("utf-8")
+    except UnicodeDecodeError:
+        return None
+    if not re.match(r"^\s*CREATE(?:\s|\Z)", text, re.IGNORECASE):
+        return None
+    if not PUBLIC_STUDY_COVERAGE_CREATE_REFERENCE.match(text):
+        return None
+    if PUBLIC_STUDY_COVERAGE_CREATE.match(text) is None:
+        raise SanitizationError(
+            "unsupported public_study_coverage_observations CREATE TABLE header"
+        )
+    return True
+
+
 def parse_reviewed_global_aggregate_bridge_create(
     line: bytes,
 ) -> tuple[str, str] | None:
@@ -1392,21 +1683,68 @@ def _split_create_declarations(
     return tuple(declarations)
 
 
-def _validate_public_study_create(lines: list[bytes]) -> None:
+def _validate_public_study_create(lines: list[bytes]) -> str:
     declarations = _split_create_declarations(lines)
     column_count = len(PUBLIC_STUDY_COLUMN_DECLARATIONS)
     columns = declarations[:column_count]
     if columns != PUBLIC_STUDY_COLUMN_DECLARATIONS:
         raise SanitizationError("unsupported public_study_observations column schema")
-    constraint_declarations = declarations[column_count:]
+    constraints = declarations[column_count:]
+    product_profiles = {
+        declaration: profile
+        for profile, declaration in PUBLIC_STUDY_PRODUCT_CHECK_DECLARATIONS.items()
+    }
+    product_declarations = [
+        declaration for declaration in constraints if declaration in product_profiles
+    ]
+    common_declarations = [
+        declaration for declaration in constraints if declaration not in product_profiles
+    ]
     if (
-        len(constraint_declarations) != len(PUBLIC_STUDY_CHECK_DECLARATIONS)
-        or len(set(constraint_declarations)) != len(constraint_declarations)
-        or frozenset(constraint_declarations) != PUBLIC_STUDY_CHECK_DECLARATIONS
+        len(product_declarations) != 1
+        or len(common_declarations) != len(PUBLIC_STUDY_COMMON_CHECK_DECLARATIONS)
+        or len(set(common_declarations)) != len(common_declarations)
+        or frozenset(common_declarations) != PUBLIC_STUDY_COMMON_CHECK_DECLARATIONS
     ):
         raise SanitizationError(
             "unsupported public_study_observations check-constraint schema"
         )
+    return product_profiles[product_declarations[0]]
+
+
+def _validate_public_study_coverage_create(lines: list[bytes]) -> str:
+    declarations = _split_create_declarations(lines, label="public-study coverage")
+    column_count = len(PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS)
+    columns = declarations[:column_count]
+    if columns != PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS:
+        raise SanitizationError(
+            "unsupported public_study_coverage_observations column schema"
+        )
+    constraints = declarations[column_count:]
+    product_profiles = {
+        declaration: profile
+        for profile, declaration in (
+            PUBLIC_STUDY_COVERAGE_PRODUCT_CHECK_DECLARATIONS.items()
+        )
+    }
+    product_declarations = [
+        declaration for declaration in constraints if declaration in product_profiles
+    ]
+    common_declarations = [
+        declaration for declaration in constraints if declaration not in product_profiles
+    ]
+    if (
+        len(product_declarations) != 1
+        or len(common_declarations)
+        != len(PUBLIC_STUDY_COVERAGE_COMMON_CHECK_DECLARATIONS)
+        or len(set(common_declarations)) != len(common_declarations)
+        or frozenset(common_declarations)
+        != PUBLIC_STUDY_COVERAGE_COMMON_CHECK_DECLARATIONS
+    ):
+        raise SanitizationError(
+            "unsupported public_study_coverage_observations check-constraint schema"
+        )
+    return product_profiles[product_declarations[0]]
 
 
 def _named_constraint(declaration: str, *, label: str) -> tuple[str, str]:
@@ -1714,6 +2052,7 @@ class PlainBackupSanitizer:
             SOURCE_POLICIES: source_policies_present,
             YOUTUBE_DISCOVERIES: youtube_discoveries_present,
             PUBLIC_STUDY_OBSERVATIONS: public_studies_present,
+            PUBLIC_STUDY_COVERAGE_OBSERVATIONS: public_studies_present,
             BLUESKY_CHECKPOINTS: bluesky_jetstream_present,
             NOSTR_CHECKPOINTS: nostr_relay_present,
             MASTODON_CHECKPOINTS: mastodon_public_hashtag_present,
@@ -1760,6 +2099,7 @@ class PlainBackupSanitizer:
         }
         self.public_study_source_keys: tuple[bytes, ...] = ()
         self.public_study_rows: dict[bytes, tuple[bytes, str]] = {}
+        self.public_study_coverage_rows: dict[bytes, tuple[bytes, str]] = {}
         self.public_study_object_ids = {
             column: set()
             for column in ("source_item_id", "extraction_run_id", "opening_id")
@@ -1767,6 +2107,10 @@ class PlainBackupSanitizer:
         self.youtube_create_count = 0
         self.public_study_create_count = 0
         self.public_study_create_lines: list[bytes] | None = None
+        self.public_study_product_profile: str | None = None
+        self.public_study_coverage_create_count = 0
+        self.public_study_coverage_create_lines: list[bytes] | None = None
+        self.public_study_coverage_product_profile: str | None = None
         self.reviewed_global_aggregate_bridge_create_counts = {
             table: 0 for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
         }
@@ -1830,8 +2174,17 @@ class PlainBackupSanitizer:
         lines = self.public_study_create_lines
         if lines is None:
             raise SanitizationError("public-study CREATE state is missing")
-        _validate_public_study_create(lines)
+        self.public_study_product_profile = _validate_public_study_create(lines)
         self.public_study_create_lines = None
+
+    def _finish_public_study_coverage_create(self) -> None:
+        lines = self.public_study_coverage_create_lines
+        if lines is None:
+            raise SanitizationError("public-study coverage CREATE state is missing")
+        self.public_study_coverage_product_profile = (
+            _validate_public_study_coverage_create(lines)
+        )
+        self.public_study_coverage_create_lines = None
 
     def _finish_reviewed_global_aggregate_bridge_create(self) -> None:
         table = self.reviewed_global_aggregate_bridge_create_table
@@ -1986,6 +2339,13 @@ class PlainBackupSanitizer:
                 "public_study_observations COPY columns do not match the exact retained schema"
             )
         elif (
+            header.table == PUBLIC_STUDY_COVERAGE_OBSERVATIONS
+            and header.columns != PUBLIC_STUDY_COVERAGE_COPY_COLUMNS
+        ):
+            raise SanitizationError(
+                "public_study_coverage_observations COPY columns do not match the exact retained schema"
+            )
+        elif (
             header.table == BLUESKY_CHECKPOINTS
             and header.columns != BLUESKY_CHECKPOINT_COPY_COLUMNS
         ):
@@ -2093,6 +2453,9 @@ class PlainBackupSanitizer:
             return
         if block.header.table == PUBLIC_STUDY_OBSERVATIONS:
             self._inspect_public_study_row(block, fields)
+            return
+        if block.header.table == PUBLIC_STUDY_COVERAGE_OBSERVATIONS:
+            self._inspect_public_study_coverage_row(block, fields)
             return
         if block.header.table == BLUESKY_CHECKPOINTS:
             self._inspect_bluesky_checkpoint_row(block, fields)
@@ -2589,6 +2952,58 @@ class PlainBackupSanitizer:
             )
         self.public_study_rows[study_key_value] = (source_key, policy_id)
 
+    def _inspect_public_study_coverage_row(
+        self, block: CopyBlock, fields: list[bytes]
+    ) -> None:
+        indexes = block.column_indexes
+        study_key_value = fields[indexes["study_key"]]
+        _plain_copy_text(study_key_value, field="public-study coverage key")
+        exact_fields = PUBLIC_STUDY_COVERAGE_EXACT_FIELDS.get(study_key_value)
+        source_key = PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY.get(study_key_value)
+        expected_observed_at = PUBLIC_STUDY_COVERAGE_OBSERVED_AT.get(study_key_value)
+        if exact_fields is None or source_key is None or expected_observed_at is None:
+            raise SanitizationError(
+                "public-study coverage ledger contains an unapproved study key"
+            )
+        if study_key_value in self.public_study_coverage_rows:
+            raise SanitizationError(
+                "public-study coverage ledger contains a duplicate study key"
+            )
+
+        for column, expected_value in exact_fields.items():
+            actual_value = fields[indexes[column]]
+            _plain_copy_text(actual_value, field=f"public-study coverage {column}")
+            if actual_value != expected_value:
+                raise SanitizationError(
+                    f"public-study coverage {column} does not match the reviewed contract"
+                )
+
+        policy_id = _canonical_uuid(
+            fields[indexes["source_policy_id"]],
+            field="public-study coverage policy id",
+        )
+        observed_at = _utc_copy_timestamp(
+            fields[indexes["source_observed_at"]],
+            field="public-study coverage source_observed_at",
+        )
+        if observed_at != expected_observed_at:
+            raise SanitizationError(
+                "public-study coverage source_observed_at does not match the reviewed contract"
+            )
+        first_verified_at = _utc_copy_timestamp(
+            fields[indexes["first_verified_at"]],
+            field="public-study coverage first_verified_at",
+        )
+        last_verified_at = _utc_copy_timestamp(
+            fields[indexes["last_verified_at"]],
+            field="public-study coverage last_verified_at",
+        )
+        if last_verified_at < first_verified_at:
+            raise SanitizationError(
+                "public-study coverage verification timestamps are out of order"
+            )
+        self.public_study_coverage_rows[study_key_value] = (source_key, policy_id)
+
     def _validate_complete(self) -> None:
         for table, expected_present in self.expected.items():
             count = self.seen[table]
@@ -2620,6 +3035,18 @@ class PlainBackupSanitizer:
                 )
             raise SanitizationError(
                 "unexpected public_study_observations CREATE TABLE definition"
+            )
+
+        expected_coverage_create_count = int(
+            self.expected[PUBLIC_STUDY_COVERAGE_OBSERVATIONS]
+        )
+        if self.public_study_coverage_create_count != expected_coverage_create_count:
+            if expected_coverage_create_count:
+                raise SanitizationError(
+                    "expected one regular public_study_coverage_observations CREATE TABLE definition"
+                )
+            raise SanitizationError(
+                "unexpected public_study_coverage_observations CREATE TABLE definition"
             )
 
         for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES:
@@ -2813,12 +3240,50 @@ class PlainBackupSanitizer:
                     "dump public-study policies do not match an exact reviewed source profile"
                 )
             self.public_study_source_keys = matching_profiles[0]
+            expected_public_study_product_profile = (
+                PUBLIC_STUDY_PRODUCT_PROFILE_BY_SOURCE_KEYS[
+                    self.public_study_source_keys
+                ]
+            )
+            if self.public_study_product_profile != expected_public_study_product_profile:
+                raise SanitizationError(
+                    "public-study statistical product schema does not match the reviewed source profile"
+                )
+            expected_coverage_product_profile = (
+                PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS[
+                    self.public_study_source_keys
+                ]
+            )
+            if (
+                self.public_study_coverage_product_profile
+                != expected_coverage_product_profile
+            ):
+                raise SanitizationError(
+                    "public-study coverage product schema does not match the reviewed source profile"
+                )
+            expected_coverage_study_keys = (
+                PUBLIC_STUDY_COVERAGE_KEYS_BY_SOURCE_PROFILE[
+                    self.public_study_source_keys
+                ]
+            )
+            if frozenset(self.public_study_coverage_rows) != expected_coverage_study_keys:
+                raise SanitizationError(
+                    "public-study coverage ledger does not contain the exact reviewed row set"
+                )
         else:
             if any(self.public_study_policy_ids.values()):
                 raise SanitizationError(
                     "dump contains public-study policies without public-study observations"
                 )
             self.public_study_source_keys = ()
+            if self.public_study_product_profile is not None:
+                raise SanitizationError(
+                    "public-study statistical schema exists without public-study observations"
+                )
+            if self.public_study_coverage_product_profile is not None:
+                raise SanitizationError(
+                    "public-study coverage schema exists without public-study observations"
+                )
         retained_public_policy_ids = [
             policy_ids[0]
             for policy_ids in self.public_study_policy_ids.values()
@@ -2832,6 +3297,15 @@ class PlainBackupSanitizer:
             if self.public_study_policy_ids[source_key] != [policy_id]:
                 raise SanitizationError(
                     "public-study ledger row does not use its exact source policy"
+                )
+        for source_key, policy_id in self.public_study_coverage_rows.values():
+            if source_key not in self.public_study_source_keys:
+                raise SanitizationError(
+                    "public-study coverage row is not admitted by the reviewed source profile"
+                )
+            if self.public_study_policy_ids[source_key] != [policy_id]:
+                raise SanitizationError(
+                    "public-study coverage row does not use its exact source policy"
                 )
 
         if self.preflight_youtube_policy_id is None:
@@ -2871,6 +3345,12 @@ class PlainBackupSanitizer:
                 self.public_study_create_lines.append(line)
                 if line.rstrip() == b");":
                     self._finish_public_study_create()
+                continue
+
+            if self.public_study_coverage_create_lines is not None:
+                self.public_study_coverage_create_lines.append(line)
+                if line.rstrip() == b");":
+                    self._finish_public_study_coverage_create()
                 continue
 
             if self.reviewed_global_aggregate_bridge_create_lines is not None:
@@ -2946,6 +3426,15 @@ class PlainBackupSanitizer:
                         "duplicate public_study_observations CREATE TABLE header"
                     )
                 self.public_study_create_lines = [line]
+                continue
+
+            if parse_public_study_coverage_create(line):
+                self.public_study_coverage_create_count += 1
+                if self.public_study_coverage_create_count != 1:
+                    raise SanitizationError(
+                        "duplicate public_study_coverage_observations CREATE TABLE header"
+                    )
+                self.public_study_coverage_create_lines = [line]
                 continue
 
             aggregate_bridge_create_table = (
@@ -3027,6 +3516,10 @@ class PlainBackupSanitizer:
         if self.public_study_create_lines is not None:
             raise SanitizationError(
                 "unterminated public_study_observations CREATE TABLE"
+            )
+        if self.public_study_coverage_create_lines is not None:
+            raise SanitizationError(
+                "unterminated public_study_coverage_observations CREATE TABLE"
             )
         if self.reviewed_global_aggregate_bridge_create_lines is not None:
             raise SanitizationError("unterminated aggregate bridge CREATE TABLE")
