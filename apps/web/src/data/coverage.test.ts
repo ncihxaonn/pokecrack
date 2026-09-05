@@ -123,6 +123,36 @@ function validRegistryCoveragePayload() {
   };
 }
 
+function validObservedSamplePayload() {
+  const payload = validRegistryCoveragePayload();
+  return {
+    ...payload,
+    schemaVersion: "3.0.0" as const,
+    countries: [{
+      ...payload.countries[0]!,
+      collectionClass: "observed_sample" as const,
+      ratePacksObserved: 91,
+      qualifyingHitPacks: 2,
+      observedRate: 2 / 91,
+    }],
+    sources: payload.sources.map((source) =>
+      source.id === "comicbook_perfect_order_study"
+        ? {
+            ...source,
+            coverage: {
+              packsObserved: 55,
+              countriesObserved: 1,
+              completeOpenings: 1,
+              ratePacksObserved: 55,
+              qualifyingHitPacks: 1,
+              observedRate: 1 / 55,
+            },
+          }
+        : source,
+    ),
+  };
+}
+
 function emptyPublicSnapshot() {
   return publicDashboardDataSchema.parse({
     ...DEMO_PUBLIC_DATA,
@@ -216,7 +246,7 @@ describe("reviewed public-study coverage merge", () => {
       deltaFromBaseline: null,
       state: "insufficient",
     });
-    expect(japan?.sampleNote).toContain("30 observed packs across 1 independent sources");
+    expect(japan?.sampleNote).toContain("No exact normalized numerator");
     expect(parsed.observations.countriesWithPublishedRate).toBe(0);
     expect(parsed.sets.some((set) => set.slug.toLowerCase() === "m3")).toBe(false);
     expect(parsed.regions.find((region) => region.countryCode === "JP")).toMatchObject({
@@ -408,6 +438,60 @@ describe("reviewed public-study coverage merge", () => {
       countriesObserved: 1,
       completeOpenings: 1,
     });
+  });
+
+  it("publishes exact raw sample arithmetic without inventing inference", () => {
+    const parsed = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(emptyPublicSnapshot(), validObservedSamplePayload()),
+    );
+    const brazil = parsed.mapCells.find((cell) => cell.countryCode === "BR");
+
+    expect(brazil).toMatchObject({
+      packsObserved: 91,
+      ratePacksObserved: 91,
+      qualifyingHitPacks: 2,
+      hitRate: 2 / 91,
+      collectionClass: "observed_sample",
+      baselineRate: null,
+      posteriorMean: null,
+      credibleInterval: null,
+      deltaFromBaseline: null,
+      state: "insufficient",
+    });
+    expect(brazil?.sampleNote).toContain("2 qualifying-hit packs among 91");
+    expect(parsed.regions.find((region) => region.countryCode === "BR")).toMatchObject({
+      ratePacksObserved: 91,
+      qualifyingHitPacks: 2,
+      hitRate: 2 / 91,
+    });
+    expect(parsed.observations).toMatchObject({
+      status: "published",
+      countriesWithPublishedRate: 1,
+    });
+    expect(
+      parsed.sources.find((source) => source.id === "comicbook_perfect_order_study")
+        ?.coverage,
+    ).toMatchObject({
+      ratePacksObserved: 55,
+      qualifyingHitPacks: 1,
+      observedRate: 1 / 55,
+    });
+  });
+
+  it("rejects incomplete or arithmetically inconsistent raw-rate tuples", () => {
+    const missingNumerator = validObservedSamplePayload();
+    delete (missingNumerator.countries[0] as {
+      qualifyingHitPacks?: number;
+    }).qualifyingHitPacks;
+    const wrongRate = validObservedSamplePayload();
+    wrongRate.countries[0]!.observedRate = 0.5;
+
+    expect(
+      mergePublicStudyCoverage(emptyPublicSnapshot(), missingNumerator),
+    ).toEqual(emptyPublicSnapshot());
+    expect(
+      mergePublicStudyCoverage(emptyPublicSnapshot(), wrongRate),
+    ).toEqual(emptyPublicSnapshot());
   });
 
   it("replaces only a mentioned v2 coverage row and preserves unrelated cells and inference", () => {

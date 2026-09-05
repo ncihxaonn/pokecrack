@@ -70,7 +70,7 @@ select ok(
 );
 select ok(
   ingest.reviewed_public_study_gates_ready_v1(),
-  'all nine reviewed source gates are present'
+  'all current reviewed source gates are present'
 );
 delete from ingest.source_request_gates
 where source_key = 'public_study_buyfunlife_tw_40';
@@ -82,9 +82,13 @@ insert into ingest.source_request_gates (source_key)
 values ('public_study_buyfunlife_tw_40');
 
 select is(
-  (select count(*)::integer from ingest.reviewed_public_study_contracts()),
+  (
+    select count(*)::integer
+    from ingest.reviewed_public_study_contracts()
+    where ordinal between 1 and 9
+  ),
   9,
-  'the reviewed registry contains the two statistical and seven coverage contracts'
+  'the reviewed registry retains the original nine-contract prefix'
 );
 select is(
   (
@@ -207,10 +211,10 @@ select is(
       pg_get_functiondef('ingest.enqueue_public_study_coverage_job_v1(text,integer,text,timestamptz,integer)'::regprocedure),
       pg_get_functiondef('ingest.enqueue_scheduled_public_study_coverage_job_v1(text,timestamptz,text,integer,integer)'::regprocedure)
     ]) as definitions(definition)
-    where position('contracts.ordinal in (3, 4, 5, 6, 7, 8, 9)' in definition) > 0
+    where position('contracts.ordinal in (3, 4, 5, 6, 7, 8, 9' in definition) > 0
   ),
   4,
-  'all four coverage ingestion boundaries admit the same seven-contract allowlist'
+  'all four coverage ingestion boundaries retain the seven-contract Asia prefix'
 );
 select ok(
   (
@@ -400,10 +404,40 @@ select is(
   }'::jsonb),
   'v2 exposes an exact source-native data version for every new Asian country'
 );
-select doesnt_match(
-  public.get_public_study_coverage_v2()::text,
-  '(?i)(qualifyingHitPackCount|qualifyingMetric|metricVersion|hitRate|observedRate|numerator)',
-  'the public Asian projection exposes no numerator, rate, or metric field'
+select ok(
+  not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_public_study_coverage_v2() -> 'countries'
+    ) as country(item)
+    where country.item ->> 'countryCode' in ('KR', 'TW', 'TH')
+      and country.item ?| array[
+        'ratePacksObserved', 'qualifyingHitPacks', 'observedRate',
+        'qualifyingMetric', 'metricVersion', 'numerator'
+      ]
+  )
+  and not exists (
+    select 1
+    from jsonb_array_elements(
+      public.get_public_study_coverage_v2() -> 'sources'
+    ) as source(item)
+    where source.item ->> 'id' in (
+      'limitsend_inferno_x_study',
+      'buyfunlife_ninja_spinner_study',
+      'allonline_mega_dream_ex_study'
+    )
+      and (
+        source.item ?| array[
+          'ratePacksObserved', 'qualifyingHitPacks', 'observedRate',
+          'qualifyingMetric', 'metricVersion', 'numerator'
+        ]
+        or (source.item -> 'coverage') ?| array[
+          'ratePacksObserved', 'qualifyingHitPacks', 'observedRate',
+          'qualifyingMetric', 'metricVersion', 'numerator'
+        ]
+      )
+  ),
+  'the three Asian v2 projections expose no numerator, rate, or metric field'
 );
 select ok(
   not exists (

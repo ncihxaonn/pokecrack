@@ -88,7 +88,7 @@ describe("public route behavior", () => {
 
   it("covers the complete methodology and explicit source boundaries", () => {
     const { unmount } = render(<MethodologyView data={DEMO_PUBLIC_DATA} synthetic />);
-    for (const phrase of ["AI Extractor", "independent AI Validator", "Dedup and cross-post checks", "Statistics eligibility", "Empirical Bayes interval", "90% credible interval", "Rate display and comparative signals both require minimum source diversity", "Social selection bias", "Regional correlation does not establish causation", "Retailer inventory or attribution is not pull evidence", "Version and update frequency"]) {
+    for (const phrase of ["AI Extractor", "independent AI Validator", "Dedup and cross-post checks", "Statistics eligibility", "Empirical Bayes interval", "90% credible interval", "descriptive observed sample rate at any sample size", "Social selection bias", "Regional correlation does not establish causation", "Retailer inventory or attribution is not pull evidence", "Version and update frequency"]) {
       expect(screen.getByText(new RegExp(phrase, "i"))).toBeVisible();
     }
     unmount();
@@ -125,7 +125,8 @@ describe("public route behavior", () => {
 
     render(<SourcesView data={data} synthetic={false} />);
 
-    expect(screen.getByText("Reviewed opening samples only — not a hit rate")).toBeVisible();
+    expect(screen.getByText("Reviewed opening-sample facts")).toBeVisible();
+    expect(screen.getByText("No exact normalized numerator")).toBeVisible();
     expect(screen.getByText("Observed packs")).toBeVisible();
     expect(screen.getByText("Attributed coverage buckets")).toBeVisible();
     expect(screen.getByText("Complete openings")).toBeVisible();

@@ -18,6 +18,9 @@ from .adapters.public_studies import (
     comicbook_perfect_order_adapter,
     limitsend_inferno_x_adapter,
     pokesup_abyss_eye_adapter,
+    pontocom_herois_excelsos_adapter,
+    richards_bricks_charizard_upc_adapter,
+    richards_bricks_mega_evolution_box_adapter,
     tcgtalk_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
@@ -74,6 +77,18 @@ def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistr
     static_registry.register(
         "allonline_mega_dream_ex_study",
         allonline_mega_dream_ex_adapter(client=http_client),
+    )
+    static_registry.register(
+        "pontocom_herois_excelsos_study",
+        pontocom_herois_excelsos_adapter(client=http_client),
+    )
+    static_registry.register(
+        "richards_bricks_charizard_upc_study",
+        richards_bricks_charizard_upc_adapter(client=http_client),
+    )
+    static_registry.register(
+        "richards_bricks_mega_evolution_box_study",
+        richards_bricks_mega_evolution_box_adapter(client=http_client),
     )
     return static_registry
 

@@ -79,6 +79,7 @@ from pokecrack_worker.config.registries import YouTubeQueryRegistry
 from pokecrack_worker.config.settings import DataMode, Settings
 from pokecrack_worker.config.source_policy import SourcePolicyRegistry
 from pokecrack_worker.db import PsycopgQueryExecutor
+from pokecrack_worker.deduplication.urls import extract_platform_id
 from pokecrack_worker.jobs import (
     BlueskyCursorRecoveryCompletion,
     BlueskyDeletionWrite,
@@ -590,7 +591,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 9
+        count(*) = 12
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -797,6 +798,106 @@ public_study_dependencies AS (
               "rights_scope":"minimal_noncreative_facts_no_media_or_body_reuse"
             }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pontocom_br_48'
+            AND policies.display_name = 'PontoCOM Heróis Excelsos Brazil 48-pack study'
+            AND policies.domain = 'pontocomdesenvolvimento.net'
+            AND policies.base_url = 'https://pontocomdesenvolvimento.net/postagem/1028/herois-excelsos-vale-a-pena-abrir-uma-case-lacrada'
+            AND policies.version = 'public-study-pontocom-herois-excelsos-v1'
+            AND policies.config ->> 'study_key' = 'pontocom-herois-excelsos-br-48-v1'
+            AND policies.config ->> 'country_code' = 'BR'
+            AND policies.config ->> 'set_language' = 'pt-BR'
+            AND policies.config ->> 'set_name' = 'Heróis Excelsos'
+            AND policies.config ->> 'product_scope' = 'four_pack_blister'
+            AND policies.config ->> 'pack_count' = '48'
+            AND policies.config ->> 'qualifying_hit_pack_count' = '1'
+            AND policies.config ->> 'qualifying_metric' = 'sir_pack'
+            AND policies.config ->> 'metric_version' = 'global-sir-v1'
+            AND policies.config ->> 'observed_at' = '2026-01-26T23:29:00Z'
+            AND policies.config ->> 'denominator_complete' = 'true'
+            AND policies.config ->> 'denominator_derivation' = '12×4'
+            AND policies.config ->> 'video_id' = 'idfg-A54S1k'
+            AND policies.config ->> 'video_review_method' = 'manual_timestamped_video_review'
+            AND policies.config ->> 'robots_status' = '404_not_found_live_collection_blocked'
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_richards_bricks_pr_18'
+            AND policies.display_name = 'Richard''s Bricks Mega Charizard X ex 18-pack study'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=OON-ICjlrd4'
+            AND policies.version = 'public-study-richards-bricks-youtube-v1'
+            AND policies.config = '{
+              "study_key":"richards-bricks-charizard-upc-pr-18-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=OON-ICjlrd4",
+              "fetch_url":"https://www.youtube.com/watch?v=OON-ICjlrd4",
+              "collector_version":"public-study-richards-bricks-youtube-v1",
+              "parser_version":"richards-bricks-charizard-upc-evidence-v1",
+              "country_code":"PR",
+              "country_name":"Puerto Rico",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@Richards_Bricks/about",
+              "publisher_channel_id":"UCP2PM8ZRJ_fiKlzJNGc02pQ",
+              "publisher_country_evidence":"country:\\\"Puerto Rico\\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"mixed-tpci-2025",
+              "set_scope":"mixed_multi_expansion",
+              "set_name":"Mixed English TPCI expansions",
+              "product_name":"Mega Charizard X ex Ultra-Premium Collection",
+              "product_scope":"all",
+              "pack_count":18,
+              "observed_at":"2025-12-24T11:03:10Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_richards_bricks_pr_36'
+            AND policies.display_name = 'Richard''s Bricks Mega Evolution 36-pack study'
+            AND policies.domain = 'm.youtube.com'
+            AND policies.base_url = 'https://m.youtube.com/watch?v=p_8k9ZkHV_0'
+            AND policies.version = 'public-study-richards-bricks-youtube-v1'
+            AND policies.config = '{
+              "study_key":"richards-bricks-mega-evolution-box-pr-36-v1",
+              "canonical_url":"https://m.youtube.com/watch?v=p_8k9ZkHV_0",
+              "fetch_url":"https://m.youtube.com/watch?v=p_8k9ZkHV_0",
+              "collector_version":"public-study-richards-bricks-youtube-v1",
+              "parser_version":"richards-bricks-mega-evolution-box-evidence-v1",
+              "country_code":"PR",
+              "country_name":"Puerto Rico",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@Richards_Bricks/about",
+              "publisher_channel_id":"UCP2PM8ZRJ_fiKlzJNGc02pQ",
+              "publisher_country_evidence":"country:\\\"Puerto Rico\\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me01",
+              "set_scope":"single_expansion",
+              "set_name":"Mega Evolution",
+              "product_name":"Mega Evolution Booster Box",
+              "product_scope":"booster_box",
+              "pack_count":36,
+              "observed_at":"2025-10-20T15:30:33Z",
+              "denominator_complete":true,
+              "robots_url":"https://m.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
@@ -807,7 +908,10 @@ public_study_dependencies AS (
         'public_study_pokesup_jp_30',
         'public_study_limitsend_kr_30',
         'public_study_buyfunlife_tw_40',
-        'public_study_allonline_th_10'
+        'public_study_allonline_th_10',
+        'public_study_pontocom_br_48',
+        'public_study_richards_bricks_pr_18',
+        'public_study_richards_bricks_pr_36'
       )
     ),
     false
@@ -2417,8 +2521,12 @@ def _public_study_handler(
         if len(candidates) != 1:
             raise JobExecutionError(code="public_study_result_invalid", retryable=False)
         candidate = candidates[0]
+        allowed_external_ids = {study_key}
+        platform_identity = extract_platform_id(identity.fetch_url)
+        if platform_identity is not None:
+            allowed_external_ids.add(platform_identity.external_id)
         if (
-            candidate.external_id != study_key
+            candidate.external_id not in allowed_external_ids
             or candidate.title is None
             or candidate.text is None
             or candidate.content_sha256 is None

@@ -700,6 +700,204 @@ sources:
     cache_ttl_seconds: 86400
     retain_raw_html: false
     terms_url: https://allonline.7eleven.co.th/service/help2/terms/
+  pontocomdesenvolvimento.net:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-pontocom-herois-excelsos-v1
+    config:
+      study_key: pontocom-herois-excelsos-br-48-v1
+      canonical_url: https://pontocomdesenvolvimento.net/postagem/1028/herois-excelsos-vale-a-pena-abrir-uma-case-lacrada
+      collector_version: public-study-pontocom-herois-excelsos-v1
+      parser_version: pontocom-herois-excelsos-evidence-v1
+      country_code: BR
+      country_name: Brazil
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      set_external_id: me02.5
+      set_language: pt-BR
+      set_name: Heróis Excelsos
+      set_official_url: https://www.pokemon.com/br/pokemon-estampas-ilustradas/cartas-de-pokemon/series/me2pt5/
+      product_scope: four_pack_blister
+      product_name: Blister Quádruplo
+      source_native_product: 12 Blisters Quadruplos
+      pack_count: 48
+      denominator_derivation: 12×4
+      qualifying_hit_pack_count: 1
+      qualifying_metric: sir_pack
+      metric_version: global-sir-v1
+      source_published_at: "2026-01-26T20:29:00-03:00"
+      observed_at: "2026-01-26T23:29:00Z"
+      denominator_complete: true
+      video_url: https://www.youtube.com/watch?v=idfg-A54S1k
+      video_id: idfg-A54S1k
+      video_embed_url: https://www.youtube.com/embed/idfg-A54S1k
+      video_review_method: manual_timestamped_video_review
+      video_reviewed_at: "2026-09-05"
+      video_review_timestamps:
+        - at: "00:07"
+          finding: 12 Blisters Quadruplos
+        - at: "02:34-02:58"
+          card_name: Mega Meganium ex
+          card_number: 272/217
+          normalized_rarity: SIR
+        - at: "16:49-16:56"
+          card_name: Mawile
+          card_number: 246/217
+          normalized_rarity: IR
+        - at: "19:49-20:08"
+          card_name: Heliolisk
+          card_number: 229/217
+          normalized_rarity: IR
+        - at: "22:07"
+          finding: manual summary of two generic art cards
+      card_rarity_mapping:
+        - card_name: Mega Meganium ex
+          card_number: 272/217
+          official_url: https://www.pokemon.com/br/pokemon-estampas-ilustradas/cartas-de-pokemon/series/me2pt5/272/
+          official_rarity_en: Special Illustration Rare
+          official_rarity_pt_br: Ilustração Rara Especial
+          normalized_rarity: SIR
+          counts_as_sir: true
+        - card_name: Mawile
+          card_number: 246/217
+          official_url: https://www.pokemon.com/br/pokemon-estampas-ilustradas/cartas-de-pokemon/series/me2pt5/246/
+          official_rarity_en: Illustration Rare
+          official_rarity_pt_br: Ilustração Rara
+          normalized_rarity: IR
+          counts_as_sir: false
+        - card_name: Heliolisk
+          card_number: 229/217
+          official_url: https://www.pokemon.com/br/pokemon-estampas-ilustradas/cartas-de-pokemon/series/me2pt5/229/
+          official_rarity_en: Illustration Rare
+          official_rarity_pt_br: Ilustração Rara
+          normalized_rarity: IR
+          counts_as_sir: false
+      robots_url: https://pontocomdesenvolvimento.net/robots.txt
+      robots_checked_at: "2026-09-05"
+      robots_status: 404_not_found_live_collection_blocked
+      terms_checked_at: "2026-09-05"
+      terms_status: publisher_terms_not_found_in_review
+      rights_scope: minimal_noncreative_facts_no_media_or_body_reuse
+    reason: Reviewed Brazil public study from the PontoCOM 2026-01-26 Heróis Excelsos case. The manual timestamped video review establishes 12 four-pack blisters and one normalized SIR in 48 packs; Mawile and Heliolisk are official Illustration Rare cards only. Publisher/product-market attribution is not a physical opening-location claim. Live static collection remains blocked fail-closed because the checked robots.txt returned 404.
+    routes: [static]
+    adapter: pontocom_herois_excelsos_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+  www.youtube.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-richards-bricks-youtube-v1
+    config:
+      study_key: richards-bricks-charizard-upc-pr-18-v1
+      canonical_url: https://www.youtube.com/watch?v=OON-ICjlrd4
+      fetch_url: https://www.youtube.com/watch?v=OON-ICjlrd4
+      collector_version: public-study-richards-bricks-youtube-v1
+      parser_version: richards-bricks-charizard-upc-evidence-v1
+      country_code: PR
+      country_name: Puerto Rico
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      publisher_country_url: https://www.youtube.com/@Richards_Bricks/about
+      publisher_channel_id: UCP2PM8ZRJ_fiKlzJNGc02pQ
+      publisher_country_evidence: 'country:"Puerto Rico"'
+      publisher_country_checked_at: "2026-09-05"
+      geography_review_method: manual_static_channel_about_review
+      set_external_id: mixed-tpci-2025
+      set_scope: mixed_multi_expansion
+      set_name: Mixed English TPCI expansions
+      product_name: Mega Charizard X ex Ultra-Premium Collection
+      product_scope: all
+      pack_count: 18
+      observed_at: "2025-12-24T11:03:10Z"
+      denominator_complete: true
+      robots_url: https://www.youtube.com/robots.txt
+      robots_checked_at: "2026-09-05"
+      robots_decision: watch_route_not_disallowed
+      terms_url: https://www.youtube.com/static?template=terms
+      terms_checked_at: "2026-09-05"
+      terms_effective_date: "2023-12-15"
+      terms_status: public_browse_static_metadata_only
+      rights_scope: minimal_noncreative_facts_no_media_transcript_or_body_reuse
+    reason: Exact static YouTube watch metadata proves an 18-pack opening and publication date; Puerto Rico is publisher-country evidence only, with no physical opening location claim or media/transcript reuse.
+    routes: [static]
+    adapter: richards_bricks_charizard_upc_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://www.youtube.com/static?template=terms
+  m.youtube.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-richards-bricks-youtube-v1
+    config:
+      study_key: richards-bricks-mega-evolution-box-pr-36-v1
+      canonical_url: https://m.youtube.com/watch?v=p_8k9ZkHV_0
+      fetch_url: https://m.youtube.com/watch?v=p_8k9ZkHV_0
+      collector_version: public-study-richards-bricks-youtube-v1
+      parser_version: richards-bricks-mega-evolution-box-evidence-v1
+      country_code: PR
+      country_name: Puerto Rico
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      publisher_country_url: https://www.youtube.com/@Richards_Bricks/about
+      publisher_channel_id: UCP2PM8ZRJ_fiKlzJNGc02pQ
+      publisher_country_evidence: 'country:"Puerto Rico"'
+      publisher_country_checked_at: "2026-09-05"
+      geography_review_method: manual_static_channel_about_review
+      set_external_id: me01
+      set_scope: single_expansion
+      set_name: Mega Evolution
+      product_name: Mega Evolution Booster Box
+      product_scope: booster_box
+      pack_count: 36
+      observed_at: "2025-10-20T15:30:33Z"
+      denominator_complete: true
+      robots_url: https://m.youtube.com/robots.txt
+      robots_checked_at: "2026-09-05"
+      robots_decision: watch_route_not_disallowed
+      terms_url: https://www.youtube.com/static?template=terms
+      terms_checked_at: "2026-09-05"
+      terms_effective_date: "2023-12-15"
+      terms_status: public_browse_static_metadata_only
+      rights_scope: minimal_noncreative_facts_no_media_transcript_or_body_reuse
+    reason: Exact static YouTube watch metadata proves a complete 36-pack booster-box opening and publication date; Puerto Rico remains publisher-country evidence only, with no physical opening location claim or media/transcript reuse.
+    routes: [static]
+    adapter: richards_bricks_mega_evolution_box_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://www.youtube.com/static?template=terms
   dynamic.example:
     enabled: true
     collector: scrapling_dynamic

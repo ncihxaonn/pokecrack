@@ -5269,6 +5269,7 @@ export type Database = {
       get_public_social_discovery_v4: { Args: never; Returns: Json }
       get_public_study_coverage_v1: { Args: never; Returns: Json }
       get_public_study_coverage_v2: { Args: never; Returns: Json }
+      get_public_study_coverage_v3: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never

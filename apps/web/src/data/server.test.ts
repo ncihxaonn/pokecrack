@@ -169,8 +169,9 @@ describe("public live-data client", () => {
     await expect(getDashboardData()).resolves.toBe(snapshot);
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v2",
+      "get_public_study_coverage_v3",
       "get_public_social_discovery_v4",
+      "get_public_study_coverage_v2",
       "get_public_study_coverage_v1",
       "get_public_social_discovery_v3",
     ]);
@@ -206,8 +207,30 @@ describe("public live-data client", () => {
     );
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v2",
+      "get_public_study_coverage_v3",
       "get_public_social_discovery_v4",
+      "get_public_social_discovery_v3",
+    ]);
+  });
+
+  it("falls back to the reviewed v2 projection when v3 returns malformed data", async () => {
+    mocks.rpc
+      .mockResolvedValueOnce({ data: DEMO_PUBLIC_DATA, error: null })
+      .mockResolvedValueOnce({ data: { schemaVersion: "3.0.0" }, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "social unavailable" } })
+      .mockResolvedValueOnce({ data: v2CoveragePayload, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "social fallback unavailable" } });
+
+    const result = await getDashboardData();
+    expect((result as unknown as typeof DEMO_PUBLIC_DATA).mapCells)
+      .toEqual(expect.arrayContaining([
+        expect.objectContaining({ countryCode: "BR", packsObserved: 91 }),
+      ]));
+    expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
+      "get_public_dashboard_snapshot_v3",
+      "get_public_study_coverage_v3",
+      "get_public_social_discovery_v4",
+      "get_public_study_coverage_v2",
       "get_public_social_discovery_v3",
     ]);
   });
@@ -227,7 +250,7 @@ describe("public live-data client", () => {
     });
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v2",
+      "get_public_study_coverage_v3",
       "get_public_social_discovery_v4",
       "get_public_social_discovery_v3",
     ]);
@@ -255,7 +278,7 @@ describe("public live-data client", () => {
     );
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v2",
+      "get_public_study_coverage_v3",
       "get_public_social_discovery_v4",
       "get_public_social_discovery_v3",
     ]);
@@ -273,7 +296,7 @@ describe("public live-data client", () => {
     await expect(getDashboardData()).resolves.toBe(DEMO_PUBLIC_DATA);
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v2",
+      "get_public_study_coverage_v3",
       "get_public_social_discovery_v4",
     ]);
   });

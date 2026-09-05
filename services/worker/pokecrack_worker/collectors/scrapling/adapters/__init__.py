@@ -9,6 +9,7 @@ from .public_studies import (
     cardchill_ascended_heroes_adapter,
     comicbook_perfect_order_adapter,
     pokesup_abyss_eye_adapter,
+    pontocom_herois_excelsos_adapter,
     tcgtalk_perfect_order_adapter,
     wargamer_chaos_rising_adapter,
 )
@@ -22,6 +23,7 @@ __all__ = [
     "cardchill_ascended_heroes_adapter",
     "comicbook_perfect_order_adapter",
     "pokesup_abyss_eye_adapter",
+    "pontocom_herois_excelsos_adapter",
     "tcgtalk_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",
 ]
