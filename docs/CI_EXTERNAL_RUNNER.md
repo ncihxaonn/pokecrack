@@ -45,9 +45,10 @@ Use a disposable Docker-capable Linux VM, container host or CI worker that is
 not the production VPS and has no production credentials mounted. Clone/fetch
 the full Git history so the repository-policy stage can scan it. The runner
 needs Git, Bash, Python 3, Node 22.13, pnpm 11.23, uv 0.11.6, Docker Compose,
-ShellCheck, and either a native Gitleaks binary or access to pull the
-version-pinned `ghcr.io/gitleaks/gitleaks:v8.30.1` image. The script records the
-resolved image digest in the evidence directory.
+ShellCheck and access to pull the immutable official Gitleaks image
+`ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f`.
+The script verifies the pull digest and records the immutable image reference
+in the evidence directory; it does not accept a scanner override.
 
 Run from a clean checkout of the candidate:
 

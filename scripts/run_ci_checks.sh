@@ -21,7 +21,9 @@ TOOL_RECORDS=''
 
 POSTGRES_META_SOURCE='ghcr.io/supabase/postgres-meta@sha256:cef71ba901751dcc242cc685cf13786935ea8926820fb342f23bb0fbef77de5a'
 POSTGRES_META_TARGET='public.ecr.aws/supabase/postgres-meta:v0.98.0'
-GITLEAKS_IMAGE=${POKECRACK_GITLEAKS_IMAGE:-ghcr.io/gitleaks/gitleaks:v8.30.1}
+POSTGRES_META_DIGEST='sha256:cef71ba901751dcc242cc685cf13786935ea8926820fb342f23bb0fbef77de5a'
+GITLEAKS_IMAGE='ghcr.io/gitleaks/gitleaks@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f'
+GITLEAKS_DIGEST='sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f'
 
 usage() {
   cat <<'USAGE'
@@ -89,11 +91,7 @@ record_tool() {
       value=$(shellcheck --version 2>&1 | sed -n '2p') || value=unavailable
       ;;
     gitleaks)
-      if command -v gitleaks >/dev/null 2>&1; then
-        value=$(gitleaks version 2>&1 | sed -n '1p') || value=unavailable
-      else
-        value="docker-image:${GITLEAKS_IMAGE}"
-      fi
+      value="docker-image:${GITLEAKS_IMAGE}"
       ;;
     *)
       value=unavailable
@@ -373,10 +371,13 @@ stage_database() {
   require_command diff
   cd "$REPO_ROOT"
 
-  docker pull "$POSTGRES_META_SOURCE"
+  local postgres_meta_pull_log="$EVIDENCE_DIR/postgres-meta-pull.log"
+  docker pull "$POSTGRES_META_SOURCE" | tee "$postgres_meta_pull_log"
+  chmod 0600 "$postgres_meta_pull_log"
+  grep -Fqx "Digest: $POSTGRES_META_DIGEST" "$postgres_meta_pull_log" \
+    || die "PostgreSQL-meta image digest was not confirmed"
   docker tag "$POSTGRES_META_SOURCE" "$POSTGRES_META_TARGET"
-  docker image inspect --format '{{index .RepoDigests 0}}' "$POSTGRES_META_SOURCE" \
-    >"$EVIDENCE_DIR/postgres-meta-image.txt"
+  printf '%s\n' "$POSTGRES_META_SOURCE" >"$EVIDENCE_DIR/postgres-meta-image.txt"
   chmod 0600 "$EVIDENCE_DIR/postgres-meta-image.txt"
 
   local start_output=/tmp/pokecrack-supabase-start-output.XXXXXXXX
@@ -429,15 +430,14 @@ stage_database() {
 }
 
 run_gitleaks() {
-  if command -v gitleaks >/dev/null 2>&1; then
-    gitleaks detect --source="$REPO_ROOT" --redact --no-banner
-    return
-  fi
   require_command docker
   [[ "$GITLEAKS_IMAGE" =~ ^[A-Za-z0-9./:@_-]+$ ]] || die "GITLEAKS_IMAGE contains unsupported characters"
-  docker pull "$GITLEAKS_IMAGE"
-  docker image inspect --format '{{index .RepoDigests 0}}' "$GITLEAKS_IMAGE" \
-    >"$EVIDENCE_DIR/gitleaks-image.txt"
+  local gitleaks_pull_log="$EVIDENCE_DIR/gitleaks-pull.log"
+  docker pull "$GITLEAKS_IMAGE" | tee "$gitleaks_pull_log"
+  chmod 0600 "$gitleaks_pull_log"
+  grep -Fqx "Digest: $GITLEAKS_DIGEST" "$gitleaks_pull_log" \
+    || die "Gitleaks image digest was not confirmed"
+  printf '%s\n' "$GITLEAKS_IMAGE" >"$EVIDENCE_DIR/gitleaks-image.txt"
   chmod 0600 "$EVIDENCE_DIR/gitleaks-image.txt"
   docker run --rm \
     --network none \
