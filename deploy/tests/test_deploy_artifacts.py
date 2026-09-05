@@ -73,6 +73,16 @@ ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V8 = (
     PUBLIC_STUDY_SOURCE_KEYS_V7 + ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS
 )
+AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_cofre_lab_chilling_reign_cr_4",
+    b"public_study_pokeyabros_perfect_order_co_2",
+    b"public_study_andree_insane_cards_cosmic_eclipse_ec_20",
+    b"public_study_thekeiplay_lost_origin_pe_36",
+    b"public_study_gringo_gameplays_silver_tempest_uy_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V9 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V8 + AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS
+)
 POKESUP_POLICY = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
 CARDCHILL_POLICY = "99999999-9999-4999-8999-999999999990"
 BLEEDINGCOOL_POLICY = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa0"
@@ -90,6 +100,11 @@ PANAMA_PITCH_POLICY = "f4444444-4444-4444-8444-444444444444"
 GUATEMALA_POLICY = "f5555555-5555-4555-8555-555555555555"
 ARGENTINA_POLICY = "f6666666-6666-4666-8666-666666666666"
 CHILE_POLICY = "f7777777-7777-4777-8777-777777777777"
+COSTA_RICA_POLICY = "f8888888-8888-4888-8888-888888888888"
+COLOMBIA_POLICY = "f9999999-9999-4999-8999-999999999999"
+ECUADOR_POLICY = "fa111111-1111-4111-8111-111111111111"
+PERU_POLICY = "fa222222-2222-4222-8222-222222222222"
+URUGUAY_POLICY = "fa333333-3333-4333-8333-333333333333"
 PUBLIC_STUDY_COVERAGE_COLUMNS = (
     b"study_key, source_policy_id, country_code, country_name, source_observed_at, "
     b"pack_count, set_external_id, product_scope, collector_version, parser_version, "
@@ -134,9 +149,14 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V6,
         PUBLIC_STUDY_SOURCE_KEYS_V7,
         PUBLIC_STUDY_SOURCE_KEYS_V8,
+        PUBLIC_STUDY_SOURCE_KEYS_V9,
     ):
         product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
-        if source_keys in (PUBLIC_STUDY_SOURCE_KEYS_V7, PUBLIC_STUDY_SOURCE_KEYS_V8):
+        if source_keys in (
+            PUBLIC_STUDY_SOURCE_KEYS_V7,
+            PUBLIC_STUDY_SOURCE_KEYS_V8,
+            PUBLIC_STUDY_SOURCE_KEYS_V9,
+        ):
             product_values += b", 'build_and_battle'::text, 'three_pack_blister'::text"
     return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
 
@@ -257,6 +277,46 @@ PUBLIC_STUDY_COVERAGE_FACTS = {
         b"public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
         b"pokemaniaco-lucas-phantasmal-flames-evidence-v1",
         b"dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f",
+    ),
+    b"public_study_cofre_lab_chilling_reign_cr_4": (
+        b"cofre-lab-chilling-reign-cr-4-v1",
+        COSTA_RICA_POLICY.encode(), b"CR", b"Costa Rica", b"2021-06-06 05:54:03+00",
+        b"4", b"swsh6", b"build_and_battle",
+        b"public-study-cofre-lab-chilling-reign-youtube-v1",
+        b"cofre-lab-chilling-reign-evidence-v1",
+        b"8b307620e562e591d30922b077bb65960a50fd0be272e6c844c4233e536fc167",
+    ),
+    b"public_study_pokeyabros_perfect_order_co_2": (
+        b"pokeyabros-perfect-order-co-2-v1",
+        COLOMBIA_POLICY.encode(), b"CO", b"Colombia", b"2026-09-04 14:00:23+00",
+        b"2", b"me03", b"all",
+        b"public-study-pokeyabros-perfect-order-youtube-v1",
+        b"pokeyabros-perfect-order-evidence-v1",
+        b"0414e5fcd9d3708873ed5c84e78f9c523fb66ba7a30211d8f798c12c5533b7f8",
+    ),
+    b"public_study_andree_insane_cards_cosmic_eclipse_ec_20": (
+        b"andree-insane-cards-cosmic-eclipse-ec-20-v1",
+        ECUADOR_POLICY.encode(), b"EC", b"Ecuador", b"2023-06-27 21:00:07+00",
+        b"20", b"sm12", b"all",
+        b"public-study-andree-insane-cards-cosmic-eclipse-youtube-v1",
+        b"andree-insane-cards-cosmic-eclipse-evidence-v1",
+        b"9ebb6592d57fc2b452bbbd00b71e4e69633eec0a389069b1e475f4489a8fb0e9",
+    ),
+    b"public_study_thekeiplay_lost_origin_pe_36": (
+        b"thekeiplay-lost-origin-pe-36-v1",
+        PERU_POLICY.encode(), b"PE", b"Peru", b"2022-09-05 18:00:12+00",
+        b"36", b"swsh11", b"booster_box",
+        b"public-study-thekeiplay-lost-origin-youtube-v1",
+        b"thekeiplay-lost-origin-evidence-v1",
+        b"4c7a43da824a182cf0a550e46e21c34f1caadca259ff99d6485819ae95dd04ee",
+    ),
+    b"public_study_gringo_gameplays_silver_tempest_uy_36": (
+        b"gringo-gameplays-silver-tempest-uy-36-v1",
+        URUGUAY_POLICY.encode(), b"UY", b"Uruguay", b"2023-03-30 17:14:02+00",
+        b"36", b"swsh12", b"booster_box",
+        b"public-study-gringo-gameplays-silver-tempest-youtube-v1",
+        b"gringo-gameplays-silver-tempest-evidence-v1",
+        b"5f65c8f1ceca00fe06f56dbf684c50f1ca4116ce084aa9fbd4ead930b19d7264",
     ),
 }
 
@@ -1839,7 +1899,10 @@ COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
         include_canada_mexico: bool = False,
         include_panama_guatemala: bool = False,
         include_argentina_chile: bool = False,
+        include_americas_phase_two: bool = False,
     ) -> bytes:
+        if include_americas_phase_two:
+            include_argentina_chile = True
         if include_argentina_chile:
             include_panama_guatemala = True
         if include_panama_guatemala:
@@ -2011,6 +2074,28 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
                 guatemala_policy_row + argentina_chile_policy_rows,
                 1,
             )
+        if include_americas_phase_two:
+            chile_policy_row = (
+                CHILE_POLICY.encode()
+                + b"\tpublic_study_pokemaniaco_lucas_cl_36\n"
+            )
+            americas_phase_two_policy_rows = (
+                COSTA_RICA_POLICY.encode()
+                + b"\tpublic_study_cofre_lab_chilling_reign_cr_4\n"
+                + COLOMBIA_POLICY.encode()
+                + b"\tpublic_study_pokeyabros_perfect_order_co_2\n"
+                + ECUADOR_POLICY.encode()
+                + b"\tpublic_study_andree_insane_cards_cosmic_eclipse_ec_20\n"
+                + PERU_POLICY.encode()
+                + b"\tpublic_study_thekeiplay_lost_origin_pe_36\n"
+                + URUGUAY_POLICY.encode()
+                + b"\tpublic_study_gringo_gameplays_silver_tempest_uy_36\n"
+            )
+            base = base.replace(
+                chile_policy_row,
+                chile_policy_row + americas_phase_two_policy_rows,
+                1,
+            )
         source_keys = PUBLIC_STUDY_SOURCE_KEYS_V1
         if include_pokesup:
             source_keys = PUBLIC_STUDY_SOURCE_KEYS_V2
@@ -2026,6 +2111,8 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
             source_keys = PUBLIC_STUDY_SOURCE_KEYS_V7
         if include_argentina_chile:
             source_keys = PUBLIC_STUDY_SOURCE_KEYS_V8
+        if include_americas_phase_two:
+            source_keys = PUBLIC_STUDY_SOURCE_KEYS_V9
         coverage_rows = public_study_coverage_rows(source_keys)
         return (
             base
@@ -3128,6 +3215,72 @@ cache-second\t{youtube_policy}\t{second_video}
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(
                 backup_dir.joinpath("pokecrack-20261009T020205Z.sql.gz").exists()
+            )
+
+    def test_backup_accepts_exact_americas_phase_two_profile_and_rejects_drift(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(
+                include_americas_phase_two=True
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261010T020203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261010T020203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V9,
+            )
+            self.assertIn(post_seed, sanitized)
+            for source_key in AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS:
+                self.assertEqual(sanitized.count(source_key + b"\n"), 2)
+
+            partial_dump = post_migration_dump.replace(
+                URUGUAY_POLICY.encode()
+                + b"\tpublic_study_gringo_gameplays_silver_tempest_uy_36\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261010T020204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261010T020204Z.sql.gz").exists()
+            )
+
+            drifted_dump = post_migration_dump.replace(
+                b"\t20\tsm12\tall\t",
+                b"\t19\tsm12\tall\t",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261010T020205Z",
+                dump=drifted_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261010T020205Z.sql.gz").exists()
             )
 
     def test_backup_retains_the_complete_reviewed_aggregate_bridge_bundle(

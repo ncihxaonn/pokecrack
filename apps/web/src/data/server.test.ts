@@ -147,6 +147,89 @@ const v2CoveragePayload = {
     },
   ],
 } as const;
+const americasHistoricalCoveragePayload = {
+  schemaVersion: "3.0.0",
+  period: { start: "2021-06-06", end: "2026-09-05" },
+  countries: [
+    {
+      countryCode: "CR",
+      countryName: "Costa Rica",
+      dataVersions: ["und · swsh6 · Chilling Reign · build and battle"],
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["publisher_country"],
+      packsObserved: 4,
+      openings: 1,
+      independentSources: 1,
+      updatedAt: "2026-09-05T00:00:00Z",
+    },
+    {
+      countryCode: "CO",
+      countryName: "Colombia",
+      dataVersions: ["und · me03 · Perfect Order · all products"],
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["publisher_country"],
+      packsObserved: 2,
+      openings: 1,
+      independentSources: 1,
+      updatedAt: "2026-09-05T00:00:00Z",
+    },
+    {
+      countryCode: "EC",
+      countryName: "Ecuador",
+      dataVersions: ["und · sm12 · Cosmic Eclipse · all products"],
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["publisher_country"],
+      packsObserved: 20,
+      openings: 1,
+      independentSources: 1,
+      updatedAt: "2026-09-05T00:00:00Z",
+    },
+    {
+      countryCode: "PE",
+      countryName: "Peru",
+      dataVersions: ["und · swsh11 · Lost Origin · booster box"],
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["publisher_country"],
+      packsObserved: 36,
+      openings: 1,
+      independentSources: 1,
+      updatedAt: "2026-09-05T00:00:00Z",
+    },
+    {
+      countryCode: "UY",
+      countryName: "Uruguay",
+      dataVersions: ["und · swsh12 · Silver Tempest · booster box"],
+      collectionClass: "coverage_only",
+      coverageAttributionBases: ["publisher_country"],
+      packsObserved: 36,
+      openings: 1,
+      independentSources: 1,
+      updatedAt: "2026-09-05T00:00:00Z",
+    },
+  ],
+  sets: [],
+  sources: ([
+    ["cofre_lab_chilling_reign_study", "Cofre Lab Chilling Reign 4-pack study", "https://www.youtube.com/watch?v=15eGmqByP0I", 4],
+    ["pokeyabros_perfect_order_study", "Pokeyabros Perfect Order 2-pack study", "https://www.youtube.com/watch?v=n_PdWg27x-o", 2],
+    ["andree_insane_cards_cosmic_eclipse_study", "Andree Insane Cards Cosmic Eclipse 20-pack study", "https://www.youtube.com/watch?v=wDDCbJKFTCw", 20],
+    ["thekeiplay_lost_origin_study", "TheKeiPlay Lost Origin 36-pack study", "https://www.youtube.com/watch?v=YKHGiYIhsQU", 36],
+    ["gringo_gameplays_silver_tempest_study", "Gringo-GamePlays Silver Tempest 36-pack study", "https://www.youtube.com/watch?v=lYzM0jtPLKw", 36],
+  ] as const).map(([id, name, url, packsObserved]) => ({
+    id,
+    name,
+    kind: "community",
+    access: "public",
+    status: "operational",
+    lastCollectedAt: "2026-09-05T00:00:00Z",
+    url,
+    note: "Reviewed publisher-country coverage with an exact pack denominator and original source date retained.",
+    coverage: {
+      packsObserved,
+      countriesObserved: 1,
+      completeOpenings: 1,
+    },
+  })),
+} as const;
 
 describe("public live-data client", () => {
   beforeEach(() => mocks.rpc.mockReset());
@@ -211,6 +294,49 @@ describe("public live-data client", () => {
       "get_public_social_discovery_v4",
       "get_public_social_discovery_v3",
     ]);
+  });
+
+  it("publishes the real five-country Americas registry when the dashboard period is narrower", async () => {
+    mocks.rpc
+      .mockResolvedValueOnce({ data: DEMO_PUBLIC_DATA, error: null })
+      .mockResolvedValueOnce({ data: americasHistoricalCoveragePayload, error: null })
+      .mockResolvedValueOnce({ data: null, error: { message: "social unavailable" } })
+      .mockResolvedValueOnce({ data: null, error: { message: "social fallback unavailable" } });
+
+    const result = await getDashboardData();
+    const merged = result as unknown as typeof DEMO_PUBLIC_DATA;
+
+    expect(merged.observations.period).toEqual({
+      start: "2021-06-06",
+      end: "2026-09-05",
+    });
+    expect(merged.observations.observedPacks).toBe(98);
+    expect(merged.mapCells.map((cell) => cell.countryCode)).toEqual([
+      "CO",
+      "CR",
+      "EC",
+      "PE",
+      "UY",
+    ]);
+    for (const expected of americasHistoricalCoveragePayload.countries) {
+      expect(merged.mapCells.find((cell) => cell.countryCode === expected.countryCode))
+        .toMatchObject({
+          packsObserved: expected.packsObserved,
+          dataVersions: expected.dataVersions,
+          periodStart: "2021-06-06",
+          periodEnd: "2026-09-05",
+        });
+    }
+    expect(merged.sources).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: "cofre_lab_chilling_reign_study",
+        url: "https://www.youtube.com/watch?v=15eGmqByP0I",
+      }),
+      expect.objectContaining({
+        id: "gringo_gameplays_silver_tempest_study",
+        url: "https://www.youtube.com/watch?v=lYzM0jtPLKw",
+      }),
+    ]));
   });
 
   it("falls back to the reviewed v2 projection when v3 returns malformed data", async () => {

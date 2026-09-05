@@ -169,6 +169,16 @@ ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V8 = (
     PUBLIC_STUDY_SOURCE_KEYS_V7 + ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS
 )
+AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_cofre_lab_chilling_reign_cr_4",
+    b"public_study_pokeyabros_perfect_order_co_2",
+    b"public_study_andree_insane_cards_cosmic_eclipse_ec_20",
+    b"public_study_thekeiplay_lost_origin_pe_36",
+    b"public_study_gringo_gameplays_silver_tempest_uy_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V9 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V8 + AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS
+)
 # Each migration adds an exact append-only reviewed source profile. Keep every
 # complete transition profile available for pre-apply backups, while rejecting
 # unions and partially migrated sets as ambiguous and restore-unsafe.
@@ -181,8 +191,9 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V6,
     PUBLIC_STUDY_SOURCE_KEYS_V7,
     PUBLIC_STUDY_SOURCE_KEYS_V8,
+    PUBLIC_STUDY_SOURCE_KEYS_V9,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V8
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V9
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(
@@ -900,6 +911,7 @@ PUBLIC_STUDY_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V6: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V7: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V8: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V9: "v4_v5",
 }
 PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS = (
     "study_key text not null",
@@ -945,6 +957,7 @@ PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V6: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V7: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V8: "v7",
+    PUBLIC_STUDY_SOURCE_KEYS_V9: "v7",
 }
 PUBLIC_STUDY_POLICY_SOURCE_KEY = {
     b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
@@ -1024,6 +1037,11 @@ PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
     b"pokeshow-mega-evolution-gt-3-v1": b"public_study_pokeshow_guatemala_megaevolution_3",
     b"cartas-pokemon-argentina-pitch-black-ar-36-v1": b"public_study_cartas_pokemon_argentina_pitch_black_36",
     b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1": b"public_study_pokemaniaco_lucas_cl_36",
+    b"cofre-lab-chilling-reign-cr-4-v1": b"public_study_cofre_lab_chilling_reign_cr_4",
+    b"pokeyabros-perfect-order-co-2-v1": b"public_study_pokeyabros_perfect_order_co_2",
+    b"andree-insane-cards-cosmic-eclipse-ec-20-v1": b"public_study_andree_insane_cards_cosmic_eclipse_ec_20",
+    b"thekeiplay-lost-origin-pe-36-v1": b"public_study_thekeiplay_lost_origin_pe_36",
+    b"gringo-gameplays-silver-tempest-uy-36-v1": b"public_study_gringo_gameplays_silver_tempest_uy_36",
 }
 PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
     b"cardchill-ascended-heroes-gb-90-v1": {
@@ -1230,6 +1248,66 @@ PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
         "evidence_sha256": b"dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f",
         "is_demo": b"f",
     },
+    b"cofre-lab-chilling-reign-cr-4-v1": {
+        "country_code": b"CR",
+        "country_name": b"Costa Rica",
+        "pack_count": b"4",
+        "set_external_id": b"swsh6",
+        "product_scope": b"build_and_battle",
+        "collector_version": b"public-study-cofre-lab-chilling-reign-youtube-v1",
+        "parser_version": b"cofre-lab-chilling-reign-evidence-v1",
+        "source_policy_version": b"public-study-cofre-lab-chilling-reign-youtube-v1",
+        "evidence_sha256": b"8b307620e562e591d30922b077bb65960a50fd0be272e6c844c4233e536fc167",
+        "is_demo": b"f",
+    },
+    b"pokeyabros-perfect-order-co-2-v1": {
+        "country_code": b"CO",
+        "country_name": b"Colombia",
+        "pack_count": b"2",
+        "set_external_id": b"me03",
+        "product_scope": b"all",
+        "collector_version": b"public-study-pokeyabros-perfect-order-youtube-v1",
+        "parser_version": b"pokeyabros-perfect-order-evidence-v1",
+        "source_policy_version": b"public-study-pokeyabros-perfect-order-youtube-v1",
+        "evidence_sha256": b"0414e5fcd9d3708873ed5c84e78f9c523fb66ba7a30211d8f798c12c5533b7f8",
+        "is_demo": b"f",
+    },
+    b"andree-insane-cards-cosmic-eclipse-ec-20-v1": {
+        "country_code": b"EC",
+        "country_name": b"Ecuador",
+        "pack_count": b"20",
+        "set_external_id": b"sm12",
+        "product_scope": b"all",
+        "collector_version": b"public-study-andree-insane-cards-cosmic-eclipse-youtube-v1",
+        "parser_version": b"andree-insane-cards-cosmic-eclipse-evidence-v1",
+        "source_policy_version": b"public-study-andree-insane-cards-cosmic-eclipse-youtube-v1",
+        "evidence_sha256": b"9ebb6592d57fc2b452bbbd00b71e4e69633eec0a389069b1e475f4489a8fb0e9",
+        "is_demo": b"f",
+    },
+    b"thekeiplay-lost-origin-pe-36-v1": {
+        "country_code": b"PE",
+        "country_name": b"Peru",
+        "pack_count": b"36",
+        "set_external_id": b"swsh11",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-thekeiplay-lost-origin-youtube-v1",
+        "parser_version": b"thekeiplay-lost-origin-evidence-v1",
+        "source_policy_version": b"public-study-thekeiplay-lost-origin-youtube-v1",
+        "evidence_sha256": b"4c7a43da824a182cf0a550e46e21c34f1caadca259ff99d6485819ae95dd04ee",
+        "is_demo": b"f",
+    },
+    b"gringo-gameplays-silver-tempest-uy-36-v1": {
+        "country_code": b"UY",
+        "country_name": b"Uruguay",
+        "pack_count": b"36",
+        "set_external_id": b"swsh12",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-gringo-gameplays-silver-tempest-youtube-v1",
+        "parser_version": b"gringo-gameplays-silver-tempest-evidence-v1",
+        "source_policy_version": b"public-study-gringo-gameplays-silver-tempest-youtube-v1",
+        "evidence_sha256": b"5f65c8f1ceca00fe06f56dbf684c50f1ca4116ce084aa9fbd4ead930b19d7264",
+        "is_demo": b"f",
+    },
 }
 PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
     b"cardchill-ascended-heroes-gb-90-v1": datetime(2026, 3, 3, 11, 26, 21, tzinfo=UTC),
@@ -1249,6 +1327,11 @@ PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
     b"pokeshow-mega-evolution-gt-3-v1": datetime(2025, 10, 6, 17, 21, 33, tzinfo=UTC),
     b"cartas-pokemon-argentina-pitch-black-ar-36-v1": datetime(2026, 7, 17, 18, 18, 50, tzinfo=UTC),
     b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1": datetime(2025, 11, 13, 16, 0, 6, tzinfo=UTC),
+    b"cofre-lab-chilling-reign-cr-4-v1": datetime(2021, 6, 6, 5, 54, 3, tzinfo=UTC),
+    b"pokeyabros-perfect-order-co-2-v1": datetime(2026, 9, 4, 14, 0, 23, tzinfo=UTC),
+    b"andree-insane-cards-cosmic-eclipse-ec-20-v1": datetime(2023, 6, 27, 21, 0, 7, tzinfo=UTC),
+    b"thekeiplay-lost-origin-pe-36-v1": datetime(2022, 9, 5, 18, 0, 12, tzinfo=UTC),
+    b"gringo-gameplays-silver-tempest-uy-36-v1": datetime(2023, 3, 30, 17, 14, 2, tzinfo=UTC),
 }
 PUBLIC_STUDY_COVERAGE_KEYS_BY_SOURCE_PROFILE = {
     profile: frozenset(
