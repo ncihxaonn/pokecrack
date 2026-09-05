@@ -121,7 +121,10 @@ jobs:
             --role-output "$role_file"
 
           pooler_ready=false
-          for attempt in 1 2 3 4 5 6 7 8; do
+          # Supabase can take longer than 36 seconds to propagate a newly-created
+          # temporary login to the transaction pooler. Keep the wait bounded and
+          # fail closed, while allowing up to 78 seconds for propagation.
+          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if role_state="$(
               PATH="$client_dir:$PATH" python3 \
                 deploy/lib/run_with_database_url.py -- \
