@@ -12,23 +12,28 @@ from .adapters.dynamic_fixture import DynamicFixtureAdapter
 from .adapters.example_public import ExamplePublicAdapter
 from .adapters.public_studies import (
     allonline_mega_dream_ex_adapter,
+    andree_insane_cards_cosmic_eclipse_adapter,
     bleedingcool_phantasmal_flames_adapter,
     buyfunlife_ninja_spinner_adapter,
     cardchill_ascended_heroes_adapter,
     cartas_pokemon_argentina_pitch_black_adapter,
+    cofre_lab_chilling_reign_adapter,
     comicbook_perfect_order_adapter,
+    gringo_gameplays_silver_tempest_adapter,
     indigo_geek_megaevolucion_adapter,
     limitsend_inferno_x_adapter,
     pokehanna_ascended_heroes_adapter,
     pokemaniaco_lucas_phantasmal_flames_adapter,
     pokeshow_guatemala_megaevolution_adapter,
     pokesup_abyss_eye_adapter,
+    pokeyabros_perfect_order_adapter,
     pontocom_herois_excelsos_adapter,
     richards_bricks_charizard_upc_adapter,
     richards_bricks_mega_evolution_box_adapter,
     tcg_market_panama_chaos_rising_adapter,
     tcg_market_panama_pitch_black_adapter,
     tcgtalk_perfect_order_adapter,
+    thekeiplay_lost_origin_adapter,
     wargamer_chaos_rising_adapter,
 )
 
@@ -124,6 +129,26 @@ def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistr
     static_registry.register(
         "pokemaniaco_lucas_phantasmal_flames_study",
         pokemaniaco_lucas_phantasmal_flames_adapter(client=http_client),
+    )
+    static_registry.register(
+        "cofre_lab_chilling_reign_study",
+        cofre_lab_chilling_reign_adapter(client=http_client),
+    )
+    static_registry.register(
+        "pokeyabros_perfect_order_study",
+        pokeyabros_perfect_order_adapter(client=http_client),
+    )
+    static_registry.register(
+        "andree_insane_cards_cosmic_eclipse_study",
+        andree_insane_cards_cosmic_eclipse_adapter(client=http_client),
+    )
+    static_registry.register(
+        "thekeiplay_lost_origin_study",
+        thekeiplay_lost_origin_adapter(client=http_client),
+    )
+    static_registry.register(
+        "gringo_gameplays_silver_tempest_study",
+        gringo_gameplays_silver_tempest_adapter(client=http_client),
     )
     return static_registry
 

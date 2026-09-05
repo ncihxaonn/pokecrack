@@ -591,7 +591,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 19
+        count(*) = 24
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -1205,6 +1205,226 @@ public_study_dependencies AS (
               "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
             }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_cofre_lab_chilling_reign_cr_4'
+            AND policies.display_name = 'Cofre Lab Chilling Reign 4-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=15eGmqByP0I'
+            AND policies.version = 'public-study-cofre-lab-chilling-reign-youtube-v1'
+            AND policies.config = '{
+              "study_key":"cofre-lab-chilling-reign-cr-4-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=15eGmqByP0I",
+              "fetch_url":"https://www.youtube.com/watch?v=15eGmqByP0I",
+              "collector_version":"public-study-cofre-lab-chilling-reign-youtube-v1",
+              "parser_version":"cofre-lab-chilling-reign-evidence-v1",
+              "country_code":"CR",
+              "country_name":"Costa Rica",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@cofrelab/about",
+              "publisher_channel_id":"UCqYl3y-wsJqvwow5_tIa22A",
+              "publisher_country_evidence":"country:\\"Costa Rica\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"swsh6",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Chilling Reign",
+              "set_official_url":"https://press.pokemon.com/en/MEDIA-ALERT-New-Pokemon-Trading-Card-Game-Sword-ShieldChilling-Reign-E",
+              "product_name":"Sword & Shield—Chilling Reign Build & Battle Box",
+              "product_scope":"build_and_battle",
+              "pack_count":4,
+              "denominator_basis":"source_named_prerelease_box_plus_official_4_pack_spec",
+              "denominator_derivation":"one_build_and_battle_box_x_4",
+              "source_published_at":"2021-06-05T22:54:03-07:00",
+              "observed_at":"2021-06-06T05:54:03Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pokeyabros_perfect_order_co_2'
+            AND policies.display_name = 'Pokeyabros Perfect Order 2-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=n_PdWg27x-o'
+            AND policies.version = 'public-study-pokeyabros-perfect-order-youtube-v1'
+            AND policies.config = '{
+              "study_key":"pokeyabros-perfect-order-co-2-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=n_PdWg27x-o",
+              "fetch_url":"https://www.youtube.com/watch?v=n_PdWg27x-o",
+              "collector_version":"public-study-pokeyabros-perfect-order-youtube-v1",
+              "parser_version":"pokeyabros-perfect-order-evidence-v1",
+              "country_code":"CO",
+              "country_name":"Colombia",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@Pokeyabros/about",
+              "publisher_channel_id":"UC6iMHQS7wp-WVH_pD4leBZw",
+              "publisher_country_evidence":"country:\\"Colombia\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me03",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Perfect Order",
+              "set_official_url":"https://www.pokemon.com/us/features/art-of-the-pokemon-tcg-mega-evolution-perfect-order-expansion",
+              "product_name":"Two Perfect Order booster packs",
+              "product_scope":"all",
+              "pack_count":2,
+              "denominator_basis":"source_declared_two_booster_opening",
+              "denominator_derivation":"source_declared_2_packs",
+              "source_published_at":"2026-09-04T07:00:23-07:00",
+              "observed_at":"2026-09-04T14:00:23Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_andree_insane_cards_cosmic_eclipse_ec_20'
+            AND policies.display_name = 'Andree Insane Cards Cosmic Eclipse 20-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=wDDCbJKFTCw'
+            AND policies.version = 'public-study-andree-insane-cards-cosmic-eclipse-youtube-v1'
+            AND policies.config = '{
+              "study_key":"andree-insane-cards-cosmic-eclipse-ec-20-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=wDDCbJKFTCw",
+              "fetch_url":"https://www.youtube.com/watch?v=wDDCbJKFTCw",
+              "collector_version":"public-study-andree-insane-cards-cosmic-eclipse-youtube-v1",
+              "parser_version":"andree-insane-cards-cosmic-eclipse-evidence-v1",
+              "country_code":"EC",
+              "country_name":"Ecuador",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@andreeinsanecards/about",
+              "publisher_channel_id":"UCvg1acSdKlzcCXAQQKcMvqg",
+              "publisher_country_evidence":"country:\\"Ecuador\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"sm12",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Cosmic Eclipse",
+              "set_official_url":"https://www.pokemon.com/us/pokemon-tcg/sun-moon-cosmic-eclipse",
+              "product_name":"Twenty Cosmic Eclipse booster packs",
+              "product_scope":"all",
+              "pack_count":20,
+              "denominator_basis":"source_declared_twenty_booster_opening",
+              "denominator_derivation":"source_declared_20_packs",
+              "source_published_at":"2023-06-27T14:00:07-07:00",
+              "observed_at":"2023-06-27T21:00:07Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_thekeiplay_lost_origin_pe_36'
+            AND policies.display_name = 'TheKeiPlay Lost Origin 36-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=YKHGiYIhsQU'
+            AND policies.version = 'public-study-thekeiplay-lost-origin-youtube-v1'
+            AND policies.config = '{
+              "study_key":"thekeiplay-lost-origin-pe-36-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=YKHGiYIhsQU",
+              "fetch_url":"https://www.youtube.com/watch?v=YKHGiYIhsQU",
+              "collector_version":"public-study-thekeiplay-lost-origin-youtube-v1",
+              "parser_version":"thekeiplay-lost-origin-evidence-v1",
+              "country_code":"PE",
+              "country_name":"Peru",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@TheKeiPlay/about",
+              "publisher_channel_id":"UChAro6QS0gP88qhgOTBnuSA",
+              "publisher_country_evidence":"country:\\"Peru\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"swsh11",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Lost Origin",
+              "set_official_url":"https://www.pokemon.com/us/news/enter-to-win-pokemon-tcg-sword-shield-era-booster-display-boxes",
+              "product_name":"Sword & Shield—Lost Origin Booster Display Box",
+              "product_scope":"booster_box",
+              "pack_count":36,
+              "denominator_basis":"source_named_complete_box_plus_official_36_pack_spec",
+              "denominator_derivation":"one_complete_booster_display_x_36",
+              "source_published_at":"2022-09-05T11:00:12-07:00",
+              "observed_at":"2022-09-05T18:00:12Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_gringo_gameplays_silver_tempest_uy_36'
+            AND policies.display_name = 'Gringo-GamePlays Silver Tempest 36-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=lYzM0jtPLKw'
+            AND policies.version = 'public-study-gringo-gameplays-silver-tempest-youtube-v1'
+            AND policies.config = '{
+              "study_key":"gringo-gameplays-silver-tempest-uy-36-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=lYzM0jtPLKw",
+              "fetch_url":"https://www.youtube.com/watch?v=lYzM0jtPLKw",
+              "collector_version":"public-study-gringo-gameplays-silver-tempest-youtube-v1",
+              "parser_version":"gringo-gameplays-silver-tempest-evidence-v1",
+              "country_code":"UY",
+              "country_name":"Uruguay",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@gringo-gameplays8987/about",
+              "publisher_channel_id":"UCqxdkBJE9jPp0JEv6eA7riQ",
+              "publisher_country_evidence":"country:\\"Uruguay\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"swsh12",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Silver Tempest",
+              "set_official_url":"https://www.pokemon.com/us/news/enter-to-win-pokemon-tcg-sword-shield-era-booster-display-boxes",
+              "product_name":"Sword & Shield—Silver Tempest Booster Display Box",
+              "product_scope":"booster_box",
+              "pack_count":36,
+              "denominator_basis":"source_named_booster_box_plus_official_36_pack_spec",
+              "denominator_derivation":"one_booster_display_x_36",
+              "source_published_at":"2023-03-30T10:14:02-07:00",
+              "observed_at":"2023-03-30T17:14:02Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
@@ -1225,7 +1445,12 @@ public_study_dependencies AS (
         'public_study_tcg_market_panama_pitch_black_4',
         'public_study_pokeshow_guatemala_megaevolution_3',
         'public_study_cartas_pokemon_argentina_pitch_black_36',
-        'public_study_pokemaniaco_lucas_cl_36'
+        'public_study_pokemaniaco_lucas_cl_36',
+        'public_study_cofre_lab_chilling_reign_cr_4',
+        'public_study_pokeyabros_perfect_order_co_2',
+        'public_study_andree_insane_cards_cosmic_eclipse_ec_20',
+        'public_study_thekeiplay_lost_origin_pe_36',
+        'public_study_gringo_gameplays_silver_tempest_uy_36'
       )
     ),
     false

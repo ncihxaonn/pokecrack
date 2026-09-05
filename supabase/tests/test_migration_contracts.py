@@ -100,6 +100,9 @@ CANADA_MEXICO_YOUTUBE_COVERAGE = (
 PANAMA_GUATEMALA_YOUTUBE_COVERAGE = (
     ROOT / "migrations/20261009000000_panama_guatemala_youtube_coverage.sql"
 ).read_text()
+AMERICAS_PHASE_TWO_YOUTUBE_COVERAGE = (
+    ROOT / "migrations/20261010000000_americas_phase_two_youtube_coverage.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -1980,6 +1983,87 @@ class IngestMigrationContractTests(unittest.TestCase):
         self.assertIn("'build_and_battle'", lowered)
         self.assertIn("'three_pack_blister'", lowered)
         self.assertIn("'four_pack_blister'", lowered)
+        self.assertNotIn(
+            "insert into ingest.public_study_observations",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant select on table ingest.public_study_coverage_observations to anon",
+            compact,
+        )
+
+    def test_americas_phase_two_youtube_coverage_is_exact_and_rate_free(self) -> None:
+        lowered = AMERICAS_PHASE_TWO_YOUTUBE_COVERAGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for fragment in (
+            "cofre-lab-chilling-reign-cr-4-v1",
+            "pokeyabros-perfect-order-co-2-v1",
+            "andree-insane-cards-cosmic-eclipse-ec-20-v1",
+            "thekeiplay-lost-origin-pe-36-v1",
+            "gringo-gameplays-silver-tempest-uy-36-v1",
+            "public_study_cofre_lab_chilling_reign_cr_4",
+            "public_study_pokeyabros_perfect_order_co_2",
+            "public_study_andree_insane_cards_cosmic_eclipse_ec_20",
+            "public_study_thekeiplay_lost_origin_pe_36",
+            "public_study_gringo_gameplays_silver_tempest_uy_36",
+            '"country_code":"cr"',
+            '"country_code":"co"',
+            '"country_code":"ec"',
+            '"country_code":"pe"',
+            '"country_code":"uy"',
+            '"set_language":"und"',
+            '"set_external_id":"swsh6"',
+            '"set_external_id":"me03"',
+            '"set_external_id":"sm12"',
+            '"set_external_id":"swsh11"',
+            '"set_external_id":"swsh12"',
+            '"product_scope":"build_and_battle"',
+            '"product_scope":"all"',
+            '"product_scope":"booster_box"',
+            '"pack_count":4',
+            '"pack_count":2',
+            '"pack_count":20',
+            '"pack_count":36',
+            "8b307620e562e591d30922b077bb65960a50fd0be272e6c844c4233e536fc167",
+            "0414e5fcd9d3708873ed5c84e78f9c523fb66ba7a30211d8f798c12c5533b7f8",
+            "9ebb6592d57fc2b452bbbd00b71e4e69633eec0a389069b1e475f4489a8fb0e9",
+            "4c7a43da824a182cf0a550e46e21c34f1caadca259ff99d6485819ae95dd04ee",
+            "5f65c8f1ceca00fe06f56dbf684c50f1ca4116ce084aa9fbd4ead930b19d7264",
+            "insert into ingest.public_study_coverage_observations",
+            "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24)",
+            "from ingest.reviewed_public_study_contracts() as contracts",
+            "public reviewed coverage function is missing the expected 365-day display window",
+            "complete reviewed, nonfuture evidence range",
+            "revoke all on function public.get_public_study_coverage_v2()",
+            "grant execute on function public.get_public_study_coverage_v3()",
+            "https://press.pokemon.com/en/media-alert-new-pokemon-trading-card-game-sword-shieldchilling-reign-e",
+            "https://www.pokemon.com/us/features/art-of-the-pokemon-tcg-mega-evolution-perfect-order-expansion",
+            "https://www.pokemon.com/us/pokemon-tcg/sun-moon-cosmic-eclipse",
+            "https://www.pokemon.com/us/news/enter-to-win-pokemon-tcg-sword-shield-era-booster-display-boxes",
+        ):
+            self.assertIn(fragment, lowered)
+        for forbidden_config_field in (
+            '"qualifying_hit_pack_count"',
+            '"qualifying_metric"',
+            '"metric_version"',
+            '"observed_rate"',
+        ):
+            self.assertNotIn(forbidden_config_field, lowered)
+        self.assertIn("count(*) = 24", compact)
+        self.assertEqual(
+            lowered.count(
+                "'public.get_public_study_coverage_v2()'::regprocedure"
+            ),
+            1,
+        )
+        self.assertEqual(
+            lowered.count(
+                "'public.get_public_study_coverage_v3()'::regprocedure"
+            ),
+            1,
+        )
         self.assertNotIn(
             "insert into ingest.public_study_observations",
             lowered,

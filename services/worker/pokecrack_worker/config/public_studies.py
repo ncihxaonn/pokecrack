@@ -238,6 +238,51 @@ PUBLIC_STUDIES: tuple[PublicStudyIdentity, ...] = (
         collector_version="public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
         parser_version="pokemaniaco-lucas-phantasmal-flames-evidence-v1",
     ),
+    PublicStudyIdentity(
+        study_key="cofre-lab-chilling-reign-cr-4-v1",
+        source_url="https://www.youtube.com/watch?v=15eGmqByP0I",
+        fetch_url="https://www.youtube.com/watch?v=15eGmqByP0I",
+        domain="www.youtube.com",
+        adapter="cofre_lab_chilling_reign_study",
+        collector_version="public-study-cofre-lab-chilling-reign-youtube-v1",
+        parser_version="cofre-lab-chilling-reign-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="pokeyabros-perfect-order-co-2-v1",
+        source_url="https://www.youtube.com/watch?v=n_PdWg27x-o",
+        fetch_url="https://www.youtube.com/watch?v=n_PdWg27x-o",
+        domain="www.youtube.com",
+        adapter="pokeyabros_perfect_order_study",
+        collector_version="public-study-pokeyabros-perfect-order-youtube-v1",
+        parser_version="pokeyabros-perfect-order-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="andree-insane-cards-cosmic-eclipse-ec-20-v1",
+        source_url="https://www.youtube.com/watch?v=wDDCbJKFTCw",
+        fetch_url="https://www.youtube.com/watch?v=wDDCbJKFTCw",
+        domain="www.youtube.com",
+        adapter="andree_insane_cards_cosmic_eclipse_study",
+        collector_version="public-study-andree-insane-cards-cosmic-eclipse-youtube-v1",
+        parser_version="andree-insane-cards-cosmic-eclipse-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="thekeiplay-lost-origin-pe-36-v1",
+        source_url="https://www.youtube.com/watch?v=YKHGiYIhsQU",
+        fetch_url="https://www.youtube.com/watch?v=YKHGiYIhsQU",
+        domain="www.youtube.com",
+        adapter="thekeiplay_lost_origin_study",
+        collector_version="public-study-thekeiplay-lost-origin-youtube-v1",
+        parser_version="thekeiplay-lost-origin-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="gringo-gameplays-silver-tempest-uy-36-v1",
+        source_url="https://www.youtube.com/watch?v=lYzM0jtPLKw",
+        fetch_url="https://www.youtube.com/watch?v=lYzM0jtPLKw",
+        domain="www.youtube.com",
+        adapter="gringo_gameplays_silver_tempest_study",
+        collector_version="public-study-gringo-gameplays-silver-tempest-youtube-v1",
+        parser_version="gringo-gameplays-silver-tempest-evidence-v1",
+    ),
 )
 
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
@@ -261,6 +306,11 @@ PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
         "pokeshow-mega-evolution-gt-3-v1",
         "cartas-pokemon-argentina-pitch-black-ar-36-v1",
         "pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
+        "cofre-lab-chilling-reign-cr-4-v1",
+        "pokeyabros-perfect-order-co-2-v1",
+        "andree-insane-cards-cosmic-eclipse-ec-20-v1",
+        "thekeiplay-lost-origin-pe-36-v1",
+        "gringo-gameplays-silver-tempest-uy-36-v1",
     }
 )
 

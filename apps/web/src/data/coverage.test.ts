@@ -584,6 +584,38 @@ describe("reviewed public-study coverage merge", () => {
     ).toBe(DEMO_PUBLIC_DATA);
   });
 
+  it("publishes an authoritative historical registry without relabelling current-period cells", () => {
+    const payload = validRegistryCoveragePayload();
+    payload.period = { start: "2021-06-06", end: "2026-09-05" };
+    payload.countries = [
+      {
+        ...payload.countries[0]!,
+        countryCode: "CR",
+        countryName: "Costa Rica",
+        packsObserved: 4,
+        openings: 1,
+        independentSources: 1,
+      },
+    ];
+
+    const parsed = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(DEMO_PUBLIC_DATA, payload),
+    );
+
+    expect(parsed.observations.period).toEqual(payload.period);
+    expect(parsed.mapCells).toEqual([
+      expect.objectContaining({
+        countryCode: "CR",
+        packsObserved: 4,
+        periodStart: "2021-06-06",
+        periodEnd: "2026-09-05",
+      }),
+    ]);
+    expect(parsed.summary.globalCoverage).toContain("reviewed evidence range");
+    expect(parsed.regions[0]?.coverage).toContain("reviewed evidence range");
+    expect(parsed.mapCells.some((cell) => cell.countryCode === "DE")).toBe(false);
+  });
+
   it("rejects unreviewed identities, non-ISO countries, and base source collisions", () => {
     const invalidCountry = validCoveragePayload();
     invalidCountry.countries[0] = {

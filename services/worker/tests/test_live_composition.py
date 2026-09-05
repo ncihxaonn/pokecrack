@@ -1226,7 +1226,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_all_nineteen_reviewed_daily_jobs(
+def test_public_study_flag_registers_all_twenty_four_reviewed_daily_jobs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _ensure_pokesup_schedule_identity(monkeypatch)
@@ -1253,6 +1253,11 @@ def test_public_study_flag_registers_all_nineteen_reviewed_daily_jobs(
         {"study_key": "pokeshow-mega-evolution-gt-3-v1"},
         {"study_key": "cartas-pokemon-argentina-pitch-black-ar-36-v1"},
         {"study_key": "pokemaniaco-lucas-phantasmal-flames-cl-36-v1"},
+        {"study_key": "cofre-lab-chilling-reign-cr-4-v1"},
+        {"study_key": "pokeyabros-perfect-order-co-2-v1"},
+        {"study_key": "andree-insane-cards-cosmic-eclipse-ec-20-v1"},
+        {"study_key": "thekeiplay-lost-origin-pe-36-v1"},
+        {"study_key": "gringo-gameplays-silver-tempest-uy-36-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1275,7 +1280,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 19" in sql
+    assert "count(*) = 24" in sql
     assert "ingest.public_study_observations" in sql
     assert "ingest.begin_public_study_job" in sql
     assert "ingest.finalize_public_study_job" in sql
@@ -1299,6 +1304,11 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert "public_study_pokeshow_guatemala_megaevolution_3" in sql
     assert "public_study_cartas_pokemon_argentina_pitch_black_36" in sql
     assert "public_study_pokemaniaco_lucas_cl_36" in sql
+    assert "public_study_cofre_lab_chilling_reign_cr_4" in sql
+    assert "public_study_pokeyabros_perfect_order_co_2" in sql
+    assert "public_study_andree_insane_cards_cosmic_eclipse_ec_20" in sql
+    assert "public_study_thekeiplay_lost_origin_pe_36" in sql
+    assert "public_study_gringo_gameplays_silver_tempest_uy_36" in sql
     pokesup_clause_start = sql.index("WHERE policies.source_key = 'public_study_pokesup_jp_30'")
     pokesup_clause = sql[pokesup_clause_start : sql.index(") = 1", pokesup_clause_start)]
     for expected in (
@@ -1486,6 +1496,71 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
                 '"observed_at":"2025-11-13T16:00:06Z"',
             ),
         ),
+        (
+            "public_study_cofre_lab_chilling_reign_cr_4",
+            (
+                '"country_code":"CR"',
+                '"publisher_channel_id":"UCqYl3y-wsJqvwow5_tIa22A"',
+                '"set_language":"und"',
+                '"set_external_id":"swsh6"',
+                '"set_name":"Chilling Reign"',
+                '"product_scope":"build_and_battle"',
+                '"pack_count":4',
+                '"observed_at":"2021-06-06T05:54:03Z"',
+            ),
+        ),
+        (
+            "public_study_pokeyabros_perfect_order_co_2",
+            (
+                '"country_code":"CO"',
+                '"publisher_channel_id":"UC6iMHQS7wp-WVH_pD4leBZw"',
+                '"set_language":"und"',
+                '"set_external_id":"me03"',
+                '"set_name":"Perfect Order"',
+                '"product_scope":"all"',
+                '"pack_count":2',
+                '"observed_at":"2026-09-04T14:00:23Z"',
+            ),
+        ),
+        (
+            "public_study_andree_insane_cards_cosmic_eclipse_ec_20",
+            (
+                '"country_code":"EC"',
+                '"publisher_channel_id":"UCvg1acSdKlzcCXAQQKcMvqg"',
+                '"set_language":"und"',
+                '"set_external_id":"sm12"',
+                '"set_name":"Cosmic Eclipse"',
+                '"product_scope":"all"',
+                '"pack_count":20',
+                '"observed_at":"2023-06-27T21:00:07Z"',
+            ),
+        ),
+        (
+            "public_study_thekeiplay_lost_origin_pe_36",
+            (
+                '"country_code":"PE"',
+                '"publisher_channel_id":"UChAro6QS0gP88qhgOTBnuSA"',
+                '"set_language":"und"',
+                '"set_external_id":"swsh11"',
+                '"set_name":"Lost Origin"',
+                '"product_scope":"booster_box"',
+                '"pack_count":36',
+                '"observed_at":"2022-09-05T18:00:12Z"',
+            ),
+        ),
+        (
+            "public_study_gringo_gameplays_silver_tempest_uy_36",
+            (
+                '"country_code":"UY"',
+                '"publisher_channel_id":"UCqxdkBJE9jPp0JEv6eA7riQ"',
+                '"set_language":"und"',
+                '"set_external_id":"swsh12"',
+                '"set_name":"Silver Tempest"',
+                '"product_scope":"booster_box"',
+                '"pack_count":36',
+                '"observed_at":"2023-03-30T17:14:02Z"',
+            ),
+        ),
     ):
         clause_start = sql.index(f"WHERE policies.source_key = '{source_key}'")
         clause = sql[clause_start : sql.index(") = 1", clause_start)]
@@ -1502,6 +1577,11 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
                 "public_study_pokeshow_guatemala",
                 "public_study_cartas_pokemon_argentina",
                 "public_study_pokemaniaco_lucas",
+                "public_study_cofre_lab",
+                "public_study_pokeyabros",
+                "public_study_andree_insane_cards",
+                "public_study_thekeiplay",
+                "public_study_gringo_gameplays",
             )
         ):
             config_match = re.search(
@@ -1522,6 +1602,16 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
                 if source_key == "public_study_cartas_pokemon_argentina_pitch_black_36"
                 else 'country:"Chile"'
                 if source_key == "public_study_pokemaniaco_lucas_cl_36"
+                else 'country:"Costa Rica"'
+                if source_key == "public_study_cofre_lab_chilling_reign_cr_4"
+                else 'country:"Colombia"'
+                if source_key == "public_study_pokeyabros_perfect_order_co_2"
+                else 'country:"Ecuador"'
+                if source_key == "public_study_andree_insane_cards_cosmic_eclipse_ec_20"
+                else 'country:"Peru"'
+                if source_key == "public_study_thekeiplay_lost_origin_pe_36"
+                else 'country:"Uruguay"'
+                if source_key == "public_study_gringo_gameplays_silver_tempest_uy_36"
                 else (
                     'country:"Guatemala"; video description: desde Guatemala'
                     if source_key == "public_study_pokeshow_guatemala_megaevolution_3"
