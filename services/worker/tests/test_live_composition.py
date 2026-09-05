@@ -1275,7 +1275,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 17" in sql
+    assert "count(*) = 19" in sql
     assert "ingest.public_study_observations" in sql
     assert "ingest.begin_public_study_job" in sql
     assert "ingest.finalize_public_study_job" in sql
@@ -1297,6 +1297,8 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert "public_study_tcg_market_panama_chaos_rising_6" in sql
     assert "public_study_tcg_market_panama_pitch_black_4" in sql
     assert "public_study_pokeshow_guatemala_megaevolution_3" in sql
+    assert "public_study_cartas_pokemon_argentina_pitch_black_36" in sql
+    assert "public_study_pokemaniaco_lucas_cl_36" in sql
     pokesup_clause_start = sql.index("WHERE policies.source_key = 'public_study_pokesup_jp_30'")
     pokesup_clause = sql[pokesup_clause_start : sql.index(") = 1", pokesup_clause_start)]
     for expected in (

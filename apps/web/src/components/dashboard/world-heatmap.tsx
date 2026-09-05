@@ -34,6 +34,11 @@ export interface GlobalFocusCountry {
     | "CA"
     | "MX"
     | "BR"
+    | "PR"
+    | "GT"
+    | "PA"
+    | "AR"
+    | "CL"
     | "KR"
     | "TW"
     | "HK"
@@ -54,6 +59,11 @@ export const GLOBAL_FOCUS_COUNTRIES: readonly GlobalFocusCountry[] = [
   { countryCode: "CA", countryName: "Canada" },
   { countryCode: "MX", countryName: "Mexico" },
   { countryCode: "BR", countryName: "Brazil" },
+  { countryCode: "PR", countryName: "Puerto Rico" },
+  { countryCode: "GT", countryName: "Guatemala" },
+  { countryCode: "PA", countryName: "Panama" },
+  { countryCode: "AR", countryName: "Argentina" },
+  { countryCode: "CL", countryName: "Chile" },
   { countryCode: "KR", countryName: "South Korea" },
   { countryCode: "TW", countryName: "Taiwan" },
   { countryCode: "HK", countryName: "Hong Kong" },

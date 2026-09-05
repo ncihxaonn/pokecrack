@@ -591,7 +591,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 17
+        count(*) = 19
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
