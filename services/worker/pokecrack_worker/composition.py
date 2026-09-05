@@ -591,7 +591,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 12
+        count(*) = 14
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -898,6 +898,92 @@ public_study_dependencies AS (
               "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
             }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_indigo_geek_mx_50'
+            AND policies.display_name = 'Indigo Geek Megaevolución 50-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=KNCSNJNcjJ8'
+            AND policies.version = 'public-study-indigo-geek-megaevolucion-youtube-v1'
+            AND policies.config = '{
+              "study_key":"indigo-geek-megaevolucion-mx-50-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=KNCSNJNcjJ8",
+              "fetch_url":"https://www.youtube.com/watch?v=KNCSNJNcjJ8",
+              "collector_version":"public-study-indigo-geek-megaevolucion-youtube-v1",
+              "parser_version":"indigo-geek-megaevolucion-evidence-v1",
+              "country_code":"MX",
+              "country_name":"Mexico",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@IndigoGeek/about",
+              "publisher_channel_id":"UCGri3BoVzarWIYCzg8MEQjw",
+              "publisher_country_evidence":"country:\\"Mexico\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me01",
+              "set_language":"es-MX",
+              "set_name":"Megaevolución",
+              "set_official_url":"https://tcg.pokemon.com/es-mx/expansions/mega-evolution/",
+              "product_name":"ETB + Booster Box + Combina y Combate",
+              "product_scope":"all",
+              "pack_count":50,
+              "denominator_basis":"source_declared_complete_opening",
+              "source_native_products":["etb","booster_box","combina_y_combate"],
+              "source_published_at":"2025-09-12T06:00:41-07:00",
+              "observed_at":"2025-09-12T13:00:41Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pokehanna_ca_9'
+            AND policies.display_name = 'PokeHanna Ascended Heroes 9-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=Jj0IxqUYat8'
+            AND policies.version = 'public-study-pokehanna-ascended-heroes-youtube-v1'
+            AND policies.config = '{
+              "study_key":"pokehanna-ascended-heroes-ca-9-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=Jj0IxqUYat8",
+              "fetch_url":"https://www.youtube.com/watch?v=Jj0IxqUYat8",
+              "collector_version":"public-study-pokehanna-ascended-heroes-youtube-v1",
+              "parser_version":"pokehanna-ascended-heroes-evidence-v1",
+              "country_code":"CA",
+              "country_name":"Canada",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@PokeHanna/about",
+              "publisher_channel_id":"UC6stWaGoj-9rsEOzYv56ftQ",
+              "publisher_country_evidence":"country:\\"Canada\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me02.5",
+              "set_language":"en",
+              "set_name":"Ascended Heroes",
+              "set_official_url":"https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-ascended-heroes-elite-trainer-box",
+              "product_name":"Ascended Heroes Elite Trainer Box",
+              "product_scope":"etb",
+              "pack_count":9,
+              "denominator_basis":"source_named_standard_etb_plus_official_9_pack_spec",
+              "denominator_derivation":"one_standard_etb_x_9",
+              "source_published_at":"2026-04-05T11:00:15-07:00",
+              "observed_at":"2026-04-05T18:00:15Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
@@ -911,7 +997,9 @@ public_study_dependencies AS (
         'public_study_allonline_th_10',
         'public_study_pontocom_br_48',
         'public_study_richards_bricks_pr_18',
-        'public_study_richards_bricks_pr_36'
+        'public_study_richards_bricks_pr_36',
+        'public_study_indigo_geek_mx_50',
+        'public_study_pokehanna_ca_9'
       )
     ),
     false

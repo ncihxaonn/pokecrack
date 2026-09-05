@@ -898,6 +898,120 @@ sources:
     cache_ttl_seconds: 86400
     retain_raw_html: false
     terms_url: https://www.youtube.com/static?template=terms
+  "www.youtube.com#indigo-geek-mx-50":
+    domain: www.youtube.com
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-indigo-geek-megaevolucion-youtube-v1
+    config:
+      study_key: indigo-geek-megaevolucion-mx-50-v1
+      canonical_url: https://www.youtube.com/watch?v=KNCSNJNcjJ8
+      fetch_url: https://www.youtube.com/watch?v=KNCSNJNcjJ8
+      collector_version: public-study-indigo-geek-megaevolucion-youtube-v1
+      parser_version: indigo-geek-megaevolucion-evidence-v1
+      country_code: MX
+      country_name: Mexico
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      publisher_country_url: https://www.youtube.com/@IndigoGeek/about
+      publisher_channel_id: UCGri3BoVzarWIYCzg8MEQjw
+      publisher_country_evidence: 'country:"Mexico"'
+      publisher_country_checked_at: "2026-09-05"
+      geography_review_method: manual_static_channel_about_review
+      set_external_id: me01
+      set_language: es-MX
+      set_name: Megaevolución
+      set_official_url: https://tcg.pokemon.com/es-mx/expansions/mega-evolution/
+      product_name: ETB + Booster Box + Combina y Combate
+      product_scope: all
+      pack_count: 50
+      denominator_basis: source_declared_complete_opening
+      source_native_products: [etb, booster_box, combina_y_combate]
+      source_published_at: "2025-09-12T06:00:41-07:00"
+      observed_at: "2025-09-12T13:00:41Z"
+      denominator_complete: true
+      robots_url: https://www.youtube.com/robots.txt
+      robots_checked_at: "2026-09-05"
+      robots_decision: watch_route_not_disallowed
+      terms_url: https://www.youtube.com/static?template=terms
+      terms_checked_at: "2026-09-05"
+      terms_effective_date: "2023-12-15"
+      terms_status: public_browse_static_metadata_only
+      rights_scope: minimal_noncreative_facts_no_media_transcript_or_body_reuse
+    reason: Exact public YouTube metadata proves a complete 50-pack Megaevolución opening attributed to the Mexico publisher channel; this is coverage-only because no qualifying hit or rate ledger is retained.
+    routes: [static]
+    adapter: indigo_geek_megaevolucion_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://www.youtube.com/static?template=terms
+  "www.youtube.com#pokehanna-ca-9":
+    domain: www.youtube.com
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-pokehanna-ascended-heroes-youtube-v1
+    config:
+      study_key: pokehanna-ascended-heroes-ca-9-v1
+      canonical_url: https://www.youtube.com/watch?v=Jj0IxqUYat8
+      fetch_url: https://www.youtube.com/watch?v=Jj0IxqUYat8
+      collector_version: public-study-pokehanna-ascended-heroes-youtube-v1
+      parser_version: pokehanna-ascended-heroes-evidence-v1
+      country_code: CA
+      country_name: Canada
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      publisher_country_url: https://www.youtube.com/@PokeHanna/about
+      publisher_channel_id: UC6stWaGoj-9rsEOzYv56ftQ
+      publisher_country_evidence: 'country:"Canada"'
+      publisher_country_checked_at: "2026-09-05"
+      geography_review_method: manual_static_channel_about_review
+      set_external_id: me02.5
+      set_language: en
+      set_name: Ascended Heroes
+      set_official_url: https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-ascended-heroes-elite-trainer-box
+      product_name: Ascended Heroes Elite Trainer Box
+      product_scope: etb
+      pack_count: 9
+      denominator_basis: source_named_standard_etb_plus_official_9_pack_spec
+      denominator_derivation: one_standard_etb_x_9
+      source_published_at: "2026-04-05T11:00:15-07:00"
+      observed_at: "2026-04-05T18:00:15Z"
+      denominator_complete: true
+      robots_url: https://www.youtube.com/robots.txt
+      robots_checked_at: "2026-09-05"
+      robots_decision: watch_route_not_disallowed
+      terms_url: https://www.youtube.com/static?template=terms
+      terms_checked_at: "2026-09-05"
+      terms_effective_date: "2023-12-15"
+      terms_status: public_browse_static_metadata_only
+      rights_scope: minimal_noncreative_facts_no_media_transcript_or_body_reuse
+    reason: Exact public YouTube metadata proves a complete 9-pack Ascended Heroes ETB opening attributed to the Canadian publisher channel; this is coverage-only because no qualifying hit or rate ledger is retained.
+    routes: [static]
+    adapter: pokehanna_ascended_heroes_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://www.youtube.com/static?template=terms
   dynamic.example:
     enabled: true
     collector: scrapling_dynamic

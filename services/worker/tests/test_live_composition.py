@@ -1226,7 +1226,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_all_twelve_reviewed_daily_jobs(
+def test_public_study_flag_registers_all_fourteen_reviewed_daily_jobs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _ensure_pokesup_schedule_identity(monkeypatch)
@@ -1246,6 +1246,8 @@ def test_public_study_flag_registers_all_twelve_reviewed_daily_jobs(
         {"study_key": "pontocom-herois-excelsos-br-48-v1"},
         {"study_key": "richards-bricks-charizard-upc-pr-18-v1"},
         {"study_key": "richards-bricks-mega-evolution-box-pr-36-v1"},
+        {"study_key": "indigo-geek-megaevolucion-mx-50-v1"},
+        {"study_key": "pokehanna-ascended-heroes-ca-9-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1268,7 +1270,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 12" in sql
+    assert "count(*) = 14" in sql
     assert "ingest.public_study_observations" in sql
     assert "ingest.begin_public_study_job" in sql
     assert "ingest.finalize_public_study_job" in sql
@@ -1285,6 +1287,8 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert "public_study_pontocom_br_48" in sql
     assert "public_study_richards_bricks_pr_18" in sql
     assert "public_study_richards_bricks_pr_36" in sql
+    assert "public_study_indigo_geek_mx_50" in sql
+    assert "public_study_pokehanna_ca_9" in sql
     pokesup_clause_start = sql.index("WHERE policies.source_key = 'public_study_pokesup_jp_30'")
     pokesup_clause = sql[pokesup_clause_start : sql.index(") = 1", pokesup_clause_start)]
     for expected in (
@@ -1363,6 +1367,39 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
                 '"pack_count":36',
             ),
         ),
+        (
+            "public_study_indigo_geek_mx_50",
+            (
+                '"country_code":"MX"',
+                '"publisher_channel_id":"UCGri3BoVzarWIYCzg8MEQjw"',
+                '"set_language":"es-MX"',
+                '"set_external_id":"me01"',
+                '"set_name":"Megaevolución"',
+                '"set_official_url":"https://tcg.pokemon.com/es-mx/expansions/mega-evolution/"',
+                '"product_name":"ETB + Booster Box + Combina y Combate"',
+                '"product_scope":"all"',
+                '"pack_count":50',
+                '"denominator_basis":"source_declared_complete_opening"',
+                '"observed_at":"2025-09-12T13:00:41Z"',
+            ),
+        ),
+        (
+            "public_study_pokehanna_ca_9",
+            (
+                '"country_code":"CA"',
+                '"publisher_channel_id":"UC6stWaGoj-9rsEOzYv56ftQ"',
+                '"set_language":"en"',
+                '"set_external_id":"me02.5"',
+                '"set_name":"Ascended Heroes"',
+                '"set_official_url":"https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-ascended-heroes-elite-trainer-box"',
+                '"product_name":"Ascended Heroes Elite Trainer Box"',
+                '"product_scope":"etb"',
+                '"pack_count":9',
+                '"denominator_basis":"source_named_standard_etb_plus_official_9_pack_spec"',
+                '"denominator_derivation":"one_standard_etb_x_9"',
+                '"observed_at":"2026-04-05T18:00:15Z"',
+            ),
+        ),
     ):
         clause_start = sql.index(f"WHERE policies.source_key = '{source_key}'")
         clause = sql[clause_start : sql.index(") = 1", clause_start)]
@@ -1370,7 +1407,9 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
             assert expected in clause
         assert "qualifying_" not in clause
         assert "metric_version" not in clause
-        if source_key.startswith("public_study_richards_bricks"):
+        if source_key.startswith(
+            ("public_study_richards_bricks", "public_study_indigo_geek", "public_study_pokehanna")
+        ):
             config_match = re.search(
                 r"policies\.config = '(\{.*\})'::jsonb",
                 clause,
@@ -1378,7 +1417,14 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
             )
             assert config_match is not None
             config = json.loads(config_match.group(1))
-            assert config["publisher_country_evidence"] == 'country:"Puerto Rico"'
+            expected_country = (
+                'country:"Puerto Rico"'
+                if source_key.startswith("public_study_richards_bricks")
+                else 'country:"Mexico"'
+                if source_key == "public_study_indigo_geek_mx_50"
+                else 'country:"Canada"'
+            )
+            assert config["publisher_country_evidence"] == expected_country
     brazil_clause_start = sql.index("WHERE policies.source_key = 'public_study_pontocom_br_48'")
     brazil_clause = sql[brazil_clause_start : sql.index(") = 1", brazil_clause_start)]
     for expected in (

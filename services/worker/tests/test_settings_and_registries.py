@@ -521,16 +521,25 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
         "max_response_bytes": 2_097_152,
         "query_allowlist": [name for name, _query in REQUIRED_YOUTUBE_QUERIES],
     }
-    youtube_identity = sources.resolve("https://www.youtube.com/watch?v=dQw4w9WgXcQ")
+    youtube_identity = sources.resolve("https://www.youtube.com/watch?v=OON-ICjlrd4")
     assert youtube_identity.enabled is True
     assert youtube_identity.retention_days == 730
     assert youtube_identity.adapter == "richards_bricks_charizard_upc_study"
-    assert not sources.allows("https://www.youtube.com/watch?v=dQw4w9WgXcQ", "static")
+    indigo_geek = sources.resolve("https://www.youtube.com/watch?v=KNCSNJNcjJ8")
+    assert indigo_geek.adapter == "indigo_geek_megaevolucion_study"
+    assert indigo_geek.config["study_key"] == "indigo-geek-megaevolucion-mx-50-v1"
+    assert indigo_geek.config["fetch_url"] == "https://www.youtube.com/watch?v=KNCSNJNcjJ8"
+    pokehanna = sources.resolve("https://www.youtube.com/watch?v=Jj0IxqUYat8")
+    assert pokehanna.adapter == "pokehanna_ascended_heroes_study"
+    assert pokehanna.config["study_key"] == "pokehanna-ascended-heroes-ca-9-v1"
+    assert pokehanna.config["fetch_url"] == "https://www.youtube.com/watch?v=Jj0IxqUYat8"
     assert not sources.allows(
         "https://www.youtube.com/watch?v=OON-ICjlrd4&si=unreviewed",
         "static",
     )
     assert sources.allows("https://www.youtube.com/watch?v=OON-ICjlrd4", "static")
+    assert sources.allows("https://www.youtube.com/watch?v=KNCSNJNcjJ8", "static")
+    assert sources.allows("https://www.youtube.com/watch?v=Jj0IxqUYat8", "static")
 
     assert queries.default_enabled is False
     assert len(queries.queries) == 5
