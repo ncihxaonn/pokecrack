@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import re
+import shlex
 import shutil
 import stat
 import subprocess
@@ -847,6 +848,24 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
             '          backup_reference="$(python3 ',
             workflow,
         )
+        self.assertIn(
+            'probe_error_file="$run_root/pooler-probe.stderr"', workflow
+        )
+        self.assertIn(': > "$probe_error_file"', workflow)
+        self.assertIn('chmod 0600 "$probe_error_file"', workflow)
+        self.assertIn('2>> "$probe_error_file"', workflow)
+        self.assertIn("EAUTHQUERY", workflow)
+        self.assertIn("user not found in the database", workflow)
+        self.assertIn("probe_failure=authentication-rejected", workflow)
+        self.assertIn("probe_failure=tls-rejected", workflow)
+        self.assertIn("probe_failure=dns-failed", workflow)
+        self.assertIn("probe_failure=network-failed", workflow)
+        self.assertNotIn('cat "$probe_error_file"', workflow)
+        self.assertIn(
+            '              "$env_file" \\\n'
+            '              "$probe_error_file"',
+            workflow,
+        )
         self.assertIn('PATH="$client_dir:$PATH" psql --version', workflow)
         self.assertLess(
             workflow.index('PATH="$client_dir:$PATH" psql --version'),
@@ -858,6 +877,192 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertGreaterEqual(workflow.count('! -L "$reviewed_path"'), 1)
         self.assertIn('backup_reference=%s\\n', workflow)
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
+
+    def test_api_backup_pooler_probe_is_exactly_bounded_and_fail_closed(self) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "backup-production-api.yml"
+        ).read_text(encoding="utf-8")
+        backup_step = workflow.split(
+            "      - name: Create and validate a fresh production backup\n", 1
+        )[1].split("      - name: Upload private rollback artifact\n", 1)[0]
+
+        probe_match = re.search(
+            r"(?ms)^          pooler_ready=false\n"
+            r"(?P<probe>.*?)"
+            r'^          \[\[ "\$pooler_ready" == true \]\] \|\| \{\n',
+            backup_step,
+        )
+        if probe_match is None:
+            self.fail("the API backup workflow must expose a pooler readiness gate")
+
+        loop_match = re.search(
+            r"(?ms)^          for attempt in (?P<attempts>[^;]+); do\n"
+            r"(?P<body>.*?)"
+            r"^          done\n",
+            probe_match.group("probe"),
+        )
+        if loop_match is None:
+            self.fail("the pooler readiness gate must have an explicit retry loop")
+
+        self.assertEqual(
+            loop_match.group("attempts").split(),
+            [str(attempt) for attempt in range(1, 13)],
+        )
+        loop_body = loop_match.group("body")
+        self.assertEqual(loop_body.count('            sleep "$attempt"\n'), 1)
+        self.assertRegex(loop_body, r'(?m)^            sleep "\$attempt"$')
+        self.assertTrue(loop_body.rstrip().endswith('sleep "$attempt"'))
+        self.assertEqual(loop_body.count('role_state="$('), 1)
+        self.assertIn('2>> "$probe_error_file"', loop_body)
+        self.assertNotIn("2>/dev/null", loop_body)
+
+        fail_closed_match = re.search(
+            r'(?ms)^          \[\[ "\$pooler_ready" == true \]\] \|\| \{\n'
+            r"(?P<body>.*?)"
+            r'^          \}\n\n          backup_reference="\$\(python3 ',
+            backup_step,
+        )
+        if fail_closed_match is None:
+            self.fail("the readiness failure must gate backup creation")
+        fail_closed_body = fail_closed_match.group("body")
+        self.assertEqual(fail_closed_body.count("exit 1"), 1)
+        self.assertRegex(fail_closed_body, r"(?m)^            exit 1$")
+        self.assertNotIn("backup_reference", fail_closed_body)
+
+    def test_api_backup_cleanup_trap_removes_ephemeral_files_and_preserves_status(
+        self,
+    ) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "backup-production-api.yml"
+        ).read_text(encoding="utf-8")
+        backup_step = workflow.split(
+            "      - name: Create and validate a fresh production backup\n", 1
+        )[1].split("      - name: Upload private rollback artifact\n", 1)[0]
+        cleanup_match = re.search(
+            r"(?ms)^          cleanup\(\) \{\n"
+            r"(?P<body>.*?)"
+            r"^          \}\n"
+            r"          trap cleanup EXIT HUP INT TERM\n",
+            backup_step,
+        )
+        if cleanup_match is None:
+            self.fail("the API backup workflow must install its cleanup trap")
+
+        cleanup_body = cleanup_match.group("body")
+        self.assertTrue(
+            cleanup_body.startswith(
+                "            status=$?\n"
+                "            cleanup_failed=false\n"
+                "            trap - EXIT HUP INT TERM\n"
+            )
+        )
+        self.assertEqual(cleanup_body.count("trap - EXIT HUP INT TERM"), 1)
+        self.assertIn(
+            '            if [[ -e "$role_file" || -L "$role_file" ]]; then',
+            cleanup_body,
+        )
+        self.assertIn(
+            "              if ! python3 scripts/create_supabase_backup_credential.py delete \\\n"
+            '                --project-ref "$SUPABASE_PROJECT_REF" \\\n'
+            '                --expected-role-file "$role_file"',
+            cleanup_body,
+        )
+        self.assertIn(
+            '            rm -f -- \\\n'
+            '              "$database_url_file" \\\n'
+            '              "$role_file" \\\n'
+            '              "$env_file" \\\n'
+            '              "$probe_error_file"',
+            cleanup_body,
+        )
+        self.assertIn(
+            '            if [[ "$status" -eq 0 && "$cleanup_failed" == true ]]; then\n'
+            "              status=1\n"
+            "            fi\n"
+            '            exit "$status"\n',
+            cleanup_body,
+        )
+        self.assertEqual(backup_step.count("trap cleanup EXIT HUP INT TERM"), 1)
+        self.assertLess(
+            backup_step.index("cleanup() {"),
+            backup_step.index("trap cleanup EXIT HUP INT TERM"),
+        )
+
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = base / "bin"
+            fake_bin.mkdir()
+            fake_python = fake_bin / "python3"
+            fake_log_name = "FAKE_PYTHON_LOG"
+            write_executable(
+                fake_python,
+                "#!/usr/bin/env bash\n"
+                'printf \'%s\\n\' "$*" > "$FAKE_PYTHON_LOG"\n'
+                'exit "${FAKE_PYTHON_STATUS:-0}"\n',
+            )
+
+            def run_cleanup_case(
+                name: str, original_status: int, fake_python_status: int
+            ) -> subprocess.CompletedProcess[str]:
+                case = base / name
+                case.mkdir()
+                database_url_file = case / "database-url"
+                role_file = case / "login-role"
+                env_file = case / "backup.env"
+                probe_error_file = case / "pooler-probe.stderr"
+                for path in (
+                    database_url_file,
+                    role_file,
+                    env_file,
+                    probe_error_file,
+                ):
+                    path.write_text("fixture\n", encoding="utf-8")
+                fake_log = case / "python.log"
+                script = case / "run-cleanup.sh"
+                script.write_text(
+                    "#!/usr/bin/env bash\n"
+                    "set -Eeuo pipefail\n"
+                    f"database_url_file={shlex.quote(str(database_url_file))}\n"
+                    f"role_file={shlex.quote(str(role_file))}\n"
+                    f"env_file={shlex.quote(str(env_file))}\n"
+                    f"probe_error_file={shlex.quote(str(probe_error_file))}\n"
+                    'SUPABASE_PROJECT_REF="fixture-project"\n'
+                    "cleanup() {\n"
+                    f"{cleanup_body}"
+                    "          }\n"
+                    "trap cleanup EXIT HUP INT TERM\n"
+                    f"exit {original_status}\n",
+                    encoding="utf-8",
+                )
+                script.chmod(script.stat().st_mode | stat.S_IXUSR)
+                environment = os.environ.copy()
+                environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
+                environment[fake_log_name] = str(fake_log)
+                environment["FAKE_PYTHON_STATUS"] = str(fake_python_status)
+                result = subprocess.run(
+                    ["/bin/bash", str(script)],
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                    env=environment,
+                )
+                self.assertFalse(database_url_file.exists())
+                self.assertFalse(role_file.exists())
+                self.assertFalse(env_file.exists())
+                self.assertFalse(probe_error_file.exists())
+                fake_log_contents = fake_log.read_text(encoding="utf-8")
+                self.assertIn("delete", fake_log_contents)
+                self.assertIn("--expected-role-file", fake_log_contents)
+                return result
+
+            success = run_cleanup_case("success", 0, 0)
+            self.assertEqual(success.returncode, 0, success.stderr)
+
+            backup_failure = run_cleanup_case("backup-failure", 23, 0)
+            self.assertEqual(backup_failure.returncode, 23, backup_failure.stderr)
+
+            cleanup_failure = run_cleanup_case("cleanup-failure", 0, 7)
+            self.assertEqual(cleanup_failure.returncode, 1, cleanup_failure.stderr)
 
 
 class BackupRetentionTests(unittest.TestCase):

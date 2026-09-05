@@ -71,9 +71,10 @@ The preferred GitHub-managed backup path is independent of the VPS worker
 credential. `.github/workflows/backup-production-api.yml` runs in the protected
 `Production` environment and uses its owner-scoped Supabase access token to
 mint the official short-lived CLI login through the Management API. The helper
-accepts only the project's primary `*.pooler.supabase.com` connection, forces
-the API-provided IPv4 pooler port, and uses the same tenant-suffixed temporary
-role username as the official CLI. The URL
+accepts only the project's primary `*.pooler.supabase.com` connection, uses its
+IPv4 host with the shared session pooler on port `5432` as recommended for
+logical backups, and uses the same tenant-suffixed temporary role username as
+the official CLI. The URL
 is written only to an owner-only runner temp file and is removed after use; the
 temporary login is deleted through the Management API on both success and
 failure, deletion failure fails the workflow, and the accepted API TTL must be

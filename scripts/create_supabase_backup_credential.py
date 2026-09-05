@@ -3,9 +3,10 @@
 
 The owner-scoped Management API token stays in this process.  Only a temporary
 Postgres URL is written, to a caller-selected owner-only file, and neither the
-URL nor either credential is printed. The generated URL preserves the primary
-IPv4 pooler endpoint returned by Supabase and applies the temporary role using
-the same tenant-suffixed username contract as the official CLI.
+URL nor either credential is printed. The generated URL uses the primary IPv4
+shared pooler host returned by Supabase in session mode, as recommended for
+logical backups, and applies the temporary role using the same tenant-suffixed
+username contract as the official CLI.
 """
 
 from __future__ import annotations
@@ -237,7 +238,7 @@ def build_database_url(
         "/run/supabase-prod-ca-2021.crt", safe=""
     )
     return (
-        f"postgresql://{username}:{encoded_password}@{parsed.hostname}:{port}/postgres"
+        f"postgresql://{username}:{encoded_password}@{parsed.hostname}:5432/postgres"
         f"?sslmode=verify-full&sslrootcert={root_certificate}&connect_timeout=15"
         f"&application_name=pokecrack-backup"
     )

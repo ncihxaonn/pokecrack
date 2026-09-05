@@ -10,6 +10,13 @@ Pokecrack is a free, personal, experimental, non-commercial and unofficial dashb
 
 Pokecrack is not affiliated with, endorsed by, or sponsored by The Pokémon Company, Nintendo, Game Freak or Creatures. It is not a gambling product, buying bot, “hot pack” predictor, store luck leaderboard, or guarantee of future pull rates.
 
+## Current release and handoff
+
+Start operational work with [the release status and convergence checklist](docs/RELEASE_STATUS.md).
+It distinguishes the verified production baseline from unreleased candidates and
+records the Web/database/Worker checks required before calling a release complete.
+Older implementation reports are historical evidence, not the current runtime inventory.
+
 ## Architecture
 
 ```text
@@ -25,7 +32,11 @@ Private GitHub monorepo
     └── watchdog        health, budgets, free-tier thresholds and optional email
 ```
 
-The everyday pipeline runs on the VPS. A personal computer is used only to open an SSH tunnel to the VPS-local noVNC listener for first login, CAPTCHA, or two-factor authentication; it does not run scheduled collection or AI processing.
+The diagram describes the implementation, not the currently enabled service set.
+The verified production core runs `collector`, `scheduler`, and `watchdog` on the
+VPS. Browser, AI, aggregation, and isolated social lanes must pass their own
+release gates before activation; their presence in the repository does not mean
+they are running. A personal computer is not the production collection host.
 
 The [global data pipeline contract](docs/GLOBAL_DATA_PIPELINE.md) separates catalog coverage, activity-only discovery, and denominator-backed statistical evidence. Global search metadata is never presented as a regional pull-rate claim.
 

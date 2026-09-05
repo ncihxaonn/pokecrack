@@ -64,6 +64,7 @@ jobs:
           env_file="$run_root/backup.env"
           database_url_file="$run_root/database-url"
           role_file="$run_root/login-role"
+          probe_error_file="$run_root/pooler-probe.stderr"
           cleanup() {
             status=$?
             cleanup_failed=false
@@ -76,7 +77,11 @@ jobs:
                 printf 'temporary Supabase login cleanup could not be confirmed\n' >&2
               fi
             fi
-            rm -f -- "$database_url_file" "$role_file" "$env_file"
+            rm -f -- \
+              "$database_url_file" \
+              "$role_file" \
+              "$env_file" \
+              "$probe_error_file"
             if [[ "$status" -eq 0 && "$cleanup_failed" == true ]]; then
               status=1
             fi
@@ -120,9 +125,11 @@ jobs:
             --output "$database_url_file" \
             --role-output "$role_file"
 
+          : > "$probe_error_file"
+          chmod 0600 "$probe_error_file"
           pooler_ready=false
           # Supabase can take longer than 36 seconds to propagate a newly-created
-          # temporary login to the transaction pooler. Keep the wait bounded and
+          # temporary login to the shared session pooler. Keep the wait bounded and
           # fail closed, while allowing up to 78 seconds for propagation.
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if role_state="$(
@@ -130,7 +137,7 @@ jobs:
                 deploy/lib/run_with_database_url.py -- \
                 psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet \
                 --command "select (left(session_user, 10) = 'cli_login_' and current_user = session_user)::text;" \
-                < "$database_url_file" 2>/dev/null
+                < "$database_url_file" 2>> "$probe_error_file"
             )" && [[ "$role_state" == true ]]; then
               pooler_ready=true
               break
@@ -138,7 +145,18 @@ jobs:
             sleep "$attempt"
           done
           [[ "$pooler_ready" == true ]] || {
-            printf 'temporary Supabase login did not become ready before backup\n' >&2
+            probe_failure=unclassified
+            if grep -Eiq 'password authentication failed|SASL|Authentication error|Tenant or user not found|EAUTHQUERY|user not found in the database' "$probe_error_file"; then
+              probe_failure=authentication-rejected
+            elif grep -Eiq 'certificate|SSL error|TLS' "$probe_error_file"; then
+              probe_failure=tls-rejected
+            elif grep -Eiq 'could not translate host name|Name or service not known|nodename nor servname' "$probe_error_file"; then
+              probe_failure=dns-failed
+            elif grep -Eiq 'connection timed out|timeout expired|Network is unreachable|No route to host|Connection refused' "$probe_error_file"; then
+              probe_failure=network-failed
+            fi
+            printf 'temporary Supabase login did not become ready before backup (%s)\n' \
+              "$probe_failure" >&2
             exit 1
           }
 
