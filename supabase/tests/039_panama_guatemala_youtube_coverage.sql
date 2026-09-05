@@ -1,37 +1,19 @@
--- Canada and Mexico each have one exact coverage-only public observation.
--- Together they contribute 59 observed packs and no normalized SIR numerator,
--- rate, or inference.
+-- Panama and Guatemala contribute three exact coverage-only observations.
+-- The rows total 13 observed packs and expose no numerator, rate, or inference.
 create extension if not exists pgtap with schema extensions;
 
 begin;
 set local search_path = public, extensions, pg_catalog;
 select no_plan();
 
-select ok(
-  exists (
-    select 1
-    from pg_constraint
-    where conrelid = 'ingest.source_policies'::regclass
-      and conname = 'source_policies_domain_base_url_key'
-      and contype = 'u'
-      and pg_get_constraintdef(oid) ilike '%unique nulls not distinct (domain, base_url)%'
-  )
-  and not exists (
-    select 1
-    from pg_constraint
-    where conrelid = 'ingest.source_policies'::regclass
-      and conname = 'source_policies_domain_key'
-  ),
-  'exact source pages may share a host but cannot duplicate a domain/base URL pair'
-);
-
 select is(
   (
     select count(*)::integer
     from ingest.source_policies
     where source_key in (
-      'public_study_indigo_geek_mx_50',
-      'public_study_pokehanna_ca_9'
+      'public_study_tcg_market_panama_chaos_rising_6',
+      'public_study_tcg_market_panama_pitch_black_4',
+      'public_study_pokeshow_guatemala_megaevolution_3'
     )
       and enabled
       and not is_demo
@@ -48,8 +30,8 @@ select is(
       and retention_days = 730
       and expected_interval_seconds = 86400
   ),
-  2,
-  'both Canada/Mexico policies retain the bounded live collector contract'
+  3,
+  'all Panama/Guatemala policies retain the bounded live collector contract'
 );
 
 select is(
@@ -61,9 +43,9 @@ select is(
         'study', config ->> 'study_key',
         'channel', config ->> 'publisher_channel_id',
         'country', config ->> 'country_code',
-        'countryEvidence', config ->> 'publisher_country_evidence',
-        'set', config ->> 'set_external_id',
         'language', config ->> 'set_language',
+        'languageBasis', config ->> 'set_language_basis',
+        'set', config ->> 'set_external_id',
         'product', config ->> 'product_scope',
         'packs', (config ->> 'pack_count')::integer,
         'observedAt', config ->> 'observed_at'
@@ -71,37 +53,50 @@ select is(
     )
     from ingest.source_policies
     where source_key in (
-      'public_study_indigo_geek_mx_50',
-      'public_study_pokehanna_ca_9'
+      'public_study_tcg_market_panama_chaos_rising_6',
+      'public_study_tcg_market_panama_pitch_black_4',
+      'public_study_pokeshow_guatemala_megaevolution_3'
     )
   ),
   '{
-    "public_study_indigo_geek_mx_50":{
-      "url":"https://www.youtube.com/watch?v=KNCSNJNcjJ8",
-      "study":"indigo-geek-megaevolucion-mx-50-v1",
-      "channel":"UCGri3BoVzarWIYCzg8MEQjw",
-      "country":"MX",
-      "countryEvidence":"country:\"Mexico\"",
-      "set":"me01",
-      "language":"es-MX",
-      "product":"all",
-      "packs":50,
-      "observedAt":"2025-09-12T13:00:41Z"
+    "public_study_tcg_market_panama_chaos_rising_6":{
+      "url":"https://www.youtube.com/watch?v=fHQpNECg4y4",
+      "study":"tcg-market-chaos-rising-pa-6-v1",
+      "channel":"UCa68xVUUIKE8dvcfxCcdyrQ",
+      "country":"PA",
+      "language":"und",
+      "languageBasis":"source_does_not_state_card_language",
+      "set":"me04",
+      "product":"booster_bundle",
+      "packs":6,
+      "observedAt":"2026-08-03T00:15:39Z"
     },
-    "public_study_pokehanna_ca_9":{
-      "url":"https://www.youtube.com/watch?v=Jj0IxqUYat8",
-      "study":"pokehanna-ascended-heroes-ca-9-v1",
-      "channel":"UC6stWaGoj-9rsEOzYv56ftQ",
-      "country":"CA",
-      "countryEvidence":"country:\"Canada\"",
-      "set":"me02.5",
-      "language":"en",
-      "product":"etb",
-      "packs":9,
-      "observedAt":"2026-04-05T18:00:15Z"
+    "public_study_tcg_market_panama_pitch_black_4":{
+      "url":"https://www.youtube.com/watch?v=6kb1MvcnMJE",
+      "study":"tcg-market-pitch-black-pa-4-v1",
+      "channel":"UCa68xVUUIKE8dvcfxCcdyrQ",
+      "country":"PA",
+      "language":"und",
+      "languageBasis":"source_does_not_state_card_language",
+      "set":"me05",
+      "product":"build_and_battle",
+      "packs":4,
+      "observedAt":"2026-08-05T19:09:10Z"
+    },
+    "public_study_pokeshow_guatemala_megaevolution_3":{
+      "url":"https://www.youtube.com/watch?v=DWRdhUuIUvI",
+      "study":"pokeshow-mega-evolution-gt-3-v1",
+      "channel":"UChG8m-xoKqrXJDCEoE2i9Jg",
+      "country":"GT",
+      "language":"und",
+      "languageBasis":"source_does_not_state_card_language",
+      "set":"me01",
+      "product":"three_pack_blister",
+      "packs":3,
+      "observedAt":"2025-10-06T17:21:33Z"
     }
   }'::jsonb,
-  'country identities, data versions, source URLs, and denominators are exact'
+  'country identities, versions, source URLs, languages, and denominators are exact'
 );
 
 select ok(
@@ -109,8 +104,9 @@ select ok(
     select 1
     from ingest.source_policies
     where source_key in (
-      'public_study_indigo_geek_mx_50',
-      'public_study_pokehanna_ca_9'
+      'public_study_tcg_market_panama_chaos_rising_6',
+      'public_study_tcg_market_panama_pitch_black_4',
+      'public_study_pokeshow_guatemala_megaevolution_3'
     )
       and config ?| array[
         'qualifying_hit_pack_count',
@@ -120,7 +116,7 @@ select ok(
         'rate'
       ]
   ),
-  'neither policy invents a normalized numerator or rate'
+  'none of the three policies invents a normalized numerator or rate'
 );
 
 select is(
@@ -128,38 +124,40 @@ select is(
     select count(*)::integer
     from ingest.source_request_gates
     where source_key in (
-      'public_study_indigo_geek_mx_50',
-      'public_study_pokehanna_ca_9'
+      'public_study_tcg_market_panama_chaos_rising_6',
+      'public_study_tcg_market_panama_pitch_black_4',
+      'public_study_pokeshow_guatemala_megaevolution_3'
     )
   ),
-  2,
-  'both sources have durable request gates'
+  3,
+  'all three exact sources have durable request gates'
 );
 select ok(
   ingest.reviewed_public_study_gates_ready_v1(),
-  'all fourteen reviewed request gates are present'
+  'all seventeen reviewed request gates are present'
 );
 
 select is(
   (
     select count(*)::integer
     from ingest.reviewed_public_study_contracts()
-    where ordinal between 1 and 14
+    where ordinal between 1 and 17
   ),
-  14,
-  'the reviewed registry retains its fourteen-contract Canada/Mexico prefix'
+  17,
+  'the reviewed registry has exactly the seventeen-contract prefix'
 );
 select is(
   (
     select array_agg(study_key order by ordinal)
     from ingest.reviewed_public_study_contracts()
-    where ordinal in (13, 14)
+    where ordinal in (15, 16, 17)
   ),
   array[
-    'indigo-geek-megaevolucion-mx-50-v1',
-    'pokehanna-ascended-heroes-ca-9-v1'
+    'tcg-market-chaos-rising-pa-6-v1',
+    'tcg-market-pitch-black-pa-4-v1',
+    'pokeshow-mega-evolution-gt-3-v1'
   ]::text[],
-  'Mexico and Canada occupy exact append-only ordinals 13 and 14'
+  'Panama and Guatemala occupy exact append-only ordinals 15 through 17'
 );
 select ok(
   not exists (
@@ -168,7 +166,7 @@ select ok(
     left join ingest.source_policies as policies
       on policies.source_key = contracts.policy_key
       and not policies.is_demo
-    where contracts.ordinal in (13, 14)
+    where contracts.ordinal in (15, 16, 17)
       and (
         policies.id is null
         or policies.config is distinct from contracts.config
@@ -188,19 +186,20 @@ select is(
       )
     )
     from ingest.reviewed_public_study_contracts()
-    where ordinal in (13, 14)
+    where ordinal in (15, 16, 17)
   ),
   '{
-    "indigo-geek-megaevolucion-mx-50-v1":"c270707bfa43c79b8362a4cf5cab1bad377f0da4402904e0af02fe62c7bdb1d2",
-    "pokehanna-ascended-heroes-ca-9-v1":"d9c012acf1e003942eebdefda80058358f85ca1c718e59e5edd4dcd25b9c3ce9"
+    "tcg-market-chaos-rising-pa-6-v1":"abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef",
+    "tcg-market-pitch-black-pa-4-v1":"055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857",
+    "pokeshow-mega-evolution-gt-3-v1":"b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb"
   }'::jsonb,
-  'both minimal evidence excerpts retain their exact reviewed SHA-256'
+  'all minimal evidence excerpts retain their exact reviewed SHA-256'
 );
 select ok(
   not exists (
     select 1
     from ingest.reviewed_public_study_contracts()
-    where ordinal in (13, 14)
+    where ordinal in (15, 16, 17)
       and (
         config ?| array[
           'qualifying_hit_pack_count',
@@ -234,17 +233,38 @@ select is(
       )
     ]) as definitions(definition)
     where definition ~
-      'contracts\.ordinal in \([^)]*13[^)]*14'
+      'contracts\.ordinal in \([^)]*15[^)]*16[^)]*17'
   ),
   4,
-  'all four coverage boundaries admit the same eleven-contract allowlist'
+  'all four coverage boundaries admit the same fourteen-contract allowlist'
+);
+select ok(
+  pg_get_functiondef(
+    'ingest.finalize_public_study_coverage_job_v1(uuid,text,bigint,text,jsonb)'::regprocedure
+  ) like '%^[a-z]{2,3}(-[A-Za-z0-9]{2,8})*$%',
+  'the finalizer accepts the explicit ISO undetermined-language code'
+);
+select ok(
+  (
+    select bool_and(position(value in pg_get_constraintdef(oid)) > 0)
+    from pg_constraint
+    cross join unnest(array[
+      'four_pack_blister',
+      'build_and_battle',
+      'three_pack_blister'
+    ]) as scopes(value)
+    where conrelid = 'ingest.public_study_coverage_observations'::regclass
+      and conname = 'public_study_coverage_product_check'
+  ),
+  'the private coverage ledger admits both exact new product scopes'
 );
 select ok(
   (
     select bool_and(position(study_key in pg_get_constraintdef(c.oid)) > 0)
     from unnest(array[
-      'indigo-geek-megaevolucion-mx-50-v1',
-      'pokehanna-ascended-heroes-ca-9-v1'
+      'tcg-market-chaos-rising-pa-6-v1',
+      'tcg-market-pitch-black-pa-4-v1',
+      'pokeshow-mega-evolution-gt-3-v1'
     ]) as studies(study_key)
     cross join lateral (
       select oid
@@ -253,7 +273,7 @@ select ok(
         and conname = 'jobs_reviewed_coverage_schedule_allowlist_check'
     ) as c
   ),
-  'the scheduled-job CHECK allowlists both exact study keys'
+  'the scheduled-job CHECK allowlists all three exact study keys'
 );
 select ok(
   not exists (
@@ -267,12 +287,13 @@ select ok(
       )
     ]) as definitions(definition)
     cross join unnest(array[
-      'indigo-geek-megaevolucion-mx-50-v1',
-      'pokehanna-ascended-heroes-ca-9-v1'
+      'tcg-market-chaos-rising-pa-6-v1',
+      'tcg-market-pitch-black-pa-4-v1',
+      'pokeshow-mega-evolution-gt-3-v1'
     ]) as identities(value)
     where position(identities.value in definitions.definition) > 0
   ),
-  'the statistical begin/finalize path admits neither coverage-only identity'
+  'the statistical begin/finalize path admits none of the coverage-only identities'
 );
 
 select is(
@@ -287,12 +308,13 @@ select is(
     join ingest.source_policies as policies
       on policies.id = coverage.source_policy_id
     where coverage.study_key in (
-      'indigo-geek-megaevolucion-mx-50-v1',
-      'pokehanna-ascended-heroes-ca-9-v1'
+      'tcg-market-chaos-rising-pa-6-v1',
+      'tcg-market-pitch-black-pa-4-v1',
+      'pokeshow-mega-evolution-gt-3-v1'
     )
   ),
-  '{"rows":2,"packs":59,"countries":2,"publishers":2}'::jsonb,
-  'the two observations total 59 packs in two countries from two publishers'
+  '{"rows":3,"packs":13,"countries":2,"publishers":2}'::jsonb,
+  'the observations total 13 packs in two countries from two publishers'
 );
 select is(
   (
@@ -308,18 +330,23 @@ select is(
     )
     from ingest.public_study_coverage_observations as coverage
     where coverage.study_key in (
-      'indigo-geek-megaevolucion-mx-50-v1',
-      'pokehanna-ascended-heroes-ca-9-v1'
+      'tcg-market-chaos-rising-pa-6-v1',
+      'tcg-market-pitch-black-pa-4-v1',
+      'pokeshow-mega-evolution-gt-3-v1'
     )
   ),
   '{
-    "indigo-geek-megaevolucion-mx-50-v1":{
-      "country":"MX","packs":50,"set":"me01","product":"all",
-      "hash":"c270707bfa43c79b8362a4cf5cab1bad377f0da4402904e0af02fe62c7bdb1d2"
+    "tcg-market-chaos-rising-pa-6-v1":{
+      "country":"PA","packs":6,"set":"me04","product":"booster_bundle",
+      "hash":"abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef"
     },
-    "pokehanna-ascended-heroes-ca-9-v1":{
-      "country":"CA","packs":9,"set":"me02.5","product":"etb",
-      "hash":"d9c012acf1e003942eebdefda80058358f85ca1c718e59e5edd4dcd25b9c3ce9"
+    "tcg-market-pitch-black-pa-4-v1":{
+      "country":"PA","packs":4,"set":"me05","product":"build_and_battle",
+      "hash":"055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857"
+    },
+    "pokeshow-mega-evolution-gt-3-v1":{
+      "country":"GT","packs":3,"set":"me01","product":"three_pack_blister",
+      "hash":"b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb"
     }
   }'::jsonb,
   'the seeded observations preserve exact immutable facts'
@@ -339,16 +366,19 @@ select is(
     from jsonb_array_elements(
       public.get_public_study_coverage_v3() -> 'countries'
     ) as country(item)
-    where country.item ->> 'countryCode' in ('CA', 'MX')
+    where country.item ->> 'countryCode' in ('GT', 'PA')
   ),
   '{
-    "CA":{
-      "packs":"9","sources":"1","class":"coverage_only",
-      "versions":["en · me02.5 · Ascended Heroes · ETB"]
+    "GT":{
+      "packs":"3","sources":"1","class":"coverage_only",
+      "versions":["und · me01 · Mega Evolution · three pack blister"]
     },
-    "MX":{
-      "packs":"50","sources":"1","class":"coverage_only",
-      "versions":["es-MX · me01 · Megaevolución · all products"]
+    "PA":{
+      "packs":"10","sources":"1","class":"coverage_only",
+      "versions":[
+        "und · me04 · Chaos Rising · booster bundle",
+        "und · me05 · Pitch Black · build and battle"
+      ]
     }
   }'::jsonb,
   'public v3 publishes exact country coverage and human-readable data versions'
@@ -359,7 +389,7 @@ select ok(
     from jsonb_array_elements(
       public.get_public_study_coverage_v3() -> 'countries'
     ) as country(item)
-    where country.item ->> 'countryCode' in ('CA', 'MX')
+    where country.item ->> 'countryCode' in ('GT', 'PA')
       and (
         country.item ? 'ratePacksObserved'
         or country.item ? 'qualifyingHitPacks'
@@ -373,6 +403,7 @@ select ok(
   ),
   'country coverage exposes no numerator, rate, or inference'
 );
+
 select is(
   (
     select jsonb_object_agg(
@@ -386,16 +417,20 @@ select is(
       public.get_public_study_coverage_v3() -> 'sources'
     ) as source(item)
     where source.item ->> 'id' in (
-      'indigo_geek_megaevolucion_study',
-      'pokehanna_ascended_heroes_study'
+      'tcg_market_panama_chaos_rising_study',
+      'tcg_market_panama_pitch_black_study',
+      'pokeshow_guatemala_megaevolution_study'
     )
   ),
   '{
-    "indigo_geek_megaevolucion_study":{
-      "packs":"50","url":"https://www.youtube.com/watch?v=KNCSNJNcjJ8"
+    "tcg_market_panama_chaos_rising_study":{
+      "packs":"6","url":"https://www.youtube.com/watch?v=fHQpNECg4y4"
     },
-    "pokehanna_ascended_heroes_study":{
-      "packs":"9","url":"https://www.youtube.com/watch?v=Jj0IxqUYat8"
+    "tcg_market_panama_pitch_black_study":{
+      "packs":"4","url":"https://www.youtube.com/watch?v=6kb1MvcnMJE"
+    },
+    "pokeshow_guatemala_megaevolution_study":{
+      "packs":"3","url":"https://www.youtube.com/watch?v=DWRdhUuIUvI"
     }
   }'::jsonb,
   'public v3 exposes each exact source URL and denominator'
@@ -407,8 +442,9 @@ select ok(
       public.get_public_study_coverage_v3() -> 'sources'
     ) as source(item)
     where source.item ->> 'id' in (
-      'indigo_geek_megaevolucion_study',
-      'pokehanna_ascended_heroes_study'
+      'tcg_market_panama_chaos_rising_study',
+      'tcg_market_panama_pitch_black_study',
+      'pokeshow_guatemala_megaevolution_study'
     )
       and (
         source.item -> 'coverage' ? 'ratePacksObserved'
@@ -416,7 +452,7 @@ select ok(
         or source.item -> 'coverage' ? 'observedRate'
       )
   ),
-  'neither source card exposes a fabricated rate'
+  'none of the source cards exposes a fabricated rate'
 );
 
 select * from finish();

@@ -97,6 +97,9 @@ PUERTO_RICO_YOUTUBE_COVERAGE = (
 CANADA_MEXICO_YOUTUBE_COVERAGE = (
     ROOT / "migrations/20261008000000_canada_mexico_youtube_coverage.sql"
 ).read_text()
+PANAMA_GUATEMALA_YOUTUBE_COVERAGE = (
+    ROOT / "migrations/20261009000000_panama_guatemala_youtube_coverage.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -1898,6 +1901,7 @@ class IngestMigrationContractTests(unittest.TestCase):
             "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14)",
             "https://tcg.pokemon.com/es-mx/expansions/mega-evolution/",
             "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-ascended-heroes-elite-trainer-box",
+            "unique nulls not distinct (domain, base_url)",
         ):
             self.assertIn(fragment, lowered)
         for forbidden_config_field in (
@@ -1908,6 +1912,65 @@ class IngestMigrationContractTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden_config_field, lowered)
         self.assertIn("count(*) = 14", compact)
+        self.assertNotIn(
+            "insert into ingest.public_study_observations",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant select on table ingest.public_study_coverage_observations to anon",
+            compact,
+        )
+
+    def test_panama_guatemala_youtube_coverage_is_exact_and_rate_free(self) -> None:
+        lowered = PANAMA_GUATEMALA_YOUTUBE_COVERAGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for fragment in (
+            "tcg-market-chaos-rising-pa-6-v1",
+            "tcg-market-pitch-black-pa-4-v1",
+            "pokeshow-mega-evolution-gt-3-v1",
+            "public_study_tcg_market_panama_chaos_rising_6",
+            "public_study_tcg_market_panama_pitch_black_4",
+            "public_study_pokeshow_guatemala_megaevolution_3",
+            '"publisher_channel_id":"uca68xvuuike8dvcfxccdyrq"',
+            '"publisher_channel_id":"uchg8m-xokqrxjdceoe2i9jg"',
+            '"country_code":"pa"',
+            '"country_code":"gt"',
+            '"set_language":"und"',
+            '"set_language_basis":"source_does_not_state_card_language"',
+            '"set_external_id":"me04"',
+            '"set_external_id":"me05"',
+            '"set_external_id":"me01"',
+            '"product_scope":"booster_bundle"',
+            '"product_scope":"build_and_battle"',
+            '"product_scope":"three_pack_blister"',
+            '"pack_count":6',
+            '"pack_count":4',
+            '"pack_count":3',
+            '"denominator_basis":"source_product_opening_plus_official_product_spec"',
+            "abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef",
+            "055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857",
+            "b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb",
+            "insert into ingest.public_study_coverage_observations",
+            "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17)",
+            "^[a-z]{2,3}(-[a-za-z0-9]{2,8})*$",
+            "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-chaos-rising-booster-bundle",
+            "https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase",
+            "https://www.pokemoncenter.com/search/megacards",
+        ):
+            self.assertIn(fragment, lowered)
+        for forbidden_config_field in (
+            '"qualifying_hit_pack_count"',
+            '"qualifying_metric"',
+            '"metric_version"',
+            '"observed_rate"',
+        ):
+            self.assertNotIn(forbidden_config_field, lowered)
+        self.assertIn("count(*) = 17", compact)
+        self.assertIn("'build_and_battle'", lowered)
+        self.assertIn("'three_pack_blister'", lowered)
+        self.assertIn("'four_pack_blister'", lowered)
         self.assertNotIn(
             "insert into ingest.public_study_observations",
             lowered,

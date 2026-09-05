@@ -1,5 +1,15 @@
 begin;
 
+-- Reviewed exact-page sources may share a host. Keep the database contract as
+-- strict as the worker registry by replacing host-only uniqueness with one
+-- policy per exact (domain, base_url) pair. NULLS NOT DISTINCT preserves the
+-- old single broad/null policy limit for any host without a concrete URL.
+alter table ingest.source_policies
+  drop constraint source_policies_domain_key;
+alter table ingest.source_policies
+  add constraint source_policies_domain_base_url_key
+  unique nulls not distinct (domain, base_url);
+
 -- Two exact public YouTube watch pages provide complete pack denominators for
 -- reviewed publisher-country coverage in Mexico and Canada. Neither source
 -- supplies a normalized SIR-pack numerator, so both remain coverage-only.

@@ -33,10 +33,7 @@ from pokecrack_worker.config.source_policy import SourcePolicy, SourcePolicyRegi
 ROOT = Path(__file__).resolve().parents[3]
 ROBOTS_URL = "https://www.youtube.com/robots.txt"
 DATABASE_MIGRATION = (
-    ROOT
-    / "supabase"
-    / "migrations"
-    / "20261008000000_canada_mexico_youtube_coverage.sql"
+    ROOT / "supabase" / "migrations" / "20261008000000_canada_mexico_youtube_coverage.sql"
 ).read_text(encoding="utf-8")
 
 
