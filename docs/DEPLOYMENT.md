@@ -1,24 +1,18 @@
 # Deployment
 
-The approved Personal targets currently host the private GitHub repository and
-the public Vercel site. The last verified Vercel production revision was
-`36d8701e85c098160635580aa46f614dcfdf066b`; the MAM VPS was separately
-observed at `fdfb49ebb03d116abafcfeccaa09618d171ee0fb` with the existing
-TCGdex/Bluesky service set. Those are historical observations, not evidence for
-this branch. General browser collection, AI-worker, aggregator, Nostr, Mastodon,
-and the Bluesky isolated lane remain fail closed until their separate release
-contracts pass. Do not describe the whole research pipeline as production-ready
-from a Compose render, heartbeat, or web deployment alone.
+Use [RELEASE_STATUS.md](RELEASE_STATUS.md) for the dated, verified production
+inventory and pending release work. Do not infer the current revision, applied
+migrations, credentials, or enabled collectors from an older implementation
+report. Verify the exact Personal target through project configuration and
+read-only provider evidence before a release; an old credential-unavailable
+note is not a reason to request login again.
 
-> **Nostr remains disabled:** the authoritative hosted ledger currently stops
-> at `050`; `060`, `090`, and the worker-isolation migration `100` are not hosted, and
-> the owner-scoped Personal Supabase credential is unavailable. Keep
-> `NOSTR_COLLECTION_ENABLED=false`. A future Nostr release must use the
-> Management API migration runner, then pass the env-file preflight in
-> `deploy/lib/verify_nostr_release.py` before replacing any service.
-> Provider-managed backup/PITR retention has not been evidenced, and the
-> dedicated login creation and exact membership remain blockers; neither may be
-> inferred from a successful local migration or Compose render.
+The documented release gates below remain required. General browser collection,
+AI-worker, aggregator, Nostr, and the Bluesky isolated lane must not be enabled
+merely to make every repository feature appear live. Each requires its own
+verified service-set contract and authorization. Do not describe the whole
+research pipeline as production-ready from a Compose render, heartbeat, or web
+deployment alone.
 
 ## 1. Account-bound prerequisites
 

@@ -7,6 +7,7 @@ import stat
 import tempfile
 import unittest
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlsplit
 
 from scripts import create_supabase_backup_credential as credential
 
@@ -109,20 +110,29 @@ class TemporaryBackupCredentialTests(unittest.TestCase):
             )
         )
 
-    def test_database_url_preserves_the_primary_pooler_and_tenant_role(self) -> None:
+    def test_database_url_uses_the_primary_session_pooler_and_tenant_role(self) -> None:
         database_url = credential.build_database_url(
             pooler_connection=POOLER,
             project_ref=PROJECT_REF,
             role="cli_login_postgres",
             password="fixture:/?#[]@ secret",
         )
-        self.assertIn("aws-0-ap-southeast-2.pooler.supabase.com:6543", database_url)
-        self.assertIn(f"cli_login_postgres.{PROJECT_REF}", database_url)
-        self.assertIn("fixture%3A%2F%3F%23%5B%5D%40%20secret", database_url)
-        self.assertIn("sslmode=verify-full", database_url)
-        self.assertIn(
-            "sslrootcert=%2Frun%2Fsupabase-prod-ca-2021.crt", database_url
+        parsed = urlsplit(database_url)
+        self.assertEqual(parsed.hostname, "aws-0-ap-southeast-2.pooler.supabase.com")
+        self.assertEqual(parsed.port, 5432)
+        self.assertEqual(parsed.username, f"cli_login_postgres.{PROJECT_REF}")
+        self.assertEqual(parsed.path, "/postgres")
+        self.assertEqual(
+            parse_qs(parsed.query),
+            {
+                "application_name": ["pokecrack-backup"],
+                "connect_timeout": ["15"],
+                "sslmode": ["verify-full"],
+                "sslrootcert": ["/run/supabase-prod-ca-2021.crt"],
+            },
         )
+        self.assertNotIn(":6543/", database_url)
+        self.assertIn("fixture%3A%2F%3F%23%5B%5D%40%20secret", database_url)
         self.assertNotIn("options=", database_url)
         self.assertNotIn("[YOUR-PASSWORD]", database_url)
 
@@ -130,6 +140,7 @@ class TemporaryBackupCredentialTests(unittest.TestCase):
         invalid = (
             POOLER.replace("pooler.supabase.com", "evil.example.invalid"),
             POOLER.replace(f"postgres.{PROJECT_REF}", "postgres.wrongtenant"),
+            POOLER.replace(":6543/", ":9999/"),
             POOLER.replace("/postgres", "/other"),
             POOLER + "?options=statement_timeout%3D0",
         )
