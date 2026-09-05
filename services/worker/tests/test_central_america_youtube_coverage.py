@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import json
+import re
 from collections.abc import Mapping
 from datetime import UTC, datetime
 from pathlib import Path
@@ -33,6 +35,9 @@ from pokecrack_worker.config.source_policy import SourcePolicy, SourcePolicyRegi
 
 ROOT = Path(__file__).resolve().parents[3]
 ROBOTS_URL = "https://www.youtube.com/robots.txt"
+DATABASE_MIGRATION = (
+    ROOT / "supabase" / "migrations" / "20261009000000_panama_guatemala_youtube_coverage.sql"
+).read_text(encoding="utf-8")
 
 
 class FixtureHTTPClient:
@@ -115,6 +120,16 @@ AMERICAS_STUDIES = (
         "official_url": "https://www.pokemoncenter.com/search/megacards",
     },
 )
+
+
+def test_central_america_worker_configs_are_pinned_in_database_migration() -> None:
+    migration_configs = [
+        json.loads(match.group(1))
+        for match in re.finditer(r"'(\{.*?\})'::jsonb", DATABASE_MIGRATION, re.DOTALL)
+    ]
+
+    for study in AMERICAS_STUDIES:
+        assert _policy(str(study["source_key"])).config in migration_configs
 
 
 @pytest.mark.parametrize("study", AMERICAS_STUDIES, ids=lambda study: str(study["study_key"]))

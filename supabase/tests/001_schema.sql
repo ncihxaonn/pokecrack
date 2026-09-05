@@ -203,7 +203,12 @@ select col_is_unique('catalog', 'products', 'slug', 'product slugs are unique');
 select col_is_unique('catalog', 'regions', 'slug', 'region slugs are unique');
 select col_is_unique('catalog', 'retailers', 'slug', 'retailer slugs are unique');
 select col_is_unique('catalog', 'stores', 'slug', 'store slugs are unique');
-select col_is_unique('ingest', 'source_policies', 'domain', 'source policy domains are unique');
+select col_is_unique(
+  'ingest',
+  'source_policies',
+  array['domain', 'base_url'],
+  'source policies are unique by domain and exact base URL'
+);
 select index_is_unique('ingest', 'source_items', 'source_items_normalized_url_uidx', 'normalized source URLs are unique within a data mode');
 select index_is_unique('ingest', 'source_items', 'source_items_platform_external_uidx', 'platform external identities are unique within a data mode');
 

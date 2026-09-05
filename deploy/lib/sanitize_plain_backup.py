@@ -147,6 +147,21 @@ PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V5 = (
     PUBLIC_STUDY_SOURCE_KEYS_V4 + PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS
 )
+CANADA_MEXICO_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_indigo_geek_mx_50",
+    b"public_study_pokehanna_ca_9",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V6 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V5 + CANADA_MEXICO_PUBLIC_STUDY_SOURCE_KEYS
+)
+PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_tcg_market_panama_chaos_rising_6",
+    b"public_study_tcg_market_panama_pitch_black_4",
+    b"public_study_pokeshow_guatemala_megaevolution_3",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V7 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V6 + PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS
+)
 # Each migration adds an exact append-only reviewed source profile. Keep every
 # complete transition profile available for pre-apply backups, while rejecting
 # unions and partially migrated sets as ambiguous and restore-unsafe.
@@ -156,8 +171,10 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V3,
     PUBLIC_STUDY_SOURCE_KEYS_V4,
     PUBLIC_STUDY_SOURCE_KEYS_V5,
+    PUBLIC_STUDY_SOURCE_KEYS_V6,
+    PUBLIC_STUDY_SOURCE_KEYS_V7,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V5
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V7
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(
@@ -872,6 +889,8 @@ PUBLIC_STUDY_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V3: "v1_v3",
     PUBLIC_STUDY_SOURCE_KEYS_V4: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V5: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V6: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V7: "v4_v5",
 }
 PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS = (
     "study_key text not null",
@@ -906,6 +925,7 @@ PUBLIC_STUDY_COVERAGE_PRODUCT_CHECK_DECLARATIONS = {
     "v1_v2": "constraint public_study_coverage_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text])))",
     "v3": "constraint public_study_coverage_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'value_bundle'::text])))",
     "v4_v5": "constraint public_study_coverage_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'value_bundle'::text, 'four_pack_blister'::text])))",
+    "v7": "constraint public_study_coverage_product_check check ((product_scope = any (array['all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text, 'value_bundle'::text, 'four_pack_blister'::text, 'build_and_battle'::text, 'three_pack_blister'::text])))",
 }
 PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V1: "v1_v2",
@@ -913,6 +933,8 @@ PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V3: "v3",
     PUBLIC_STUDY_SOURCE_KEYS_V4: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V5: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V6: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V7: "v7",
 }
 PUBLIC_STUDY_POLICY_SOURCE_KEY = {
     b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
@@ -985,6 +1007,11 @@ PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
     b"pontocom-herois-excelsos-br-48-v1": b"public_study_pontocom_br_48",
     b"richards-bricks-charizard-upc-pr-18-v1": b"public_study_richards_bricks_pr_18",
     b"richards-bricks-mega-evolution-box-pr-36-v1": b"public_study_richards_bricks_pr_36",
+    b"indigo-geek-megaevolucion-mx-50-v1": b"public_study_indigo_geek_mx_50",
+    b"pokehanna-ascended-heroes-ca-9-v1": b"public_study_pokehanna_ca_9",
+    b"tcg-market-chaos-rising-pa-6-v1": b"public_study_tcg_market_panama_chaos_rising_6",
+    b"tcg-market-pitch-black-pa-4-v1": b"public_study_tcg_market_panama_pitch_black_4",
+    b"pokeshow-mega-evolution-gt-3-v1": b"public_study_pokeshow_guatemala_megaevolution_3",
 }
 PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
     b"cardchill-ascended-heroes-gb-90-v1": {
@@ -1107,6 +1134,66 @@ PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
         "evidence_sha256": b"97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c",
         "is_demo": b"f",
     },
+    b"indigo-geek-megaevolucion-mx-50-v1": {
+        "country_code": b"MX",
+        "country_name": b"Mexico",
+        "pack_count": b"50",
+        "set_external_id": b"me01",
+        "product_scope": b"all",
+        "collector_version": b"public-study-indigo-geek-megaevolucion-youtube-v1",
+        "parser_version": b"indigo-geek-megaevolucion-evidence-v1",
+        "source_policy_version": b"public-study-indigo-geek-megaevolucion-youtube-v1",
+        "evidence_sha256": b"c270707bfa43c79b8362a4cf5cab1bad377f0da4402904e0af02fe62c7bdb1d2",
+        "is_demo": b"f",
+    },
+    b"pokehanna-ascended-heroes-ca-9-v1": {
+        "country_code": b"CA",
+        "country_name": b"Canada",
+        "pack_count": b"9",
+        "set_external_id": b"me02.5",
+        "product_scope": b"etb",
+        "collector_version": b"public-study-pokehanna-ascended-heroes-youtube-v1",
+        "parser_version": b"pokehanna-ascended-heroes-evidence-v1",
+        "source_policy_version": b"public-study-pokehanna-ascended-heroes-youtube-v1",
+        "evidence_sha256": b"d9c012acf1e003942eebdefda80058358f85ca1c718e59e5edd4dcd25b9c3ce9",
+        "is_demo": b"f",
+    },
+    b"tcg-market-chaos-rising-pa-6-v1": {
+        "country_code": b"PA",
+        "country_name": b"Panama",
+        "pack_count": b"6",
+        "set_external_id": b"me04",
+        "product_scope": b"booster_bundle",
+        "collector_version": b"public-study-tcg-market-panama-chaos-rising-youtube-v1",
+        "parser_version": b"tcg-market-panama-chaos-rising-evidence-v1",
+        "source_policy_version": b"public-study-tcg-market-panama-chaos-rising-youtube-v1",
+        "evidence_sha256": b"abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef",
+        "is_demo": b"f",
+    },
+    b"tcg-market-pitch-black-pa-4-v1": {
+        "country_code": b"PA",
+        "country_name": b"Panama",
+        "pack_count": b"4",
+        "set_external_id": b"me05",
+        "product_scope": b"build_and_battle",
+        "collector_version": b"public-study-tcg-market-panama-pitch-black-youtube-v1",
+        "parser_version": b"tcg-market-panama-pitch-black-evidence-v1",
+        "source_policy_version": b"public-study-tcg-market-panama-pitch-black-youtube-v1",
+        "evidence_sha256": b"055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857",
+        "is_demo": b"f",
+    },
+    b"pokeshow-mega-evolution-gt-3-v1": {
+        "country_code": b"GT",
+        "country_name": b"Guatemala",
+        "pack_count": b"3",
+        "set_external_id": b"me01",
+        "product_scope": b"three_pack_blister",
+        "collector_version": b"public-study-pokeshow-guatemala-megaevolution-youtube-v1",
+        "parser_version": b"pokeshow-guatemala-megaevolution-evidence-v1",
+        "source_policy_version": b"public-study-pokeshow-guatemala-megaevolution-youtube-v1",
+        "evidence_sha256": b"b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb",
+        "is_demo": b"f",
+    },
 }
 PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
     b"cardchill-ascended-heroes-gb-90-v1": datetime(2026, 3, 3, 11, 26, 21, tzinfo=UTC),
@@ -1119,6 +1206,11 @@ PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
     b"pontocom-herois-excelsos-br-48-v1": datetime(2026, 1, 26, 23, 29, tzinfo=UTC),
     b"richards-bricks-charizard-upc-pr-18-v1": datetime(2025, 12, 24, 11, 3, 10, tzinfo=UTC),
     b"richards-bricks-mega-evolution-box-pr-36-v1": datetime(2025, 10, 20, 15, 30, 33, tzinfo=UTC),
+    b"indigo-geek-megaevolucion-mx-50-v1": datetime(2025, 9, 12, 13, 0, 41, tzinfo=UTC),
+    b"pokehanna-ascended-heroes-ca-9-v1": datetime(2026, 4, 5, 18, 0, 15, tzinfo=UTC),
+    b"tcg-market-chaos-rising-pa-6-v1": datetime(2026, 8, 3, 0, 15, 39, tzinfo=UTC),
+    b"tcg-market-pitch-black-pa-4-v1": datetime(2026, 8, 5, 19, 9, 10, tzinfo=UTC),
+    b"pokeshow-mega-evolution-gt-3-v1": datetime(2025, 10, 6, 17, 21, 33, tzinfo=UTC),
 }
 PUBLIC_STUDY_COVERAGE_KEYS_BY_SOURCE_PROFILE = {
     profile: frozenset(
