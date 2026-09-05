@@ -680,7 +680,25 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("BACKUP_PREFLIGHT_ROLE=postgres", workflow)
         self.assertIn("left(session_user, 10) = 'cli_login_'", workflow)
         self.assertIn("current_user = session_user", workflow)
-        self.assertIn("for attempt in 1 2 3 4 5 6 7 8", workflow)
+        self.assertRegex(
+            workflow,
+            re.compile(
+                r"^          for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do$",
+                re.MULTILINE,
+            ),
+        )
+        self.assertIn(
+            '            sleep "$attempt"\n'
+            '          done\n'
+            '          [[ "$pooler_ready" == true ]] || {',
+            workflow,
+        )
+        self.assertIn(
+            "            exit 1\n"
+            "          }\n\n"
+            '          backup_reference="$(python3 ',
+            workflow,
+        )
         self.assertIn('PATH="$client_dir:$PATH" psql --version', workflow)
         self.assertLess(
             workflow.index('PATH="$client_dir:$PATH" psql --version'),
