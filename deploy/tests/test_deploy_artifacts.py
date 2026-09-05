@@ -66,6 +66,13 @@ PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V7 = (
     PUBLIC_STUDY_SOURCE_KEYS_V6 + PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS
 )
+ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_cartas_pokemon_argentina_pitch_black_36",
+    b"public_study_pokemaniaco_lucas_cl_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V8 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V7 + ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS
+)
 POKESUP_POLICY = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
 CARDCHILL_POLICY = "99999999-9999-4999-8999-999999999990"
 BLEEDINGCOOL_POLICY = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa0"
@@ -81,6 +88,8 @@ CANADA_POLICY = "f2222222-2222-4222-8222-222222222222"
 PANAMA_CHAOS_POLICY = "f3333333-3333-4333-8333-333333333333"
 PANAMA_PITCH_POLICY = "f4444444-4444-4444-8444-444444444444"
 GUATEMALA_POLICY = "f5555555-5555-4555-8555-555555555555"
+ARGENTINA_POLICY = "f6666666-6666-4666-8666-666666666666"
+CHILE_POLICY = "f7777777-7777-4777-8777-777777777777"
 PUBLIC_STUDY_COVERAGE_COLUMNS = (
     b"study_key, source_policy_id, country_code, country_name, source_observed_at, "
     b"pack_count, set_external_id, product_scope, collector_version, parser_version, "
@@ -124,9 +133,10 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V5,
         PUBLIC_STUDY_SOURCE_KEYS_V6,
         PUBLIC_STUDY_SOURCE_KEYS_V7,
+        PUBLIC_STUDY_SOURCE_KEYS_V8,
     ):
         product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
-        if source_keys == PUBLIC_STUDY_SOURCE_KEYS_V7:
+        if source_keys in (PUBLIC_STUDY_SOURCE_KEYS_V7, PUBLIC_STUDY_SOURCE_KEYS_V8):
             product_values += b", 'build_and_battle'::text, 'three_pack_blister'::text"
     return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
 
@@ -231,6 +241,22 @@ PUBLIC_STUDY_COVERAGE_FACTS = {
         b"public-study-pokeshow-guatemala-megaevolution-youtube-v1",
         b"pokeshow-guatemala-megaevolution-evidence-v1",
         b"b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb",
+    ),
+    b"public_study_cartas_pokemon_argentina_pitch_black_36": (
+        b"cartas-pokemon-argentina-pitch-black-ar-36-v1",
+        ARGENTINA_POLICY.encode(), b"AR", b"Argentina", b"2026-07-17 18:18:50+00",
+        b"36", b"me05", b"booster_box",
+        b"public-study-cartas-pokemon-argentina-pitch-black-youtube-v1",
+        b"cartas-pokemon-argentina-pitch-black-evidence-v1",
+        b"9332e272a335d9e81a6e42c702b5d49630357eaf4a7a8c10d9d5f9d40cc05690",
+    ),
+    b"public_study_pokemaniaco_lucas_cl_36": (
+        b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
+        CHILE_POLICY.encode(), b"CL", b"Chile", b"2025-11-13 16:00:06+00",
+        b"36", b"me02", b"booster_box",
+        b"public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
+        b"pokemaniaco-lucas-phantasmal-flames-evidence-v1",
+        b"dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f",
     ),
 }
 
@@ -1812,7 +1838,10 @@ COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
         include_puerto_rico: bool = False,
         include_canada_mexico: bool = False,
         include_panama_guatemala: bool = False,
+        include_argentina_chile: bool = False,
     ) -> bytes:
+        if include_argentina_chile:
+            include_panama_guatemala = True
         if include_panama_guatemala:
             include_canada_mexico = True
         if include_canada_mexico:
@@ -1966,6 +1995,22 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
                 canada_policy_row + panama_guatemala_policy_rows,
                 1,
             )
+        if include_argentina_chile:
+            guatemala_policy_row = (
+                GUATEMALA_POLICY.encode()
+                + b"\tpublic_study_pokeshow_guatemala_megaevolution_3\n"
+            )
+            argentina_chile_policy_rows = (
+                ARGENTINA_POLICY.encode()
+                + b"\tpublic_study_cartas_pokemon_argentina_pitch_black_36\n"
+                + CHILE_POLICY.encode()
+                + b"\tpublic_study_pokemaniaco_lucas_cl_36\n"
+            )
+            base = base.replace(
+                guatemala_policy_row,
+                guatemala_policy_row + argentina_chile_policy_rows,
+                1,
+            )
         source_keys = PUBLIC_STUDY_SOURCE_KEYS_V1
         if include_pokesup:
             source_keys = PUBLIC_STUDY_SOURCE_KEYS_V2
@@ -1979,6 +2024,8 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
             source_keys = PUBLIC_STUDY_SOURCE_KEYS_V6
         if include_panama_guatemala:
             source_keys = PUBLIC_STUDY_SOURCE_KEYS_V7
+        if include_argentina_chile:
+            source_keys = PUBLIC_STUDY_SOURCE_KEYS_V8
         coverage_rows = public_study_coverage_rows(source_keys)
         return (
             base
@@ -3016,6 +3063,71 @@ cache-second\t{youtube_policy}\t{second_video}
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(
                 backup_dir.joinpath("pokecrack-20261009T010205Z.sql.gz").exists()
+            )
+
+    def test_backup_accepts_exact_argentina_chile_profile_and_rejects_drift(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(
+                include_argentina_chile=True
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261009T020203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261009T020203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V8,
+            )
+            self.assertIn(post_seed, sanitized)
+            for source_key in ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS:
+                self.assertEqual(sanitized.count(source_key + b"\n"), 2)
+
+            partial_dump = post_migration_dump.replace(
+                CHILE_POLICY.encode() + b"\tpublic_study_pokemaniaco_lucas_cl_36\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261009T020204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261009T020204Z.sql.gz").exists()
+            )
+
+            drifted_dump = post_migration_dump.replace(
+                b"\t36\tme02\tbooster_box\t",
+                b"\t35\tme02\tbooster_box\t",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261009T020205Z",
+                dump=drifted_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261009T020205Z.sql.gz").exists()
             )
 
     def test_backup_retains_the_complete_reviewed_aggregate_bridge_bundle(

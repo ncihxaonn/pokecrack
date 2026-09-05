@@ -220,6 +220,24 @@ PUBLIC_STUDIES: tuple[PublicStudyIdentity, ...] = (
         collector_version="public-study-pokeshow-guatemala-megaevolution-youtube-v1",
         parser_version="pokeshow-guatemala-megaevolution-evidence-v1",
     ),
+    PublicStudyIdentity(
+        study_key="cartas-pokemon-argentina-pitch-black-ar-36-v1",
+        source_url="https://www.youtube.com/watch?v=HcsWjycR1L0",
+        fetch_url="https://www.youtube.com/watch?v=HcsWjycR1L0",
+        domain="www.youtube.com",
+        adapter="cartas_pokemon_argentina_pitch_black_study",
+        collector_version="public-study-cartas-pokemon-argentina-pitch-black-youtube-v1",
+        parser_version="cartas-pokemon-argentina-pitch-black-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
+        source_url="https://www.youtube.com/watch?v=Meg4AO9CqHE",
+        fetch_url="https://www.youtube.com/watch?v=Meg4AO9CqHE",
+        domain="www.youtube.com",
+        adapter="pokemaniaco_lucas_phantasmal_flames_study",
+        collector_version="public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
+        parser_version="pokemaniaco-lucas-phantasmal-flames-evidence-v1",
+    ),
 )
 
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
@@ -241,6 +259,8 @@ PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
         "tcg-market-chaos-rising-pa-6-v1",
         "tcg-market-pitch-black-pa-4-v1",
         "pokeshow-mega-evolution-gt-3-v1",
+        "cartas-pokemon-argentina-pitch-black-ar-36-v1",
+        "pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
     }
 )
 

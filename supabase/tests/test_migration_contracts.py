@@ -1930,13 +1930,19 @@ class IngestMigrationContractTests(unittest.TestCase):
             "tcg-market-chaos-rising-pa-6-v1",
             "tcg-market-pitch-black-pa-4-v1",
             "pokeshow-mega-evolution-gt-3-v1",
+            "cartas-pokemon-argentina-pitch-black-ar-36-v1",
+            "pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
             "public_study_tcg_market_panama_chaos_rising_6",
             "public_study_tcg_market_panama_pitch_black_4",
             "public_study_pokeshow_guatemala_megaevolution_3",
+            "public_study_cartas_pokemon_argentina_pitch_black_36",
+            "public_study_pokemaniaco_lucas_cl_36",
             '"publisher_channel_id":"uca68xvuuike8dvcfxccdyrq"',
             '"publisher_channel_id":"uchg8m-xokqrxjdceoe2i9jg"',
             '"country_code":"pa"',
             '"country_code":"gt"',
+            '"country_code":"ar"',
+            '"country_code":"cl"',
             '"set_language":"und"',
             '"set_language_basis":"source_does_not_state_card_language"',
             '"set_external_id":"me04"',
@@ -1948,12 +1954,15 @@ class IngestMigrationContractTests(unittest.TestCase):
             '"pack_count":6',
             '"pack_count":4',
             '"pack_count":3',
+            '"pack_count":36',
             '"denominator_basis":"source_product_opening_plus_official_product_spec"',
             "abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef",
             "055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857",
             "b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb",
+            "9332e272a335d9e81a6e42c702b5d49630357eaf4a7a8c10d9d5f9d40cc05690",
+            "dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f",
             "insert into ingest.public_study_coverage_observations",
-            "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17)",
+            "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19)",
             "^[a-z]{2,3}(-[a-za-z0-9]{2,8})*$",
             "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-chaos-rising-booster-bundle",
             "https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase",
@@ -1967,7 +1976,7 @@ class IngestMigrationContractTests(unittest.TestCase):
             '"observed_rate"',
         ):
             self.assertNotIn(forbidden_config_field, lowered)
-        self.assertIn("count(*) = 17", compact)
+        self.assertIn("count(*) = 19", compact)
         self.assertIn("'build_and_battle'", lowered)
         self.assertIn("'three_pack_blister'", lowered)
         self.assertIn("'four_pack_blister'", lowered)

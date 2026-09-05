@@ -162,6 +162,13 @@ PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V7 = (
     PUBLIC_STUDY_SOURCE_KEYS_V6 + PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS
 )
+ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_cartas_pokemon_argentina_pitch_black_36",
+    b"public_study_pokemaniaco_lucas_cl_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V8 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V7 + ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS
+)
 # Each migration adds an exact append-only reviewed source profile. Keep every
 # complete transition profile available for pre-apply backups, while rejecting
 # unions and partially migrated sets as ambiguous and restore-unsafe.
@@ -173,8 +180,9 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V5,
     PUBLIC_STUDY_SOURCE_KEYS_V6,
     PUBLIC_STUDY_SOURCE_KEYS_V7,
+    PUBLIC_STUDY_SOURCE_KEYS_V8,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V7
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V8
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(
@@ -891,6 +899,7 @@ PUBLIC_STUDY_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V5: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V6: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V7: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V8: "v4_v5",
 }
 PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS = (
     "study_key text not null",
@@ -935,6 +944,7 @@ PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V5: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V6: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V7: "v7",
+    PUBLIC_STUDY_SOURCE_KEYS_V8: "v7",
 }
 PUBLIC_STUDY_POLICY_SOURCE_KEY = {
     b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
@@ -1012,6 +1022,8 @@ PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
     b"tcg-market-chaos-rising-pa-6-v1": b"public_study_tcg_market_panama_chaos_rising_6",
     b"tcg-market-pitch-black-pa-4-v1": b"public_study_tcg_market_panama_pitch_black_4",
     b"pokeshow-mega-evolution-gt-3-v1": b"public_study_pokeshow_guatemala_megaevolution_3",
+    b"cartas-pokemon-argentina-pitch-black-ar-36-v1": b"public_study_cartas_pokemon_argentina_pitch_black_36",
+    b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1": b"public_study_pokemaniaco_lucas_cl_36",
 }
 PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
     b"cardchill-ascended-heroes-gb-90-v1": {
@@ -1194,6 +1206,30 @@ PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
         "evidence_sha256": b"b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb",
         "is_demo": b"f",
     },
+    b"cartas-pokemon-argentina-pitch-black-ar-36-v1": {
+        "country_code": b"AR",
+        "country_name": b"Argentina",
+        "pack_count": b"36",
+        "set_external_id": b"me05",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-cartas-pokemon-argentina-pitch-black-youtube-v1",
+        "parser_version": b"cartas-pokemon-argentina-pitch-black-evidence-v1",
+        "source_policy_version": b"public-study-cartas-pokemon-argentina-pitch-black-youtube-v1",
+        "evidence_sha256": b"9332e272a335d9e81a6e42c702b5d49630357eaf4a7a8c10d9d5f9d40cc05690",
+        "is_demo": b"f",
+    },
+    b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1": {
+        "country_code": b"CL",
+        "country_name": b"Chile",
+        "pack_count": b"36",
+        "set_external_id": b"me02",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
+        "parser_version": b"pokemaniaco-lucas-phantasmal-flames-evidence-v1",
+        "source_policy_version": b"public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
+        "evidence_sha256": b"dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f",
+        "is_demo": b"f",
+    },
 }
 PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
     b"cardchill-ascended-heroes-gb-90-v1": datetime(2026, 3, 3, 11, 26, 21, tzinfo=UTC),
@@ -1211,6 +1247,8 @@ PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
     b"tcg-market-chaos-rising-pa-6-v1": datetime(2026, 8, 3, 0, 15, 39, tzinfo=UTC),
     b"tcg-market-pitch-black-pa-4-v1": datetime(2026, 8, 5, 19, 9, 10, tzinfo=UTC),
     b"pokeshow-mega-evolution-gt-3-v1": datetime(2025, 10, 6, 17, 21, 33, tzinfo=UTC),
+    b"cartas-pokemon-argentina-pitch-black-ar-36-v1": datetime(2026, 7, 17, 18, 18, 50, tzinfo=UTC),
+    b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1": datetime(2025, 11, 13, 16, 0, 6, tzinfo=UTC),
 }
 PUBLIC_STUDY_COVERAGE_KEYS_BY_SOURCE_PROFILE = {
     profile: frozenset(

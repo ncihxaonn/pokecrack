@@ -1117,6 +1117,94 @@ public_study_dependencies AS (
               "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
             }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_cartas_pokemon_argentina_pitch_black_36'
+            AND policies.display_name = 'Cartas Pokemon Argentina Pitch Black 36-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=HcsWjycR1L0'
+            AND policies.version = 'public-study-cartas-pokemon-argentina-pitch-black-youtube-v1'
+            AND policies.config = '{
+              "study_key":"cartas-pokemon-argentina-pitch-black-ar-36-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=HcsWjycR1L0",
+              "fetch_url":"https://www.youtube.com/watch?v=HcsWjycR1L0",
+              "collector_version":"public-study-cartas-pokemon-argentina-pitch-black-youtube-v1",
+              "parser_version":"cartas-pokemon-argentina-pitch-black-evidence-v1",
+              "country_code":"AR",
+              "country_name":"Argentina",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@pokemonargentinatcg/about",
+              "publisher_channel_id":"UCGBtAPv7mLLRgdqeupj2kLg",
+              "publisher_country_evidence":"country:\\"Argentina\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me05",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Pitch Black",
+              "set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase",
+              "product_name":"Pitch Black Booster Display Box",
+              "product_scope":"booster_box",
+              "pack_count":36,
+              "denominator_basis":"source_named_complete_box_plus_official_36_pack_spec",
+              "denominator_derivation":"one_complete_booster_display_x_36",
+              "source_published_at":"2026-07-17T11:18:50-07:00",
+              "observed_at":"2026-07-17T18:18:50Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pokemaniaco_lucas_cl_36'
+            AND policies.display_name = 'Pokemaniaco Lucas Phantasmal Flames 36-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=Meg4AO9CqHE'
+            AND policies.version = 'public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1'
+            AND policies.config = '{
+              "study_key":"pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=Meg4AO9CqHE",
+              "fetch_url":"https://www.youtube.com/watch?v=Meg4AO9CqHE",
+              "collector_version":"public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
+              "parser_version":"pokemaniaco-lucas-phantasmal-flames-evidence-v1",
+              "country_code":"CL",
+              "country_name":"Chile",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@PokemaniacoLucas/about",
+              "publisher_channel_id":"UCDKXzvS5YaUJwsHD1wNkWBw",
+              "publisher_country_evidence":"country:\\"Chile\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me02",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Phantasmal Flames",
+              "set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-phantasmal-flames-product-showcase",
+              "product_name":"Phantasmal Flames Booster Display Box",
+              "product_scope":"booster_box",
+              "pack_count":36,
+              "denominator_basis":"source_declared_complete_36_pack_opening",
+              "denominator_derivation":"source_declared_36_packs",
+              "source_published_at":"2025-11-13T08:00:06-08:00",
+              "observed_at":"2025-11-13T16:00:06Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
@@ -1135,7 +1223,9 @@ public_study_dependencies AS (
         'public_study_pokehanna_ca_9',
         'public_study_tcg_market_panama_chaos_rising_6',
         'public_study_tcg_market_panama_pitch_black_4',
-        'public_study_pokeshow_guatemala_megaevolution_3'
+        'public_study_pokeshow_guatemala_megaevolution_3',
+        'public_study_cartas_pokemon_argentina_pitch_black_36',
+        'public_study_pokemaniaco_lucas_cl_36'
       )
     ),
     false

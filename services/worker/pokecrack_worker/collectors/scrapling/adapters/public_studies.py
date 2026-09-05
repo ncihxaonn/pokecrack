@@ -1154,6 +1154,112 @@ POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_SHA256 = (
     "b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb"
 )
 
+CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY = PUBLIC_STUDIES_BY_KEY[
+    "cartas-pokemon-argentina-pitch-black-ar-36-v1"
+]
+CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_POLICY_CONFIG: dict[str, object] = {
+    "study_key": CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY.study_key,
+    "canonical_url": CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY.source_url,
+    "fetch_url": CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY.fetch_url,
+    "collector_version": CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY.collector_version,
+    "parser_version": CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY.parser_version,
+    "country_code": "AR",
+    "country_name": "Argentina",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@pokemonargentinatcg/about",
+    "publisher_channel_id": "UCGBtAPv7mLLRgdqeupj2kLg",
+    "publisher_country_evidence": 'country:"Argentina"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me05",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Pitch Black",
+    "set_official_url": (
+        "https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase"
+    ),
+    "product_name": "Pitch Black Booster Display Box",
+    "product_scope": "booster_box",
+    "pack_count": 36,
+    "denominator_basis": "source_named_complete_box_plus_official_36_pack_spec",
+    "denominator_derivation": "one_complete_booster_display_x_36",
+    "source_published_at": "2026-07-17T11:18:50-07:00",
+    "observed_at": "2026-07-17T18:18:50Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_TITLE = "Abrimos una caja de Pitch Black COMPLETA 😈"
+CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_EXCERPT = (
+    "Abrimos una caja de Pitch Black COMPLETA 😈\n"
+    "Opening de Cartas Pokemon Pitch Black · caja completa · "
+    "official booster display = 36 packs"
+)
+CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_SHA256 = (
+    "9332e272a335d9e81a6e42c702b5d49630357eaf4a7a8c10d9d5f9d40cc05690"
+)
+
+POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY = PUBLIC_STUDIES_BY_KEY[
+    "pokemaniaco-lucas-phantasmal-flames-cl-36-v1"
+]
+POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_POLICY_CONFIG: dict[str, object] = {
+    "study_key": POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY.study_key,
+    "canonical_url": POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY.source_url,
+    "fetch_url": POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY.fetch_url,
+    "collector_version": POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY.collector_version,
+    "parser_version": POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY.parser_version,
+    "country_code": "CL",
+    "country_name": "Chile",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@PokemaniacoLucas/about",
+    "publisher_channel_id": "UCDKXzvS5YaUJwsHD1wNkWBw",
+    "publisher_country_evidence": 'country:"Chile"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me02",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Phantasmal Flames",
+    "set_official_url": (
+        "https://www.pokemon.com/us/news/"
+        "pokemon-tcg-mega-evolution-phantasmal-flames-product-showcase"
+    ),
+    "product_name": "Phantasmal Flames Booster Display Box",
+    "product_scope": "booster_box",
+    "pack_count": 36,
+    "denominator_basis": "source_declared_complete_36_pack_opening",
+    "denominator_derivation": "source_declared_36_packs",
+    "source_published_at": "2025-11-13T08:00:06-08:00",
+    "observed_at": "2025-11-13T16:00:06Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_TITLE = (
+    "¡Apertura Anticipada! Booster Box completa de Phantasmal Flames -  Pokémon TCG"
+)
+POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_EXCERPT = (
+    "¡Apertura Anticipada! Booster Box completa de Phantasmal Flames -  Pokémon TCG\n"
+    "abro 36 sobres de la nueva edición Phantasmal Flames · Booster Box completa"
+)
+POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_SHA256 = (
+    "dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f"
+)
+
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
@@ -1434,7 +1540,48 @@ def pokeshow_guatemala_megaevolution_adapter(*, client: HTTPClient) -> YouTubeWa
     )
 
 
+def cartas_pokemon_argentina_pitch_black_adapter(
+    *, client: HTTPClient
+) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY,
+        expected_policy_config=CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_POLICY_CONFIG,
+        expected_title=CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_TITLE,
+        evidence_lines=CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(r"Opening de Cartas Pokemon Pitch Black"),
+        expected_video_id="HcsWjycR1L0",
+        expected_channel_id="UCGBtAPv7mLLRgdqeupj2kLg",
+        expected_observed_at=datetime(2026, 7, 17, 18, 18, 50, tzinfo=UTC),
+        expected_evidence_sha256=CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_SHA256,
+    )
+
+
+def pokemaniaco_lucas_phantasmal_flames_adapter(
+    *, client: HTTPClient
+) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY,
+        expected_policy_config=POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_POLICY_CONFIG,
+        expected_title=POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_TITLE,
+        evidence_lines=POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"En este video abro 36 sobres de la nueva edición Phantasmal Flames"
+        ),
+        expected_video_id="Meg4AO9CqHE",
+        expected_channel_id="UCDKXzvS5YaUJwsHD1wNkWBw",
+        expected_observed_at=datetime(2025, 11, 13, 16, 0, 6, tzinfo=UTC),
+        expected_evidence_sha256=POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_SHA256,
+    )
+
+
 __all__ = [
+    "CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_EXCERPT",
+    "CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_SHA256",
+    "CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY",
+    "CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_POLICY_CONFIG",
+    "CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_TITLE",
     "ALLONLINE_EVIDENCE_EXCERPT",
     "ALLONLINE_EVIDENCE_SHA256",
     "ALLONLINE_IDENTITY",
@@ -1484,6 +1631,11 @@ __all__ = [
     "POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY",
     "POKESHOW_GUATEMALA_MEGA_EVOLUTION_POLICY_CONFIG",
     "POKESHOW_GUATEMALA_MEGA_EVOLUTION_TITLE",
+    "POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_EXCERPT",
+    "POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_SHA256",
+    "POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY",
+    "POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_POLICY_CONFIG",
+    "POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_TITLE",
     "ReviewedPublicStudyAdapter",
     "RobotsTxtChecker",
     "RICHARDS_BRICKS_CHARIZARD_EVIDENCE_EXCERPT",
@@ -1516,6 +1668,7 @@ __all__ = [
     "bleedingcool_phantasmal_flames_adapter",
     "buyfunlife_ninja_spinner_adapter",
     "cardchill_ascended_heroes_adapter",
+    "cartas_pokemon_argentina_pitch_black_adapter",
     "comicbook_perfect_order_adapter",
     "limitsend_inferno_x_adapter",
     "pokesup_abyss_eye_adapter",
@@ -1525,6 +1678,7 @@ __all__ = [
     "indigo_geek_megaevolucion_adapter",
     "pokehanna_ascended_heroes_adapter",
     "pokeshow_guatemala_megaevolution_adapter",
+    "pokemaniaco_lucas_phantasmal_flames_adapter",
     "tcg_market_panama_chaos_rising_adapter",
     "tcg_market_panama_pitch_black_adapter",
     "tcgtalk_perfect_order_adapter",

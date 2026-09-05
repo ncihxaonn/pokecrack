@@ -225,13 +225,133 @@ insert into ingest.source_policies (
   'public-study-pokeshow-guatemala-megaevolution-youtube-v1',
   86400,
   false
+),
+(
+  'public_study_cartas_pokemon_argentina_pitch_black_36',
+  'Cartas Pokemon Argentina Pitch Black 36-pack coverage',
+  'public_web',
+  'www.youtube.com',
+  'https://www.youtube.com/watch?v=HcsWjycR1L0',
+  true,
+  'scrapling_http',
+  'public',
+  'respect',
+  array['scrapling_http']::text[],
+  false,
+  30,
+  2,
+  1,
+  1,
+  true,
+  730,
+  '{
+    "study_key":"cartas-pokemon-argentina-pitch-black-ar-36-v1",
+    "canonical_url":"https://www.youtube.com/watch?v=HcsWjycR1L0",
+    "fetch_url":"https://www.youtube.com/watch?v=HcsWjycR1L0",
+    "collector_version":"public-study-cartas-pokemon-argentina-pitch-black-youtube-v1",
+    "parser_version":"cartas-pokemon-argentina-pitch-black-evidence-v1",
+    "country_code":"AR",
+    "country_name":"Argentina",
+    "geography_basis":"publisher_country",
+    "geography_confidence":"tier_b",
+    "publisher_country_url":"https://www.youtube.com/@pokemonargentinatcg/about",
+    "publisher_channel_id":"UCGBtAPv7mLLRgdqeupj2kLg",
+    "publisher_country_evidence":"country:\"Argentina\"",
+    "publisher_country_checked_at":"2026-09-05",
+    "geography_review_method":"manual_static_channel_about_review",
+    "set_external_id":"me05",
+    "set_language":"und",
+    "set_language_basis":"source_does_not_state_card_language",
+    "set_name":"Pitch Black",
+    "set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase",
+    "product_name":"Pitch Black Booster Display Box",
+    "product_scope":"booster_box",
+    "pack_count":36,
+    "denominator_basis":"source_named_complete_box_plus_official_36_pack_spec",
+    "denominator_derivation":"one_complete_booster_display_x_36",
+    "source_published_at":"2026-07-17T11:18:50-07:00",
+    "observed_at":"2026-07-17T18:18:50Z",
+    "denominator_complete":true,
+    "robots_url":"https://www.youtube.com/robots.txt",
+    "robots_checked_at":"2026-09-05",
+    "robots_decision":"watch_route_not_disallowed",
+    "terms_url":"https://www.youtube.com/static?template=terms",
+    "terms_checked_at":"2026-09-05",
+    "terms_effective_date":"2023-12-15",
+    "terms_status":"public_browse_static_metadata_only",
+    "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+  }'::jsonb,
+  'public-study-cartas-pokemon-argentina-pitch-black-youtube-v1',
+  86400,
+  false
+),
+(
+  'public_study_pokemaniaco_lucas_cl_36',
+  'Pokemaniaco Lucas Phantasmal Flames 36-pack coverage',
+  'public_web',
+  'www.youtube.com',
+  'https://www.youtube.com/watch?v=Meg4AO9CqHE',
+  true,
+  'scrapling_http',
+  'public',
+  'respect',
+  array['scrapling_http']::text[],
+  false,
+  30,
+  2,
+  1,
+  1,
+  true,
+  730,
+  '{
+    "study_key":"pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
+    "canonical_url":"https://www.youtube.com/watch?v=Meg4AO9CqHE",
+    "fetch_url":"https://www.youtube.com/watch?v=Meg4AO9CqHE",
+    "collector_version":"public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
+    "parser_version":"pokemaniaco-lucas-phantasmal-flames-evidence-v1",
+    "country_code":"CL",
+    "country_name":"Chile",
+    "geography_basis":"publisher_country",
+    "geography_confidence":"tier_b",
+    "publisher_country_url":"https://www.youtube.com/@PokemaniacoLucas/about",
+    "publisher_channel_id":"UCDKXzvS5YaUJwsHD1wNkWBw",
+    "publisher_country_evidence":"country:\"Chile\"",
+    "publisher_country_checked_at":"2026-09-05",
+    "geography_review_method":"manual_static_channel_about_review",
+    "set_external_id":"me02",
+    "set_language":"und",
+    "set_language_basis":"source_does_not_state_card_language",
+    "set_name":"Phantasmal Flames",
+    "set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-phantasmal-flames-product-showcase",
+    "product_name":"Phantasmal Flames Booster Display Box",
+    "product_scope":"booster_box",
+    "pack_count":36,
+    "denominator_basis":"source_declared_complete_36_pack_opening",
+    "denominator_derivation":"source_declared_36_packs",
+    "source_published_at":"2025-11-13T08:00:06-08:00",
+    "observed_at":"2025-11-13T16:00:06Z",
+    "denominator_complete":true,
+    "robots_url":"https://www.youtube.com/robots.txt",
+    "robots_checked_at":"2026-09-05",
+    "robots_decision":"watch_route_not_disallowed",
+    "terms_url":"https://www.youtube.com/static?template=terms",
+    "terms_checked_at":"2026-09-05",
+    "terms_effective_date":"2023-12-15",
+    "terms_status":"public_browse_static_metadata_only",
+    "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+  }'::jsonb,
+  'public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1',
+  86400,
+  false
 );
 
 insert into ingest.source_request_gates (source_key)
 values
   ('public_study_tcg_market_panama_chaos_rising_6'),
   ('public_study_tcg_market_panama_pitch_black_4'),
-  ('public_study_pokeshow_guatemala_megaevolution_3');
+  ('public_study_pokeshow_guatemala_megaevolution_3'),
+  ('public_study_cartas_pokemon_argentina_pitch_black_36'),
+  ('public_study_pokemaniaco_lucas_cl_36');
 
 create or replace function ingest.reviewed_public_study_gates_ready_v1()
 returns boolean
@@ -241,7 +361,7 @@ security definer
 parallel safe
 set search_path = pg_catalog
 as $$
-  select count(*) = 17
+  select count(*) = 19
   from ingest.source_request_gates as gates
   where gates.source_key in (
     'public_study_comicbook_us_55',
@@ -260,7 +380,9 @@ as $$
     'public_study_pokehanna_ca_9',
     'public_study_tcg_market_panama_chaos_rising_6',
     'public_study_tcg_market_panama_pitch_black_4',
-    'public_study_pokeshow_guatemala_megaevolution_3'
+    'public_study_pokeshow_guatemala_megaevolution_3',
+    'public_study_cartas_pokemon_argentina_pitch_black_36',
+    'public_study_pokemaniaco_lucas_cl_36'
   );
 $$;
 
@@ -272,7 +394,7 @@ grant execute on function ingest.reviewed_public_study_gates_ready_v1()
 comment on function ingest.reviewed_public_study_gates_ready_v1() is
   'Boolean-only readiness check for all exact reviewed public-study request gates; it exposes no gate identity or lease state.';
 
--- Append ordinals 15 through 17 only when the exact Canada ordinal-14 suffix
+-- Append ordinals 15 through 19 only when the exact Canada ordinal-14 suffix
 -- is still present. Every appended contract explicitly omits a normalized
 -- numerator and rate.
 do $migration$
@@ -438,6 +560,108 @@ declare
       }'::jsonb,
       E'🦆 El Poder del Pato 💪 | Apertura MegaEvolution + Noticias y Pokeguamazos | PokéShow de Maddi\nAbriremos un Tripack de Mega Evolution · desde Guatemala · official tripack = 3 packs'::text,
       array['🦆 El Poder del Pato 💪 | Apertura MegaEvolution + Noticias y Pokeguamazos | PokéShow de Maddi']::text[]
+    ),
+    (
+      18,
+      'cartas-pokemon-argentina-pitch-black-ar-36-v1'::text,
+      'public_study_cartas_pokemon_argentina_pitch_black_36'::text,
+      'cartas_pokemon_argentina_pitch_black_study'::text,
+      'Cartas Pokemon Argentina Pitch Black 36-pack study'::text,
+      'Reviewed Argentina publisher-country coverage: the exact source names a complete Pitch Black box opening, while the official product showcase supplies the 36-pack booster-display denominator. Physical opening location and card language are not claimed. No normalized SIR-pack numerator exists, so no rate or inference is published.'::text,
+      'Cartas Pokemon Argentina Pitch Black 36-pack coverage'::text,
+      'www.youtube.com'::text,
+      'https://www.youtube.com/watch?v=HcsWjycR1L0'::text,
+      'public-study-cartas-pokemon-argentina-pitch-black-youtube-v1'::text,
+      '{
+        "study_key":"cartas-pokemon-argentina-pitch-black-ar-36-v1",
+        "canonical_url":"https://www.youtube.com/watch?v=HcsWjycR1L0",
+        "fetch_url":"https://www.youtube.com/watch?v=HcsWjycR1L0",
+        "collector_version":"public-study-cartas-pokemon-argentina-pitch-black-youtube-v1",
+        "parser_version":"cartas-pokemon-argentina-pitch-black-evidence-v1",
+        "country_code":"AR",
+        "country_name":"Argentina",
+        "geography_basis":"publisher_country",
+        "geography_confidence":"tier_b",
+        "publisher_country_url":"https://www.youtube.com/@pokemonargentinatcg/about",
+        "publisher_channel_id":"UCGBtAPv7mLLRgdqeupj2kLg",
+        "publisher_country_evidence":"country:\"Argentina\"",
+        "publisher_country_checked_at":"2026-09-05",
+        "geography_review_method":"manual_static_channel_about_review",
+        "set_external_id":"me05",
+        "set_language":"und",
+        "set_language_basis":"source_does_not_state_card_language",
+        "set_name":"Pitch Black",
+        "set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase",
+        "product_name":"Pitch Black Booster Display Box",
+        "product_scope":"booster_box",
+        "pack_count":36,
+        "denominator_basis":"source_named_complete_box_plus_official_36_pack_spec",
+        "denominator_derivation":"one_complete_booster_display_x_36",
+        "source_published_at":"2026-07-17T11:18:50-07:00",
+        "observed_at":"2026-07-17T18:18:50Z",
+        "denominator_complete":true,
+        "robots_url":"https://www.youtube.com/robots.txt",
+        "robots_checked_at":"2026-09-05",
+        "robots_decision":"watch_route_not_disallowed",
+        "terms_url":"https://www.youtube.com/static?template=terms",
+        "terms_checked_at":"2026-09-05",
+        "terms_effective_date":"2023-12-15",
+        "terms_status":"public_browse_static_metadata_only",
+        "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+      }'::jsonb,
+      E'Abrimos una caja de Pitch Black COMPLETA 😈\nOpening de Cartas Pokemon Pitch Black · caja completa · official booster display = 36 packs'::text,
+      array['Abrimos una caja de Pitch Black COMPLETA 😈']::text[]
+    ),
+    (
+      19,
+      'pokemaniaco-lucas-phantasmal-flames-cl-36-v1'::text,
+      'public_study_pokemaniaco_lucas_cl_36'::text,
+      'pokemaniaco_lucas_phantasmal_flames_study'::text,
+      'Pokemaniaco Lucas Phantasmal Flames 36-pack study'::text,
+      'Reviewed Chile publisher-country coverage: the exact source declares a complete 36-pack Phantasmal Flames booster-box opening. Physical opening location and card language are not claimed. No normalized SIR-pack numerator exists, so no rate or inference is published.'::text,
+      'Pokemaniaco Lucas Phantasmal Flames 36-pack coverage'::text,
+      'www.youtube.com'::text,
+      'https://www.youtube.com/watch?v=Meg4AO9CqHE'::text,
+      'public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1'::text,
+      '{
+        "study_key":"pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
+        "canonical_url":"https://www.youtube.com/watch?v=Meg4AO9CqHE",
+        "fetch_url":"https://www.youtube.com/watch?v=Meg4AO9CqHE",
+        "collector_version":"public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
+        "parser_version":"pokemaniaco-lucas-phantasmal-flames-evidence-v1",
+        "country_code":"CL",
+        "country_name":"Chile",
+        "geography_basis":"publisher_country",
+        "geography_confidence":"tier_b",
+        "publisher_country_url":"https://www.youtube.com/@PokemaniacoLucas/about",
+        "publisher_channel_id":"UCDKXzvS5YaUJwsHD1wNkWBw",
+        "publisher_country_evidence":"country:\"Chile\"",
+        "publisher_country_checked_at":"2026-09-05",
+        "geography_review_method":"manual_static_channel_about_review",
+        "set_external_id":"me02",
+        "set_language":"und",
+        "set_language_basis":"source_does_not_state_card_language",
+        "set_name":"Phantasmal Flames",
+        "set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-phantasmal-flames-product-showcase",
+        "product_name":"Phantasmal Flames Booster Display Box",
+        "product_scope":"booster_box",
+        "pack_count":36,
+        "denominator_basis":"source_declared_complete_36_pack_opening",
+        "denominator_derivation":"source_declared_36_packs",
+        "source_published_at":"2025-11-13T08:00:06-08:00",
+        "observed_at":"2025-11-13T16:00:06Z",
+        "denominator_complete":true,
+        "robots_url":"https://www.youtube.com/robots.txt",
+        "robots_checked_at":"2026-09-05",
+        "robots_decision":"watch_route_not_disallowed",
+        "terms_url":"https://www.youtube.com/static?template=terms",
+        "terms_checked_at":"2026-09-05",
+        "terms_effective_date":"2023-12-15",
+        "terms_status":"public_browse_static_metadata_only",
+        "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+      }'::jsonb,
+      E'¡Apertura Anticipada! Booster Box completa de Phantasmal Flames -  Pokémon TCG\nabro 36 sobres de la nueva edición Phantasmal Flames · Booster Box completa'::text,
+      array['¡Apertura Anticipada! Booster Box completa de Phantasmal Flames -  Pokémon TCG']::text[]
     );$new$;
 begin
   select pg_get_functiondef(
@@ -450,6 +674,8 @@ begin
     or position('tcg-market-chaos-rising-pa-6-v1' in definition) > 0
     or position('tcg-market-pitch-black-pa-4-v1' in definition) > 0
     or position('pokeshow-mega-evolution-gt-3-v1' in definition) > 0
+    or position('cartas-pokemon-argentina-pitch-black-ar-36-v1' in definition) > 0
+    or position('pokemaniaco-lucas-phantasmal-flames-cl-36-v1' in definition) > 0
     or (
       select array_agg(contracts.ordinal order by contracts.ordinal)
       from ingest.reviewed_public_study_contracts() as contracts
@@ -464,7 +690,7 @@ begin
   if updated_definition = definition then
     raise exception using
       errcode = '55000',
-      message = 'Panama/Guatemala reviewed coverage registry extension was not applied';
+      message = 'Central/South America reviewed coverage registry extension was not applied';
   end if;
   execute updated_definition;
 end;
@@ -496,7 +722,7 @@ begin
       in source_definition
     ) = 0
       or position(
-        'contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17)'
+        'contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19)'
         in source_definition
       ) > 0
     then
@@ -508,12 +734,12 @@ begin
     updated_definition := replace(
       source_definition,
       'contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14)',
-      'contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17)'
+      'contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19)'
     );
     if updated_definition = source_definition then
       raise exception using
         errcode = '55000',
-        message = 'reviewed coverage ordinal-15/16/17 extension was not applied',
+        message = 'reviewed coverage ordinal-15-through-19 extension was not applied',
         detail = function_oid::text;
     end if;
     execute updated_definition;
@@ -572,9 +798,9 @@ $migration$;
 comment on function ingest.finalize_public_study_coverage_job_v1(
   uuid, text, bigint, text, jsonb
 ) is
-  'Generation-fenced verifier for fourteen reviewed denominator-only contracts. English contracts require the exact live TCGdex catalog, except the two exact source-native Puerto Rico product identities; explicit non-English or undetermined-language (`und`) contracts require a bounded source-native set name and official set URL. It cannot publish a numerator or inference.';
+  'Generation-fenced verifier for sixteen reviewed denominator-only contracts. English contracts require the exact live TCGdex catalog, except the two exact source-native Puerto Rico product identities; explicit non-English or undetermined-language (`und`) contracts require a bounded source-native set name and official set URL. It cannot publish a numerator or inference.';
 
--- Seed the three manually verified coverage facts immediately. Their source
+-- Seed the five manually verified coverage facts immediately. Their source
 -- product identity plus the official product specification establishes the
 -- denominator; the rows do not claim a frame-by-frame review.
 do $migration$
@@ -582,6 +808,8 @@ declare
   panama_chaos_policy_id uuid;
   panama_pitch_policy_id uuid;
   guatemala_policy_id uuid;
+  argentina_policy_id uuid;
+  chile_policy_id uuid;
   verification_time timestamptz := statement_timestamp();
   panama_chaos_evidence text :=
     'abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef';
@@ -589,6 +817,10 @@ declare
     '055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857';
   guatemala_evidence text :=
     'b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb';
+  argentina_evidence text :=
+    '9332e272a335d9e81a6e42c702b5d49630357eaf4a7a8c10d9d5f9d40cc05690';
+  chile_evidence text :=
+    'dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f';
 begin
   if panama_chaos_evidence <> encode(
     extensions.digest(
@@ -630,6 +862,34 @@ begin
   ) then
     raise exception using errcode = '55000',
       message = 'Guatemala Mega Evolution evidence hash does not match the immutable excerpt';
+  end if;
+
+  if argentina_evidence <> encode(
+    extensions.digest(
+      convert_to(
+        E'Abrimos una caja de Pitch Black COMPLETA 😈\nOpening de Cartas Pokemon Pitch Black · caja completa · official booster display = 36 packs',
+        'UTF8'
+      ),
+      'sha256'
+    ),
+    'hex'
+  ) then
+    raise exception using errcode = '55000',
+      message = 'Argentina Pitch Black evidence hash does not match the immutable excerpt';
+  end if;
+
+  if chile_evidence <> encode(
+    extensions.digest(
+      convert_to(
+        E'¡Apertura Anticipada! Booster Box completa de Phantasmal Flames -  Pokémon TCG\nabro 36 sobres de la nueva edición Phantasmal Flames · Booster Box completa',
+        'UTF8'
+      ),
+      'sha256'
+    ),
+    'hex'
+  ) then
+    raise exception using errcode = '55000',
+      message = 'Chile Phantasmal Flames evidence hash does not match the immutable excerpt';
   end if;
 
   select policies.id
@@ -699,12 +959,58 @@ begin
     and policies.statistics_eligible_default
     and not policies.is_demo;
 
+  select policies.id
+  into argentina_policy_id
+  from ingest.source_policies as policies
+  where policies.source_key = 'public_study_cartas_pokemon_argentina_pitch_black_36'
+    and policies.display_name = 'Cartas Pokemon Argentina Pitch Black 36-pack coverage'
+    and policies.domain = 'www.youtube.com'
+    and policies.base_url = 'https://www.youtube.com/watch?v=HcsWjycR1L0'
+    and policies.version = 'public-study-cartas-pokemon-argentina-pitch-black-youtube-v1'
+    and policies.config ->> 'study_key' = 'cartas-pokemon-argentina-pitch-black-ar-36-v1'
+    and policies.config ->> 'publisher_channel_id' = 'UCGBtAPv7mLLRgdqeupj2kLg'
+    and policies.config ->> 'set_external_id' = 'me05'
+    and policies.config ->> 'set_language' = 'und'
+    and policies.config ->> 'set_language_basis' = 'source_does_not_state_card_language'
+    and policies.config ->> 'product_scope' = 'booster_box'
+    and policies.config ->> 'pack_count' = '36'
+    and not (policies.config ? 'qualifying_hit_pack_count')
+    and not (policies.config ? 'qualifying_metric')
+    and not (policies.config ? 'metric_version')
+    and policies.enabled
+    and policies.statistics_eligible_default
+    and not policies.is_demo;
+
+  select policies.id
+  into chile_policy_id
+  from ingest.source_policies as policies
+  where policies.source_key = 'public_study_pokemaniaco_lucas_cl_36'
+    and policies.display_name = 'Pokemaniaco Lucas Phantasmal Flames 36-pack coverage'
+    and policies.domain = 'www.youtube.com'
+    and policies.base_url = 'https://www.youtube.com/watch?v=Meg4AO9CqHE'
+    and policies.version = 'public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1'
+    and policies.config ->> 'study_key' = 'pokemaniaco-lucas-phantasmal-flames-cl-36-v1'
+    and policies.config ->> 'publisher_channel_id' = 'UCDKXzvS5YaUJwsHD1wNkWBw'
+    and policies.config ->> 'set_external_id' = 'me02'
+    and policies.config ->> 'set_language' = 'und'
+    and policies.config ->> 'set_language_basis' = 'source_does_not_state_card_language'
+    and policies.config ->> 'product_scope' = 'booster_box'
+    and policies.config ->> 'pack_count' = '36'
+    and not (policies.config ? 'qualifying_hit_pack_count')
+    and not (policies.config ? 'qualifying_metric')
+    and not (policies.config ? 'metric_version')
+    and policies.enabled
+    and policies.statistics_eligible_default
+    and not policies.is_demo;
+
   if panama_chaos_policy_id is null
     or panama_pitch_policy_id is null
     or guatemala_policy_id is null
+    or argentina_policy_id is null
+    or chile_policy_id is null
   then
     raise exception using errcode = '55000',
-      message = 'Panama/Guatemala reviewed source policy is unavailable or drifted';
+      message = 'Central/South America reviewed source policy is unavailable or drifted';
   end if;
 
   insert into ingest.public_study_coverage_observations (
@@ -774,6 +1080,40 @@ begin
     verification_time,
     verification_time,
     false
+  ),
+  (
+    'cartas-pokemon-argentina-pitch-black-ar-36-v1',
+    argentina_policy_id,
+    'AR',
+    'Argentina',
+    '2026-07-17T18:18:50Z'::timestamptz,
+    36,
+    'me05',
+    'booster_box',
+    'public-study-cartas-pokemon-argentina-pitch-black-youtube-v1',
+    'cartas-pokemon-argentina-pitch-black-evidence-v1',
+    'public-study-cartas-pokemon-argentina-pitch-black-youtube-v1',
+    argentina_evidence,
+    verification_time,
+    verification_time,
+    false
+  ),
+  (
+    'pokemaniaco-lucas-phantasmal-flames-cl-36-v1',
+    chile_policy_id,
+    'CL',
+    'Chile',
+    '2025-11-13T16:00:06Z'::timestamptz,
+    36,
+    'me02',
+    'booster_box',
+    'public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1',
+    'pokemaniaco-lucas-phantasmal-flames-evidence-v1',
+    'public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1',
+    chile_evidence,
+    verification_time,
+    verification_time,
+    false
   );
 end;
 $migration$;
@@ -806,7 +1146,9 @@ alter table ingest.jobs
         'pokehanna-ascended-heroes-ca-9-v1',
         'tcg-market-chaos-rising-pa-6-v1',
         'tcg-market-pitch-black-pa-4-v1',
-        'pokeshow-mega-evolution-gt-3-v1'
+        'pokeshow-mega-evolution-gt-3-v1',
+        'cartas-pokemon-argentina-pitch-black-ar-36-v1',
+        'pokemaniaco-lucas-phantasmal-flames-cl-36-v1'
       )
     )
   );
