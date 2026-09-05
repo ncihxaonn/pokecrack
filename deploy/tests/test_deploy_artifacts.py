@@ -699,6 +699,24 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
             '          backup_reference="$(python3 ',
             workflow,
         )
+        self.assertIn(
+            'probe_error_file="$run_root/pooler-probe.stderr"', workflow
+        )
+        self.assertIn(': > "$probe_error_file"', workflow)
+        self.assertIn('chmod 0600 "$probe_error_file"', workflow)
+        self.assertIn('2>> "$probe_error_file"', workflow)
+        self.assertIn("EAUTHQUERY", workflow)
+        self.assertIn("user not found in the database", workflow)
+        self.assertIn("probe_failure=authentication-rejected", workflow)
+        self.assertIn("probe_failure=tls-rejected", workflow)
+        self.assertIn("probe_failure=dns-failed", workflow)
+        self.assertIn("probe_failure=network-failed", workflow)
+        self.assertNotIn('cat "$probe_error_file"', workflow)
+        self.assertIn(
+            '              "$env_file" \\\n'
+            '              "$probe_error_file"',
+            workflow,
+        )
         self.assertIn('PATH="$client_dir:$PATH" psql --version', workflow)
         self.assertLess(
             workflow.index('PATH="$client_dir:$PATH" psql --version'),
