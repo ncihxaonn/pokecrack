@@ -1187,6 +1187,122 @@ sources:
     cache_ttl_seconds: 86400
     retain_raw_html: false
     terms_url: https://www.youtube.com/static?template=terms
+  "www.youtube.com#cartas-pokemon-argentina-pitch-black-36":
+    domain: www.youtube.com
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-cartas-pokemon-argentina-pitch-black-youtube-v1
+    config:
+      study_key: cartas-pokemon-argentina-pitch-black-ar-36-v1
+      canonical_url: https://www.youtube.com/watch?v=HcsWjycR1L0
+      fetch_url: https://www.youtube.com/watch?v=HcsWjycR1L0
+      collector_version: public-study-cartas-pokemon-argentina-pitch-black-youtube-v1
+      parser_version: cartas-pokemon-argentina-pitch-black-evidence-v1
+      country_code: AR
+      country_name: Argentina
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      publisher_country_url: https://www.youtube.com/@pokemonargentinatcg/about
+      publisher_channel_id: UCGBtAPv7mLLRgdqeupj2kLg
+      publisher_country_evidence: 'country:"Argentina"'
+      publisher_country_checked_at: "2026-09-05"
+      geography_review_method: manual_static_channel_about_review
+      set_external_id: me05
+      set_language: und
+      set_language_basis: source_does_not_state_card_language
+      set_name: Pitch Black
+      set_official_url: https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase
+      product_name: Pitch Black Booster Display Box
+      product_scope: booster_box
+      pack_count: 36
+      denominator_basis: source_named_complete_box_plus_official_36_pack_spec
+      denominator_derivation: one_complete_booster_display_x_36
+      source_published_at: "2026-07-17T11:18:50-07:00"
+      observed_at: "2026-07-17T18:18:50Z"
+      denominator_complete: true
+      robots_url: https://www.youtube.com/robots.txt
+      robots_checked_at: "2026-09-05"
+      robots_decision: watch_route_not_disallowed
+      terms_url: https://www.youtube.com/static?template=terms
+      terms_checked_at: "2026-09-05"
+      terms_effective_date: "2023-12-15"
+      terms_status: public_browse_static_metadata_only
+      rights_scope: minimal_noncreative_facts_no_media_transcript_or_body_reuse
+    reason: Exact public YouTube metadata names a complete Pitch Black booster-box opening attributed to the Argentina publisher channel; the official product showcase supplies the 36-pack specification. This is denominator-only coverage with no qualifying hit or rate claim.
+    routes: [static]
+    adapter: cartas_pokemon_argentina_pitch_black_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://www.youtube.com/static?template=terms
+  "www.youtube.com#pokemaniaco-lucas-cl-36":
+    domain: www.youtube.com
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1
+    config:
+      study_key: pokemaniaco-lucas-phantasmal-flames-cl-36-v1
+      canonical_url: https://www.youtube.com/watch?v=Meg4AO9CqHE
+      fetch_url: https://www.youtube.com/watch?v=Meg4AO9CqHE
+      collector_version: public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1
+      parser_version: pokemaniaco-lucas-phantasmal-flames-evidence-v1
+      country_code: CL
+      country_name: Chile
+      geography_basis: publisher_country
+      geography_confidence: tier_b
+      publisher_country_url: https://www.youtube.com/@PokemaniacoLucas/about
+      publisher_channel_id: UCDKXzvS5YaUJwsHD1wNkWBw
+      publisher_country_evidence: 'country:"Chile"'
+      publisher_country_checked_at: "2026-09-05"
+      geography_review_method: manual_static_channel_about_review
+      set_external_id: me02
+      set_language: und
+      set_language_basis: source_does_not_state_card_language
+      set_name: Phantasmal Flames
+      set_official_url: https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-phantasmal-flames-product-showcase
+      product_name: Phantasmal Flames Booster Display Box
+      product_scope: booster_box
+      pack_count: 36
+      denominator_basis: source_declared_complete_36_pack_opening
+      denominator_derivation: source_declared_36_packs
+      source_published_at: "2025-11-13T08:00:06-08:00"
+      observed_at: "2025-11-13T16:00:06Z"
+      denominator_complete: true
+      robots_url: https://www.youtube.com/robots.txt
+      robots_checked_at: "2026-09-05"
+      robots_decision: watch_route_not_disallowed
+      terms_url: https://www.youtube.com/static?template=terms
+      terms_checked_at: "2026-09-05"
+      terms_effective_date: "2023-12-15"
+      terms_status: public_browse_static_metadata_only
+      rights_scope: minimal_noncreative_facts_no_media_transcript_or_body_reuse
+    reason: Exact public YouTube metadata declares a complete 36-pack Phantasmal Flames booster-box opening attributed to the Chile publisher channel. This is denominator-only coverage with no qualifying hit or rate claim.
+    routes: [static]
+    adapter: pokemaniaco_lucas_phantasmal_flames_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://www.youtube.com/static?template=terms
   dynamic.example:
     enabled: true
     collector: scrapling_dynamic

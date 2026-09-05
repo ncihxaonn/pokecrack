@@ -1226,7 +1226,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_all_seventeen_reviewed_daily_jobs(
+def test_public_study_flag_registers_all_nineteen_reviewed_daily_jobs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _ensure_pokesup_schedule_identity(monkeypatch)
@@ -1251,6 +1251,8 @@ def test_public_study_flag_registers_all_seventeen_reviewed_daily_jobs(
         {"study_key": "tcg-market-chaos-rising-pa-6-v1"},
         {"study_key": "tcg-market-pitch-black-pa-4-v1"},
         {"study_key": "pokeshow-mega-evolution-gt-3-v1"},
+        {"study_key": "cartas-pokemon-argentina-pitch-black-ar-36-v1"},
+        {"study_key": "pokemaniaco-lucas-phantasmal-flames-cl-36-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1456,6 +1458,32 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
                 '"observed_at":"2025-10-06T17:21:33Z"',
             ),
         ),
+        (
+            "public_study_cartas_pokemon_argentina_pitch_black_36",
+            (
+                '"country_code":"AR"',
+                '"publisher_channel_id":"UCGBtAPv7mLLRgdqeupj2kLg"',
+                '"set_language":"und"',
+                '"set_external_id":"me05"',
+                '"set_name":"Pitch Black"',
+                '"product_scope":"booster_box"',
+                '"pack_count":36',
+                '"observed_at":"2026-07-17T18:18:50Z"',
+            ),
+        ),
+        (
+            "public_study_pokemaniaco_lucas_cl_36",
+            (
+                '"country_code":"CL"',
+                '"publisher_channel_id":"UCDKXzvS5YaUJwsHD1wNkWBw"',
+                '"set_language":"und"',
+                '"set_external_id":"me02"',
+                '"set_name":"Phantasmal Flames"',
+                '"product_scope":"booster_box"',
+                '"pack_count":36',
+                '"observed_at":"2025-11-13T16:00:06Z"',
+            ),
+        ),
     ):
         clause_start = sql.index(f"WHERE policies.source_key = '{source_key}'")
         clause = sql[clause_start : sql.index(") = 1", clause_start)]
@@ -1470,6 +1498,8 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
                 "public_study_pokehanna",
                 "public_study_tcg_market_panama",
                 "public_study_pokeshow_guatemala",
+                "public_study_cartas_pokemon_argentina",
+                "public_study_pokemaniaco_lucas",
             )
         ):
             config_match = re.search(
@@ -1486,6 +1516,10 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
                 if source_key == "public_study_indigo_geek_mx_50"
                 else 'country:"Canada"'
                 if source_key == "public_study_pokehanna_ca_9"
+                else 'country:"Argentina"'
+                if source_key == "public_study_cartas_pokemon_argentina_pitch_black_36"
+                else 'country:"Chile"'
+                if source_key == "public_study_pokemaniaco_lucas_cl_36"
                 else (
                     'country:"Guatemala"; video description: desde Guatemala'
                     if source_key == "public_study_pokeshow_guatemala_megaevolution_3"
