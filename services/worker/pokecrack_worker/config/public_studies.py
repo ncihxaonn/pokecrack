@@ -175,6 +175,24 @@ PUBLIC_STUDIES: tuple[PublicStudyIdentity, ...] = (
         collector_version="public-study-richards-bricks-youtube-v1",
         parser_version="richards-bricks-mega-evolution-box-evidence-v1",
     ),
+    PublicStudyIdentity(
+        study_key="indigo-geek-megaevolucion-mx-50-v1",
+        source_url="https://www.youtube.com/watch?v=KNCSNJNcjJ8",
+        fetch_url="https://www.youtube.com/watch?v=KNCSNJNcjJ8",
+        domain="www.youtube.com",
+        adapter="indigo_geek_megaevolucion_study",
+        collector_version="public-study-indigo-geek-megaevolucion-youtube-v1",
+        parser_version="indigo-geek-megaevolucion-evidence-v1",
+    ),
+    PublicStudyIdentity(
+        study_key="pokehanna-ascended-heroes-ca-9-v1",
+        source_url="https://www.youtube.com/watch?v=Jj0IxqUYat8",
+        fetch_url="https://www.youtube.com/watch?v=Jj0IxqUYat8",
+        domain="www.youtube.com",
+        adapter="pokehanna_ascended_heroes_study",
+        collector_version="public-study-pokehanna-ascended-heroes-youtube-v1",
+        parser_version="pokehanna-ascended-heroes-evidence-v1",
+    ),
 )
 
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
@@ -191,6 +209,8 @@ PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
         "allonline-mega-dream-ex-th-10-v1",
         "richards-bricks-charizard-upc-pr-18-v1",
         "richards-bricks-mega-evolution-box-pr-36-v1",
+        "indigo-geek-megaevolucion-mx-50-v1",
+        "pokehanna-ascended-heroes-ca-9-v1",
     }
 )
 

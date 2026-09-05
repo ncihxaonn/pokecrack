@@ -16,7 +16,9 @@ from .adapters.public_studies import (
     buyfunlife_ninja_spinner_adapter,
     cardchill_ascended_heroes_adapter,
     comicbook_perfect_order_adapter,
+    indigo_geek_megaevolucion_adapter,
     limitsend_inferno_x_adapter,
+    pokehanna_ascended_heroes_adapter,
     pokesup_abyss_eye_adapter,
     pontocom_herois_excelsos_adapter,
     richards_bricks_charizard_upc_adapter,
@@ -89,6 +91,14 @@ def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistr
     static_registry.register(
         "richards_bricks_mega_evolution_box_study",
         richards_bricks_mega_evolution_box_adapter(client=http_client),
+    )
+    static_registry.register(
+        "indigo_geek_megaevolucion_study",
+        indigo_geek_megaevolucion_adapter(client=http_client),
+    )
+    static_registry.register(
+        "pokehanna_ascended_heroes_study",
+        pokehanna_ascended_heroes_adapter(client=http_client),
     )
     return static_registry
 

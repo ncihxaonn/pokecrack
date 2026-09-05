@@ -431,6 +431,7 @@ class YouTubeWatchCoverageAdapter:
         return (
             SourceItemCandidate(
                 platform="web",
+                external_id=self.expected_video_id,
                 source_url=identity.fetch_url,
                 title=self.expected_title,
                 text=evidence_excerpt,
@@ -901,6 +902,98 @@ RICHARDS_BRICKS_MEGA_EVOLUTION_EVIDENCE_SHA256 = (
     "97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c"
 )
 
+INDIGO_GEEK_MEGA_IDENTITY = PUBLIC_STUDIES_BY_KEY["indigo-geek-megaevolucion-mx-50-v1"]
+INDIGO_GEEK_MEGA_POLICY_CONFIG: dict[str, object] = {
+    "study_key": INDIGO_GEEK_MEGA_IDENTITY.study_key,
+    "canonical_url": INDIGO_GEEK_MEGA_IDENTITY.source_url,
+    "fetch_url": INDIGO_GEEK_MEGA_IDENTITY.fetch_url,
+    "collector_version": INDIGO_GEEK_MEGA_IDENTITY.collector_version,
+    "parser_version": INDIGO_GEEK_MEGA_IDENTITY.parser_version,
+    "country_code": "MX",
+    "country_name": "Mexico",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@IndigoGeek/about",
+    "publisher_channel_id": "UCGri3BoVzarWIYCzg8MEQjw",
+    "publisher_country_evidence": 'country:"Mexico"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me01",
+    "set_language": "es-MX",
+    "set_name": "Megaevolución",
+    "set_official_url": "https://tcg.pokemon.com/es-mx/expansions/mega-evolution/",
+    "product_name": "ETB + Booster Box + Combina y Combate",
+    "product_scope": "all",
+    "pack_count": 50,
+    "denominator_basis": "source_declared_complete_opening",
+    "source_native_products": ["etb", "booster_box", "combina_y_combate"],
+    "source_published_at": "2025-09-12T06:00:41-07:00",
+    "observed_at": "2025-09-12T13:00:41Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+INDIGO_GEEK_MEGA_TITLE = "Abrimos 50 SOBRES de la nueva expansión de Pokémon JCC: Megaevolución"
+INDIGO_GEEK_MEGA_EVIDENCE_EXCERPT = (
+    "Abrimos 50 SOBRES de la nueva expansión de Pokémon JCC: Megaevolución\n"
+    "50 sobres · ETB · booster box · Combina y combate"
+)
+INDIGO_GEEK_MEGA_EVIDENCE_SHA256 = (
+    "c270707bfa43c79b8362a4cf5cab1bad377f0da4402904e0af02fe62c7bdb1d2"
+)
+
+POKEHANNA_ASCENDED_HEROES_IDENTITY = PUBLIC_STUDIES_BY_KEY["pokehanna-ascended-heroes-ca-9-v1"]
+POKEHANNA_ASCENDED_HEROES_POLICY_CONFIG: dict[str, object] = {
+    "study_key": POKEHANNA_ASCENDED_HEROES_IDENTITY.study_key,
+    "canonical_url": POKEHANNA_ASCENDED_HEROES_IDENTITY.source_url,
+    "fetch_url": POKEHANNA_ASCENDED_HEROES_IDENTITY.fetch_url,
+    "collector_version": POKEHANNA_ASCENDED_HEROES_IDENTITY.collector_version,
+    "parser_version": POKEHANNA_ASCENDED_HEROES_IDENTITY.parser_version,
+    "country_code": "CA",
+    "country_name": "Canada",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@PokeHanna/about",
+    "publisher_channel_id": "UC6stWaGoj-9rsEOzYv56ftQ",
+    "publisher_country_evidence": 'country:"Canada"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me02.5",
+    "set_language": "en",
+    "set_name": "Ascended Heroes",
+    "set_official_url": "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-ascended-heroes-elite-trainer-box",
+    "product_name": "Ascended Heroes Elite Trainer Box",
+    "product_scope": "etb",
+    "pack_count": 9,
+    "denominator_basis": "source_named_standard_etb_plus_official_9_pack_spec",
+    "denominator_derivation": "one_standard_etb_x_9",
+    "source_published_at": "2026-04-05T11:00:15-07:00",
+    "observed_at": "2026-04-05T18:00:15Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+POKEHANNA_ASCENDED_HEROES_TITLE = "Opening The Ascended Heroes ETB! (Pokémon card opening)"
+POKEHANNA_ASCENDED_HEROES_EVIDENCE_EXCERPT = (
+    "Opening The Ascended Heroes ETB! (Pokémon card opening)\n"
+    "opening all the packs · Ascended Heroes Elite Trainer Box · standard ETB = 9 packs"
+)
+POKEHANNA_ASCENDED_HEROES_EVIDENCE_SHA256 = (
+    "d9c012acf1e003942eebdefda80058358f85ca1c718e59e5edd4dcd25b9c3ce9"
+)
+
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
@@ -1091,6 +1184,49 @@ def richards_bricks_mega_evolution_box_adapter(
     )
 
 
+def indigo_geek_megaevolucion_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=INDIGO_GEEK_MEGA_IDENTITY,
+        expected_policy_config=INDIGO_GEEK_MEGA_POLICY_CONFIG,
+        expected_title=INDIGO_GEEK_MEGA_TITLE,
+        evidence_lines=INDIGO_GEEK_MEGA_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"(?s)una ETB, una booster box y un paquete 'Combina y combate' "
+            r"para probar nuestra suerte con 50 sobres\..*"
+            r"03:30\s+Combina y Combate.*"
+            r"23:14\s+Elite Trainer Box.*"
+            r"34:58\s+Booster Box.*"
+            r"01:10:09\s+Las mejores cartas"
+        ),
+        expected_video_id="KNCSNJNcjJ8",
+        expected_channel_id="UCGri3BoVzarWIYCzg8MEQjw",
+        expected_observed_at=datetime(2025, 9, 12, 13, 0, 41, tzinfo=UTC),
+        expected_evidence_sha256=INDIGO_GEEK_MEGA_EVIDENCE_SHA256,
+    )
+
+
+def pokehanna_ascended_heroes_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=POKEHANNA_ASCENDED_HEROES_IDENTITY,
+        expected_policy_config=POKEHANNA_ASCENDED_HEROES_POLICY_CONFIG,
+        expected_title=POKEHANNA_ASCENDED_HEROES_TITLE,
+        evidence_lines=POKEHANNA_ASCENDED_HEROES_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"(?s)Unboxing and opening all the packs in the Ascended Heroes Elite Trainer Box\..*"
+            r"0:25 opening everything in the box.*"
+            r"4:47 opening Ascended Heroes packs.*"
+            r"12:06 opening Ascended Heroes packs.*"
+            r"18:40 recap of hits"
+        ),
+        expected_video_id="Jj0IxqUYat8",
+        expected_channel_id="UC6stWaGoj-9rsEOzYv56ftQ",
+        expected_observed_at=datetime(2026, 4, 5, 18, 0, 15, tzinfo=UTC),
+        expected_evidence_sha256=POKEHANNA_ASCENDED_HEROES_EVIDENCE_SHA256,
+    )
+
+
 __all__ = [
     "ALLONLINE_EVIDENCE_EXCERPT",
     "ALLONLINE_EVIDENCE_SHA256",
@@ -1126,6 +1262,16 @@ __all__ = [
     "PONTOCOM_IDENTITY",
     "PONTOCOM_POLICY_CONFIG",
     "PONTOCOM_TITLE",
+    "INDIGO_GEEK_MEGA_EVIDENCE_EXCERPT",
+    "INDIGO_GEEK_MEGA_EVIDENCE_SHA256",
+    "INDIGO_GEEK_MEGA_IDENTITY",
+    "INDIGO_GEEK_MEGA_POLICY_CONFIG",
+    "INDIGO_GEEK_MEGA_TITLE",
+    "POKEHANNA_ASCENDED_HEROES_EVIDENCE_EXCERPT",
+    "POKEHANNA_ASCENDED_HEROES_EVIDENCE_SHA256",
+    "POKEHANNA_ASCENDED_HEROES_IDENTITY",
+    "POKEHANNA_ASCENDED_HEROES_POLICY_CONFIG",
+    "POKEHANNA_ASCENDED_HEROES_TITLE",
     "ReviewedPublicStudyAdapter",
     "RobotsTxtChecker",
     "RICHARDS_BRICKS_CHARIZARD_EVIDENCE_EXCERPT",
@@ -1154,6 +1300,8 @@ __all__ = [
     "pontocom_herois_excelsos_adapter",
     "richards_bricks_charizard_upc_adapter",
     "richards_bricks_mega_evolution_box_adapter",
+    "indigo_geek_megaevolucion_adapter",
+    "pokehanna_ascended_heroes_adapter",
     "tcgtalk_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",
     "YouTubeWatchCoverageAdapter",
