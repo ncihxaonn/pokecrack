@@ -994,6 +994,166 @@ POKEHANNA_ASCENDED_HEROES_EVIDENCE_SHA256 = (
     "d9c012acf1e003942eebdefda80058358f85ca1c718e59e5edd4dcd25b9c3ce9"
 )
 
+TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY = PUBLIC_STUDIES_BY_KEY["tcg-market-chaos-rising-pa-6-v1"]
+TCG_MARKET_PANAMA_CHAOS_RISING_POLICY_CONFIG: dict[str, object] = {
+    "study_key": TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY.study_key,
+    "canonical_url": TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY.source_url,
+    "fetch_url": TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY.fetch_url,
+    "collector_version": TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY.collector_version,
+    "parser_version": TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY.parser_version,
+    "country_code": "PA",
+    "country_name": "Panama",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/channel/UCa68xVUUIKE8dvcfxCcdyrQ/about",
+    "publisher_channel_id": "UCa68xVUUIKE8dvcfxCcdyrQ",
+    "publisher_country_evidence": (
+        "channel name: TCG Market Panamá; video description: Contenido exclusivo desde Panamá"
+    ),
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_watch_and_channel_name_review",
+    "set_external_id": "me04",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Chaos Rising",
+    "set_official_url": (
+        "https://www.pokemon.com/us/pokemon-tcg/product-gallery/"
+        "mega-evolution-chaos-rising-booster-bundle"
+    ),
+    "product_name": "Chaos Rising Booster Bundle",
+    "product_scope": "booster_bundle",
+    "pack_count": 6,
+    "denominator_basis": "source_product_opening_plus_official_product_spec",
+    "denominator_derivation": "source_opening_plus_official_6_pack_bundle_spec",
+    "source_published_at": "2026-08-02T17:15:39-07:00",
+    "observed_at": "2026-08-03T00:15:39Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+TCG_MARKET_PANAMA_CHAOS_RISING_TITLE = (
+    "¡Nuestro PRIMER OPENING de Pokémon TCG! ¿Vale la pena Chaos Rising Booster Bundle?"
+)
+TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_EXCERPT = (
+    "¡Nuestro PRIMER OPENING de Pokémon TCG! ¿Vale la pena Chaos Rising Booster Bundle?\n"
+    "Opening del Booster Bundle · sobre por sobre · desde Panamá · official bundle = 6 packs"
+)
+TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_SHA256 = (
+    "abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef"
+)
+
+TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY = PUBLIC_STUDIES_BY_KEY["tcg-market-pitch-black-pa-4-v1"]
+TCG_MARKET_PANAMA_PITCH_BLACK_POLICY_CONFIG: dict[str, object] = {
+    "study_key": TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY.study_key,
+    "canonical_url": TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY.source_url,
+    "fetch_url": TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY.fetch_url,
+    "collector_version": TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY.collector_version,
+    "parser_version": TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY.parser_version,
+    "country_code": "PA",
+    "country_name": "Panama",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/channel/UCa68xVUUIKE8dvcfxCcdyrQ/about",
+    "publisher_channel_id": "UCa68xVUUIKE8dvcfxCcdyrQ",
+    "publisher_country_evidence": (
+        "channel name: TCG Market Panamá; video description: Contenido exclusivo desde Panamá"
+    ),
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_watch_and_channel_name_review",
+    "set_external_id": "me05",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Pitch Black",
+    "set_official_url": (
+        "https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase"
+    ),
+    "product_name": "Pitch Black Build & Battle Box",
+    "product_scope": "build_and_battle",
+    "pack_count": 4,
+    "denominator_basis": "source_product_opening_plus_official_product_spec",
+    "denominator_derivation": "source_opening_plus_official_4_pack_build_and_battle_spec",
+    "source_published_at": "2026-08-05T12:09:10-07:00",
+    "observed_at": "2026-08-05T19:09:10Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+TCG_MARKET_PANAMA_PITCH_BLACK_TITLE = (
+    "¡Abrimos la Build & Battle de Pitch Black! ¿Nos salió una carta increíble? | Pokémon TCG"
+)
+TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_EXCERPT = (
+    "¡Abrimos la Build & Battle de Pitch Black! ¿Nos salió una carta increíble? | Pokémon TCG\n"
+    "abrimos la Build & Battle · todo el contenido · official box = 4 packs"
+)
+TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_SHA256 = (
+    "055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857"
+)
+
+POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY = PUBLIC_STUDIES_BY_KEY[
+    "pokeshow-mega-evolution-gt-3-v1"
+]
+POKESHOW_GUATEMALA_MEGA_EVOLUTION_POLICY_CONFIG: dict[str, object] = {
+    "study_key": POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY.study_key,
+    "canonical_url": POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY.source_url,
+    "fetch_url": POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY.fetch_url,
+    "collector_version": POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY.collector_version,
+    "parser_version": POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY.parser_version,
+    "country_code": "GT",
+    "country_name": "Guatemala",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@pokeshowdemaddi/about",
+    "publisher_channel_id": "UChG8m-xoKqrXJDCEoE2i9Jg",
+    "publisher_country_evidence": 'country:"Guatemala"; video description: desde Guatemala',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me01",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Mega Evolution",
+    "set_official_url": "https://www.pokemoncenter.com/search/megacards",
+    "product_name": "Mega Evolution Tripack (promo variant unspecified)",
+    "product_scope": "three_pack_blister",
+    "pack_count": 3,
+    "denominator_basis": "source_product_opening_plus_official_product_spec",
+    "denominator_derivation": "source_opening_plus_official_3_pack_tripack_spec",
+    "product_variant_claim": "not_claimed",
+    "source_published_at": "2025-10-06T10:21:33-07:00",
+    "observed_at": "2025-10-06T17:21:33Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+POKESHOW_GUATEMALA_MEGA_EVOLUTION_TITLE = (
+    "🦆 El Poder del Pato 💪 | Apertura MegaEvolution + Noticias y Pokeguamazos | PokéShow de Maddi"
+)
+POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_EXCERPT = (
+    "🦆 El Poder del Pato 💪 | Apertura MegaEvolution + Noticias y Pokeguamazos | "
+    "PokéShow de Maddi\n"
+    "Abriremos un Tripack de Mega Evolution · desde Guatemala · official tripack = 3 packs"
+)
+POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_SHA256 = (
+    "b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb"
+)
+
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
@@ -1227,6 +1387,53 @@ def pokehanna_ascended_heroes_adapter(*, client: HTTPClient) -> YouTubeWatchCove
     )
 
 
+def tcg_market_panama_chaos_rising_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY,
+        expected_policy_config=TCG_MARKET_PANAMA_CHAOS_RISING_POLICY_CONFIG,
+        expected_title=TCG_MARKET_PANAMA_CHAOS_RISING_TITLE,
+        evidence_lines=TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"(?s)Opening del Booster Bundle.*sobre por sobre.*desde Panamá"
+        ),
+        expected_video_id="fHQpNECg4y4",
+        expected_channel_id="UCa68xVUUIKE8dvcfxCcdyrQ",
+        expected_observed_at=datetime(2026, 8, 3, 0, 15, 39, tzinfo=UTC),
+        expected_evidence_sha256=TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_SHA256,
+    )
+
+
+def tcg_market_panama_pitch_black_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY,
+        expected_policy_config=TCG_MARKET_PANAMA_PITCH_BLACK_POLICY_CONFIG,
+        expected_title=TCG_MARKET_PANAMA_PITCH_BLACK_TITLE,
+        evidence_lines=TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(r"(?s)abrimos la Build & Battle.*todo el contenido"),
+        expected_video_id="6kb1MvcnMJE",
+        expected_channel_id="UCa68xVUUIKE8dvcfxCcdyrQ",
+        expected_observed_at=datetime(2026, 8, 5, 19, 9, 10, tzinfo=UTC),
+        expected_evidence_sha256=TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_SHA256,
+    )
+
+
+def pokeshow_guatemala_megaevolution_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY,
+        expected_policy_config=POKESHOW_GUATEMALA_MEGA_EVOLUTION_POLICY_CONFIG,
+        expected_title=POKESHOW_GUATEMALA_MEGA_EVOLUTION_TITLE,
+        evidence_lines=POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(r"(?s)Abriremos un Tripack de Mega Evolution.*desde Guatemala"),
+        expected_video_id="DWRdhUuIUvI",
+        expected_channel_id="UChG8m-xoKqrXJDCEoE2i9Jg",
+        expected_observed_at=datetime(2025, 10, 6, 17, 21, 33, tzinfo=UTC),
+        expected_evidence_sha256=POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_SHA256,
+    )
+
+
 __all__ = [
     "ALLONLINE_EVIDENCE_EXCERPT",
     "ALLONLINE_EVIDENCE_SHA256",
@@ -1272,6 +1479,11 @@ __all__ = [
     "POKEHANNA_ASCENDED_HEROES_IDENTITY",
     "POKEHANNA_ASCENDED_HEROES_POLICY_CONFIG",
     "POKEHANNA_ASCENDED_HEROES_TITLE",
+    "POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_EXCERPT",
+    "POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_SHA256",
+    "POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY",
+    "POKESHOW_GUATEMALA_MEGA_EVOLUTION_POLICY_CONFIG",
+    "POKESHOW_GUATEMALA_MEGA_EVOLUTION_TITLE",
     "ReviewedPublicStudyAdapter",
     "RobotsTxtChecker",
     "RICHARDS_BRICKS_CHARIZARD_EVIDENCE_EXCERPT",
@@ -1288,6 +1500,16 @@ __all__ = [
     "TCGTALK_EVIDENCE_SHA256",
     "TCGTALK_IDENTITY",
     "TCGTALK_POLICY_CONFIG",
+    "TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_EXCERPT",
+    "TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_SHA256",
+    "TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY",
+    "TCG_MARKET_PANAMA_CHAOS_RISING_POLICY_CONFIG",
+    "TCG_MARKET_PANAMA_CHAOS_RISING_TITLE",
+    "TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_EXCERPT",
+    "TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_SHA256",
+    "TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY",
+    "TCG_MARKET_PANAMA_PITCH_BLACK_POLICY_CONFIG",
+    "TCG_MARKET_PANAMA_PITCH_BLACK_TITLE",
     "WARGAMER_IDENTITY",
     "WARGAMER_POLICY_CONFIG",
     "allonline_mega_dream_ex_adapter",
@@ -1302,6 +1524,9 @@ __all__ = [
     "richards_bricks_mega_evolution_box_adapter",
     "indigo_geek_megaevolucion_adapter",
     "pokehanna_ascended_heroes_adapter",
+    "pokeshow_guatemala_megaevolution_adapter",
+    "tcg_market_panama_chaos_rising_adapter",
+    "tcg_market_panama_pitch_black_adapter",
     "tcgtalk_perfect_order_adapter",
     "wargamer_chaos_rising_adapter",
     "YouTubeWatchCoverageAdapter",

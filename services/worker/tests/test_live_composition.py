@@ -1226,7 +1226,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_all_fourteen_reviewed_daily_jobs(
+def test_public_study_flag_registers_all_seventeen_reviewed_daily_jobs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _ensure_pokesup_schedule_identity(monkeypatch)
@@ -1248,6 +1248,9 @@ def test_public_study_flag_registers_all_fourteen_reviewed_daily_jobs(
         {"study_key": "richards-bricks-mega-evolution-box-pr-36-v1"},
         {"study_key": "indigo-geek-megaevolucion-mx-50-v1"},
         {"study_key": "pokehanna-ascended-heroes-ca-9-v1"},
+        {"study_key": "tcg-market-chaos-rising-pa-6-v1"},
+        {"study_key": "tcg-market-pitch-black-pa-4-v1"},
+        {"study_key": "pokeshow-mega-evolution-gt-3-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1270,7 +1273,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 14" in sql
+    assert "count(*) = 17" in sql
     assert "ingest.public_study_observations" in sql
     assert "ingest.begin_public_study_job" in sql
     assert "ingest.finalize_public_study_job" in sql
@@ -1289,6 +1292,9 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert "public_study_richards_bricks_pr_36" in sql
     assert "public_study_indigo_geek_mx_50" in sql
     assert "public_study_pokehanna_ca_9" in sql
+    assert "public_study_tcg_market_panama_chaos_rising_6" in sql
+    assert "public_study_tcg_market_panama_pitch_black_4" in sql
+    assert "public_study_pokeshow_guatemala_megaevolution_3" in sql
     pokesup_clause_start = sql.index("WHERE policies.source_key = 'public_study_pokesup_jp_30'")
     pokesup_clause = sql[pokesup_clause_start : sql.index(") = 1", pokesup_clause_start)]
     for expected in (
@@ -1400,6 +1406,56 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
                 '"observed_at":"2026-04-05T18:00:15Z"',
             ),
         ),
+        (
+            "public_study_tcg_market_panama_chaos_rising_6",
+            (
+                '"country_code":"PA"',
+                '"publisher_channel_id":"UCa68xVUUIKE8dvcfxCcdyrQ"',
+                '"set_language":"und"',
+                '"set_language_basis":"source_does_not_state_card_language"',
+                '"set_external_id":"me04"',
+                '"set_name":"Chaos Rising"',
+                '"set_official_url":"https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-chaos-rising-booster-bundle"',
+                '"product_scope":"booster_bundle"',
+                '"pack_count":6',
+                '"denominator_basis":"source_product_opening_plus_official_product_spec"',
+                '"observed_at":"2026-08-03T00:15:39Z"',
+            ),
+        ),
+        (
+            "public_study_tcg_market_panama_pitch_black_4",
+            (
+                '"country_code":"PA"',
+                '"publisher_channel_id":"UCa68xVUUIKE8dvcfxCcdyrQ"',
+                '"set_language":"und"',
+                '"set_language_basis":"source_does_not_state_card_language"',
+                '"set_external_id":"me05"',
+                '"set_name":"Pitch Black"',
+                '"set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase"',
+                '"product_scope":"build_and_battle"',
+                '"pack_count":4',
+                '"denominator_basis":"source_product_opening_plus_official_product_spec"',
+                '"observed_at":"2026-08-05T19:09:10Z"',
+            ),
+        ),
+        (
+            "public_study_pokeshow_guatemala_megaevolution_3",
+            (
+                '"country_code":"GT"',
+                '"publisher_channel_id":"UChG8m-xoKqrXJDCEoE2i9Jg"',
+                '"set_language":"und"',
+                '"set_language_basis":"source_does_not_state_card_language"',
+                '"set_external_id":"me01"',
+                '"set_name":"Mega Evolution"',
+                '"set_official_url":"https://www.pokemoncenter.com/search/megacards"',
+                '"product_name":"Mega Evolution Tripack (promo variant unspecified)"',
+                '"product_scope":"three_pack_blister"',
+                '"pack_count":3',
+                '"product_variant_claim":"not_claimed"',
+                '"denominator_basis":"source_product_opening_plus_official_product_spec"',
+                '"observed_at":"2025-10-06T17:21:33Z"',
+            ),
+        ),
     ):
         clause_start = sql.index(f"WHERE policies.source_key = '{source_key}'")
         clause = sql[clause_start : sql.index(") = 1", clause_start)]
@@ -1408,7 +1464,13 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         assert "qualifying_" not in clause
         assert "metric_version" not in clause
         if source_key.startswith(
-            ("public_study_richards_bricks", "public_study_indigo_geek", "public_study_pokehanna")
+            (
+                "public_study_richards_bricks",
+                "public_study_indigo_geek",
+                "public_study_pokehanna",
+                "public_study_tcg_market_panama",
+                "public_study_pokeshow_guatemala",
+            )
         ):
             config_match = re.search(
                 r"policies\.config = '(\{.*\})'::jsonb",
@@ -1423,6 +1485,12 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
                 else 'country:"Mexico"'
                 if source_key == "public_study_indigo_geek_mx_50"
                 else 'country:"Canada"'
+                if source_key == "public_study_pokehanna_ca_9"
+                else (
+                    'country:"Guatemala"; video description: desde Guatemala'
+                    if source_key == "public_study_pokeshow_guatemala_megaevolution_3"
+                    else "channel name: TCG Market Panamá; video description: Contenido exclusivo desde Panamá"
+                )
             )
             assert config["publisher_country_evidence"] == expected_country
     brazil_clause_start = sql.index("WHERE policies.source_key = 'public_study_pontocom_br_48'")
