@@ -19,12 +19,12 @@ alter table ingest.public_study_coverage_observations
     )
   );
 
--- Three exact public YouTube watch pages provide reviewed publisher-country
--- coverage in Panama and Guatemala. Each source names the product being opened;
--- the retained pack denominator comes from the corresponding official product
--- specification. The sources do not state the card language and do not provide
--- a normalized SIR-pack numerator, so language is `und` and all rows are
--- coverage-only.
+-- Five exact public YouTube watch pages provide reviewed publisher-country
+-- coverage in Panama, Guatemala, Argentina, and Chile. Each source names the
+-- product being opened; the retained denominator is either stated by the source
+-- or derived from the corresponding official product specification. The
+-- sources do not state the card language and do not provide a normalized
+-- SIR-pack numerator, so language is `und` and all rows are coverage-only.
 insert into ingest.source_policies (
   source_key,
   display_name,
@@ -798,7 +798,7 @@ $migration$;
 comment on function ingest.finalize_public_study_coverage_job_v1(
   uuid, text, bigint, text, jsonb
 ) is
-  'Generation-fenced verifier for sixteen reviewed denominator-only contracts. English contracts require the exact live TCGdex catalog, except the two exact source-native Puerto Rico product identities; explicit non-English or undetermined-language (`und`) contracts require a bounded source-native set name and official set URL. It cannot publish a numerator or inference.';
+  'Generation-fenced verifier for nineteen reviewed denominator-only contracts. English contracts require the exact live TCGdex catalog, except the two exact source-native Puerto Rico product identities; explicit non-English or undetermined-language (`und`) contracts require a bounded source-native set name and official set URL. It cannot publish a numerator or inference.';
 
 -- Seed the five manually verified coverage facts immediately. Their source
 -- product identity plus the official product specification establishes the

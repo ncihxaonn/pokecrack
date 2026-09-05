@@ -126,7 +126,7 @@ describe("WorldHeatmap", () => {
     expect(fallback.closest("td")).toHaveAttribute("data-label", "Data version");
   });
 
-  it("highlights the sixteen expanded collection countries without inventing observations", () => {
+  it("highlights the twenty-one expanded collection countries without inventing observations", () => {
     const { container } = render(
       <WorldHeatmap
         cells={DEMO_PUBLIC_DATA.mapCells}
@@ -141,16 +141,31 @@ describe("WorldHeatmap", () => {
     for (const country of GLOBAL_FOCUS_COUNTRIES) {
       expect(within(focusList).getByText(country.countryName)).toBeVisible();
     }
-    expect(focusList.querySelectorAll("li")).toHaveLength(16);
+    expect(focusList.querySelectorAll("li")).toHaveLength(21);
     expect(within(focusList).getByText("CN · Awaiting observations")).toBeVisible();
     expect(within(focusList).getByText("MX · Awaiting observations")).toBeVisible();
     expect(within(focusList).getByText("BR · Sample observed")).toBeVisible();
-    for (const countryCode of ["KR", "TW", "HK", "TH", "ID", "MY", "PH", "VN", "IN"]) {
+    for (const countryCode of [
+      "PR",
+      "GT",
+      "PA",
+      "AR",
+      "CL",
+      "KR",
+      "TW",
+      "HK",
+      "TH",
+      "ID",
+      "MY",
+      "PH",
+      "VN",
+      "IN",
+    ]) {
       expect(within(focusList).getByText(`${countryCode} · Awaiting observations`)).toBeVisible();
     }
 
     const focusShapes = container.querySelectorAll('[data-focus-country="true"]');
-    expect(focusShapes).toHaveLength(15);
+    expect(focusShapes).toHaveLength(20);
     expect(within(focusList).getByText("List/table only · no separate map geometry")).toBeVisible();
     expect(container.querySelector('[data-country-code="CN"]'))
       .toHaveAttribute("fill", WORLD_MAP_PALETTE.noData);
@@ -517,7 +532,7 @@ describe("WorldHeatmap", () => {
     expect(screen.getByText("No verified pack coverage yet")).toBeVisible();
     expect(screen.getByText("No verified country or product-market coverage is published yet.")).toBeVisible();
     expect(screen.getByRole("img", { name: "Observed pack coverage across the world" })).toHaveAccessibleDescription(
-      /15 collection targets have gold outlines.*Hong Kong.*no separate geometry/i,
+      /20 collection targets have gold outlines.*Hong Kong.*no separate geometry/i,
     );
   });
 });
