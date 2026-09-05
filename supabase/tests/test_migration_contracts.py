@@ -88,6 +88,9 @@ BLUESKY_ROLE_DEPLOY_HARDENING = (
 PUBLIC_OBSERVED_SAMPLE_RATES = (
     ROOT / "migrations/20261004000000_public_observed_sample_rates.sql"
 ).read_text()
+BRAZIL_OBSERVED_SAMPLE = (
+    ROOT / "migrations/20261006000000_brazil_pontocom_observed_sample.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -1776,6 +1779,45 @@ class IngestMigrationContractTests(unittest.TestCase):
             compact,
         )
         self.assertIn("get_public_study_coverage_v3:", DATABASE_TYPES)
+
+    def test_brazil_observed_sample_is_reviewed_exact_and_bootstrapped_as_coverage(
+        self,
+    ) -> None:
+        lowered = BRAZIL_OBSERVED_SAMPLE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for fragment in (
+            "pontocom-herois-excelsos-br-48-v1",
+            "public_study_pontocom_br_48",
+            "public-study-pontocom-herois-excelsos-v1",
+            '"country_code":"br"',
+            '"set_language":"pt-br"',
+            '"pack_count":48',
+            '"denominator_derivation":"12×4"',
+            '"qualifying_hit_pack_count":1',
+            '"qualifying_metric":"sir_pack"',
+            '"metric_version":"global-sir-v1"',
+            '"video_review_method":"manual_timestamped_video_review"',
+            '"robots_status":"404_not_found_live_collection_blocked"',
+            "mega meganium ex",
+            "special illustration rare",
+            "mawile",
+            "heliolisk",
+            "illustration rare",
+            "insert into ingest.public_study_coverage_observations",
+            "4788f28b2e61c0b1879d287da82e4c45712ba7ba0a84cb1599c32611e1968da6",
+            "public v3 observed sample is 1/48",
+        ):
+            self.assertIn(fragment, lowered)
+        self.assertNotIn(
+            "insert into ingest.public_study_observations",
+            lowered,
+            "the migration must not pretend the robots-blocked manual review was a live statistical collection",
+        )
+        self.assertIn("count(*) = 10", compact)
+        self.assertIn("'four_pack_blister'", lowered)
+        self.assertNotIn("grant select on table ingest.public_study_coverage_observations to anon", compact)
 
     def test_global_dashboard_is_a_separate_strict_v2_projection(self) -> None:
         lowered = GLOBAL_DASHBOARD.casefold()
