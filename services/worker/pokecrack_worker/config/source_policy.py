@@ -76,6 +76,92 @@ _LEGACY_ROUTE_COLLECTORS = {
 }
 
 
+def _normalize_hostname(value: str) -> str:
+    candidate = value.strip().lower().rstrip(".")
+    if "://" in candidate:
+        try:
+            candidate = urlsplit(candidate).hostname or ""
+        except ValueError as error:
+            raise ValueError("domain must be a valid hostname") from error
+    if not candidate or "/" in candidate or " " in candidate:
+        raise ValueError("domain must be a valid hostname")
+    try:
+        return candidate.encode("idna").decode("ascii")
+    except UnicodeError as error:
+        raise ValueError("domain must be a valid hostname") from error
+
+
+def _validate_credential_free_fetch_url(value: object, *, field_name: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{field_name} must be a credential-free HTTPS URL")
+    candidate = value.strip()
+    try:
+        parsed = urlsplit(candidate)
+        port = parsed.port
+        hostname = parsed.hostname
+    except ValueError as error:
+        raise ValueError(f"{field_name} must be a credential-free HTTPS URL") from error
+    del port
+    if (
+        parsed.scheme != "https"
+        or parsed.username is not None
+        or parsed.password is not None
+        or hostname is None
+        or parsed.fragment
+    ):
+        raise ValueError(f"{field_name} must be a credential-free HTTPS URL")
+    return candidate
+
+
+def _mapping_source_key(value: object) -> tuple[str, str | None]:
+    if not isinstance(value, str):
+        raise ValueError("source policy mapping keys must be hostnames")
+    key = value.strip()
+    domain_key, separator, label = key.partition("#")
+    if separator and (not label or "#" in label or label != label.strip()):
+        raise ValueError("source policy mapping labels must be non-empty and unique")
+    if not domain_key or any(character in domain_key for character in "/?:@"):
+        raise ValueError("source policy mapping keys must start with a hostname")
+    return _normalize_hostname(domain_key), label if separator else None
+
+
+def _configured_fetch_url(policy: SourcePolicy) -> str | None:
+    value = policy.config.get("fetch_url")
+    return value if isinstance(value, str) else None
+
+
+def _is_exact_policy(policy: SourcePolicy) -> bool:
+    return _configured_fetch_url(policy) is not None or bool(policy.exact_urls)
+
+
+def _validate_policy_groups(
+    policies: tuple[SourcePolicy, ...] | list[SourcePolicy],
+) -> dict[str, tuple[SourcePolicy, ...]]:
+    grouped: dict[str, list[SourcePolicy]] = {}
+    for policy in policies:
+        grouped.setdefault(policy.domain, []).append(policy)
+
+    seen_fetch_urls: set[str] = set()
+    normalized_groups: dict[str, tuple[SourcePolicy, ...]] = {}
+    for domain, domain_policies in grouped.items():
+        if len(domain_policies) > 1:
+            fetch_urls = [_configured_fetch_url(policy) for policy in domain_policies]
+            if any(fetch_url is None for fetch_url in fetch_urls):
+                raise ValueError(
+                    "duplicate source policy domains require config.fetch_url on every policy"
+                )
+            if len(set(fetch_urls)) != len(fetch_urls):
+                raise ValueError("config.fetch_url values must be unique")
+        for policy in domain_policies:
+            fetch_url = _configured_fetch_url(policy)
+            if fetch_url is not None:
+                if fetch_url in seen_fetch_urls:
+                    raise ValueError("config.fetch_url values must be unique")
+                seen_fetch_urls.add(fetch_url)
+        normalized_groups[domain] = tuple(domain_policies)
+    return normalized_groups
+
+
 class SourcePolicy(BaseModel):
     """Complete policy contract for one exact source domain."""
 
@@ -102,6 +188,7 @@ class SourcePolicy(BaseModel):
     name: str | None = None
     routes: frozenset[CollectorRoute] = Field(default_factory=frozenset)
     adapter: str | None = None
+    exact_urls: frozenset[str] = Field(default_factory=frozenset)
     include_subdomains: bool = False
     metadata_only: bool = True
     requests_per_minute: float = Field(default=6, gt=0, le=600)
@@ -155,20 +242,48 @@ class SourcePolicy(BaseModel):
                     check(item, f"{path}[{index}]")
 
         check(value)
+        if "fetch_url" in value:
+            normalized = dict(value)
+            normalized["fetch_url"] = _validate_credential_free_fetch_url(
+                value["fetch_url"],
+                field_name="config.fetch_url",
+            )
+            return normalized
         return value
 
     @field_validator("domain")
     @classmethod
     def normalize_domain(cls, value: str) -> str:
-        candidate = value.strip().lower().rstrip(".")
-        if "://" in candidate:
-            candidate = urlsplit(candidate).hostname or ""
-        if not candidate or "/" in candidate or " " in candidate:
-            raise ValueError("domain must be a valid hostname")
-        return candidate.encode("idna").decode("ascii")
+        return _normalize_hostname(value)
+
+    @field_validator("exact_urls")
+    @classmethod
+    def validate_exact_urls(cls, values: frozenset[str]) -> frozenset[str]:
+        normalized: set[str] = set()
+        for value in values:
+            candidate = value.strip()
+            parsed = urlsplit(candidate)
+            if (
+                parsed.scheme != "https"
+                or parsed.username is not None
+                or parsed.password is not None
+                or parsed.hostname is None
+                or parsed.fragment
+            ):
+                raise ValueError("exact_urls must contain credential-free HTTPS URLs")
+            normalized.add(candidate)
+        return frozenset(normalized)
 
     @model_validator(mode="after")
     def validate_collector_safety(self) -> Self:
+        fetch_url = _configured_fetch_url(self)
+        if fetch_url is not None:
+            try:
+                fetch_domain = _normalize_hostname(urlsplit(fetch_url).hostname or "")
+            except ValueError as error:
+                raise ValueError("config.fetch_url must contain a valid hostname") from error
+            if fetch_domain != self.domain:
+                raise ValueError("config.fetch_url hostname must match policy domain")
         if self.enabled and self.collector is CollectorType.DISABLED:
             raise ValueError("enabled policy cannot use the disabled collector")
         if self.collector is CollectorType.SCRAPLING_DYNAMIC and not self.dynamic_allowed:
@@ -206,22 +321,26 @@ class SourcePolicyDocument(BaseModel):
         sources = data.get("sources", ())
         if isinstance(sources, Mapping):
             normalized: list[dict[str, Any]] = []
-            for domain, raw_policy in sources.items():
+            for raw_key, raw_policy in sources.items():
+                domain, _label = _mapping_source_key(raw_key)
                 if not isinstance(raw_policy, Mapping):
                     raise ValueError(f"source policy for {domain} must be a mapping")
                 policy = dict(raw_policy)
-                configured_domain = policy.setdefault("domain", str(domain))
+                configured_domain = policy.get("domain", domain)
+                try:
+                    configured_domain = _normalize_hostname(configured_domain)
+                except (AttributeError, TypeError, ValueError) as error:
+                    raise ValueError(f"source policy domain key mismatch: {raw_key}") from error
                 if configured_domain != domain:
                     raise ValueError(f"source policy domain key mismatch: {domain}")
+                policy["domain"] = domain
                 normalized.append(policy)
             data["sources"] = normalized
         return data
 
     @model_validator(mode="after")
-    def unique_domains(self) -> Self:
-        domains = [source.domain for source in self.sources]
-        if len(domains) != len(set(domains)):
-            raise ValueError("source policy domains must be unique")
+    def validate_policy_groups(self) -> Self:
+        _validate_policy_groups(self.sources)
         return self
 
 
@@ -283,10 +402,7 @@ class SourcePolicyRegistry:
     ) -> None:
         if default != "disabled" or default_enabled is not False:
             raise ValueError("source policy default must remain disabled")
-        policy_map = {policy.domain: policy for policy in policies}
-        if len(policy_map) != len(policies):
-            raise ValueError("source policy domains must be unique")
-        self._policies = policy_map
+        self._policies = _validate_policy_groups(tuple(policies))
         self._audit = audit_sink or NullPolicyAuditSink()
         self.default = "disabled"
         self.default_enabled = False
@@ -347,20 +463,39 @@ class SourcePolicyRegistry:
             host = f"{host}:{port}"
         return urlunsplit((scheme, host, path, "", ""))
 
-    def _lookup(self, domain: str) -> SourcePolicy | None:
-        exact = self._policies.get(domain)
-        if exact is not None:
-            return exact
+    def _lookup(self, domain: str, source: str | None = None) -> SourcePolicy | None:
+        domain_policies = self._policies.get(domain, ())
+        if source is not None:
+            normalized_source = source.strip()
+            for policy in domain_policies:
+                fetch_url = _configured_fetch_url(policy)
+                if fetch_url is not None and normalized_source == fetch_url:
+                    return policy
+                if (
+                    fetch_url is None
+                    and policy.exact_urls
+                    and normalized_source in policy.exact_urls
+                ):
+                    return policy
+
+        unrestricted = [policy for policy in domain_policies if not _is_exact_policy(policy)]
+        if unrestricted:
+            return unrestricted[0]
+
         matches = [
             policy
-            for policy in self._policies.values()
-            if policy.include_subdomains and domain.endswith(f".{policy.domain}")
+            for policy_group in self._policies.values()
+            for policy in policy_group
+            if policy.include_subdomains
+            and domain.endswith(f".{policy.domain}")
+            and policy.domain != domain
+            and not _is_exact_policy(policy)
         ]
         return max(matches, key=lambda policy: len(policy.domain)) if matches else None
 
     def resolve(self, source: str) -> SourcePolicy:
         domain = self._domain(source)
-        return self._lookup(domain) or SourcePolicy(domain=domain)
+        return self._lookup(domain, source) or SourcePolicy(domain=domain)
 
     def require(self, source: str, route: CollectorRoute | str) -> SourcePolicy:
         domain = self._domain(source)
@@ -370,7 +505,7 @@ class SourcePolicyRegistry:
         except ValueError:
             normalized_route = None
             route_value = str(route)
-        policy = self._lookup(domain)
+        policy = self._lookup(domain, source)
         if policy is None:
             reason = "unknown_domain"
         elif not policy.enabled or policy.collector is CollectorType.DISABLED:
@@ -419,4 +554,4 @@ class SourcePolicyRegistry:
 
     @property
     def policies(self) -> tuple[SourcePolicy, ...]:
-        return tuple(self._policies.values())
+        return tuple(policy for group in self._policies.values() for policy in group)
