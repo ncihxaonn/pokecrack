@@ -15,7 +15,7 @@ declare
       'public_study_bikuhime_id_20'::text,
       'bikuhime_hantaman_pertama_a_study'::text,
       'BIKUHIME first Hantaman Pertama Set A box study'::text,
-      'One complete first Set A booster box: 20 packs. Indonesian product-market evidence only, not opening location. The other Set A box and Set B box are excluded; no normalized hit numerator or rate. Publication time is used as the observation date.'::text,
+      'One complete first Set A booster box: 20 packs. Indonesian product-market coverage only, not opening location. The other Set A box and Set B box are excluded; no normalized hit numerator or rate. Publication time is used as the observation date.'::text,
       'BIKUHIME first Set A box coverage'::text,
       'bikuhime.wordpress.com'::text,
       'https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/'::text,
