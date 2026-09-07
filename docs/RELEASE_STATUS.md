@@ -121,12 +121,12 @@ restore evidence and not an accepted new regression in the candidate.
    Docker-capable runtime, so this alternative has not yet produced a passing
    full evidence manifest. Do not fabricate GitHub checks or treat a partial
    local pass as release evidence.
-2. **Fresh, recoverable backup.** Verify the backup fix with a new backup and
-   an isolated restore, including current migration/retention contracts. gzip
-   is not encryption; follow the transfer/encryption rules in
-   [BACKUP_AND_RESTORE.md](BACKUP_AND_RESTORE.md). The current workflow's raw gzip
-   artifact upload does not meet that pre-transfer encryption requirement;
-   resolve the encryption/key-recovery contract before dispatching that upload.
+2. **Fresh, recoverable backup.** The candidate now encrypts the validated gzip
+   before any GitHub artifact upload and verifies decrypt/gzip/byte equality;
+   the protected `BACKUP_ENCRYPTION_PASSPHRASE` has been provisioned in the
+   Production environment. A post-merge workflow run and isolated restore must
+   still be recorded against the exact final main SHA before this gate is
+   closed.
 3. **Release control.** Main/Production lacked enforced protection at the audit
    time. Verify branch/environment restrictions and actual backup identity,
    project, age, integrity and restore evidence before running production
