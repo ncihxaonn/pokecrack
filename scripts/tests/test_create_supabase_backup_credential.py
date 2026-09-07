@@ -14,10 +14,6 @@ from scripts import create_supabase_backup_credential as credential
 
 PROJECT_REF = "a" * 20
 TOKEN = "sbp_fixture_owner_token_123456"
-POOLER = (
-    f"postgresql://postgres.{PROJECT_REF}:[YOUR-PASSWORD]@"
-    "aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres"
-)
 
 
 class _Response:
@@ -48,9 +44,6 @@ class _API:
     def __init__(self) -> None:
         self.deleted = 0
         self.roles: list[str] = []
-
-    def pooler_config(self) -> object:
-        return [{"database_type": "PRIMARY", "connection_string": POOLER}]
 
     def create_login_role(self) -> object:
         self.roles = ["cli_login_postgres"]
@@ -110,17 +103,18 @@ class TemporaryBackupCredentialTests(unittest.TestCase):
             )
         )
 
-    def test_database_url_uses_the_primary_session_pooler_and_tenant_role(self) -> None:
+    def test_database_url_uses_the_official_direct_endpoint_and_bare_login_role(
+        self,
+    ) -> None:
         database_url = credential.build_database_url(
-            pooler_connection=POOLER,
             project_ref=PROJECT_REF,
             role="cli_login_postgres",
             password="fixture:/?#[]@ secret",
         )
         parsed = urlsplit(database_url)
-        self.assertEqual(parsed.hostname, "aws-0-ap-southeast-2.pooler.supabase.com")
+        self.assertEqual(parsed.hostname, f"db.{PROJECT_REF}.supabase.co")
         self.assertEqual(parsed.port, 5432)
-        self.assertEqual(parsed.username, f"cli_login_postgres.{PROJECT_REF}")
+        self.assertEqual(parsed.username, "cli_login_postgres")
         self.assertEqual(parsed.path, "/postgres")
         self.assertEqual(
             parse_qs(parsed.query),
@@ -136,24 +130,21 @@ class TemporaryBackupCredentialTests(unittest.TestCase):
         self.assertNotIn("options=", database_url)
         self.assertNotIn("[YOUR-PASSWORD]", database_url)
 
-    def test_database_url_rejects_untrusted_or_ambiguous_pooler_shapes(self) -> None:
+    def test_database_url_rejects_untrusted_project_role_or_password_shapes(
+        self,
+    ) -> None:
         invalid = (
-            POOLER.replace("pooler.supabase.com", "evil.example.invalid"),
-            POOLER.replace(f"postgres.{PROJECT_REF}", "postgres.wrongtenant"),
-            POOLER.replace(":6543/", ":9999/"),
-            POOLER.replace("/postgres", "/other"),
-            POOLER + "?options=statement_timeout%3D0",
+            {"project_ref": "A" * 20, "role": "cli_login_postgres", "password": "secret"},
+            {"project_ref": "a" * 19, "role": "cli_login_postgres", "password": "secret"},
+            {"project_ref": PROJECT_REF, "role": "postgres", "password": "secret"},
+            {"project_ref": PROJECT_REF, "role": "cli_login_postgres", "password": ""},
+            {"project_ref": PROJECT_REF, "role": "cli_login_postgres", "password": "bad\nsecret"},
         )
-        for pooler in invalid:
-            with self.subTest(pooler=pooler), self.assertRaises(
+        for arguments in invalid:
+            with self.subTest(arguments=arguments), self.assertRaises(
                 credential.TemporaryCredentialError
             ):
-                credential.build_database_url(
-                    pooler_connection=pooler,
-                    project_ref=PROJECT_REF,
-                    role="cli_login_postgres",
-                    password="secret",
-                )
+                credential.build_database_url(**arguments)
 
     def test_create_writes_one_owner_only_line_without_printing_credentials(self) -> None:
         api = _API()

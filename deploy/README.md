@@ -71,10 +71,11 @@ The preferred GitHub-managed backup path is independent of the VPS worker
 credential. `.github/workflows/backup-production-api.yml` runs in the protected
 `Production` environment and uses its owner-scoped Supabase access token to
 mint the official short-lived CLI login through the Management API. The helper
-accepts only the project's primary `*.pooler.supabase.com` connection, uses its
-IPv4 host with the shared session pooler on port `5432` as recommended for
-logical backups, and uses the same tenant-suffixed temporary role username as
-the official CLI. The URL
+uses the project's direct PostgreSQL endpoint `db.<project-ref>.supabase.co` on
+port `5432`, matching the official CLI login path. The temporary login is used
+as a bare Postgres role and the backup selects the reviewed `postgres` effective
+role; the shared Supavisor pooler rejects this temporary-login contract for the
+project. The URL
 is written only to an owner-only runner temp file and is removed after use; the
 temporary login is deleted through the Management API on both success and
 failure, deletion failure fails the workflow, and the accepted API TTL must be
@@ -85,7 +86,7 @@ concurrently because Supabase's deletion endpoint revokes project CLI logins
 collectively.
 TLS uses the `prod-ca-2021.crt` public root from a pinned Supabase CLI commit;
 the wrapper verifies its SHA-256 before mounting it read-only, then libpq
-verifies both the certificate chain and pooler hostname. The token and database
+verifies both the certificate chain and direct database hostname. The token and database
 credential never appear in command arguments or logs. The
 same reviewed retention preflights, exact schema scope, sanitizer,
 gzip validation, and immutable PostgreSQL 17 container used by the manual
