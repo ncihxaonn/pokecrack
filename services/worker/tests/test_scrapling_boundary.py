@@ -8,9 +8,23 @@ import pytest
 from pokecrack_worker.collectors.scrapling.backend import (
     ScraplingBackend,
     ScraplingBindings,
+    ScraplingResolutionError,
     ScraplingResponseError,
     ScraplingUnavailableError,
 )
+
+
+def test_resolver_os_failure_is_distinct_from_a_rejected_response(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from pokecrack_worker.collectors.scrapling import backend
+
+    def fail_resolution(*args: object, **kwargs: object) -> object:
+        raise OSError("private resolver details")
+
+    monkeypatch.setattr(backend, "getaddrinfo", fail_resolution)
+    with pytest.raises(ScraplingResolutionError, match="^hostname resolution failed$"):
+        backend._resolve_hostname("example.com")
 
 
 def test_loaded_static_fetchers_enforce_dns_pinning_capability() -> None:
