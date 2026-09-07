@@ -208,7 +208,8 @@ def publish(report: dict) -> None:
         check=True, capture_output=True, text=True,
     )
     matches = [item for item in json.loads(listing.stdout)
-               if item["title"] == title and item["author"]["login"] == "github-actions[bot]"
+               if item["title"] == title and item["author"].get("is_bot") is True
+               and item["author"]["login"] in {"app/github-actions", "github-actions[bot]"}
                and item["body"].startswith(f"<!-- pokecrack-asia-research-v1:{country} -->")]
     if len(matches) > 1:
         raise ValueError("duplicate_managed_issues")
