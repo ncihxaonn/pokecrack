@@ -1,6 +1,50 @@
 version: 1
 default: disabled
 sources:
+  bikuhime.wordpress.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-bikuhime-hantaman-pertama-a-v1
+    config:
+      study_key: "bikuhime-hantaman-pertama-a-id-20-v1"
+      canonical_url: "https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/"
+      collector_version: "public-study-bikuhime-hantaman-pertama-a-v1"
+      parser_version: "bikuhime-hantaman-pertama-a-evidence-v1"
+      country_code: "ID"
+      country_name: "Indonesia"
+      geography_basis: "product_market"
+      geography_confidence: "tier_b"
+      set_external_id: "hantaman-pertama-set-a"
+      set_language: "id"
+      set_name: "Hantaman Pertama Set A"
+      product_scope: "booster_box"
+      pack_count: 20
+      observed_at: "2020-05-17T07:23:58Z"
+      denominator_complete: true
+      set_official_url: "https://asia.pokemon-card.com/id/archive/card/sun_moon_series/1st_booster_pack_seta.html"
+      robots_url: "https://bikuhime.wordpress.com/robots.txt"
+      robots_checked_at: "2026-09-08"
+      terms_url: "https://wordpress.com/tos/"
+      terms_checked_at: "2026-09-08"
+      terms_status: "public_site_policy_reviewed"
+      rights_scope: "minimal_noncreative_facts_no_media_or_body_reuse"
+    reason: Exact first Set A box only; Indonesian product-market coverage, not physical location or probability evidence. No media or article-body reuse.
+    routes: [static]
+    adapter: bikuhime_hantaman_pertama_a_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://wordpress.com/tos/
   garbagerips.com:
     enabled: true
     collector: scrapling_http

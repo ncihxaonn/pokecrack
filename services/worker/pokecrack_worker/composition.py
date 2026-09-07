@@ -595,7 +595,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 25
+        count(*) = 26
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -1460,8 +1460,40 @@ public_study_dependencies AS (
   "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
 }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_bikuhime_id_20'
+            AND policies.display_name = 'BIKUHIME first Set A box coverage'
+            AND policies.domain = 'bikuhime.wordpress.com'
+            AND policies.base_url = 'https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/'
+            AND policies.version = 'public-study-bikuhime-hantaman-pertama-a-v1'
+            AND policies.config = '{
+  "study_key": "bikuhime-hantaman-pertama-a-id-20-v1",
+  "canonical_url": "https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/",
+  "collector_version": "public-study-bikuhime-hantaman-pertama-a-v1",
+  "parser_version": "bikuhime-hantaman-pertama-a-evidence-v1",
+  "country_code": "ID",
+  "country_name": "Indonesia",
+  "geography_basis": "product_market",
+  "geography_confidence": "tier_b",
+  "set_external_id": "hantaman-pertama-set-a",
+  "set_language": "id",
+  "set_name": "Hantaman Pertama Set A",
+  "product_scope": "booster_box",
+  "pack_count": 20,
+  "observed_at": "2020-05-17T07:23:58Z",
+  "denominator_complete": true,
+  "set_official_url": "https://asia.pokemon-card.com/id/archive/card/sun_moon_series/1st_booster_pack_seta.html",
+  "robots_url": "https://bikuhime.wordpress.com/robots.txt",
+  "robots_checked_at": "2026-09-08",
+  "terms_url": "https://wordpress.com/tos/",
+  "terms_checked_at": "2026-09-08",
+  "terms_status": "public_site_policy_reviewed",
+  "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
+}'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
+        'public_study_bikuhime_id_20',
         'public_study_comicbook_us_55',
         'public_study_wargamer_gb_17',
         'public_study_cardchill_gb_90',

@@ -291,8 +291,11 @@ select is(
 
 select is(
   public.get_public_study_coverage_v3() -> 'period' ->> 'start',
-  '2021-06-06',
-  'public coverage starts at the earliest honestly dated reviewed source'
+  -- This is the global registry period, not the five-country subset above.
+  -- Ordinal 26 adds the earlier Indonesian publication (2020-05-17).
+  -- The Ecuador-specific 2021-06-06 assertion above remains unchanged.
+  '2020-05-17',
+  'global public coverage starts at the earliest reviewed source, including Indonesia'
 );
 select is(
   public.get_public_study_coverage_v3() -> 'period' ->> 'end',
