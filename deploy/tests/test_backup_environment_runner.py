@@ -101,6 +101,7 @@ with gzip.open(backup_dir / filename, "wb") as stream:
                 "\n".join(
                     (
                         f"BACKUP_DIR={backup_dir}",
+                        "BACKUP_POSTGRES_NETWORK_MODE=host",
                         "BACKUP_RETENTION_DAILY=7",
                         "BACKUP_RETENTION_WEEKLY=4",
                         "BACKUP_PREFLIGHT_ROLE=postgres",
@@ -126,9 +127,29 @@ with gzip.open(backup_dir / filename, "wb") as stream:
             )
             self.assertIn("SUPABASE_DB_URL", child_keys)
             self.assertIn("BACKUP_PREFLIGHT_ROLE", child_keys)
+            self.assertIn("BACKUP_POSTGRES_NETWORK_MODE", child_keys)
             self.assertNotIn("AI_API_KEY", child_keys)
             self.assertNotIn("SCHEDULE_CATALOG_SYNC", child_keys)
             self.assertNotIn("UNRELATED_COMMAND", child_keys)
+
+    def test_rejects_unreviewed_postgres_network_mode(self) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            root = Path(temporary).resolve()
+            env_file = self.write_environment(
+                root,
+                f"BACKUP_DIR={root / 'backups'}\n"
+                "BACKUP_POSTGRES_NETWORK_MODE=unreviewed\n"
+                "SUPABASE_DB_URL=secret-value\n",
+            )
+            result = self.run_runner(
+                env_file=env_file,
+                backup_script=self.write_fake_backup(root),
+                default_db_url_file=root / "unused-db-url",
+            )
+
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, "")
+            self.assertNotIn("secret-value", result.stderr)
 
     def test_accepts_private_reviewed_postgres_clients(self) -> None:
         with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:

@@ -23,6 +23,15 @@ command -v docker >/dev/null 2>&1 || {
   exit 127
 }
 
+network_mode=${BACKUP_POSTGRES_NETWORK_MODE:-bridge}
+case "$network_mode" in
+  bridge | host) ;;
+  *)
+    printf 'PostgreSQL client wrapper: unsupported network mode\n' >&2
+    exit 2
+    ;;
+esac
+
 # Host filesystem paths in libpq TLS options cannot be interpreted safely
 # inside this read-only container. The only exception is the reviewed public
 # Supabase root CA, mounted at one fixed in-container path after hash checking.
@@ -86,7 +95,7 @@ exec docker run \
   --rm \
   --interactive \
   --pull=missing \
-  --network=bridge \
+  "--network=$network_mode" \
   --cap-drop=ALL \
   --security-opt=no-new-privileges:true \
   --read-only \

@@ -769,6 +769,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         self.assertIn("postgres:17.6-bookworm@sha256:", postgres_wrapper)
         self.assertIn("--pull=missing", postgres_wrapper)
+        self.assertIn('"--network=$network_mode"', postgres_wrapper)
         self.assertIn("file-based TLS option %s is unsupported", postgres_wrapper)
         self.assertIn("$PGSSLROOTCERT != system", postgres_wrapper)
         self.assertIn(
@@ -843,6 +844,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn('--postgres-client-directory "$client_dir"', workflow)
         self.assertIn('--dedicated-db-url-file "$database_url_file"', workflow)
         self.assertIn("BACKUP_PREFLIGHT_ROLE=postgres", workflow)
+        self.assertIn("BACKUP_POSTGRES_NETWORK_MODE=host", workflow)
         self.assertIn("left(session_user, 10) = 'cli_login_'", workflow)
         self.assertIn("current_user = session_user", workflow)
         self.assertIn(
