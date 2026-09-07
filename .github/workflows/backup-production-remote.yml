@@ -54,7 +54,7 @@ jobs:
           [[ -f /.dockerenv ]]
           [[ "$(< /run/pokecrack-release-runner-contract)" == pokecrack-release-runner-v1 ]]
           [[ "$(sha256sum /run/supabase-prod-ca-2021.crt | cut -d ' ' -f 1)" == 700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7 ]]
-          [[ "$(./bin/Runner.Listener --version)" == 2.337.0 ]]
+          [[ "$(/home/runner/bin/Runner.Listener --version)" == 2.337.0 ]]
           capabilities="$(awk '$1 == "CapEff:" { print $2 }' /proc/self/status)"
           [[ "$capabilities" =~ ^0+$ ]]
           [[ "$(awk '$1 == "NoNewPrivs:" { print $2 }' /proc/self/status)" == 1 ]]
