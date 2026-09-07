@@ -112,7 +112,7 @@ validate_root() {
   origin_url=$(git -C "$REPO_ROOT" remote get-url origin) || die "could not read repository origin"
   [[ "$origin_url" =~ ^https://github\.com/ncihxaonn/pokecrack(\.git)?$ ]] || die "unexpected repository origin"
   [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || die "--expected-sha must be a 40-character lowercase commit SHA"
-  actual_sha=$(git -C "$REPO_ROOT" rev-parse --verify HEAD^{commit}) || die "could not resolve HEAD"
+  actual_sha=$(git -C "$REPO_ROOT" rev-parse --verify 'HEAD^{commit}') || die "could not resolve HEAD"
   [[ "$actual_sha" == "$EXPECTED_SHA" ]] || die "checkout SHA does not match --expected-sha"
   git -C "$REPO_ROOT" diff --quiet --ignore-submodules -- || die "checkout has unstaged changes"
   git -C "$REPO_ROOT" diff --cached --quiet --ignore-submodules -- || die "checkout has staged changes"
@@ -380,26 +380,27 @@ stage_database() {
   printf '%s\n' "$POSTGRES_META_SOURCE" >"$EVIDENCE_DIR/postgres-meta-image.txt"
   chmod 0600 "$EVIDENCE_DIR/postgres-meta-image.txt"
 
-  local start_output=/tmp/pokecrack-supabase-start-output.XXXXXXXX
-  start_output=$(mktemp "$start_output")
-  chmod 0600 "$start_output"
-  local database_stack_started=false
+  DATABASE_START_OUTPUT=/tmp/pokecrack-supabase-start-output.XXXXXXXX
+  DATABASE_START_OUTPUT=$(mktemp "$DATABASE_START_OUTPUT")
+  chmod 0600 "$DATABASE_START_OUTPUT"
+  DATABASE_STACK_STARTED=false
+  # shellcheck disable=SC2317 # invoked indirectly by the EXIT trap below
   cleanup_database() {
     local status=$?
     trap - EXIT HUP INT TERM
-    if [[ "$database_stack_started" == true ]]; then
+    if [[ "$DATABASE_STACK_STARTED" == true ]]; then
       if ! npx --yes supabase@2.116.0 stop --no-backup; then
         status=1
       fi
     fi
-    rm -f -- "$start_output"
+    rm -f -- "$DATABASE_START_OUTPUT"
     exit "$status"
   }
   trap cleanup_database EXIT HUP INT TERM
 
-  database_stack_started=true
-  if ! GITHUB_OUTPUT="$start_output" bash "$SCRIPT_DIR/start-local-supabase-ci.sh"; then
-    diagnose_supabase_start "$start_output"
+  DATABASE_STACK_STARTED=true
+  if ! GITHUB_OUTPUT="$DATABASE_START_OUTPUT" bash "$SCRIPT_DIR/start-local-supabase-ci.sh"; then
+    diagnose_supabase_start "$DATABASE_START_OUTPUT"
     return 1
   fi
   npx --yes supabase@2.116.0 db reset

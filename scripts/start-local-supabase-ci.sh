@@ -9,6 +9,7 @@ set -Eeuo pipefail
 : "${GITHUB_OUTPUT:?GITHUB_OUTPUT is required}"
 
 log_file="$(mktemp)"
+# shellcheck disable=SC2317 # invoked indirectly by the EXIT trap below
 cleanup() {
   rm -f "$log_file"
 }
