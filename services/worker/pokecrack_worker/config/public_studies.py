@@ -298,6 +298,21 @@ PUBLIC_STUDIES: tuple[PublicStudyIdentity, ...] = (
         collector_version="public-study-garbage-rips-gem-vol2-v1",
         parser_version="garbage-rips-gem-vol2-evidence-v1",
     ),
+    PublicStudyIdentity(
+        study_key="bikuhime-hantaman-pertama-a-id-20-v1",
+        source_url=(
+            "https://bikuhime.wordpress.com/2020/05/17/"
+            "yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/"
+        ),
+        fetch_url=(
+            "https://bikuhime.wordpress.com/2020/05/17/"
+            "yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/"
+        ),
+        domain="bikuhime.wordpress.com",
+        adapter="bikuhime_hantaman_pertama_a_study",
+        collector_version="public-study-bikuhime-hantaman-pertama-a-v1",
+        parser_version="bikuhime-hantaman-pertama-a-evidence-v1",
+    ),
 )
 
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
@@ -305,6 +320,7 @@ PUBLIC_STUDIES_BY_URL = {study.source_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDIES_BY_FETCH_URL = {study.fetch_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
     {
+        "bikuhime-hantaman-pertama-a-id-20-v1",
         "garbage-rips-gem-vol2-cn-1-v1",
         "cardchill-ascended-heroes-gb-90-v1",
         "bleedingcool-phantasmal-flames-us-36-v1",
