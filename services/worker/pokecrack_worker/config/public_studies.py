@@ -283,6 +283,21 @@ PUBLIC_STUDIES: tuple[PublicStudyIdentity, ...] = (
         collector_version="public-study-gringo-gameplays-silver-tempest-youtube-v1",
         parser_version="gringo-gameplays-silver-tempest-evidence-v1",
     ),
+    PublicStudyIdentity(
+        study_key="garbage-rips-gem-vol2-cn-1-v1",
+        source_url=(
+            "https://garbagerips.com/rip/"
+            "only-garbage-rips-chinese-gem-pack-vol-2-eeveelutions-8jKHh-P7P7M.html"
+        ),
+        fetch_url=(
+            "https://garbagerips.com/rip/"
+            "only-garbage-rips-chinese-gem-pack-vol-2-eeveelutions-8jKHh-P7P7M.html"
+        ),
+        domain="garbagerips.com",
+        adapter="garbage_rips_gem_vol2_study",
+        collector_version="public-study-garbage-rips-gem-vol2-v1",
+        parser_version="garbage-rips-gem-vol2-evidence-v1",
+    ),
 )
 
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
@@ -290,6 +305,7 @@ PUBLIC_STUDIES_BY_URL = {study.source_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDIES_BY_FETCH_URL = {study.fetch_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
     {
+        "garbage-rips-gem-vol2-cn-1-v1",
         "cardchill-ascended-heroes-gb-90-v1",
         "bleedingcool-phantasmal-flames-us-36-v1",
         "tcgtalk-perfect-order-sg-54-v1",

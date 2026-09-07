@@ -591,7 +591,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 24
+        count(*) = 25
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -1425,6 +1425,37 @@ public_study_dependencies AS (
               "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
             }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_garbage_rips_cn_1'
+            AND policies.display_name = 'Garbage Rips Gem Vol.2 single-pack coverage'
+            AND policies.domain = 'garbagerips.com'
+            AND policies.base_url = 'https://garbagerips.com/rip/only-garbage-rips-chinese-gem-pack-vol-2-eeveelutions-8jKHh-P7P7M.html'
+            AND policies.version = 'public-study-garbage-rips-gem-vol2-v1'
+            AND policies.config = '{
+  "study_key": "garbage-rips-gem-vol2-cn-1-v1",
+  "canonical_url": "https://garbagerips.com/rip/only-garbage-rips-chinese-gem-pack-vol-2-eeveelutions-8jKHh-P7P7M.html",
+  "collector_version": "public-study-garbage-rips-gem-vol2-v1",
+  "parser_version": "garbage-rips-gem-vol2-evidence-v1",
+  "country_code": "CN",
+  "country_name": "China",
+  "geography_basis": "product_market",
+  "geography_confidence": "tier_b",
+  "set_external_id": "gem-pack-vol-2",
+  "set_language": "zh-CN",
+  "set_name": "Pokémon宝石包VOL.2",
+  "product_scope": "all",
+  "pack_count": 1,
+  "observed_at": "2026-02-13T13:30:09Z",
+  "denominator_complete": true,
+  "set_official_url": "https://www.pokemon.cn/tcg/product/15518.html",
+  "robots_url": "https://garbagerips.com/robots.txt",
+  "robots_checked_at": "2026-09-07",
+  "terms_url": "https://garbagerips.com/privacy.html",
+  "terms_checked_at": "2026-09-07",
+  "terms_status": "public_site_policy_reviewed",
+  "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
+}'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
@@ -1450,7 +1481,8 @@ public_study_dependencies AS (
         'public_study_pokeyabros_perfect_order_co_2',
         'public_study_andree_insane_cards_cosmic_eclipse_ec_20',
         'public_study_thekeiplay_lost_origin_pe_36',
-        'public_study_gringo_gameplays_silver_tempest_uy_36'
+        'public_study_gringo_gameplays_silver_tempest_uy_36',
+        'public_study_garbage_rips_cn_1'
       )
     ),
     false

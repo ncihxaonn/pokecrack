@@ -1,6 +1,50 @@
 version: 1
 default: disabled
 sources:
+  garbagerips.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-garbage-rips-gem-vol2-v1
+    config:
+      study_key: "garbage-rips-gem-vol2-cn-1-v1"
+      canonical_url: "https://garbagerips.com/rip/only-garbage-rips-chinese-gem-pack-vol-2-eeveelutions-8jKHh-P7P7M.html"
+      collector_version: "public-study-garbage-rips-gem-vol2-v1"
+      parser_version: "garbage-rips-gem-vol2-evidence-v1"
+      country_code: "CN"
+      country_name: "China"
+      geography_basis: "product_market"
+      geography_confidence: "tier_b"
+      set_external_id: "gem-pack-vol-2"
+      set_language: "zh-CN"
+      set_name: "Pokémon宝石包VOL.2"
+      product_scope: "all"
+      pack_count: 1
+      observed_at: "2026-02-13T13:30:09Z"
+      denominator_complete: true
+      set_official_url: "https://www.pokemon.cn/tcg/product/15518.html"
+      robots_url: "https://garbagerips.com/robots.txt"
+      robots_checked_at: "2026-09-07"
+      terms_url: "https://garbagerips.com/privacy.html"
+      terms_checked_at: "2026-09-07"
+      terms_status: "public_site_policy_reviewed"
+      rights_scope: "minimal_noncreative_facts_no_media_or_body_reuse"
+    reason: Exact original-publisher single-pack evidence, attributed to the Chinese product market only. No opening-location or qualifying-hit claim, media download, or article-body reuse.
+    routes: [static]
+    adapter: garbage_rips_gem_vol2_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+    terms_url: https://garbagerips.com/privacy.html
   example.com:
     enabled: true
     collector: scrapling_http

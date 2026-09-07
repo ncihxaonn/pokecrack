@@ -1226,7 +1226,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_all_twenty_four_reviewed_daily_jobs(
+def test_public_study_flag_registers_all_twenty_five_reviewed_daily_jobs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _ensure_pokesup_schedule_identity(monkeypatch)
@@ -1258,6 +1258,7 @@ def test_public_study_flag_registers_all_twenty_four_reviewed_daily_jobs(
         {"study_key": "andree-insane-cards-cosmic-eclipse-ec-20-v1"},
         {"study_key": "thekeiplay-lost-origin-pe-36-v1"},
         {"study_key": "gringo-gameplays-silver-tempest-uy-36-v1"},
+        {"study_key": "garbage-rips-gem-vol2-cn-1-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1280,7 +1281,9 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 24" in sql
+    assert "count(*) = 25" in sql
+    assert "public_study_garbage_rips_cn_1" in sql
+    assert '"geography_basis": "product_market"' in sql
     assert "ingest.public_study_observations" in sql
     assert "ingest.begin_public_study_job" in sql
     assert "ingest.finalize_public_study_job" in sql
