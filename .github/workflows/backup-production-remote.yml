@@ -3,10 +3,6 @@ name: Backup production database on isolated remote runner
 on:
   workflow_dispatch:
     inputs:
-      runner_label:
-        description: Unique label of the disposable isolated Linux release runner
-        required: true
-        type: string
       confirm_sha:
         description: Exact GITHUB_SHA containing the reviewed backup implementation
         required: true
@@ -22,7 +18,11 @@ concurrency:
 jobs:
   backup:
     if: github.ref == 'refs/heads/main'
-    runs-on: ${{ inputs.runner_label }}
+    runs-on:
+      - self-hosted
+      - Linux
+      - X64
+      - ${{ format('pokecrack-release-backup-{0}-{1}', github.run_id, github.run_attempt) }}
     timeout-minutes: 20
     environment: Production
     outputs:
@@ -43,6 +43,35 @@ jobs:
             printf 'confirm_sha must equal GITHUB_SHA (%s)\n' "$GITHUB_SHA" >&2
             exit 1
           }
+      - name: Verify disposable runner isolation before secret material
+        shell: bash
+        env:
+          EXPECTED_RUNNER_NAME: ${{ format('pokecrack-release-backup-{0}-{1}', github.run_id, github.run_attempt) }}
+        run: |
+          set -Eeuo pipefail
+          [[ "$RUNNER_NAME" == "$EXPECTED_RUNNER_NAME" ]]
+          [[ "$(id -u)" == 10001 ]]
+          [[ -f /.dockerenv ]]
+          [[ "$(< /run/pokecrack-release-runner-contract)" == pokecrack-release-runner-v1 ]]
+          [[ "$(sha256sum /run/supabase-prod-ca-2021.crt | cut -d ' ' -f 1)" == 700723581420dd1ac98fd7e9ac529f0ef210eadcaf87fc868a3ad7d114c2f3b7 ]]
+          [[ "$(./bin/Runner.Listener --version)" == 2.337.0 ]]
+          capabilities="$(awk '$1 == "CapEff:" { print $2 }' /proc/self/status)"
+          [[ "$capabilities" =~ ^0+$ ]]
+          [[ "$(awk '$1 == "NoNewPrivs:" { print $2 }' /proc/self/status)" == 1 ]]
+          pids_max="$(< /sys/fs/cgroup/pids.max)"
+          memory_max="$(< /sys/fs/cgroup/memory.max)"
+          read -r cpu_quota cpu_period < /sys/fs/cgroup/cpu.max
+          [[ "$pids_max" =~ ^[0-9]+$ && "$pids_max" -le 256 ]]
+          [[ "$memory_max" =~ ^[0-9]+$ && "$memory_max" -le 2147483648 ]]
+          [[ "$cpu_quota" =~ ^[0-9]+$ && "$cpu_period" =~ ^[0-9]+$ && "$cpu_quota" -le "$cpu_period" ]]
+          for forbidden_path in \
+            /var/run/docker.sock \
+            /run/docker.sock \
+            /home/codex/pokecrack \
+            /home/codex/.config/pokecrack \
+            /home/codex/.local/share/pokecrack; do
+            [[ ! -e "$forbidden_path" && ! -L "$forbidden_path" ]]
+          done
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           ref: ${{ github.sha }}
@@ -70,6 +99,8 @@ jobs:
           role_file="$run_root/login-role"
           probe_error_file="$run_root/direct-endpoint-probe.stderr"
           encryption_passphrase_file="$run_root/backup-encryption-passphrase"
+          backup_file=''
+          decrypted_file=''
           cleanup() {
             status=$?
             cleanup_failed=false
@@ -82,14 +113,24 @@ jobs:
                 printf 'temporary Supabase login cleanup could not be confirmed\n' >&2
               fi
             fi
-            rm -f -- \
-              "$database_url_file" \
-              "$role_file" \
-              "$env_file" \
-              "$probe_error_file" \
-              "$encryption_passphrase_file"
             if [[ "$status" -eq 0 && "$cleanup_failed" == true ]]; then
               status=1
+            fi
+            if [[ "$status" -ne 0 ]]; then
+              if [[ -d "$run_root" && ! -L "$run_root" ]]; then
+                rm -rf -- "$run_root"
+              else
+                rm -f -- "$run_root"
+              fi
+            else
+              rm -f -- \
+                "$database_url_file" \
+                "$role_file" \
+                "$env_file" \
+                "$probe_error_file" \
+                "$encryption_passphrase_file" \
+                "$backup_file" \
+                "$decrypted_file"
             fi
             exit "$status"
           }
@@ -202,6 +243,7 @@ jobs:
           printf 'backup_reference=%s\n' "$reference" >> "$GITHUB_OUTPUT"
           printf 'backup_file=%s\n' "$encrypted_file" >> "$GITHUB_OUTPUT"
           printf 'checksum_file=%s\n' "$encrypted_file.sha256" >> "$GITHUB_OUTPUT"
+          printf 'run_root=%s\n' "$run_root" >> "$GITHUB_OUTPUT"
           printf 'Fresh production backup: %s\n' "$reference"
       - name: Upload encrypted private rollback artifact
         id: artifact
@@ -224,6 +266,20 @@ jobs:
           set -Eeuo pipefail
           [[ "$BACKUP_REFERENCE" =~ ^gha-run-[0-9]+:pokecrack-[0-9]{8}T[0-9]{6}Z\.sql\.gz\.enc$ ]]
           [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]
-          [[ "$ARTIFACT_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          ARTIFACT_DIGEST="${ARTIFACT_DIGEST#sha256:}"
+          [[ "$ARTIFACT_DIGEST" =~ ^[0-9a-f]{64}$ ]]
           printf 'Rollback artifact: id=%s digest=%s reference=%s\n' \
             "$ARTIFACT_ID" "$ARTIFACT_DIGEST" "$BACKUP_REFERENCE"
+      - name: Remove encrypted staging directory
+        if: ${{ always() }}
+        shell: bash
+        env:
+          RUN_ROOT: ${{ steps.backup.outputs.run_root }}
+        run: |
+          set -Eeuo pipefail
+          [[ -n "$RUN_ROOT" ]] || exit 0
+          expected="$RUNNER_TEMP/pokecrack-backup-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          [[ "$RUN_ROOT" == "$expected" ]]
+          [[ -d "$RUN_ROOT" && ! -L "$RUN_ROOT" ]]
+          rm -rf -- "$RUN_ROOT"
+          [[ ! -e "$RUN_ROOT" && ! -L "$RUN_ROOT" ]]

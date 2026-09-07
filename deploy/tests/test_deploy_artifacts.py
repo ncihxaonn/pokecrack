@@ -790,6 +790,78 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn('backup_reference=%s\\n', workflow)
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
 
+    def test_backup_artifact_digest_accepts_action_and_api_formats(self) -> None:
+        for filename in ("backup-production-api.yml", "backup-production-remote.yml"):
+            workflow = (REPOSITORY_ROOT / ".github" / "workflows" / filename).read_text()
+            lines = [line.strip() for line in workflow.splitlines()]
+            start = lines.index('ARTIFACT_DIGEST="${ARTIFACT_DIGEST#sha256:}"')
+            script = "\n".join(lines[start : start + 2])
+            for value, expected in (("a" * 64, 0), ("sha256:" + "a" * 64, 0),
+                                    ("", 1), ("sha256:bad", 1), ("a" * 65, 1)):
+                with self.subTest(workflow=filename, digest=value):
+                    result = subprocess.run(["bash", "-c", script],
+                                            env={**os.environ, "ARTIFACT_DIGEST": value},
+                                            check=False, capture_output=True)
+                    self.assertEqual(result.returncode, expected)
+
+    def test_remote_backup_is_bound_to_an_attested_per_run_jit_runner(self) -> None:
+        workflow = (
+            REPOSITORY_ROOT
+            / ".github"
+            / "workflows"
+            / "backup-production-remote.yml"
+        ).read_text(encoding="utf-8")
+        runner_name = (
+            "${{ format('pokecrack-release-backup-{0}-{1}', "
+            "github.run_id, github.run_attempt) }}"
+        )
+        self.assertNotIn("runner_label:", workflow)
+        self.assertEqual(workflow.count(runner_name), 2)
+        isolation = workflow.index(
+            "      - name: Verify disposable runner isolation before secret material\n"
+        )
+        secret_material = workflow.index(
+            "          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}"
+        )
+        self.assertLess(isolation, secret_material)
+        for contract in (
+            '[[ "$RUNNER_NAME" == "$EXPECTED_RUNNER_NAME" ]]',
+            '[[ "$(id -u)" == 10001 ]]',
+            '[[ -f /.dockerenv ]]',
+            '[[ "$capabilities" =~ ^0+$ ]]',
+            '[[ "$(awk \'$1 == "NoNewPrivs:" { print $2 }\' /proc/self/status)" == 1 ]]',
+            '[[ "$pids_max" =~ ^[0-9]+$ && "$pids_max" -le 256 ]]',
+            '[[ "$memory_max" =~ ^[0-9]+$ && "$memory_max" -le 2147483648 ]]',
+            "/var/run/docker.sock",
+            "/home/codex/pokecrack",
+            "pokecrack-release-runner-v1",
+        ):
+            self.assertIn(contract, workflow)
+
+    def test_remote_backup_removes_plaintext_and_always_cleans_staging(self) -> None:
+        workflow = (
+            REPOSITORY_ROOT
+            / ".github"
+            / "workflows"
+            / "backup-production-remote.yml"
+        ).read_text(encoding="utf-8")
+        backup_step = workflow.split(
+            "      - name: Create and validate a fresh production backup\n", 1
+        )[1].split(
+            "      - name: Upload encrypted private rollback artifact\n", 1
+        )[0]
+        self.assertIn('            if [[ "$status" -ne 0 ]]; then\n', backup_step)
+        self.assertIn('                rm -rf -- "$run_root"\n', backup_step)
+        self.assertIn('                "$backup_file" \\\n', backup_step)
+        self.assertIn('                "$decrypted_file"\n', backup_step)
+        self.assertIn("          printf 'run_root=%s\\n' \"$run_root\"", backup_step)
+        finalizer = workflow.split(
+            "      - name: Remove encrypted staging directory\n", 1
+        )[1]
+        self.assertIn("        if: ${{ always() }}", finalizer)
+        self.assertIn('          [[ "$RUN_ROOT" == "$expected" ]]', finalizer)
+        self.assertIn('          rm -rf -- "$RUN_ROOT"', finalizer)
+
     def test_api_backup_workflow_uses_a_reviewed_short_lived_login(self) -> None:
         workflow = (
             REPOSITORY_ROOT / ".github" / "workflows" / "backup-production-api.yml"
