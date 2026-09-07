@@ -70,7 +70,7 @@ class AsiaResearchTests(unittest.TestCase):
     def test_unchanged_bot_issue_is_not_written_again(self):
         data = module.validate(json.dumps(self.example()).encode(), "VN")
         issue = {"number": 42, "title": "[Asia research] VN — Vietnam",
-                 "author": {"login": "github-actions[bot]"}, "state": "OPEN",
+                 "author": {"login": "app/github-actions", "is_bot": True}, "state": "OPEN",
                  "body": module.issue_body(data)}
         with patch.object(module.subprocess, "run", return_value=Mock(
             stdout=json.dumps([issue]))) as run:
@@ -80,12 +80,32 @@ class AsiaResearchTests(unittest.TestCase):
     def test_user_issue_cannot_be_overwritten(self):
         data = module.validate(json.dumps(self.example()).encode(), "VN")
         issue = {"number": 42, "title": "[Asia research] VN — Vietnam",
-                 "author": {"login": "ncihxaonn"}, "state": "OPEN",
+                 "author": {"login": "ncihxaonn", "is_bot": False}, "state": "OPEN",
                  "body": module.issue_body(data)}
         with patch.object(module.subprocess, "run", side_effect=[
             Mock(stdout=json.dumps([issue])), Mock()]) as run:
             module.publish(data)
         self.assertEqual(run.call_args_list[1].args[0][1:3], ["issue", "create"])
+
+    def test_closed_cli_bot_issue_is_not_reopened_or_duplicated(self):
+        data = module.validate(json.dumps(self.example()).encode(), "VN")
+        issue = {"number": 42, "title": "[Asia research] VN — Vietnam",
+                 "author": {"login": "app/github-actions", "is_bot": True},
+                 "state": "CLOSED", "body": module.issue_body(data)}
+        with patch.object(module.subprocess, "run", return_value=Mock(
+            stdout=json.dumps([issue]))) as run:
+            module.publish(data)
+        self.assertEqual(run.call_count, 1)
+
+    def test_changed_cli_bot_issue_is_edited_not_duplicated(self):
+        data = module.validate(json.dumps(self.example()).encode(), "VN")
+        issue = {"number": 42, "title": "[Asia research] VN — Vietnam",
+                 "author": {"login": "app/github-actions", "is_bot": True}, "state": "OPEN",
+                 "body": "<!-- pokecrack-asia-research-v1:VN -->\nold result"}
+        with patch.object(module.subprocess, "run", side_effect=[
+            Mock(stdout=json.dumps([issue])), Mock()]) as run:
+            module.publish(data)
+        self.assertEqual(run.call_args_list[1].args[0][1:4], ["issue", "edit", "42"])
 
     def test_workflow_is_main_only_sequential_and_has_no_db_secret(self):
         source = (ROOT / ".github/workflows/asia-research.yml").read_text()
