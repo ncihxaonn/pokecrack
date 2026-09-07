@@ -20,6 +20,7 @@ from typing import cast
 ALLOWED_KEYS = frozenset(
     {
         "BACKUP_DIR",
+        "BACKUP_POSTGRES_NETWORK_MODE",
         "BACKUP_PREFLIGHT_ROLE",
         "BACKUP_RETENTION_DAILY",
         "BACKUP_RETENTION_WEEKLY",
@@ -229,8 +230,15 @@ def build_backup_environment(
         _validate_postgres_client_directory(postgres_client_directory)
         path_value = f"{postgres_client_directory}:{SAFE_PATH}"
 
+    postgres_network_mode = values.get("BACKUP_POSTGRES_NETWORK_MODE", "bridge")
+    if postgres_network_mode not in {"bridge", "host"}:
+        raise BackupEnvironmentError(
+            "BACKUP_POSTGRES_NETWORK_MODE must be bridge or host"
+        )
+
     child_environment = {
         "BACKUP_DIR": backup_dir_value,
+        "BACKUP_POSTGRES_NETWORK_MODE": postgres_network_mode,
         "HOME": pwd.getpwuid(os.geteuid()).pw_dir,
         "LANG": "C.UTF-8",
         "LC_ALL": "C.UTF-8",
