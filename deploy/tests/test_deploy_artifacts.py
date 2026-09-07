@@ -832,6 +832,10 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("BACKUP_PREFLIGHT_ROLE=postgres", workflow)
         self.assertIn("left(session_user, 10) = 'cli_login_'", workflow)
         self.assertIn("current_user = session_user", workflow)
+        self.assertIn(
+            '< <(tr -d \'\\n\' < "$database_url_file")',
+            workflow,
+        )
         self.assertRegex(
             workflow,
             re.compile(
