@@ -182,16 +182,16 @@ select ok(
       on contract.study_key = coverage.study_key
     where contract.config ->> 'geography_basis' = 'product_market'
       and not coverage.is_demo
-  )
-  or exists (
-    select 1
-    from jsonb_array_elements(
-      public.get_public_study_coverage_v2() -> 'countries'
-    ) as country(item)
-    where country.item ->> 'countryCode' = 'JP'
-      and country.item -> 'coverageAttributionBases' ? 'product_market'
+      and not exists (
+        select 1
+        from jsonb_array_elements(
+          public.get_public_study_coverage_v2() -> 'countries'
+        ) as country(item)
+        where country.item ->> 'countryCode' = coverage.country_code
+          and country.item -> 'coverageAttributionBases' ? 'product_market'
+      )
   ),
-  'a verified product-market observation is exposed as the JP product-market bucket'
+  'each verified product-market observation is exposed in its own market bucket'
 );
 
 select ok(
