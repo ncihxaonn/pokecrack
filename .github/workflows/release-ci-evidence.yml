@@ -1,0 +1,39 @@
+name: Complete release CI evidence
+on:
+  workflow_dispatch:
+    inputs:
+      confirm_sha:
+        required: true
+        type: string
+permissions:
+  contents: read
+jobs:
+  evidence:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    env:
+      REQUESTED_SHA: ${{ inputs.confirm_sha }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22.13.0'
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e
+        with:
+          version: '0.11.6'
+      - run: |
+          test "$REQUESTED_SHA" = "$GITHUB_SHA"
+          sudo apt-get update
+          sudo apt-get install --yes shellcheck
+          scripts/run_ci_checks.sh all --expected-sha "$GITHUB_SHA" --evidence-dir /tmp/pokecrack-release-ci
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        if: always()
+        with:
+          name: complete-release-ci-${{ github.sha }}
+          path: /tmp/pokecrack-release-ci
+          retention-days: 7
