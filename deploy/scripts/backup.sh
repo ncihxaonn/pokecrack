@@ -26,9 +26,18 @@ done
 [[ $DAILY =~ ^[0-9]+$ ]] || die "BACKUP_RETENTION_DAILY must be a non-negative integer"
 [[ $WEEKLY =~ ^[0-9]+$ ]] || die "BACKUP_RETENTION_WEEKLY must be a non-negative integer"
 [[ ! -L $BACKUP_DIR ]] || die "BACKUP_DIR must not be a symbolic link"
+pg_dump_role_argument=
 case "$PREFLIGHT_ROLE" in
-  service_role) preflight_role_statement='set role service_role;' ;;
-  postgres) preflight_role_statement='set role postgres;' ;;
+  service_role)
+    preflight_role_statement='set role service_role;'
+    ;;
+  postgres)
+    preflight_role_statement='set role postgres;'
+    # The official Supabase CLI login is a temporary bare role that can switch
+    # to postgres. Keep the effective role explicit for the logical dump while
+    # leaving the legacy service_role path unchanged.
+    pg_dump_role_argument='--role=postgres'
+    ;;
   *) die "BACKUP_PREFLIGHT_ROLE must be service_role or postgres" ;;
 esac
 
@@ -474,13 +483,15 @@ trap cleanup EXIT HUP INT TERM
 # particular, do not ask pg_dump to inspect provider-owned auth, storage,
 # realtime, extensions, or other managed schemas.
 #
-# The independent preflights above still SET ROLE service_role so the retained
-# data contract is checked through the reviewed application capability. The
-# dump itself deliberately remains on the owner-capable login: Nostr isolation
-# denies service_role direct relation access, and the migration ledger is not a
-# worker capability. Exact schema inclusion keeps that owner authority bounded
-# to the reviewed backup surface without broadening service_role grants.
+# The independent preflights above use the selected reviewed capability. The
+# temporary Supabase CLI login path selects postgres explicitly for the dump:
+# Nostr isolation denies service_role direct relation access, and the migration
+# ledger is not a worker capability. Exact schema inclusion keeps that owner
+# authority bounded to the reviewed backup surface without broadening worker
+# grants. The legacy service_role path intentionally keeps pg_dump on its login
+# role for compatibility with the existing owner DSN contract.
 if ! run_database_command pg_dump \
+  ${pg_dump_role_argument:+"$pg_dump_role_argument"} \
   --format=plain \
   --no-owner \
   --no-privileges \

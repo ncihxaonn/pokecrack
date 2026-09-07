@@ -67,7 +67,7 @@ jobs:
           env_file="$run_root/backup.env"
           database_url_file="$run_root/database-url"
           role_file="$run_root/login-role"
-          probe_error_file="$run_root/pooler-probe.stderr"
+          probe_error_file="$run_root/direct-endpoint-probe.stderr"
           cleanup() {
             status=$?
             cleanup_failed=false
@@ -130,10 +130,10 @@ jobs:
 
           : > "$probe_error_file"
           chmod 0600 "$probe_error_file"
-          pooler_ready=false
+          direct_endpoint_ready=false
           # Supabase can take longer than 36 seconds to propagate a newly-created
-          # temporary login to the shared session pooler. Keep the wait bounded and
-          # fail closed, while allowing up to 78 seconds for propagation.
+          # temporary login to the direct database endpoint. Keep the wait bounded
+          # and fail closed, while allowing up to 78 seconds for propagation.
           for attempt in 1 2 3 4 5 6 7 8 9 10 11 12; do
             if role_state="$(
               PATH="$client_dir:$PATH" python3 \
@@ -142,12 +142,12 @@ jobs:
                 --command "select (left(session_user, 10) = 'cli_login_' and current_user = session_user)::text;" \
                 < "$database_url_file" 2>> "$probe_error_file"
             )" && [[ "$role_state" == true ]]; then
-              pooler_ready=true
+              direct_endpoint_ready=true
               break
             fi
             sleep "$attempt"
           done
-          [[ "$pooler_ready" == true ]] || {
+          [[ "$direct_endpoint_ready" == true ]] || {
             probe_failure=unclassified
             if grep -Eiq 'password authentication failed|SASL|Authentication error|Tenant or user not found|EAUTHQUERY|user not found in the database' "$probe_error_file"; then
               probe_failure=authentication-rejected
@@ -158,7 +158,7 @@ jobs:
             elif grep -Eiq 'connection timed out|timeout expired|Network is unreachable|No route to host|Connection refused' "$probe_error_file"; then
               probe_failure=network-failed
             fi
-            printf 'temporary Supabase login did not become ready before backup (%s)\n' \
+            printf 'temporary Supabase login did not become ready on the direct endpoint before backup (%s)\n' \
               "$probe_failure" >&2
             exit 1
           }

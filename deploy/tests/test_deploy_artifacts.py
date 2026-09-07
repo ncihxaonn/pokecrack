@@ -842,7 +842,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn(
             '            sleep "$attempt"\n'
             '          done\n'
-            '          [[ "$pooler_ready" == true ]] || {',
+            '          [[ "$direct_endpoint_ready" == true ]] || {',
             workflow,
         )
         self.assertIn(
@@ -852,7 +852,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
             workflow,
         )
         self.assertIn(
-            'probe_error_file="$run_root/pooler-probe.stderr"', workflow
+            'probe_error_file="$run_root/direct-endpoint-probe.stderr"', workflow
         )
         self.assertIn(': > "$probe_error_file"', workflow)
         self.assertIn('chmod 0600 "$probe_error_file"', workflow)
@@ -881,7 +881,9 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn('backup_reference=%s\\n', workflow)
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
 
-    def test_api_backup_pooler_probe_is_exactly_bounded_and_fail_closed(self) -> None:
+    def test_api_backup_direct_endpoint_probe_is_exactly_bounded_and_fail_closed(
+        self,
+    ) -> None:
         workflow = (
             REPOSITORY_ROOT / ".github" / "workflows" / "backup-production-api.yml"
         ).read_text(encoding="utf-8")
@@ -890,13 +892,13 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         )[1].split("      - name: Upload private rollback artifact\n", 1)[0]
 
         probe_match = re.search(
-            r"(?ms)^          pooler_ready=false\n"
+            r"(?ms)^          direct_endpoint_ready=false\n"
             r"(?P<probe>.*?)"
-            r'^          \[\[ "\$pooler_ready" == true \]\] \|\| \{\n',
+            r'^          \[\[ "\$direct_endpoint_ready" == true \]\] \|\| \{\n',
             backup_step,
         )
         if probe_match is None:
-            self.fail("the API backup workflow must expose a pooler readiness gate")
+            self.fail("the API backup workflow must expose a direct-endpoint readiness gate")
 
         loop_match = re.search(
             r"(?ms)^          for attempt in (?P<attempts>[^;]+); do\n"
@@ -905,7 +907,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
             probe_match.group("probe"),
         )
         if loop_match is None:
-            self.fail("the pooler readiness gate must have an explicit retry loop")
+            self.fail("the direct-endpoint readiness gate must have an explicit retry loop")
 
         self.assertEqual(
             loop_match.group("attempts").split(),
@@ -920,7 +922,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertNotIn("2>/dev/null", loop_body)
 
         fail_closed_match = re.search(
-            r'(?ms)^          \[\[ "\$pooler_ready" == true \]\] \|\| \{\n'
+            r'(?ms)^          \[\[ "\$direct_endpoint_ready" == true \]\] \|\| \{\n'
             r"(?P<body>.*?)"
             r'^          \}\n\n          backup_reference="\$\(python3 ',
             backup_step,
@@ -1012,7 +1014,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
                 database_url_file = case / "database-url"
                 role_file = case / "login-role"
                 env_file = case / "backup.env"
-                probe_error_file = case / "pooler-probe.stderr"
+                probe_error_file = case / "direct-endpoint-probe.stderr"
                 for path in (
                     database_url_file,
                     role_file,
@@ -2476,6 +2478,7 @@ set -Eeuo pipefail
 [[ ${PGCONNECT_TIMEOUT:-} == '7' ]]
 [[ ${PGAPPNAME:-} == 'pokecrack-backup' ]]
 role_argument_count=0
+expected_role_argument_count=${FAKE_EXPECTED_DUMP_ROLE_COUNT:-0}
 strict_names_count=0
 schema_argument_count=0
 catalog_schema_count=0
@@ -2493,7 +2496,7 @@ mastodon_candidate_exclusion_count=0
 mastodon_observation_exclusion_count=0
 for argument in "$@"; do
   [[ $argument != *'very-secret'* ]]
-  if [[ $argument == '--role=service_role' ]]; then
+  if [[ $argument == '--role=postgres' ]]; then
     role_argument_count=$((role_argument_count + 1))
   fi
   if [[ $argument == '--strict-names' ]]; then
@@ -2534,7 +2537,7 @@ for argument in "$@"; do
     mastodon_observation_exclusion_count=$((mastodon_observation_exclusion_count + 1))
   fi
 done
-[[ $role_argument_count == 0 ]]
+[[ $role_argument_count == $expected_role_argument_count ]]
 [[ $strict_names_count == 1 ]]
 [[ $schema_argument_count == 5 ]]
 [[ $catalog_schema_count == 1 ]]
@@ -2657,6 +2660,9 @@ fi
         environment["FAKE_PSQL_LOG"] = str(fake_bin.parent / "psql-preflight.log")
         environment["FAKE_EXPECTED_PREFLIGHT_ROLE"] = (
             preflight_role or "service_role"
+        )
+        environment["FAKE_EXPECTED_DUMP_ROLE_COUNT"] = (
+            "1" if preflight_role == "postgres" else "0"
         )
         if preflight_role is not None:
             environment["BACKUP_PREFLIGHT_ROLE"] = preflight_role
