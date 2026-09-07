@@ -828,6 +828,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
             '[[ "$RUNNER_NAME" == "$EXPECTED_RUNNER_NAME" ]]',
             '[[ "$(id -u)" == 10001 ]]',
             '[[ -f /.dockerenv ]]',
+            '[[ "$(/home/runner/bin/Runner.Listener --version)" == 2.337.0 ]]',
             '[[ "$capabilities" =~ ^0+$ ]]',
             '[[ "$(awk \'$1 == "NoNewPrivs:" { print $2 }\' /proc/self/status)" == 1 ]]',
             '[[ "$pids_max" =~ ^[0-9]+$ && "$pids_max" -le 256 ]]',
