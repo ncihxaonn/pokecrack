@@ -207,6 +207,21 @@ class ReleasePreflightTests(unittest.TestCase):
         self.assertIn(MODULE.GITLEAKS_TOOL.removeprefix("docker-image:"), source)
         self.assertNotIn("POKECRACK_GITLEAKS_IMAGE", source)
 
+    def test_origin_pattern_accepts_github_checkout_variants_only(self) -> None:
+        for origin in (
+            "https://github.com/ncihxaonn/pokecrack",
+            "https://github.com/ncihxaonn/pokecrack.git",
+        ):
+            with self.subTest(origin=origin):
+                self.assertIsNotNone(MODULE.ORIGIN_PATTERN.fullmatch(origin))
+        for origin in (
+            "http://github.com/ncihxaonn/pokecrack",
+            "https://github.com/other-owner/pokecrack",
+            "https://user:token@github.com/ncihxaonn/pokecrack",
+        ):
+            with self.subTest(origin=origin):
+                self.assertIsNone(MODULE.ORIGIN_PATTERN.fullmatch(origin))
+
 
 if __name__ == "__main__":
     unittest.main()

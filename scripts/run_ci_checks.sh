@@ -110,7 +110,7 @@ validate_root() {
     || die "repository root does not contain a real .git entry: $REPO_ROOT"
   local origin_url actual_sha status_output
   origin_url=$(git -C "$REPO_ROOT" remote get-url origin) || die "could not read repository origin"
-  [[ "$origin_url" == 'https://github.com/ncihxaonn/pokecrack.git' ]] || die "unexpected repository origin"
+  [[ "$origin_url" =~ ^https://github\.com/ncihxaonn/pokecrack(\.git)?$ ]] || die "unexpected repository origin"
   [[ "$EXPECTED_SHA" =~ ^[0-9a-f]{40}$ ]] || die "--expected-sha must be a 40-character lowercase commit SHA"
   actual_sha=$(git -C "$REPO_ROOT" rev-parse --verify HEAD^{commit}) || die "could not resolve HEAD"
   [[ "$actual_sha" == "$EXPECTED_SHA" ]] || die "checkout SHA does not match --expected-sha"

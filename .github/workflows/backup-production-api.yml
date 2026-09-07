@@ -34,6 +34,9 @@ jobs:
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$GITHUB_REF" == "refs/heads/main" ]]
           [[ "$GITHUB_REPOSITORY" == "ncihxaonn/pokecrack" ]]
+          # This workflow uploads a database dump as an Actions artifact. Keep
+          # it private-only; public repositories must use the VPS retention
+          # path or an independently approved private artifact store.
           [[ "$REPOSITORY_VISIBILITY" == "private" ]]
           [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]] || {

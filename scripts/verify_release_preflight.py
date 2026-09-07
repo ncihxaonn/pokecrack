@@ -27,6 +27,7 @@ from typing import Any
 
 REPOSITORY = "ncihxaonn/pokecrack"
 ORIGIN = "https://github.com/ncihxaonn/pokecrack.git"
+ORIGIN_PATTERN = re.compile(r"https://github\.com/ncihxaonn/pokecrack(?:\.git)?\Z")
 PROJECT_REF = "wohnphsxlquhhknuthrj"
 VPS_DEPLOY_PATH = "/home/codex/pokecrack"
 POSTGRES_META_IMAGE = "ghcr.io/supabase/postgres-meta@sha256:cef71ba901751dcc242cc685cf13786935ea8926820fb342f23bb0fbef77de5a"
@@ -131,7 +132,7 @@ def validate_checkout(checkout: Path, sha: str) -> Path:
     _require(RELEASE_SHA.fullmatch(sha) is not None, "--sha must be a 40-character lowercase SHA")
     _require((checkout / ".git").exists(), "checkout does not contain a Git repository")
     _require(not (checkout / ".git").is_symlink(), "checkout .git entry must not be a symlink")
-    _require(_git(checkout, "remote", "get-url", "origin") == ORIGIN, "unexpected repository origin")
+    _require(ORIGIN_PATTERN.fullmatch(_git(checkout, "remote", "get-url", "origin")) is not None, "unexpected repository origin")
     _require(_git(checkout, "rev-parse", "--verify", "HEAD^{commit}") == sha, "HEAD does not match --sha")
     _require(
         _git(checkout, "rev-parse", "--verify", "refs/remotes/origin/main") == sha,

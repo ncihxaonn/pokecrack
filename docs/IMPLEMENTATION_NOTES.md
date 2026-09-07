@@ -100,7 +100,10 @@ audit takes precedence.
   `codex/global-data-pipeline`, based on merged Personal-repository commit
   `9428e1d`. The protected UI worktree and its `codex/light-map-dashboard`
   branch were not modified. This backend diff contains no `apps/web` path.
-- The approved Git origin is the private repository `ncihxaonn/pokecrack`.
+- At the time of this historical audit, the approved Git origin was the private
+  repository `ncihxaonn/pokecrack`. The owner explicitly changed its GitHub
+  visibility to public on 2026-09-07; this historical entry is retained as
+  dated evidence.
   Repository-local Git identity is `ncihxaonn` with the approved GitHub
   noreply address.
 - A prior owner-approved rollout deployed main commit `9428e1d` and its

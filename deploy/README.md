@@ -89,10 +89,14 @@ verifies both the certificate chain and pooler hostname. The token and database
 credential never appear in command arguments or logs. The
 same reviewed retention preflights, exact schema scope, sanitizer,
 gzip validation, and immutable PostgreSQL 17 container used by the manual
-backup path then produce one consistent logical dump. The private repository's
-Actions storage retains that dump plus its checksum as a seven-day rollback
-artifact. The workflow returns a `gha-run-<run-id>:<filename>` reference for the
-migration gate.
+backup path then produce one consistent logical dump. The GitHub-managed path
+retains that dump plus its checksum as a seven-day rollback artifact only when
+the repository is private. This repository is public, so
+`backup-production-api.yml` intentionally fails closed rather than uploading a
+database dump to publicly readable Actions storage. Use the legacy VPS retention
+path, or an independently approved private artifact store, for production
+backup evidence. The workflow returns a `gha-run-<run-id>:<filename>` reference
+for the migration gate only in the private-repository case.
 
 `.github/workflows/backup-production.yml` is the legacy VPS retention path. It
 requires an owner-capable `supabase-db-url` file next to the explicitly selected

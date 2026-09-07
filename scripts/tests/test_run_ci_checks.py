@@ -83,6 +83,13 @@ class CanonicalCiRunnerTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden, source)
 
+    def test_runner_accepts_the_github_checkout_origin_variant(self) -> None:
+        source = RUNNER.read_text(encoding="utf-8")
+        self.assertIn(
+            r"^https://github\.com/ncihxaonn/pokecrack(\.git)?$",
+            source,
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
