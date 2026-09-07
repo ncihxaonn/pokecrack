@@ -8,6 +8,7 @@ from pokecrack_worker.collectors.base import (
     HTTPClient,
 )
 
+from .adapters.asia_coverage import garbage_rips_gem_vol2_adapter
 from .adapters.dynamic_fixture import DynamicFixtureAdapter
 from .adapters.example_public import ExamplePublicAdapter
 from .adapters.public_studies import (
@@ -54,6 +55,10 @@ def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistr
     """Build only explicitly reviewed live static adapters; there is no catch-all."""
 
     static_registry = HTTPAdapterRegistry()
+    static_registry.register(
+        "garbage_rips_gem_vol2_study",
+        garbage_rips_gem_vol2_adapter(client=http_client),
+    )
     static_registry.register(
         "comicbook_perfect_order_study",
         comicbook_perfect_order_adapter(client=http_client),
