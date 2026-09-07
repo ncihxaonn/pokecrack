@@ -803,7 +803,20 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         )
         self.assertIn("SUPABASE_PROJECT_REF: wohnphsxlquhhknuthrj", workflow)
         self.assertIn('[[ "$GITHUB_REPOSITORY" == "ncihxaonn/pokecrack" ]]', workflow)
-        self.assertIn('[[ "$REPOSITORY_VISIBILITY" == "private" ]]', workflow)
+        self.assertIn(
+            "BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}",
+            workflow,
+        )
+        self.assertIn(
+            "openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt", workflow
+        )
+        self.assertIn('gzip --test "$decrypted_file"', workflow)
+        self.assertIn('cmp -s "$backup_file" "$decrypted_file"', workflow)
+        self.assertIn(
+            'rm -f -- "$backup_file" "$decrypted_file" "$encryption_passphrase_file"',
+            workflow,
+        )
+        self.assertNotIn('[[ "$REPOSITORY_VISIBILITY" == "private" ]]', workflow)
         self.assertIn("scripts/create_supabase_backup_credential.py create", workflow)
         self.assertIn("scripts/create_supabase_backup_credential.py delete", workflow)
         self.assertIn('--role-output "$role_file"', workflow)
@@ -893,7 +906,9 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         backup_step = workflow.split(
             "      - name: Create and validate a fresh production backup\n", 1
-        )[1].split("      - name: Upload private rollback artifact\n", 1)[0]
+        )[1].split(
+            "      - name: Upload encrypted private rollback artifact\n", 1
+        )[0]
 
         probe_match = re.search(
             r"(?ms)^          direct_endpoint_ready=false\n"
@@ -946,7 +961,9 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         ).read_text(encoding="utf-8")
         backup_step = workflow.split(
             "      - name: Create and validate a fresh production backup\n", 1
-        )[1].split("      - name: Upload private rollback artifact\n", 1)[0]
+        )[1].split(
+            "      - name: Upload encrypted private rollback artifact\n", 1
+        )[0]
         cleanup_match = re.search(
             r"(?ms)^          cleanup\(\) \{\n"
             r"(?P<body>.*?)"
@@ -981,7 +998,8 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
             '              "$database_url_file" \\\n'
             '              "$role_file" \\\n'
             '              "$env_file" \\\n'
-            '              "$probe_error_file"',
+            '              "$probe_error_file" \\\n'
+            '              "$encryption_passphrase_file"',
             cleanup_body,
         )
         self.assertIn(
@@ -1019,11 +1037,13 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
                 role_file = case / "login-role"
                 env_file = case / "backup.env"
                 probe_error_file = case / "direct-endpoint-probe.stderr"
+                encryption_passphrase_file = case / "backup-encryption-passphrase"
                 for path in (
                     database_url_file,
                     role_file,
                     env_file,
                     probe_error_file,
+                    encryption_passphrase_file,
                 ):
                     path.write_text("fixture\n", encoding="utf-8")
                 fake_log = case / "python.log"
@@ -1035,6 +1055,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
                     f"role_file={shlex.quote(str(role_file))}\n"
                     f"env_file={shlex.quote(str(env_file))}\n"
                     f"probe_error_file={shlex.quote(str(probe_error_file))}\n"
+                    f"encryption_passphrase_file={shlex.quote(str(encryption_passphrase_file))}\n"
                     'SUPABASE_PROJECT_REF="fixture-project"\n'
                     "cleanup() {\n"
                     f"{cleanup_body}"
@@ -1059,6 +1080,7 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
                 self.assertFalse(role_file.exists())
                 self.assertFalse(env_file.exists())
                 self.assertFalse(probe_error_file.exists())
+                self.assertFalse(encryption_passphrase_file.exists())
                 fake_log_contents = fake_log.read_text(encoding="utf-8")
                 self.assertIn("delete", fake_log_contents)
                 self.assertIn("--expected-role-file", fake_log_contents)

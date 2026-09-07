@@ -127,6 +127,12 @@ database URL.
 
 Encrypt database backups before transfer, use a destination/account separate from the VPS, restrict retention/access, and test key recovery. Never commit/upload unencrypted dumps. Persistent browser profiles contain live cookies/tokens and are excluded by default; `PROFILE_BACKUP_ENABLED=false`. Prefer reauthentication. Any encrypted profile backup needs separate threat review, key file outside the VPS backup, short retention and tested revocation.
 
+The public-repository API backup workflow requires the protected
+`BACKUP_ENCRYPTION_PASSPHRASE` secret. It encrypts the validated gzip before
+upload, decrypts it in the same owner-only runner directory, verifies gzip
+integrity and byte equality, and removes the plaintext before artifact upload.
+Only the ciphertext and checksum are retained by the workflow.
+
 ## Restore drill (fresh isolated target)
 
 Never test against production. Provision a fresh disposable PostgreSQL/Supabase-compatible target with no public access and enough capacity. Provider schemas are intentionally not part of the managed backup, so provision the target's reviewed Supabase roles, `auth.jwt()`, and the `pgcrypto` extension in the `extensions` schema before restoring the application dump; do not restore provider user, session, object-storage, or Realtime data from another project. Select a retained file by explicit name and verify gzip before connecting:

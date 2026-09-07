@@ -24,7 +24,6 @@ jobs:
       backup_reference: ${{ steps.backup.outputs.backup_reference }}
     env:
       REQUESTED_SHA: ${{ inputs.confirm_sha }}
-      REPOSITORY_VISIBILITY: ${{ github.repository_visibility }}
       SUPABASE_PROJECT_REF: wohnphsxlquhhknuthrj
     steps:
       - name: Verify exact requested SHA
@@ -34,10 +33,6 @@ jobs:
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$GITHUB_REF" == "refs/heads/main" ]]
           [[ "$GITHUB_REPOSITORY" == "ncihxaonn/pokecrack" ]]
-          # This workflow uploads a database dump as an Actions artifact. Keep
-          # it private-only; public repositories must use the VPS retention
-          # path or an independently approved private artifact store.
-          [[ "$REPOSITORY_VISIBILITY" == "private" ]]
           [[ "$REQUESTED_SHA" =~ ^[0-9a-f]{40}$ ]]
           [[ "$REQUESTED_SHA" == "$GITHUB_SHA" ]] || {
             printf 'confirm_sha must equal GITHUB_SHA (%s)\n' "$GITHUB_SHA" >&2
@@ -53,6 +48,7 @@ jobs:
         shell: bash
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}
         run: |
           set -Eeuo pipefail
           umask 077
@@ -68,6 +64,7 @@ jobs:
           database_url_file="$run_root/database-url"
           role_file="$run_root/login-role"
           probe_error_file="$run_root/direct-endpoint-probe.stderr"
+          encryption_passphrase_file="$run_root/backup-encryption-passphrase"
           cleanup() {
             status=$?
             cleanup_failed=false
@@ -84,7 +81,8 @@ jobs:
               "$database_url_file" \
               "$role_file" \
               "$env_file" \
-              "$probe_error_file"
+              "$probe_error_file" \
+              "$encryption_passphrase_file"
             if [[ "$status" -eq 0 && "$cleanup_failed" == true ]]; then
               status=1
             fi
@@ -172,19 +170,38 @@ jobs:
           [[ "$backup_reference" =~ ^pokecrack-[0-9]{8}T[0-9]{6}Z\.sql\.gz$ ]]
           backup_file="$backup_dir/$backup_reference"
           [[ -f "$backup_file" && ! -L "$backup_file" && -s "$backup_file" ]]
-          digest="$(sha256sum "$backup_file")"
+          [[ -n "$BACKUP_ENCRYPTION_PASSPHRASE" ]]
+          encrypted_reference="${backup_reference}.enc"
+          encrypted_file="$backup_dir/$encrypted_reference"
+          decrypted_file="$run_root/decrypted-$backup_reference"
+          install -m 0600 /dev/null "$encryption_passphrase_file"
+          printf '%s' "$BACKUP_ENCRYPTION_PASSPHRASE" > "$encryption_passphrase_file"
+          openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt \
+            -in "$backup_file" \
+            -out "$encrypted_file" \
+            -pass "file:$encryption_passphrase_file"
+          chmod 0600 "$encrypted_file"
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in "$encrypted_file" \
+            -out "$decrypted_file" \
+            -pass "file:$encryption_passphrase_file"
+          chmod 0600 "$decrypted_file"
+          gzip --test "$decrypted_file"
+          cmp -s "$backup_file" "$decrypted_file"
+          rm -f -- "$backup_file" "$decrypted_file" "$encryption_passphrase_file"
+          digest="$(sha256sum "$encrypted_file")"
           digest="${digest%% *}"
           [[ "$digest" =~ ^[0-9a-f]{64}$ ]]
-          printf '%s  %s\n' "$digest" "$backup_reference" \
-            > "$backup_file.sha256"
-          chmod 0600 "$backup_file.sha256"
+          printf '%s  %s\n' "$digest" "$encrypted_reference" \
+            > "$encrypted_file.sha256"
+          chmod 0600 "$encrypted_file.sha256"
 
-          reference="gha-run-${GITHUB_RUN_ID}:${backup_reference}"
+          reference="gha-run-${GITHUB_RUN_ID}:${encrypted_reference}"
           printf 'backup_reference=%s\n' "$reference" >> "$GITHUB_OUTPUT"
-          printf 'backup_file=%s\n' "$backup_file" >> "$GITHUB_OUTPUT"
-          printf 'checksum_file=%s\n' "$backup_file.sha256" >> "$GITHUB_OUTPUT"
+          printf 'backup_file=%s\n' "$encrypted_file" >> "$GITHUB_OUTPUT"
+          printf 'checksum_file=%s\n' "$encrypted_file.sha256" >> "$GITHUB_OUTPUT"
           printf 'Fresh production backup: %s\n' "$reference"
-      - name: Upload private rollback artifact
+      - name: Upload encrypted private rollback artifact
         id: artifact
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -202,7 +219,7 @@ jobs:
           ARTIFACT_DIGEST: ${{ steps.artifact.outputs.artifact-digest }}
         run: |
           set -Eeuo pipefail
-          [[ "$BACKUP_REFERENCE" =~ ^gha-run-[0-9]+:pokecrack-[0-9]{8}T[0-9]{6}Z\.sql\.gz$ ]]
+          [[ "$BACKUP_REFERENCE" =~ ^gha-run-[0-9]+:pokecrack-[0-9]{8}T[0-9]{6}Z\.sql\.gz\.enc$ ]]
           [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]
           [[ "$ARTIFACT_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
           printf 'Rollback artifact: id=%s digest=%s reference=%s\n' \
