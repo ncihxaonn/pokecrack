@@ -6,6 +6,7 @@ import importlib.util
 import json
 import os
 import re
+import shlex
 import shutil
 import stat
 import subprocess
@@ -51,6 +52,38 @@ PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V5 = (
     PUBLIC_STUDY_SOURCE_KEYS_V4 + PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS
 )
+CANADA_MEXICO_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_indigo_geek_mx_50",
+    b"public_study_pokehanna_ca_9",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V6 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V5 + CANADA_MEXICO_PUBLIC_STUDY_SOURCE_KEYS
+)
+PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_tcg_market_panama_chaos_rising_6",
+    b"public_study_tcg_market_panama_pitch_black_4",
+    b"public_study_pokeshow_guatemala_megaevolution_3",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V7 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V6 + PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS
+)
+ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_cartas_pokemon_argentina_pitch_black_36",
+    b"public_study_pokemaniaco_lucas_cl_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V8 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V7 + ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS
+)
+AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_cofre_lab_chilling_reign_cr_4",
+    b"public_study_pokeyabros_perfect_order_co_2",
+    b"public_study_andree_insane_cards_cosmic_eclipse_ec_20",
+    b"public_study_thekeiplay_lost_origin_pe_36",
+    b"public_study_gringo_gameplays_silver_tempest_uy_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V9 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V8 + AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS
+)
 POKESUP_POLICY = "dddddddd-dddd-4ddd-8ddd-dddddddddddd"
 CARDCHILL_POLICY = "99999999-9999-4999-8999-999999999990"
 BLEEDINGCOOL_POLICY = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa0"
@@ -61,6 +94,18 @@ ALLONLINE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3"
 BRAZIL_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff1"
 PUERTO_RICO_18_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff2"
 PUERTO_RICO_36_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff3"
+MEXICO_POLICY = "f1111111-1111-4111-8111-111111111111"
+CANADA_POLICY = "f2222222-2222-4222-8222-222222222222"
+PANAMA_CHAOS_POLICY = "f3333333-3333-4333-8333-333333333333"
+PANAMA_PITCH_POLICY = "f4444444-4444-4444-8444-444444444444"
+GUATEMALA_POLICY = "f5555555-5555-4555-8555-555555555555"
+ARGENTINA_POLICY = "f6666666-6666-4666-8666-666666666666"
+CHILE_POLICY = "f7777777-7777-4777-8777-777777777777"
+COSTA_RICA_POLICY = "f8888888-8888-4888-8888-888888888888"
+COLOMBIA_POLICY = "f9999999-9999-4999-8999-999999999999"
+ECUADOR_POLICY = "fa111111-1111-4111-8111-111111111111"
+PERU_POLICY = "fa222222-2222-4222-8222-222222222222"
+URUGUAY_POLICY = "fa333333-3333-4333-8333-333333333333"
 PUBLIC_STUDY_COVERAGE_COLUMNS = (
     b"study_key, source_policy_id, country_code, country_name, source_observed_at, "
     b"pack_count, set_external_id, product_scope, collector_version, parser_version, "
@@ -99,8 +144,21 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
     product_values = b"'all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text"
     if source_keys == PUBLIC_STUDY_SOURCE_KEYS_V3:
         product_values += b", 'value_bundle'::text"
-    elif source_keys in (PUBLIC_STUDY_SOURCE_KEYS_V4, PUBLIC_STUDY_SOURCE_KEYS_V5):
+    elif source_keys in (
+        PUBLIC_STUDY_SOURCE_KEYS_V4,
+        PUBLIC_STUDY_SOURCE_KEYS_V5,
+        PUBLIC_STUDY_SOURCE_KEYS_V6,
+        PUBLIC_STUDY_SOURCE_KEYS_V7,
+        PUBLIC_STUDY_SOURCE_KEYS_V8,
+        PUBLIC_STUDY_SOURCE_KEYS_V9,
+    ):
         product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
+        if source_keys in (
+            PUBLIC_STUDY_SOURCE_KEYS_V7,
+            PUBLIC_STUDY_SOURCE_KEYS_V8,
+            PUBLIC_STUDY_SOURCE_KEYS_V9,
+        ):
+            product_values += b", 'build_and_battle'::text, 'three_pack_blister'::text"
     return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
 
 
@@ -169,6 +227,97 @@ PUBLIC_STUDY_COVERAGE_FACTS = {
         b"booster_box", b"public-study-richards-bricks-youtube-v1",
         b"richards-bricks-mega-evolution-box-evidence-v1",
         b"97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c",
+    ),
+    b"public_study_indigo_geek_mx_50": (
+        b"indigo-geek-megaevolucion-mx-50-v1", MEXICO_POLICY.encode(), b"MX", b"Mexico",
+        b"2025-09-12 13:00:41+00", b"50", b"me01", b"all",
+        b"public-study-indigo-geek-megaevolucion-youtube-v1",
+        b"indigo-geek-megaevolucion-evidence-v1",
+        b"c270707bfa43c79b8362a4cf5cab1bad377f0da4402904e0af02fe62c7bdb1d2",
+    ),
+    b"public_study_pokehanna_ca_9": (
+        b"pokehanna-ascended-heroes-ca-9-v1", CANADA_POLICY.encode(), b"CA", b"Canada",
+        b"2026-04-05 18:00:15+00", b"9", b"me02.5", b"etb",
+        b"public-study-pokehanna-ascended-heroes-youtube-v1",
+        b"pokehanna-ascended-heroes-evidence-v1",
+        b"d9c012acf1e003942eebdefda80058358f85ca1c718e59e5edd4dcd25b9c3ce9",
+    ),
+    b"public_study_tcg_market_panama_chaos_rising_6": (
+        b"tcg-market-chaos-rising-pa-6-v1", PANAMA_CHAOS_POLICY.encode(), b"PA", b"Panama",
+        b"2026-08-03 00:15:39+00", b"6", b"me04", b"booster_bundle",
+        b"public-study-tcg-market-panama-chaos-rising-youtube-v1",
+        b"tcg-market-panama-chaos-rising-evidence-v1",
+        b"abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef",
+    ),
+    b"public_study_tcg_market_panama_pitch_black_4": (
+        b"tcg-market-pitch-black-pa-4-v1", PANAMA_PITCH_POLICY.encode(), b"PA", b"Panama",
+        b"2026-08-05 19:09:10+00", b"4", b"me05", b"build_and_battle",
+        b"public-study-tcg-market-panama-pitch-black-youtube-v1",
+        b"tcg-market-panama-pitch-black-evidence-v1",
+        b"055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857",
+    ),
+    b"public_study_pokeshow_guatemala_megaevolution_3": (
+        b"pokeshow-mega-evolution-gt-3-v1", GUATEMALA_POLICY.encode(), b"GT", b"Guatemala",
+        b"2025-10-06 17:21:33+00", b"3", b"me01", b"three_pack_blister",
+        b"public-study-pokeshow-guatemala-megaevolution-youtube-v1",
+        b"pokeshow-guatemala-megaevolution-evidence-v1",
+        b"b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb",
+    ),
+    b"public_study_cartas_pokemon_argentina_pitch_black_36": (
+        b"cartas-pokemon-argentina-pitch-black-ar-36-v1",
+        ARGENTINA_POLICY.encode(), b"AR", b"Argentina", b"2026-07-17 18:18:50+00",
+        b"36", b"me05", b"booster_box",
+        b"public-study-cartas-pokemon-argentina-pitch-black-youtube-v1",
+        b"cartas-pokemon-argentina-pitch-black-evidence-v1",
+        b"9332e272a335d9e81a6e42c702b5d49630357eaf4a7a8c10d9d5f9d40cc05690",
+    ),
+    b"public_study_pokemaniaco_lucas_cl_36": (
+        b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
+        CHILE_POLICY.encode(), b"CL", b"Chile", b"2025-11-13 16:00:06+00",
+        b"36", b"me02", b"booster_box",
+        b"public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
+        b"pokemaniaco-lucas-phantasmal-flames-evidence-v1",
+        b"dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f",
+    ),
+    b"public_study_cofre_lab_chilling_reign_cr_4": (
+        b"cofre-lab-chilling-reign-cr-4-v1",
+        COSTA_RICA_POLICY.encode(), b"CR", b"Costa Rica", b"2021-06-06 05:54:03+00",
+        b"4", b"swsh6", b"build_and_battle",
+        b"public-study-cofre-lab-chilling-reign-youtube-v1",
+        b"cofre-lab-chilling-reign-evidence-v1",
+        b"8b307620e562e591d30922b077bb65960a50fd0be272e6c844c4233e536fc167",
+    ),
+    b"public_study_pokeyabros_perfect_order_co_2": (
+        b"pokeyabros-perfect-order-co-2-v1",
+        COLOMBIA_POLICY.encode(), b"CO", b"Colombia", b"2026-09-04 14:00:23+00",
+        b"2", b"me03", b"all",
+        b"public-study-pokeyabros-perfect-order-youtube-v1",
+        b"pokeyabros-perfect-order-evidence-v1",
+        b"0414e5fcd9d3708873ed5c84e78f9c523fb66ba7a30211d8f798c12c5533b7f8",
+    ),
+    b"public_study_andree_insane_cards_cosmic_eclipse_ec_20": (
+        b"andree-insane-cards-cosmic-eclipse-ec-20-v1",
+        ECUADOR_POLICY.encode(), b"EC", b"Ecuador", b"2023-06-27 21:00:07+00",
+        b"20", b"sm12", b"all",
+        b"public-study-andree-insane-cards-cosmic-eclipse-youtube-v1",
+        b"andree-insane-cards-cosmic-eclipse-evidence-v1",
+        b"9ebb6592d57fc2b452bbbd00b71e4e69633eec0a389069b1e475f4489a8fb0e9",
+    ),
+    b"public_study_thekeiplay_lost_origin_pe_36": (
+        b"thekeiplay-lost-origin-pe-36-v1",
+        PERU_POLICY.encode(), b"PE", b"Peru", b"2022-09-05 18:00:12+00",
+        b"36", b"swsh11", b"booster_box",
+        b"public-study-thekeiplay-lost-origin-youtube-v1",
+        b"thekeiplay-lost-origin-evidence-v1",
+        b"4c7a43da824a182cf0a550e46e21c34f1caadca259ff99d6485819ae95dd04ee",
+    ),
+    b"public_study_gringo_gameplays_silver_tempest_uy_36": (
+        b"gringo-gameplays-silver-tempest-uy-36-v1",
+        URUGUAY_POLICY.encode(), b"UY", b"Uruguay", b"2023-03-30 17:14:02+00",
+        b"36", b"swsh12", b"booster_box",
+        b"public-study-gringo-gameplays-silver-tempest-youtube-v1",
+        b"gringo-gameplays-silver-tempest-evidence-v1",
+        b"5f65c8f1ceca00fe06f56dbf684c50f1ca4116ce084aa9fbd4ead930b19d7264",
     ),
 }
 
@@ -452,9 +601,12 @@ printf '%s  %s\n' '{digest}' "$3"
 class WorkflowSecurityPolicyTests(unittest.TestCase):
     def test_ci_audits_both_python_lockfiles_with_a_pinned_auditor(self) -> None:
         workflow = (REPOSITORY_ROOT / ".github" / "workflows" / "ci.yml").read_text()
-        self.assertGreaterEqual(workflow.count("pip-audit==2.10.1"), 2)
-        self.assertIn("pokecrack-worker-audit.txt", workflow)
-        self.assertIn("pokecrack-browser-audit.txt", workflow)
+        runner = (REPOSITORY_ROOT / "scripts" / "run_ci_checks.sh").read_text()
+        self.assertIn("scripts/run_ci_checks.sh worker", workflow)
+        self.assertIn("scripts/run_ci_checks.sh auth-browser", workflow)
+        self.assertGreaterEqual(runner.count("pip-audit==2.10.1"), 2)
+        self.assertIn("worker-audit.txt", runner)
+        self.assertIn("auth-browser-audit.txt", runner)
 
     def test_worker_deploy_workflow_forwards_only_explicit_reviewed_service_sets(
         self,
@@ -651,7 +803,20 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         )
         self.assertIn("SUPABASE_PROJECT_REF: wohnphsxlquhhknuthrj", workflow)
         self.assertIn('[[ "$GITHUB_REPOSITORY" == "ncihxaonn/pokecrack" ]]', workflow)
-        self.assertIn('[[ "$REPOSITORY_VISIBILITY" == "private" ]]', workflow)
+        self.assertIn(
+            "BACKUP_ENCRYPTION_PASSPHRASE: ${{ secrets.BACKUP_ENCRYPTION_PASSPHRASE }}",
+            workflow,
+        )
+        self.assertIn(
+            "openssl enc -aes-256-cbc -pbkdf2 -iter 200000 -salt", workflow
+        )
+        self.assertIn('gzip --test "$decrypted_file"', workflow)
+        self.assertIn('cmp -s "$backup_file" "$decrypted_file"', workflow)
+        self.assertIn(
+            'rm -f -- "$backup_file" "$decrypted_file" "$encryption_passphrase_file"',
+            workflow,
+        )
+        self.assertNotIn('[[ "$REPOSITORY_VISIBILITY" == "private" ]]', workflow)
         self.assertIn("scripts/create_supabase_backup_credential.py create", workflow)
         self.assertIn("scripts/create_supabase_backup_credential.py delete", workflow)
         self.assertIn('--role-output "$role_file"', workflow)
@@ -680,6 +845,10 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn("BACKUP_PREFLIGHT_ROLE=postgres", workflow)
         self.assertIn("left(session_user, 10) = 'cli_login_'", workflow)
         self.assertIn("current_user = session_user", workflow)
+        self.assertIn(
+            '< <(tr -d \'\\n\' < "$database_url_file")',
+            workflow,
+        )
         self.assertRegex(
             workflow,
             re.compile(
@@ -690,13 +859,31 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn(
             '            sleep "$attempt"\n'
             '          done\n'
-            '          [[ "$pooler_ready" == true ]] || {',
+            '          [[ "$direct_endpoint_ready" == true ]] || {',
             workflow,
         )
         self.assertIn(
             "            exit 1\n"
             "          }\n\n"
             '          backup_reference="$(python3 ',
+            workflow,
+        )
+        self.assertIn(
+            'probe_error_file="$run_root/direct-endpoint-probe.stderr"', workflow
+        )
+        self.assertIn(': > "$probe_error_file"', workflow)
+        self.assertIn('chmod 0600 "$probe_error_file"', workflow)
+        self.assertIn('2>> "$probe_error_file"', workflow)
+        self.assertIn("EAUTHQUERY", workflow)
+        self.assertIn("user not found in the database", workflow)
+        self.assertIn("probe_failure=authentication-rejected", workflow)
+        self.assertIn("probe_failure=tls-rejected", workflow)
+        self.assertIn("probe_failure=dns-failed", workflow)
+        self.assertIn("probe_failure=network-failed", workflow)
+        self.assertNotIn('cat "$probe_error_file"', workflow)
+        self.assertIn(
+            '              "$env_file" \\\n'
+            '              "$probe_error_file"',
             workflow,
         )
         self.assertIn('PATH="$client_dir:$PATH" psql --version', workflow)
@@ -710,6 +897,203 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertGreaterEqual(workflow.count('! -L "$reviewed_path"'), 1)
         self.assertIn('backup_reference=%s\\n', workflow)
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
+
+    def test_api_backup_direct_endpoint_probe_is_exactly_bounded_and_fail_closed(
+        self,
+    ) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "backup-production-api.yml"
+        ).read_text(encoding="utf-8")
+        backup_step = workflow.split(
+            "      - name: Create and validate a fresh production backup\n", 1
+        )[1].split(
+            "      - name: Upload encrypted private rollback artifact\n", 1
+        )[0]
+
+        probe_match = re.search(
+            r"(?ms)^          direct_endpoint_ready=false\n"
+            r"(?P<probe>.*?)"
+            r'^          \[\[ "\$direct_endpoint_ready" == true \]\] \|\| \{\n',
+            backup_step,
+        )
+        if probe_match is None:
+            self.fail("the API backup workflow must expose a direct-endpoint readiness gate")
+
+        loop_match = re.search(
+            r"(?ms)^          for attempt in (?P<attempts>[^;]+); do\n"
+            r"(?P<body>.*?)"
+            r"^          done\n",
+            probe_match.group("probe"),
+        )
+        if loop_match is None:
+            self.fail("the direct-endpoint readiness gate must have an explicit retry loop")
+
+        self.assertEqual(
+            loop_match.group("attempts").split(),
+            [str(attempt) for attempt in range(1, 13)],
+        )
+        loop_body = loop_match.group("body")
+        self.assertEqual(loop_body.count('            sleep "$attempt"\n'), 1)
+        self.assertRegex(loop_body, r'(?m)^            sleep "\$attempt"$')
+        self.assertTrue(loop_body.rstrip().endswith('sleep "$attempt"'))
+        self.assertEqual(loop_body.count('role_state="$('), 1)
+        self.assertIn('2>> "$probe_error_file"', loop_body)
+        self.assertNotIn("2>/dev/null", loop_body)
+
+        fail_closed_match = re.search(
+            r'(?ms)^          \[\[ "\$direct_endpoint_ready" == true \]\] \|\| \{\n'
+            r"(?P<body>.*?)"
+            r'^          \}\n\n          backup_reference="\$\(python3 ',
+            backup_step,
+        )
+        if fail_closed_match is None:
+            self.fail("the readiness failure must gate backup creation")
+        fail_closed_body = fail_closed_match.group("body")
+        self.assertEqual(fail_closed_body.count("exit 1"), 1)
+        self.assertRegex(fail_closed_body, r"(?m)^            exit 1$")
+        self.assertNotIn("backup_reference", fail_closed_body)
+
+    def test_api_backup_cleanup_trap_removes_ephemeral_files_and_preserves_status(
+        self,
+    ) -> None:
+        workflow = (
+            REPOSITORY_ROOT / ".github" / "workflows" / "backup-production-api.yml"
+        ).read_text(encoding="utf-8")
+        backup_step = workflow.split(
+            "      - name: Create and validate a fresh production backup\n", 1
+        )[1].split(
+            "      - name: Upload encrypted private rollback artifact\n", 1
+        )[0]
+        cleanup_match = re.search(
+            r"(?ms)^          cleanup\(\) \{\n"
+            r"(?P<body>.*?)"
+            r"^          \}\n"
+            r"          trap cleanup EXIT HUP INT TERM\n",
+            backup_step,
+        )
+        if cleanup_match is None:
+            self.fail("the API backup workflow must install its cleanup trap")
+
+        cleanup_body = cleanup_match.group("body")
+        self.assertTrue(
+            cleanup_body.startswith(
+                "            status=$?\n"
+                "            cleanup_failed=false\n"
+                "            trap - EXIT HUP INT TERM\n"
+            )
+        )
+        self.assertEqual(cleanup_body.count("trap - EXIT HUP INT TERM"), 1)
+        self.assertIn(
+            '            if [[ -e "$role_file" || -L "$role_file" ]]; then',
+            cleanup_body,
+        )
+        self.assertIn(
+            "              if ! python3 scripts/create_supabase_backup_credential.py delete \\\n"
+            '                --project-ref "$SUPABASE_PROJECT_REF" \\\n'
+            '                --expected-role-file "$role_file"',
+            cleanup_body,
+        )
+        self.assertIn(
+            '            rm -f -- \\\n'
+            '              "$database_url_file" \\\n'
+            '              "$role_file" \\\n'
+            '              "$env_file" \\\n'
+            '              "$probe_error_file" \\\n'
+            '              "$encryption_passphrase_file"',
+            cleanup_body,
+        )
+        self.assertIn(
+            '            if [[ "$status" -eq 0 && "$cleanup_failed" == true ]]; then\n'
+            "              status=1\n"
+            "            fi\n"
+            '            exit "$status"\n',
+            cleanup_body,
+        )
+        self.assertEqual(backup_step.count("trap cleanup EXIT HUP INT TERM"), 1)
+        self.assertLess(
+            backup_step.index("cleanup() {"),
+            backup_step.index("trap cleanup EXIT HUP INT TERM"),
+        )
+
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = base / "bin"
+            fake_bin.mkdir()
+            fake_python = fake_bin / "python3"
+            fake_log_name = "FAKE_PYTHON_LOG"
+            write_executable(
+                fake_python,
+                "#!/usr/bin/env bash\n"
+                'printf \'%s\\n\' "$*" > "$FAKE_PYTHON_LOG"\n'
+                'exit "${FAKE_PYTHON_STATUS:-0}"\n',
+            )
+
+            def run_cleanup_case(
+                name: str, original_status: int, fake_python_status: int
+            ) -> subprocess.CompletedProcess[str]:
+                case = base / name
+                case.mkdir()
+                database_url_file = case / "database-url"
+                role_file = case / "login-role"
+                env_file = case / "backup.env"
+                probe_error_file = case / "direct-endpoint-probe.stderr"
+                encryption_passphrase_file = case / "backup-encryption-passphrase"
+                for path in (
+                    database_url_file,
+                    role_file,
+                    env_file,
+                    probe_error_file,
+                    encryption_passphrase_file,
+                ):
+                    path.write_text("fixture\n", encoding="utf-8")
+                fake_log = case / "python.log"
+                script = case / "run-cleanup.sh"
+                script.write_text(
+                    "#!/usr/bin/env bash\n"
+                    "set -Eeuo pipefail\n"
+                    f"database_url_file={shlex.quote(str(database_url_file))}\n"
+                    f"role_file={shlex.quote(str(role_file))}\n"
+                    f"env_file={shlex.quote(str(env_file))}\n"
+                    f"probe_error_file={shlex.quote(str(probe_error_file))}\n"
+                    f"encryption_passphrase_file={shlex.quote(str(encryption_passphrase_file))}\n"
+                    'SUPABASE_PROJECT_REF="fixture-project"\n'
+                    "cleanup() {\n"
+                    f"{cleanup_body}"
+                    "          }\n"
+                    "trap cleanup EXIT HUP INT TERM\n"
+                    f"exit {original_status}\n",
+                    encoding="utf-8",
+                )
+                script.chmod(script.stat().st_mode | stat.S_IXUSR)
+                environment = os.environ.copy()
+                environment["PATH"] = f"{fake_bin}:{environment['PATH']}"
+                environment[fake_log_name] = str(fake_log)
+                environment["FAKE_PYTHON_STATUS"] = str(fake_python_status)
+                result = subprocess.run(
+                    ["/bin/bash", str(script)],
+                    check=False,
+                    text=True,
+                    capture_output=True,
+                    env=environment,
+                )
+                self.assertFalse(database_url_file.exists())
+                self.assertFalse(role_file.exists())
+                self.assertFalse(env_file.exists())
+                self.assertFalse(probe_error_file.exists())
+                self.assertFalse(encryption_passphrase_file.exists())
+                fake_log_contents = fake_log.read_text(encoding="utf-8")
+                self.assertIn("delete", fake_log_contents)
+                self.assertIn("--expected-role-file", fake_log_contents)
+                return result
+
+            success = run_cleanup_case("success", 0, 0)
+            self.assertEqual(success.returncode, 0, success.stderr)
+
+            backup_failure = run_cleanup_case("backup-failure", 23, 0)
+            self.assertEqual(backup_failure.returncode, 23, backup_failure.stderr)
+
+            cleanup_failure = run_cleanup_case("cleanup-failure", 0, 7)
+            self.assertEqual(cleanup_failure.returncode, 1, cleanup_failure.stderr)
 
 
 class BackupRetentionTests(unittest.TestCase):
@@ -1748,7 +2132,19 @@ COPY ingest.youtube_discoveries (video_id, source_policy_id) FROM stdin;
         include_asia_phase_one: bool = False,
         include_brazil: bool = False,
         include_puerto_rico: bool = False,
+        include_canada_mexico: bool = False,
+        include_panama_guatemala: bool = False,
+        include_argentina_chile: bool = False,
+        include_americas_phase_two: bool = False,
     ) -> bytes:
+        if include_americas_phase_two:
+            include_argentina_chile = True
+        if include_argentina_chile:
+            include_panama_guatemala = True
+        if include_panama_guatemala:
+            include_canada_mexico = True
+        if include_canada_mexico:
+            include_puerto_rico = True
         if include_puerto_rico:
             include_brazil = True
         if include_brazil:
@@ -1865,6 +2261,77 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
                 brazil_policy_row + puerto_rico_policy_rows,
                 1,
             )
+        if include_canada_mexico:
+            puerto_rico_policy_row = (
+                PUERTO_RICO_36_POLICY.encode()
+                + b"\tpublic_study_richards_bricks_pr_36\n"
+            )
+            canada_mexico_policy_rows = (
+                MEXICO_POLICY.encode()
+                + b"\tpublic_study_indigo_geek_mx_50\n"
+                + CANADA_POLICY.encode()
+                + b"\tpublic_study_pokehanna_ca_9\n"
+            )
+            base = base.replace(
+                puerto_rico_policy_row,
+                puerto_rico_policy_row + canada_mexico_policy_rows,
+                1,
+            )
+        if include_panama_guatemala:
+            canada_policy_row = (
+                CANADA_POLICY.encode() + b"\tpublic_study_pokehanna_ca_9\n"
+            )
+            panama_guatemala_policy_rows = (
+                PANAMA_CHAOS_POLICY.encode()
+                + b"\tpublic_study_tcg_market_panama_chaos_rising_6\n"
+                + PANAMA_PITCH_POLICY.encode()
+                + b"\tpublic_study_tcg_market_panama_pitch_black_4\n"
+                + GUATEMALA_POLICY.encode()
+                + b"\tpublic_study_pokeshow_guatemala_megaevolution_3\n"
+            )
+            base = base.replace(
+                canada_policy_row,
+                canada_policy_row + panama_guatemala_policy_rows,
+                1,
+            )
+        if include_argentina_chile:
+            guatemala_policy_row = (
+                GUATEMALA_POLICY.encode()
+                + b"\tpublic_study_pokeshow_guatemala_megaevolution_3\n"
+            )
+            argentina_chile_policy_rows = (
+                ARGENTINA_POLICY.encode()
+                + b"\tpublic_study_cartas_pokemon_argentina_pitch_black_36\n"
+                + CHILE_POLICY.encode()
+                + b"\tpublic_study_pokemaniaco_lucas_cl_36\n"
+            )
+            base = base.replace(
+                guatemala_policy_row,
+                guatemala_policy_row + argentina_chile_policy_rows,
+                1,
+            )
+        if include_americas_phase_two:
+            chile_policy_row = (
+                CHILE_POLICY.encode()
+                + b"\tpublic_study_pokemaniaco_lucas_cl_36\n"
+            )
+            americas_phase_two_policy_rows = (
+                COSTA_RICA_POLICY.encode()
+                + b"\tpublic_study_cofre_lab_chilling_reign_cr_4\n"
+                + COLOMBIA_POLICY.encode()
+                + b"\tpublic_study_pokeyabros_perfect_order_co_2\n"
+                + ECUADOR_POLICY.encode()
+                + b"\tpublic_study_andree_insane_cards_cosmic_eclipse_ec_20\n"
+                + PERU_POLICY.encode()
+                + b"\tpublic_study_thekeiplay_lost_origin_pe_36\n"
+                + URUGUAY_POLICY.encode()
+                + b"\tpublic_study_gringo_gameplays_silver_tempest_uy_36\n"
+            )
+            base = base.replace(
+                chile_policy_row,
+                chile_policy_row + americas_phase_two_policy_rows,
+                1,
+            )
         source_keys = PUBLIC_STUDY_SOURCE_KEYS_V1
         if include_pokesup:
             source_keys = PUBLIC_STUDY_SOURCE_KEYS_V2
@@ -1874,6 +2341,14 @@ comicbook-perfect-order-us-55-v1\t44444444-4444-4444-8444-444444444444\t66666666
             source_keys = PUBLIC_STUDY_SOURCE_KEYS_V4
         if include_puerto_rico:
             source_keys = PUBLIC_STUDY_SOURCE_KEYS_V5
+        if include_canada_mexico:
+            source_keys = PUBLIC_STUDY_SOURCE_KEYS_V6
+        if include_panama_guatemala:
+            source_keys = PUBLIC_STUDY_SOURCE_KEYS_V7
+        if include_argentina_chile:
+            source_keys = PUBLIC_STUDY_SOURCE_KEYS_V8
+        if include_americas_phase_two:
+            source_keys = PUBLIC_STUDY_SOURCE_KEYS_V9
         coverage_rows = public_study_coverage_rows(source_keys)
         return (
             base
@@ -2029,6 +2504,7 @@ set -Eeuo pipefail
 [[ ${PGCONNECT_TIMEOUT:-} == '7' ]]
 [[ ${PGAPPNAME:-} == 'pokecrack-backup' ]]
 role_argument_count=0
+expected_role_argument_count=${FAKE_EXPECTED_DUMP_ROLE_COUNT:-0}
 strict_names_count=0
 schema_argument_count=0
 catalog_schema_count=0
@@ -2046,7 +2522,7 @@ mastodon_candidate_exclusion_count=0
 mastodon_observation_exclusion_count=0
 for argument in "$@"; do
   [[ $argument != *'very-secret'* ]]
-  if [[ $argument == '--role=service_role' ]]; then
+  if [[ $argument == '--role=postgres' ]]; then
     role_argument_count=$((role_argument_count + 1))
   fi
   if [[ $argument == '--strict-names' ]]; then
@@ -2087,7 +2563,7 @@ for argument in "$@"; do
     mastodon_observation_exclusion_count=$((mastodon_observation_exclusion_count + 1))
   fi
 done
-[[ $role_argument_count == 0 ]]
+[[ $role_argument_count == $expected_role_argument_count ]]
 [[ $strict_names_count == 1 ]]
 [[ $schema_argument_count == 5 ]]
 [[ $catalog_schema_count == 1 ]]
@@ -2210,6 +2686,9 @@ fi
         environment["FAKE_PSQL_LOG"] = str(fake_bin.parent / "psql-preflight.log")
         environment["FAKE_EXPECTED_PREFLIGHT_ROLE"] = (
             preflight_role or "service_role"
+        )
+        environment["FAKE_EXPECTED_DUMP_ROLE_COUNT"] = (
+            "1" if preflight_role == "postgres" else "0"
         )
         if preflight_role is not None:
             environment["BACKUP_PREFLIGHT_ROLE"] = preflight_role
@@ -2797,6 +3276,251 @@ cache-second\t{youtube_policy}\t{second_video}
             self.assertNotEqual(result.returncode, 0)
             self.assertFalse(
                 backup_dir.joinpath("pokecrack-20261007T010206Z.sql.gz").exists()
+            )
+
+    def test_backup_accepts_exact_canada_mexico_profile_and_rejects_partial_profile(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(
+                include_canada_mexico=True
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261008T010203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261008T010203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V6,
+            )
+            self.assertIn(post_seed, sanitized)
+            for source_key in CANADA_MEXICO_PUBLIC_STUDY_SOURCE_KEYS:
+                self.assertEqual(sanitized.count(source_key + b"\n"), 2)
+
+            partial_dump = post_migration_dump.replace(
+                CANADA_POLICY.encode() + b"\tpublic_study_pokehanna_ca_9\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261008T010204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261008T010204Z.sql.gz").exists()
+            )
+
+    def test_backup_accepts_exact_panama_guatemala_profile_and_rejects_drift(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(
+                include_panama_guatemala=True
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261009T010203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261009T010203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V7,
+            )
+            self.assertIn(post_seed, sanitized)
+            for source_key in PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS:
+                self.assertEqual(sanitized.count(source_key + b"\n"), 2)
+
+            partial_dump = post_migration_dump.replace(
+                PANAMA_PITCH_POLICY.encode()
+                + b"\tpublic_study_tcg_market_panama_pitch_black_4\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261009T010204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261009T010204Z.sql.gz").exists()
+            )
+
+            drifted_dump = post_migration_dump.replace(
+                b"\t4\tme05\tbuild_and_battle\t",
+                b"\t5\tme05\tbuild_and_battle\t",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261009T010205Z",
+                dump=drifted_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261009T010205Z.sql.gz").exists()
+            )
+
+    def test_backup_accepts_exact_argentina_chile_profile_and_rejects_drift(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(
+                include_argentina_chile=True
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261009T020203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261009T020203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V8,
+            )
+            self.assertIn(post_seed, sanitized)
+            for source_key in ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS:
+                self.assertEqual(sanitized.count(source_key + b"\n"), 2)
+
+            partial_dump = post_migration_dump.replace(
+                CHILE_POLICY.encode() + b"\tpublic_study_pokemaniaco_lucas_cl_36\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261009T020204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261009T020204Z.sql.gz").exists()
+            )
+
+            drifted_dump = post_migration_dump.replace(
+                b"\t36\tme02\tbooster_box\t",
+                b"\t35\tme02\tbooster_box\t",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261009T020205Z",
+                dump=drifted_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261009T020205Z.sql.gz").exists()
+            )
+
+    def test_backup_accepts_exact_americas_phase_two_profile_and_rejects_drift(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory(dir=DEPLOY_ROOT / "tests") as temporary:
+            base = Path(temporary)
+            fake_bin = self.make_fake_commands(base)
+            backup_dir = base / "backups"
+            post_migration_dump = self.post_public_study_dump(
+                include_americas_phase_two=True
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261010T020203Z",
+                dump=post_migration_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+
+            self.assertEqual(result.returncode, 0, result.stderr)
+            backup = backup_dir / "pokecrack-20261010T020203Z.sql.gz"
+            with gzip.open(backup, "rb") as stream:
+                sanitized = stream.read()
+            post_seed = self.canonical_gate_seed(
+                youtube=True,
+                public_studies=True,
+                public_study_source_keys=PUBLIC_STUDY_SOURCE_KEYS_V9,
+            )
+            self.assertIn(post_seed, sanitized)
+            for source_key in AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS:
+                self.assertEqual(sanitized.count(source_key + b"\n"), 2)
+
+            partial_dump = post_migration_dump.replace(
+                URUGUAY_POLICY.encode()
+                + b"\tpublic_study_gringo_gameplays_silver_tempest_uy_36\n",
+                b"",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261010T020204Z",
+                dump=partial_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261010T020204Z.sql.gz").exists()
+            )
+
+            drifted_dump = post_migration_dump.replace(
+                b"\t20\tsm12\tall\t",
+                b"\t19\tsm12\tall\t",
+                1,
+            )
+            result = self.run_backup(
+                fake_bin=fake_bin,
+                backup_dir=backup_dir,
+                timestamp="20261010T020205Z",
+                dump=drifted_dump,
+                table_state="rp\tru\trp\trp\t0\t0\t0\ttrue",
+            )
+            self.assertNotEqual(result.returncode, 0)
+            self.assertFalse(
+                backup_dir.joinpath("pokecrack-20261010T020205Z.sql.gz").exists()
             )
 
     def test_backup_retains_the_complete_reviewed_aggregate_bridge_bundle(

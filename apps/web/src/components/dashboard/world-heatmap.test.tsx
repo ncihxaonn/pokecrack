@@ -102,6 +102,66 @@ describe("WorldHeatmap", () => {
     expect(screen.getByText("JP · Product market")).toBeVisible();
   });
 
+  it("renders the five real Americas coverage rows with exact data versions", () => {
+    const template = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "BR")!;
+    const definitions = [
+      ["CR", "Costa Rica", 4, "und · swsh6 · Chilling Reign · build and battle"],
+      ["CO", "Colombia", 2, "und · me03 · Perfect Order · all products"],
+      ["EC", "Ecuador", 20, "und · sm12 · Cosmic Eclipse · all products"],
+      ["PE", "Peru", 36, "und · swsh11 · Lost Origin · booster box"],
+      ["UY", "Uruguay", 36, "und · swsh12 · Silver Tempest · booster box"],
+    ] as const;
+    const cells = definitions.map(([countryCode, countryName, packsObserved, version]) => ({
+      ...template,
+      countryCode,
+      countryName,
+      dataVersions: [version],
+      collectionClass: "coverage_only" as const,
+      coverageAttributionBases: ["publisher_country"] as const,
+      periodStart: "2021-06-06",
+      periodEnd: "2026-09-05",
+      packsObserved,
+      openings: 1,
+      independentSources: 1,
+      ratePacksObserved: undefined,
+      qualifyingHitPacks: undefined,
+      baselineRate: null,
+      hitRate: null,
+      posteriorMean: null,
+      credibleInterval: null,
+      deltaFromBaseline: null,
+      state: "insufficient" as const,
+      sampleNote: "Reviewed denominator-only coverage; no exact normalized numerator.",
+      updatedAt: "2026-09-05T00:00:00Z",
+    }));
+
+    const { container } = render(
+      <WorldHeatmap
+        cells={cells}
+        coverageSummary="Five reviewed Americas coverage buckets."
+        initialMetric="coverage"
+        observations={{
+          ...DEMO_PUBLIC_DATA.observations,
+          status: "collecting",
+          period: { start: "2021-06-06", end: "2026-09-05" },
+          observedPacks: 98,
+          completeOpenings: 5,
+          sourceCountryContributions: 5,
+          countriesObserved: 5,
+          countriesWithPublishedRate: 0,
+        }}
+      />,
+    );
+
+    for (const [countryCode, countryName, , version] of definitions) {
+      expect(screen.getByRole("row", { name: new RegExp(`${countryName} ${countryCode}`) }))
+        .toHaveTextContent(version);
+      expect(container.querySelector(`[data-country-code="${countryCode}"]`))
+        .not.toHaveAttribute("fill", WORLD_MAP_PALETTE.noData);
+    }
+    expect(screen.getByText("06 Jun 2021 - 05 Sep 2026")).toBeVisible();
+  });
+
   it("renders a clear fallback for legacy cells without data versions", () => {
     const legacy = DEMO_PUBLIC_DATA.mapCells.find((cell) => cell.countryCode === "BR")!;
     render(
@@ -126,7 +186,7 @@ describe("WorldHeatmap", () => {
     expect(fallback.closest("td")).toHaveAttribute("data-label", "Data version");
   });
 
-  it("highlights the sixteen expanded collection countries without inventing observations", () => {
+  it("highlights the twenty-six expanded collection countries without inventing observations", () => {
     const { container } = render(
       <WorldHeatmap
         cells={DEMO_PUBLIC_DATA.mapCells}
@@ -141,16 +201,36 @@ describe("WorldHeatmap", () => {
     for (const country of GLOBAL_FOCUS_COUNTRIES) {
       expect(within(focusList).getByText(country.countryName)).toBeVisible();
     }
-    expect(focusList.querySelectorAll("li")).toHaveLength(16);
+    expect(focusList.querySelectorAll("li")).toHaveLength(26);
     expect(within(focusList).getByText("CN · Awaiting observations")).toBeVisible();
     expect(within(focusList).getByText("MX · Awaiting observations")).toBeVisible();
     expect(within(focusList).getByText("BR · Sample observed")).toBeVisible();
-    for (const countryCode of ["KR", "TW", "HK", "TH", "ID", "MY", "PH", "VN", "IN"]) {
+    for (const countryCode of [
+      "PR",
+      "GT",
+      "PA",
+      "CR",
+      "CO",
+      "EC",
+      "PE",
+      "AR",
+      "CL",
+      "UY",
+      "KR",
+      "TW",
+      "HK",
+      "TH",
+      "ID",
+      "MY",
+      "PH",
+      "VN",
+      "IN",
+    ]) {
       expect(within(focusList).getByText(`${countryCode} · Awaiting observations`)).toBeVisible();
     }
 
     const focusShapes = container.querySelectorAll('[data-focus-country="true"]');
-    expect(focusShapes).toHaveLength(15);
+    expect(focusShapes).toHaveLength(25);
     expect(within(focusList).getByText("List/table only · no separate map geometry")).toBeVisible();
     expect(container.querySelector('[data-country-code="CN"]'))
       .toHaveAttribute("fill", WORLD_MAP_PALETTE.noData);
@@ -517,7 +597,7 @@ describe("WorldHeatmap", () => {
     expect(screen.getByText("No verified pack coverage yet")).toBeVisible();
     expect(screen.getByText("No verified country or product-market coverage is published yet.")).toBeVisible();
     expect(screen.getByRole("img", { name: "Observed pack coverage across the world" })).toHaveAccessibleDescription(
-      /15 collection targets have gold outlines.*Hong Kong.*no separate geometry/i,
+      /25 collection targets have gold outlines.*Hong Kong.*no separate geometry/i,
     );
   });
 });

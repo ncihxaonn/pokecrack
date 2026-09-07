@@ -123,9 +123,13 @@ select ok(
 );
 
 select is(
-  (select count(*)::integer from ingest.reviewed_public_study_contracts()),
+  (
+    select count(*)::integer
+    from ingest.reviewed_public_study_contracts()
+    where ordinal between 1 and 12
+  ),
   12,
-  'the reviewed registry contains twelve ordered contracts'
+  'the reviewed registry retains its twelve-contract Puerto Rico prefix'
 );
 select is(
   (
@@ -211,13 +215,11 @@ select is(
         'ingest.enqueue_scheduled_public_study_coverage_job_v1(text,timestamptz,text,integer,integer)'::regprocedure
       )
     ]) as definitions(definition)
-    where position(
-      'contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12)'
-      in definition
-    ) > 0
+    where definition ~
+      'contracts\.ordinal in \([^)]*11[^)]*12'
   ),
   4,
-  'all four coverage ingestion boundaries admit the same nine-contract allowlist'
+  'all four coverage ingestion boundaries still admit ordinals 11 and 12'
 );
 select matches(
   pg_get_functiondef(

@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -24,60 +23,32 @@ jobs:
         with:
           node-version: "22.13.0"
           cache: pnpm
-      - run: pnpm install --frozen-lockfile
-      - run: pnpm lint
-      - run: pnpm typecheck
-      - run: pnpm test
-      - run: pnpm build
+      - name: Run canonical Web checks
+        run: scripts/run_ci_checks.sh web --expected-sha "$GITHUB_SHA" --evidence-dir "/tmp/pokecrack-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-web"
 
   worker:
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    defaults:
-      run:
-        working-directory: services/worker
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           version: "0.11.6"
           enable-cache: true
-      - run: uv sync --frozen --extra dev --extra scrapling
-      - name: Audit the full locked worker dependency set
-        run: |
-          uv export --quiet --frozen --all-extras --format requirements-txt --no-emit-project -o /tmp/pokecrack-worker-audit.txt
-          uvx --from pip-audit==2.10.1 pip-audit -r /tmp/pokecrack-worker-audit.txt --disable-pip
-      - run: uv run ruff check pokecrack_worker tests
-      - run: uv run ruff format --check pokecrack_worker tests
-      - run: uv run mypy pokecrack_worker
-      - run: uv run pytest -q
+      - name: Run canonical Worker checks
+        run: scripts/run_ci_checks.sh worker --expected-sha "$GITHUB_SHA" --evidence-dir "/tmp/pokecrack-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-worker"
 
   auth-browser:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    defaults:
-      run:
-        working-directory: services/auth-browser
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
         with:
           version: "0.11.6"
           enable-cache: true
-      - run: uv sync --frozen --extra dev
-      - name: Audit the full locked auth-browser dependency set
-        run: |
-          uv export --quiet --frozen --all-extras --format requirements-txt --no-emit-project -o /tmp/pokecrack-browser-audit.txt
-          uvx --from pip-audit==2.10.1 pip-audit -r /tmp/pokecrack-browser-audit.txt --disable-pip
-      - run: uv run ruff check src tests
-      - run: uv run ruff format --check src tests
-      - run: uv run mypy src/pokecrack_browser
-      - run: uv run pytest -q
-      - name: Build production auth-browser image with fixtures only
-        working-directory: ${{ github.workspace }}
-        env:
-          DEPLOY_SHA: ${{ github.sha }}
-        run: docker build --file deploy/Dockerfile.auth-browser --tag pokecrack-auth-browser:${GITHUB_SHA} .
+      - name: Run canonical auth-browser checks
+        run: scripts/run_ci_checks.sh auth-browser --expected-sha "$GITHUB_SHA" --evidence-dir "/tmp/pokecrack-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-auth-browser"
 
   database:
     runs-on: ubuntu-latest
@@ -87,76 +58,16 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
           node-version: "22.13.0"
-      # Keep startup and migration failures independently observable through
-      # the Actions step state. This is intentionally safe diagnostic output:
-      # it never prints a database URL, payload, policy, or migration SQL.
-      - name: Start local Supabase
-        id: local-supabase-start
-        continue-on-error: true
-        run: bash scripts/start-local-supabase-ci.sh
-      - name: "Safe Supabase startup diagnosis: ${{ steps.local-supabase-start.outputs.category }}"
-        if: always()
-        env:
-          START_CATEGORY: ${{ steps.local-supabase-start.outputs.category }}
-          START_MIGRATION_FILE: ${{ steps.local-supabase-start.outputs.migration_file }}
-          START_SQLSTATE: ${{ steps.local-supabase-start.outputs.sqlstate }}
-          START_BOOTSTRAP_REASON: ${{ steps.local-supabase-start.outputs.bootstrap_reason }}
-        run: |
-          case "$START_CATEGORY" in
-            started) exit 0 ;;
-            bootstrap_migration)
-              case "$START_BOOTSTRAP_REASON" in
-                runtime_evidence_prerequisites|runtime_evidence_security_header|runtime_evidence_integration_points|runtime_evidence_replacement|unknown) ;;
-                *)
-                  printf 'Safe Supabase bootstrap migration reason was not recognised.\n'
-                  exit 1
-                  ;;
-              esac
-              printf 'Safe Supabase bootstrap migration metadata: migration=%s SQLSTATE=%s reason=%s\n' \
-                "$START_MIGRATION_FILE" "$START_SQLSTATE" "$START_BOOTSTRAP_REASON"
-              exit 1
-              ;;
-            docker_unavailable|image_pull|port_conflict|health_check|startup_timeout|cli_install|unknown)
-              exit 1
-              ;;
-            *)
-              printf 'Safe Supabase local startup category was not recognised.\n'
-              exit 1
-              ;;
-          esac
-      - name: Reset local database and apply migrations
-        run: npx --yes supabase@2.116.0 db reset
-      - name: Run pgTAP database tests
-        run: |
-          regular_tests=()
-          for test_file in supabase/tests/*.sql; do
-            case "$test_file" in
-              supabase/tests/003_public_security.sql|supabase/tests/009_admin_session_fence.sql) ;;
-              *) regular_tests+=("$test_file") ;;
-            esac
-          done
-          npx --yes supabase@2.116.0 test db "${regular_tests[@]}"
-
-          # These two suites change immutable session_user to reproduce the
-          # PostgREST authenticator boundary. Keep every other suite on the
-          # non-superuser postgres role and elevate only these exact files.
-          npx --yes supabase@2.116.0 test db \
-            --db-url postgresql://supabase_admin:postgres@127.0.0.1:54322/postgres \
-            supabase/tests/003_public_security.sql \
-            supabase/tests/009_admin_session_fence.sql
-      - name: Stop local Supabase
-        if: always()
-        run: npx --yes supabase@2.116.0 stop --no-backup
+      - name: Run canonical database checks
+        run: scripts/run_ci_checks.sh database --expected-sha "$GITHUB_SHA" --evidence-dir "/tmp/pokecrack-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-database"
 
   container-worker:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Build production worker image
-        env:
-          DEPLOY_SHA: ${{ github.sha }}
-        run: docker build --file deploy/Dockerfile.worker --tag pokecrack-worker:${GITHUB_SHA} .
+      - name: Run canonical worker image build
+        run: scripts/run_ci_checks.sh container-worker --expected-sha "$GITHUB_SHA" --evidence-dir "/tmp/pokecrack-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-container-worker"
 
   repository-policy:
     runs-on: ubuntu-latest
@@ -169,29 +80,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install --yes shellcheck
-      - name: Validate shell scripts
-        run: shellcheck deploy/scripts/*.sh deploy/*.sh deploy/lib/run_postgres_client_container.sh services/auth-browser/container/*.sh
-      - name: Validate repository policy and secret/profile exclusions
-        run: |
-          python3 scripts/verify_repository.py .
-          python3 -m unittest discover -s scripts/tests -v
-      - name: Scan Git history for credentials
-        uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7 # v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run canonical repository policy checks
+        run: scripts/run_ci_checks.sh repository-policy --expected-sha "$GITHUB_SHA" --evidence-dir "/tmp/pokecrack-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-repository-policy"
 
   deployment-contracts:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
-      - name: Run deployment, backup, rollback, and Compose contract tests
-        run: python3 -m unittest discover -s deploy/tests -v
-      - name: Render the production Compose contract without secrets
-        env:
-          DEPLOY_SHA: ${{ github.sha }}
-          CHROMIUM_PROFILE_ROOT_HOST: /tmp/pokecrack-ci-profiles
-          BACKUP_DIR: /tmp/pokecrack-ci-backups
-          OPENCLI_EXTENSION_DIR: /tmp/pokecrack-ci-extension
-          NOVNC_PASSWORD_FILE: /tmp/pokecrack-ci-novnc-password
-        run: docker compose -f deploy/compose.prod.yml config --quiet
+      - name: Run canonical deployment contract checks
+        run: scripts/run_ci_checks.sh deployment-contracts --expected-sha "$GITHUB_SHA" --evidence-dir "/tmp/pokecrack-ci-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}-deployment-contracts"

@@ -8,6 +8,7 @@ import time
 from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from html.parser import HTMLParser
+from typing import Literal
 from urllib.parse import urlsplit
 from urllib.robotparser import RobotFileParser
 
@@ -345,6 +346,7 @@ class YouTubeWatchCoverageAdapter:
         expected_channel_id: str,
         expected_observed_at: datetime,
         expected_evidence_sha256: str,
+        evidence_location: Literal["description", "title"] = "description",
         timeout_seconds: float = 30.0,
         max_response_bytes: int = 2_000_000,
     ) -> None:
@@ -358,6 +360,7 @@ class YouTubeWatchCoverageAdapter:
         self.expected_channel_id = expected_channel_id
         self.expected_observed_at = expected_observed_at.astimezone(UTC)
         self.expected_evidence_sha256 = expected_evidence_sha256
+        self.evidence_location = evidence_location
         self.timeout_seconds = timeout_seconds
         self.max_response_bytes = max_response_bytes
 
@@ -398,9 +401,10 @@ class YouTubeWatchCoverageAdapter:
             raise CollectorError("public study publisher identity no longer matches the review")
         if any(item.get("title") != self.expected_title for item in matching_video):
             raise CollectorError("public study title no longer proves the reviewed scope")
+        evidence_field = "title" if self.evidence_location == "title" else "shortDescription"
         if any(
-            not isinstance(item.get("shortDescription"), str)
-            or self.evidence_pattern.search(str(item["shortDescription"])) is None
+            not isinstance(item.get(evidence_field), str)
+            or self.evidence_pattern.search(str(item[evidence_field])) is None
             for item in matching_video
         ):
             raise CollectorError("public study evidence no longer matches the reviewed facts")
@@ -431,6 +435,7 @@ class YouTubeWatchCoverageAdapter:
         return (
             SourceItemCandidate(
                 platform="web",
+                external_id=self.expected_video_id,
                 source_url=identity.fetch_url,
                 title=self.expected_title,
                 text=evidence_excerpt,
@@ -901,6 +906,625 @@ RICHARDS_BRICKS_MEGA_EVOLUTION_EVIDENCE_SHA256 = (
     "97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c"
 )
 
+INDIGO_GEEK_MEGA_IDENTITY = PUBLIC_STUDIES_BY_KEY["indigo-geek-megaevolucion-mx-50-v1"]
+INDIGO_GEEK_MEGA_POLICY_CONFIG: dict[str, object] = {
+    "study_key": INDIGO_GEEK_MEGA_IDENTITY.study_key,
+    "canonical_url": INDIGO_GEEK_MEGA_IDENTITY.source_url,
+    "fetch_url": INDIGO_GEEK_MEGA_IDENTITY.fetch_url,
+    "collector_version": INDIGO_GEEK_MEGA_IDENTITY.collector_version,
+    "parser_version": INDIGO_GEEK_MEGA_IDENTITY.parser_version,
+    "country_code": "MX",
+    "country_name": "Mexico",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@IndigoGeek/about",
+    "publisher_channel_id": "UCGri3BoVzarWIYCzg8MEQjw",
+    "publisher_country_evidence": 'country:"Mexico"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me01",
+    "set_language": "es-MX",
+    "set_name": "Megaevolución",
+    "set_official_url": "https://tcg.pokemon.com/es-mx/expansions/mega-evolution/",
+    "product_name": "ETB + Booster Box + Combina y Combate",
+    "product_scope": "all",
+    "pack_count": 50,
+    "denominator_basis": "source_declared_complete_opening",
+    "source_native_products": ["etb", "booster_box", "combina_y_combate"],
+    "source_published_at": "2025-09-12T06:00:41-07:00",
+    "observed_at": "2025-09-12T13:00:41Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+INDIGO_GEEK_MEGA_TITLE = "Abrimos 50 SOBRES de la nueva expansión de Pokémon JCC: Megaevolución"
+INDIGO_GEEK_MEGA_EVIDENCE_EXCERPT = (
+    "Abrimos 50 SOBRES de la nueva expansión de Pokémon JCC: Megaevolución\n"
+    "50 sobres · ETB · booster box · Combina y combate"
+)
+INDIGO_GEEK_MEGA_EVIDENCE_SHA256 = (
+    "c270707bfa43c79b8362a4cf5cab1bad377f0da4402904e0af02fe62c7bdb1d2"
+)
+
+POKEHANNA_ASCENDED_HEROES_IDENTITY = PUBLIC_STUDIES_BY_KEY["pokehanna-ascended-heroes-ca-9-v1"]
+POKEHANNA_ASCENDED_HEROES_POLICY_CONFIG: dict[str, object] = {
+    "study_key": POKEHANNA_ASCENDED_HEROES_IDENTITY.study_key,
+    "canonical_url": POKEHANNA_ASCENDED_HEROES_IDENTITY.source_url,
+    "fetch_url": POKEHANNA_ASCENDED_HEROES_IDENTITY.fetch_url,
+    "collector_version": POKEHANNA_ASCENDED_HEROES_IDENTITY.collector_version,
+    "parser_version": POKEHANNA_ASCENDED_HEROES_IDENTITY.parser_version,
+    "country_code": "CA",
+    "country_name": "Canada",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@PokeHanna/about",
+    "publisher_channel_id": "UC6stWaGoj-9rsEOzYv56ftQ",
+    "publisher_country_evidence": 'country:"Canada"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me02.5",
+    "set_language": "en",
+    "set_name": "Ascended Heroes",
+    "set_official_url": "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-ascended-heroes-elite-trainer-box",
+    "product_name": "Ascended Heroes Elite Trainer Box",
+    "product_scope": "etb",
+    "pack_count": 9,
+    "denominator_basis": "source_named_standard_etb_plus_official_9_pack_spec",
+    "denominator_derivation": "one_standard_etb_x_9",
+    "source_published_at": "2026-04-05T11:00:15-07:00",
+    "observed_at": "2026-04-05T18:00:15Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+POKEHANNA_ASCENDED_HEROES_TITLE = "Opening The Ascended Heroes ETB! (Pokémon card opening)"
+POKEHANNA_ASCENDED_HEROES_EVIDENCE_EXCERPT = (
+    "Opening The Ascended Heroes ETB! (Pokémon card opening)\n"
+    "opening all the packs · Ascended Heroes Elite Trainer Box · standard ETB = 9 packs"
+)
+POKEHANNA_ASCENDED_HEROES_EVIDENCE_SHA256 = (
+    "d9c012acf1e003942eebdefda80058358f85ca1c718e59e5edd4dcd25b9c3ce9"
+)
+
+TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY = PUBLIC_STUDIES_BY_KEY["tcg-market-chaos-rising-pa-6-v1"]
+TCG_MARKET_PANAMA_CHAOS_RISING_POLICY_CONFIG: dict[str, object] = {
+    "study_key": TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY.study_key,
+    "canonical_url": TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY.source_url,
+    "fetch_url": TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY.fetch_url,
+    "collector_version": TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY.collector_version,
+    "parser_version": TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY.parser_version,
+    "country_code": "PA",
+    "country_name": "Panama",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/channel/UCa68xVUUIKE8dvcfxCcdyrQ/about",
+    "publisher_channel_id": "UCa68xVUUIKE8dvcfxCcdyrQ",
+    "publisher_country_evidence": (
+        "channel name: TCG Market Panamá; video description: Contenido exclusivo desde Panamá"
+    ),
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_watch_and_channel_name_review",
+    "set_external_id": "me04",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Chaos Rising",
+    "set_official_url": (
+        "https://www.pokemon.com/us/pokemon-tcg/product-gallery/"
+        "mega-evolution-chaos-rising-booster-bundle"
+    ),
+    "product_name": "Chaos Rising Booster Bundle",
+    "product_scope": "booster_bundle",
+    "pack_count": 6,
+    "denominator_basis": "source_product_opening_plus_official_product_spec",
+    "denominator_derivation": "source_opening_plus_official_6_pack_bundle_spec",
+    "source_published_at": "2026-08-02T17:15:39-07:00",
+    "observed_at": "2026-08-03T00:15:39Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+TCG_MARKET_PANAMA_CHAOS_RISING_TITLE = (
+    "¡Nuestro PRIMER OPENING de Pokémon TCG! ¿Vale la pena Chaos Rising Booster Bundle?"
+)
+TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_EXCERPT = (
+    "¡Nuestro PRIMER OPENING de Pokémon TCG! ¿Vale la pena Chaos Rising Booster Bundle?\n"
+    "Opening del Booster Bundle · sobre por sobre · desde Panamá · official bundle = 6 packs"
+)
+TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_SHA256 = (
+    "abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef"
+)
+
+TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY = PUBLIC_STUDIES_BY_KEY["tcg-market-pitch-black-pa-4-v1"]
+TCG_MARKET_PANAMA_PITCH_BLACK_POLICY_CONFIG: dict[str, object] = {
+    "study_key": TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY.study_key,
+    "canonical_url": TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY.source_url,
+    "fetch_url": TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY.fetch_url,
+    "collector_version": TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY.collector_version,
+    "parser_version": TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY.parser_version,
+    "country_code": "PA",
+    "country_name": "Panama",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/channel/UCa68xVUUIKE8dvcfxCcdyrQ/about",
+    "publisher_channel_id": "UCa68xVUUIKE8dvcfxCcdyrQ",
+    "publisher_country_evidence": (
+        "channel name: TCG Market Panamá; video description: Contenido exclusivo desde Panamá"
+    ),
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_watch_and_channel_name_review",
+    "set_external_id": "me05",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Pitch Black",
+    "set_official_url": (
+        "https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase"
+    ),
+    "product_name": "Pitch Black Build & Battle Box",
+    "product_scope": "build_and_battle",
+    "pack_count": 4,
+    "denominator_basis": "source_product_opening_plus_official_product_spec",
+    "denominator_derivation": "source_opening_plus_official_4_pack_build_and_battle_spec",
+    "source_published_at": "2026-08-05T12:09:10-07:00",
+    "observed_at": "2026-08-05T19:09:10Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+TCG_MARKET_PANAMA_PITCH_BLACK_TITLE = (
+    "¡Abrimos la Build & Battle de Pitch Black! ¿Nos salió una carta increíble? | Pokémon TCG"
+)
+TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_EXCERPT = (
+    "¡Abrimos la Build & Battle de Pitch Black! ¿Nos salió una carta increíble? | Pokémon TCG\n"
+    "abrimos la Build & Battle · todo el contenido · official box = 4 packs"
+)
+TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_SHA256 = (
+    "055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857"
+)
+
+POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY = PUBLIC_STUDIES_BY_KEY[
+    "pokeshow-mega-evolution-gt-3-v1"
+]
+POKESHOW_GUATEMALA_MEGA_EVOLUTION_POLICY_CONFIG: dict[str, object] = {
+    "study_key": POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY.study_key,
+    "canonical_url": POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY.source_url,
+    "fetch_url": POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY.fetch_url,
+    "collector_version": POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY.collector_version,
+    "parser_version": POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY.parser_version,
+    "country_code": "GT",
+    "country_name": "Guatemala",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@pokeshowdemaddi/about",
+    "publisher_channel_id": "UChG8m-xoKqrXJDCEoE2i9Jg",
+    "publisher_country_evidence": 'country:"Guatemala"; video description: desde Guatemala',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me01",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Mega Evolution",
+    "set_official_url": "https://www.pokemoncenter.com/search/megacards",
+    "product_name": "Mega Evolution Tripack (promo variant unspecified)",
+    "product_scope": "three_pack_blister",
+    "pack_count": 3,
+    "denominator_basis": "source_product_opening_plus_official_product_spec",
+    "denominator_derivation": "source_opening_plus_official_3_pack_tripack_spec",
+    "product_variant_claim": "not_claimed",
+    "source_published_at": "2025-10-06T10:21:33-07:00",
+    "observed_at": "2025-10-06T17:21:33Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+POKESHOW_GUATEMALA_MEGA_EVOLUTION_TITLE = (
+    "🦆 El Poder del Pato 💪 | Apertura MegaEvolution + Noticias y Pokeguamazos | PokéShow de Maddi"
+)
+POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_EXCERPT = (
+    "🦆 El Poder del Pato 💪 | Apertura MegaEvolution + Noticias y Pokeguamazos | "
+    "PokéShow de Maddi\n"
+    "Abriremos un Tripack de Mega Evolution · desde Guatemala · official tripack = 3 packs"
+)
+POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_SHA256 = (
+    "b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb"
+)
+
+CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY = PUBLIC_STUDIES_BY_KEY[
+    "cartas-pokemon-argentina-pitch-black-ar-36-v1"
+]
+CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_POLICY_CONFIG: dict[str, object] = {
+    "study_key": CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY.study_key,
+    "canonical_url": CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY.source_url,
+    "fetch_url": CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY.fetch_url,
+    "collector_version": CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY.collector_version,
+    "parser_version": CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY.parser_version,
+    "country_code": "AR",
+    "country_name": "Argentina",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@pokemonargentinatcg/about",
+    "publisher_channel_id": "UCGBtAPv7mLLRgdqeupj2kLg",
+    "publisher_country_evidence": 'country:"Argentina"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me05",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Pitch Black",
+    "set_official_url": (
+        "https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase"
+    ),
+    "product_name": "Pitch Black Booster Display Box",
+    "product_scope": "booster_box",
+    "pack_count": 36,
+    "denominator_basis": "source_named_complete_box_plus_official_36_pack_spec",
+    "denominator_derivation": "one_complete_booster_display_x_36",
+    "source_published_at": "2026-07-17T11:18:50-07:00",
+    "observed_at": "2026-07-17T18:18:50Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_TITLE = "Abrimos una caja de Pitch Black COMPLETA 😈"
+CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_EXCERPT = (
+    "Abrimos una caja de Pitch Black COMPLETA 😈\n"
+    "Opening de Cartas Pokemon Pitch Black · caja completa · "
+    "official booster display = 36 packs"
+)
+CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_SHA256 = (
+    "9332e272a335d9e81a6e42c702b5d49630357eaf4a7a8c10d9d5f9d40cc05690"
+)
+
+POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY = PUBLIC_STUDIES_BY_KEY[
+    "pokemaniaco-lucas-phantasmal-flames-cl-36-v1"
+]
+POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_POLICY_CONFIG: dict[str, object] = {
+    "study_key": POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY.study_key,
+    "canonical_url": POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY.source_url,
+    "fetch_url": POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY.fetch_url,
+    "collector_version": POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY.collector_version,
+    "parser_version": POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY.parser_version,
+    "country_code": "CL",
+    "country_name": "Chile",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@PokemaniacoLucas/about",
+    "publisher_channel_id": "UCDKXzvS5YaUJwsHD1wNkWBw",
+    "publisher_country_evidence": 'country:"Chile"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me02",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Phantasmal Flames",
+    "set_official_url": (
+        "https://www.pokemon.com/us/news/"
+        "pokemon-tcg-mega-evolution-phantasmal-flames-product-showcase"
+    ),
+    "product_name": "Phantasmal Flames Booster Display Box",
+    "product_scope": "booster_box",
+    "pack_count": 36,
+    "denominator_basis": "source_declared_complete_36_pack_opening",
+    "denominator_derivation": "source_declared_36_packs",
+    "source_published_at": "2025-11-13T08:00:06-08:00",
+    "observed_at": "2025-11-13T16:00:06Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_TITLE = (
+    "¡Apertura Anticipada! Booster Box completa de Phantasmal Flames -  Pokémon TCG"
+)
+POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_EXCERPT = (
+    "¡Apertura Anticipada! Booster Box completa de Phantasmal Flames -  Pokémon TCG\n"
+    "abro 36 sobres de la nueva edición Phantasmal Flames · Booster Box completa"
+)
+POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_SHA256 = (
+    "dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f"
+)
+
+COFRE_LAB_CHILLING_REIGN_IDENTITY = PUBLIC_STUDIES_BY_KEY["cofre-lab-chilling-reign-cr-4-v1"]
+COFRE_LAB_CHILLING_REIGN_POLICY_CONFIG: dict[str, object] = {
+    "study_key": COFRE_LAB_CHILLING_REIGN_IDENTITY.study_key,
+    "canonical_url": COFRE_LAB_CHILLING_REIGN_IDENTITY.source_url,
+    "fetch_url": COFRE_LAB_CHILLING_REIGN_IDENTITY.fetch_url,
+    "collector_version": COFRE_LAB_CHILLING_REIGN_IDENTITY.collector_version,
+    "parser_version": COFRE_LAB_CHILLING_REIGN_IDENTITY.parser_version,
+    "country_code": "CR",
+    "country_name": "Costa Rica",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@cofrelab/about",
+    "publisher_channel_id": "UCqYl3y-wsJqvwow5_tIa22A",
+    "publisher_country_evidence": 'country:"Costa Rica"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "swsh6",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Chilling Reign",
+    "set_official_url": (
+        "https://press.pokemon.com/en/"
+        "MEDIA-ALERT-New-Pokemon-Trading-Card-Game-Sword-ShieldChilling-Reign-E"
+    ),
+    "product_name": "Sword & Shield—Chilling Reign Build & Battle Box",
+    "product_scope": "build_and_battle",
+    "pack_count": 4,
+    "denominator_basis": "source_named_prerelease_box_plus_official_4_pack_spec",
+    "denominator_derivation": "one_build_and_battle_box_x_4",
+    "source_published_at": "2021-06-05T22:54:03-07:00",
+    "observed_at": "2021-06-06T05:54:03Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+COFRE_LAB_CHILLING_REIGN_TITLE = (
+    "Unboxing Pre Release *Chilling Reign- *Reinado Escalofriante #pokemon tcg"
+)
+COFRE_LAB_CHILLING_REIGN_EVIDENCE_EXCERPT = (
+    "Unboxing Pre Release *Chilling Reign- *Reinado Escalofriante #pokemon tcg\n"
+    "El día de hoy estaremos haciendo Unboxing del Pre Release de *Chilling Reign* o "
+    "*Reinado Escalofriente* · official Build & Battle Box = 4 packs"
+)
+COFRE_LAB_CHILLING_REIGN_EVIDENCE_SHA256 = (
+    "8b307620e562e591d30922b077bb65960a50fd0be272e6c844c4233e536fc167"
+)
+
+POKEYABROS_PERFECT_ORDER_IDENTITY = PUBLIC_STUDIES_BY_KEY["pokeyabros-perfect-order-co-2-v1"]
+POKEYABROS_PERFECT_ORDER_POLICY_CONFIG: dict[str, object] = {
+    "study_key": POKEYABROS_PERFECT_ORDER_IDENTITY.study_key,
+    "canonical_url": POKEYABROS_PERFECT_ORDER_IDENTITY.source_url,
+    "fetch_url": POKEYABROS_PERFECT_ORDER_IDENTITY.fetch_url,
+    "collector_version": POKEYABROS_PERFECT_ORDER_IDENTITY.collector_version,
+    "parser_version": POKEYABROS_PERFECT_ORDER_IDENTITY.parser_version,
+    "country_code": "CO",
+    "country_name": "Colombia",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@Pokeyabros/about",
+    "publisher_channel_id": "UC6iMHQS7wp-WVH_pD4leBZw",
+    "publisher_country_evidence": 'country:"Colombia"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "me03",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Perfect Order",
+    "set_official_url": (
+        "https://www.pokemon.com/us/features/"
+        "art-of-the-pokemon-tcg-mega-evolution-perfect-order-expansion"
+    ),
+    "product_name": "Two Perfect Order booster packs",
+    "product_scope": "all",
+    "pack_count": 2,
+    "denominator_basis": "source_declared_two_booster_opening",
+    "denominator_derivation": "source_declared_2_packs",
+    "source_published_at": "2026-09-04T07:00:23-07:00",
+    "observed_at": "2026-09-04T14:00:23Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+POKEYABROS_PERFECT_ORDER_TITLE = "🎁¿PREMIO O FRACASO? #579 BOOSTER PACK OPENING PERFECT ORDER"
+POKEYABROS_PERFECT_ORDER_EVIDENCE_EXCERPT = (
+    "🎁¿PREMIO O FRACASO? #579 BOOSTER PACK OPENING PERFECT ORDER\n"
+    "🎁 ¡Abrimos dos boosters de Pokémon TCG! 🎴"
+)
+POKEYABROS_PERFECT_ORDER_EVIDENCE_SHA256 = (
+    "0414e5fcd9d3708873ed5c84e78f9c523fb66ba7a30211d8f798c12c5533b7f8"
+)
+
+ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_IDENTITY = PUBLIC_STUDIES_BY_KEY[
+    "andree-insane-cards-cosmic-eclipse-ec-20-v1"
+]
+ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_POLICY_CONFIG: dict[str, object] = {
+    "study_key": ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_IDENTITY.study_key,
+    "canonical_url": ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_IDENTITY.source_url,
+    "fetch_url": ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_IDENTITY.fetch_url,
+    "collector_version": ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_IDENTITY.collector_version,
+    "parser_version": ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_IDENTITY.parser_version,
+    "country_code": "EC",
+    "country_name": "Ecuador",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@andreeinsanecards/about",
+    "publisher_channel_id": "UCvg1acSdKlzcCXAQQKcMvqg",
+    "publisher_country_evidence": 'country:"Ecuador"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "sm12",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Cosmic Eclipse",
+    "set_official_url": "https://www.pokemon.com/us/pokemon-tcg/sun-moon-cosmic-eclipse",
+    "product_name": "Twenty Cosmic Eclipse booster packs",
+    "product_scope": "all",
+    "pack_count": 20,
+    "denominator_basis": "source_declared_twenty_booster_opening",
+    "denominator_derivation": "source_declared_20_packs",
+    "source_published_at": "2023-06-27T14:00:07-07:00",
+    "observed_at": "2023-06-27T21:00:07Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_TITLE = (
+    "🔥 Buscando a #Charizard Ep6: Abriendo 20 #CosmicEclipse Booster Packs LA MEJOR "
+    "APERTURA DE YOUTUBE!"
+)
+ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_EVIDENCE_EXCERPT = (
+    "🔥 Buscando a #Charizard Ep6: Abriendo 20 #CosmicEclipse Booster Packs LA MEJOR "
+    "APERTURA DE YOUTUBE!\n"
+    "En esta oprtunidad vamos a darle con 20 de boosters de #CosmicEclipse"
+)
+ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_EVIDENCE_SHA256 = (
+    "9ebb6592d57fc2b452bbbd00b71e4e69633eec0a389069b1e475f4489a8fb0e9"
+)
+
+THEKEIPLAY_LOST_ORIGIN_IDENTITY = PUBLIC_STUDIES_BY_KEY["thekeiplay-lost-origin-pe-36-v1"]
+THEKEIPLAY_LOST_ORIGIN_POLICY_CONFIG: dict[str, object] = {
+    "study_key": THEKEIPLAY_LOST_ORIGIN_IDENTITY.study_key,
+    "canonical_url": THEKEIPLAY_LOST_ORIGIN_IDENTITY.source_url,
+    "fetch_url": THEKEIPLAY_LOST_ORIGIN_IDENTITY.fetch_url,
+    "collector_version": THEKEIPLAY_LOST_ORIGIN_IDENTITY.collector_version,
+    "parser_version": THEKEIPLAY_LOST_ORIGIN_IDENTITY.parser_version,
+    "country_code": "PE",
+    "country_name": "Peru",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@TheKeiPlay/about",
+    "publisher_channel_id": "UChAro6QS0gP88qhgOTBnuSA",
+    "publisher_country_evidence": 'country:"Peru"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "swsh11",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Lost Origin",
+    "set_official_url": (
+        "https://www.pokemon.com/us/news/"
+        "enter-to-win-pokemon-tcg-sword-shield-era-booster-display-boxes"
+    ),
+    "product_name": "Sword & Shield—Lost Origin Booster Display Box",
+    "product_scope": "booster_box",
+    "pack_count": 36,
+    "denominator_basis": "source_named_complete_box_plus_official_36_pack_spec",
+    "denominator_derivation": "one_complete_booster_display_x_36",
+    "source_published_at": "2022-09-05T11:00:12-07:00",
+    "observed_at": "2022-09-05T18:00:12Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+THEKEIPLAY_LOST_ORIGIN_TITLE = "MEGA Apertura!!!😱 Booster Box 💥LOST ORIGIN (Origen Perdido)"
+THEKEIPLAY_LOST_ORIGIN_EVIDENCE_EXCERPT = (
+    "MEGA Apertura!!!😱 Booster Box 💥LOST ORIGIN (Origen Perdido)\n"
+    "Apertura Completa de una Booster Box deel set de Lost Origin. · "
+    "official display = 36 packs"
+)
+THEKEIPLAY_LOST_ORIGIN_EVIDENCE_SHA256 = (
+    "4c7a43da824a182cf0a550e46e21c34f1caadca259ff99d6485819ae95dd04ee"
+)
+
+GRINGO_GAMEPLAYS_SILVER_TEMPEST_IDENTITY = PUBLIC_STUDIES_BY_KEY[
+    "gringo-gameplays-silver-tempest-uy-36-v1"
+]
+GRINGO_GAMEPLAYS_SILVER_TEMPEST_POLICY_CONFIG: dict[str, object] = {
+    "study_key": GRINGO_GAMEPLAYS_SILVER_TEMPEST_IDENTITY.study_key,
+    "canonical_url": GRINGO_GAMEPLAYS_SILVER_TEMPEST_IDENTITY.source_url,
+    "fetch_url": GRINGO_GAMEPLAYS_SILVER_TEMPEST_IDENTITY.fetch_url,
+    "collector_version": GRINGO_GAMEPLAYS_SILVER_TEMPEST_IDENTITY.collector_version,
+    "parser_version": GRINGO_GAMEPLAYS_SILVER_TEMPEST_IDENTITY.parser_version,
+    "country_code": "UY",
+    "country_name": "Uruguay",
+    "geography_basis": "publisher_country",
+    "geography_confidence": "tier_b",
+    "publisher_country_url": "https://www.youtube.com/@gringo-gameplays8987/about",
+    "publisher_channel_id": "UCqxdkBJE9jPp0JEv6eA7riQ",
+    "publisher_country_evidence": 'country:"Uruguay"',
+    "publisher_country_checked_at": "2026-09-05",
+    "geography_review_method": "manual_static_channel_about_review",
+    "set_external_id": "swsh12",
+    "set_language": "und",
+    "set_language_basis": "source_does_not_state_card_language",
+    "set_name": "Silver Tempest",
+    "set_official_url": (
+        "https://www.pokemon.com/us/news/"
+        "enter-to-win-pokemon-tcg-sword-shield-era-booster-display-boxes"
+    ),
+    "product_name": "Sword & Shield—Silver Tempest Booster Display Box",
+    "product_scope": "booster_box",
+    "pack_count": 36,
+    "denominator_basis": "source_named_booster_box_plus_official_36_pack_spec",
+    "denominator_derivation": "one_booster_display_x_36",
+    "source_published_at": "2023-03-30T10:14:02-07:00",
+    "observed_at": "2023-03-30T17:14:02Z",
+    "denominator_complete": True,
+    "robots_url": "https://www.youtube.com/robots.txt",
+    "robots_checked_at": "2026-09-05",
+    "robots_decision": "watch_route_not_disallowed",
+    "terms_url": "https://www.youtube.com/static?template=terms",
+    "terms_checked_at": "2026-09-05",
+    "terms_effective_date": "2023-12-15",
+    "terms_status": "public_browse_static_metadata_only",
+    "rights_scope": "minimal_noncreative_facts_no_media_transcript_or_body_reuse",
+}
+GRINGO_GAMEPLAYS_SILVER_TEMPEST_TITLE = (
+    "TCG Pokémon Uruguay  Unboxing  Booster BOX Silver Tempest + Codigos TCG Live"
+)
+GRINGO_GAMEPLAYS_SILVER_TEMPEST_EVIDENCE_EXCERPT = (
+    "TCG Pokémon Uruguay  Unboxing  Booster BOX Silver Tempest + Codigos TCG Live\n"
+    "Booster BOX Silver Tempest · official display = 36 packs"
+)
+GRINGO_GAMEPLAYS_SILVER_TEMPEST_EVIDENCE_SHA256 = (
+    "5f65c8f1ceca00fe06f56dbf684c50f1ca4116ce084aa9fbd4ead930b19d7264"
+)
+
 
 def comicbook_perfect_order_adapter(*, client: HTTPClient) -> ReviewedPublicStudyAdapter:
     return ReviewedPublicStudyAdapter(
@@ -1091,7 +1715,227 @@ def richards_bricks_mega_evolution_box_adapter(
     )
 
 
+def indigo_geek_megaevolucion_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=INDIGO_GEEK_MEGA_IDENTITY,
+        expected_policy_config=INDIGO_GEEK_MEGA_POLICY_CONFIG,
+        expected_title=INDIGO_GEEK_MEGA_TITLE,
+        evidence_lines=INDIGO_GEEK_MEGA_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"(?s)una ETB, una booster box y un paquete 'Combina y combate' "
+            r"para probar nuestra suerte con 50 sobres\..*"
+            r"03:30\s+Combina y Combate.*"
+            r"23:14\s+Elite Trainer Box.*"
+            r"34:58\s+Booster Box.*"
+            r"01:10:09\s+Las mejores cartas"
+        ),
+        expected_video_id="KNCSNJNcjJ8",
+        expected_channel_id="UCGri3BoVzarWIYCzg8MEQjw",
+        expected_observed_at=datetime(2025, 9, 12, 13, 0, 41, tzinfo=UTC),
+        expected_evidence_sha256=INDIGO_GEEK_MEGA_EVIDENCE_SHA256,
+    )
+
+
+def pokehanna_ascended_heroes_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=POKEHANNA_ASCENDED_HEROES_IDENTITY,
+        expected_policy_config=POKEHANNA_ASCENDED_HEROES_POLICY_CONFIG,
+        expected_title=POKEHANNA_ASCENDED_HEROES_TITLE,
+        evidence_lines=POKEHANNA_ASCENDED_HEROES_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"(?s)Unboxing and opening all the packs in the Ascended Heroes Elite Trainer Box\..*"
+            r"0:25 opening everything in the box.*"
+            r"4:47 opening Ascended Heroes packs.*"
+            r"12:06 opening Ascended Heroes packs.*"
+            r"18:40 recap of hits"
+        ),
+        expected_video_id="Jj0IxqUYat8",
+        expected_channel_id="UC6stWaGoj-9rsEOzYv56ftQ",
+        expected_observed_at=datetime(2026, 4, 5, 18, 0, 15, tzinfo=UTC),
+        expected_evidence_sha256=POKEHANNA_ASCENDED_HEROES_EVIDENCE_SHA256,
+    )
+
+
+def tcg_market_panama_chaos_rising_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY,
+        expected_policy_config=TCG_MARKET_PANAMA_CHAOS_RISING_POLICY_CONFIG,
+        expected_title=TCG_MARKET_PANAMA_CHAOS_RISING_TITLE,
+        evidence_lines=TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"(?s)Opening del Booster Bundle.*sobre por sobre.*desde Panamá"
+        ),
+        expected_video_id="fHQpNECg4y4",
+        expected_channel_id="UCa68xVUUIKE8dvcfxCcdyrQ",
+        expected_observed_at=datetime(2026, 8, 3, 0, 15, 39, tzinfo=UTC),
+        expected_evidence_sha256=TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_SHA256,
+    )
+
+
+def tcg_market_panama_pitch_black_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY,
+        expected_policy_config=TCG_MARKET_PANAMA_PITCH_BLACK_POLICY_CONFIG,
+        expected_title=TCG_MARKET_PANAMA_PITCH_BLACK_TITLE,
+        evidence_lines=TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(r"(?s)abrimos la Build & Battle.*todo el contenido"),
+        expected_video_id="6kb1MvcnMJE",
+        expected_channel_id="UCa68xVUUIKE8dvcfxCcdyrQ",
+        expected_observed_at=datetime(2026, 8, 5, 19, 9, 10, tzinfo=UTC),
+        expected_evidence_sha256=TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_SHA256,
+    )
+
+
+def pokeshow_guatemala_megaevolution_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY,
+        expected_policy_config=POKESHOW_GUATEMALA_MEGA_EVOLUTION_POLICY_CONFIG,
+        expected_title=POKESHOW_GUATEMALA_MEGA_EVOLUTION_TITLE,
+        evidence_lines=POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(r"(?s)Abriremos un Tripack de Mega Evolution.*desde Guatemala"),
+        expected_video_id="DWRdhUuIUvI",
+        expected_channel_id="UChG8m-xoKqrXJDCEoE2i9Jg",
+        expected_observed_at=datetime(2025, 10, 6, 17, 21, 33, tzinfo=UTC),
+        expected_evidence_sha256=POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_SHA256,
+    )
+
+
+def cartas_pokemon_argentina_pitch_black_adapter(
+    *, client: HTTPClient
+) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY,
+        expected_policy_config=CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_POLICY_CONFIG,
+        expected_title=CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_TITLE,
+        evidence_lines=CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(r"Opening de Cartas Pokemon Pitch Black"),
+        expected_video_id="HcsWjycR1L0",
+        expected_channel_id="UCGBtAPv7mLLRgdqeupj2kLg",
+        expected_observed_at=datetime(2026, 7, 17, 18, 18, 50, tzinfo=UTC),
+        expected_evidence_sha256=CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_SHA256,
+    )
+
+
+def pokemaniaco_lucas_phantasmal_flames_adapter(
+    *, client: HTTPClient
+) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY,
+        expected_policy_config=POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_POLICY_CONFIG,
+        expected_title=POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_TITLE,
+        evidence_lines=POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"En este video abro 36 sobres de la nueva edición Phantasmal Flames"
+        ),
+        expected_video_id="Meg4AO9CqHE",
+        expected_channel_id="UCDKXzvS5YaUJwsHD1wNkWBw",
+        expected_observed_at=datetime(2025, 11, 13, 16, 0, 6, tzinfo=UTC),
+        expected_evidence_sha256=POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_SHA256,
+    )
+
+
+def cofre_lab_chilling_reign_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=COFRE_LAB_CHILLING_REIGN_IDENTITY,
+        expected_policy_config=COFRE_LAB_CHILLING_REIGN_POLICY_CONFIG,
+        expected_title=COFRE_LAB_CHILLING_REIGN_TITLE,
+        evidence_lines=COFRE_LAB_CHILLING_REIGN_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"El día de hoy estaremos haciendo Unboxing del Pre Release de \*Chilling Reign\*"
+        ),
+        expected_video_id="15eGmqByP0I",
+        expected_channel_id="UCqYl3y-wsJqvwow5_tIa22A",
+        expected_observed_at=datetime(2021, 6, 6, 5, 54, 3, tzinfo=UTC),
+        expected_evidence_sha256=COFRE_LAB_CHILLING_REIGN_EVIDENCE_SHA256,
+    )
+
+
+def pokeyabros_perfect_order_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=POKEYABROS_PERFECT_ORDER_IDENTITY,
+        expected_policy_config=POKEYABROS_PERFECT_ORDER_POLICY_CONFIG,
+        expected_title=POKEYABROS_PERFECT_ORDER_TITLE,
+        evidence_lines=POKEYABROS_PERFECT_ORDER_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(r"Abrimos dos boosters de Pokémon TCG"),
+        expected_video_id="n_PdWg27x-o",
+        expected_channel_id="UC6iMHQS7wp-WVH_pD4leBZw",
+        expected_observed_at=datetime(2026, 9, 4, 14, 0, 23, tzinfo=UTC),
+        expected_evidence_sha256=POKEYABROS_PERFECT_ORDER_EVIDENCE_SHA256,
+    )
+
+
+def andree_insane_cards_cosmic_eclipse_adapter(
+    *, client: HTTPClient
+) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_IDENTITY,
+        expected_policy_config=ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_POLICY_CONFIG,
+        expected_title=ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_TITLE,
+        evidence_lines=ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"En esta oprtunidad vamos a darle con 20 de boosters de #CosmicEclipse"
+        ),
+        expected_video_id="wDDCbJKFTCw",
+        expected_channel_id="UCvg1acSdKlzcCXAQQKcMvqg",
+        expected_observed_at=datetime(2023, 6, 27, 21, 0, 7, tzinfo=UTC),
+        expected_evidence_sha256=ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_EVIDENCE_SHA256,
+    )
+
+
+def thekeiplay_lost_origin_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=THEKEIPLAY_LOST_ORIGIN_IDENTITY,
+        expected_policy_config=THEKEIPLAY_LOST_ORIGIN_POLICY_CONFIG,
+        expected_title=THEKEIPLAY_LOST_ORIGIN_TITLE,
+        evidence_lines=THEKEIPLAY_LOST_ORIGIN_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(
+            r"Apertura Completa de una Booster Box deel set de Lost Origin"
+        ),
+        expected_video_id="YKHGiYIhsQU",
+        expected_channel_id="UChAro6QS0gP88qhgOTBnuSA",
+        expected_observed_at=datetime(2022, 9, 5, 18, 0, 12, tzinfo=UTC),
+        expected_evidence_sha256=THEKEIPLAY_LOST_ORIGIN_EVIDENCE_SHA256,
+    )
+
+
+def gringo_gameplays_silver_tempest_adapter(*, client: HTTPClient) -> YouTubeWatchCoverageAdapter:
+    return YouTubeWatchCoverageAdapter(
+        client=client,
+        identity=GRINGO_GAMEPLAYS_SILVER_TEMPEST_IDENTITY,
+        expected_policy_config=GRINGO_GAMEPLAYS_SILVER_TEMPEST_POLICY_CONFIG,
+        expected_title=GRINGO_GAMEPLAYS_SILVER_TEMPEST_TITLE,
+        evidence_lines=GRINGO_GAMEPLAYS_SILVER_TEMPEST_EVIDENCE_EXCERPT.split("\n"),
+        evidence_pattern=re.compile(r"Booster BOX Silver Tempest"),
+        expected_video_id="lYzM0jtPLKw",
+        expected_channel_id="UCqxdkBJE9jPp0JEv6eA7riQ",
+        expected_observed_at=datetime(2023, 3, 30, 17, 14, 2, tzinfo=UTC),
+        expected_evidence_sha256=GRINGO_GAMEPLAYS_SILVER_TEMPEST_EVIDENCE_SHA256,
+        evidence_location="title",
+    )
+
+
 __all__ = [
+    "ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_EVIDENCE_EXCERPT",
+    "ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_EVIDENCE_SHA256",
+    "ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_IDENTITY",
+    "ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_POLICY_CONFIG",
+    "ANDREE_INSANE_CARDS_COSMIC_ECLIPSE_TITLE",
+    "CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_EXCERPT",
+    "CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_EVIDENCE_SHA256",
+    "CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_IDENTITY",
+    "CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_POLICY_CONFIG",
+    "CARTAS_POKEMON_ARGENTINA_PITCH_BLACK_TITLE",
     "ALLONLINE_EVIDENCE_EXCERPT",
     "ALLONLINE_EVIDENCE_SHA256",
     "ALLONLINE_IDENTITY",
@@ -1108,6 +1952,16 @@ __all__ = [
     "CARDCHILL_POLICY_CONFIG",
     "COMICBOOK_IDENTITY",
     "COMICBOOK_POLICY_CONFIG",
+    "COFRE_LAB_CHILLING_REIGN_EVIDENCE_EXCERPT",
+    "COFRE_LAB_CHILLING_REIGN_EVIDENCE_SHA256",
+    "COFRE_LAB_CHILLING_REIGN_IDENTITY",
+    "COFRE_LAB_CHILLING_REIGN_POLICY_CONFIG",
+    "COFRE_LAB_CHILLING_REIGN_TITLE",
+    "GRINGO_GAMEPLAYS_SILVER_TEMPEST_EVIDENCE_EXCERPT",
+    "GRINGO_GAMEPLAYS_SILVER_TEMPEST_EVIDENCE_SHA256",
+    "GRINGO_GAMEPLAYS_SILVER_TEMPEST_IDENTITY",
+    "GRINGO_GAMEPLAYS_SILVER_TEMPEST_POLICY_CONFIG",
+    "GRINGO_GAMEPLAYS_SILVER_TEMPEST_TITLE",
     "LIMITSEND_EVIDENCE_EXCERPT",
     "LIMITSEND_EVIDENCE_SHA256",
     "LIMITSEND_IDENTITY",
@@ -1120,12 +1974,37 @@ __all__ = [
     "POKESUP_POLICY_CONFIG",
     "POKESUP_SECTION_HEADING",
     "POKESUP_TITLE",
+    "POKEYABROS_PERFECT_ORDER_EVIDENCE_EXCERPT",
+    "POKEYABROS_PERFECT_ORDER_EVIDENCE_SHA256",
+    "POKEYABROS_PERFECT_ORDER_IDENTITY",
+    "POKEYABROS_PERFECT_ORDER_POLICY_CONFIG",
+    "POKEYABROS_PERFECT_ORDER_TITLE",
     "PONTOCOM_CARD_RARITY_MAPPING",
     "PONTOCOM_EVIDENCE_EXCERPT",
     "PONTOCOM_EVIDENCE_SHA256",
     "PONTOCOM_IDENTITY",
     "PONTOCOM_POLICY_CONFIG",
     "PONTOCOM_TITLE",
+    "INDIGO_GEEK_MEGA_EVIDENCE_EXCERPT",
+    "INDIGO_GEEK_MEGA_EVIDENCE_SHA256",
+    "INDIGO_GEEK_MEGA_IDENTITY",
+    "INDIGO_GEEK_MEGA_POLICY_CONFIG",
+    "INDIGO_GEEK_MEGA_TITLE",
+    "POKEHANNA_ASCENDED_HEROES_EVIDENCE_EXCERPT",
+    "POKEHANNA_ASCENDED_HEROES_EVIDENCE_SHA256",
+    "POKEHANNA_ASCENDED_HEROES_IDENTITY",
+    "POKEHANNA_ASCENDED_HEROES_POLICY_CONFIG",
+    "POKEHANNA_ASCENDED_HEROES_TITLE",
+    "POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_EXCERPT",
+    "POKESHOW_GUATEMALA_MEGA_EVOLUTION_EVIDENCE_SHA256",
+    "POKESHOW_GUATEMALA_MEGA_EVOLUTION_IDENTITY",
+    "POKESHOW_GUATEMALA_MEGA_EVOLUTION_POLICY_CONFIG",
+    "POKESHOW_GUATEMALA_MEGA_EVOLUTION_TITLE",
+    "POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_EXCERPT",
+    "POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_EVIDENCE_SHA256",
+    "POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_IDENTITY",
+    "POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_POLICY_CONFIG",
+    "POKEMANIACO_LUCAS_PHANTASMAL_FLAMES_TITLE",
     "ReviewedPublicStudyAdapter",
     "RobotsTxtChecker",
     "RICHARDS_BRICKS_CHARIZARD_EVIDENCE_EXCERPT",
@@ -1142,19 +2021,46 @@ __all__ = [
     "TCGTALK_EVIDENCE_SHA256",
     "TCGTALK_IDENTITY",
     "TCGTALK_POLICY_CONFIG",
+    "TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_EXCERPT",
+    "TCG_MARKET_PANAMA_CHAOS_RISING_EVIDENCE_SHA256",
+    "TCG_MARKET_PANAMA_CHAOS_RISING_IDENTITY",
+    "TCG_MARKET_PANAMA_CHAOS_RISING_POLICY_CONFIG",
+    "TCG_MARKET_PANAMA_CHAOS_RISING_TITLE",
+    "TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_EXCERPT",
+    "TCG_MARKET_PANAMA_PITCH_BLACK_EVIDENCE_SHA256",
+    "TCG_MARKET_PANAMA_PITCH_BLACK_IDENTITY",
+    "TCG_MARKET_PANAMA_PITCH_BLACK_POLICY_CONFIG",
+    "TCG_MARKET_PANAMA_PITCH_BLACK_TITLE",
+    "THEKEIPLAY_LOST_ORIGIN_EVIDENCE_EXCERPT",
+    "THEKEIPLAY_LOST_ORIGIN_EVIDENCE_SHA256",
+    "THEKEIPLAY_LOST_ORIGIN_IDENTITY",
+    "THEKEIPLAY_LOST_ORIGIN_POLICY_CONFIG",
+    "THEKEIPLAY_LOST_ORIGIN_TITLE",
     "WARGAMER_IDENTITY",
     "WARGAMER_POLICY_CONFIG",
     "allonline_mega_dream_ex_adapter",
+    "andree_insane_cards_cosmic_eclipse_adapter",
     "bleedingcool_phantasmal_flames_adapter",
     "buyfunlife_ninja_spinner_adapter",
     "cardchill_ascended_heroes_adapter",
+    "cartas_pokemon_argentina_pitch_black_adapter",
     "comicbook_perfect_order_adapter",
+    "cofre_lab_chilling_reign_adapter",
+    "gringo_gameplays_silver_tempest_adapter",
     "limitsend_inferno_x_adapter",
     "pokesup_abyss_eye_adapter",
+    "pokeyabros_perfect_order_adapter",
     "pontocom_herois_excelsos_adapter",
     "richards_bricks_charizard_upc_adapter",
     "richards_bricks_mega_evolution_box_adapter",
+    "indigo_geek_megaevolucion_adapter",
+    "pokehanna_ascended_heroes_adapter",
+    "pokeshow_guatemala_megaevolution_adapter",
+    "pokemaniaco_lucas_phantasmal_flames_adapter",
+    "tcg_market_panama_chaos_rising_adapter",
+    "tcg_market_panama_pitch_black_adapter",
     "tcgtalk_perfect_order_adapter",
+    "thekeiplay_lost_origin_adapter",
     "wargamer_chaos_rising_adapter",
     "YouTubeWatchCoverageAdapter",
 ]

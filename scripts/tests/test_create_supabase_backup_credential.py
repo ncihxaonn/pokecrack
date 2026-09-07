@@ -7,16 +7,13 @@ import stat
 import tempfile
 import unittest
 from unittest.mock import patch
+from urllib.parse import parse_qs, urlsplit
 
 from scripts import create_supabase_backup_credential as credential
 
 
 PROJECT_REF = "a" * 20
 TOKEN = "sbp_fixture_owner_token_123456"
-POOLER = (
-    f"postgresql://postgres.{PROJECT_REF}:[YOUR-PASSWORD]@"
-    "aws-0-ap-southeast-2.pooler.supabase.com:6543/postgres"
-)
 
 
 class _Response:
@@ -47,9 +44,6 @@ class _API:
     def __init__(self) -> None:
         self.deleted = 0
         self.roles: list[str] = []
-
-    def pooler_config(self) -> object:
-        return [{"database_type": "PRIMARY", "connection_string": POOLER}]
 
     def create_login_role(self) -> object:
         self.roles = ["cli_login_postgres"]
@@ -109,40 +103,48 @@ class TemporaryBackupCredentialTests(unittest.TestCase):
             )
         )
 
-    def test_database_url_preserves_the_primary_pooler_and_tenant_role(self) -> None:
+    def test_database_url_uses_the_official_direct_endpoint_and_bare_login_role(
+        self,
+    ) -> None:
         database_url = credential.build_database_url(
-            pooler_connection=POOLER,
             project_ref=PROJECT_REF,
             role="cli_login_postgres",
             password="fixture:/?#[]@ secret",
         )
-        self.assertIn("aws-0-ap-southeast-2.pooler.supabase.com:6543", database_url)
-        self.assertIn(f"cli_login_postgres.{PROJECT_REF}", database_url)
-        self.assertIn("fixture%3A%2F%3F%23%5B%5D%40%20secret", database_url)
-        self.assertIn("sslmode=verify-full", database_url)
-        self.assertIn(
-            "sslrootcert=%2Frun%2Fsupabase-prod-ca-2021.crt", database_url
+        parsed = urlsplit(database_url)
+        self.assertEqual(parsed.hostname, f"db.{PROJECT_REF}.supabase.co")
+        self.assertEqual(parsed.port, 5432)
+        self.assertEqual(parsed.username, "cli_login_postgres")
+        self.assertEqual(parsed.path, "/postgres")
+        self.assertEqual(
+            parse_qs(parsed.query),
+            {
+                "application_name": ["pokecrack-backup"],
+                "connect_timeout": ["15"],
+                "sslmode": ["verify-full"],
+                "sslrootcert": ["/run/supabase-prod-ca-2021.crt"],
+            },
         )
+        self.assertNotIn(":6543/", database_url)
+        self.assertIn("fixture%3A%2F%3F%23%5B%5D%40%20secret", database_url)
         self.assertNotIn("options=", database_url)
         self.assertNotIn("[YOUR-PASSWORD]", database_url)
 
-    def test_database_url_rejects_untrusted_or_ambiguous_pooler_shapes(self) -> None:
+    def test_database_url_rejects_untrusted_project_role_or_password_shapes(
+        self,
+    ) -> None:
         invalid = (
-            POOLER.replace("pooler.supabase.com", "evil.example.invalid"),
-            POOLER.replace(f"postgres.{PROJECT_REF}", "postgres.wrongtenant"),
-            POOLER.replace("/postgres", "/other"),
-            POOLER + "?options=statement_timeout%3D0",
+            {"project_ref": "A" * 20, "role": "cli_login_postgres", "password": "secret"},
+            {"project_ref": "a" * 19, "role": "cli_login_postgres", "password": "secret"},
+            {"project_ref": PROJECT_REF, "role": "postgres", "password": "secret"},
+            {"project_ref": PROJECT_REF, "role": "cli_login_postgres", "password": ""},
+            {"project_ref": PROJECT_REF, "role": "cli_login_postgres", "password": "bad\nsecret"},
         )
-        for pooler in invalid:
-            with self.subTest(pooler=pooler), self.assertRaises(
+        for arguments in invalid:
+            with self.subTest(arguments=arguments), self.assertRaises(
                 credential.TemporaryCredentialError
             ):
-                credential.build_database_url(
-                    pooler_connection=pooler,
-                    project_ref=PROJECT_REF,
-                    role="cli_login_postgres",
-                    password="secret",
-                )
+                credential.build_database_url(**arguments)
 
     def test_create_writes_one_owner_only_line_without_printing_credentials(self) -> None:
         api = _API()
@@ -186,6 +188,7 @@ class TemporaryBackupCredentialTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             parent = Path(directory, "shared")
             parent.mkdir(mode=0o755)
+            parent.chmod(0o755)
             with self.assertRaises(credential.TemporaryCredentialError):
                 credential._write_owner_only(parent / "database-url", "secret")
             self.assertFalse((parent / "database-url").exists())

@@ -10,3 +10,47 @@ id = "generic-api-key"
 description = "The reviewed PokeSup study key is a public identifier, not a credential."
 regexTarget = "secret"
 regexes = ['''^pokesup-abyss-eye-jp-30-v1$''']
+
+[[rules.allowlists]]
+description = "Reviewed public-study identifiers are data keys, not credentials."
+regexTarget = "secret"
+regexes = [
+  '''^allonline-mega-dream-ex-th-10-v1$''',
+  '''^andree-insane-cards-cosmic-eclipse-ec-20-v1$''',
+  '''^bleedingcool-phantasmal-flames-us-36-v1$''',
+  '''^buyfunlife-ninja-spinner-tw-40-v1$''',
+  '''^cardchill-ascended-heroes-gb-90-v1$''',
+  '''^cartas-pokemon-argentina-pitch-black-ar-36-v1$''',
+  '''^cofre-lab-chilling-reign-cr-4-v1$''',
+  '''^comicbook-perfect-order-us-55-v1$''',
+  '''^gringo-gameplays-silver-tempest-uy-36-v1$''',
+  '''^indigo-geek-megaevolucion-mx-50-v1$''',
+  '''^limitsend-inferno-x-kr-30-v1$''',
+  '''^pokehanna-ascended-heroes-ca-9-v1$''',
+  '''^pokemaniaco-lucas-phantasmal-flames-cl-36-v1$''',
+  '''^pokeshow-mega-evolution-gt-3-v1$''',
+  '''^pokeyabros-perfect-order-co-2-v1$''',
+  '''^pontocom-herois-excelsos-br-48-v1$''',
+  '''^richards-bricks-charizard-upc-pr-18-v1$''',
+  '''^richards-bricks-mega-evolution-box-pr-36-v1$''',
+  '''^tcg-market-chaos-rising-pa-6-v1$''',
+  '''^tcg-market-pitch-black-pa-4-v1$''',
+  '''^tcgtalk-perfect-order-sg-54-v1$''',
+  '''^thekeiplay-lost-origin-pe-36-v1$''',
+  '''^wargamer-chaos-rising-gb-17-v1$''',
+]
+
+[[rules.allowlists]]
+description = "The historical environment example contains an intentionally blank API-key placeholder."
+regexTarget = "line"
+regexes = ['''^YOUTUBE_API_KEY=$''']
+
+[[rules.allowlists]]
+description = "The source-policy checklist names an API-policy field; it is prose, not a key."
+regexTarget = "secret"
+regexes = ['''^regional/privacy$''']
+
+[[rules.allowlists]]
+description = "The historical environment example contains a non-secret SCRAPLING setting adjacent to a blank API-key placeholder."
+regexTarget = "secret"
+regexes = ['''^SCRAPLING_ENABLED=true$''']
