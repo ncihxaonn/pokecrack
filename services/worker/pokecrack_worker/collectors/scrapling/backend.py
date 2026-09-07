@@ -34,6 +34,10 @@ class ScraplingResponseError(RuntimeError):
     """A Scrapling response violated the bounded transport contract."""
 
 
+class ScraplingResolutionError(ScraplingResponseError):
+    """A transient resolver failure, not a response or public-address violation."""
+
+
 def _curl_resolve_rule(url: str, pinned_address: str) -> str:
     parsed = urlsplit(url)
     if not parsed.hostname:
@@ -349,7 +353,7 @@ def _resolve_hostname(hostname: str) -> tuple[str, ...]:
     try:
         results = getaddrinfo(hostname, None, type=SOCK_STREAM)
     except OSError as error:
-        raise ScraplingResponseError("dynamic hostname resolution failed") from error
+        raise ScraplingResolutionError("hostname resolution failed") from error
     return tuple(sorted({str(result[4][0]) for result in results}))
 
 

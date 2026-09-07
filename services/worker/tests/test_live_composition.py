@@ -12,6 +12,10 @@ from pydantic import SecretStr
 from pokecrack_worker import composition as composition_module
 from pokecrack_worker.collectors.official_api.tcgdex import APIResponse
 from pokecrack_worker.collectors.official_api.youtube import YouTubeRequestStateUnknown
+from pokecrack_worker.collectors.scrapling.backend import (
+    ScraplingResolutionError,
+    ScraplingResponseError,
+)
 from pokecrack_worker.composition import (
     BLUESKY_JETSTREAM_JOB_TYPE,
     CLEANUP_JOB_TYPE,
@@ -419,6 +423,63 @@ def _youtube_settings(role: str = "collector") -> Settings:
 
 def _public_study_settings(role: str = "collector") -> Settings:
     return _settings(role, public_study_collection_enabled=True)
+
+
+@pytest.mark.parametrize(
+    ("error", "code", "retryable"),
+    [
+        (
+            ScraplingResponseError("private response details"),
+            "public_study_response_rejected",
+            False,
+        ),
+        (
+            ScraplingResolutionError("private resolver details"),
+            "public_study_resolution_failed",
+            True,
+        ),
+    ],
+)
+def test_public_study_transport_failure_is_classified_and_redacted(
+    monkeypatch: pytest.MonkeyPatch,
+    error: Exception,
+    code: str,
+    retryable: bool,
+) -> None:
+    payload = {"study_key": POKESUP_STUDY_KEY}
+    executor = RecordingExecutor(
+        [
+            [_job_row(status="running", payload=payload, job_type=PUBLIC_STUDY_JOB_TYPE)],
+            [{"acquired": True, "retry_at": None}],
+            [
+                _job_row(
+                    status="pending" if retryable else "dead",
+                    payload=payload,
+                    locked=False,
+                    job_type=PUBLIC_STUDY_JOB_TYPE,
+                )
+            ],
+        ]
+    )
+
+    def reject_response(*args: object, **kwargs: object) -> object:
+        raise error
+
+    monkeypatch.setattr(composition_module.CollectionService, "collect_url", reject_response)
+    runtime = build_live_worker_runtime(
+        _public_study_settings(),
+        executor=executor,
+        clock=lambda: NOW,
+    )
+    result = runtime.run_once()
+
+    assert result.status is RuntimeStatus.FAILED
+    assert result.error_code == code
+    assert len(executor.calls) == 3
+    assert "ingest.fail_job_v2" in executor.calls[-1][0]
+    assert executor.calls[-1][1]["error_code"] == code
+    assert executor.calls[-1][1]["retryable"] is retryable
+    assert "private" not in repr(executor.calls)
 
 
 def _ensure_pokesup_schedule_identity(monkeypatch: pytest.MonkeyPatch) -> None:

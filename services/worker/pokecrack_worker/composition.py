@@ -69,6 +69,10 @@ from pokecrack_worker.collectors.official_api.youtube import (
     YouTubeTransport,
 )
 from pokecrack_worker.collectors.scrapling.adapters.public_studies import RobotsTxtChecker
+from pokecrack_worker.collectors.scrapling.backend import (
+    ScraplingResolutionError,
+    ScraplingResponseError,
+)
 from pokecrack_worker.collectors.scrapling.http import ScraplingHTTPClient
 from pokecrack_worker.collectors.scrapling.registry import build_live_static_registry
 from pokecrack_worker.config.bluesky import BlueskyKeywordRegistry
@@ -3084,6 +3088,18 @@ def _public_study_handler(
             ) from None
         try:
             candidates = service.collect_url(identity.fetch_url, route="static")
+        except ScraplingResolutionError as error:
+            raise JobExecutionError(
+                code="public_study_resolution_failed",
+                retryable=True,
+            ) from error
+        except ScraplingResponseError as error:
+            # A rejected bounded response must not trigger generic job retries.
+            # Preserve the transport's caps and address checks; retain no payload.
+            raise JobExecutionError(
+                code="public_study_response_rejected",
+                retryable=False,
+            ) from error
         except CollectorError as error:
             raise JobExecutionError(
                 code="public_study_contract_failed",
