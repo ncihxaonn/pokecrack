@@ -1,0 +1,83 @@
+name: Asia country research
+
+on:
+  schedule:
+    - cron: '17 */6 * * *'
+  workflow_dispatch:
+    inputs:
+      country:
+        description: Research one region only; never admits data
+        type: choice
+        default: auto
+        options: [auto, VN, MY, ID, PH, HK, IN]
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: pokecrack-asia-research
+  cancel-in-progress: false
+
+jobs:
+  research:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    environment: worker-production
+    env:
+      REQUESTED_COUNTRY: ${{ inputs.country || 'auto' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Choose one country
+        run: |
+          set -Eeuo pipefail
+          country=$(python3 scripts/asia_research.py --country "$REQUESTED_COUNTRY" --select-only)
+          echo "COUNTRY=$country" >> "$GITHUB_ENV"
+      - name: Research on MAM with existing Codex login
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+          VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          [[ "$VPS_HOST" == 72.62.101.225 && "$VPS_USER" == codex ]]
+          [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ "$COUNTRY" =~ ^(VN|MY|ID|PH|HK|IN)$ ]]
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]]
+          ssh_dir=$(mktemp -d "$RUNNER_TEMP/asia-ssh.XXXXXX")
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          unset SSH_PRIVATE_KEY SSH_KNOWN_HOSTS
+          opts=(-i "$ssh_dir/key" -o "UserKnownHostsFile=$ssh_dir/known_hosts"
+                -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
+                -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=3)
+          remote_dir=''
+          cleanup() {
+            if [[ "$remote_dir" =~ ^/tmp/pokecrack-asia-job\.[A-Za-z0-9]{8}$ ]]; then
+              ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+                "rm -f -- '$remote_dir/research.py'; rmdir -- '$remote_dir'" || true
+            fi
+            rm -f -- "$ssh_dir/key" "$ssh_dir/known_hosts"
+            rmdir -- "$ssh_dir"
+          }
+          trap cleanup EXIT
+          remote_dir=$(ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            'umask 077; mktemp -d /tmp/pokecrack-asia-job.XXXXXXXX')
+          [[ "$remote_dir" =~ ^/tmp/pokecrack-asia-job\.[A-Za-z0-9]{8}$ ]]
+          scp "${opts[@]}" -P "$VPS_PORT" scripts/asia_research.py \
+            "$VPS_USER@$VPS_HOST:$remote_dir/research.py"
+          ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "python3 '$remote_dir/research.py' --country '$COUNTRY'" > "$RUNNER_TEMP/asia-report.json"
+      - name: Validate and publish candidate work item
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -Eeuo pipefail
+          python3 scripts/asia_research.py --country "$COUNTRY" --render "$RUNNER_TEMP/asia-report.json" >> "$GITHUB_STEP_SUMMARY"
+          python3 scripts/asia_research.py --country "$COUNTRY" --publish "$RUNNER_TEMP/asia-report.json"
