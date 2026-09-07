@@ -197,6 +197,7 @@ class TemporaryBackupCredentialTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             parent = Path(directory, "shared")
             parent.mkdir(mode=0o755)
+            parent.chmod(0o755)
             with self.assertRaises(credential.TemporaryCredentialError):
                 credential._write_owner_only(parent / "database-url", "secret")
             self.assertFalse((parent / "database-url").exists())
