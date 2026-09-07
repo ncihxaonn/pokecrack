@@ -224,6 +224,7 @@ jobs:
           set -Eeuo pipefail
           [[ "$BACKUP_REFERENCE" =~ ^gha-run-[0-9]+:pokecrack-[0-9]{8}T[0-9]{6}Z\.sql\.gz\.enc$ ]]
           [[ "$ARTIFACT_ID" =~ ^[0-9]+$ ]]
-          [[ "$ARTIFACT_DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          ARTIFACT_DIGEST="${ARTIFACT_DIGEST#sha256:}"
+          [[ "$ARTIFACT_DIGEST" =~ ^[0-9a-f]{64}$ ]]
           printf 'Rollback artifact: id=%s digest=%s reference=%s\n' \
             "$ARTIFACT_ID" "$ARTIFACT_DIGEST" "$BACKUP_REFERENCE"

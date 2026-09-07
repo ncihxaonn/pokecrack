@@ -790,6 +790,20 @@ class WorkflowSecurityPolicyTests(unittest.TestCase):
         self.assertIn('backup_reference=%s\\n', workflow)
         self.assertNotIn('[[ "${{ inputs.confirm_sha }}"', workflow)
 
+    def test_backup_artifact_digest_accepts_action_and_api_formats(self) -> None:
+        for filename in ("backup-production-api.yml", "backup-production-remote.yml"):
+            workflow = (REPOSITORY_ROOT / ".github" / "workflows" / filename).read_text()
+            lines = [line.strip() for line in workflow.splitlines()]
+            start = lines.index('ARTIFACT_DIGEST="${ARTIFACT_DIGEST#sha256:}"')
+            script = "\n".join(lines[start : start + 2])
+            for value, expected in (("a" * 64, 0), ("sha256:" + "a" * 64, 0),
+                                    ("", 1), ("sha256:bad", 1), ("a" * 65, 1)):
+                with self.subTest(workflow=filename, digest=value):
+                    result = subprocess.run(["bash", "-c", script],
+                                            env={**os.environ, "ARTIFACT_DIGEST": value},
+                                            check=False, capture_output=True)
+                    self.assertEqual(result.returncode, expected)
+
     def test_api_backup_workflow_uses_a_reviewed_short_lived_login(self) -> None:
         workflow = (
             REPOSITORY_ROOT / ".github" / "workflows" / "backup-production-api.yml"
