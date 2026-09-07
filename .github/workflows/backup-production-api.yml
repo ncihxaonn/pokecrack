@@ -140,7 +140,7 @@ jobs:
                 deploy/lib/run_with_database_url.py -- \
                 psql -X --set=ON_ERROR_STOP=1 --tuples-only --no-align --quiet \
                 --command "select (left(session_user, 10) = 'cli_login_' and current_user = session_user)::text;" \
-                < "$database_url_file" 2>> "$probe_error_file"
+                < <(tr -d '\n' < "$database_url_file") 2>> "$probe_error_file"
             )" && [[ "$role_state" == true ]]; then
               direct_endpoint_ready=true
               break
