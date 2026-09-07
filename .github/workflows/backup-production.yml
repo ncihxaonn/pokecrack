@@ -164,7 +164,7 @@ jobs:
           done
           [[ "$repository" =~ ^/[A-Za-z0-9._/-]+$ && "$repository" != *'..'* ]]
           [[ -d "$repository/.git" ]]
-          [[ "$(git -C "$repository" remote get-url origin)" == "https://github.com/ncihxaonn/pokecrack.git" ]]
+          [[ "$(git -C "$repository" remote get-url origin)" =~ ^https://github\.com/ncihxaonn/pokecrack(\.git)?$ ]]
           [[ "$env_file" =~ ^/[A-Za-z0-9._/-]+$ && "$env_file" != *'..'* ]]
           postgres_client_directory="$backup_code_root/postgres-client"
           install -d -m 0700 "$postgres_client_directory"

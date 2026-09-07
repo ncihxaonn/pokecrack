@@ -82,6 +82,38 @@ PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V5 = (
     PUBLIC_STUDY_SOURCE_KEYS_V4 + PUERTO_RICO_PUBLIC_STUDY_SOURCE_KEYS
 )
+CANADA_MEXICO_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_indigo_geek_mx_50",
+    b"public_study_pokehanna_ca_9",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V6 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V5 + CANADA_MEXICO_PUBLIC_STUDY_SOURCE_KEYS
+)
+PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_tcg_market_panama_chaos_rising_6",
+    b"public_study_tcg_market_panama_pitch_black_4",
+    b"public_study_pokeshow_guatemala_megaevolution_3",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V7 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V6 + PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS
+)
+ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_cartas_pokemon_argentina_pitch_black_36",
+    b"public_study_pokemaniaco_lucas_cl_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V8 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V7 + ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS
+)
+AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS = (
+    b"public_study_cofre_lab_chilling_reign_cr_4",
+    b"public_study_pokeyabros_perfect_order_co_2",
+    b"public_study_andree_insane_cards_cosmic_eclipse_ec_20",
+    b"public_study_thekeiplay_lost_origin_pe_36",
+    b"public_study_gringo_gameplays_silver_tempest_uy_36",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V9 = (
+    PUBLIC_STUDY_SOURCE_KEYS_V8 + AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS
+)
 PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V1
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
@@ -95,6 +127,18 @@ ALLONLINE_POLICY = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeee3"
 BRAZIL_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff1"
 PUERTO_RICO_18_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff2"
 PUERTO_RICO_36_POLICY = "ffffffff-ffff-4fff-8fff-fffffffffff3"
+MEXICO_POLICY = "f1111111-1111-4111-8111-111111111111"
+CANADA_POLICY = "f2222222-2222-4222-8222-222222222222"
+PANAMA_CHAOS_POLICY = "f3333333-3333-4333-8333-333333333333"
+PANAMA_PITCH_POLICY = "f4444444-4444-4444-8444-444444444444"
+GUATEMALA_POLICY = "f5555555-5555-4555-8555-555555555555"
+ARGENTINA_POLICY = "f6666666-6666-4666-8666-666666666666"
+CHILE_POLICY = "f7777777-7777-4777-8777-777777777777"
+COSTA_RICA_POLICY = "f8888888-8888-4888-8888-888888888888"
+COLOMBIA_POLICY = "f9999999-9999-4999-8999-999999999999"
+ECUADOR_POLICY = "fa111111-1111-4111-8111-111111111111"
+PERU_POLICY = "fa222222-2222-4222-8222-222222222222"
+URUGUAY_POLICY = "fa333333-3333-4333-8333-333333333333"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
     "country_code, country_name, geography_basis, geography_confidence, "
@@ -191,6 +235,22 @@ POST_PUBLIC_STUDY_GATE_SEED_V5 = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
     b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V5) + b"\n",
 )
+POST_PUBLIC_STUDY_GATE_SEED_V6 = POST_YOUTUBE_GATE_SEED.replace(
+    b"youtube_discovery\n",
+    b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V6) + b"\n",
+)
+POST_PUBLIC_STUDY_GATE_SEED_V7 = POST_YOUTUBE_GATE_SEED.replace(
+    b"youtube_discovery\n",
+    b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V7) + b"\n",
+)
+POST_PUBLIC_STUDY_GATE_SEED_V8 = POST_YOUTUBE_GATE_SEED.replace(
+    b"youtube_discovery\n",
+    b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V8) + b"\n",
+)
+POST_PUBLIC_STUDY_GATE_SEED_V9 = POST_YOUTUBE_GATE_SEED.replace(
+    b"youtube_discovery\n",
+    b"youtube_discovery\n" + b"\n".join(PUBLIC_STUDY_SOURCE_KEYS_V9) + b"\n",
+)
 POST_BLUESKY_GATE_SEED = POST_YOUTUBE_GATE_SEED.replace(
     b"youtube_discovery\n",
     b"youtube_discovery\nbluesky_jetstream\n",
@@ -240,7 +300,14 @@ def comicbook_ledger_row(**overrides: bytes) -> bytes:
 
 def public_study_ddl(source_keys: tuple[bytes, ...]) -> bytes:
     product_values = b"'all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text"
-    if source_keys in (PUBLIC_STUDY_SOURCE_KEYS_V4, PUBLIC_STUDY_SOURCE_KEYS_V5):
+    if source_keys in (
+        PUBLIC_STUDY_SOURCE_KEYS_V4,
+        PUBLIC_STUDY_SOURCE_KEYS_V5,
+        PUBLIC_STUDY_SOURCE_KEYS_V6,
+        PUBLIC_STUDY_SOURCE_KEYS_V7,
+        PUBLIC_STUDY_SOURCE_KEYS_V8,
+        PUBLIC_STUDY_SOURCE_KEYS_V9,
+    ):
         product_values += b", 'four_pack_blister'::text"
     return PUBLIC_STUDY_DDL.replace(b"{product_values}", product_values)
 
@@ -249,8 +316,21 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
     product_values = b"'all'::text, 'booster_box'::text, 'etb'::text, 'booster_bundle'::text"
     if source_keys in (PUBLIC_STUDY_SOURCE_KEYS_V3,):
         product_values += b", 'value_bundle'::text"
-    elif source_keys in (PUBLIC_STUDY_SOURCE_KEYS_V4, PUBLIC_STUDY_SOURCE_KEYS_V5):
+    elif source_keys in (
+        PUBLIC_STUDY_SOURCE_KEYS_V4,
+        PUBLIC_STUDY_SOURCE_KEYS_V5,
+        PUBLIC_STUDY_SOURCE_KEYS_V6,
+        PUBLIC_STUDY_SOURCE_KEYS_V7,
+        PUBLIC_STUDY_SOURCE_KEYS_V8,
+        PUBLIC_STUDY_SOURCE_KEYS_V9,
+    ):
         product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
+        if source_keys in (
+            PUBLIC_STUDY_SOURCE_KEYS_V7,
+            PUBLIC_STUDY_SOURCE_KEYS_V8,
+            PUBLIC_STUDY_SOURCE_KEYS_V9,
+        ):
+            product_values += b", 'build_and_battle'::text, 'three_pack_blister'::text"
     return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
 
 
@@ -319,6 +399,97 @@ PUBLIC_STUDY_COVERAGE_FACTS = {
         b"booster_box", b"public-study-richards-bricks-youtube-v1",
         b"richards-bricks-mega-evolution-box-evidence-v1",
         b"97371af1d78a7d91e48e55a02f0376d4cd399297ea50fc150b3d966963e2d18c",
+    ),
+    b"public_study_indigo_geek_mx_50": (
+        b"indigo-geek-megaevolucion-mx-50-v1", MEXICO_POLICY.encode(), b"MX", b"Mexico",
+        b"2025-09-12 13:00:41+00", b"50", b"me01", b"all",
+        b"public-study-indigo-geek-megaevolucion-youtube-v1",
+        b"indigo-geek-megaevolucion-evidence-v1",
+        b"c270707bfa43c79b8362a4cf5cab1bad377f0da4402904e0af02fe62c7bdb1d2",
+    ),
+    b"public_study_pokehanna_ca_9": (
+        b"pokehanna-ascended-heroes-ca-9-v1", CANADA_POLICY.encode(), b"CA", b"Canada",
+        b"2026-04-05 18:00:15+00", b"9", b"me02.5", b"etb",
+        b"public-study-pokehanna-ascended-heroes-youtube-v1",
+        b"pokehanna-ascended-heroes-evidence-v1",
+        b"d9c012acf1e003942eebdefda80058358f85ca1c718e59e5edd4dcd25b9c3ce9",
+    ),
+    b"public_study_tcg_market_panama_chaos_rising_6": (
+        b"tcg-market-chaos-rising-pa-6-v1", PANAMA_CHAOS_POLICY.encode(), b"PA", b"Panama",
+        b"2026-08-03 00:15:39+00", b"6", b"me04", b"booster_bundle",
+        b"public-study-tcg-market-panama-chaos-rising-youtube-v1",
+        b"tcg-market-panama-chaos-rising-evidence-v1",
+        b"abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef",
+    ),
+    b"public_study_tcg_market_panama_pitch_black_4": (
+        b"tcg-market-pitch-black-pa-4-v1", PANAMA_PITCH_POLICY.encode(), b"PA", b"Panama",
+        b"2026-08-05 19:09:10+00", b"4", b"me05", b"build_and_battle",
+        b"public-study-tcg-market-panama-pitch-black-youtube-v1",
+        b"tcg-market-panama-pitch-black-evidence-v1",
+        b"055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857",
+    ),
+    b"public_study_pokeshow_guatemala_megaevolution_3": (
+        b"pokeshow-mega-evolution-gt-3-v1", GUATEMALA_POLICY.encode(), b"GT", b"Guatemala",
+        b"2025-10-06 17:21:33+00", b"3", b"me01", b"three_pack_blister",
+        b"public-study-pokeshow-guatemala-megaevolution-youtube-v1",
+        b"pokeshow-guatemala-megaevolution-evidence-v1",
+        b"b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb",
+    ),
+    b"public_study_cartas_pokemon_argentina_pitch_black_36": (
+        b"cartas-pokemon-argentina-pitch-black-ar-36-v1",
+        ARGENTINA_POLICY.encode(), b"AR", b"Argentina", b"2026-07-17 18:18:50+00",
+        b"36", b"me05", b"booster_box",
+        b"public-study-cartas-pokemon-argentina-pitch-black-youtube-v1",
+        b"cartas-pokemon-argentina-pitch-black-evidence-v1",
+        b"9332e272a335d9e81a6e42c702b5d49630357eaf4a7a8c10d9d5f9d40cc05690",
+    ),
+    b"public_study_pokemaniaco_lucas_cl_36": (
+        b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
+        CHILE_POLICY.encode(), b"CL", b"Chile", b"2025-11-13 16:00:06+00",
+        b"36", b"me02", b"booster_box",
+        b"public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
+        b"pokemaniaco-lucas-phantasmal-flames-evidence-v1",
+        b"dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f",
+    ),
+    b"public_study_cofre_lab_chilling_reign_cr_4": (
+        b"cofre-lab-chilling-reign-cr-4-v1",
+        COSTA_RICA_POLICY.encode(), b"CR", b"Costa Rica", b"2021-06-06 05:54:03+00",
+        b"4", b"swsh6", b"build_and_battle",
+        b"public-study-cofre-lab-chilling-reign-youtube-v1",
+        b"cofre-lab-chilling-reign-evidence-v1",
+        b"8b307620e562e591d30922b077bb65960a50fd0be272e6c844c4233e536fc167",
+    ),
+    b"public_study_pokeyabros_perfect_order_co_2": (
+        b"pokeyabros-perfect-order-co-2-v1",
+        COLOMBIA_POLICY.encode(), b"CO", b"Colombia", b"2026-09-04 14:00:23+00",
+        b"2", b"me03", b"all",
+        b"public-study-pokeyabros-perfect-order-youtube-v1",
+        b"pokeyabros-perfect-order-evidence-v1",
+        b"0414e5fcd9d3708873ed5c84e78f9c523fb66ba7a30211d8f798c12c5533b7f8",
+    ),
+    b"public_study_andree_insane_cards_cosmic_eclipse_ec_20": (
+        b"andree-insane-cards-cosmic-eclipse-ec-20-v1",
+        ECUADOR_POLICY.encode(), b"EC", b"Ecuador", b"2023-06-27 21:00:07+00",
+        b"20", b"sm12", b"all",
+        b"public-study-andree-insane-cards-cosmic-eclipse-youtube-v1",
+        b"andree-insane-cards-cosmic-eclipse-evidence-v1",
+        b"9ebb6592d57fc2b452bbbd00b71e4e69633eec0a389069b1e475f4489a8fb0e9",
+    ),
+    b"public_study_thekeiplay_lost_origin_pe_36": (
+        b"thekeiplay-lost-origin-pe-36-v1",
+        PERU_POLICY.encode(), b"PE", b"Peru", b"2022-09-05 18:00:12+00",
+        b"36", b"swsh11", b"booster_box",
+        b"public-study-thekeiplay-lost-origin-youtube-v1",
+        b"thekeiplay-lost-origin-evidence-v1",
+        b"4c7a43da824a182cf0a550e46e21c34f1caadca259ff99d6485819ae95dd04ee",
+    ),
+    b"public_study_gringo_gameplays_silver_tempest_uy_36": (
+        b"gringo-gameplays-silver-tempest-uy-36-v1",
+        URUGUAY_POLICY.encode(), b"UY", b"Uruguay", b"2023-03-30 17:14:02+00",
+        b"36", b"swsh12", b"booster_box",
+        b"public-study-gringo-gameplays-silver-tempest-youtube-v1",
+        b"gringo-gameplays-silver-tempest-evidence-v1",
+        b"5f65c8f1ceca00fe06f56dbf684c50f1ca4116ce084aa9fbd4ead930b19d7264",
     ),
 }
 
@@ -522,6 +693,18 @@ class BackupSanitizerTests(unittest.TestCase):
             BRAZIL_PUBLIC_STUDY_SOURCE_KEY: BRAZIL_POLICY,
             b"public_study_richards_bricks_pr_18": PUERTO_RICO_18_POLICY,
             b"public_study_richards_bricks_pr_36": PUERTO_RICO_36_POLICY,
+            b"public_study_indigo_geek_mx_50": MEXICO_POLICY,
+            b"public_study_pokehanna_ca_9": CANADA_POLICY,
+            b"public_study_tcg_market_panama_chaos_rising_6": PANAMA_CHAOS_POLICY,
+            b"public_study_tcg_market_panama_pitch_black_4": PANAMA_PITCH_POLICY,
+            b"public_study_pokeshow_guatemala_megaevolution_3": GUATEMALA_POLICY,
+            b"public_study_cartas_pokemon_argentina_pitch_black_36": ARGENTINA_POLICY,
+            b"public_study_pokemaniaco_lucas_cl_36": CHILE_POLICY,
+            b"public_study_cofre_lab_chilling_reign_cr_4": COSTA_RICA_POLICY,
+            b"public_study_pokeyabros_perfect_order_co_2": COLOMBIA_POLICY,
+            b"public_study_andree_insane_cards_cosmic_eclipse_ec_20": ECUADOR_POLICY,
+            b"public_study_thekeiplay_lost_origin_pe_36": PERU_POLICY,
+            b"public_study_gringo_gameplays_silver_tempest_uy_36": URUGUAY_POLICY,
         }
         policy_rows = b"".join(
             f"{policy_ids[source_key]}\t{source_key.decode()}\tpolicy\n".encode()
@@ -754,6 +937,146 @@ class BackupSanitizerTests(unittest.TestCase):
         drifted_coverage = dump.replace(
             b"\t18\tmixed-tpci-2025\tall\t",
             b"\t19\tmixed-tpci-2025\tall\t",
+            1,
+        )
+        result = self.run_sanitizer(drifted_coverage, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+    def test_public_study_accepts_exact_canada_mexico_profile_only(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V6,
+        )
+
+        result = self.run_sanitizer(dump, public_studies="present")
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(POST_PUBLIC_STUDY_GATE_SEED_V6, result.stdout)
+        self.assertIn(b"indigo-geek-megaevolucion-mx-50-v1", result.stdout)
+        self.assertIn(b"pokehanna-ascended-heroes-ca-9-v1", result.stdout)
+        for source_key in CANADA_MEXICO_PUBLIC_STUDY_SOURCE_KEYS:
+            self.assertEqual(result.stdout.count(source_key + b"\n"), 1)
+
+        partial_profile = dump.replace(
+            f"{CANADA_POLICY}\tpublic_study_pokehanna_ca_9\tpolicy\n".encode(),
+            b"",
+            1,
+        )
+        result = self.run_sanitizer(partial_profile, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+    def test_public_study_accepts_exact_panama_guatemala_profile_only(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V7,
+        )
+
+        result = self.run_sanitizer(dump, public_studies="present")
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(POST_PUBLIC_STUDY_GATE_SEED_V7, result.stdout)
+        self.assertIn(b"tcg-market-chaos-rising-pa-6-v1", result.stdout)
+        self.assertIn(b"tcg-market-pitch-black-pa-4-v1", result.stdout)
+        self.assertIn(b"pokeshow-mega-evolution-gt-3-v1", result.stdout)
+        for source_key in PANAMA_GUATEMALA_PUBLIC_STUDY_SOURCE_KEYS:
+            self.assertEqual(result.stdout.count(source_key + b"\n"), 1)
+
+        partial_profile = dump.replace(
+            (
+                f"{PANAMA_PITCH_POLICY}\t"
+                "public_study_tcg_market_panama_pitch_black_4\tpolicy\n"
+            ).encode(),
+            b"",
+            1,
+        )
+        result = self.run_sanitizer(partial_profile, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+        drifted_coverage = dump.replace(
+            b"\t4\tme05\tbuild_and_battle\t",
+            b"\t5\tme05\tbuild_and_battle\t",
+            1,
+        )
+        result = self.run_sanitizer(drifted_coverage, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+    def test_public_study_accepts_exact_argentina_chile_profile_only(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V8,
+        )
+
+        result = self.run_sanitizer(dump, public_studies="present")
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(POST_PUBLIC_STUDY_GATE_SEED_V8, result.stdout)
+        self.assertIn(b"cartas-pokemon-argentina-pitch-black-ar-36-v1", result.stdout)
+        self.assertIn(b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1", result.stdout)
+        for source_key in ARGENTINA_CHILE_PUBLIC_STUDY_SOURCE_KEYS:
+            self.assertEqual(result.stdout.count(source_key + b"\n"), 1)
+
+        partial_profile = dump.replace(
+            (f"{CHILE_POLICY}\tpublic_study_pokemaniaco_lucas_cl_36\tpolicy\n").encode(),
+            b"",
+            1,
+        )
+        result = self.run_sanitizer(partial_profile, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+        drifted_coverage = dump.replace(
+            b"\t36\tme02\tbooster_box\t",
+            b"\t35\tme02\tbooster_box\t",
+            1,
+        )
+        result = self.run_sanitizer(drifted_coverage, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+    def test_public_study_accepts_exact_americas_phase_two_profile_only(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V9,
+        )
+
+        result = self.run_sanitizer(dump, public_studies="present")
+
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(POST_PUBLIC_STUDY_GATE_SEED_V9, result.stdout)
+        for study_key in (
+            b"cofre-lab-chilling-reign-cr-4-v1",
+            b"pokeyabros-perfect-order-co-2-v1",
+            b"andree-insane-cards-cosmic-eclipse-ec-20-v1",
+            b"thekeiplay-lost-origin-pe-36-v1",
+            b"gringo-gameplays-silver-tempest-uy-36-v1",
+        ):
+            self.assertIn(study_key, result.stdout)
+        for source_key in AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS:
+            self.assertEqual(result.stdout.count(source_key + b"\n"), 1)
+
+        partial_profile = dump.replace(
+            (
+                f"{URUGUAY_POLICY}\t"
+                "public_study_gringo_gameplays_silver_tempest_uy_36\tpolicy\n"
+            ).encode(),
+            b"",
+            1,
+        )
+        result = self.run_sanitizer(partial_profile, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+        drifted_coverage = dump.replace(
+            b"\t20\tsm12\tall\t",
+            b"\t19\tsm12\tall\t",
             1,
         )
         result = self.run_sanitizer(drifted_coverage, public_studies="present")

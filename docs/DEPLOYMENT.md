@@ -1,41 +1,60 @@
 # Deployment
 
-The approved Personal targets currently host the private GitHub repository and
-the public Vercel site. The last verified Vercel production revision was
-`36d8701e85c098160635580aa46f614dcfdf066b`; the MAM VPS was separately
-observed at `fdfb49ebb03d116abafcfeccaa09618d171ee0fb` with the existing
-TCGdex/Bluesky service set. Those are historical observations, not evidence for
-this branch. General browser collection, AI-worker, aggregator, Nostr, Mastodon,
-and the Bluesky isolated lane remain fail closed until their separate release
-contracts pass. Do not describe the whole research pipeline as production-ready
-from a Compose render, heartbeat, or web deployment alone.
+Use [RELEASE_STATUS.md](RELEASE_STATUS.md) for the dated, verified production
+inventory and pending release work. Do not infer the current revision, applied
+migrations, credentials, or enabled collectors from an older implementation
+report. Verify the exact Personal target through project configuration and
+read-only provider evidence before a release; an old credential-unavailable
+note is not a reason to request login again.
 
-> **Nostr remains disabled:** the authoritative hosted ledger currently stops
-> at `050`; `060`, `090`, and the worker-isolation migration `100` are not hosted, and
-> the owner-scoped Personal Supabase credential is unavailable. Keep
-> `NOSTR_COLLECTION_ENABLED=false`. A future Nostr release must use the
-> Management API migration runner, then pass the env-file preflight in
-> `deploy/lib/verify_nostr_release.py` before replacing any service.
-> Provider-managed backup/PITR retention has not been evidenced, and the
-> dedicated login creation and exact membership remain blockers; neither may be
-> inferred from a successful local migration or Compose render.
+The documented release gates below remain required. General browser collection,
+AI-worker, aggregator, Nostr, and the Bluesky isolated lane must not be enabled
+merely to make every repository feature appear live. Each requires its own
+verified service-set contract and authorization. Do not describe the whole
+research pipeline as production-ready from a Compose render, heartbeat, or web
+deployment alone.
 
 ## 1. Account-bound prerequisites
 
-The owner must create/approve: a private GitHub repository and deploy key; protected GitHub environments; Supabase Free project and DB password; Vercel Hobby project; VPS/user/Docker access; DNS; noVNC secret; API/provider keys; a reviewed OpenCLI CLI/Bridge artifact; and platform logins/2FA. Review source/platform terms, trademark/name and privacy obligations before live collection.
+The owner must create/approve: the public GitHub repository with protected branches/environments; Supabase Free project and DB password; Vercel Hobby project; VPS/user/Docker access; DNS; noVNC secret; API/provider keys; a reviewed OpenCLI CLI/Bridge artifact; and platform logins/2FA. A deploy key is optional for a public checkout but may still be used when the host's clone policy requires it. Review source/platform terms, trademark/name and privacy obligations before live collection.
 
 Keep `DATA_MODE=demo`, `AI_PROVIDER=fixture`, `OPENCLI_ENABLED=false`, public signup off and retailer domains disabled until each corresponding live dependency is proven.
 
 ## 2. Database
 
 1. Create a dedicated Supabase project; record region/project reference privately.
-2. Test all migrations and pgTAP locally in Docker-capable CI. For YouTube,
+2. Run `scripts/run_ci_checks.sh database --expected-sha EXACT_SHA` on the
+   isolated Docker-capable runner described in
+   [`CI_EXTERNAL_RUNNER.md`](CI_EXTERNAL_RUNNER.md); it covers migrations,
+   pgTAP and generated-type drift. For YouTube,
    verify the dedicated cache is `UNLOGGED`, forced-RLS, service-role read-only,
    and absent from public/Admin/analytics relations.
 3. Take/verify a backup before production changes.
-4. Before the lease-fencing migration, stop every legacy worker and verify that no old worker process or in-flight job remains. This protocol upgrade is not compatible with a rolling old/new worker deployment. Run `.github/workflows/migrate-database.yml` manually against a protected environment. `confirm_sha` must equal `GITHUB_SHA`; supply the fresh backup reference. Before any hosted change, the workflow requires hosted PostgreSQL 17 or newer, reads the applied migration versions through the owner-scoped Personal Supabase Management API token, audits only pending migrations, requires an exact reasoned fingerprint for every reviewed `DELETE`, rejects `DROP`/`TRUNCATE`, builds the schema locally on PostgreSQL 17, and rejects generated TypeScript drift. It previews and applies forward migrations only—no automatic destructive rollback/reset and no database URL in the workflow environment, argv, child process or logs. Deploy only generation-aware workers after the migration; never roll code back to the legacy claim/naked-cleanup protocol.
+4. Before the lease-fencing migration, stop every legacy worker and verify that no old worker process or in-flight job remains. This protocol upgrade is not compatible with a rolling old/new worker deployment. Run the repository's protected migration entry point manually against the approved environment after the independent runner has passed. `confirm_sha` must equal the exact checked-out main SHA; supply the fresh backup reference. Before any hosted change, the release path requires hosted PostgreSQL 17 or newer, reads the applied migration versions through the owner-scoped Personal Supabase Management API token, audits only pending migrations, requires an exact reasoned fingerprint for every reviewed `DELETE`, rejects `DROP`/`TRUNCATE`, builds the schema locally on PostgreSQL 17, and rejects generated TypeScript drift. It previews and applies forward migrations only—no automatic destructive rollback/reset and no database URL in the test environment, argv, child process or logs. Deploy only generation-aware workers after the migration; never roll code back to the legacy claim/naked-cleanup protocol. The independent runner never applies hosted migrations.
 5. Create the first admin account manually; disable public signup; configure redirect/email settings deliberately.
 6. Verify private-schema grants/RLS and query the intended public-safe API as anon. Create a dedicated `NOINHERIT` collector login with only queue access and execute permission on the fenced collector RPCs; do not reuse broad `service_role` membership as the steady-state worker permission model. Create a separate `NOINHERIT` backup login/role with only the required read/grant path and PostgreSQL 17 gate-table schema lock, then prove it cannot read gate rows. Never expose DB/service-role credentials to browser variables.
+
+Before any production mutation, run the read-only release gate with the exact
+`origin/main` SHA, the completed external CI manifest, and the operator-owned
+backup/restore evidence:
+
+```bash
+python3 scripts/verify_release_preflight.py \
+  --sha EXACT_MAIN_SHA \
+  --ci-manifest /secure/evidence/ci/manifest.json \
+  --release-evidence /secure/evidence/release-evidence.json \
+  --project-ref wohnphsxlquhhknuthrj \
+  --service-set tcgdex \
+  --vps-host-key-fingerprint SHA256:KNOWN_HOST_KEY_FINGERPRINT \
+  --vps-deploy-path /home/codex/pokecrack
+```
+
+This gate is read-only and does not grant approval. It binds the tested SHA to
+the approved target, fresh encrypted backup, isolated restore report, least-
+privilege evidence, and the separately recorded owner approval. The production
+backup, migration, Worker deployment, and GitHub-triggered Vercel operations
+remain distinct state-changing steps; the independent CI runner never performs
+them and never receives production secrets.
 
 For Nostr specifically, set `NOSTR_COLLECTION_ENABLED=true` only after the
 hosted ledger contains `060`, `090`, and `100`, the exact Nostr policy/gate/RLS/ACL and
@@ -95,11 +114,11 @@ production-ready claim.
 
 ## 3. Web (Vercel)
 
-Import the private repository and use `apps/web` as the project root. Pin the production branch and Node version. Set only `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL` and the publishable key in browser-visible variables. Keep `ADMIN_EMAILS`, `ADMIN_CONTROL_RPC_ENABLED`, and `SUPABASE_SERVICE_ROLE_KEY` as Vercel server-only variables; never prefix the service-role key with `NEXT_PUBLIC_`, place it in the VPS environment, or enable controls before the Auth claim and email allowlist are verified. Start with `ADMIN_CONTROL_RPC_ENABLED=false` and demo mode, run the production build, verify the demo label/disclaimers and no secret in built assets, then switch to live only after the database public surface and service-role-only Admin RPC grants are verified. DNS/OAuth/email-provider setup is account-bound and was not done here.
+Import the public repository and use `apps/web` as the project root. Pin the production branch and Node version. Set only `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL` and the publishable key in browser-visible variables. Keep `ADMIN_EMAILS`, `ADMIN_CONTROL_RPC_ENABLED`, and `SUPABASE_SERVICE_ROLE_KEY` as Vercel server-only variables; never prefix the service-role key with `NEXT_PUBLIC_`, place it in the VPS environment, or enable controls before the Auth claim and email allowlist are verified. Start with `ADMIN_CONTROL_RPC_ENABLED=false` and demo mode, run the production build, verify the demo label/disclaimers and no secret in built assets, then switch to live only after the database public surface and service-role-only Admin RPC grants are verified. DNS/OAuth/email-provider setup is account-bound and was not done here.
 
 ## 4. VPS
 
-Use a patched Linux host, dedicated non-root deploy user, SSH keys only, host firewall and Docker Engine/Compose. Clone the private repo to an absolute path; keep config/secrets outside it. Follow `deploy/README.md` to configure the mode-`0600` `/etc/pokecrack/production.env` and backup-marker directory. For Nostr, create a separate mode-`0600` `/etc/pokecrack/nostr.env` from the exact four-key template; for Bluesky, create a separate exact mode-`0600` `/etc/pokecrack/bluesky.env` from the exact three-key template. Do not add either source's DSN to the shared production file. Browser profile/noVNC/Bridge preparation is not part of these service sets.
+Use a patched Linux host, dedicated non-root deploy user, SSH keys only, host firewall and Docker Engine/Compose. Clone the public repo to an absolute path at the exact reviewed SHA; keep config/secrets outside it. Follow `deploy/README.md` to configure the mode-`0600` `/etc/pokecrack/production.env` and backup-marker directory. For Nostr, create a separate mode-`0600` `/etc/pokecrack/nostr.env` from the exact four-key template; for Bluesky, create a separate exact mode-`0600` `/etc/pokecrack/bluesky.env` from the exact three-key template. Do not add either source's DSN to the shared production file. Browser profile/noVNC/Bridge preparation is not part of these service sets.
 
 Deploy an exact commit:
 

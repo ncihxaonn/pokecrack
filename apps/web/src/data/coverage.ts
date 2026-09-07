@@ -481,11 +481,10 @@ export function mergePublicStudyCoverage(
   const base = snapshotResult.data;
   const coverage = coverageResult.data;
   const replaceRegistryCoverageRows = coverage.schemaVersion !== "1.0.0";
-  if (
-    base.observations.period !== null &&
-    (base.observations.period.start !== coverage.period.start ||
-      base.observations.period.end !== coverage.period.end)
-  ) {
+  const periodsMatch = base.observations.period === null ||
+    (base.observations.period.start === coverage.period.start &&
+      base.observations.period.end === coverage.period.end);
+  if (!periodsMatch && !replaceRegistryCoverageRows) {
     return snapshot;
   }
   const sourceById = new Map<string, PublicSource>(
@@ -510,8 +509,13 @@ export function mergePublicStudyCoverage(
     return { ...base, sources: [...sourceById.values()] } satisfies PublicDashboardData;
   }
 
+  // v2/v3 are the authoritative reviewed-evidence registry. If the main
+  // snapshot still describes a narrower period, do not relabel or combine its
+  // cells with the registry's historical range; rebuild this view from the
+  // registry rows instead. Legacy v1 remains period-locked above.
+  const compatibleBaseCells = periodsMatch ? base.mapCells : [];
   const countryByCode = new Map<string, CountryMapCell>(
-    base.mapCells.map((cell) => [cell.countryCode, cell]),
+    compatibleBaseCells.map((cell) => [cell.countryCode, cell]),
   );
   for (const row of coverage.countries) {
     countryByCode.set(
@@ -530,7 +534,10 @@ export function mergePublicStudyCoverage(
       left.countryCode.localeCompare(right.countryCode),
   );
 
-  const setBySlug = new Map<string, SetMetric>(base.sets.map((set) => [set.slug, set]));
+  const compatibleBaseSets = periodsMatch ? base.sets : [];
+  const setBySlug = new Map<string, SetMetric>(
+    compatibleBaseSets.map((set) => [set.slug, set]),
+  );
   for (const row of coverage.sets) {
     setBySlug.set(
       row.slug,
@@ -566,7 +573,7 @@ export function mergePublicStudyCoverage(
     slug: cell.countryCode.toLowerCase(),
     name: cell.countryName,
     countryCode: cell.countryCode,
-    coverage: `${cell.packsObserved} observed packs from ${cell.independentSources} independent sources in the current global period.`,
+    coverage: `${cell.packsObserved} observed packs from ${cell.independentSources} independent sources in the reviewed evidence range.`,
     packsObserved: cell.packsObserved,
     openings: cell.openings,
     independentSources: cell.independentSources,
@@ -597,12 +604,15 @@ export function mergePublicStudyCoverage(
       ...base.summary,
       observedPacks,
       completeOpenings,
+      aiValidatedSources: periodsMatch
+        ? Math.min(base.summary.aiValidatedSources, completeOpenings)
+        : 0,
       trackedSets: sets.length,
       trackedRegions: mapCells.length,
       baselineHitRate: countriesWithPublishedInference === 0
         ? null
         : base.summary.baselineHitRate,
-      globalCoverage: `${mapCells.length} country or product-market coverage buckets have verified observations in the current global period; ${countriesWithObservedRate} show an exact observed sample rate.`,
+      globalCoverage: `${mapCells.length} country or product-market coverage buckets have verified observations in the reviewed evidence range; ${countriesWithObservedRate} show an exact observed sample rate.`,
       methodologyVersion: "global-observation-v1",
     },
     observations: {

@@ -72,7 +72,7 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
 
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
         <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>
-        <div><dt>Coverage buckets observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>latest shared period</small></dd></div>
+        <div><dt>Coverage buckets observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>full reviewed evidence range</small></dd></div>
         <div><dt>Observed sample rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>exact numerator + denominator</small></dd></div>
         <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>eligible denominator</small></dd></div>
         <div><dt>Complete openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>verified observations</small></dd></div>

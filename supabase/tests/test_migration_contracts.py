@@ -94,6 +94,15 @@ BRAZIL_OBSERVED_SAMPLE = (
 PUERTO_RICO_YOUTUBE_COVERAGE = (
     ROOT / "migrations/20261007000000_puerto_rico_youtube_coverage.sql"
 ).read_text()
+CANADA_MEXICO_YOUTUBE_COVERAGE = (
+    ROOT / "migrations/20261008000000_canada_mexico_youtube_coverage.sql"
+).read_text()
+PANAMA_GUATEMALA_YOUTUBE_COVERAGE = (
+    ROOT / "migrations/20261009000000_panama_guatemala_youtube_coverage.sql"
+).read_text()
+AMERICAS_PHASE_TWO_YOUTUBE_COVERAGE = (
+    ROOT / "migrations/20261010000000_americas_phase_two_youtube_coverage.sql"
+).read_text()
 DATABASE_TYPES = (ROOT / "types/database.ts").read_text()
 SEED = (ROOT / "seed.sql").read_text()
 
@@ -1858,6 +1867,203 @@ class IngestMigrationContractTests(unittest.TestCase):
         ):
             self.assertNotIn(forbidden_config_field, lowered)
         self.assertIn("count(*) = 12", compact)
+        self.assertNotIn(
+            "insert into ingest.public_study_observations",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant select on table ingest.public_study_coverage_observations to anon",
+            compact,
+        )
+
+    def test_canada_mexico_youtube_coverage_is_exact_and_rate_free(self) -> None:
+        lowered = CANADA_MEXICO_YOUTUBE_COVERAGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for fragment in (
+            "indigo-geek-megaevolucion-mx-50-v1",
+            "pokehanna-ascended-heroes-ca-9-v1",
+            "public_study_indigo_geek_mx_50",
+            "public_study_pokehanna_ca_9",
+            '"publisher_channel_id":"ucgri3bovzarwiyczg8meqjw"',
+            '"publisher_channel_id":"uc6stwagoj-9rseozyv56ftq"',
+            '"country_code":"mx"',
+            '"country_code":"ca"',
+            '"set_language":"es-mx"',
+            '"set_language":"en"',
+            '"set_external_id":"me01"',
+            '"set_external_id":"me02.5"',
+            '"pack_count":50',
+            '"pack_count":9',
+            '"denominator_basis":"source_declared_complete_opening"',
+            '"denominator_derivation":"one_standard_etb_x_9"',
+            "c270707bfa43c79b8362a4cf5cab1bad377f0da4402904e0af02fe62c7bdb1d2",
+            "d9c012acf1e003942eebdefda80058358f85ca1c718e59e5edd4dcd25b9c3ce9",
+            "insert into ingest.public_study_coverage_observations",
+            "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14)",
+            "https://tcg.pokemon.com/es-mx/expansions/mega-evolution/",
+            "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-ascended-heroes-elite-trainer-box",
+            "unique nulls not distinct (domain, base_url)",
+        ):
+            self.assertIn(fragment, lowered)
+        for forbidden_config_field in (
+            '"qualifying_hit_pack_count"',
+            '"qualifying_metric"',
+            '"metric_version"',
+            '"observed_rate"',
+        ):
+            self.assertNotIn(forbidden_config_field, lowered)
+        self.assertIn("count(*) = 14", compact)
+        self.assertNotIn(
+            "insert into ingest.public_study_observations",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant select on table ingest.public_study_coverage_observations to anon",
+            compact,
+        )
+
+    def test_panama_guatemala_youtube_coverage_is_exact_and_rate_free(self) -> None:
+        lowered = PANAMA_GUATEMALA_YOUTUBE_COVERAGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for fragment in (
+            "tcg-market-chaos-rising-pa-6-v1",
+            "tcg-market-pitch-black-pa-4-v1",
+            "pokeshow-mega-evolution-gt-3-v1",
+            "cartas-pokemon-argentina-pitch-black-ar-36-v1",
+            "pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
+            "public_study_tcg_market_panama_chaos_rising_6",
+            "public_study_tcg_market_panama_pitch_black_4",
+            "public_study_pokeshow_guatemala_megaevolution_3",
+            "public_study_cartas_pokemon_argentina_pitch_black_36",
+            "public_study_pokemaniaco_lucas_cl_36",
+            '"publisher_channel_id":"uca68xvuuike8dvcfxccdyrq"',
+            '"publisher_channel_id":"uchg8m-xokqrxjdceoe2i9jg"',
+            '"country_code":"pa"',
+            '"country_code":"gt"',
+            '"country_code":"ar"',
+            '"country_code":"cl"',
+            '"set_language":"und"',
+            '"set_language_basis":"source_does_not_state_card_language"',
+            '"set_external_id":"me04"',
+            '"set_external_id":"me05"',
+            '"set_external_id":"me01"',
+            '"product_scope":"booster_bundle"',
+            '"product_scope":"build_and_battle"',
+            '"product_scope":"three_pack_blister"',
+            '"pack_count":6',
+            '"pack_count":4',
+            '"pack_count":3',
+            '"pack_count":36',
+            '"denominator_basis":"source_product_opening_plus_official_product_spec"',
+            "abb892071c34d353e811c9715174512bb47304ac72de2508d188e13956e3e4ef",
+            "055d48674555e3a9dc79ced8f5886c7960ad200c7c8bdc4383a5623b5e583857",
+            "b6c535ad4e34f0df39c8b9823a8a6e624fbb9a66c2da8329996b484b04a9feeb",
+            "9332e272a335d9e81a6e42c702b5d49630357eaf4a7a8c10d9d5f9d40cc05690",
+            "dd5424daf2b83dde579788be5676d1a59403c49ebf516e4601d82ddaf3f6f74f",
+            "insert into ingest.public_study_coverage_observations",
+            "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19)",
+            "^[a-z]{2,3}(-[a-za-z0-9]{2,8})*$",
+            "https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-chaos-rising-booster-bundle",
+            "https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase",
+            "https://www.pokemoncenter.com/search/megacards",
+        ):
+            self.assertIn(fragment, lowered)
+        for forbidden_config_field in (
+            '"qualifying_hit_pack_count"',
+            '"qualifying_metric"',
+            '"metric_version"',
+            '"observed_rate"',
+        ):
+            self.assertNotIn(forbidden_config_field, lowered)
+        self.assertIn("count(*) = 19", compact)
+        self.assertIn("'build_and_battle'", lowered)
+        self.assertIn("'three_pack_blister'", lowered)
+        self.assertIn("'four_pack_blister'", lowered)
+        self.assertNotIn(
+            "insert into ingest.public_study_observations",
+            lowered,
+        )
+        self.assertNotIn(
+            "grant select on table ingest.public_study_coverage_observations to anon",
+            compact,
+        )
+
+    def test_americas_phase_two_youtube_coverage_is_exact_and_rate_free(self) -> None:
+        lowered = AMERICAS_PHASE_TWO_YOUTUBE_COVERAGE.casefold()
+        compact = " ".join(lowered.split())
+        self.assertEqual(lowered.count("begin;"), 1)
+        self.assertEqual(lowered.count("commit;"), 1)
+        for fragment in (
+            "cofre-lab-chilling-reign-cr-4-v1",
+            "pokeyabros-perfect-order-co-2-v1",
+            "andree-insane-cards-cosmic-eclipse-ec-20-v1",
+            "thekeiplay-lost-origin-pe-36-v1",
+            "gringo-gameplays-silver-tempest-uy-36-v1",
+            "public_study_cofre_lab_chilling_reign_cr_4",
+            "public_study_pokeyabros_perfect_order_co_2",
+            "public_study_andree_insane_cards_cosmic_eclipse_ec_20",
+            "public_study_thekeiplay_lost_origin_pe_36",
+            "public_study_gringo_gameplays_silver_tempest_uy_36",
+            '"country_code":"cr"',
+            '"country_code":"co"',
+            '"country_code":"ec"',
+            '"country_code":"pe"',
+            '"country_code":"uy"',
+            '"set_language":"und"',
+            '"set_external_id":"swsh6"',
+            '"set_external_id":"me03"',
+            '"set_external_id":"sm12"',
+            '"set_external_id":"swsh11"',
+            '"set_external_id":"swsh12"',
+            '"product_scope":"build_and_battle"',
+            '"product_scope":"all"',
+            '"product_scope":"booster_box"',
+            '"pack_count":4',
+            '"pack_count":2',
+            '"pack_count":20',
+            '"pack_count":36',
+            "8b307620e562e591d30922b077bb65960a50fd0be272e6c844c4233e536fc167",
+            "0414e5fcd9d3708873ed5c84e78f9c523fb66ba7a30211d8f798c12c5533b7f8",
+            "9ebb6592d57fc2b452bbbd00b71e4e69633eec0a389069b1e475f4489a8fb0e9",
+            "4c7a43da824a182cf0a550e46e21c34f1caadca259ff99d6485819ae95dd04ee",
+            "5f65c8f1ceca00fe06f56dbf684c50f1ca4116ce084aa9fbd4ead930b19d7264",
+            "insert into ingest.public_study_coverage_observations",
+            "contracts.ordinal in (3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24)",
+            "from ingest.reviewed_public_study_contracts() as contracts",
+            "public reviewed coverage function is missing the expected 365-day display window",
+            "complete reviewed, nonfuture evidence range",
+            "revoke all on function public.get_public_study_coverage_v2()",
+            "grant execute on function public.get_public_study_coverage_v3()",
+            "https://press.pokemon.com/en/media-alert-new-pokemon-trading-card-game-sword-shieldchilling-reign-e",
+            "https://www.pokemon.com/us/features/art-of-the-pokemon-tcg-mega-evolution-perfect-order-expansion",
+            "https://www.pokemon.com/us/pokemon-tcg/sun-moon-cosmic-eclipse",
+            "https://www.pokemon.com/us/news/enter-to-win-pokemon-tcg-sword-shield-era-booster-display-boxes",
+        ):
+            self.assertIn(fragment, lowered)
+        for forbidden_config_field in (
+            '"qualifying_hit_pack_count"',
+            '"qualifying_metric"',
+            '"metric_version"',
+            '"observed_rate"',
+        ):
+            self.assertNotIn(forbidden_config_field, lowered)
+        self.assertIn("count(*) = 24", compact)
+        self.assertEqual(
+            lowered.count(
+                "'public.get_public_study_coverage_v2()'::regprocedure"
+            ),
+            1,
+        )
+        self.assertEqual(
+            lowered.count(
+                "'public.get_public_study_coverage_v3()'::regprocedure"
+            ),
+            1,
+        )
         self.assertNotIn(
             "insert into ingest.public_study_observations",
             lowered,

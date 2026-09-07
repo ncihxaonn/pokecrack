@@ -1226,7 +1226,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_all_twelve_reviewed_daily_jobs(
+def test_public_study_flag_registers_all_twenty_four_reviewed_daily_jobs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _ensure_pokesup_schedule_identity(monkeypatch)
@@ -1246,6 +1246,18 @@ def test_public_study_flag_registers_all_twelve_reviewed_daily_jobs(
         {"study_key": "pontocom-herois-excelsos-br-48-v1"},
         {"study_key": "richards-bricks-charizard-upc-pr-18-v1"},
         {"study_key": "richards-bricks-mega-evolution-box-pr-36-v1"},
+        {"study_key": "indigo-geek-megaevolucion-mx-50-v1"},
+        {"study_key": "pokehanna-ascended-heroes-ca-9-v1"},
+        {"study_key": "tcg-market-chaos-rising-pa-6-v1"},
+        {"study_key": "tcg-market-pitch-black-pa-4-v1"},
+        {"study_key": "pokeshow-mega-evolution-gt-3-v1"},
+        {"study_key": "cartas-pokemon-argentina-pitch-black-ar-36-v1"},
+        {"study_key": "pokemaniaco-lucas-phantasmal-flames-cl-36-v1"},
+        {"study_key": "cofre-lab-chilling-reign-cr-4-v1"},
+        {"study_key": "pokeyabros-perfect-order-co-2-v1"},
+        {"study_key": "andree-insane-cards-cosmic-eclipse-ec-20-v1"},
+        {"study_key": "thekeiplay-lost-origin-pe-36-v1"},
+        {"study_key": "gringo-gameplays-silver-tempest-uy-36-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1268,7 +1280,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 12" in sql
+    assert "count(*) = 24" in sql
     assert "ingest.public_study_observations" in sql
     assert "ingest.begin_public_study_job" in sql
     assert "ingest.finalize_public_study_job" in sql
@@ -1285,6 +1297,18 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert "public_study_pontocom_br_48" in sql
     assert "public_study_richards_bricks_pr_18" in sql
     assert "public_study_richards_bricks_pr_36" in sql
+    assert "public_study_indigo_geek_mx_50" in sql
+    assert "public_study_pokehanna_ca_9" in sql
+    assert "public_study_tcg_market_panama_chaos_rising_6" in sql
+    assert "public_study_tcg_market_panama_pitch_black_4" in sql
+    assert "public_study_pokeshow_guatemala_megaevolution_3" in sql
+    assert "public_study_cartas_pokemon_argentina_pitch_black_36" in sql
+    assert "public_study_pokemaniaco_lucas_cl_36" in sql
+    assert "public_study_cofre_lab_chilling_reign_cr_4" in sql
+    assert "public_study_pokeyabros_perfect_order_co_2" in sql
+    assert "public_study_andree_insane_cards_cosmic_eclipse_ec_20" in sql
+    assert "public_study_thekeiplay_lost_origin_pe_36" in sql
+    assert "public_study_gringo_gameplays_silver_tempest_uy_36" in sql
     pokesup_clause_start = sql.index("WHERE policies.source_key = 'public_study_pokesup_jp_30'")
     pokesup_clause = sql[pokesup_clause_start : sql.index(") = 1", pokesup_clause_start)]
     for expected in (
@@ -1363,6 +1387,180 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
                 '"pack_count":36',
             ),
         ),
+        (
+            "public_study_indigo_geek_mx_50",
+            (
+                '"country_code":"MX"',
+                '"publisher_channel_id":"UCGri3BoVzarWIYCzg8MEQjw"',
+                '"set_language":"es-MX"',
+                '"set_external_id":"me01"',
+                '"set_name":"Megaevolución"',
+                '"set_official_url":"https://tcg.pokemon.com/es-mx/expansions/mega-evolution/"',
+                '"product_name":"ETB + Booster Box + Combina y Combate"',
+                '"product_scope":"all"',
+                '"pack_count":50',
+                '"denominator_basis":"source_declared_complete_opening"',
+                '"observed_at":"2025-09-12T13:00:41Z"',
+            ),
+        ),
+        (
+            "public_study_pokehanna_ca_9",
+            (
+                '"country_code":"CA"',
+                '"publisher_channel_id":"UC6stWaGoj-9rsEOzYv56ftQ"',
+                '"set_language":"en"',
+                '"set_external_id":"me02.5"',
+                '"set_name":"Ascended Heroes"',
+                '"set_official_url":"https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-ascended-heroes-elite-trainer-box"',
+                '"product_name":"Ascended Heroes Elite Trainer Box"',
+                '"product_scope":"etb"',
+                '"pack_count":9',
+                '"denominator_basis":"source_named_standard_etb_plus_official_9_pack_spec"',
+                '"denominator_derivation":"one_standard_etb_x_9"',
+                '"observed_at":"2026-04-05T18:00:15Z"',
+            ),
+        ),
+        (
+            "public_study_tcg_market_panama_chaos_rising_6",
+            (
+                '"country_code":"PA"',
+                '"publisher_channel_id":"UCa68xVUUIKE8dvcfxCcdyrQ"',
+                '"set_language":"und"',
+                '"set_language_basis":"source_does_not_state_card_language"',
+                '"set_external_id":"me04"',
+                '"set_name":"Chaos Rising"',
+                '"set_official_url":"https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-chaos-rising-booster-bundle"',
+                '"product_scope":"booster_bundle"',
+                '"pack_count":6',
+                '"denominator_basis":"source_product_opening_plus_official_product_spec"',
+                '"observed_at":"2026-08-03T00:15:39Z"',
+            ),
+        ),
+        (
+            "public_study_tcg_market_panama_pitch_black_4",
+            (
+                '"country_code":"PA"',
+                '"publisher_channel_id":"UCa68xVUUIKE8dvcfxCcdyrQ"',
+                '"set_language":"und"',
+                '"set_language_basis":"source_does_not_state_card_language"',
+                '"set_external_id":"me05"',
+                '"set_name":"Pitch Black"',
+                '"set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase"',
+                '"product_scope":"build_and_battle"',
+                '"pack_count":4',
+                '"denominator_basis":"source_product_opening_plus_official_product_spec"',
+                '"observed_at":"2026-08-05T19:09:10Z"',
+            ),
+        ),
+        (
+            "public_study_pokeshow_guatemala_megaevolution_3",
+            (
+                '"country_code":"GT"',
+                '"publisher_channel_id":"UChG8m-xoKqrXJDCEoE2i9Jg"',
+                '"set_language":"und"',
+                '"set_language_basis":"source_does_not_state_card_language"',
+                '"set_external_id":"me01"',
+                '"set_name":"Mega Evolution"',
+                '"set_official_url":"https://www.pokemoncenter.com/search/megacards"',
+                '"product_name":"Mega Evolution Tripack (promo variant unspecified)"',
+                '"product_scope":"three_pack_blister"',
+                '"pack_count":3',
+                '"product_variant_claim":"not_claimed"',
+                '"denominator_basis":"source_product_opening_plus_official_product_spec"',
+                '"observed_at":"2025-10-06T17:21:33Z"',
+            ),
+        ),
+        (
+            "public_study_cartas_pokemon_argentina_pitch_black_36",
+            (
+                '"country_code":"AR"',
+                '"publisher_channel_id":"UCGBtAPv7mLLRgdqeupj2kLg"',
+                '"set_language":"und"',
+                '"set_external_id":"me05"',
+                '"set_name":"Pitch Black"',
+                '"product_scope":"booster_box"',
+                '"pack_count":36',
+                '"observed_at":"2026-07-17T18:18:50Z"',
+            ),
+        ),
+        (
+            "public_study_pokemaniaco_lucas_cl_36",
+            (
+                '"country_code":"CL"',
+                '"publisher_channel_id":"UCDKXzvS5YaUJwsHD1wNkWBw"',
+                '"set_language":"und"',
+                '"set_external_id":"me02"',
+                '"set_name":"Phantasmal Flames"',
+                '"product_scope":"booster_box"',
+                '"pack_count":36',
+                '"observed_at":"2025-11-13T16:00:06Z"',
+            ),
+        ),
+        (
+            "public_study_cofre_lab_chilling_reign_cr_4",
+            (
+                '"country_code":"CR"',
+                '"publisher_channel_id":"UCqYl3y-wsJqvwow5_tIa22A"',
+                '"set_language":"und"',
+                '"set_external_id":"swsh6"',
+                '"set_name":"Chilling Reign"',
+                '"product_scope":"build_and_battle"',
+                '"pack_count":4',
+                '"observed_at":"2021-06-06T05:54:03Z"',
+            ),
+        ),
+        (
+            "public_study_pokeyabros_perfect_order_co_2",
+            (
+                '"country_code":"CO"',
+                '"publisher_channel_id":"UC6iMHQS7wp-WVH_pD4leBZw"',
+                '"set_language":"und"',
+                '"set_external_id":"me03"',
+                '"set_name":"Perfect Order"',
+                '"product_scope":"all"',
+                '"pack_count":2',
+                '"observed_at":"2026-09-04T14:00:23Z"',
+            ),
+        ),
+        (
+            "public_study_andree_insane_cards_cosmic_eclipse_ec_20",
+            (
+                '"country_code":"EC"',
+                '"publisher_channel_id":"UCvg1acSdKlzcCXAQQKcMvqg"',
+                '"set_language":"und"',
+                '"set_external_id":"sm12"',
+                '"set_name":"Cosmic Eclipse"',
+                '"product_scope":"all"',
+                '"pack_count":20',
+                '"observed_at":"2023-06-27T21:00:07Z"',
+            ),
+        ),
+        (
+            "public_study_thekeiplay_lost_origin_pe_36",
+            (
+                '"country_code":"PE"',
+                '"publisher_channel_id":"UChAro6QS0gP88qhgOTBnuSA"',
+                '"set_language":"und"',
+                '"set_external_id":"swsh11"',
+                '"set_name":"Lost Origin"',
+                '"product_scope":"booster_box"',
+                '"pack_count":36',
+                '"observed_at":"2022-09-05T18:00:12Z"',
+            ),
+        ),
+        (
+            "public_study_gringo_gameplays_silver_tempest_uy_36",
+            (
+                '"country_code":"UY"',
+                '"publisher_channel_id":"UCqxdkBJE9jPp0JEv6eA7riQ"',
+                '"set_language":"und"',
+                '"set_external_id":"swsh12"',
+                '"set_name":"Silver Tempest"',
+                '"product_scope":"booster_box"',
+                '"pack_count":36',
+                '"observed_at":"2023-03-30T17:14:02Z"',
+            ),
+        ),
     ):
         clause_start = sql.index(f"WHERE policies.source_key = '{source_key}'")
         clause = sql[clause_start : sql.index(") = 1", clause_start)]
@@ -1370,7 +1568,22 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
             assert expected in clause
         assert "qualifying_" not in clause
         assert "metric_version" not in clause
-        if source_key.startswith("public_study_richards_bricks"):
+        if source_key.startswith(
+            (
+                "public_study_richards_bricks",
+                "public_study_indigo_geek",
+                "public_study_pokehanna",
+                "public_study_tcg_market_panama",
+                "public_study_pokeshow_guatemala",
+                "public_study_cartas_pokemon_argentina",
+                "public_study_pokemaniaco_lucas",
+                "public_study_cofre_lab",
+                "public_study_pokeyabros",
+                "public_study_andree_insane_cards",
+                "public_study_thekeiplay",
+                "public_study_gringo_gameplays",
+            )
+        ):
             config_match = re.search(
                 r"policies\.config = '(\{.*\})'::jsonb",
                 clause,
@@ -1378,7 +1591,34 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
             )
             assert config_match is not None
             config = json.loads(config_match.group(1))
-            assert config["publisher_country_evidence"] == 'country:"Puerto Rico"'
+            expected_country = (
+                'country:"Puerto Rico"'
+                if source_key.startswith("public_study_richards_bricks")
+                else 'country:"Mexico"'
+                if source_key == "public_study_indigo_geek_mx_50"
+                else 'country:"Canada"'
+                if source_key == "public_study_pokehanna_ca_9"
+                else 'country:"Argentina"'
+                if source_key == "public_study_cartas_pokemon_argentina_pitch_black_36"
+                else 'country:"Chile"'
+                if source_key == "public_study_pokemaniaco_lucas_cl_36"
+                else 'country:"Costa Rica"'
+                if source_key == "public_study_cofre_lab_chilling_reign_cr_4"
+                else 'country:"Colombia"'
+                if source_key == "public_study_pokeyabros_perfect_order_co_2"
+                else 'country:"Ecuador"'
+                if source_key == "public_study_andree_insane_cards_cosmic_eclipse_ec_20"
+                else 'country:"Peru"'
+                if source_key == "public_study_thekeiplay_lost_origin_pe_36"
+                else 'country:"Uruguay"'
+                if source_key == "public_study_gringo_gameplays_silver_tempest_uy_36"
+                else (
+                    'country:"Guatemala"; video description: desde Guatemala'
+                    if source_key == "public_study_pokeshow_guatemala_megaevolution_3"
+                    else "channel name: TCG Market Panamá; video description: Contenido exclusivo desde Panamá"
+                )
+            )
+            assert config["publisher_country_evidence"] == expected_country
     brazil_clause_start = sql.index("WHERE policies.source_key = 'public_study_pontocom_br_48'")
     brazil_clause = sql[brazil_clause_start : sql.index(") = 1", brazil_clause_start)]
     for expected in (

@@ -591,7 +591,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 12
+        count(*) = 24
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -898,6 +898,533 @@ public_study_dependencies AS (
               "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
             }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_indigo_geek_mx_50'
+            AND policies.display_name = 'Indigo Geek Megaevolución 50-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=KNCSNJNcjJ8'
+            AND policies.version = 'public-study-indigo-geek-megaevolucion-youtube-v1'
+            AND policies.config = '{
+              "study_key":"indigo-geek-megaevolucion-mx-50-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=KNCSNJNcjJ8",
+              "fetch_url":"https://www.youtube.com/watch?v=KNCSNJNcjJ8",
+              "collector_version":"public-study-indigo-geek-megaevolucion-youtube-v1",
+              "parser_version":"indigo-geek-megaevolucion-evidence-v1",
+              "country_code":"MX",
+              "country_name":"Mexico",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@IndigoGeek/about",
+              "publisher_channel_id":"UCGri3BoVzarWIYCzg8MEQjw",
+              "publisher_country_evidence":"country:\\"Mexico\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me01",
+              "set_language":"es-MX",
+              "set_name":"Megaevolución",
+              "set_official_url":"https://tcg.pokemon.com/es-mx/expansions/mega-evolution/",
+              "product_name":"ETB + Booster Box + Combina y Combate",
+              "product_scope":"all",
+              "pack_count":50,
+              "denominator_basis":"source_declared_complete_opening",
+              "source_native_products":["etb","booster_box","combina_y_combate"],
+              "source_published_at":"2025-09-12T06:00:41-07:00",
+              "observed_at":"2025-09-12T13:00:41Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pokehanna_ca_9'
+            AND policies.display_name = 'PokeHanna Ascended Heroes 9-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=Jj0IxqUYat8'
+            AND policies.version = 'public-study-pokehanna-ascended-heroes-youtube-v1'
+            AND policies.config = '{
+              "study_key":"pokehanna-ascended-heroes-ca-9-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=Jj0IxqUYat8",
+              "fetch_url":"https://www.youtube.com/watch?v=Jj0IxqUYat8",
+              "collector_version":"public-study-pokehanna-ascended-heroes-youtube-v1",
+              "parser_version":"pokehanna-ascended-heroes-evidence-v1",
+              "country_code":"CA",
+              "country_name":"Canada",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@PokeHanna/about",
+              "publisher_channel_id":"UC6stWaGoj-9rsEOzYv56ftQ",
+              "publisher_country_evidence":"country:\\"Canada\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me02.5",
+              "set_language":"en",
+              "set_name":"Ascended Heroes",
+              "set_official_url":"https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-ascended-heroes-elite-trainer-box",
+              "product_name":"Ascended Heroes Elite Trainer Box",
+              "product_scope":"etb",
+              "pack_count":9,
+              "denominator_basis":"source_named_standard_etb_plus_official_9_pack_spec",
+              "denominator_derivation":"one_standard_etb_x_9",
+              "source_published_at":"2026-04-05T11:00:15-07:00",
+              "observed_at":"2026-04-05T18:00:15Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_tcg_market_panama_chaos_rising_6'
+            AND policies.display_name = 'TCG Market Panamá Chaos Rising 6-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=fHQpNECg4y4'
+            AND policies.version = 'public-study-tcg-market-panama-chaos-rising-youtube-v1'
+            AND policies.config = '{
+              "study_key":"tcg-market-chaos-rising-pa-6-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=fHQpNECg4y4",
+              "fetch_url":"https://www.youtube.com/watch?v=fHQpNECg4y4",
+              "collector_version":"public-study-tcg-market-panama-chaos-rising-youtube-v1",
+              "parser_version":"tcg-market-panama-chaos-rising-evidence-v1",
+              "country_code":"PA",
+              "country_name":"Panama",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/channel/UCa68xVUUIKE8dvcfxCcdyrQ/about",
+              "publisher_channel_id":"UCa68xVUUIKE8dvcfxCcdyrQ",
+              "publisher_country_evidence":"channel name: TCG Market Panamá; video description: Contenido exclusivo desde Panamá",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_watch_and_channel_name_review",
+              "set_external_id":"me04",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Chaos Rising",
+              "set_official_url":"https://www.pokemon.com/us/pokemon-tcg/product-gallery/mega-evolution-chaos-rising-booster-bundle",
+              "product_name":"Chaos Rising Booster Bundle",
+              "product_scope":"booster_bundle",
+              "pack_count":6,
+              "denominator_basis":"source_product_opening_plus_official_product_spec",
+              "denominator_derivation":"source_opening_plus_official_6_pack_bundle_spec",
+              "source_published_at":"2026-08-02T17:15:39-07:00",
+              "observed_at":"2026-08-03T00:15:39Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_tcg_market_panama_pitch_black_4'
+            AND policies.display_name = 'TCG Market Panamá Pitch Black 4-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=6kb1MvcnMJE'
+            AND policies.version = 'public-study-tcg-market-panama-pitch-black-youtube-v1'
+            AND policies.config = '{
+              "study_key":"tcg-market-pitch-black-pa-4-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=6kb1MvcnMJE",
+              "fetch_url":"https://www.youtube.com/watch?v=6kb1MvcnMJE",
+              "collector_version":"public-study-tcg-market-panama-pitch-black-youtube-v1",
+              "parser_version":"tcg-market-panama-pitch-black-evidence-v1",
+              "country_code":"PA",
+              "country_name":"Panama",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/channel/UCa68xVUUIKE8dvcfxCcdyrQ/about",
+              "publisher_channel_id":"UCa68xVUUIKE8dvcfxCcdyrQ",
+              "publisher_country_evidence":"channel name: TCG Market Panamá; video description: Contenido exclusivo desde Panamá",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_watch_and_channel_name_review",
+              "set_external_id":"me05",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Pitch Black",
+              "set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase",
+              "product_name":"Pitch Black Build & Battle Box",
+              "product_scope":"build_and_battle",
+              "pack_count":4,
+              "denominator_basis":"source_product_opening_plus_official_product_spec",
+              "denominator_derivation":"source_opening_plus_official_4_pack_build_and_battle_spec",
+              "source_published_at":"2026-08-05T12:09:10-07:00",
+              "observed_at":"2026-08-05T19:09:10Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pokeshow_guatemala_megaevolution_3'
+            AND policies.display_name = 'PokéShow Guatemala Mega Evolution 3-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=DWRdhUuIUvI'
+            AND policies.version = 'public-study-pokeshow-guatemala-megaevolution-youtube-v1'
+            AND policies.config = '{
+              "study_key":"pokeshow-mega-evolution-gt-3-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=DWRdhUuIUvI",
+              "fetch_url":"https://www.youtube.com/watch?v=DWRdhUuIUvI",
+              "collector_version":"public-study-pokeshow-guatemala-megaevolution-youtube-v1",
+              "parser_version":"pokeshow-guatemala-megaevolution-evidence-v1",
+              "country_code":"GT",
+              "country_name":"Guatemala",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@pokeshowdemaddi/about",
+              "publisher_channel_id":"UChG8m-xoKqrXJDCEoE2i9Jg",
+              "publisher_country_evidence":"country:\\"Guatemala\\"; video description: desde Guatemala",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me01",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Mega Evolution",
+              "set_official_url":"https://www.pokemoncenter.com/search/megacards",
+              "product_name":"Mega Evolution Tripack (promo variant unspecified)",
+              "product_scope":"three_pack_blister",
+              "pack_count":3,
+              "denominator_basis":"source_product_opening_plus_official_product_spec",
+              "denominator_derivation":"source_opening_plus_official_3_pack_tripack_spec",
+              "product_variant_claim":"not_claimed",
+              "source_published_at":"2025-10-06T10:21:33-07:00",
+              "observed_at":"2025-10-06T17:21:33Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_cartas_pokemon_argentina_pitch_black_36'
+            AND policies.display_name = 'Cartas Pokemon Argentina Pitch Black 36-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=HcsWjycR1L0'
+            AND policies.version = 'public-study-cartas-pokemon-argentina-pitch-black-youtube-v1'
+            AND policies.config = '{
+              "study_key":"cartas-pokemon-argentina-pitch-black-ar-36-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=HcsWjycR1L0",
+              "fetch_url":"https://www.youtube.com/watch?v=HcsWjycR1L0",
+              "collector_version":"public-study-cartas-pokemon-argentina-pitch-black-youtube-v1",
+              "parser_version":"cartas-pokemon-argentina-pitch-black-evidence-v1",
+              "country_code":"AR",
+              "country_name":"Argentina",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@pokemonargentinatcg/about",
+              "publisher_channel_id":"UCGBtAPv7mLLRgdqeupj2kLg",
+              "publisher_country_evidence":"country:\\"Argentina\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me05",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Pitch Black",
+              "set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-pitch-black-product-showcase",
+              "product_name":"Pitch Black Booster Display Box",
+              "product_scope":"booster_box",
+              "pack_count":36,
+              "denominator_basis":"source_named_complete_box_plus_official_36_pack_spec",
+              "denominator_derivation":"one_complete_booster_display_x_36",
+              "source_published_at":"2026-07-17T11:18:50-07:00",
+              "observed_at":"2026-07-17T18:18:50Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pokemaniaco_lucas_cl_36'
+            AND policies.display_name = 'Pokemaniaco Lucas Phantasmal Flames 36-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=Meg4AO9CqHE'
+            AND policies.version = 'public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1'
+            AND policies.config = '{
+              "study_key":"pokemaniaco-lucas-phantasmal-flames-cl-36-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=Meg4AO9CqHE",
+              "fetch_url":"https://www.youtube.com/watch?v=Meg4AO9CqHE",
+              "collector_version":"public-study-pokemaniaco-lucas-phantasmal-flames-youtube-v1",
+              "parser_version":"pokemaniaco-lucas-phantasmal-flames-evidence-v1",
+              "country_code":"CL",
+              "country_name":"Chile",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@PokemaniacoLucas/about",
+              "publisher_channel_id":"UCDKXzvS5YaUJwsHD1wNkWBw",
+              "publisher_country_evidence":"country:\\"Chile\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me02",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Phantasmal Flames",
+              "set_official_url":"https://www.pokemon.com/us/news/pokemon-tcg-mega-evolution-phantasmal-flames-product-showcase",
+              "product_name":"Phantasmal Flames Booster Display Box",
+              "product_scope":"booster_box",
+              "pack_count":36,
+              "denominator_basis":"source_declared_complete_36_pack_opening",
+              "denominator_derivation":"source_declared_36_packs",
+              "source_published_at":"2025-11-13T08:00:06-08:00",
+              "observed_at":"2025-11-13T16:00:06Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_cofre_lab_chilling_reign_cr_4'
+            AND policies.display_name = 'Cofre Lab Chilling Reign 4-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=15eGmqByP0I'
+            AND policies.version = 'public-study-cofre-lab-chilling-reign-youtube-v1'
+            AND policies.config = '{
+              "study_key":"cofre-lab-chilling-reign-cr-4-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=15eGmqByP0I",
+              "fetch_url":"https://www.youtube.com/watch?v=15eGmqByP0I",
+              "collector_version":"public-study-cofre-lab-chilling-reign-youtube-v1",
+              "parser_version":"cofre-lab-chilling-reign-evidence-v1",
+              "country_code":"CR",
+              "country_name":"Costa Rica",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@cofrelab/about",
+              "publisher_channel_id":"UCqYl3y-wsJqvwow5_tIa22A",
+              "publisher_country_evidence":"country:\\"Costa Rica\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"swsh6",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Chilling Reign",
+              "set_official_url":"https://press.pokemon.com/en/MEDIA-ALERT-New-Pokemon-Trading-Card-Game-Sword-ShieldChilling-Reign-E",
+              "product_name":"Sword & Shield—Chilling Reign Build & Battle Box",
+              "product_scope":"build_and_battle",
+              "pack_count":4,
+              "denominator_basis":"source_named_prerelease_box_plus_official_4_pack_spec",
+              "denominator_derivation":"one_build_and_battle_box_x_4",
+              "source_published_at":"2021-06-05T22:54:03-07:00",
+              "observed_at":"2021-06-06T05:54:03Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_pokeyabros_perfect_order_co_2'
+            AND policies.display_name = 'Pokeyabros Perfect Order 2-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=n_PdWg27x-o'
+            AND policies.version = 'public-study-pokeyabros-perfect-order-youtube-v1'
+            AND policies.config = '{
+              "study_key":"pokeyabros-perfect-order-co-2-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=n_PdWg27x-o",
+              "fetch_url":"https://www.youtube.com/watch?v=n_PdWg27x-o",
+              "collector_version":"public-study-pokeyabros-perfect-order-youtube-v1",
+              "parser_version":"pokeyabros-perfect-order-evidence-v1",
+              "country_code":"CO",
+              "country_name":"Colombia",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@Pokeyabros/about",
+              "publisher_channel_id":"UC6iMHQS7wp-WVH_pD4leBZw",
+              "publisher_country_evidence":"country:\\"Colombia\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"me03",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Perfect Order",
+              "set_official_url":"https://www.pokemon.com/us/features/art-of-the-pokemon-tcg-mega-evolution-perfect-order-expansion",
+              "product_name":"Two Perfect Order booster packs",
+              "product_scope":"all",
+              "pack_count":2,
+              "denominator_basis":"source_declared_two_booster_opening",
+              "denominator_derivation":"source_declared_2_packs",
+              "source_published_at":"2026-09-04T07:00:23-07:00",
+              "observed_at":"2026-09-04T14:00:23Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_andree_insane_cards_cosmic_eclipse_ec_20'
+            AND policies.display_name = 'Andree Insane Cards Cosmic Eclipse 20-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=wDDCbJKFTCw'
+            AND policies.version = 'public-study-andree-insane-cards-cosmic-eclipse-youtube-v1'
+            AND policies.config = '{
+              "study_key":"andree-insane-cards-cosmic-eclipse-ec-20-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=wDDCbJKFTCw",
+              "fetch_url":"https://www.youtube.com/watch?v=wDDCbJKFTCw",
+              "collector_version":"public-study-andree-insane-cards-cosmic-eclipse-youtube-v1",
+              "parser_version":"andree-insane-cards-cosmic-eclipse-evidence-v1",
+              "country_code":"EC",
+              "country_name":"Ecuador",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@andreeinsanecards/about",
+              "publisher_channel_id":"UCvg1acSdKlzcCXAQQKcMvqg",
+              "publisher_country_evidence":"country:\\"Ecuador\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"sm12",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Cosmic Eclipse",
+              "set_official_url":"https://www.pokemon.com/us/pokemon-tcg/sun-moon-cosmic-eclipse",
+              "product_name":"Twenty Cosmic Eclipse booster packs",
+              "product_scope":"all",
+              "pack_count":20,
+              "denominator_basis":"source_declared_twenty_booster_opening",
+              "denominator_derivation":"source_declared_20_packs",
+              "source_published_at":"2023-06-27T14:00:07-07:00",
+              "observed_at":"2023-06-27T21:00:07Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_thekeiplay_lost_origin_pe_36'
+            AND policies.display_name = 'TheKeiPlay Lost Origin 36-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=YKHGiYIhsQU'
+            AND policies.version = 'public-study-thekeiplay-lost-origin-youtube-v1'
+            AND policies.config = '{
+              "study_key":"thekeiplay-lost-origin-pe-36-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=YKHGiYIhsQU",
+              "fetch_url":"https://www.youtube.com/watch?v=YKHGiYIhsQU",
+              "collector_version":"public-study-thekeiplay-lost-origin-youtube-v1",
+              "parser_version":"thekeiplay-lost-origin-evidence-v1",
+              "country_code":"PE",
+              "country_name":"Peru",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@TheKeiPlay/about",
+              "publisher_channel_id":"UChAro6QS0gP88qhgOTBnuSA",
+              "publisher_country_evidence":"country:\\"Peru\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"swsh11",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Lost Origin",
+              "set_official_url":"https://www.pokemon.com/us/news/enter-to-win-pokemon-tcg-sword-shield-era-booster-display-boxes",
+              "product_name":"Sword & Shield—Lost Origin Booster Display Box",
+              "product_scope":"booster_box",
+              "pack_count":36,
+              "denominator_basis":"source_named_complete_box_plus_official_36_pack_spec",
+              "denominator_derivation":"one_complete_booster_display_x_36",
+              "source_published_at":"2022-09-05T11:00:12-07:00",
+              "observed_at":"2022-09-05T18:00:12Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_gringo_gameplays_silver_tempest_uy_36'
+            AND policies.display_name = 'Gringo-GamePlays Silver Tempest 36-pack coverage'
+            AND policies.domain = 'www.youtube.com'
+            AND policies.base_url = 'https://www.youtube.com/watch?v=lYzM0jtPLKw'
+            AND policies.version = 'public-study-gringo-gameplays-silver-tempest-youtube-v1'
+            AND policies.config = '{
+              "study_key":"gringo-gameplays-silver-tempest-uy-36-v1",
+              "canonical_url":"https://www.youtube.com/watch?v=lYzM0jtPLKw",
+              "fetch_url":"https://www.youtube.com/watch?v=lYzM0jtPLKw",
+              "collector_version":"public-study-gringo-gameplays-silver-tempest-youtube-v1",
+              "parser_version":"gringo-gameplays-silver-tempest-evidence-v1",
+              "country_code":"UY",
+              "country_name":"Uruguay",
+              "geography_basis":"publisher_country",
+              "geography_confidence":"tier_b",
+              "publisher_country_url":"https://www.youtube.com/@gringo-gameplays8987/about",
+              "publisher_channel_id":"UCqxdkBJE9jPp0JEv6eA7riQ",
+              "publisher_country_evidence":"country:\\"Uruguay\\"",
+              "publisher_country_checked_at":"2026-09-05",
+              "geography_review_method":"manual_static_channel_about_review",
+              "set_external_id":"swsh12",
+              "set_language":"und",
+              "set_language_basis":"source_does_not_state_card_language",
+              "set_name":"Silver Tempest",
+              "set_official_url":"https://www.pokemon.com/us/news/enter-to-win-pokemon-tcg-sword-shield-era-booster-display-boxes",
+              "product_name":"Sword & Shield—Silver Tempest Booster Display Box",
+              "product_scope":"booster_box",
+              "pack_count":36,
+              "denominator_basis":"source_named_booster_box_plus_official_36_pack_spec",
+              "denominator_derivation":"one_booster_display_x_36",
+              "source_published_at":"2023-03-30T10:14:02-07:00",
+              "observed_at":"2023-03-30T17:14:02Z",
+              "denominator_complete":true,
+              "robots_url":"https://www.youtube.com/robots.txt",
+              "robots_checked_at":"2026-09-05",
+              "robots_decision":"watch_route_not_disallowed",
+              "terms_url":"https://www.youtube.com/static?template=terms",
+              "terms_checked_at":"2026-09-05",
+              "terms_effective_date":"2023-12-15",
+              "terms_status":"public_browse_static_metadata_only",
+              "rights_scope":"minimal_noncreative_facts_no_media_transcript_or_body_reuse"
+            }'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_comicbook_us_55',
@@ -911,7 +1438,19 @@ public_study_dependencies AS (
         'public_study_allonline_th_10',
         'public_study_pontocom_br_48',
         'public_study_richards_bricks_pr_18',
-        'public_study_richards_bricks_pr_36'
+        'public_study_richards_bricks_pr_36',
+        'public_study_indigo_geek_mx_50',
+        'public_study_pokehanna_ca_9',
+        'public_study_tcg_market_panama_chaos_rising_6',
+        'public_study_tcg_market_panama_pitch_black_4',
+        'public_study_pokeshow_guatemala_megaevolution_3',
+        'public_study_cartas_pokemon_argentina_pitch_black_36',
+        'public_study_pokemaniaco_lucas_cl_36',
+        'public_study_cofre_lab_chilling_reign_cr_4',
+        'public_study_pokeyabros_perfect_order_co_2',
+        'public_study_andree_insane_cards_cosmic_eclipse_ec_20',
+        'public_study_thekeiplay_lost_origin_pe_36',
+        'public_study_gringo_gameplays_silver_tempest_uy_36'
       )
     ),
     false
