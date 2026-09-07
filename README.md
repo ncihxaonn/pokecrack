@@ -20,7 +20,7 @@ Older implementation reports are historical evidence, not the current runtime in
 ## Architecture
 
 ```text
-Private GitHub monorepo
+Public GitHub monorepo
 ├── Vercel Hobby: Next.js public dashboard + protected admin status UI
 ├── Supabase Free: PostgreSQL/Auth/RLS/public aggregate layer
 └── Existing VPS (Docker Compose)
@@ -116,7 +116,7 @@ non-GitHub execution path.
 
 1. Create a dedicated **Supabase Free organization and project**; apply migrations and create the first admin account with signup disabled.
 2. Create a **Vercel Hobby** project rooted at `apps/web`; configure only public Supabase values in browser-visible variables and server secrets in Vercel settings.
-3. Prepare the VPS as a non-root deploy user, clone the private repository using a dedicated deploy key, create `/opt/pokecrack/{browser-profiles,backups,opencli-extension}`, and set profile permissions to `0700`.
+3. Prepare the VPS as a non-root deploy user, clone the public repository at the exact reviewed SHA, create `/opt/pokecrack/{browser-profiles,backups,opencli-extension}`, and set profile permissions to `0700`. Keep all configuration and secrets outside the checkout.
 4. Pin and install an audited OpenCLI CLI/Browser Bridge release with its SHA-256; do not use a floating `latest` artifact.
 5. Start Compose, tunnel `6080` over SSH, log into each permitted platform profile, run the browser doctor, and close the tunnel.
 6. Configure daily `pg_dump` backups and test restore into a fresh project.

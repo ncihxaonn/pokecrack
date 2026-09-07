@@ -601,9 +601,12 @@ printf '%s  %s\n' '{digest}' "$3"
 class WorkflowSecurityPolicyTests(unittest.TestCase):
     def test_ci_audits_both_python_lockfiles_with_a_pinned_auditor(self) -> None:
         workflow = (REPOSITORY_ROOT / ".github" / "workflows" / "ci.yml").read_text()
-        self.assertGreaterEqual(workflow.count("pip-audit==2.10.1"), 2)
-        self.assertIn("pokecrack-worker-audit.txt", workflow)
-        self.assertIn("pokecrack-browser-audit.txt", workflow)
+        runner = (REPOSITORY_ROOT / "scripts" / "run_ci_checks.sh").read_text()
+        self.assertIn("scripts/run_ci_checks.sh worker", workflow)
+        self.assertIn("scripts/run_ci_checks.sh auth-browser", workflow)
+        self.assertGreaterEqual(runner.count("pip-audit==2.10.1"), 2)
+        self.assertIn("worker-audit.txt", runner)
+        self.assertIn("auth-browser-audit.txt", runner)
 
     def test_worker_deploy_workflow_forwards_only_explicit_reviewed_service_sets(
         self,

@@ -270,7 +270,7 @@ jobs:
           git -C "$repository" diff --quiet --ignore-submodules --
           git -C "$repository" diff --cached --quiet --ignore-submodules --
           [[ -z $(git -C "$repository" status --porcelain --untracked-files=all) ]]
-          [[ "$(git -C "$repository" remote get-url origin)" == "https://github.com/ncihxaonn/pokecrack.git" ]]
+          [[ "$(git -C "$repository" remote get-url origin)" =~ ^https://github\.com/ncihxaonn/pokecrack(\.git)?$ ]]
           [[ "$(git -C "$repository" bundle list-heads "$bundle" | awk '$2 == "HEAD" { print $1 }')" == "$sha" ]]
           git -C "$repository" bundle verify "$bundle" >/dev/null
           if ! git -C "$repository" cat-file -e "${sha}^{commit}" 2>/dev/null; then

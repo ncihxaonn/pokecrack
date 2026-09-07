@@ -1,5 +1,20 @@
 # Release status and convergence
 
+## Repository visibility update: 2026-09-07
+
+The owner explicitly approved making the complete `ncihxaonn/pokecrack`
+repository public, including its reachable branches, history, Worker,
+auth-browser, Supabase migrations, deployment scripts, CI and documentation.
+GitHub now reports the repository as public. No credentials, database dumps,
+browser profiles or private API payloads were added. The dated baseline below
+still records the private visibility that was verified on 2026-09-05.
+
+The GitHub-managed API backup workflow remains private-only by design: its raw
+rollback artifact would not be safe in publicly readable Actions storage. Public
+repository operation therefore uses the VPS retention path or a separately
+approved private artifact store; this visibility change does not waive the
+backup, restore, CI or production release gates.
+
 This is the operational entry point, not permission to deploy. Update the dated
 evidence after each actual release. A candidate, clean checkout, successful
 preview, or completed code review is not a production release.
