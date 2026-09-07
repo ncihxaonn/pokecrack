@@ -90,6 +90,12 @@ class CanonicalCiRunnerTests(unittest.TestCase):
             source,
         )
 
+    def test_database_cleanup_state_survives_stage_function_return(self) -> None:
+        source = RUNNER.read_text(encoding="utf-8")
+        self.assertIn("DATABASE_STACK_STARTED=false", source)
+        self.assertIn('[[ "$DATABASE_STACK_STARTED" == true ]]', source)
+        self.assertNotIn("local database_stack_started=false", source)
+
 
 if __name__ == "__main__":
     unittest.main()
