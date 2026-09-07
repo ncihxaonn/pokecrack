@@ -1,0 +1,9 @@
+FROM postgres:17.6-bookworm@sha256:f3bd19c606e442c3d7bdfa8002e03fe260a1023351e0ea4598032022b68dd6e3
+RUN apt-get update && apt-get install --yes --no-install-recommends git curl ca-certificates python3 openssl libicu72 libssl3 libkrb5-3 zlib1g && rm -rf /var/lib/apt/lists/*
+RUN useradd --create-home --uid 10001 runner
+WORKDIR /home/runner
+RUN curl --fail --location --silent --show-error https://github.com/actions/runner/releases/download/v2.337.0/actions-runner-linux-x64-2.337.0.tar.gz -o /tmp/runner.tar.gz && echo '70920811a4f8ad4328818682bca5c6469c1c942fab52448868071d0063816613  /tmp/runner.tar.gz' | sha256sum --check && tar -xzf /tmp/runner.tar.gz && rm /tmp/runner.tar.gz && chown -R runner:runner /home/runner
+COPY deploy/certs/supabase-prod-ca-2021.crt /run/supabase-prod-ca-2021.crt
+USER runner
+ENV PATH="/usr/lib/postgresql/17/bin:${PATH}"
+ENTRYPOINT ["/bin/bash", "-c", "read -r jit; exec ./run.sh --jitconfig \"$jit\""]
