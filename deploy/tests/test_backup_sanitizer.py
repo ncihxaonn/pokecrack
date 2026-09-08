@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import ast
 import os
+import runpy
 import subprocess
 import tempfile
 import unittest
@@ -114,6 +116,12 @@ AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V9 = (
     PUBLIC_STUDY_SOURCE_KEYS_V8 + AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS
 )
+PUBLIC_STUDY_SOURCE_KEYS_V10 = PUBLIC_STUDY_SOURCE_KEYS_V9 + (
+    b"public_study_garbage_rips_cn_1",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V11 = PUBLIC_STUDY_SOURCE_KEYS_V10 + (
+    b"public_study_bikuhime_id_20",
+)
 PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V1
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
@@ -139,6 +147,8 @@ COLOMBIA_POLICY = "f9999999-9999-4999-8999-999999999999"
 ECUADOR_POLICY = "fa111111-1111-4111-8111-111111111111"
 PERU_POLICY = "fa222222-2222-4222-8222-222222222222"
 URUGUAY_POLICY = "fa333333-3333-4333-8333-333333333333"
+CHINA_POLICY = "fa444444-4444-4444-8444-444444444444"
+INDONESIA_POLICY = "fa555555-5555-4555-8555-555555555555"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
     "country_code, country_name, geography_basis, geography_confidence, "
@@ -307,6 +317,8 @@ def public_study_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V7,
         PUBLIC_STUDY_SOURCE_KEYS_V8,
         PUBLIC_STUDY_SOURCE_KEYS_V9,
+        PUBLIC_STUDY_SOURCE_KEYS_V10,
+        PUBLIC_STUDY_SOURCE_KEYS_V11,
     ):
         product_values += b", 'four_pack_blister'::text"
     return PUBLIC_STUDY_DDL.replace(b"{product_values}", product_values)
@@ -323,18 +335,38 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V7,
         PUBLIC_STUDY_SOURCE_KEYS_V8,
         PUBLIC_STUDY_SOURCE_KEYS_V9,
+        PUBLIC_STUDY_SOURCE_KEYS_V10,
+        PUBLIC_STUDY_SOURCE_KEYS_V11,
     ):
         product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
         if source_keys in (
             PUBLIC_STUDY_SOURCE_KEYS_V7,
             PUBLIC_STUDY_SOURCE_KEYS_V8,
             PUBLIC_STUDY_SOURCE_KEYS_V9,
+            PUBLIC_STUDY_SOURCE_KEYS_V10,
+            PUBLIC_STUDY_SOURCE_KEYS_V11,
         ):
             product_values += b", 'build_and_battle'::text, 'three_pack_blister'::text"
     return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
 
 
 PUBLIC_STUDY_COVERAGE_FACTS = {
+    b"public_study_garbage_rips_cn_1": (
+        b"garbage-rips-gem-vol2-cn-1-v1",
+        CHINA_POLICY.encode(), b"CN", b"China", b"2026-02-13 13:30:09+00",
+        b"1", b"gem-pack-vol-2", b"all",
+        b"public-study-garbage-rips-gem-vol2-v1",
+        b"garbage-rips-gem-vol2-evidence-v1",
+        b"a53e1e4f4b881e8d7f8ba006764aae8b8e27323ffa1a41a138caf5c05ff1c804",
+    ),
+    b"public_study_bikuhime_id_20": (
+        b"bikuhime-hantaman-pertama-a-id-20-v1",
+        INDONESIA_POLICY.encode(), b"ID", b"Indonesia", b"2020-05-17 07:23:58+00",
+        b"20", b"hantaman-pertama-set-a", b"booster_box",
+        b"public-study-bikuhime-hantaman-pertama-a-v1",
+        b"bikuhime-hantaman-pertama-a-evidence-v1",
+        b"693653031f398c3006a7aa6d3b476c968f5b3f67d6452e73d904ed1ef377b328",
+    ),
     b"public_study_cardchill_gb_90": (
         b"cardchill-ascended-heroes-gb-90-v1", CARDCHILL_POLICY.encode(), b"GB",
         b"United Kingdom", b"2026-03-03 11:26:21+00", b"90", b"me02.5", b"etb",
@@ -705,6 +737,8 @@ class BackupSanitizerTests(unittest.TestCase):
             b"public_study_andree_insane_cards_cosmic_eclipse_ec_20": ECUADOR_POLICY,
             b"public_study_thekeiplay_lost_origin_pe_36": PERU_POLICY,
             b"public_study_gringo_gameplays_silver_tempest_uy_36": URUGUAY_POLICY,
+            b"public_study_garbage_rips_cn_1": CHINA_POLICY,
+            b"public_study_bikuhime_id_20": INDONESIA_POLICY,
         }
         policy_rows = b"".join(
             f"{policy_ids[source_key]}\t{source_key.decode()}\tpolicy\n".encode()
@@ -1082,6 +1116,74 @@ class BackupSanitizerTests(unittest.TestCase):
         result = self.run_sanitizer(drifted_coverage, public_studies="present")
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(result.stdout, b"")
+
+    def test_asian_transition_profiles_preserve_exact_rows_and_idle_gates(self) -> None:
+        for profile in (PUBLIC_STUDY_SOURCE_KEYS_V10, PUBLIC_STUDY_SOURCE_KEYS_V11):
+            with self.subTest(profile=len(profile)):
+                dump = self.with_public_study_ledger(
+                    self.complete_dump(), comicbook_ledger_row(), source_keys=profile,
+                )
+                result = self.run_sanitizer(dump, public_studies="present")
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                for source_key in profile:
+                    self.assertEqual(result.stdout.count(source_key + b"\n"), 1)
+                for row in public_study_coverage_rows(profile):
+                    self.assertIn(row, result.stdout)
+
+    def test_asian_coverage_backup_drift_fails_without_output(self) -> None:
+        profile = PUBLIC_STUDY_SOURCE_KEYS_V11
+        base = self.with_public_study_ledger(
+            self.complete_dump(), comicbook_ledger_row(), source_keys=profile,
+        )
+        for key in (b"public_study_garbage_rips_cn_1", b"public_study_bikuhime_id_20"):
+            original = public_study_coverage_row(key)
+            for field, value in (
+                ("pack_count", b"999"),
+                ("country_code", b"US"),
+                ("evidence_sha256", b"0" * 64),
+                ("source_observed_at", b"2020-01-01 00:00:00+00"),
+                ("source_policy_id", WRONG_POLICY.encode()),
+                ("study_key", b"unreviewed-asia-v1"),
+            ):
+                with self.subTest(key=key, field=field):
+                    result = self.run_sanitizer(
+                        base.replace(original, public_study_coverage_row(key, **{field: value}), 1),
+                        public_studies="present",
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(result.stdout, b"")
+            for replacement in (b"", original + b"\n" + original):
+                result = self.run_sanitizer(
+                    base.replace(original + b"\n", replacement + b"\n", 1),
+                    public_studies="present",
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+
+    def test_new_worker_study_requires_a_reviewed_backup_contract(self) -> None:
+        # CI must catch a new collector that would make the next backup fail.
+        module = runpy.run_path(str(SANITIZER))
+        identities = ast.parse((
+            REPOSITORY_ROOT / "services/worker/pokecrack_worker/config/public_studies.py"
+        ).read_text())
+        worker_keys = {
+            keyword.value.value.encode()
+            for call in ast.walk(identities)
+            if isinstance(call, ast.Call)
+            and isinstance(call.func, ast.Name) and call.func.id == "PublicStudyIdentity"
+            for keyword in call.keywords
+            if keyword.arg == "study_key" and isinstance(keyword.value, ast.Constant)
+        }
+        backup_keys = (
+            set(module["PUBLIC_STUDY_EXACT_FIELDS"])
+            | set(module["PUBLIC_STUDY_COVERAGE_EXACT_FIELDS"])
+        )
+        self.assertEqual(worker_keys, backup_keys)
+        self.assertEqual(
+            set(module["PUBLIC_STUDY_SOURCE_KEYS"]),
+            set(module["PUBLIC_STUDY_POLICY_SOURCE_KEY"].values())
+            | set(module["PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY"].values()),
+        )
 
     def test_pokesup_study_key_is_not_promoted_to_the_statistical_ledger(self) -> None:
         dump = self.with_public_study_ledger(
