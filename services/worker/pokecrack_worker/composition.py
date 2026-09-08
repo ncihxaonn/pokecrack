@@ -595,7 +595,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 27
+        count(*) = 28
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -1532,9 +1532,46 @@ public_study_dependencies AS (
   "report_evidence_sha256": "b5dc75b772fb6b63a198c72f43193e76e2fd48f332ec546dd1800062640552ad"
 }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_nanjakorya_paradigm_100'
+            AND policies.display_name = 'Nanjakorya Paradigm Trigger 100-pack coverage'
+            AND policies.domain = 'nanjakorya.com'
+            AND policies.base_url = 'https://nanjakorya.com/1823'
+            AND policies.version = 'public-study-nanjakorya-paradigm-v1'
+            AND policies.config = '{
+  "study_key": "nanjakorya-paradigm-jp-100-v1",
+  "canonical_url": "https://nanjakorya.com/1823",
+  "collector_version": "public-study-nanjakorya-paradigm-v1",
+  "parser_version": "nanjakorya-paradigm-evidence-v1",
+  "country_code": "JP",
+  "country_name": "Japan",
+  "geography_basis": "product_market",
+  "geography_confidence": "tier_b",
+  "set_external_id": "s12",
+  "set_language": "ja",
+  "set_name": "Paradigm Trigger",
+  "product_scope": "all",
+  "pack_count": 100,
+  "observed_at": "2022-10-21T11:10:35Z",
+  "denominator_complete": true,
+  "set_official_url": "https://www.pokemon-card.com/ex/s12/index.html",
+  "robots_url": "https://nanjakorya.com/robots.txt",
+  "robots_checked_at": "2026-09-08",
+  "terms_checked_at": "2026-09-08",
+  "terms_status": "no_independent_terms_page",
+  "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse",
+  "rarity_card_counts": {"RR":14,"RRR":7,"SR":1,"HR":2},
+  "purchase_group_pack_counts": [30,10,30,30],
+  "source_label_inconsistencies": true,
+  "opening_country": null,
+  "opened_at": null,
+  "report_evidence_sha256": "e34a7b2043134f3c8ed6d62b024b64bf3d9c8503a0f3c66564ecbbc36b8b6b6c"
+}'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_nanjakorya_jp_100',
+        'public_study_nanjakorya_paradigm_100',
         'public_study_bikuhime_id_20',
         'public_study_comicbook_us_55',
         'public_study_wargamer_gb_17',

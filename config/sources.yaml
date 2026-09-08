@@ -23,6 +23,7 @@ sources:
       production_admitted: false
     reason: Reference inventory only. Terms prohibit automated bots or scripts. The 151 report combines own pulls with third-party sources, so cohort independence is unresolved. No collection routes or content retention.
   nanjakorya.com:
+    exact_urls: ["https://nanjakorya.com/1123"]
     enabled: true
     collector: scrapling_http
     access_mode: public
@@ -66,6 +67,55 @@ sources:
     reason: One 100-pack Star Birth cohort (80 loose plus 20 premium-box packs). RR16 RRR6 SR4 HR1 are card counts, not hit-pack rates. Japanese product market only; opening place/date unknown. No media or body retention.
     routes: [static]
     adapter: nanjakorya_star_birth_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+  nanjakorya.com#paradigm-trigger:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    exact_urls: ["https://nanjakorya.com/1823"]
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-nanjakorya-paradigm-v1
+    config:
+      study_key: "nanjakorya-paradigm-jp-100-v1"
+      canonical_url: "https://nanjakorya.com/1823"
+      collector_version: "public-study-nanjakorya-paradigm-v1"
+      parser_version: "nanjakorya-paradigm-evidence-v1"
+      country_code: "JP"
+      country_name: "Japan"
+      geography_basis: "product_market"
+      geography_confidence: "tier_b"
+      set_external_id: "s12"
+      set_language: "ja"
+      set_name: "Paradigm Trigger"
+      product_scope: "all"
+      pack_count: 100
+      observed_at: "2022-10-21T11:10:35Z"
+      denominator_complete: true
+      set_official_url: "https://www.pokemon-card.com/ex/s12/index.html"
+      robots_url: "https://nanjakorya.com/robots.txt"
+      robots_checked_at: "2026-09-08"
+      terms_checked_at: "2026-09-08"
+      terms_status: "no_independent_terms_page"
+      rights_scope: "minimal_noncreative_facts_no_media_or_body_reuse"
+      rarity_card_counts: {"RR":14,"RRR":7,"SR":1,"HR":2}
+      purchase_group_pack_counts: [30,10,30,30]
+      source_label_inconsistencies: true
+      opening_country: null
+      opened_at: null
+      report_evidence_sha256: "e34a7b2043134f3c8ed6d62b024b64bf3d9c8503a0f3c66564ecbbc36b8b6b6c"
+    reason: One primary 100-pack Paradigm Trigger cohort, four consecutive groups. Native RR14 RRR7 SR1 HR2; source labels have inconsistencies and are not normalized hit-rate evidence. Japanese product market only, opening location/date unknown. No body or media retention.
+    routes: [static]
+    adapter: nanjakorya_paradigm_trigger_study
     metadata_only: false
     requests_per_minute: 2
     cache_ttl_seconds: 86400
