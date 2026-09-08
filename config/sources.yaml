@@ -1,6 +1,75 @@
 version: 1
 default: disabled
 sources:
+  nanjakorya.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-nanjakorya-star-birth-v1
+    config:
+      study_key: "nanjakorya-star-birth-jp-100-v1"
+      canonical_url: "https://nanjakorya.com/1123"
+      collector_version: "public-study-nanjakorya-star-birth-v1"
+      parser_version: "nanjakorya-star-birth-evidence-v1"
+      country_code: "JP"
+      country_name: "Japan"
+      geography_basis: "product_market"
+      geography_confidence: "tier_b"
+      set_external_id: "s9"
+      set_language: "ja"
+      set_name: "Star Birth"
+      product_scope: "all"
+      pack_count: 100
+      observed_at: "2022-02-21T20:40:46Z"
+      denominator_complete: true
+      set_official_url: "https://www.pokemon-card.com/ex/s9/index.html"
+      robots_url: "https://nanjakorya.com/robots.txt"
+      robots_checked_at: "2026-09-08"
+      terms_checked_at: "2026-09-08"
+      terms_status: "no_independent_terms_page"
+      rights_scope: "minimal_noncreative_facts_no_media_or_body_reuse"
+      rarity_card_counts: {"RR":16,"RRR":6,"SR":4,"HR":1}
+      loose_pack_count: 80
+      premium_box_pack_count: 20
+      opening_country: null
+      opened_at: null
+      report_evidence_sha256: "b5dc75b772fb6b63a198c72f43193e76e2fd48f332ec546dd1800062640552ad"
+    reason: One 100-pack Star Birth cohort (80 loose plus 20 premium-box packs). RR16 RRR6 SR4 HR1 are card counts, not hit-pack rates. Japanese product market only; opening place/date unknown. No media or body retention.
+    routes: [static]
+    adapter: nanjakorya_star_birth_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
+  cardshoplive.com:
+    name: Card Shop Live
+    enabled: false
+    collector: disabled
+    access_mode: disabled
+    robots_policy: respect
+    include_subdomains: true
+    statistics_eligible_default: false
+    retention_days: 0
+    version: restricted-source-cardshoplive-v1
+    routes: []
+    metadata_only: true
+    retain_raw_html: false
+    terms_url: https://cardshoplive.com/policies/terms-of-service
+    config:
+      access_review_status: publisher_authorization_required
+      restriction_basis: terms_section_12_prohibits_spider_crawl_scrape
+      policy_reviewed_on: "2026-09-08"
+      security_finding_status: not_established
+      production_admitted: false
+    reason: Registered for source inventory only. Earlier policy review found a crawl/scrape prohibition; robots allowance is not permission and public accessibility is not proof of a vulnerability. No collection route is enabled pending publisher authorization and review.
   bikuhime.wordpress.com:
     enabled: true
     collector: scrapling_http

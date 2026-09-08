@@ -595,7 +595,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 26
+        count(*) = 27
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -1491,8 +1491,50 @@ public_study_dependencies AS (
   "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
 }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_nanjakorya_jp_100'
+            AND policies.display_name = 'Nanjakorya Star Birth 100-pack coverage'
+            AND policies.domain = 'nanjakorya.com'
+            AND policies.base_url = 'https://nanjakorya.com/1123'
+            AND policies.version = 'public-study-nanjakorya-star-birth-v1'
+            AND policies.config = '{
+  "study_key": "nanjakorya-star-birth-jp-100-v1",
+  "canonical_url": "https://nanjakorya.com/1123",
+  "collector_version": "public-study-nanjakorya-star-birth-v1",
+  "parser_version": "nanjakorya-star-birth-evidence-v1",
+  "country_code": "JP",
+  "country_name": "Japan",
+  "geography_basis": "product_market",
+  "geography_confidence": "tier_b",
+  "set_external_id": "s9",
+  "set_language": "ja",
+  "set_name": "Star Birth",
+  "product_scope": "all",
+  "pack_count": 100,
+  "observed_at": "2022-02-21T20:40:46Z",
+  "denominator_complete": true,
+  "set_official_url": "https://www.pokemon-card.com/ex/s9/index.html",
+  "robots_url": "https://nanjakorya.com/robots.txt",
+  "robots_checked_at": "2026-09-08",
+  "terms_checked_at": "2026-09-08",
+  "terms_status": "no_independent_terms_page",
+  "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse",
+  "rarity_card_counts": {
+    "RR": 16,
+    "RRR": 6,
+    "SR": 4,
+    "HR": 1
+  },
+  "loose_pack_count": 80,
+  "premium_box_pack_count": 20,
+  "opening_country": null,
+  "opened_at": null,
+  "report_evidence_sha256": "b5dc75b772fb6b63a198c72f43193e76e2fd48f332ec546dd1800062640552ad"
+}'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
+        'public_study_nanjakorya_jp_100',
         'public_study_bikuhime_id_20',
         'public_study_comicbook_us_55',
         'public_study_wargamer_gb_17',

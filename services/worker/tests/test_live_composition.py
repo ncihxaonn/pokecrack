@@ -1321,6 +1321,7 @@ def test_public_study_flag_registers_all_twenty_six_reviewed_daily_jobs(
         {"study_key": "gringo-gameplays-silver-tempest-uy-36-v1"},
         {"study_key": "garbage-rips-gem-vol2-cn-1-v1"},
         {"study_key": "bikuhime-hantaman-pertama-a-id-20-v1"},
+        {"study_key": "nanjakorya-star-birth-jp-100-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1343,7 +1344,11 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 26" in sql
+    assert "count(*) = 27" in sql
+    # A source must be counted inside the correct CTE, never another provider.
+    before_studies, study_sql = sql.split("public_study_dependencies AS (", 1)
+    assert "public_study_nanjakorya_jp_100" not in before_studies
+    assert study_sql.count("'public_study_nanjakorya_jp_100'") == 2
     assert "public_study_bikuhime_id_20" in sql
     assert "public_study_garbage_rips_cn_1" in sql
     assert '"geography_basis": "product_market"' in sql
