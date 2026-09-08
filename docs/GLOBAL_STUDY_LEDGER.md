@@ -83,6 +83,15 @@ issue creates production evidence. Research metadata is minimal public facts,
 never a cached page body or media. A successful test is not proof the schedule
 has run: verify a main-branch run and its artifact after merging.
 
+Failures report a fixed stage and an allowlisted error code, not the original
+exception or generated document. `research_unavailable` means the isolated
+research command failed; it is not evidence of an invalid login. A `validation`
+failure means the returned batch was rejected. A `publication` failure means
+history reconstruction or publication failed; it must not trigger a blind retry
+without checking the existing run and history. No failure repairs a candidate,
+weakens admission checks, or exposes raw provider output. Historical batches and
+their fingerprints are unchanged by diagnostics.
+
 ## Remaining work (not complete)
 
 Verify the scheduled discovery and accumulating ledger on main;

@@ -16,6 +16,34 @@ SCOPES = ("global", "asia", "europe", "north-america", "latin-america", "africa"
 REPO = "ncihxaonn/pokecrack"
 MARKER = "<!-- pokecrack-global-research-v1 -->"
 TITLE = "[Global research batch] "
+# Public logs must contain only our finite diagnostic vocabulary, never a
+# provider response, generated report, local path, or exception traceback.
+SAFE_FAILURE_CODES = frozenset({
+    "unsupported_scope", "timezone_required", "research_unavailable",
+    "research_timeout", "invalid_report", "batch_too_large", "batch_study_limit",
+    "normalized_batch_too_large", "history_capacity_requires_archive",
+    "invalid_history_body", "history_fingerprint_mismatch", "invalid_identity",
+    "invalid_reference_url", "invalid_pack_count", "invalid_study_fields",
+    "invalid_list", "missing_provenance", "invalid_country",
+    "invalid_geography_basis", "country_requires_evidence_basis",
+    "invalid_pack_precision", "pack_precision_mismatch", "invalid_source_sample",
+    "native_sample_must_not_be_converted_to_packs", "invalid_metrics",
+    "invalid_metric", "duplicate_metric", "invalid_metric_unit",
+    "invalid_hit_count", "exact_metric_requires_exact_denominator",
+    "hits_exceed_packs", "input_too_large", "invalid_catalog",
+})
+
+
+def failure_code(error: Exception) -> str:
+    if isinstance(error, json.JSONDecodeError):
+        return "invalid_json"
+    if isinstance(error, subprocess.CalledProcessError):
+        return "provider_command_failed"
+    if isinstance(error, OSError):
+        return "io_unavailable"
+    if type(error) is ValueError and str(error) in SAFE_FAILURE_CODES:
+        return str(error)
+    return "invalid_input"
 
 
 def select_scope(requested: str, now: datetime) -> str:
@@ -173,18 +201,27 @@ def main() -> None:
     parser.add_argument("--publish", type=Path)
     parser.add_argument("--seed", type=Path, default=Path("data/research/global-studies.json"))
     args = parser.parse_args()
+    stage = "selection"
     try:
         scope = select_scope(args.scope, datetime.now(timezone.utc))
         if args.select_only:
             print(scope)
         elif args.publish:
+            stage = "read_batch"
             with args.publish.open("rb") as source:
-                batch = validate_batch(source.read(MAX_BYTES + 1))
+                raw = source.read(MAX_BYTES + 1)
+            stage = "validation"
+            batch = validate_batch(raw)
+            stage = "publication"
             print(json.dumps(publish(batch, args.seed), sort_keys=True))
         else:
-            print(json.dumps(validate_batch(research_document(prompt(scope), schema())), sort_keys=True))
-    except (ValueError, OSError, TypeError, KeyError, subprocess.CalledProcessError):
-        raise SystemExit("global_research_failed: no data admitted") from None
+            stage = "research"
+            raw = research_document(prompt(scope), schema())
+            stage = "validation"
+            print(json.dumps(validate_batch(raw), sort_keys=True))
+    except (ValueError, OSError, TypeError, KeyError, subprocess.CalledProcessError) as error:
+        raise SystemExit(f"global_research_failed: stage={stage} code={failure_code(error)}; "
+                         "no production data admitted") from None
 
 
 if __name__ == "__main__":
