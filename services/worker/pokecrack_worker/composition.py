@@ -595,7 +595,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 28
+        count(*) = 29
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -1568,8 +1568,43 @@ public_study_dependencies AS (
   "report_evidence_sha256": "e34a7b2043134f3c8ed6d62b024b64bf3d9c8503a0f3c66564ecbbc36b8b6b6c"
 }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_bokunotebook_th_1'
+            AND policies.display_name = 'Bokunotebook VSTAR Universe one-pack coverage'
+            AND policies.domain = 'bokunotebook.com'
+            AND policies.base_url = 'https://bokunotebook.com/archives/13725'
+            AND policies.version = 'public-study-bokunotebook-vstar-universe-v1'
+            AND policies.config = '{
+  "study_key": "bokunotebook-vstar-universe-th-1-v1",
+  "canonical_url": "https://bokunotebook.com/archives/13725",
+  "collector_version": "public-study-bokunotebook-vstar-universe-v1",
+  "parser_version": "bokunotebook-vstar-universe-evidence-v1",
+  "country_code": "TH",
+  "country_name": "Thailand",
+  "geography_basis": "product_market",
+  "geography_confidence": "tier_b",
+  "set_external_id": "s12a",
+  "set_language": "th",
+  "set_name": "จักรวาลแห่ง VSTAR",
+  "product_scope": "all",
+  "pack_count": 1,
+  "observed_at": "2026-07-01T12:01:46Z",
+  "denominator_complete": true,
+  "set_official_url": "https://asia.pokemon-card.com/th/archive/special/card/s12a/index.html",
+  "robots_url": "https://bokunotebook.com/robots.txt",
+  "robots_checked_at": "2026-09-08",
+  "terms_url": "https://bokunotebook.com/privacy-policy",
+  "terms_checked_at": "2026-09-08",
+  "terms_status": "public_site_policy_reviewed",
+  "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse",
+  "opening_country": null,
+  "opened_at": null,
+  "observed_card_count": 10
+}'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
+        'public_study_bokunotebook_th_1',
         'public_study_nanjakorya_jp_100',
         'public_study_nanjakorya_paradigm_100',
         'public_study_bikuhime_id_20',
