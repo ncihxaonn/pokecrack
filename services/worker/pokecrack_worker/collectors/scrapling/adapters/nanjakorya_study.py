@@ -130,8 +130,16 @@ def parse_star_birth_report(document: str) -> StarBirthReport:
     counts = tuple(sum(group[2][index] for group in groups) for index in range(4))
     if counts != (16, 6, 4, 1):
         raise CollectorError("public study rarity totals drifted")
-    evidence = json.dumps({"source": SOURCE_URL, "published": PUBLISHED_AT, "groups": groups,
-                           "premium_box_range": [31, 50]},
-                          ensure_ascii=True, separators=(",", ":"))
-    return StarBirthReport(100, (16, 6, 4, 1), PUBLISHED_AT,
-                           hashlib.sha256(evidence.encode()).hexdigest())
+    evidence = json.dumps(
+        {
+            "source": SOURCE_URL,
+            "published": PUBLISHED_AT,
+            "groups": groups,
+            "premium_box_range": [31, 50],
+        },
+        ensure_ascii=True,
+        separators=(",", ":"),
+    )
+    return StarBirthReport(
+        100, (16, 6, 4, 1), PUBLISHED_AT, hashlib.sha256(evidence.encode()).hexdigest()
+    )
