@@ -89,9 +89,9 @@ export const WORLD_MAP_PALETTE = {
   background: "#ffffff",
   noData: "#e7e7e7",
   boundary: "#808080",
-  quantitativeLow: "#7f4bf3",
-  quantitativeMid: "#6331b8",
-  quantitativeHigh: "#351651",
+  quantitativeLow: "#2563eb",
+  quantitativeMid: "#0f766e",
+  quantitativeHigh: "#c2410c",
   deltaLow: "#cc785c",
   deltaMid: "#d9d9d9",
   deltaHigh: "#7f4bf3",
@@ -100,6 +100,18 @@ export const WORLD_MAP_PALETTE = {
   focus: "#9b6a12",
   labelAccent: "#702675",
 } as const;
+
+// Absolute pack-count bands: do not normalize to the current countries or maximum.
+// The legend uses this same definition so a colour always means the same range.
+export const WORLD_COVERAGE_BANDS = [
+  { minimum: 0, label: "0–24", color: "#2563eb" },
+  { minimum: 25, label: "25–49", color: "#0e7490" },
+  { minimum: 50, label: "50–99", color: "#0f766e" },
+  { minimum: 100, label: "100–249", color: "#a16207" },
+  { minimum: 250, label: "250–499", color: "#c2410c" },
+  { minimum: 500, label: "500–1,499", color: "#b91c1c" },
+  { minimum: 1_500, label: "≥ 1,500", color: "#7f1d1d" },
+] as const;
 
 const worldMapCssVariables = {
   "--map-background": WORLD_MAP_PALETTE.background,
@@ -154,18 +166,9 @@ function interpolateHex(start: string, end: string, amount: number) {
 
 export function getWorldMapFill(value: number, metric: WorldHeatMetric): string {
   if (metric === "coverage") {
-    const bounded = clamp(value, 0, 1_500);
-    if (bounded <= 750) {
-      return interpolateHex(
-        WORLD_MAP_PALETTE.quantitativeLow,
-        WORLD_MAP_PALETTE.quantitativeMid,
-        bounded / 750,
-      );
-    }
-    return interpolateHex(
-      WORLD_MAP_PALETTE.quantitativeMid,
-      WORLD_MAP_PALETTE.quantitativeHigh,
-      (bounded - 750) / 750,
+    return WORLD_COVERAGE_BANDS.reduce<string>(
+      (color, band) => value >= band.minimum ? band.color : color,
+      WORLD_COVERAGE_BANDS[0].color,
     );
   }
 
@@ -451,25 +454,32 @@ export function WorldHeatmap({
 
           <figcaption className={styles.caption}>
             <div className={styles.legend} role="group" aria-label={`${metricLabel} map legend`}>
+              {metric === "coverage" ? (
+                <>
+                  <span>Observed packs</span>
+                  <ul className={styles.coverageBands} aria-label="Fixed pack-count colour bands">
+                    {WORLD_COVERAGE_BANDS.map((band) => (
+                      <li key={band.minimum}><i style={{ backgroundColor: band.color }} aria-hidden="true" /><span>{band.label}</span></li>
+                    ))}
+                  </ul>
+                </>
+              ) : <>
               <span
-                className={`${styles.legendScale} ${metric === "coverage" ? styles.coverageScale : metric === "delta" ? styles.deltaScale : styles.rateScale}`}
+                className={`${styles.legendScale} ${metric === "delta" ? styles.deltaScale : styles.rateScale}`}
                 aria-hidden="true"
               />
               <span className={styles.legendTicks}>
-                {metric === "coverage" ? (
-                  <><span>0 packs</span><span>750</span><span>≥ 1,500</span></>
-                ) : metric === "delta" ? (
+                {metric === "delta" ? (
                   <><span>≤ −5 pp</span><span>0 pp</span><span>≥ +5 pp</span></>
                 ) : (
                   <><span>0%</span><span>15%</span><span>≥ 30%</span></>
                 )}
               </span>
+              </>}
               <span className={styles.legendKeys}>
                 <span className={styles.noDataKey}><i aria-hidden="true" />Not observed</span>
                 <span className={styles.focusKey}><i aria-hidden="true" />Collection focus, awaiting observations</span>
-                {metric === "coverage" ? (
-                  <span className={styles.observedKey}><i className={dataKeyClassName} aria-hidden="true" />Observed pack sample uses scale</span>
-                ) : metric === "rate" ? (
+                {metric === "coverage" ? null : metric === "rate" ? (
                   <>
                     <span className={styles.withheldKey}><i aria-hidden="true" />Observed, no exact numerator</span>
                     <span className={styles.publishedKey}><i className={dataKeyClassName} aria-hidden="true" />Observed sample rate uses scale</span>
@@ -484,7 +494,7 @@ export function WorldHeatmap({
             </div>
             <p id={`world-map-caveat-${instanceId}`}>
               {metric === "coverage"
-                ? `Fixed absolute 0–1,500 pack colour scale; this shows sample volume, not a hit rate or representative demand. ${focusGeometryNote} Neutral fill means unobserved.`
+                ? `Fixed absolute pack-count colour bands; never rescaled to the current snapshot. This shows sample volume, not a hit rate or representative demand. ${focusGeometryNote} Neutral fill means unobserved.`
                 : "Fixed absolute colour scale; values are never rescaled to the current snapshot. Higher historical observations do not predict future packs, products, stores or countries."}
             </p>
           </figcaption>
