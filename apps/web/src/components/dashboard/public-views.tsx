@@ -6,7 +6,6 @@ import type {
   BatchMetric,
   ObservedMetric,
   PublicDashboardData,
-  PublicSource,
   RegionMetric,
   RetailerMetric,
   SetMetric,
@@ -25,6 +24,7 @@ import {
   TableFrame,
 } from "@/components/ui/dashboard-ui";
 import type { SetSort } from "@/app/_lib/sets-query";
+import { SourceRegistry } from "./source-registry";
 import { formatCoverageAttribution } from "@/lib/coverage-attribution";
 
 interface MetricRow {
@@ -35,48 +35,20 @@ interface MetricRow {
   metric: ObservedMetric;
 }
 
-function sourceDetails(source: PublicSource) {
-  const details = [
-    { term: "Kind", value: source.kind },
-    { term: "Access", value: source.access },
-    { term: "Status", value: source.status },
-    { term: "Last collected", value: formatDateTime(source.lastCollectedAt) },
-  ];
-  const coverage = source.kind === "community" && source.access === "public"
-    ? source.coverage
-    : undefined;
-  if (coverage !== undefined) {
-    details.push(
-      { term: "Coverage", value: "Reviewed opening-sample facts" },
-      { term: "Observed packs", value: formatCompactNumber(coverage.packsObserved) },
-      { term: "Attributed coverage buckets", value: formatCompactNumber(coverage.countriesObserved) },
-      { term: "Complete openings", value: formatCompactNumber(coverage.completeOpenings) },
-    );
-    if (coverage.observedRate === undefined) {
-      details.push({ term: "Rate sample", value: "No exact normalized numerator" });
-    } else {
-      details.push(
-        { term: "Qualifying hits / rate packs", value: `${formatCompactNumber(coverage.qualifyingHitPacks!)} / ${formatCompactNumber(coverage.ratePacksObserved!)}` },
-        { term: "Observed sample rate", value: formatProbability(coverage.observedRate) },
-      );
-    }
-  }
-  return details;
-}
 
 function MetricTable({ rows, label, emptyMessage }: { rows: readonly MetricRow[]; label: string; emptyMessage: string }) {
   return (
     <Panel>
       <TableFrame label={label}>
-        <table>
-          <thead><tr><th>Name</th><th>Packs</th><th>Openings</th><th>Observed rate</th><th>Signal</th></tr></thead>
+        <table className="comparison-table">
+          <thead><tr><th scope="col">Name</th><th scope="col" className="numeric">Packs</th><th scope="col" className="numeric">Openings</th><th scope="col" className="numeric">Observed rate</th><th scope="col">Signal</th></tr></thead>
           <tbody>
             {rows.length === 0 ? <EmptyTableRow columns={5} message={emptyMessage} /> : rows.map((row) => (
               <tr key={row.key}>
                 <td><Link className="entity-link" href={row.href}><strong>{row.name}</strong><small>{row.meta}</small></Link></td>
-                <td>{formatCompactNumber(row.metric.packsObserved)}</td>
-                <td>{formatCompactNumber(row.metric.openings)}</td>
-                <td>{formatProbability(row.metric.hitRate)}</td>
+                <td className="numeric">{formatCompactNumber(row.metric.packsObserved)}</td>
+                <td className="numeric">{formatCompactNumber(row.metric.openings)}</td>
+                <td className="numeric">{formatProbability(row.metric.hitRate)}</td>
                 <td><SignalBadge metric={row.metric} /></td>
               </tr>
             ))}
@@ -120,6 +92,7 @@ export function SetDetailView({ data, set, synthetic }: { data: PublicDashboardD
   const relatedActivity = data.recentActivity.filter((item) => item.setName === set.name);
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
+      <Link className="breadcrumb" href="/sets">← All sets</Link>
       <PageIntro eyebrow={`${set.series} · set observation`} title={set.name} description="Published aggregate for validated, complete observations in the current snapshot.">
         <div className="intro-meta"><span>Released {formatDate(set.releaseDate)}</span><span>Updated {formatDateTime(set.updatedAt)}</span></div>
       </PageIntro>
@@ -136,11 +109,10 @@ export function SetDetailView({ data, set, synthetic }: { data: PublicDashboardD
 }
 
 export function RegionsView({ data, synthetic }: { data: PublicDashboardData; synthetic: boolean }) {
-  const rows = data.regions.map((region) => ({ key: region.slug, href: `/regions/${region.slug}` as Route, name: region.name, meta: region.coverage, metric: region }));
+  const rows = data.regions.map((region) => ({ key: region.slug, href: `/regions/${region.slug}` as Route, name: region.name, meta: `${formatCoverageAttribution(region.coverageAttributionBases, "Country")} · ${region.coverage}`, metric: region }));
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
       <PageIntro eyebrow="Worldwide coverage detail" title="Country / product-market coverage" description="Browse the same verified country and product-market coverage buckets shown in the global atlas. Exact raw sample rates are shown when both normalized counts exist; inference remains separately gated." />
-      <div className="coverage-grid coverage-grid--list">{data.regions.map((region, index) => <Link className={`coverage-cell coverage-cell--${(index % 4) + 1}`} href={`/regions/${region.slug}` as Route} key={region.slug}><span className="coverage-cell__index">{region.countryCode}.{String(index + 1).padStart(2, "0")}</span><strong>{region.name}</strong><span>{formatCoverageAttribution(region.coverageAttributionBases, "Country")} · {region.coverage}</span><SignalBadge metric={region} /></Link>)}</div>
       <MetricTable rows={rows} label="Country and product-market coverage comparison" emptyMessage="No country or product-market coverage buckets are published in this snapshot." />
       <MetricDisclaimer />
     </PublicPage>
@@ -152,6 +124,7 @@ export function RegionDetailView({ data, region, synthetic }: { data: PublicDash
   const batches = data.batches.filter((batch) => batch.region === region.name);
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
+      <Link className="breadcrumb" href="/regions">← All regions</Link>
       <PageIntro eyebrow={`${region.countryCode} · ${formatCoverageAttribution(region.coverageAttributionBases, "Country")}`} title={region.name} description={region.coverage}><div className="intro-meta"><span>Updated {formatDateTime(region.updatedAt)}</span></div></PageIntro>
       <ObservationStats metric={region} />
       <div className="detail-grid"><Panel><h2>Coverage note</h2><p>{region.sampleNote}</p><p>This coverage bucket reflects the declared attribution basis and collected sources, not a claim about the physical opening location or the underlying distribution of purchases.</p></Panel><Panel><h2>Published scope</h2><DefinitionList items={[{ term: "Attribution basis", value: formatCoverageAttribution(region.coverageAttributionBases, "Country") }, { term: "Country / market code", value: region.countryCode }, { term: "Coverage bucket key", value: <code>{region.slug}</code> }, { term: "Retailer aggregates", value: retailers.length }, { term: "Visible batches", value: batches.length }]} /></Panel></div>
@@ -177,6 +150,7 @@ export function RetailerDetailView({ data, retailer, synthetic }: { data: Public
   const activity = data.recentActivity.filter((item) => item.retailer === retailer.name);
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
+      <Link className="breadcrumb" href="/retailers">← All retailers</Link>
       <PageIntro eyebrow={`${retailer.channel} · retailer observation`} title={retailer.name} description={`Attributed observations for ${retailer.region}.`}><div className="intro-meta"><span>Updated {formatDateTime(retailer.updatedAt)}</span></div></PageIntro>
       <ObservationStats metric={retailer} />
       <div className="detail-grid"><Panel><h2>Interpretation</h2><p>{retailer.sampleNote}</p><p>Retailer attribution can be incomplete or self-reported; observed differences do not establish retailer influence.</p></Panel><Panel><h2>Published scope</h2><DefinitionList items={[{ term: "Region", value: retailer.region }, { term: "Channel", value: retailer.channel }, { term: "Retailer key", value: <code>{retailer.slug}</code> }, { term: "Recent activities", value: activity.length }]} /></Panel></div>
@@ -202,6 +176,7 @@ export function BatchDetailView({ data, batch, synthetic }: { data: PublicDashbo
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
       <MetricDisclaimer batch />
+      <Link className="breadcrumb" href="/batches">← All batches</Link>
       <PageIntro eyebrow={`${batch.productType} · visible batch observation`} title={batch.code} description={`${batch.setName} observations attributed to ${batch.region}.`}><div className="intro-meta"><span>{formatDate(batch.firstObserved)} to {formatDate(batch.lastObserved)}</span><span>Updated {formatDateTime(batch.updatedAt)}</span></div></PageIntro>
       <ObservationStats metric={batch} />
       <div className="detail-grid"><Panel><h2>Interpretation</h2><p>{batch.sampleNote}</p><p>Batch labels are observational groupings and may not correspond to a single production run.</p></Panel><Panel><h2>Published scope</h2><DefinitionList items={[{ term: "Set", value: set ? <Link href={`/sets/${set.slug}` as Route}>{batch.setName}</Link> : batch.setName }, { term: "Product", value: batch.productType }, { term: "Region", value: batch.region }, { term: "Window", value: `${formatDate(batch.firstObserved)} to ${formatDate(batch.lastObserved)}` }]} /></Panel></div>
@@ -247,10 +222,12 @@ export function SourcesView({ data, synthetic }: { data: PublicDashboardData; sy
   ] as const;
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
-      <PageIntro eyebrow="Public provenance" title="Sources and collection boundaries" description="Only public-safe source classes and operational notes are shown; private evidence, accounts and payloads stay outside the public dashboard." />
+      <PageIntro eyebrow="Public provenance" title="Sources and collection boundaries" description="Public-safe summaries only. No login/CAPTCHA bypass, proxy rotation, or collection after access denial. Private evidence and accounts are never shown." />
+      <section><SectionHeading title="Registered public source classes" detail="Availability is snapshot-based. Expand a source to inspect its scope, exact sample counts and collection notes." /><SourceRegistry sources={data.sources} /></section>
+      <details className="source-policy"><summary>Collection policy and boundaries</summary>
       <Panel className="policy-panel"><h2>Collection policy</h2><p>Official sources and bounded structured metadata are preferred. Every source needs an exact, versioned policy covering routes, fields, terms, robots behavior, limits, retention, owner, review date and kill switch. Unknown domains and disabled routes fail closed.</p><div className="source-type-grid">{sourceTypes.map(([name, detail]) => <div key={name}><h3>{name}</h3><p>{detail}</p></div>)}</div></Panel>
       <Panel className="policy-panel policy-panel--warning"><h2>Explicitly outside scope</h2><ul className="policy-list"><li>No login or CAPTCHA bypass; an access challenge stops automated collection.</li><li>No proxy pools, stealth rotation, credential sharing or collection after access denial.</li><li>No long-term full third-party video retention, full-content rehosting or third-party content archive.</li><li>No private-message collection, hidden account creation or automated purchasing.</li></ul></Panel>
-      <section className="dashboard-section"><SectionHeading title="Registered public source classes" detail="Status reflects the aggregate snapshot, not a promise of future availability. Reviewed sources show exact sample-rate counts only when both a normalized numerator and denominator are verified." /><div className="card-grid">{data.sources.length === 0 ? <Panel><p className="empty-cell">No public source status is available.</p></Panel> : data.sources.map((source) => <Panel key={source.id}><div className="card-heading"><span className={`status-dot status-dot--${source.status}`} /><h3>{source.name}</h3></div><DefinitionList items={sourceDetails(source)} /><p>{source.note}</p><a className="external-link" href={source.url} target="_blank" rel="noopener noreferrer">Source reference ↗<span className="sr-only"> (opens in a new tab)</span></a></Panel>)}</div></section>
+      </details>
     </PublicPage>
   );
 }
@@ -259,7 +236,7 @@ export function StatusView({ data, synthetic }: { data: PublicDashboardData; syn
   const degraded = data.services.some((service) => service.status !== "operational");
   return (
     <PublicPage synthetic={synthetic} generatedAt={data.generatedAt}>
-      <PageIntro eyebrow="Public status" title={degraded ? "Some services need attention" : "All published services operational"} description="Public, aggregate-level status only. Sensitive infrastructure details are intentionally omitted." />
+      <PageIntro eyebrow="Public status" title={data.services.length === 0 ? "Service status unavailable" : degraded ? "Some services need attention" : "All published services operational"} description="Public, aggregate-level status only. Sensitive infrastructure details are intentionally omitted." />
       <div className="status-list">{data.services.length === 0 ? <Panel><p className="empty-cell">No public service checks are available.</p></Panel> : data.services.map((service) => <Panel key={service.id}><div className="card-heading"><span className={`status-dot status-dot--${service.status}`} /><h2>{service.name}</h2><span className="status-label">{service.status}</span></div><p>{service.detail}</p><time dateTime={service.checkedAt}>Checked {formatDateTime(service.checkedAt)}</time></Panel>)}</div>
       <Panel className="policy-panel"><h2>Snapshot freshness</h2><p>Dashboard snapshot generated {formatDateTime(data.generatedAt)}. Status entries are bounded public summaries and may lag underlying checks.</p><Link className="text-link" href="/sources">Review source availability →</Link></Panel>
     </PublicPage>

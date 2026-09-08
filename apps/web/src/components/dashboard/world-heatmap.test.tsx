@@ -495,18 +495,20 @@ describe("WorldHeatmap", () => {
 
   it("keeps low-volume observations vivid while preserving a distinct no-data state", () => {
     expect(WORLD_MAP_PALETTE).toMatchObject({
-      background: "#03111f",
-      noData: "#526987",
-      quantitativeLow: "#22d3ee",
-      quantitativeMid: "#67e8f9",
-      quantitativeHigh: "#cffafe",
-      withheldBase: "#0e7490",
-      withheldStripe: "#a5f3fc",
-      focus: "#facc15",
+      background: "#f8fafc",
+      noData: "#dce3ed",
+      boundary: "#7c8b9f",
+      quantitativeLow: "#2563eb",
+      quantitativeMid: "#1d4ed8",
+      quantitativeHigh: "#172554",
+      withheldBase: "#2563eb",
+      withheldStripe: "#dbeafe",
+      focus: "#9b6a12",
       labelAccent: "#075985",
     });
     expect(getWorldMapFill(10, "coverage")).not.toBe(WORLD_MAP_PALETTE.noData);
-    expect(contrastRatio(WORLD_MAP_PALETTE.noData, WORLD_MAP_PALETTE.background))
+    // Neutral countries use a light fill with a contrasting boundary on the light atlas.
+    expect(contrastRatio(WORLD_MAP_PALETTE.boundary, WORLD_MAP_PALETTE.background))
       .toBeGreaterThanOrEqual(3);
     expect(contrastRatio(WORLD_MAP_PALETTE.quantitativeLow, WORLD_MAP_PALETTE.noData))
       .toBeGreaterThanOrEqual(3);
