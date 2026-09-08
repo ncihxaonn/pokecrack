@@ -30,6 +30,7 @@ describe("AppHeader", () => {
   it("closes the mobile disclosure after choosing a destination", () => {
     render(<AppHeader />);
     const menu = screen.getByText("Menu");
+    expect(menu).toHaveAccessibleName("Menu");
     fireEvent.click(menu);
     expect(menu.parentElement).toHaveAttribute("open");
     fireEvent.click(within(screen.getByRole("navigation", { name: "Mobile navigation" })).getByRole("link", { name: "Sets" }));

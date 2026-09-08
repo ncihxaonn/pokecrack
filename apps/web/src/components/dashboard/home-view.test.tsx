@@ -58,6 +58,16 @@ describe("HomeView", () => {
     }
   });
 
+  it("keeps summary explanations inside their definition-list values", () => {
+    const { container } = render(<HomeView data={DEMO_PUBLIC_DATA} synthetic={false} />);
+    const totals = container.querySelector('[aria-label="Global dashboard totals"]')!;
+    expect(totals.children).toHaveLength(4);
+    for (const group of totals.children) {
+      expect([...group.children].map((child) => child.tagName)).toEqual(["DT", "DD"]);
+      expect(group.querySelector("dd small")).toBeInTheDocument();
+    }
+  });
+
   it("omits source and operational panels even when reviewed coverage exists", () => {
     const reviewedCoverage = {
       ...DEMO_PUBLIC_DATA,
