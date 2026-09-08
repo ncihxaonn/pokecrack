@@ -339,11 +339,24 @@ PUBLIC_STUDIES += (
     ),
 )
 
+PUBLIC_STUDIES += (
+    PublicStudyIdentity(
+        study_key="bokunotebook-vstar-universe-th-1-v1",
+        source_url="https://bokunotebook.com/archives/13725",
+        fetch_url="https://bokunotebook.com/archives/13725",
+        domain="bokunotebook.com",
+        adapter="bokunotebook_vstar_universe_study",
+        collector_version="public-study-bokunotebook-vstar-universe-v1",
+        parser_version="bokunotebook-vstar-universe-evidence-v1",
+    ),
+)
+
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDIES_BY_URL = {study.source_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDIES_BY_FETCH_URL = {study.fetch_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
     {
+        "bokunotebook-vstar-universe-th-1-v1",
         "nanjakorya-paradigm-jp-100-v1",
         "nanjakorya-star-birth-jp-100-v1",
         "bikuhime-hantaman-pertama-a-id-20-v1",

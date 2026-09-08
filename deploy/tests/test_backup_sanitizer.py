@@ -128,6 +128,9 @@ PUBLIC_STUDY_SOURCE_KEYS_V12 = PUBLIC_STUDY_SOURCE_KEYS_V11 + (
 PUBLIC_STUDY_SOURCE_KEYS_V13 = PUBLIC_STUDY_SOURCE_KEYS_V12 + (
     b"public_study_nanjakorya_paradigm_100",
 )
+PUBLIC_STUDY_SOURCE_KEYS_V14 = PUBLIC_STUDY_SOURCE_KEYS_V13 + (
+    b"public_study_bokunotebook_th_1",
+)
 PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V1
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
@@ -156,6 +159,7 @@ URUGUAY_POLICY = "fa333333-3333-4333-8333-333333333333"
 CHINA_POLICY = "fa444444-4444-4444-8444-444444444444"
 NANJAKORYA_POLICY = "fa666666-6666-4666-8666-666666666666"
 PARADIGM_POLICY = "fa777777-7777-4777-8777-777777777777"
+BOKUNOTEBOOK_POLICY = "fa888888-8888-4888-8888-888888888888"
 INDONESIA_POLICY = "fa555555-5555-4555-8555-555555555555"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
@@ -329,6 +333,7 @@ def public_study_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V11,
         PUBLIC_STUDY_SOURCE_KEYS_V12,
         PUBLIC_STUDY_SOURCE_KEYS_V13,
+        PUBLIC_STUDY_SOURCE_KEYS_V14,
     ):
         product_values += b", 'four_pack_blister'::text"
     return PUBLIC_STUDY_DDL.replace(b"{product_values}", product_values)
@@ -349,6 +354,7 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V11,
         PUBLIC_STUDY_SOURCE_KEYS_V12,
         PUBLIC_STUDY_SOURCE_KEYS_V13,
+        PUBLIC_STUDY_SOURCE_KEYS_V14,
     ):
         product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
         if source_keys in (
@@ -359,12 +365,21 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
             PUBLIC_STUDY_SOURCE_KEYS_V11,
             PUBLIC_STUDY_SOURCE_KEYS_V12,
             PUBLIC_STUDY_SOURCE_KEYS_V13,
+            PUBLIC_STUDY_SOURCE_KEYS_V14,
         ):
             product_values += b", 'build_and_battle'::text, 'three_pack_blister'::text"
     return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
 
 
 PUBLIC_STUDY_COVERAGE_FACTS = {
+    b"public_study_bokunotebook_th_1": (
+        b"bokunotebook-vstar-universe-th-1-v1",
+        BOKUNOTEBOOK_POLICY.encode(), b"TH", b"Thailand", b"2026-07-01 12:01:46+00",
+        b"1", b"s12a", b"all",
+        b"public-study-bokunotebook-vstar-universe-v1",
+        b"bokunotebook-vstar-universe-evidence-v1",
+        b"575413295f78946c02ce9c97319f4688652a55d113df54b57c7fed3f626a9f31",
+    ),
     b"public_study_nanjakorya_paradigm_100": (
         b"nanjakorya-paradigm-jp-100-v1",
         PARADIGM_POLICY.encode(), b"JP", b"Japan", b"2022-10-21 11:10:35+00",
@@ -771,6 +786,7 @@ class BackupSanitizerTests(unittest.TestCase):
             b"public_study_bikuhime_id_20": INDONESIA_POLICY,
             b"public_study_nanjakorya_jp_100": NANJAKORYA_POLICY,
             b"public_study_nanjakorya_paradigm_100": PARADIGM_POLICY,
+            b"public_study_bokunotebook_th_1": BOKUNOTEBOOK_POLICY,
         }
         policy_rows = b"".join(
             f"{policy_ids[source_key]}\t{source_key.decode()}\tpolicy\n".encode()
@@ -1150,7 +1166,7 @@ class BackupSanitizerTests(unittest.TestCase):
         self.assertEqual(result.stdout, b"")
 
     def test_asian_transition_profiles_preserve_exact_rows_and_idle_gates(self) -> None:
-        for profile in (PUBLIC_STUDY_SOURCE_KEYS_V10, PUBLIC_STUDY_SOURCE_KEYS_V11, PUBLIC_STUDY_SOURCE_KEYS_V12, PUBLIC_STUDY_SOURCE_KEYS_V13):
+        for profile in (PUBLIC_STUDY_SOURCE_KEYS_V10, PUBLIC_STUDY_SOURCE_KEYS_V11, PUBLIC_STUDY_SOURCE_KEYS_V12, PUBLIC_STUDY_SOURCE_KEYS_V13, PUBLIC_STUDY_SOURCE_KEYS_V14):
             with self.subTest(profile=len(profile)):
                 dump = self.with_public_study_ledger(
                     self.complete_dump(), comicbook_ledger_row(), source_keys=profile,
@@ -1163,11 +1179,11 @@ class BackupSanitizerTests(unittest.TestCase):
                     self.assertIn(row, result.stdout)
 
     def test_asian_coverage_backup_drift_fails_without_output(self) -> None:
-        profile = PUBLIC_STUDY_SOURCE_KEYS_V13
+        profile = PUBLIC_STUDY_SOURCE_KEYS_V14
         base = self.with_public_study_ledger(
             self.complete_dump(), comicbook_ledger_row(), source_keys=profile,
         )
-        for key in (b"public_study_garbage_rips_cn_1", b"public_study_bikuhime_id_20", b"public_study_nanjakorya_jp_100", b"public_study_nanjakorya_paradigm_100"):
+        for key in (b"public_study_garbage_rips_cn_1", b"public_study_bikuhime_id_20", b"public_study_nanjakorya_jp_100", b"public_study_nanjakorya_paradigm_100", b"public_study_bokunotebook_th_1"):
             original = public_study_coverage_row(key)
             for field, value in (
                 ("pack_count", b"999"),

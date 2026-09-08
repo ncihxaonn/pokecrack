@@ -1,6 +1,54 @@
 version: 1
 default: disabled
 sources:
+  bokunotebook.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    exact_urls: ["https://bokunotebook.com/archives/13725"]
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-bokunotebook-vstar-universe-v1
+    config: {
+        "study_key": "bokunotebook-vstar-universe-th-1-v1",
+        "canonical_url": "https://bokunotebook.com/archives/13725",
+        "collector_version": "public-study-bokunotebook-vstar-universe-v1",
+        "parser_version": "bokunotebook-vstar-universe-evidence-v1",
+        "country_code": "TH",
+        "country_name": "Thailand",
+        "geography_basis": "product_market",
+        "geography_confidence": "tier_b",
+        "set_external_id": "s12a",
+        "set_language": "th",
+        "set_name": "จักรวาลแห่ง VSTAR",
+        "product_scope": "all",
+        "pack_count": 1,
+        "observed_at": "2026-07-01T12:01:46Z",
+        "denominator_complete": true,
+        "set_official_url": "https://asia.pokemon-card.com/th/archive/special/card/s12a/index.html",
+        "robots_url": "https://bokunotebook.com/robots.txt",
+        "robots_checked_at": "2026-09-08",
+        "terms_url": "https://bokunotebook.com/privacy-policy",
+        "terms_checked_at": "2026-09-08",
+        "terms_status": "public_site_policy_reviewed",
+        "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse",
+        "opening_country": null,
+        "opened_at": null,
+        "observed_card_count": 10
+      }
+    reason: One complete Thai-language VSTAR Universe pack. Product market only, not physical opening location. Publication timestamp is not the opening date. No rate numerator, prose, images or raw HTML retained.
+    routes: [static]
+    adapter: bokunotebook_vstar_universe_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
   digitaltq.com:
     name: DigitalTQ
     enabled: false
