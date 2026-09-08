@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
 import { BRAND } from "@/config/brand";
@@ -12,7 +12,7 @@ describe("HomeView", () => {
   it("renders the required synthetic dashboard sections and observational caveats", () => {
     render(<HomeView data={DEMO_PUBLIC_DATA} synthetic />);
 
-    expect(screen.getByRole("heading", { level: 1, name: BRAND.tagline })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
     expect(screen.getByText(BRAND.demoNotice)).toBeVisible();
     expect(screen.getByText(BRAND.individualPackDisclaimer)).toBeVisible();
     expect(screen.getByRole("heading", { name: "Worldwide qualifying-hit map" })).toBeVisible();
@@ -163,6 +163,9 @@ describe("HomeView", () => {
 
     expect(screen.getByText("Live observations")).toBeVisible();
     expect(screen.getByText("Verified observations cover 3 country or product-market coverage buckets and 252 packs. Exact sample rates appear only where a reviewed normalized numerator is also available; inference remains separately gated.")).toBeVisible();
+    const disclosure = screen.getByText("Country and market details").closest("summary")!;
+    expect(disclosure.parentElement).not.toHaveAttribute("open");
+    fireEvent.click(disclosure);
     expect(screen.getByText("Inference pending")).toBeVisible();
     expect(screen.getAllByText("Withheld").length).toBeGreaterThan(0);
     expect(screen.queryByText(/Verified country or product-market coverage is not published yet/)).not.toBeInTheDocument();

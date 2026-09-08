@@ -16,7 +16,7 @@ function plural(value: number, singular: string, pluralForm = `${singular}s`): s
   return `${formatCompactNumber(value)} ${value === 1 ? singular : pluralForm}`;
 }
 
-export function ReviewedEvidenceSources({ sources }: { sources: readonly PublicSource[] }) {
+export function ReviewedEvidenceSources({ sources, limit }: { sources: readonly PublicSource[]; limit?: number }) {
   const reviewedSources = sources.filter(hasReviewedCoverage);
 
   if (reviewedSources.length === 0) return null;
@@ -27,10 +27,10 @@ export function ReviewedEvidenceSources({ sources }: { sources: readonly PublicS
         id="reviewed-evidence-title"
         title="Reviewed evidence sources"
         detail="Verified opening-sample facts. When an exact normalized numerator and denominator are both available, their direct sample rate is shown without implying a representative probability or statistical signal."
-        action={<Link className="text-link" href="/sources">Source boundaries →</Link>}
+        action={<Link className="text-link" href="/sources">All sources →</Link>}
       />
       <ul className="reviewed-source-rail" aria-label="Reviewed evidence source coverage">
-        {reviewedSources.map((source) => (
+        {reviewedSources.slice(0, limit).map((source) => (
           <li key={source.id}>
             <div className="reviewed-source-rail__identity">
               <a href={source.url} target="_blank" rel="noopener noreferrer">
@@ -84,6 +84,7 @@ export function ReviewedEvidenceSources({ sources }: { sources: readonly PublicS
           </li>
         ))}
       </ul>
+      {limit !== undefined && reviewedSources.length > limit ? <p className="results-line">Showing {limit} of {reviewedSources.length} reviewed sources. This is a preview, not a ranking.</p> : null}
     </section>
   );
 }

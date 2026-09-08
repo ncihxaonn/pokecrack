@@ -4,7 +4,6 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import type { WorldHeatMetric } from "@/app/_lib/world-map-query";
-import { BRAND } from "@/config/brand";
 import type { PublicDashboardData } from "@/data/types";
 import { formatDate, formatDateTime, formatProbability } from "@/lib/format";
 import { TrendChart } from "@/components/charts/trend-chart";
@@ -25,32 +24,16 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
   const heroEyebrow = observationsPublished
     ? "Worldwide evidence atlas"
     : "Worldwide catalog and observation readiness";
-  const heroObservationValue = data.observations.observedPacks > 0
-    ? integer.format(data.observations.observedPacks)
-    : "Pending";
 
   return (
     <div className="page-shell home-page">
       <section className="dashboard-intro" aria-labelledby="hero-title">
         <div className="dashboard-intro__copy">
           <span className="eyebrow">{heroEyebrow}</span>
-          <h1 id="hero-title">{BRAND.tagline}</h1>
-          <p>Verified Pokémon TCG opening evidence, mapped by declared country or product-market coverage bucket and kept separate from catalog activity.</p>
-          <div className="dashboard-intro__actions">
-            <Link className="button" href="/sets">Explore sets <ArrowUpRight aria-hidden="true" size={15} /></Link>
-            <Link className="button button--secondary" href="/methodology">How we measure</Link>
-          </div>
+          <h1 id="hero-title">Overview</h1>
+          <p>Pokémon TCG opening evidence, with the sample and its limits in view.</p>
         </div>
-        <dl className="dashboard-intro__ledger" aria-label="Current global index">
-          <div>
-            <dt>Catalog coverage</dt>
-            <dd>{integer.format(data.catalog.setCount)}<small>sets indexed worldwide</small></dd>
-          </div>
-          <div>
-            <dt>Evidence base</dt>
-            <dd>{heroObservationValue}<small>{data.observations.observedPacks > 0 ? "verified packs observed" : "awaiting publishable samples"}</small></dd>
-          </div>
-        </dl>
+        <Link className="button" href="/sets">Explore sets <ArrowUpRight aria-hidden="true" size={15} /></Link>
       </section>
 
       <DataModeNotice
@@ -61,29 +44,26 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
         observedPackCount={data.observations.observedPacks}
         synthetic={synthetic}
       />
+      <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
+        <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}</dd><small>Verified eligible denominator</small></div>
+        <div><dt>Complete openings</dt><dd>{integer.format(data.observations.completeOpenings)}</dd><small>Reviewed observations</small></div>
+        <div><dt>Coverage buckets</dt><dd>{integer.format(data.observations.countriesObserved)}</dd><small>Countries or product markets</small></div>
+        <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}</dd><small>Metadata, not opening evidence</small></div>
+      </dl>
       <WorldHeatmap
         cells={data.mapCells}
         coverageSummary={data.summary.globalCoverage}
         observations={data.observations}
         initialMetric={worldMetric}
+        compact
       />
-      <ReviewedEvidenceSources sources={data.sources} />
-      <LiveDiscoveryPulse pulse={data.socialActivityPulse} sources={data.sources} />
-
-      <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
-        <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}<small>TCGdex catalog only</small></dd></div>
-        <div><dt>Coverage buckets observed</dt><dd>{integer.format(data.observations.countriesObserved)}<small>full reviewed evidence range</small></dd></div>
-        <div><dt>Observed sample rates</dt><dd>{integer.format(data.observations.countriesWithPublishedRate)}<small>exact numerator + denominator</small></dd></div>
-        <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>eligible denominator</small></dd></div>
-        <div><dt>Complete openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>verified observations</small></dd></div>
-        <div><dt>Source contributions</dt><dd>{integer.format(data.observations.sourceCountryContributions)}<small>not globally deduplicated</small></dd></div>
-      </dl>
+      <ReviewedEvidenceSources sources={data.sources} limit={4} />
 
       <section className="dashboard-section" aria-labelledby="catalog-title">
         <SectionHeading
           id="catalog-title"
           title="Global set catalog"
-          detail={`${data.catalog.name} set metadata is shown for discovery only. It is never opening evidence or a pull-rate denominator.`}
+          detail={`${data.catalog.name} metadata for discovery — never opening evidence or a pull-rate denominator.`}
           action={<span className={`catalog-state catalog-state--${data.catalog.status}`}>{data.catalog.status}</span>}
         />
         <Panel className="catalog-panel">
@@ -109,6 +89,8 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
           </p>
         </Panel>
       </section>
+
+      <LiveDiscoveryPulse pulse={data.socialActivityPulse} sources={data.sources} />
 
       {data.trend.length > 0 ? <section className="dashboard-section" aria-labelledby="trend-title">
         <SectionHeading id="trend-title" title="Observed trend" detail="Weekly aggregate and rolling baseline; a visual aid with a textual table below." />

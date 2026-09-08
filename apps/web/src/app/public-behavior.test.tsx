@@ -1,7 +1,7 @@
 import React from "react";
 import { readFileSync } from "node:fs";
 import path from "node:path";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { BRAND } from "@/config/brand";
@@ -16,6 +16,7 @@ import {
   SetDetailView,
   SetsView,
   SourcesView,
+  StatusView,
 } from "@/components/dashboard/public-views";
 import { ObservationStats, PublicUnavailable } from "@/components/ui/dashboard-ui";
 import { DEMO_PUBLIC_DATA } from "@/data/demo";
@@ -25,7 +26,25 @@ import { filterAndSortSets } from "./_lib/sets-query";
 
 afterEach(cleanup);
 
+function expandSourceDetails() {
+  for (const summary of document.querySelectorAll(".source-row > summary, .source-policy > summary")) {
+    fireEvent.click(summary);
+  }
+}
+
 describe("public route behavior", () => {
+  it("keeps critical collection boundaries visible before policy details are expanded", () => {
+    render(<SourcesView data={DEMO_PUBLIC_DATA} synthetic />);
+    expect(screen.getByText(/Public-safe summaries only. No login\/CAPTCHA bypass/)).toBeVisible();
+    expect(screen.getByText("Collection policy and boundaries").parentElement).not.toHaveAttribute("open");
+  });
+
+  it("does not label unavailable service checks as operational", () => {
+    render(<StatusView data={{ ...DEMO_PUBLIC_DATA, services: [] }} synthetic={false} />);
+    expect(screen.getByRole("heading", { name: "Service status unavailable" })).toBeVisible();
+    expect(screen.queryByText("All published services operational")).not.toBeInTheDocument();
+  });
+
   it("filters sets case-insensitively and keeps withheld rates last", () => {
     expect(filterAndSortSets(DEMO_PUBLIC_DATA.sets, "TWILIGHT", "name").map((set) => set.slug)).toEqual(["twilight-masquerade"]);
     const byRate = filterAndSortSets(DEMO_PUBLIC_DATA.sets, "", "rate");
@@ -94,6 +113,7 @@ describe("public route behavior", () => {
     unmount();
 
     render(<SourcesView data={DEMO_PUBLIC_DATA} synthetic />);
+    expandSourceDetails();
     for (const name of ["Official APIs", "RSS", "Sitemaps", "Public JSON", "Policy-approved public pages", "Authenticated OpenCLI adapters", "Admin CSV/JSONL imports", "Authorized media"]) expect(screen.getByRole("heading", { name })).toBeVisible();
     expect(screen.getByText(/No login or CAPTCHA bypass/)).toBeVisible();
     expect(screen.getByText(/No proxy pools/)).toBeVisible();
@@ -124,6 +144,7 @@ describe("public route behavior", () => {
     } satisfies PublicDashboardData;
 
     render(<SourcesView data={data} synthetic={false} />);
+    expandSourceDetails();
 
     expect(screen.getByText("Reviewed opening-sample facts")).toBeVisible();
     expect(screen.getByText("No exact normalized numerator")).toBeVisible();
@@ -190,7 +211,8 @@ describe("public route behavior", () => {
     });
 
     render(<SourcesView data={data as typeof DEMO_PUBLIC_DATA} synthetic />);
-    expect(screen.getByRole("heading", { name: "Mastodon public hashtag discovery" })).toBeVisible();
+    expect(screen.getByText("Mastodon public hashtag discovery")).toBeVisible();
+    expandSourceDetails();
     expect(screen.getByText(/never opening evidence or a pull-rate denominator/)).toBeVisible();
     expect(
       screen

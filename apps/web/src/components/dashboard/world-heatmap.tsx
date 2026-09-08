@@ -86,23 +86,25 @@ export const GLOBAL_FOCUS_COUNTRIES: readonly GlobalFocusCountry[] = [
 ];
 
 export const WORLD_MAP_PALETTE = {
-  background: "#03111f",
-  noData: "#526987",
-  quantitativeLow: "#22d3ee",
-  quantitativeMid: "#67e8f9",
-  quantitativeHigh: "#cffafe",
+  background: "#f8fafc",
+  noData: "#dce3ed",
+  boundary: "#7c8b9f",
+  quantitativeLow: "#2563eb",
+  quantitativeMid: "#1d4ed8",
+  quantitativeHigh: "#172554",
   deltaLow: "#f43f5e",
   deltaMid: "#cbd5e1",
-  deltaHigh: "#22d3ee",
-  withheldBase: "#0e7490",
-  withheldStripe: "#a5f3fc",
-  focus: "#facc15",
+  deltaHigh: "#2563eb",
+  withheldBase: "#2563eb",
+  withheldStripe: "#dbeafe",
+  focus: "#9b6a12",
   labelAccent: "#075985",
 } as const;
 
 const worldMapCssVariables = {
   "--map-background": WORLD_MAP_PALETTE.background,
   "--map-no-data": WORLD_MAP_PALETTE.noData,
+  "--map-boundary": WORLD_MAP_PALETTE.boundary,
   "--map-quantitative-low": WORLD_MAP_PALETTE.quantitativeLow,
   "--map-quantitative-mid": WORLD_MAP_PALETTE.quantitativeMid,
   "--map-quantitative-high": WORLD_MAP_PALETTE.quantitativeHigh,
@@ -238,11 +240,13 @@ export function WorldHeatmap({
   coverageSummary,
   observations,
   initialMetric,
+  compact = false,
 }: {
   readonly cells: readonly CountryMapCell[];
   readonly coverageSummary: string;
   readonly observations: ObservationReadiness;
   readonly initialMetric?: WorldHeatMetric;
+  readonly compact?: boolean;
 }) {
   const [metric, setMetric] = useState<WorldHeatMetric>(
     initialMetric ?? defaultWorldHeatMetric(observations.countriesWithPublishedRate),
@@ -509,6 +513,8 @@ export function WorldHeatmap({
         </aside>
       </div>
 
+      <details className={styles.details} open={compact ? undefined : true}>
+        <summary>Country and market details <span>{rows.length} observed buckets · exact values and collection status</span></summary>
       <section className={styles.focusBlock} aria-labelledby={`collection-focus-${instanceId}`}>
         <div className={styles.focusHeading}>
           <div>
@@ -595,6 +601,7 @@ export function WorldHeatmap({
           </table>
         </div>
       </div>
+      </details>
     </section>
   );
 }
