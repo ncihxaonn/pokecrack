@@ -114,7 +114,7 @@ class GlobalStudiesTests(unittest.TestCase):
 
     def test_real_catalog_is_reference_only_and_no_fabricated_total(self):
         data = module.build_ledger((ROOT / "data/research/global-studies.json").read_bytes())
-        self.assertEqual(data["distinct_report_groups"], 6)
+        self.assertEqual(data["distinct_report_groups"], 7)
         self.assertFalse(data["production_admitted"])
         self.assertIsNone(data["verified_unique_packs"])
         self.assertTrue(all(row["country"] is None for row in data["studies"]))
@@ -132,6 +132,59 @@ class GlobalStudiesTests(unittest.TestCase):
         self.assertEqual({m["category"]: m["hits"] for m in japanese["metrics"]},
                          {"rr": 16, "rrr": 6, "sr": 4, "hr": 1})
         self.assertTrue(all(m["unit"] == "cards" for m in japanese["metrics"]))
+
+    def native(self):
+        row = self.sample()
+        row.update(packs=None, pack_precision="unknown", metrics=[],
+                   source_sample={"unit": "boxes", "count": 1000,
+                                  "precision": "approximate_reported"})
+        return row
+
+    def test_native_units_never_become_packs_or_statistics(self):
+        row = self.build([self.native()])["studies"][0]
+        self.assertEqual(row["source_sample"], self.native()["source_sample"])
+        self.assertIsNone(row["packs"])
+        self.assertEqual(row["metrics"], [])
+        self.assertFalse(row["statistics_eligible"])
+        candidate = next(row for row in json.loads(
+            (ROOT / "data/research/global-studies.json").read_text())["studies"]
+            if row["study_id"] == "pokemon-infomation-battle-partners-2026")
+        self.assertEqual(candidate["source_sample"], self.native()["source_sample"])
+        self.assertIsNone(candidate["packs"])
+
+    def test_native_validation_rejects_conversion_and_invalid_samples(self):
+        for field, value in [("unit", "packs"), ("unit", "videos"), ("count", True),
+                             ("count", 0), ("precision", "inferred"), ("extra", 1)]:
+            row = self.native()
+            row["source_sample"][field] = value
+            with self.subTest(field=field, value=value), self.assertRaises(ValueError):
+                self.build([row])
+        row = self.native()
+        row.update(packs=30000, pack_precision="exact_reported")
+        with self.assertRaises(ValueError):
+            self.build([row])
+
+    def test_native_conflict_quarantines_and_unknown_is_not_conflict(self):
+        a = self.native()
+        for field, value in [("count", 800), ("unit", "decks"),
+                             ("precision", "exact_reported")]:
+            b = copy.deepcopy(a)
+            b["source_sample"][field] = value
+            row = self.build([a, b])["studies"][0]
+            self.assertIn("source_sample", row["conflicts"])
+            self.assertIsNone(row["source_sample"])
+            self.assertEqual(self.build([a, b]), self.build([b, a]))
+        b = copy.deepcopy(a)
+        del b["source_sample"]
+        self.assertEqual(self.build([a, b])["studies"][0]["source_sample"], a["source_sample"])
+        b["source_sample"] = None
+        self.assertEqual(self.build([a, b])["studies"][0]["conflicts"], [])
+        b["set"] = "different-set"
+        self.assertIsNone(self.build([a, b])["studies"][0]["source_sample"])
+
+    def test_legacy_shape_is_unchanged(self):
+        row = self.sample()
+        self.assertNotIn("source_sample", module.validate_record(row))
 
 
 if __name__ == "__main__":
