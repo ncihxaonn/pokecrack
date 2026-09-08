@@ -179,6 +179,12 @@ AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS = (
 PUBLIC_STUDY_SOURCE_KEYS_V9 = (
     PUBLIC_STUDY_SOURCE_KEYS_V8 + AMERICAS_PHASE_TWO_PUBLIC_STUDY_SOURCE_KEYS
 )
+PUBLIC_STUDY_SOURCE_KEYS_V10 = PUBLIC_STUDY_SOURCE_KEYS_V9 + (
+    b"public_study_garbage_rips_cn_1",
+)
+PUBLIC_STUDY_SOURCE_KEYS_V11 = PUBLIC_STUDY_SOURCE_KEYS_V10 + (
+    b"public_study_bikuhime_id_20",
+)
 # Each migration adds an exact append-only reviewed source profile. Keep every
 # complete transition profile available for pre-apply backups, while rejecting
 # unions and partially migrated sets as ambiguous and restore-unsafe.
@@ -192,8 +198,10 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V7,
     PUBLIC_STUDY_SOURCE_KEYS_V8,
     PUBLIC_STUDY_SOURCE_KEYS_V9,
+    PUBLIC_STUDY_SOURCE_KEYS_V10,
+    PUBLIC_STUDY_SOURCE_KEYS_V11,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V9
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V11
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(
@@ -912,6 +920,8 @@ PUBLIC_STUDY_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V7: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V8: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V9: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V10: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V11: "v4_v5",
 }
 PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS = (
     "study_key text not null",
@@ -958,6 +968,8 @@ PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V7: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V8: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V9: "v7",
+    PUBLIC_STUDY_SOURCE_KEYS_V10: "v7",
+    PUBLIC_STUDY_SOURCE_KEYS_V11: "v7",
 }
 PUBLIC_STUDY_POLICY_SOURCE_KEY = {
     b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
@@ -1020,6 +1032,8 @@ PUBLIC_STUDY_OBSERVED_AT = {
     b"pontocom-herois-excelsos-br-48-v1": datetime(2026, 1, 26, 23, 29, tzinfo=UTC),
 }
 PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
+    b"garbage-rips-gem-vol2-cn-1-v1": b"public_study_garbage_rips_cn_1",
+    b"bikuhime-hantaman-pertama-a-id-20-v1": b"public_study_bikuhime_id_20",
     b"cardchill-ascended-heroes-gb-90-v1": b"public_study_cardchill_gb_90",
     b"bleedingcool-phantasmal-flames-us-36-v1": b"public_study_bleedingcool_us_36",
     b"tcgtalk-perfect-order-sg-54-v1": b"public_study_tcgtalk_sg_54",
@@ -1044,6 +1058,30 @@ PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
     b"gringo-gameplays-silver-tempest-uy-36-v1": b"public_study_gringo_gameplays_silver_tempest_uy_36",
 }
 PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
+    b"garbage-rips-gem-vol2-cn-1-v1": {
+        "country_code": b"CN",
+        "country_name": b"China",
+        "pack_count": b"1",
+        "set_external_id": b"gem-pack-vol-2",
+        "product_scope": b"all",
+        "collector_version": b"public-study-garbage-rips-gem-vol2-v1",
+        "parser_version": b"garbage-rips-gem-vol2-evidence-v1",
+        "source_policy_version": b"public-study-garbage-rips-gem-vol2-v1",
+        "evidence_sha256": b"a53e1e4f4b881e8d7f8ba006764aae8b8e27323ffa1a41a138caf5c05ff1c804",
+        "is_demo": b"f",
+    },
+    b"bikuhime-hantaman-pertama-a-id-20-v1": {
+        "country_code": b"ID",
+        "country_name": b"Indonesia",
+        "pack_count": b"20",
+        "set_external_id": b"hantaman-pertama-set-a",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-bikuhime-hantaman-pertama-a-v1",
+        "parser_version": b"bikuhime-hantaman-pertama-a-evidence-v1",
+        "source_policy_version": b"public-study-bikuhime-hantaman-pertama-a-v1",
+        "evidence_sha256": b"693653031f398c3006a7aa6d3b476c968f5b3f67d6452e73d904ed1ef377b328",
+        "is_demo": b"f",
+    },
     b"cardchill-ascended-heroes-gb-90-v1": {
         "country_code": b"GB",
         "country_name": b"United Kingdom",
@@ -1310,6 +1348,8 @@ PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
     },
 }
 PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
+    b"garbage-rips-gem-vol2-cn-1-v1": datetime(2026, 2, 13, 13, 30, 9, tzinfo=UTC),
+    b"bikuhime-hantaman-pertama-a-id-20-v1": datetime(2020, 5, 17, 7, 23, 58, tzinfo=UTC),
     b"cardchill-ascended-heroes-gb-90-v1": datetime(2026, 3, 3, 11, 26, 21, tzinfo=UTC),
     b"bleedingcool-phantasmal-flames-us-36-v1": datetime(2026, 1, 3, 16, 12, 4, tzinfo=UTC),
     b"tcgtalk-perfect-order-sg-54-v1": datetime(2026, 3, 25, 12, 40, tzinfo=UTC),
