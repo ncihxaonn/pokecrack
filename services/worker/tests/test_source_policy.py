@@ -214,6 +214,47 @@ def test_fetch_url_must_be_credential_free_https_and_match_domain() -> None:
         )
 
 
+@pytest.mark.parametrize(
+    "second_urls",
+    [["https://example.com/one"], ["https://example.com/two", "https://example.com/three"]],
+)
+def test_same_domain_exact_url_duplicates_and_ambiguity_are_rejected(second_urls) -> None:
+    with pytest.raises(ValidationError):
+        SourcePolicyRegistry.from_mapping(
+            {
+                "version": 1,
+                "sources": {
+                    "example.com#first": {"exact_urls": ["https://example.com/one"]},
+                    "example.com#second": {"exact_urls": second_urls},
+                },
+            }
+        )
+
+
+def test_same_domain_single_exact_urls_route_without_config_mutation() -> None:
+    registry = SourcePolicyRegistry.from_mapping(
+        {
+            "version": 1,
+            "sources": {
+                "example.com#first": {
+                    "enabled": True,
+                    "routes": ["static"],
+                    "exact_urls": ["https://example.com/one"],
+                },
+                "example.com#second": {
+                    "enabled": True,
+                    "routes": ["static"],
+                    "exact_urls": ["https://example.com/two"],
+                },
+            },
+        }
+    )
+    for url in ("https://example.com/one", "https://example.com/two"):
+        assert registry.allows(url, "static")
+        assert registry.resolve(url).config == {}
+    assert not registry.allows("https://example.com/three", "static")
+
+
 def test_url_credentials_are_rejected_before_any_audit_event_can_capture_them() -> None:
     audit = InMemoryPolicyAuditSink()
     registry = SourcePolicyRegistry(audit_sink=audit)
