@@ -1,6 +1,27 @@
 version: 1
 default: disabled
 sources:
+  digitaltq.com:
+    name: DigitalTQ
+    enabled: false
+    collector: disabled
+    access_mode: disabled
+    robots_policy: respect
+    include_subdomains: true
+    statistics_eligible_default: false
+    retention_days: 0
+    version: restricted-source-digitaltq-v1
+    routes: []
+    metadata_only: true
+    retain_raw_html: false
+    terms_url: https://www.digitaltq.com/terms-of-use
+    config:
+      access_review_status: publisher_authorization_required
+      restriction_basis: terms_prohibit_automated_bots_or_scripts
+      policy_reviewed_on: "2026-09-08"
+      security_finding_status: not_established
+      production_admitted: false
+    reason: Reference inventory only. Terms prohibit automated bots or scripts. The 151 report combines own pulls with third-party sources, so cohort independence is unresolved. No collection routes or content retention.
   nanjakorya.com:
     enabled: true
     collector: scrapling_http

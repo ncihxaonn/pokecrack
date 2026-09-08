@@ -27,3 +27,15 @@ flaw without supporting evidence and an appropriately authorized assessment.
 No message has been sent. Publisher permission, if obtained, must be checked
 for exact scope before a reviewed policy change enables collection. This
 inventory entry is not itself a live dashboard entry or production admission.
+
+## DigitalTQ — publisher authorization required
+
+Reviewed on 2026-09-08: [terms of use](https://www.digitaltq.com/terms-of-use),
+under Use Of This Website, prohibit automated bots or scripts. Registered
+disabled including subdomains, with no routes, retention or statistical eligibility.
+The [151 report](https://www.digitaltq.com/pokemon-151-pull-rates-pokemon-tcg)
+describes 700 boosters using both the site's own pulls and third-party sources;
+this is not evidence of 700 additional independent packs. No retry or alternate
+collection route was attempted after identifying the restriction. The robots
+lookup failed in the web tool; this does not establish its policy or HTTP status.
+No vulnerability has been established and no publisher has been contacted.

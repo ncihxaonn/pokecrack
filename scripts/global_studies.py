@@ -48,7 +48,8 @@ def positive_count(value: object) -> int:
 
 
 def validate_record(record: object) -> dict:
-    if not isinstance(record, dict) or set(record) != FIELDS:
+    if (not isinstance(record, dict) or not FIELDS <= set(record)
+            or set(record) - FIELDS - {"source_sample"}):
         raise ValueError("invalid_study_fields")
     record = dict(record)
     token(record["study_id"])
@@ -82,6 +83,17 @@ def validate_record(record: object) -> dict:
         positive_count(packs)
     if (packs is None) != (precision == "unknown"):
         raise ValueError("pack_precision_mismatch")
+    # Optional for legacy issue fingerprints: never insert a missing field.
+    # Native non-pack samples are references, not converted pack denominators.
+    sample = record.get("source_sample")
+    if sample is not None:
+        if (not isinstance(sample, dict) or set(sample) != {"unit", "count", "precision"}
+                or sample["unit"] not in {"boxes", "cartons", "decks"}
+                or sample["precision"] not in {"exact_reported", "approximate_reported", "lower_bound"}):
+            raise ValueError("invalid_source_sample")
+        positive_count(sample["count"])
+        if packs is not None:
+            raise ValueError("native_sample_must_not_be_converted_to_packs")
     metrics = record["metrics"]
     if not isinstance(metrics, list) or len(metrics) > 100:
         raise ValueError("invalid_metrics")
@@ -152,6 +164,12 @@ def build_ledger(raw: bytes) -> dict:
             else:
                 selected[field] = component[0][field]
         metrics = {}
+        native_samples = {json.dumps(row["source_sample"], sort_keys=True)
+                          for row in component if row.get("source_sample") is not None}
+        if native_samples:
+            selected["source_sample"] = json.loads(sorted(native_samples)[0])
+            if len(native_samples) > 1:
+                conflicts.append("source_sample")
         for row in component:
             for metric in row["metrics"]:
                 key = metric["category"]
@@ -161,6 +179,8 @@ def build_ledger(raw: bytes) -> dict:
         # Quarantine all counts when related reports disagree. No "latest wins"
         # or automatic summation of partially overlapping aggregate cohorts.
         if conflicts:
+            if native_samples:
+                selected["source_sample"] = None
             selected["packs"] = None
             selected["pack_precision"] = "unknown"
             metrics = {}
