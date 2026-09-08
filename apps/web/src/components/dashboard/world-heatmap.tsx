@@ -86,19 +86,19 @@ export const GLOBAL_FOCUS_COUNTRIES: readonly GlobalFocusCountry[] = [
 ];
 
 export const WORLD_MAP_PALETTE = {
-  background: "#f8fafc",
-  noData: "#dce3ed",
-  boundary: "#7c8b9f",
-  quantitativeLow: "#2563eb",
-  quantitativeMid: "#1d4ed8",
-  quantitativeHigh: "#172554",
-  deltaLow: "#f43f5e",
-  deltaMid: "#cbd5e1",
-  deltaHigh: "#2563eb",
-  withheldBase: "#2563eb",
-  withheldStripe: "#dbeafe",
+  background: "#ffffff",
+  noData: "#e7e7e7",
+  boundary: "#808080",
+  quantitativeLow: "#7f4bf3",
+  quantitativeMid: "#6331b8",
+  quantitativeHigh: "#351651",
+  deltaLow: "#cc785c",
+  deltaMid: "#d9d9d9",
+  deltaHigh: "#7f4bf3",
+  withheldBase: "#7f4bf3",
+  withheldStripe: "#eee7fb",
   focus: "#9b6a12",
-  labelAccent: "#075985",
+  labelAccent: "#702675",
 } as const;
 
 const worldMapCssVariables = {

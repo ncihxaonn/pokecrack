@@ -1,6 +1,5 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
-import { GeistSans } from "geist/font/sans";
 
 import { BRAND } from "@/config/brand";
 import { SiteFooter, SiteHeader } from "./_components/site-chrome";
@@ -47,7 +46,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: Readonly<{ children: ReactNode }>) {
   return (
-    <html className={GeistSans.variable} lang="en-AU">
+    <html lang="en-AU">
       <body>
         <a className="skip-link" href="#main-content">Skip to content</a>
         <SiteHeader />
