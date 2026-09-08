@@ -5,15 +5,7 @@ import type { AdminStatusData, OperationalState } from "@/app/admin/_lib/admin-f
 import { Panel, TableFrame } from "@/components/ui/dashboard-ui";
 import { BRAND } from "@/config/brand";
 import { formatCompactNumber, formatDate } from "@/lib/format";
-
-const adminNavigation = [
-  { href: "/admin", label: "Overview" },
-  { href: "/admin/sources", label: "Sources" },
-  { href: "/admin/jobs", label: "Jobs" },
-  { href: "/admin/browser", label: "Browser" },
-  { href: "/admin/ai-usage", label: "AI usage" },
-  { href: "/admin/system", label: "System" },
-] as const;
+import { AdminNavigation } from "./admin-navigation";
 
 function OperationalBadge({ state }: { state: OperationalState }) {
   return (
@@ -34,12 +26,12 @@ export function AdminShell({ email, via, children }: { email: string; via: "supa
           <small>{email}</small>
           <span className={`admin-session admin-session--${via}`}>Verified Supabase user</span>
         </div>
-        <nav aria-label="Admin navigation">
-          <ul>{adminNavigation.map((item) => <li key={item.href}><Link href={item.href}>{item.label}</Link></li>)}</ul>
-        </nav>
+        <AdminNavigation />
+        <Link className="text-link" href="/">← Public dashboard</Link>
         <p>Operational summaries are read-only unless a policy-validating, audited server endpoint is explicitly connected.</p>
       </aside>
-      <main className="admin-content">{children}</main>
+      {/* RootLayout supplies #main-content on admin routes too; do not nest main landmarks. */}
+      <div className="admin-content">{children}</div>
     </div>
   );
 }

@@ -10,12 +10,20 @@ import {
   AdminModeNotice,
   AdminOverview,
   AdminSourcesView,
+  AdminShell,
   AdminSystemView,
 } from "./admin-views";
 
 afterEach(cleanup);
 
 describe("admin demo views", () => {
+  it("retains one main landmark when mounted inside the shared root layout", () => {
+    render(<main id="main-content"><AdminShell email="admin@example.test" via="supabase"><h1>Admin overview</h1></AdminShell></main>);
+    expect(screen.getAllByRole("main")).toHaveLength(1);
+    expect(screen.getByRole("main")).toContainElement(screen.getByRole("heading", { name: "Admin overview" }));
+    expect(screen.getByRole("link", { name: "← Public dashboard" })).toHaveAttribute("href", "/");
+  });
+
   it("uses the complete read-only operational fixture across all admin pages", () => {
     const overview = render(<AdminOverview snapshot={{ status: "ready", data: ADMIN_DEMO_FIXTURE }} />);
     expect(screen.getByText("Pipeline accepted")).toBeVisible();
