@@ -26,6 +26,7 @@ regexes = [
   '''^gringo-gameplays-silver-tempest-uy-36-v1$''',
   '''^indigo-geek-megaevolucion-mx-50-v1$''',
   '''^limitsend-inferno-x-kr-30-v1$''',
+  '''^nanjakorya-star-birth-jp-100-v1$''',
   '''^pokehanna-ascended-heroes-ca-9-v1$''',
   '''^pokemaniaco-lucas-phantasmal-flames-cl-36-v1$''',
   '''^pokeshow-mega-evolution-gt-3-v1$''',
