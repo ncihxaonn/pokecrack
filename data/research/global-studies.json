@@ -2,6 +2,22 @@
   "version": 1,
   "studies": [
     {
+      "study_id": "pokemon-infomation-battle-partners-2026",
+      "cohort_ids": ["pokemon-infomation-battle-partners-aggregate"],
+      "urls": ["https://pokemon-infomation.com/pull-rates-battlepartner/"],
+      "set": "battle-partners",
+      "language": "ja",
+      "product": "booster-box",
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": null,
+      "pack_precision": "unknown",
+      "source_sample": {"unit": "boxes", "count": 1000, "precision": "approximate_reported"},
+      "metrics": [],
+      "method": "publisher-tabulated-carton-openings",
+      "limitations": ["approximate-native-box-count", "no-pack-conversion", "rounded-rates-not-integer-counts", "original-session-overlap-unresolved", "opening-location-unknown", "access-policy-review-pending", "independent-review-pending", "collector-policy-not-enabled"]
+    },
+    {
       "study_id": "whiteoutsider-fusion-strike-4197",
       "cohort_ids": ["whiteoutsider-fusion-strike-4197"],
       "urls": ["https://www.reddit.com/r/PokemonTCG/comments/qqpiol/"],

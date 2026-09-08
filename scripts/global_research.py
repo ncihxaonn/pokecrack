@@ -36,6 +36,11 @@ def schema() -> dict:
     fields.update({key: strings for key in ("cohort_ids", "urls", "limitations")})
     fields.update({key: {"type": ["string", "null"]} for key in ("country", "language", "product")})
     fields["packs"] = {"type": ["integer", "null"]}
+    fields["source_sample"] = {"type": ["object", "null"], "additionalProperties": False,
+        "properties": {"unit": {"type": "string", "enum": ["boxes", "cartons", "decks"]},
+                       "count": {"type": "integer"}, "precision": {"type": "string", "enum": [
+                           "exact_reported", "approximate_reported", "lower_bound"]}},
+        "required": ["unit", "count", "precision"]}
     fields["metrics"] = {"type": "array", "items": {
         "type": "object", "additionalProperties": False,
         "properties": {"category": string, "hits": {"type": "integer"}, "unit": string},
@@ -63,6 +68,10 @@ Different uncertain cohorts must remain separate, flagged overlap-unresolved in 
 geography_basis: opening_location, publisher_country, product_market, or unknown.
 Country null requires unknown; never infer location from site language or targeted SEO.
 pack_precision: exact_reported, lower_bound, title_claim, or unknown (packs null).
+If only native boxes/cartons/decks are reported, preserve their count and precision
+in source_sample (exact_reported, approximate_reported, lower_bound), with packs null,
+pack_precision unknown and metrics empty. Never multiply box contents into packs.
+Otherwise source_sample is null. Preserve approximate counts without upgrading precision.
 Metrics only when BOTH exact denominator and integer numerator are explicit. unit is
 cards or packs_with_hit; do not conflate card yield with probability of a hit pack.
 Missing language/product are null. Unknown method uses unverified. Record limitations.

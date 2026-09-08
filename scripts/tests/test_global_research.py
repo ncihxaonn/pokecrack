@@ -57,6 +57,23 @@ class GlobalResearchTests(unittest.TestCase):
         with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([item]))):
             self.assertEqual(module.load_history(), [])
 
+    def test_legacy_history_fingerprint_survives_native_sample_extension(self):
+        batch = self.batch()
+        batch["studies"][0].pop("source_sample", None)
+        digest = module.fingerprint(batch)
+        item = {"title": module.TITLE + digest, "body": module.issue_body(batch),
+                "author": {"login": "app/github-actions", "is_bot": True}}
+        with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([item]))):
+            self.assertEqual(module.load_history(), batch["studies"])
+        self.assertEqual(module.fingerprint(module.validate_batch(json.dumps(batch).encode())), digest)
+
+    def test_new_schema_and_prompt_preserve_native_units(self):
+        fields = module.schema()["properties"]["studies"]["items"]
+        self.assertIn("source_sample", fields["required"])
+        self.assertEqual(fields["properties"]["source_sample"]["properties"]["unit"]["enum"],
+                         ["boxes", "cartons", "decks"])
+        self.assertIn("Never multiply box contents into packs", module.prompt("asia"))
+
     def test_tampered_history_fails_closed(self):
         item = {"title": module.TITLE + "wrong", "body": module.issue_body(self.batch()),
                 "author": {"login": "app/github-actions", "is_bot": True}}
