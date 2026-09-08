@@ -1,6 +1,55 @@
 version: 1
 default: disabled
 sources:
+  www.aucklandcardshow.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    exact_urls: ["https://www.aucklandcardshow.com/post/auckland-card-show-2025-recap"]
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-auckland-show-v1
+    config: {
+      "study_key": "auckland-show-mighty-ape-nz-105-v1",
+      "canonical_url": "https://www.aucklandcardshow.com/post/auckland-card-show-2025-recap",
+      "collector_version": "public-study-auckland-show-v1",
+      "parser_version": "auckland-show-105-evidence-v1",
+      "country_code": "NZ",
+      "country_name": "New Zealand",
+      "geography_basis": "publisher_country",
+      "geography_confidence": "tier_b",
+      "publisher_country_url": "https://www.aucklandcardshow.com/about",
+      "opening_country": "NZ",
+      "opened_on": "2025-08-10",
+      "set_external_id": "mixed-pokemon-tcg-2025",
+      "set_language": "und",
+      "set_scope": "mixed_multi_expansion",
+      "set_name": "Mixed Pokémon TCG expansions",
+      "product_scope": "all",
+      "pack_count": 105,
+      "observed_at": "2025-09-30T00:08:20.972Z",
+      "denominator_complete": true,
+      "cohort_id": "auckland-card-show-2025-mighty-ape-105",
+      "robots_url": "https://www.aucklandcardshow.com/robots.txt",
+      "robots_checked_at": "2026-09-09",
+      "terms_url": "https://www.aucklandcardshow.com/terms-of-use",
+      "terms_checked_at": "2026-09-09",
+      "terms_status": "public_site_policy_reviewed",
+      "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
+    }
+    reason: One organizer-reported 105-pack event segment. Mixed sets and unknown language; no hit rate, attendance, other giveaways, body text or media. Publisher country is separate from independently reported event location.
+    routes: [static]
+    adapter: auckland_show_mighty_ape_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
   bokunotebook.com:
     enabled: true
     collector: scrapling_http

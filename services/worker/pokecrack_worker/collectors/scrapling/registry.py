@@ -9,6 +9,7 @@ from pokecrack_worker.collectors.base import (
 )
 
 from .adapters.asia_coverage import garbage_rips_gem_vol2_adapter
+from .adapters.auckland_coverage import auckland_show_mighty_ape_adapter
 from .adapters.bokunotebook_coverage import bokunotebook_vstar_universe_adapter
 from .adapters.dynamic_fixture import DynamicFixtureAdapter
 from .adapters.example_public import ExamplePublicAdapter
@@ -55,10 +56,16 @@ def build_fixture_registries(
     return static_registry, dynamic_registry
 
 
-def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistry:
+def build_live_static_registry(
+    *, http_client: HTTPClient, auckland_http_client: HTTPClient | None = None
+) -> HTTPAdapterRegistry:
     """Build only explicitly reviewed live static adapters; there is no catch-all."""
 
     static_registry = HTTPAdapterRegistry()
+    static_registry.register(
+        "auckland_show_mighty_ape_study",
+        auckland_show_mighty_ape_adapter(client=auckland_http_client or http_client),
+    )
     static_registry.register(
         "bokunotebook_vstar_universe_study",
         bokunotebook_vstar_universe_adapter(client=http_client),
