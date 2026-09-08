@@ -49,3 +49,15 @@ This document is a release proposal, not proof of production admission.
 Mandatory review, tests, GitHub CI/merge, fresh encrypted backup and isolated
 restore, migration, exact-SHA MAM deployment, collection and public projection
 must all be verified before calling this source live.
+
+## Runtime title contract correction
+
+The first production job fetched robots and the report successfully, but the
+database rejected its result: ordinal 29 mistakenly used body-evidence fragments
+as required title fragments. The forward-only `20261016` migration replaces
+only that title check with the actual report title already required by the
+adapter. It leaves the URL, body digest, pack count, policy, privileges and
+all other sources unchanged. The added pgTAP test exercises enqueue, claim,
+request-gate acquisition, wrong-title rejection, actual-title finalization and
+deduplicated refresh of the seeded observation. Publication of a seed alone is
+not proof that the recurring collector succeeded.
