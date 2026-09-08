@@ -2,7 +2,7 @@
 
 ## Legacy manual workflow
 
-Scheduled discovery now belongs to [the global multi-source workflow](GLOBAL_STUDY_LEDGER.md#continuous-discovery).
+Scheduled discovery now belongs to [the country-first campaign](COUNTRY_DATA_CAMPAIGN.md).
 The six-country `Asia country research` workflow is retained for manual checks
 on `main`, not scheduled collection. It sends only the reviewed research script to a fresh MAM temporary
 directory. MAM's existing Codex CLI runs one ephemeral, read-only research call
@@ -14,7 +14,8 @@ Existing Codex account usage limits still apply; this is not unlimited compute.
 The legacy `auto` selector still chooses Vietnam → Malaysia → Indonesia →
 Philippines → Hong Kong → India by six-hour UTC slots anchored at 2026-09-08
 00:00 UTC, but no timer dispatches this workflow. Manual dispatch can select a
-region. The global workflow searches every world region and accumulates history.
+region. The global workflow is also manual-only; the country campaign preserves
+its research history and deduplicates new country reports against it.
 
 The research call has a ten-minute hard timeout, no automatic failure retries,
 up to three candidates and a 16 KiB output cap. It is instructed to use at most

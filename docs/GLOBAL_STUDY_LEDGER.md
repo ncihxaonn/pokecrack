@@ -60,10 +60,11 @@ is retained at title-claim level only, not as a verified denominator.
 
 ## Continuous discovery
 
-`global-research.yml` replaces the six-country schedule with a six-hour UTC
-rotation through global, Asia, Europe, North America, Latin America, Africa and
-Oceania. These are search emphases, not admission country restrictions. The
-legacy Asia workflow remains available for manual diagnostics only.
+The [country-first campaign](COUNTRY_DATA_CAMPAIGN.md) now owns scheduled
+research, following Asia → Oceania → Europe → Africa at country/area level.
+`global-research.yml` remains available for manual global/regional diagnostics,
+including the Americas; its legacy `auto` selector still uses six-hour slots,
+but no timer dispatches it. The legacy Asia workflow is also manual-only.
 
 Research runs on the approved MAM host using the existing Codex ChatGPT login,
 with no database or GitHub credentials passed to the research process. Each run
