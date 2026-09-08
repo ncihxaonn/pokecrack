@@ -18,7 +18,9 @@ def document() -> str:
     for first, last, counts in EXPECTED_GROUPS:
         suffix = "（プレミアムボックス）" if (first, last) == (31, 50) else ""
         result += f"<h3>{first}〜{last}パック目{suffix}</h3><p>（"
-        result += "、".join(f"{key}：{count}枚" for key, count in zip(RARITIES, counts, strict=True) if count)
+        result += "、".join(
+            f"{key}：{count}枚" for key, count in zip(RARITIES, counts, strict=True) if count
+        )
         result += "）</p>"
     return result + "<h2>summary</h2></article>"
 
@@ -48,20 +50,25 @@ class NanjakoryaStudyTests(unittest.TestCase):
                 parse_star_birth_report(document().replace(old, new, 1))
 
     def test_hidden_counts_cannot_supply_missing_segment(self) -> None:
-        text = document().replace("<p>（RR：2枚、SR：1枚）</p>",
-                                  "<script><p>（RR：2枚、SR：1枚）</p></script>", 1)
+        text = document().replace(
+            "<p>（RR：2枚、SR：1枚）</p>", "<script><p>（RR：2枚、SR：1枚）</p></script>", 1
+        )
         with self.assertRaises(CollectorError):
             parse_star_birth_report(text)
 
     def test_duplicate_and_out_of_article_evidence_rejected(self) -> None:
-        for text in [document() + document(),
-                     document().replace("<article>", "<div>").replace("</article>", "</div>")]:
+        for text in [
+            document() + document(),
+            document().replace("<article>", "<div>").replace("</article>", "</div>"),
+        ]:
             with self.assertRaises(CollectorError):
                 parse_star_birth_report(text)
 
     def test_inline_formatting_does_not_change_minimal_fact_hash(self) -> None:
-        self.assertEqual(parse_star_birth_report(document()), parse_star_birth_report(
-            document().replace("RR：2枚", "<b>RR</b>：2枚", 1)))
+        self.assertEqual(
+            parse_star_birth_report(document()),
+            parse_star_birth_report(document().replace("RR：2枚", "<b>RR</b>：2枚", 1)),
+        )
 
     def test_mismatched_hidden_end_tag_cannot_expose_evidence(self) -> None:
         hidden = document().replace("<article>", "<article><template></script>")
