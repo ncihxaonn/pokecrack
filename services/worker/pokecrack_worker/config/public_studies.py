@@ -351,11 +351,24 @@ PUBLIC_STUDIES += (
     ),
 )
 
+PUBLIC_STUDIES += (
+    PublicStudyIdentity(
+        study_key="auckland-show-mighty-ape-nz-105-v1",
+        source_url="https://www.aucklandcardshow.com/post/auckland-card-show-2025-recap",
+        fetch_url="https://www.aucklandcardshow.com/post/auckland-card-show-2025-recap",
+        domain="www.aucklandcardshow.com",
+        adapter="auckland_show_mighty_ape_study",
+        collector_version="public-study-auckland-show-v1",
+        parser_version="auckland-show-105-evidence-v1",
+    ),
+)
+
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDIES_BY_URL = {study.source_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDIES_BY_FETCH_URL = {study.fetch_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
     {
+        "auckland-show-mighty-ape-nz-105-v1",
         "bokunotebook-vstar-universe-th-1-v1",
         "nanjakorya-paradigm-jp-100-v1",
         "nanjakorya-star-birth-jp-100-v1",

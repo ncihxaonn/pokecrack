@@ -68,8 +68,12 @@ from pokecrack_worker.collectors.official_api.youtube import (
     YouTubeError,
     YouTubeTransport,
 )
+from pokecrack_worker.collectors.scrapling.adapters.auckland_coverage import (
+    MAX_RESPONSE_BYTES as AUCKLAND_MAX_RESPONSE_BYTES,
+)
 from pokecrack_worker.collectors.scrapling.adapters.public_studies import RobotsTxtChecker
 from pokecrack_worker.collectors.scrapling.backend import (
+    ScraplingBackend,
     ScraplingResolutionError,
     ScraplingResponseError,
 )
@@ -595,7 +599,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 29
+        count(*) = 30
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -1602,8 +1606,44 @@ public_study_dependencies AS (
   "observed_card_count": 10
 }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_auckland_nz_105'
+            AND policies.display_name = 'Auckland Card Show 105-pack coverage'
+            AND policies.domain = 'www.aucklandcardshow.com'
+            AND policies.base_url = 'https://www.aucklandcardshow.com/post/auckland-card-show-2025-recap'
+            AND policies.version = 'public-study-auckland-show-v1'
+            AND policies.config = '{
+  "study_key": "auckland-show-mighty-ape-nz-105-v1",
+  "canonical_url": "https://www.aucklandcardshow.com/post/auckland-card-show-2025-recap",
+  "collector_version": "public-study-auckland-show-v1",
+  "parser_version": "auckland-show-105-evidence-v1",
+  "country_code": "NZ",
+  "country_name": "New Zealand",
+  "geography_basis": "publisher_country",
+  "geography_confidence": "tier_b",
+  "publisher_country_url": "https://www.aucklandcardshow.com/about",
+  "opening_country": "NZ",
+  "opened_on": "2025-08-10",
+  "set_external_id": "mixed-pokemon-tcg-2025",
+  "set_language": "und",
+  "set_scope": "mixed_multi_expansion",
+  "set_name": "Mixed Pokémon TCG expansions",
+  "product_scope": "all",
+  "pack_count": 105,
+  "observed_at": "2025-09-30T00:08:20.972Z",
+  "denominator_complete": true,
+  "cohort_id": "auckland-card-show-2025-mighty-ape-105",
+  "robots_url": "https://www.aucklandcardshow.com/robots.txt",
+  "robots_checked_at": "2026-09-09",
+  "terms_url": "https://www.aucklandcardshow.com/terms-of-use",
+  "terms_checked_at": "2026-09-09",
+  "terms_status": "public_site_policy_reviewed",
+  "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
+}'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
+        'public_study_auckland_nz_105',
         'public_study_bokunotebook_th_1',
         'public_study_nanjakorya_jp_100',
         'public_study_nanjakorya_paradigm_100',
@@ -3206,7 +3246,14 @@ def _public_study_handler(
     )
     service = CollectionService(
         policies=SourcePolicyRegistry.from_yaml(SOURCES_CONFIG),
-        http_adapters=build_live_static_registry(http_client=client),
+        http_adapters=build_live_static_registry(
+            http_client=client,
+            auckland_http_client=http_client
+            or ScraplingHTTPClient(
+                backend=ScraplingBackend(max_response_bytes=AUCKLAND_MAX_RESPONSE_BYTES),
+                timeout_seconds=settings.scrapling_request_timeout_seconds,
+            ),
+        ),
         robots=robots,
     )
     gates = PostgresPublicStudyGate(executor)
