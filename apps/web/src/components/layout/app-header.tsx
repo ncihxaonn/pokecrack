@@ -46,7 +46,7 @@ function HeaderContent({ pathname }: { pathname: string | null }) {
           <input type="search" name="q" aria-label="Search observed sets" placeholder="Search sets" />
         </form>
         <details className="mobile-menu" ref={mobileMenu}>
-          <summary aria-label="Toggle navigation">Menu</summary>
+          <summary>Menu</summary>
           <nav aria-label="Mobile navigation">{navigation}</nav>
         </details>
       </div>

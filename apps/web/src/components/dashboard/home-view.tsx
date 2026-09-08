@@ -58,10 +58,10 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
         <div className="analysis-content">
       {synthetic ? null : modeNotice}
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
-        <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}</dd><small>Verified eligible denominator</small></div>
-        <div><dt>Complete openings</dt><dd>{integer.format(data.observations.completeOpenings)}</dd><small>Reviewed observations</small></div>
-        <div><dt>Coverage buckets</dt><dd>{integer.format(data.observations.countriesObserved)}</dd><small>Countries or product markets</small></div>
-        <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}</dd><small>Metadata, not opening evidence</small></div>
+        <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>Verified eligible denominator</small></dd></div>
+        <div><dt>Complete openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>Reviewed observations</small></dd></div>
+        <div><dt>Coverage buckets</dt><dd>{integer.format(data.observations.countriesObserved)}<small>Countries or product markets</small></dd></div>
+        <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}<small>Metadata, not opening evidence</small></dd></div>
       </dl>
       <OverviewHighlights data={data} />
 
