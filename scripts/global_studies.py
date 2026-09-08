@@ -128,8 +128,8 @@ def build_ledger(raw: bytes) -> dict:
 
     owners = {}
     for index, record in enumerate(records):
-        keys = [("study", record["study_id"])]
-        keys += [("cohort", value) for value in record["cohort_ids"]]
+        # A generated report slug is not evidence of shared physical samples.
+        keys = [("cohort", value) for value in record["cohort_ids"]]
         keys += [("url", value) for value in record["urls"]]
         for key in keys:
             if key in owners:
@@ -178,7 +178,7 @@ def build_ledger(raw: bytes) -> dict:
     return {"version": 1, "scope": "global", "layer": "research_references",
             "input_reports": len(records), "distinct_report_groups": len(studies),
             "verified_unique_packs": None, "production_admitted": False,
-            "studies": sorted(studies, key=lambda row: row["study_ids"])}
+            "studies": sorted(studies, key=lambda row: (row["study_ids"], row["cohort_ids"], row["urls"]))}
 
 
 def main() -> None:

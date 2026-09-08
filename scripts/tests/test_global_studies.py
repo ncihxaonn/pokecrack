@@ -69,6 +69,15 @@ class GlobalStudiesTests(unittest.TestCase):
     def test_unknown_country_is_preserved(self):
         self.assertIsNone(self.build([self.sample()])["studies"][0]["country"])
 
+    def test_generated_study_slug_collision_does_not_merge_samples(self):
+        a = self.sample()
+        b = copy.deepcopy(a)
+        b.update(cohort_ids=["different-original"], urls=["https://example.org/other"], packs=72)
+        result = self.build([a, b])
+        self.assertEqual(result["distinct_report_groups"], 2)
+        self.assertEqual(sorted(row["packs"] for row in result["studies"]), [36, 72])
+        self.assertEqual(result, self.build([b, a]))
+
     def test_precision_boolean_negative_and_unknown_fields_rejected(self):
         for field, value in [("packs", True), ("packs", -1), ("packs", 0),
                              ("pack_precision", "lower_bound"), ("country", "US"),

@@ -1,21 +1,20 @@
 # Asia country automation
 
-## What runs automatically
+## Legacy manual workflow
 
-GitHub Actions `Asia country research` runs at minute 17 every six hours on
-`main`. It sends only the reviewed research script to a fresh MAM temporary
+Scheduled discovery now belongs to [the global multi-source workflow](GLOBAL_STUDY_LEDGER.md#continuous-discovery).
+The six-country `Asia country research` workflow is retained for manual checks
+on `main`, not scheduled collection. It sends only the reviewed research script to a fresh MAM temporary
 directory. MAM's existing Codex CLI runs one ephemeral, read-only research call
 using ChatGPT authentication, live web search, no shell tools, no inherited
 MCP configuration, and no production database/API credentials. There is no
 local-Mac timer, paid API fallback, browser login, or source-policy bypass.
 Existing Codex account usage limits still apply; this is not unlimited compute.
 
-First-batch rotation: Vietnam → Malaysia → Indonesia → Philippines → Hong Kong
-→ India, anchored at 2026-09-08 00:00 UTC. One region per six-hour UTC slot;
-all six get a turn within 36 hours when GitHub scheduling is available. A
-failed/blocked region does not prevent the next slot. Scheduled Actions can be
-delayed or disabled by GitHub; the run history is the execution evidence.
-Manual dispatch can select one region without changing the rotation.
+The legacy `auto` selector still chooses Vietnam → Malaysia → Indonesia →
+Philippines → Hong Kong → India by six-hour UTC slots anchored at 2026-09-08
+00:00 UTC, but no timer dispatches this workflow. Manual dispatch can select a
+region. The global workflow searches every world region and accumulates history.
 
 The research call has a ten-minute hard timeout, no automatic failure retries,
 up to three candidates and a 16 KiB output cap. It is instructed to use at most
@@ -27,7 +26,7 @@ route encountered access challenges; alternate routes must not bypass them.
 
 Each region has a bot-owned `[Asia research] XX` issue. Changed research results
 update that issue; identical results do not create comments or notifications.
-Closing the issue stops its updates (not the scheduled research). Disable the
+Closing the issue stops its updates (not manual research execution). Disable the
 workflow to stop all research. An unavailable Codex login/usage window fails the
 run rather than falling back to an API key or changing credentials.
 
