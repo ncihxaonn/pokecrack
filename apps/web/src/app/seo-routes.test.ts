@@ -18,6 +18,7 @@ describe("SEO metadata routes", () => {
     expect(robots).toContain("/api/internal/");
     const sitemap = readFileSync(path.join(appRoot, "sitemap.ts"), "utf8");
     expect(sitemap).not.toMatch(/["'`]\/admin/);
+    expect(sitemap).not.toMatch(/["'`]\/(sources|methodology|status)["'`]/);
     expect(sitemap).toContain("loadDashboard");
   });
 
@@ -31,19 +32,16 @@ describe("SEO metadata routes", () => {
     const liveDashboardPages = ["page.tsx"];
     for (const page of liveDashboardPages) expect(readFileSync(path.join(appRoot, page), "utf8"), page).toContain("export const revalidate = 60");
 
-    const researchPages = ["sets/page.tsx", "regions/page.tsx", "retailers/page.tsx", "batches/page.tsx", "methodology/page.tsx"];
+    const researchPages = ["sets/page.tsx", "regions/page.tsx", "retailers/page.tsx", "batches/page.tsx"];
     for (const page of researchPages) expect(readFileSync(path.join(appRoot, page), "utf8"), page).toContain("export const revalidate = 900");
 
-    const operationalPages = ["sources/page.tsx", "status/page.tsx"];
-    for (const page of operationalPages) {
+    const hiddenPages = ["sources/page.tsx", "methodology/page.tsx", "status/page.tsx"];
+    for (const page of hiddenPages) {
       const source = readFileSync(path.join(appRoot, page), "utf8");
-      expect(source, page).toContain('export const dynamic = "force-dynamic"');
-      expect(source, page).toContain("export const revalidate = 0");
-      expect(source, page).toContain("loadOperationalDashboard");
+      expect(source, page).toContain('redirect("/")');
+      expect(source, page).toContain("index: false");
+      expect(source, page).not.toContain("loadDashboard");
+      expect(source, page).not.toContain("loadOperationalDashboard");
     }
-
-    const sourcesPage = readFileSync(path.join(appRoot, "sources/page.tsx"), "utf8");
-    expect(sourcesPage).toContain('createPageMetadata("Sources"');
-    expect(sourcesPage).not.toMatch(/Mastodon/);
   });
 });

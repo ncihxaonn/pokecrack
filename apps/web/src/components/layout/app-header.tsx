@@ -3,7 +3,7 @@
 import React, { Suspense, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Activity, ArrowUpRight, BookOpen, Boxes, Database, Globe2, LayoutDashboard, Search, Store } from "lucide-react";
+import { Boxes, Database, Globe2, LayoutDashboard, Search, Store } from "lucide-react";
 
 import { BRAND } from "@/config/brand";
 
@@ -13,9 +13,6 @@ const publicNavigation = [
   { href: "/regions", label: "Regions", icon: Globe2 },
   { href: "/retailers", label: "Retailers", icon: Store },
   { href: "/batches", label: "Batches", icon: Database },
-  { href: "/sources", label: "Sources", icon: Database },
-  { href: "/methodology", label: "Methodology", icon: BookOpen },
-  { href: "/status", label: "Status", icon: Activity },
 ] as const;
 
 function HeaderContent({ pathname }: { pathname: string | null }) {
@@ -45,7 +42,6 @@ function HeaderContent({ pathname }: { pathname: string | null }) {
           <span className="nav-caption">Workspace</span>
           {navigation}
         </nav>
-        <div className="sidebar-note"><BookOpen size={16} aria-hidden="true" /><p>Evidence, not predictions.</p><Link href="/methodology">Read our methodology <ArrowUpRight size={13} aria-hidden="true" /></Link></div>
       </div>
       <div className="app-header__inner">
         <span className="workspace-label">PokeCrack <span aria-hidden="true">/</span> <strong>{isAdmin ? "Administration" : activeItem?.label ?? "Workspace"}</strong></span>
