@@ -9,6 +9,7 @@ from pokecrack_worker.collectors.base import (
 )
 
 from .adapters.asia_coverage import garbage_rips_gem_vol2_adapter
+from .adapters.bokunotebook_coverage import bokunotebook_vstar_universe_adapter
 from .adapters.dynamic_fixture import DynamicFixtureAdapter
 from .adapters.example_public import ExamplePublicAdapter
 from .adapters.indonesia_coverage import bikuhime_hantaman_pertama_a_adapter
@@ -58,6 +59,10 @@ def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistr
     """Build only explicitly reviewed live static adapters; there is no catch-all."""
 
     static_registry = HTTPAdapterRegistry()
+    static_registry.register(
+        "bokunotebook_vstar_universe_study",
+        bokunotebook_vstar_universe_adapter(client=http_client),
+    )
     static_registry.register(
         "nanjakorya_paradigm_trigger_study",
         nanjakorya_paradigm_trigger_adapter(client=http_client),
