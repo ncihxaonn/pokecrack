@@ -48,6 +48,56 @@
       "metrics": [],
       "method": "unverified",
       "limitations": ["title-only", "raw-counts-and-method-not-verified", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "tcgplayer-perfect-order-2026",
+      "cohort_ids": ["tcgplayer-authentication-perfect-order-2026"],
+      "urls": ["https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Perfect-Order-Pull-Rates/73148119-ebcb-40b7-84b6-52b3a6d0c631/"],
+      "set": "perfect-order",
+      "language": null,
+      "product": null,
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 3500,
+      "pack_precision": "lower_bound",
+      "metrics": [],
+      "method": "publisher-tabulated-openings",
+      "limitations": ["strictly-more-than-reported-bound", "rounded-rates-not-integer-counts", "original-cohort-audit-pending", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "tcgplayer-destined-rivals-2025",
+      "cohort_ids": ["tcgplayer-authentication-destined-rivals-2025"],
+      "urls": ["https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Destined-Rivals-Pull-Rates/43ba832e-44c9-45a4-ae2e-594df2defdda/"],
+      "set": "destined-rivals",
+      "language": null,
+      "product": null,
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 8000,
+      "pack_precision": "lower_bound",
+      "metrics": [],
+      "method": "publisher-tabulated-openings",
+      "limitations": ["strictly-more-than-reported-bound", "rounded-rates-not-integer-counts", "original-cohort-audit-pending", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "nanjakorya-star-birth-100",
+      "cohort_ids": ["nanjakorya-1123-star-birth-100"],
+      "urls": ["https://nanjakorya.com/1123"],
+      "set": "star-birth",
+      "language": "ja",
+      "product": "loose-packs-and-premium-trainer-box",
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 100,
+      "pack_precision": "exact_reported",
+      "metrics": [
+        {"category": "rr", "hits": 16, "unit": "cards"},
+        {"category": "rrr", "hits": 6, "unit": "cards"},
+        {"category": "sr", "hits": 4, "unit": "cards"},
+        {"category": "hr", "hits": 1, "unit": "cards"}
+      ],
+      "method": "consecutive-opening-segments",
+      "limitations": ["opening-location-unknown", "opening-date-unknown", "mixed-product-sampling", "card-yield-not-hit-pack-probability", "original-cohort-audit-pending", "collector-policy-not-enabled"]
     }
   ]
 }
