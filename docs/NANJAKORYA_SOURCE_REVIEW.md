@@ -51,6 +51,14 @@ explicit null opening country/date. These counts never populate SIR fields.
 
 ## Remaining release work
 
+CI run 34180004240 passed database, Worker, Web, auth-browser, image and
+deployment checks. Its secret scan reported eleven generic-api-key matches,
+all exact occurrences of the public cohort identifier
+`nanjakorya-star-birth-jp-100-v1` in source config, adapter, registry, readiness
+SQL, migration and tests. MAM reproduced all eleven with redacted output.
+The scanner exception is anchored to this exact public identifier only; the
+generic key detector and all other rules remain enabled.
+
 The source is registered under the single cohort key
 `nanjakorya-star-birth-jp-100-v1`, append-only contract ordinal 27.
 Migration creation used Supabase CLI 2.116.0 on MAM; the generated timestamp
