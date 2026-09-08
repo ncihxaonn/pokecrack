@@ -114,10 +114,24 @@ class GlobalStudiesTests(unittest.TestCase):
 
     def test_real_catalog_is_reference_only_and_no_fabricated_total(self):
         data = module.build_ledger((ROOT / "data/research/global-studies.json").read_bytes())
-        self.assertEqual(data["distinct_report_groups"], 3)
+        self.assertEqual(data["distinct_report_groups"], 6)
         self.assertFalse(data["production_admitted"])
         self.assertIsNone(data["verified_unique_packs"])
         self.assertTrue(all(row["country"] is None for row in data["studies"]))
+
+    def test_large_publisher_samples_are_bounds_not_reconstructed_counts(self):
+        data = module.build_ledger((ROOT / "data/research/global-studies.json").read_bytes())
+        rows = {row["study_ids"][0]: row for row in data["studies"]}
+        for study, bound in [("tcgplayer-perfect-order-2026", 3500),
+                             ("tcgplayer-destined-rivals-2025", 8000)]:
+            self.assertEqual(rows[study]["packs"], bound)
+            self.assertEqual(rows[study]["pack_precision"], "lower_bound")
+            self.assertEqual(rows[study]["metrics"], [])
+        japanese = rows["nanjakorya-star-birth-100"]
+        self.assertEqual(japanese["packs"], 100)
+        self.assertEqual({m["category"]: m["hits"] for m in japanese["metrics"]},
+                         {"rr": 16, "rrr": 6, "sr": 4, "hr": 1})
+        self.assertTrue(all(m["unit"] == "cards" for m in japanese["metrics"]))
 
 
 if __name__ == "__main__":
