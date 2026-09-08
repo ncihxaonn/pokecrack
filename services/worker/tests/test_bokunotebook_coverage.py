@@ -48,6 +48,7 @@ def test_complete_report_is_minimal_coverage_not_rate() -> None:
     assert policy.config["opened_at"] is None
     assert policy.config["geography_basis"] == "product_market"
     assert "qualifying_hit_pack_count" not in policy.config
+    assert item.title == TITLE
     assert item.text == EVIDENCE_EXCERPT
     assert item.content_sha256 == EVIDENCE_SHA256
     assert item.media_urls == ()
