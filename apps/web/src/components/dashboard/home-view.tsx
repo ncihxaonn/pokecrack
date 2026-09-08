@@ -1,7 +1,6 @@
 import React from "react";
 import type { Route } from "next";
 import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 
 import type { WorldHeatMetric } from "@/app/_lib/world-map-query";
 import type { PublicDashboardData } from "@/data/types";
@@ -30,24 +29,27 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
 
   return (
     <div className="page-shell home-page">
-      {/* Label synthetic data before the hero count as well as the charts. */}
+      {/* Synthetic provenance must precede the map and all other metrics. */}
       {synthetic ? modeNotice : null}
       <section className="dashboard-intro" aria-labelledby="hero-title">
         <div className="dashboard-intro__copy">
           <h1 id="hero-title">Pokémon opening analysis</h1>
           <p>Explore Pokémon TCG opening data across sets, countries and product markets.</p>
         </div>
-        <div className="overview-updates">
-          <Link href="/regions"><span className="eyebrow">Worldwide coverage</span><strong>{integer.format(data.observations.countriesObserved)} coverage buckets</strong><p>Compare published country and product-market samples.</p><ArrowUpRight size={16} aria-hidden="true" /></Link>
-          <Link href="/sets"><span className="eyebrow">Set comparisons</span><strong>Explore observed sets</strong><p>View sample sizes and the available opening statistics.</p><ArrowUpRight size={16} aria-hidden="true" /></Link>
-        </div>
       </section>
 
-      <OverviewHighlights data={data} />
+      <div id="world-coverage"><WorldHeatmap
+        cells={data.mapCells}
+        coverageSummary={data.summary.globalCoverage}
+        observations={data.observations}
+        initialMetric={worldMetric}
+        compact
+      /></div>
 
       <div className="analysis-layout">
         <nav className="analysis-nav" aria-label="On this page">
           <a href="#world-coverage">World coverage</a>
+          <a href="#highlights-title">Highlights</a>
           <a href="#catalog-title">Set catalog</a>
           {data.trend.length > 0 ? <a href="#trend-title">Observed trend</a> : null}
           {trending.length > 0 || watched.length > 0 ? <a href="#trending-title">Set comparisons</a> : null}
@@ -61,13 +63,7 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
         <div><dt>Coverage buckets</dt><dd>{integer.format(data.observations.countriesObserved)}</dd><small>Countries or product markets</small></div>
         <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}</dd><small>Metadata, not opening evidence</small></div>
       </dl>
-      <div id="world-coverage"><WorldHeatmap
-        cells={data.mapCells}
-        coverageSummary={data.summary.globalCoverage}
-        observations={data.observations}
-        initialMetric={worldMetric}
-        compact
-      /></div>
+      <OverviewHighlights data={data} />
 
       <section className="dashboard-section" aria-labelledby="catalog-title">
         <SectionHeading

@@ -39,10 +39,13 @@
 
 .caption { display: flex; align-items: flex-start; justify-content: space-between; gap: 1.25rem; border-top: 1px solid rgba(148, 163, 184, .3); padding: .8rem .15rem 0; }
 .caption p { max-width: 570px; color: var(--muted); font-size: .78rem; }
-.legend { display: grid; width: min(240px, 100%); flex: 0 1 auto; gap: .35rem; color: var(--ink); font: 700 12px/1.35 var(--sans); }
+.legend { display: grid; width: min(320px, 100%); flex: 0 0 auto; gap: .35rem; color: var(--ink); font: 400 12px/1.35 var(--sans); }
+.coverageBands { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; padding: 4px 0 8px; list-style: none; }
+.coverageBands li { display: flex; align-items: center; gap: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.coverageBands i { width: 16px; height: 12px; flex-shrink: 0; border-radius: 2px; }
 .legendScale { height: 9px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 99px; }
 .deltaScale, .deltaDataKey { background: linear-gradient(90deg, var(--map-delta-low), var(--map-delta-mid), var(--map-delta-high)); }
-.rateScale, .coverageScale, .quantitativeDataKey { background: linear-gradient(90deg, var(--map-quantitative-low), var(--map-quantitative-mid), var(--map-quantitative-high)); }
+.rateScale, .quantitativeDataKey { background: linear-gradient(90deg, var(--map-quantitative-low), var(--map-quantitative-mid), var(--map-quantitative-high)); }
 .legendTicks { display: flex; justify-content: space-between; gap: .35rem; }
 .legendKeys { display: grid; gap: .28rem; margin-top: .15rem; }
 .noDataKey, .focusKey, .observedKey, .withheldKey, .publishedKey { display: flex; align-items: center; gap: .4rem; }

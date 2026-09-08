@@ -8,6 +8,7 @@ import {
   buildWorldHeatRows,
   GLOBAL_FOCUS_COUNTRIES,
   getWorldMapFill,
+  WORLD_COVERAGE_BANDS,
   WORLD_MAP_PALETTE,
   WorldHeatmap,
 } from "./world-heatmap";
@@ -416,7 +417,7 @@ describe("WorldHeatmap", () => {
     expect(getWorldMapFill(-1, "coverage")).toBe(getWorldMapFill(0, "coverage"));
     expect(getWorldMapFill(5_000, "coverage")).toBe(getWorldMapFill(1_500, "coverage"));
     expect(getWorldMapFill(0, "coverage")).toBe(WORLD_MAP_PALETTE.quantitativeLow);
-    expect(getWorldMapFill(1_500, "coverage")).toBe(WORLD_MAP_PALETTE.quantitativeHigh);
+    expect(getWorldMapFill(1_500, "coverage")).toBe(WORLD_COVERAGE_BANDS[6].color);
 
     render(
       <WorldHeatmap
@@ -435,9 +436,15 @@ describe("WorldHeatmap", () => {
     expect(screen.getByRole("img", { name: "Observed pack coverage across the world" })).toHaveAccessibleDescription(
       /not a hit rate or representative demand/i,
     );
-    expect(screen.getByText("Observed pack sample uses scale")).toBeVisible();
-    expect(screen.getByRole("group", { name: "Observed pack coverage map legend" }))
-      .toHaveTextContent(/0 packs.*750.*≥ 1,500/);
+    const legend = screen.getByRole("group", { name: "Observed pack coverage map legend" });
+    expect(legend).toHaveTextContent("Observed packs");
+    const bands = within(legend).getAllByRole("listitem");
+    expect(bands).toHaveLength(WORLD_COVERAGE_BANDS.length);
+    WORLD_COVERAGE_BANDS.forEach((band, index) => {
+      expect(bands[index]).toHaveTextContent(band.label);
+      expect(bands[index]?.querySelector("i")).toHaveStyle({ backgroundColor: band.color });
+    });
+    expect(screen.getByText(/fixed absolute pack-count colour bands/i)).toHaveTextContent(/never rescaled/i);
     expect(screen.queryByText("No attributed bucket rates published yet")).not.toBeInTheDocument();
   });
 
@@ -498,9 +505,9 @@ describe("WorldHeatmap", () => {
       background: "#ffffff",
       noData: "#e7e7e7",
       boundary: "#808080",
-      quantitativeLow: "#7f4bf3",
-      quantitativeMid: "#6331b8",
-      quantitativeHigh: "#351651",
+      quantitativeLow: "#2563eb",
+      quantitativeMid: "#0f766e",
+      quantitativeHigh: "#c2410c",
       withheldBase: "#7f4bf3",
       withheldStripe: "#eee7fb",
       focus: "#9b6a12",
@@ -516,6 +523,25 @@ describe("WorldHeatmap", () => {
       .toBeGreaterThanOrEqual(3);
     expect(contrastRatio(WORLD_MAP_PALETTE.labelAccent, "#f3f6f3"))
       .toBeGreaterThanOrEqual(4.5);
+    for (const band of WORLD_COVERAGE_BANDS) {
+      expect(contrastRatio(band.color, WORLD_MAP_PALETTE.noData)).toBeGreaterThanOrEqual(3);
+    }
+  });
+
+  it("uses distinct fixed coverage bands at every boundary, including small samples", () => {
+    WORLD_COVERAGE_BANDS.forEach((band, index) => {
+      expect(getWorldMapFill(band.minimum, "coverage")).toBe(band.color);
+      const nextBand = WORLD_COVERAGE_BANDS[index + 1];
+      if (nextBand) expect(getWorldMapFill(nextBand.minimum - 1, "coverage")).toBe(band.color);
+    });
+    expect(new Set(WORLD_COVERAGE_BANDS.map((band) => band.color)).size).toBe(7);
+    expect(new Set([9, 36, 54, 107].map((packs) => getWorldMapFill(packs, "coverage"))).size).toBe(4);
+    const cell = { ...DEMO_PUBLIC_DATA.mapCells[0]!, packsObserved: 36 };
+    const alone = buildWorldHeatRows([cell], "coverage");
+    const withLargeSample = buildWorldHeatRows([cell, {
+      ...cell, countryCode: "ZZ", countryName: "Other sample", packsObserved: 100_000,
+    }], "coverage");
+    expect(withLargeSample.find((row) => row.cell.countryCode === cell.countryCode)?.fill).toBe(alone[0]?.fill);
   });
 
   it("records the selected metric in the URL", () => {
