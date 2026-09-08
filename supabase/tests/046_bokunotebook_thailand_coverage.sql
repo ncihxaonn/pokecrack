@@ -12,9 +12,9 @@ select is(
   1, 'one real pack, not the ten cards inside it'
 );
 select is(
-  (select pack_count from ingest.public_study_coverage_observations
-   where study_key = 'allonline-mega-dream-ex-th-10-v1'),
-  10, 'existing Thai source remains unchanged and independent'
+  (select (config ->> 'pack_count')::integer from ingest.reviewed_public_study_contracts()
+   where ordinal = 9 and study_key = 'allonline-mega-dream-ex-th-10-v1'),
+  10, 'existing Thai source contract remains unchanged and independent'
 );
 select is(
   (select evidence_sha256 from ingest.public_study_coverage_observations
