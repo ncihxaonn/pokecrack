@@ -41,3 +41,6 @@ Scope: navigation, public lists/details, sources, methodology, status, admin/log
 styling and loading/error shells. Authentication and collection are unchanged.
 Avoid duplicated region cards and tables; keep caveats needed for visible metrics
 visible. Verify desktop, mobile, navigation, search, empty data and disclosures.
+## Public navigation follow-up
+
+Sources, Methodology and Status are no longer public website sections. Desktop/mobile navigation contains only Overview, Sets, Regions, Retailers and Batches; the footer has no reference navigation. Their old URLs redirect to Overview and are excluded from the sitemap. The homepage no longer displays reviewed-source, social-discovery health or methodology panels. Internal collection, source review, health checks, data-quality labels and authentication remain unchanged.

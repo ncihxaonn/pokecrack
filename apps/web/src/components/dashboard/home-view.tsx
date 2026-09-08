@@ -7,8 +7,6 @@ import type { WorldHeatMetric } from "@/app/_lib/world-map-query";
 import type { PublicDashboardData } from "@/data/types";
 import { formatDate, formatDateTime, formatProbability } from "@/lib/format";
 import { TrendChart } from "@/components/charts/trend-chart";
-import { LiveDiscoveryPulse } from "./live-discovery-pulse";
-import { ReviewedEvidenceSources } from "./reviewed-evidence-sources";
 import { WorldHeatmap } from "./world-heatmap";
 import { DataModeNotice, MetricDisclaimer, Panel, SectionHeading, SignalBadge, TableFrame } from "@/components/ui/dashboard-ui";
 
@@ -57,7 +55,6 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
         initialMetric={worldMetric}
         compact
       />
-      <ReviewedEvidenceSources sources={data.sources} limit={4} />
 
       <section className="dashboard-section" aria-labelledby="catalog-title">
         <SectionHeading
@@ -89,8 +86,6 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
           </p>
         </Panel>
       </section>
-
-      <LiveDiscoveryPulse pulse={data.socialActivityPulse} sources={data.sources} />
 
       {data.trend.length > 0 ? <section className="dashboard-section" aria-labelledby="trend-title">
         <SectionHeading id="trend-title" title="Observed trend" detail="Weekly aggregate and rolling baseline; a visual aid with a textual table below." />
@@ -154,19 +149,6 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
           </TableFrame>
         </Panel>
       </section> : null}
-
-      <section className="dashboard-section methodology-glance" aria-labelledby="methodology-title">
-        <SectionHeading id="methodology-title" title="Methodology at a glance" detail="Exact raw sample rates are descriptive; baselines, intervals and signals remain separately threshold-gated." />
-        <ol className="method-steps">
-          {[
-            ["Collect", "Allowlisted, bounded discovery and metadata only."],
-            ["Validate", "Complete, nonduplicate tier A/B observations qualify."],
-            ["Aggregate", "Packs observed form the denominator; no missing counts are imputed."],
-            ["Publish", "Exact counts first; inference, intervals and signals only when qualified."],
-          ].map(([title, detail]) => <li key={title}><h3>{title}</h3><p>{detail}</p></li>)}
-        </ol>
-        <Link className="button button--secondary" href="/methodology">Full methodology</Link>
-      </section>
 
       <MetricDisclaimer />
     </div>
