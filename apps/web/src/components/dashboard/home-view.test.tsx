@@ -40,6 +40,22 @@ describe("HomeView", () => {
     const mapHeading = screen.getByRole("heading", { name: "Worldwide qualifying-hit map" });
     const trendHeading = screen.getByRole("heading", { name: "Observed trend" });
     expect(mapHeading.compareDocumentPosition(trendHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("complementary", { name: "Data provenance" })
+      .compareDocumentPosition(mapHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  });
+
+  it("places the map before highlights, totals and section navigation on first entry", () => {
+    const { container } = render(<HomeView data={DEMO_PUBLIC_DATA} synthetic={false} />);
+    const map = container.querySelector("#world-coverage")!;
+    expect(map.parentElement).toHaveClass("home-page");
+    for (const section of [
+      screen.getByRole("heading", { name: "Highlights" }),
+      container.querySelector('[aria-label="Global dashboard totals"]')!,
+      screen.getByRole("navigation", { name: "On this page" }),
+      screen.getByRole("complementary", { name: "Data provenance" }),
+    ]) {
+      expect(map.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    }
   });
 
   it("omits source and operational panels even when reviewed coverage exists", () => {
