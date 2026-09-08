@@ -1,8 +1,7 @@
 name: Asia country research
 
 on:
-  schedule:
-    - cron: '17 */6 * * *'
+  # Scheduled discovery moved to global-research.yml; retain manual legacy checks.
   workflow_dispatch:
     inputs:
       country:

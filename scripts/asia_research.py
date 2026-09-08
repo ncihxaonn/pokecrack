@@ -143,14 +143,14 @@ paid services or request credentials. Output only the supplied JSON schema.
 """
 
 
-def research(country: str) -> dict:
+def research_document(prompt_text: str, output_schema: dict) -> bytes:
     # An empty, private working directory prevents project hooks/instructions or
     # production files from entering the task. Auth stays with the existing CLI.
     with tempfile.TemporaryDirectory(prefix="pokecrack-asia-research-") as directory:
         root = Path(directory)
         schema_path = root / "schema.json"
         output = root / "result.json"
-        schema_path.write_text(json.dumps(schema(country)), encoding="utf-8")
+        schema_path.write_text(json.dumps(output_schema), encoding="utf-8")
         command = [CODEX, "exec", "--ignore-user-config", "--ephemeral",
                    "--sandbox", "read-only", "--skip-git-repo-check", "-C", directory,
                    "-c", 'forced_login_method="chatgpt"',
@@ -162,7 +162,7 @@ def research(country: str) -> dict:
         with subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.DEVNULL,
                               stderr=subprocess.DEVNULL, env=env, start_new_session=True) as proc:
             try:
-                proc.communicate(prompt(country).encode(), timeout=600)
+                proc.communicate(prompt_text.encode(), timeout=600)
             except subprocess.TimeoutExpired:
                 os.killpg(proc.pid, signal.SIGKILL)
                 proc.communicate()
@@ -171,7 +171,11 @@ def research(country: str) -> dict:
                 raise ValueError("research_unavailable")
         if not output.is_file() or output.stat().st_size > MAX_BYTES:
             raise ValueError("invalid_report")
-        return validate(output.read_bytes(), country)
+        return output.read_bytes()
+
+
+def research(country: str) -> dict:
+    return validate(research_document(prompt(country), schema(country)), country)
 
 
 def issue_body(report: dict) -> str:

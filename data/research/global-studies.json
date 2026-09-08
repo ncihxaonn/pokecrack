@@ -1,0 +1,53 @@
+{
+  "version": 1,
+  "studies": [
+    {
+      "study_id": "whiteoutsider-fusion-strike-4197",
+      "cohort_ids": ["whiteoutsider-fusion-strike-4197"],
+      "urls": ["https://www.reddit.com/r/PokemonTCG/comments/qqpiol/"],
+      "set": "fusion-strike",
+      "language": null,
+      "product": "booster-boxes-and-etbs",
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 4197,
+      "pack_precision": "exact_reported",
+      "metrics": [
+        {"category": "alternate-art-v-excluding-vmax", "hits": 41, "unit": "cards"},
+        {"category": "alternate-art-vmax-secret-rare", "hits": 14, "unit": "cards"}
+      ],
+      "method": "tabulated-complete-public-video-openings",
+      "limitations": ["promotional-sampling", "original-video-overlap-unresolved", "source-percent-count-discrepancy", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "cardzard-chilling-reign-5000",
+      "cohort_ids": ["cardzard-chilling-reign-5000"],
+      "urls": ["https://www.reddit.com/r/PokemonTCG/comments/o2nhez/", "https://cardzard.com/blogs/news/chilling-reign-pull-rate-data-2021"],
+      "set": "chilling-reign",
+      "language": null,
+      "product": null,
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 5000,
+      "pack_precision": "exact_reported",
+      "metrics": [],
+      "method": "publisher-tabulated-openings",
+      "limitations": ["raw-table-unavailable", "original-cohort-audit-pending", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "shining-fates-1087-title",
+      "cohort_ids": ["shining-fates-reddit-lo8m1v"],
+      "urls": ["https://www.reddit.com/r/PokemonTCG/comments/lo8m1v/shining_fates_pull_rate_data_from_1087_packs/"],
+      "set": "shining-fates",
+      "language": null,
+      "product": null,
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 1087,
+      "pack_precision": "title_claim",
+      "metrics": [],
+      "method": "unverified",
+      "limitations": ["title-only", "raw-counts-and-method-not-verified", "collector-policy-not-enabled"]
+    }
+  ]
+}
