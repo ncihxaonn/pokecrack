@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useId, useMemo, useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 import { defaultWorldHeatMetric, type WorldHeatMetric } from "@/app/_lib/world-map-query";
 import mapData from "@/data/world-map-110m.json";
@@ -104,12 +105,12 @@ export const WORLD_MAP_PALETTE = {
 // Absolute pack-count bands: do not normalize to the current countries or maximum.
 // The legend uses this same definition so a colour always means the same range.
 export const WORLD_COVERAGE_BANDS = [
-  { minimum: 0, label: "0–24", color: "#2563eb" },
-  { minimum: 25, label: "25–49", color: "#0e7490" },
-  { minimum: 50, label: "50–99", color: "#0f766e" },
-  { minimum: 100, label: "100–249", color: "#a16207" },
-  { minimum: 250, label: "250–499", color: "#c2410c" },
-  { minimum: 500, label: "500–1,499", color: "#b91c1c" },
+  { minimum: 0, label: "0-24", color: "#2563eb" },
+  { minimum: 25, label: "25-49", color: "#0e7490" },
+  { minimum: 50, label: "50-99", color: "#0f766e" },
+  { minimum: 100, label: "100-249", color: "#a16207" },
+  { minimum: 250, label: "250-499", color: "#c2410c" },
+  { minimum: 500, label: "500-1,499", color: "#b91c1c" },
   { minimum: 1_500, label: "≥ 1,500", color: "#7f1d1d" },
 ] as const;
 
@@ -334,7 +335,6 @@ export function WorldHeatmap({
     >
       <header className={styles.header}>
         <div>
-          <span className={styles.kicker}>Global evidence map</span>
           <h2 id={titleId}>
             {metric === "coverage" ? "Worldwide evidence coverage" : "Worldwide qualifying-hit map"}
           </h2>
@@ -524,7 +524,10 @@ export function WorldHeatmap({
       </div>
 
       <details className={styles.details} open={compact ? undefined : true}>
-        <summary>Country and market details <span>{rows.length} observed buckets · exact values and collection status</span></summary>
+        <summary>
+          <span className={styles.detailsLabel}>Country and market details <small>{rows.length} observed buckets · exact values and collection status</small></span>
+          <ChevronDown className={styles.detailsIcon} size={18} aria-hidden="true" />
+        </summary>
       <section className={styles.focusBlock} aria-labelledby={`collection-focus-${instanceId}`}>
         <div className={styles.focusHeading}>
           <div>
