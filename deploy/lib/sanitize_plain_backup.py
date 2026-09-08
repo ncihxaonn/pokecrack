@@ -188,6 +188,9 @@ PUBLIC_STUDY_SOURCE_KEYS_V11 = PUBLIC_STUDY_SOURCE_KEYS_V10 + (
 PUBLIC_STUDY_SOURCE_KEYS_V12 = PUBLIC_STUDY_SOURCE_KEYS_V11 + (
     b"public_study_nanjakorya_jp_100",
 )
+PUBLIC_STUDY_SOURCE_KEYS_V13 = PUBLIC_STUDY_SOURCE_KEYS_V12 + (
+    b"public_study_nanjakorya_paradigm_100",
+)
 # Each migration adds an exact append-only reviewed source profile. Keep every
 # complete transition profile available for pre-apply backups, while rejecting
 # unions and partially migrated sets as ambiguous and restore-unsafe.
@@ -204,8 +207,9 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V10,
     PUBLIC_STUDY_SOURCE_KEYS_V11,
     PUBLIC_STUDY_SOURCE_KEYS_V12,
+    PUBLIC_STUDY_SOURCE_KEYS_V13,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V12
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V13
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(
@@ -927,6 +931,7 @@ PUBLIC_STUDY_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V10: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V11: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V12: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V13: "v4_v5",
 }
 PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS = (
     "study_key text not null",
@@ -976,6 +981,7 @@ PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V10: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V11: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V12: "v7",
+    PUBLIC_STUDY_SOURCE_KEYS_V13: "v7",
 }
 PUBLIC_STUDY_POLICY_SOURCE_KEY = {
     b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
@@ -1038,6 +1044,7 @@ PUBLIC_STUDY_OBSERVED_AT = {
     b"pontocom-herois-excelsos-br-48-v1": datetime(2026, 1, 26, 23, 29, tzinfo=UTC),
 }
 PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
+    b"nanjakorya-paradigm-jp-100-v1": b"public_study_nanjakorya_paradigm_100",
     b"nanjakorya-star-birth-jp-100-v1": b"public_study_nanjakorya_jp_100",
     b"garbage-rips-gem-vol2-cn-1-v1": b"public_study_garbage_rips_cn_1",
     b"bikuhime-hantaman-pertama-a-id-20-v1": b"public_study_bikuhime_id_20",
@@ -1065,6 +1072,18 @@ PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
     b"gringo-gameplays-silver-tempest-uy-36-v1": b"public_study_gringo_gameplays_silver_tempest_uy_36",
 }
 PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
+    b"nanjakorya-paradigm-jp-100-v1": {
+        "country_code": b"JP",
+        "country_name": b"Japan",
+        "pack_count": b"100",
+        "set_external_id": b"s12",
+        "product_scope": b"all",
+        "collector_version": b"public-study-nanjakorya-paradigm-v1",
+        "parser_version": b"nanjakorya-paradigm-evidence-v1",
+        "source_policy_version": b"public-study-nanjakorya-paradigm-v1",
+        "evidence_sha256": b"ee845effa99200b85ff4380f16380f80aeec68a5398fc7d68a4b552c2cb16203",
+        "is_demo": b"f",
+    },
     b"nanjakorya-star-birth-jp-100-v1": {
         "country_code": b"JP",
         "country_name": b"Japan",
@@ -1367,6 +1386,7 @@ PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
     },
 }
 PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
+    b"nanjakorya-paradigm-jp-100-v1": datetime(2022, 10, 21, 11, 10, 35, tzinfo=UTC),
     b"nanjakorya-star-birth-jp-100-v1": datetime(2022, 2, 21, 20, 40, 46, tzinfo=UTC),
     b"garbage-rips-gem-vol2-cn-1-v1": datetime(2026, 2, 13, 13, 30, 9, tzinfo=UTC),
     b"bikuhime-hantaman-pertama-a-id-20-v1": datetime(2020, 5, 17, 7, 23, 58, tzinfo=UTC),

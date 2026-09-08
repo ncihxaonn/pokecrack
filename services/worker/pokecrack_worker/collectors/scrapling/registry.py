@@ -13,6 +13,7 @@ from .adapters.dynamic_fixture import DynamicFixtureAdapter
 from .adapters.example_public import ExamplePublicAdapter
 from .adapters.indonesia_coverage import bikuhime_hantaman_pertama_a_adapter
 from .adapters.nanjakorya_coverage import nanjakorya_star_birth_adapter
+from .adapters.paradigm_trigger_coverage import nanjakorya_paradigm_trigger_adapter
 from .adapters.public_studies import (
     allonline_mega_dream_ex_adapter,
     andree_insane_cards_cosmic_eclipse_adapter,
@@ -57,6 +58,10 @@ def build_live_static_registry(*, http_client: HTTPClient) -> HTTPAdapterRegistr
     """Build only explicitly reviewed live static adapters; there is no catch-all."""
 
     static_registry = HTTPAdapterRegistry()
+    static_registry.register(
+        "nanjakorya_paradigm_trigger_study",
+        nanjakorya_paradigm_trigger_adapter(client=http_client),
+    )
     static_registry.register(
         "nanjakorya_star_birth_study",
         nanjakorya_star_birth_adapter(client=http_client),
