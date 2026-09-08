@@ -12,7 +12,13 @@ describe("HomeView", () => {
   it("renders the required synthetic dashboard sections and observational caveats", () => {
     render(<HomeView data={DEMO_PUBLIC_DATA} synthetic />);
 
-    expect(screen.getByRole("heading", { level: 1, name: "Overview" })).toBeVisible();
+    expect(screen.getByRole("heading", { level: 1, name: "Pokémon opening analysis" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Highlights" })).toBeVisible();
+    expect(screen.getByRole("navigation", { name: "On this page" })).toBeVisible();
+    expect(screen.getByRole("complementary", { name: "Data provenance" })
+      .compareDocumentPosition(screen.getByRole("heading", { name: "Highlights" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.getByRole("complementary", { name: "Data provenance" })
+      .compareDocumentPosition(screen.getByRole("heading", { level: 1 })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText(BRAND.demoNotice)).toBeVisible();
     expect(screen.getByText(BRAND.individualPackDisclaimer)).toBeVisible();
     expect(screen.getByRole("heading", { name: "Worldwide qualifying-hit map" })).toBeVisible();
@@ -104,7 +110,7 @@ describe("HomeView", () => {
 
     render(<HomeView data={liveCatalogOnly} synthetic={false} />);
 
-    expect(screen.getByText("Worldwide catalog and observation readiness")).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Pokémon opening analysis" })).toBeVisible();
     expect(screen.getByText("Live catalog")).toBeVisible();
     expect(screen.getByText("218 catalog sets are live. Verified country or product-market coverage is not published yet.")).toBeVisible();
     expect(screen.getByRole("heading", { name: "Worldwide evidence coverage" })).toBeVisible();
@@ -295,6 +301,6 @@ describe("HomeView", () => {
     render(<HomeView data={noDiscoveryData} synthetic={false} />);
 
     expect(screen.queryByText("No public discovery source status is available.")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Overview" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Pokémon opening analysis" })).toBeVisible();
   });
 });
