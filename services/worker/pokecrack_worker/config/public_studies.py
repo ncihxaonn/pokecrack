@@ -327,11 +327,24 @@ PUBLIC_STUDIES += (
     ),
 )
 
+PUBLIC_STUDIES += (
+    PublicStudyIdentity(
+        study_key="nanjakorya-paradigm-jp-100-v1",
+        source_url="https://nanjakorya.com/1823",
+        fetch_url="https://nanjakorya.com/1823",
+        domain="nanjakorya.com",
+        adapter="nanjakorya_paradigm_trigger_study",
+        collector_version="public-study-nanjakorya-paradigm-v1",
+        parser_version="nanjakorya-paradigm-evidence-v1",
+    ),
+)
+
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDIES_BY_URL = {study.source_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDIES_BY_FETCH_URL = {study.fetch_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
     {
+        "nanjakorya-paradigm-jp-100-v1",
         "nanjakorya-star-birth-jp-100-v1",
         "bikuhime-hantaman-pertama-a-id-20-v1",
         "garbage-rips-gem-vol2-cn-1-v1",

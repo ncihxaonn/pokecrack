@@ -127,7 +127,13 @@ def _mapping_source_key(value: object) -> tuple[str, str | None]:
 
 def _configured_fetch_url(policy: SourcePolicy) -> str | None:
     value = policy.config.get("fetch_url")
-    return value if isinstance(value, str) else None
+    if isinstance(value, str):
+        return value
+    # A single explicit URL can scope a second report on an existing domain
+    # without rewriting the first report's immutable database evidence config.
+    if len(policy.exact_urls) == 1:
+        return next(iter(policy.exact_urls))
+    return None
 
 
 def _is_exact_policy(policy: SourcePolicy) -> bool:
@@ -148,7 +154,7 @@ def _validate_policy_groups(
             fetch_urls = [_configured_fetch_url(policy) for policy in domain_policies]
             if any(fetch_url is None for fetch_url in fetch_urls):
                 raise ValueError(
-                    "duplicate source policy domains require config.fetch_url on every policy"
+                    "duplicate source policy domains require config.fetch_url or one exact_url on every policy"
                 )
             if len(set(fetch_urls)) != len(fetch_urls):
                 raise ValueError("config.fetch_url values must be unique")
