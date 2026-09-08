@@ -1,6 +1,27 @@
 version: 1
 default: disabled
 sources:
+  cardshoplive.com:
+    name: Card Shop Live
+    enabled: false
+    collector: disabled
+    access_mode: disabled
+    robots_policy: respect
+    include_subdomains: true
+    statistics_eligible_default: false
+    retention_days: 0
+    version: restricted-source-cardshoplive-v1
+    routes: []
+    metadata_only: true
+    retain_raw_html: false
+    terms_url: https://cardshoplive.com/policies/terms-of-service
+    config:
+      access_review_status: publisher_authorization_required
+      restriction_basis: terms_section_12_prohibits_spider_crawl_scrape
+      policy_reviewed_on: "2026-09-08"
+      security_finding_status: not_established
+      production_admitted: false
+    reason: Registered for source inventory only. Earlier policy review found a crawl/scrape prohibition; robots allowance is not permission and public accessibility is not proof of a vulnerability. No collection route is enabled pending publisher authorization and review.
   bikuhime.wordpress.com:
     enabled: true
     collector: scrapling_http
