@@ -1,4 +1,4 @@
-# Star Birth 100-pack report: preparation, not admission
+# Star Birth 100-pack report: reviewed admission contract
 
 Reviewed 2026-09-08 for the worldwide multi-source dataset. Original source:
 <https://nanjakorya.com/1123>. This is one 100-pack cohort, not nine independent
@@ -39,17 +39,32 @@ opening timestamps separate and performs no network calls or admission itself.
 
 On MAM, an isolated capped container fetched robots and the exact article with
 redirects disabled, parsed the live HTML in memory, and returned these counts.
-No raw HTML/media was saved. Minimal-fact digest:
-`f4e15509b058c5520a0ba60179267d2134b3c588850666a79d462cd122ed41cd`
-was the initial count-only digest. The parser now also validates and hashes the
-premium-box segment attribution; reverify its updated digest before admission.
+No raw HTML/media was saved. A fresh MAM check on 2026-09-08 verified the live
+adapter and robots policy with redirects disabled and a 30-second request gap.
+The complete report digest (including premium-box attribution) is
+`b5dc75b772fb6b63a198c72f43193e76e2fd48f332ec546dd1800062640552ad`.
+The minimal retained title excerpt digest is separately
+`e9c87d754c51746c9af0cf3c85d164bfee5bf90c84e69e8c65ca46cfda2601e9`.
+The adapter validates the complete report before returning that short excerpt.
+Structured policy facts retain RR16/RRR6/SR4/HR1, the 80/20 pack split, and
+explicit null opening country/date. These counts never populate SIR fields.
 
 ## Remaining release work
 
-The parser is not registered/enabled in a production collector. Add reviewed
-source policy, dedup/cohort identity, persistence and public reporting contracts,
-including honest treatment of unknown location and opening date. Preserve
-Japanese rarity meanings instead of forcing SR/HR into SIR. Run full Worker,
+CI run 34180004240 passed database, Worker, Web, auth-browser, image and
+deployment checks. Its secret scan reported eleven generic-api-key matches,
+all exact occurrences of the public cohort identifier
+`nanjakorya-star-birth-jp-100-v1` in source config, adapter, registry, readiness
+SQL, migration and tests. MAM reproduced all eleven with redacted output.
+The scanner exception is anchored to this exact public identifier only; the
+generic key detector and all other rules remain enabled.
+
+The source is registered under the single cohort key
+`nanjakorya-star-birth-jp-100-v1`, append-only contract ordinal 27.
+Migration creation used Supabase CLI 2.116.0 on MAM; the generated timestamp
+20260908020719 is ordered after the existing future-dated ledger as 20261013.
+The public source note distinguishes native card counts from pack rates and
+product-market geography from unknown physical opening location. Run full Worker,
 database (if changed), backup-contract and Web checks, structured review,
 GitHub release and runtime verification before claiming new live data.
 
