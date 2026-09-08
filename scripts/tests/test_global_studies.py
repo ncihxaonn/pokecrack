@@ -44,6 +44,67 @@ class GlobalStudiesTests(unittest.TestCase):
         c.update(study_id="third", urls=["https://example.net/third"])
         self.assertEqual(self.build([a, b, c])["distinct_report_groups"], 1)
 
+    def test_reddit_post_slug_alias_preserves_original_records(self):
+        a = self.sample()
+        a["urls"] = ["https://www.reddit.com/r/PokemonTCG/comments/qqpiol/"]
+        b = copy.deepcopy(a)
+        b.update(study_id="rediscovery", cohort_ids=["different-generated-cohort"],
+                 urls=["https://www.reddit.com/r/PokemonTCG/comments/qqpiol/title_slug"])
+        before = module.validate_record(b)
+        result = self.build([a, b])
+        self.assertEqual(result["distinct_report_groups"], 1)
+        self.assertEqual(result["studies"][0]["packs"], 36)
+        self.assertEqual(len(result["studies"][0]["urls"]), 2)
+        self.assertEqual(before, module.validate_record(b))
+        self.assertEqual(before["urls"], b["urls"])
+        self.assertEqual(result, self.build([b, a]))
+
+    def test_reddit_alias_does_not_merge_comments_other_posts_or_lookalike_hosts(self):
+        a = self.sample()
+        a["urls"] = ["https://www.reddit.com/r/PokemonTCG/comments/qqpiol"]
+        for url in (
+            "https://www.reddit.com/r/PokemonTCG/comments/qqpiol/title/commentid",
+            "https://www.reddit.com/r/PokemonTCG/comments/otherid/title",
+            "https://www.reddit.com.example.com/r/PokemonTCG/comments/qqpiol/title",
+            "https://example.com/r/PokemonTCG/comments/qqpiol/title",
+        ):
+            b = copy.deepcopy(a)
+            b.update(study_id="other", cohort_ids=["other"], urls=[url])
+            with self.subTest(url=url):
+                self.assertEqual(self.build([a, b])["distinct_report_groups"], 2)
+
+    def test_reddit_alias_conflicts_are_quarantined_not_added(self):
+        a = self.sample()
+        a["urls"] = ["https://www.reddit.com/r/PokemonTCG/comments/qqpiol"]
+        b = copy.deepcopy(a)
+        b.update(cohort_ids=["different"], packs=72,
+                 urls=["https://old.reddit.com/comments/qqpiol/title"])
+        result = self.build([a, b])
+        self.assertEqual(result["distinct_report_groups"], 1)
+        self.assertEqual(result["studies"][0]["status"], "conflicting_reports")
+        self.assertIsNone(result["studies"][0]["packs"])
+
+    def test_reddit_shortlinks_and_new_frontend_share_post_identity(self):
+        a = self.sample()
+        a["urls"] = ["https://www.reddit.com/r/PokemonTCG/comments/qqpiol"]
+        for url in ("https://redd.it/qqpiol", "https://redd.it/qqpiol/",
+                    "https://new.reddit.com/r/PokemonTCG/comments/qqpiol/title",
+                    "https://np.reddit.com/r/PokemonTCG/comments/qqpiol/title",
+                    "https://m.reddit.com/r/PokemonTCG/comments/qqpiol/title",
+                    "https://sh.reddit.com/r/PokemonTCG/comments/qqpiol/title",
+                    "https://de.reddit.com/r/PokemonTCG/comments/qqpiol/title",
+                    "https://www.reddit.com/gallery/qqpiol"):
+            b = copy.deepcopy(a)
+            b.update(cohort_ids=["different"], urls=[url])
+            with self.subTest(url=url):
+                self.assertEqual(self.build([a, b])["distinct_report_groups"], 1)
+        for url in ("https://i.redd.it/qqpiol", "https://v.redd.it/qqpiol",
+                    "https://redd.it/qqpiol/comment", "https://redd.it.example.com/qqpiol",
+                    "https://notreddit.com/gallery/qqpiol",
+                    "https://reddit.com.example.com/gallery/qqpiol",
+                    "https://www.reddit.com/gallery/qqpiol/another"):
+            self.assertIsNone(module.report_alias_key(url))
+
     def test_conflicting_denominator_quarantines_component(self):
         a = self.sample()
         b = copy.deepcopy(a)
@@ -114,10 +175,38 @@ class GlobalStudiesTests(unittest.TestCase):
 
     def test_real_catalog_is_reference_only_and_no_fabricated_total(self):
         data = module.build_ledger((ROOT / "data/research/global-studies.json").read_bytes())
-        self.assertEqual(data["distinct_report_groups"], 7)
+        self.assertEqual(data["input_reports"], 11)
+        self.assertEqual(data["distinct_report_groups"], 10)
         self.assertFalse(data["production_admitted"])
         self.assertIsNone(data["verified_unique_packs"])
         self.assertTrue(all(row["country"] is None for row in data["studies"]))
+
+    def test_real_same_page_disagreement_is_one_quarantined_cohort(self):
+        data = module.build_ledger((ROOT / "data/research/global-studies.json").read_bytes())
+        row = next(row for row in data["studies"]
+                   if "codedyellow-crown-zenith-results-50" in row["study_ids"])
+        self.assertEqual(len(row["study_ids"]), 2)
+        self.assertEqual(len(row["urls"]), 1)
+        self.assertEqual(row["status"], "conflicting_reports")
+        self.assertEqual(row["conflicts"], ["metric:source-reported-art-hit-packs"])
+        self.assertIsNone(row["packs"])
+        self.assertEqual(row["metrics"], [])
+
+    def test_new_reference_units_do_not_invent_rarity_or_opening_country(self):
+        data = module.build_ledger((ROOT / "data/research/global-studies.json").read_bytes())
+        rows = {row["study_ids"][0]: row for row in data["studies"]}
+        go = rows["codedyellow-pokemon-go-38"]
+        self.assertEqual(go["packs"], 38)
+        self.assertEqual(go["metrics"], [{"category": "source-art-radiant-or-peelable-ditto",
+                                        "hits": 12, "unit": "packs_with_hit"}])
+        self.assertIsNone(go["country"])
+        self.assertIsNone(go["language"])
+        paradigm = rows["nanjakorya-paradigm-trigger-100"]
+        self.assertEqual(paradigm["packs"], 100)
+        self.assertEqual({m["category"]: m["hits"] for m in paradigm["metrics"]},
+                         {"rr": 14, "rrr": 7, "sr": 1, "hr": 2})
+        self.assertTrue(all(m["unit"] == "cards" for m in paradigm["metrics"]))
+        self.assertFalse(paradigm["statistics_eligible"])
 
     def test_large_publisher_samples_are_bounds_not_reconstructed_counts(self):
         data = module.build_ledger((ROOT / "data/research/global-studies.json").read_bytes())

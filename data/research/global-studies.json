@@ -2,6 +2,74 @@
   "version": 1,
   "studies": [
     {
+      "study_id": "codedyellow-pokemon-go-38",
+      "cohort_ids": ["codedyellow-pokemon-go-pull-rate-38"],
+      "urls": ["https://www.codedyellow.com/what-is-the-pokemon-go-pull-rate/"],
+      "set": "pokemon-go",
+      "language": null,
+      "product": "elite-trainer-boxes-and-radiant-eevee-collection",
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 38,
+      "pack_precision": "exact_reported",
+      "metrics": [{"category": "source-art-radiant-or-peelable-ditto", "hits": 12, "unit": "packs_with_hit"}],
+      "method": "publisher-opened-complete-products",
+      "limitations": ["opening-location-unknown", "opening-date-unknown", "product-language-unverified", "mixed-product-sampling", "source-category-not-normalized-rarity", "same-publisher-session-overlap-unresolved", "access-policy-review-pending", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "codedyellow-crown-zenith-results-50",
+      "cohort_ids": ["codedyellow-crown-zenith-pull-rate-50"],
+      "urls": ["https://www.codedyellow.com/what-is-the-crown-zenith-pull-rate/"],
+      "set": "crown-zenith",
+      "language": null,
+      "product": "elite-trainer-boxes",
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 50,
+      "pack_precision": "exact_reported",
+      "metrics": [{"category": "source-reported-art-hit-packs", "hits": 28, "unit": "packs_with_hit"}],
+      "method": "publisher-opened-complete-products",
+      "limitations": ["same-page-results-section", "results-conclusion-count-or-category-disagreement", "opening-location-unknown", "opening-date-unknown", "product-language-unverified", "same-publisher-session-overlap-unresolved", "access-policy-review-pending", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "codedyellow-crown-zenith-conclusion-50",
+      "cohort_ids": ["codedyellow-crown-zenith-pull-rate-50"],
+      "urls": ["https://www.codedyellow.com/what-is-the-crown-zenith-pull-rate/"],
+      "set": "crown-zenith",
+      "language": null,
+      "product": "elite-trainer-boxes",
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 50,
+      "pack_precision": "exact_reported",
+      "metrics": [
+        {"category": "source-reported-art-hit-packs", "hits": 22, "unit": "packs_with_hit"},
+        {"category": "source-reported-art-cards", "hits": 27, "unit": "cards"}
+      ],
+      "method": "publisher-opened-complete-products",
+      "limitations": ["same-page-conclusion-section-not-new-opening", "results-conclusion-count-or-category-disagreement", "card-yield-misdescribed-as-at-least-one-probability", "opening-location-unknown", "opening-date-unknown", "product-language-unverified", "same-publisher-session-overlap-unresolved", "access-policy-review-pending", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "nanjakorya-paradigm-trigger-100",
+      "cohort_ids": ["nanjakorya-1823-paradigm-trigger-100"],
+      "urls": ["https://nanjakorya.com/1823"],
+      "set": "paradigm-trigger",
+      "language": "ja",
+      "product": "booster-boxes-and-loose-packs",
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 100,
+      "pack_precision": "exact_reported",
+      "metrics": [
+        {"category": "rr", "hits": 14, "unit": "cards"},
+        {"category": "rrr", "hits": 7, "unit": "cards"},
+        {"category": "sr", "hits": 1, "unit": "cards"},
+        {"category": "hr", "hits": 2, "unit": "cards"}
+      ],
+      "method": "consecutive-opening-segments",
+      "limitations": ["opening-location-unknown", "opening-date-unknown", "mixed-product-sampling", "source-label-inconsistencies", "card-yield-not-hit-pack-probability", "separate-production-coverage-admission-not-ledger-authority"]
+    },
+    {
       "study_id": "pokemon-infomation-battle-partners-2026",
       "cohort_ids": ["pokemon-infomation-battle-partners-aggregate"],
       "urls": ["https://pokemon-infomation.com/pull-rates-battlepartner/"],
