@@ -9,6 +9,8 @@ vi.mock("next/navigation", () => ({ usePathname: () => route.pathname }));
 describe("AppHeader", () => {
   it("shows only the five research destinations on desktop and mobile", () => {
     const { container } = render(<AppHeader />);
+    expect(container.querySelector(".app-sidebar")).toBeNull();
+    expect(screen.getByRole("link", { name: "Pokecrack home" })).toHaveTextContent("Pokecrack");
     fireEvent.click(screen.getByText("Menu"));
     for (const name of ["Primary navigation", "Mobile navigation"]) {
       const links = within(screen.getByRole("navigation", { name })).getAllByRole("link");

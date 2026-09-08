@@ -8,6 +8,7 @@ import type { PublicDashboardData } from "@/data/types";
 import { formatDate, formatDateTime, formatProbability } from "@/lib/format";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { WorldHeatmap } from "./world-heatmap";
+import { OverviewHighlights } from "./overview-highlights";
 import { DataModeNotice, MetricDisclaimer, Panel, SectionHeading, SignalBadge, TableFrame } from "@/components/ui/dashboard-ui";
 
 const integer = new Intl.NumberFormat("en-AU");
@@ -18,50 +19,61 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
     .slice(0, 4);
   const watched = data.sets.filter((set) => set.state === "watch" || set.state === "anomaly");
   const catalogPreview = data.catalog.sets.slice(0, 8);
-  const observationsPublished = data.observations.status === "published";
-  const heroEyebrow = observationsPublished
-    ? "Worldwide evidence atlas"
-    : "Worldwide catalog and observation readiness";
+  const modeNotice = <DataModeNotice
+    catalogSetCount={data.catalog.setCount}
+    generatedAt={data.generatedAt}
+    observationStatus={data.observations.status}
+    observedCountryCount={data.observations.countriesObserved}
+    observedPackCount={data.observations.observedPacks}
+    synthetic={synthetic}
+  />;
 
   return (
     <div className="page-shell home-page">
+      {/* Label synthetic data before the hero count as well as the charts. */}
+      {synthetic ? modeNotice : null}
       <section className="dashboard-intro" aria-labelledby="hero-title">
         <div className="dashboard-intro__copy">
-          <span className="eyebrow">{heroEyebrow}</span>
-          <h1 id="hero-title">Overview</h1>
-          <p>Pokémon TCG opening evidence, with the sample and its limits in view.</p>
+          <h1 id="hero-title">Pokémon opening analysis</h1>
+          <p>Explore Pokémon TCG opening data across sets, countries and product markets.</p>
         </div>
-        <Link className="button" href="/sets">Explore sets <ArrowUpRight aria-hidden="true" size={15} /></Link>
+        <div className="overview-updates">
+          <Link href="/regions"><span className="eyebrow">Worldwide coverage</span><strong>{integer.format(data.observations.countriesObserved)} coverage buckets</strong><p>Compare published country and product-market samples.</p><ArrowUpRight size={16} aria-hidden="true" /></Link>
+          <Link href="/sets"><span className="eyebrow">Set comparisons</span><strong>Explore observed sets</strong><p>View sample sizes and the available opening statistics.</p><ArrowUpRight size={16} aria-hidden="true" /></Link>
+        </div>
       </section>
 
-      <DataModeNotice
-        catalogSetCount={data.catalog.setCount}
-        generatedAt={data.generatedAt}
-        observationStatus={data.observations.status}
-        observedCountryCount={data.observations.countriesObserved}
-        observedPackCount={data.observations.observedPacks}
-        synthetic={synthetic}
-      />
+      <OverviewHighlights data={data} />
+
+      <div className="analysis-layout">
+        <nav className="analysis-nav" aria-label="On this page">
+          <a href="#world-coverage">World coverage</a>
+          <a href="#catalog-title">Set catalog</a>
+          {data.trend.length > 0 ? <a href="#trend-title">Observed trend</a> : null}
+          {trending.length > 0 || watched.length > 0 ? <a href="#trending-title">Set comparisons</a> : null}
+          {data.recentActivity.length > 0 ? <a href="#activity-title">Recent activity</a> : null}
+        </nav>
+        <div className="analysis-content">
+      {synthetic ? null : modeNotice}
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
         <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}</dd><small>Verified eligible denominator</small></div>
         <div><dt>Complete openings</dt><dd>{integer.format(data.observations.completeOpenings)}</dd><small>Reviewed observations</small></div>
         <div><dt>Coverage buckets</dt><dd>{integer.format(data.observations.countriesObserved)}</dd><small>Countries or product markets</small></div>
         <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}</dd><small>Metadata, not opening evidence</small></div>
       </dl>
-      <WorldHeatmap
+      <div id="world-coverage"><WorldHeatmap
         cells={data.mapCells}
         coverageSummary={data.summary.globalCoverage}
         observations={data.observations}
         initialMetric={worldMetric}
         compact
-      />
+      /></div>
 
       <section className="dashboard-section" aria-labelledby="catalog-title">
         <SectionHeading
           id="catalog-title"
           title="Global set catalog"
           detail={`${data.catalog.name} metadata for discovery — never opening evidence or a pull-rate denominator.`}
-          action={<span className={`catalog-state catalog-state--${data.catalog.status}`}>{data.catalog.status}</span>}
         />
         <Panel className="catalog-panel">
           <TableFrame label="Global TCGdex set catalog preview">
@@ -151,6 +163,8 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
       </section> : null}
 
       <MetricDisclaimer />
+        </div>
+      </div>
     </div>
   );
 }
