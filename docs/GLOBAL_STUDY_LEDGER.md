@@ -21,6 +21,14 @@ It does not circumvent `config/sources.yaml` or grant a collector permission.
 
 - Explicit original cohort IDs and reference URLs form connected components.
   Reprints/translations are aliases; reports with the same counts alone are not.
+- Reddit whole-post permalinks additionally use the original post ID, so a
+  title-slug URL and the short comments URL cannot count as separate reports.
+  Original URLs and normalized record fingerprints remain unchanged. Comment
+  permalinks, unrelated hosts and different post IDs are not collapsed.
+  Explicit `redd.it/<post-id>` shortlinks also join the post; image/video
+  subdomains of `redd.it` are not post aliases. Whole-post paths on Reddit's
+  desktop/mobile/locale frontends and `/gallery/<post-id>` use the same ID.
+  This identity matching is not a fetch allowlist and performs no redirects.
 - A disagreement in cohort attributes or counts quarantines the component;
   aggregate updates and overlapping partial samples must never be summed.
 - Deduplication resolves only known links. Distinct report groups are **not** a

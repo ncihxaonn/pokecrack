@@ -47,6 +47,29 @@ def positive_count(value: object) -> int:
     return value
 
 
+def report_alias_key(url: str) -> tuple[str, str] | None:
+    """Recognize Reddit post permalinks without rewriting historical records."""
+    parsed = urlsplit(url)
+    if parsed.hostname == "redd.it":
+        match = re.fullmatch(r"/([a-z0-9]+)/?", parsed.path)
+        return ("reddit-post", match[1]) if match else None
+    host = parsed.hostname or ""
+    # Reddit serves post permalinks through desktop, mobile, locale and other
+    # first-party frontends. This is an identity key, never a fetch allowlist.
+    if host != "reddit.com" and not host.endswith(".reddit.com"):
+        return None
+    gallery = re.fullmatch(r"/gallery/([a-z0-9]+)/?", parsed.path)
+    if gallery:
+        return ("reddit-post", gallery[1])
+    # Only whole-post routes. A comment can describe a different physical
+    # opening, so comment-specific paths must not collapse into the parent post.
+    match = re.fullmatch(
+        r"/(?:r/[A-Za-z0-9_]+/)?comments/([a-z0-9]+)(?:/[^/]+)?/?",
+        parsed.path,
+    )
+    return ("reddit-post", match[1]) if match else None
+
+
 def validate_record(record: object) -> dict:
     if (not isinstance(record, dict) or not FIELDS <= set(record)
             or set(record) - FIELDS - {"source_sample"}):
@@ -143,6 +166,7 @@ def build_ledger(raw: bytes) -> dict:
         # A generated report slug is not evidence of shared physical samples.
         keys = [("cohort", value) for value in record["cohort_ids"]]
         keys += [("url", value) for value in record["urls"]]
+        keys += [alias for url in record["urls"] if (alias := report_alias_key(url))]
         for key in keys:
             if key in owners:
                 parents[root(index)] = root(owners[key])
