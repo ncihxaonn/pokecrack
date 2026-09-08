@@ -30,8 +30,13 @@ class RestrictedSourceInventoryTests(unittest.TestCase):
         # Policy authorization is local; no HTTP client is constructed or called.
         audit = InMemoryPolicyAuditSink()
         registry = SourcePolicyRegistry.from_yaml(ROOT / "config/sources.yaml", audit_sink=audit)
-        for host in ("cardshoplive.com", "www.cardshoplive.com",
-                     "digitaltq.com", "www.digitaltq.com", "api.digitaltq.com"):
+        for host in (
+            "cardshoplive.com",
+            "www.cardshoplive.com",
+            "digitaltq.com",
+            "www.digitaltq.com",
+            "api.digitaltq.com",
+        ):
             for route in CollectorRoute:
                 with self.subTest(host=host, route=route), self.assertRaises(PolicyDeniedError):
                     registry.require(f"https://{host}/pages/pull-rates", route)
