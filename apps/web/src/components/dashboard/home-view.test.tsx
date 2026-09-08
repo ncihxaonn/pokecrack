@@ -16,13 +16,8 @@ describe("HomeView", () => {
     expect(screen.getByText(BRAND.demoNotice)).toBeVisible();
     expect(screen.getByText(BRAND.individualPackDisclaimer)).toBeVisible();
     expect(screen.getByRole("heading", { name: "Worldwide qualifying-hit map" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Live discovery pulse" })).toBeVisible();
-    expect(screen.getByText("No public social activity pulse is available.")).toBeVisible();
-    expect(screen.getByRole("link", { name: /YouTube Data API/ })).toHaveAttribute(
-      "href",
-      "https://developers.google.com/youtube/v3",
-    );
-    expect(screen.getByText("Discovery metadata; extracted observations require validation.")).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Live discovery pulse" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /YouTube Data API/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /Reddit authenticated session/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /X authenticated session/ })).not.toBeInTheDocument();
     expect(screen.getByText(/fixed absolute colour scale/i)).toBeVisible();
@@ -31,7 +26,8 @@ describe("HomeView", () => {
     expect(screen.getByRole("heading", { name: "Trending sets" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Signal watch" })).toBeVisible();
     expect(screen.getByRole("heading", { name: "Recent observed activity" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Methodology at a glance" })).toBeVisible();
+    expect(screen.queryByRole("heading", { name: "Methodology at a glance" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /methodology|all sources|system status/i })).not.toBeInTheDocument();
     expect(screen.getAllByText(getSignalPresentation("anomaly").label).length).toBeGreaterThan(0);
     expect(screen.getAllByText("4,872").length).toBeGreaterThan(0);
 
@@ -40,7 +36,7 @@ describe("HomeView", () => {
     expect(mapHeading.compareDocumentPosition(trendHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("places reviewed opening-sample coverage after the map and before social discovery", () => {
+  it("omits source and operational panels even when reviewed coverage exists", () => {
     const reviewedCoverage = {
       ...DEMO_PUBLIC_DATA,
       sources: [
@@ -66,13 +62,11 @@ describe("HomeView", () => {
     render(<HomeView data={reviewedCoverage} synthetic={false} />);
 
     const mapHeading = screen.getByRole("heading", { name: "Worldwide qualifying-hit map" });
-    const sourcesHeading = screen.getByRole("heading", { name: "Reviewed evidence sources" });
-    const socialHeading = screen.getByRole("heading", { name: "Live discovery pulse" });
-
-    expect(mapHeading.compareDocumentPosition(sourcesHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(sourcesHeading.compareDocumentPosition(socialHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
-    expect(screen.getByText(/without implying a representative probability/i)).toBeVisible();
-    expect(screen.getByText("55 packs")).toBeVisible();
+    const catalogHeading = screen.getByRole("heading", { name: "Global set catalog" });
+    expect(mapHeading.compareDocumentPosition(catalogHeading) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(screen.queryByRole("heading", { name: "Reviewed evidence sources" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Live discovery pulse" })).not.toBeInTheDocument();
+    expect(screen.queryByText("ComicBook Perfect Order study")).not.toBeInTheDocument();
   });
 
   it("separates live catalog coverage from unpublished observations", () => {
@@ -171,7 +165,7 @@ describe("HomeView", () => {
     expect(screen.queryByText(/Verified country or product-market coverage is not published yet/)).not.toBeInTheDocument();
   });
 
-  it("renders platform-specific social activity counts with explicit non-evidence labels", () => {
+  it("does not publish the operational social pulse on the homepage", () => {
     const pulse: PublicSocialActivityPulse = {
       schemaVersion: "4.0.0" as const,
       window: {
@@ -225,23 +219,14 @@ describe("HomeView", () => {
 
     render(<HomeView data={{ ...DEMO_PUBLIC_DATA, socialActivityPulse: pulse }} synthetic={false} />);
 
-    expect(
-      screen.getByRole("group", { name: "Social activity scope" }),
-    ).toHaveTextContent("Activity only");
-    expect(screen.getByText("Non-evidence")).toBeVisible();
-    expect(screen.getAllByText("New candidates (24h)")).toHaveLength(3);
-    expect(screen.getByText("Bluesky Jetstream discovery")).toBeVisible();
-    expect(screen.getByText("Nostr multi-relay discovery")).toBeVisible();
-    expect(screen.getByText("Mastodon public hashtag discovery")).toBeVisible();
-    expect(screen.getByText("12")).toBeVisible();
-    expect(screen.getByText("42")).toBeVisible();
-    expect(screen.getByText("8")).toBeVisible();
-    expect(screen.getByText("18")).toBeVisible();
-    expect(screen.getAllByText(/not evidence for packs, country, or rate/i)).toHaveLength(3);
-    expect(screen.queryByRole("link", { name: /Bluesky Jetstream discovery/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("group", { name: "Social activity scope" })).not.toBeInTheDocument();
+    expect(screen.queryByText("New candidates (24h)")).not.toBeInTheDocument();
+    for (const source of pulse.sources) {
+      expect(screen.queryByText(source.name)).not.toBeInTheDocument();
+    }
   });
 
-  it("shows public social discovery health without turning activity into evidence", () => {
+  it("keeps source health out of the homepage regardless of availability", () => {
     const sources = [
       {
         id: "bluesky_jetstream",
@@ -298,23 +283,18 @@ describe("HomeView", () => {
 
     render(<HomeView data={liveSocialData} synthetic={false} />);
 
-    expect(screen.getByRole("heading", { name: "Live discovery pulse" })).toBeVisible();
-    expect(screen.getByRole("link", { name: /Bluesky Jetstream discovery/ })).toHaveAttribute(
-      "href",
-      "https://bsky.network/docs/jetstream/",
-    );
-    expect(screen.getByText("operational", { selector: "span" })).toBeVisible();
-    expect(screen.getByText("30 Aug 2026, 10:45 UTC")).toBeVisible();
-    expect(screen.getByText("Public activity discovery only; it is never opening evidence or a pull-rate denominator.")).toBeVisible();
-    expect(screen.queryByRole("link", { name: /Reviewed social evidence/ })).not.toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: /YouTube with a drifted access contract/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Live discovery pulse" })).not.toBeInTheDocument();
+    for (const source of sources) {
+      expect(screen.queryByText(source.name)).not.toBeInTheDocument();
+    }
   });
 
-  it("renders an honest empty state when no public discovery source is projected", () => {
+  it("does not add an empty source-status panel when no sources exist", () => {
     const noDiscoveryData = { ...DEMO_PUBLIC_DATA, sources: [] } satisfies PublicDashboardData;
 
     render(<HomeView data={noDiscoveryData} synthetic={false} />);
 
-    expect(screen.getByText("No public discovery source status is available.")).toBeVisible();
+    expect(screen.queryByText("No public discovery source status is available.")).not.toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Overview" })).toBeVisible();
   });
 });

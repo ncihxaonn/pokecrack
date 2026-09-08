@@ -13,9 +13,6 @@ const publicPages = [
   "retailers/[slug]/page.tsx",
   "batches/page.tsx",
   "batches/[code]/page.tsx",
-  "methodology/page.tsx",
-  "sources/page.tsx",
-  "status/page.tsx",
 ] as const;
 
 describe("public App Router inventory", () => {

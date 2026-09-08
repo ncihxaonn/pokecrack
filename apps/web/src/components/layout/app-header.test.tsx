@@ -7,6 +7,16 @@ const route = vi.hoisted(() => ({ pathname: "/regions/japan" }));
 vi.mock("next/navigation", () => ({ usePathname: () => route.pathname }));
 
 describe("AppHeader", () => {
+  it("shows only the five research destinations on desktop and mobile", () => {
+    const { container } = render(<AppHeader />);
+    fireEvent.click(screen.getByText("Menu"));
+    for (const name of ["Primary navigation", "Mobile navigation"]) {
+      const links = within(screen.getByRole("navigation", { name })).getAllByRole("link");
+      expect(links.map((link) => link.textContent)).toEqual(["Overview", "Sets", "Regions", "Retailers", "Batches"]);
+    }
+    expect(container.querySelector('a[href="/sources"], a[href="/methodology"], a[href="/status"]')).toBeNull();
+  });
+
   it("marks a detail route's section as current and keeps search scoped to sets", () => {
     render(<AppHeader />);
     const navigation = screen.getByRole("navigation", { name: "Primary navigation" });

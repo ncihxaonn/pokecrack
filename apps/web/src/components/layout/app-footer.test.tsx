@@ -6,22 +6,12 @@ import { BRAND } from "@/config/brand";
 import { AppFooter } from "./app-footer";
 
 describe("AppFooter", () => {
-  it("renders the centralized exact disclaimer and public reference links", () => {
+  it("keeps the disclaimer without public reference navigation", () => {
     render(<AppFooter />);
 
     expect(screen.getByText(BRAND.footerDisclaimer)).toBeVisible();
     expect(screen.getByText(BRAND.copyright)).toBeVisible();
-    expect(screen.getByRole("link", { name: "Methodology" })).toHaveAttribute(
-      "href",
-      "/methodology",
-    );
-    expect(screen.getByRole("link", { name: "Sources" })).toHaveAttribute(
-      "href",
-      "/sources",
-    );
-    expect(screen.getByRole("link", { name: "System status" })).toHaveAttribute(
-      "href",
-      "/status",
-    );
+    expect(screen.queryByRole("navigation")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 });
