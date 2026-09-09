@@ -9,6 +9,33 @@ from scripts.check_migration_safety import audit_migrations, scan_destructive_st
 
 
 class MigrationSafetyTests(unittest.TestCase):
+    def test_source_family_release_has_exactly_three_reviewed_staging_deletes(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        migrations = root / "supabase/migrations"
+        target = "20261018000000_continuous_source_family.sql"
+        with tempfile.TemporaryDirectory() as temporary:
+            applied = Path(temporary) / "applied.txt"
+            applied.write_text(
+                "\n".join(
+                    path.name.split("_", 1)[0]
+                    for path in sorted(migrations.glob("*.sql"))
+                    if path.name != target
+                ) + "\n",
+                encoding="utf-8",
+            )
+            result = audit_migrations(
+                migrations, applied, root / "config/migration-safety-allowlist.json"
+            )
+        self.assertTrue(result.ok, result.errors)
+        self.assertEqual(result.pending, (target,))
+        self.assertEqual(result.reviewed_deletes, 3)
+        statements = scan_destructive_statements((migrations / target).read_text())
+        self.assertTrue(all(
+            statement.kind == "delete"
+            and statement.normalized.startswith("delete from ingest.source_family_runs ")
+            for statement in statements
+        ))
+
     def _workspace(self, root: Path) -> tuple[Path, Path, Path]:
         migrations = root / "migrations"
         migrations.mkdir()
