@@ -187,6 +187,60 @@ SOURCE_FAMILY_COLUMNS = {
     ("ingest", "source_family_clock"): ("singleton", "discovered_at"),
     ("ingest", "source_family_control"): ("singleton", "enabled", "policy_version"),
 }
+# pg_dump 17 output from the isolated intake migration. Reference metadata may
+# survive a restore; activation must not. No page bodies or reported counts.
+RESEARCH_INTAKE_SCHEMA_SQL = b"""
+CREATE TABLE ingest.research_intake_control (
+    singleton boolean DEFAULT true NOT NULL,
+    enabled boolean DEFAULT false NOT NULL,
+    CONSTRAINT research_intake_control_singleton_check CHECK (singleton)
+);
+CREATE TABLE ingest.research_intake_references (
+    url text NOT NULL,
+    report_group_sha256 text NOT NULL,
+    conflicting boolean DEFAULT false NOT NULL,
+    first_seen_at timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+    last_seen_at timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+    snapshot_sha256 text NOT NULL,
+    CONSTRAINT research_intake_references_check CHECK ((last_seen_at >= first_seen_at)),
+    CONSTRAINT research_intake_references_report_group_sha256_check CHECK ((report_group_sha256 ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT research_intake_references_snapshot_sha256_check CHECK ((snapshot_sha256 ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT research_intake_references_url_check CHECK (ingest.research_reference_url_valid_v1(url))
+);
+ALTER TABLE ONLY ingest.research_intake_control ADD CONSTRAINT research_intake_control_pkey PRIMARY KEY (singleton);
+ALTER TABLE ONLY ingest.research_intake_references ADD CONSTRAINT research_intake_references_pkey PRIMARY KEY (url);
+"""
+for _intake_table in ("control", "references"):
+    RESEARCH_INTAKE_SCHEMA_SQL += (
+        f"ALTER TABLE ONLY ingest.research_intake_{_intake_table} FORCE ROW LEVEL SECURITY;\n"
+        f"ALTER TABLE ingest.research_intake_{_intake_table} OWNER TO postgres;\n"
+        f"ALTER TABLE ingest.research_intake_{_intake_table} ENABLE ROW LEVEL SECURITY;\n"
+    ).encode("ascii")
+RESEARCH_INTAKE_SCHEMA_STATEMENTS = frozenset(
+    b" ".join(statement.split()) + b";"
+    for statement in RESEARCH_INTAKE_SCHEMA_SQL.split(b";")
+    if statement.strip()
+)
+RESEARCH_INTAKE_OWNER_STATEMENTS = frozenset(
+    statement
+    for statement in RESEARCH_INTAKE_SCHEMA_STATEMENTS
+    if statement.endswith(b" OWNER TO postgres;")
+)
+RESEARCH_INTAKE_OWNERLESS_STATEMENTS = (
+    RESEARCH_INTAKE_SCHEMA_STATEMENTS - RESEARCH_INTAKE_OWNER_STATEMENTS
+)
+RESEARCH_INTAKE_DDL = re.compile(
+    SOURCE_FAMILY_DDL.pattern.replace(b"source_family_", b"research_intake_"),
+    SOURCE_FAMILY_DDL.flags,
+)
+RESEARCH_INTAKE_CONTROL = ("ingest", "research_intake_control")
+RESEARCH_INTAKE_COLUMNS = {
+    RESEARCH_INTAKE_CONTROL: ("singleton", "enabled"),
+    ("ingest", "research_intake_references"): (
+        "url", "report_group_sha256", "conflicting", "first_seen_at",
+        "last_seen_at", "snapshot_sha256",
+    ),
+}
 BLUESKY_CANDIDATES = ("ingest", "bluesky_jetstream_candidates")
 BLUESKY_OBSERVATIONS = ("ingest", "bluesky_jetstream_observations")
 BLUESKY_CHECKPOINTS = ("ingest", "bluesky_jetstream_checkpoints")
@@ -382,7 +436,8 @@ DOLLAR_QUOTE_TAG = re.compile(rb"\$(?:[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)?
 TARGET_TABLES = (
     RETENTION_CONTROL_TABLES
     | EPHEMERAL_ACTIVITY_TABLES
-    | {SOURCE_REQUEST_GATES, SOURCE_FAMILY_RUNS, *SOURCE_FAMILY_COLUMNS}
+    | {SOURCE_REQUEST_GATES, SOURCE_FAMILY_RUNS, *SOURCE_FAMILY_COLUMNS,
+       *RESEARCH_INTAKE_COLUMNS}
 )
 INGEST_TARGET_TABLE_NAMES = tuple(
     sorted(table[1] for table in TARGET_TABLES if table[0] == "ingest")
@@ -461,6 +516,8 @@ def _reject_target_statement_prefix(state: SqlLexState) -> None:
     statement = bytes(state.statement_sql)
     if SOURCE_FAMILY_DDL.match(statement):
         raise SanitizationError("source-family DDL must use the reviewed pg_dump shape")
+    if RESEARCH_INTAKE_DDL.match(statement):
+        raise SanitizationError("research-intake DDL must use the reviewed pg_dump shape")
     if DO_STATEMENT_PREFIX.match(statement):
         raise SanitizationError(
             "executable DO bodies are not supported in managed backups"
@@ -2584,6 +2641,11 @@ class PlainBackupSanitizer:
         self.family_seen: set[tuple[str, ...]] = set()
         self.family_schema_seen: set[bytes] = set()
         self.family_schema_lines: list[bytes] | None = None
+        self.intake_seen: set[tuple[str, ...]] = set()
+        self.intake_schema_seen: set[bytes] = set()
+        self.intake_schema_lines: list[bytes] | None = None
+        self.intake_control_rows = 0
+        self.intake_urls: set[str] = set()
         self.family_singleton_rows = {
             ("ingest", "source_family_clock"): 0,
             ("ingest", "source_family_control"): 0,
@@ -2822,6 +2884,11 @@ class PlainBackupSanitizer:
 
     def _start_block(self, header: CopyHeader) -> CopyBlock:
         indexes = _column_indexes(header)
+        if header.table in RESEARCH_INTAKE_COLUMNS:
+            if (header.table in self.intake_seen
+                or header.columns != RESEARCH_INTAKE_COLUMNS[header.table]):
+                raise SanitizationError("research-intake COPY schema or multiplicity mismatch")
+            self.intake_seen.add(header.table)
         if header.table in SOURCE_FAMILY_COLUMNS:
             if (
                 header.table in self.family_seen
@@ -2901,6 +2968,9 @@ class PlainBackupSanitizer:
         return fields
 
     def _inspect_control_row(self, block: CopyBlock, line: bytes) -> None:
+        if block.header.table in RESEARCH_INTAKE_COLUMNS:
+            self._inspect_intake_row(block, line)
+            return
         if block.header.table in SOURCE_FAMILY_COLUMNS:
             self._inspect_family_row(block, line)
             return
@@ -2991,6 +3061,31 @@ class PlainBackupSanitizer:
             raise SanitizationError(
                 "youtube_discoveries row does not use the exact YouTube policy"
             )
+
+    def _inspect_intake_row(self, block: CopyBlock, line: bytes) -> None:
+        fields = self._target_fields(block, line)
+        if block.header.table == RESEARCH_INTAKE_CONTROL:
+            self.intake_control_rows += 1
+            if (self.intake_control_rows != 1 or fields[0] != b"t"
+                or fields[1] not in (b"t", b"f")):
+                raise SanitizationError("invalid research-intake singleton")
+            return
+        url = _plain_copy_text(fields[0], field="research reference URL")
+        match = re.fullmatch(r"https://((?:[a-z0-9-]+\.)+[a-z]{2,63})/[^\s<>?#\\`]*", url)
+        if (match is None or not 10 <= len(url) <= 1000
+            or match[1].endswith((".local", ".internal", ".localhost", ".invalid"))
+            or (url.endswith("/") and url != "https://" + match[1] + "/")
+            or url in self.intake_urls or len(self.intake_urls) >= 10_000):
+            raise SanitizationError("invalid or duplicate research reference URL")
+        self.intake_urls.add(url)
+        _sha256_copy(fields[1], field="research report group")
+        _sha256_copy(fields[5], field="research snapshot")
+        if fields[2] not in (b"t", b"f"):
+            raise SanitizationError("invalid research conflict state")
+        first = _utc_copy_timestamp(fields[3], field="research first seen")
+        last = _utc_copy_timestamp(fields[4], field="research last seen")
+        if last < first:
+            raise SanitizationError("research reference timestamps are out of order")
 
     def _inspect_family_row(self, block: CopyBlock, line: bytes) -> None:
         if block.header.table in self.family_singleton_rows:
@@ -3557,6 +3652,14 @@ class PlainBackupSanitizer:
         self.public_study_coverage_rows[study_key_value] = (source_key, policy_id)
 
     def _validate_complete(self) -> None:
+        if (self.intake_seen or self.intake_schema_seen) and (
+            self.intake_schema_seen not in (
+                RESEARCH_INTAKE_SCHEMA_STATEMENTS, RESEARCH_INTAKE_OWNERLESS_STATEMENTS,
+            )
+            or self.intake_seen != set(RESEARCH_INTAKE_COLUMNS)
+            or self.intake_control_rows != 1
+        ):
+            raise SanitizationError("research-intake backup requires complete schema and data blocks")
         if (self.family_seen or self.family_schema_seen) and (
             self.family_schema_seen
             not in (SOURCE_FAMILY_SCHEMA_STATEMENTS, SOURCE_FAMILY_OWNERLESS_STATEMENTS)
@@ -3908,6 +4011,21 @@ class PlainBackupSanitizer:
                 _advance_sql_lex_state(line, sql_lex_state)
                 continue
 
+            if self.intake_schema_lines is not None or RESEARCH_INTAKE_DDL.match(line):
+                if self.intake_schema_lines is None:
+                    self.intake_schema_lines = []
+                self.intake_schema_lines.append(line)
+                if sum(map(len, self.intake_schema_lines)) > MAX_SQL_STATEMENT_PREFIX_BYTES:
+                    raise SanitizationError("research-intake schema statement is too large")
+                if line.rstrip().endswith(b";"):
+                    statement = b" ".join(b"".join(self.intake_schema_lines).split())
+                    if (statement not in RESEARCH_INTAKE_SCHEMA_STATEMENTS
+                        or statement in self.intake_schema_seen):
+                        raise SanitizationError("research-intake schema drift or duplicate statement")
+                    self.intake_schema_seen.add(statement)
+                    self.intake_schema_lines = None
+                continue
+
             if self.family_schema_lines is not None or SOURCE_FAMILY_DDL.match(line):
                 if self.family_schema_lines is None:
                     self.family_schema_lines = []
@@ -4112,6 +4230,8 @@ class PlainBackupSanitizer:
             raise SanitizationError("unterminated COPY data block")
         if self.family_schema_lines is not None:
             raise SanitizationError("unterminated source-family DDL")
+        if self.intake_schema_lines is not None:
+            raise SanitizationError("unterminated research-intake DDL")
         if sql_lex_state.mode != "normal":
             raise SanitizationError("unterminated SQL quoted body or comment")
         if self.request_gates_create_lines is not None:
@@ -4148,6 +4268,8 @@ class PlainBackupSanitizer:
                 if block.header.table == ("ingest", "source_family_control"):
                     # Restore is inert even if the snapshot was taken enabled.
                     destination.write(b"t\tf\tpokesup-enumerated-v1\n")
+                elif block.header.table == RESEARCH_INTAKE_CONTROL:
+                    destination.write(b"t\tf\n")
                 elif block.header.table != YOUTUBE_DISCOVERIES:
                     destination.write(line)
                 continue
