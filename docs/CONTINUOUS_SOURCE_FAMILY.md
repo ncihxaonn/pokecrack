@@ -58,7 +58,12 @@ A valid disabled/expired family gate is an operational pause: the scheduler
 skips that family without blocking existing jobs, and shared worker health
 remains valid. Missing or malformed database contracts still fail health checks.
 
-One hourly cycle refreshes the sitemap daily or checks one due event. The
+One hourly cycle refreshes the sitemap daily or checks one due event. A busy
+acquisition gate defers the job by five minutes through the existing fenced
+pause protocol without consuming its one attempt or making network requests.
+Revoked access also remains paused; malformed acquisition responses fail.
+This covers overlapping hourly slots during startup without bypassing pacing.
+The
 sitemap is bounded to 200 URLs; each event uses at most three requests. The
 existing M5 domain gate is shared without altering its fixed contract. Leases,
 generation, request sequence and 30-second pacing are checked in PostgreSQL.

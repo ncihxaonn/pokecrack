@@ -21,6 +21,7 @@ from xml.etree import ElementTree
 from pokecrack_worker.collectors.base import PUBLIC_COLLECTOR_USER_AGENT, HTTPClient
 from pokecrack_worker.jobs.models import CompletionEffect, Job
 from pokecrack_worker.jobs.postgres import QueryExecutor
+from pokecrack_worker.runtime import JobDeferred
 
 JOB_TYPE = "source.family.cycle"
 VERSION = "pokesup-enumerated-v1"
@@ -217,6 +218,16 @@ def make_handler(
             "select * from ingest.begin_source_family_v1(%(job)s::uuid, %(worker)s, %(generation)s)",
             params,
         )
+        if not rows:
+            # No network request has happened in this invocation. A busy domain
+            # gate (or a revoked family) is a pause, not an exhausted attempt.
+            # The runtime's existing fenced pause refunds this claim; a stale
+            # lease cannot pause another generation. Re-entry still requires
+            # fresh database acquisition and every per-request authorization.
+            raise JobDeferred(
+                retry_at=datetime.now(UTC) + timedelta(minutes=5),
+                code="source_family_acquisition_deferred",
+            )
         if len(rows) != 1:
             raise ValueError("family_lease_or_gate")
         target = str(rows[0]["target_url"])
