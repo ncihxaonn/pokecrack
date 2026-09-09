@@ -5,7 +5,17 @@ import runpy
 
 import test_backup_sanitizer as fixtures
 
-FAMILY_SCHEMA = runpy.run_path(str(fixtures.SANITIZER))["SOURCE_FAMILY_SCHEMA_SQL"]
+SANITIZER_MODULE = runpy.run_path(str(fixtures.SANITIZER))
+FAMILY_SCHEMA = SANITIZER_MODULE["SOURCE_FAMILY_SCHEMA_SQL"]
+OWNER_SQL = (
+    b"\n".join(sorted(SANITIZER_MODULE["SOURCE_FAMILY_OWNER_STATEMENTS"])) + b"\n"
+)
+
+
+def without_owners(document: bytes) -> bytes:
+    for statement in SANITIZER_MODULE["SOURCE_FAMILY_OWNER_STATEMENTS"]:
+        document = document.replace(statement + b"\n", b"")
+    return document
 
 
 def family_dump() -> bytes:
@@ -46,6 +56,62 @@ def family_dump() -> bytes:
 
 
 class SourceFamilyBackupTests(unittest.TestCase):
+    def test_managed_no_owner_dump_is_complete_and_restores_disabled(self) -> None:
+        self.assertEqual(len(SANITIZER_MODULE["SOURCE_FAMILY_OWNER_STATEMENTS"]), 7)
+        self.assertEqual(OWNER_SQL.count(b" OWNER TO postgres;"), 7)
+        helper = fixtures.BackupSanitizerTests()
+        document = without_owners(family_dump())
+        self.assertNotIn(b" OWNER TO ", document)
+        result = helper.run_sanitizer(helper.complete_dump() + document)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(b"t\tf\tpokesup-enumerated-v1", result.stdout)
+
+    def test_partial_or_wrong_owner_sets_fail_closed(self) -> None:
+        helper = fixtures.BackupSanitizerTests()
+        ownerless = without_owners(family_dump())
+        for extra in (
+            b"ALTER TABLE ingest.source_family_control OWNER TO postgres;\n",
+            OWNER_SQL.replace(b"OWNER TO postgres", b"OWNER TO service_role"),
+        ):
+            with self.subTest(extra=extra[:80]):
+                result = helper.run_sanitizer(
+                    helper.complete_dump() + ownerless + extra
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+
+    def test_other_table_constraints_do_not_impersonate_family_ddl(self) -> None:
+        helper = fixtures.BackupSanitizerTests()
+        jobs = b"""CREATE TABLE ingest.jobs (
+  id uuid NOT NULL,
+  payload jsonb,
+  CONSTRAINT jobs_source_family_payload_check CHECK (payload IS NOT NULL)
+);
+"""
+        result = helper.run_sanitizer(
+            helper.complete_dump() + jobs + without_owners(family_dump())
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(jobs, result.stdout)
+
+    def test_family_detector_uses_relation_position(self) -> None:
+        detector = SANITIZER_MODULE["SOURCE_FAMILY_DDL"]
+        for statement in (
+            b'CREATE TABLE "ingest"."source_family_control" (x text);',
+            b"ALTER TABLE ONLY ingest.source_family_control NO FORCE ROW LEVEL SECURITY;",
+            b"CREATE INDEX arbitrary ON ingest.source_family_control (singleton);",
+            b'CREATE POLICY arbitrary\n ON "ingest"."source_family_control" USING (true);',
+            b"DROP TABLE IF EXISTS ingest.source_family_control;",
+            b"DROP TABLE ingest.other, ingest.source_family_control;",
+        ):
+            with self.subTest(statement=statement):
+                self.assertIsNotNone(detector.match(statement))
+        self.assertIsNone(
+            detector.match(
+                b"CREATE TABLE ingest.jobs (CONSTRAINT source_family_name CHECK (true));"
+            )
+        )
+
     def test_schema_drift_missing_constraints_and_extra_columns_fail_closed(
         self,
     ) -> None:

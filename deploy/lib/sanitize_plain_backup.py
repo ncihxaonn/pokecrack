@@ -129,15 +129,38 @@ for _family_table in (
         f"ALTER TABLE ingest.source_family_{_family_table} ENABLE ROW LEVEL SECURITY;\n"
     ).encode("ascii")
 SOURCE_FAMILY_SCHEMA_STATEMENTS = frozenset(
+    # Restore the terminator after splitting; membership checks include it.
     b" ".join(statement.split()) + b";"
     for statement in SOURCE_FAMILY_SCHEMA_SQL.split(b";")
     if statement.strip()
 )
+# Managed backups use --no-owner. A full isolated pg_dump may include the
+# complete postgres owner set instead; partial or different owners still fail.
+SOURCE_FAMILY_OWNER_STATEMENTS = frozenset(
+    statement
+    for statement in SOURCE_FAMILY_SCHEMA_STATEMENTS
+    if statement.endswith(b" OWNER TO postgres;")
+)
+SOURCE_FAMILY_OWNERLESS_STATEMENTS = (
+    SOURCE_FAMILY_SCHEMA_STATEMENTS - SOURCE_FAMILY_OWNER_STATEMENTS
+)
+_FAMILY_RELATION = (
+    rb'(?:(?:"[a-z_][a-z0-9_$]*"|[a-z_][a-z0-9_$]*)\s*\.\s*)?'
+    rb'"?source_family_[a-z_]+"?(?=\s|[;(]|$)'
+)
 SOURCE_FAMILY_DDL = re.compile(
-    rb"^\s*(?:CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE|ALTER\s+TABLE|"
-    rb"CREATE\s+(?:UNIQUE\s+)?INDEX|CREATE\s+POLICY|DROP\s+TABLE)\b.*"
-    rb'(?:"?ingest"?\s*\.\s*)?"?source_family_[a-z_]+',
-    re.IGNORECASE,
+    # Match the relation being changed, not a constraint name or expression
+    # inside an unrelated table such as jobs_source_family_payload_check.
+    rb"^\s*(?:(?:CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+"
+    rb"(?:IF\s+NOT\s+EXISTS\s+)?|ALTER\s+TABLE\s+(?:IF\s+EXISTS\s+)?(?:ONLY\s+)?)"
+    + _FAMILY_RELATION
+    + rb"|DROP\s+TABLE\b[^;]*?"
+    + _FAMILY_RELATION
+    + rb"|"
+    rb"CREATE\s+(?:(?:UNIQUE\s+)?INDEX|POLICY)\b[^;]*?\bON\s+(?:ONLY\s+)?"
+    + _FAMILY_RELATION
+    + rb")",
+    re.IGNORECASE | re.DOTALL,
 )
 SOURCE_FAMILY_COLUMNS = {
     ("ingest", "source_family_candidates"): (
@@ -3535,7 +3558,8 @@ class PlainBackupSanitizer:
 
     def _validate_complete(self) -> None:
         if (self.family_seen or self.family_schema_seen) and (
-            self.family_schema_seen != SOURCE_FAMILY_SCHEMA_STATEMENTS
+            self.family_schema_seen
+            not in (SOURCE_FAMILY_SCHEMA_STATEMENTS, SOURCE_FAMILY_OWNERLESS_STATEMENTS)
             or self.family_seen != set(SOURCE_FAMILY_COLUMNS)
         ):
             raise SanitizationError(
