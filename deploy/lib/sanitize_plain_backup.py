@@ -29,6 +29,141 @@ PUBLIC_STUDY_COVERAGE_OBSERVATIONS = (
     "public_study_coverage_observations",
 )
 SOURCE_REQUEST_GATES = ("ingest", "source_request_gates")
+SOURCE_FAMILY_RUNS = ("ingest", "source_family_runs")
+# Exact pg_dump 17 table DDL from the reviewed isolated migration. Keep this
+# inline: backup bundles intentionally ship this sanitizer as one file.
+# Case is preserved inside SQL literals; only whitespace is normalized.
+SOURCE_FAMILY_SCHEMA_SQL = b"""
+CREATE TABLE ingest.source_family_admissions (
+    url text NOT NULL,
+    policy_version text NOT NULL,
+    post_id bigint NOT NULL,
+    product text NOT NULL,
+    opening_ordinal integer NOT NULL,
+    published_at timestamp with time zone NOT NULL,
+    verified_at timestamp with time zone NOT NULL,
+    resource_sha256 text NOT NULL,
+    video_sha256 text,
+    pack_count integer NOT NULL,
+    CONSTRAINT source_family_admissions_opening_ordinal_check CHECK (((opening_ordinal >= 1) AND (opening_ordinal <= 99))),
+    CONSTRAINT source_family_admissions_pack_count_check CHECK ((pack_count = 30)),
+    CONSTRAINT source_family_admissions_policy_version_check CHECK ((policy_version = 'pokesup-enumerated-v1'::text)),
+    CONSTRAINT source_family_admissions_post_id_check CHECK ((post_id > 0)),
+    CONSTRAINT source_family_admissions_product_check CHECK (((product ~ '^[a-z][a-z0-9]{0,15}$'::text) AND (product <> 'm5'::text))),
+    CONSTRAINT source_family_admissions_resource_sha256_check CHECK ((resource_sha256 ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT source_family_admissions_video_sha256_check CHECK ((video_sha256 ~ '^[0-9a-f]{64}$'::text))
+);
+CREATE TABLE ingest.source_family_candidates (
+    url text NOT NULL,
+    state text DEFAULT 'pending_family'::text NOT NULL,
+    discovered_at timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+    checked_at timestamp with time zone,
+    reason text DEFAULT 'pending_family'::text NOT NULL,
+    CONSTRAINT source_family_candidates_reason_check CHECK ((reason = ANY (ARRAY['pending_family'::text, 'pending_evidence'::text, 'invalid_evidence'::text, 'fixed_duplicate'::text, 'cohort_duplicate'::text, 'valid'::text, 'retracted'::text]))),
+    CONSTRAINT source_family_candidates_state_check CHECK ((state = ANY (ARRAY['pending_family'::text, 'pending_evidence'::text, 'quarantined'::text, 'admitted'::text, 'duplicate'::text, 'retracted'::text]))),
+    CONSTRAINT source_family_candidates_url_check CHECK (((url ~ '^https://[a-z][a-z0-9.-]+/[a-zA-Z0-9/_-]*$'::text) AND (length(url) <= 512)))
+);
+CREATE TABLE ingest.source_family_clock (
+    singleton boolean DEFAULT true NOT NULL,
+    discovered_at timestamp with time zone,
+    CONSTRAINT source_family_clock_singleton_check CHECK (singleton)
+);
+CREATE TABLE ingest.source_family_control (
+    singleton boolean DEFAULT true NOT NULL,
+    enabled boolean DEFAULT false NOT NULL,
+    policy_version text NOT NULL,
+    CONSTRAINT source_family_control_policy_version_check CHECK ((policy_version = 'pokesup-enumerated-v1'::text)),
+    CONSTRAINT source_family_control_singleton_check CHECK (singleton)
+);
+CREATE TABLE ingest.source_family_identity_keys (
+    identity_sha256 text NOT NULL,
+    url_sha256 text NOT NULL,
+    CONSTRAINT source_family_identity_keys_identity_sha256_check CHECK ((identity_sha256 ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT source_family_identity_keys_url_sha256_check CHECK ((url_sha256 ~ '^[0-9a-f]{64}$'::text))
+);
+CREATE TABLE ingest.source_family_runs (
+    job_id uuid NOT NULL,
+    generation bigint NOT NULL,
+    target_url text NOT NULL,
+    result jsonb,
+    requests integer DEFAULT 0 NOT NULL,
+    last_request_at timestamp with time zone,
+    created_at timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+    CONSTRAINT source_family_runs_requests_check CHECK (((requests >= 0) AND (requests <= 3))),
+    CONSTRAINT source_family_runs_result_check CHECK ((octet_length((result)::text) <= 120000))
+);
+CREATE TABLE ingest.source_family_tombstones (
+    url_sha256 text NOT NULL,
+    reason text NOT NULL,
+    CONSTRAINT source_family_tombstones_reason_check CHECK ((reason = ANY (ARRAY['duplicate'::text, 'retracted'::text]))),
+    CONSTRAINT source_family_tombstones_url_sha256_check CHECK ((url_sha256 ~ '^[0-9a-f]{64}$'::text))
+);
+ALTER TABLE ONLY ingest.source_family_admissions ADD CONSTRAINT source_family_admissions_pkey PRIMARY KEY (url);
+ALTER TABLE ONLY ingest.source_family_admissions ADD CONSTRAINT source_family_admissions_post_id_key UNIQUE (post_id);
+ALTER TABLE ONLY ingest.source_family_admissions ADD CONSTRAINT source_family_admissions_product_opening_ordinal_key UNIQUE (product, opening_ordinal);
+ALTER TABLE ONLY ingest.source_family_admissions ADD CONSTRAINT source_family_admissions_resource_sha256_key UNIQUE (resource_sha256);
+ALTER TABLE ONLY ingest.source_family_candidates ADD CONSTRAINT source_family_candidates_pkey PRIMARY KEY (url);
+ALTER TABLE ONLY ingest.source_family_clock ADD CONSTRAINT source_family_clock_pkey PRIMARY KEY (singleton);
+ALTER TABLE ONLY ingest.source_family_control ADD CONSTRAINT source_family_control_pkey PRIMARY KEY (singleton);
+ALTER TABLE ONLY ingest.source_family_identity_keys ADD CONSTRAINT source_family_identity_keys_pkey PRIMARY KEY (identity_sha256);
+ALTER TABLE ONLY ingest.source_family_runs ADD CONSTRAINT source_family_runs_pkey PRIMARY KEY (job_id);
+ALTER TABLE ONLY ingest.source_family_tombstones ADD CONSTRAINT source_family_tombstones_pkey PRIMARY KEY (url_sha256);
+ALTER TABLE ONLY ingest.source_family_admissions ADD CONSTRAINT source_family_admissions_url_fkey FOREIGN KEY (url) REFERENCES ingest.source_family_candidates(url);
+ALTER TABLE ONLY ingest.source_family_runs ADD CONSTRAINT source_family_runs_job_id_fkey FOREIGN KEY (job_id) REFERENCES ingest.jobs(id) ON DELETE CASCADE;
+CREATE INDEX source_family_candidates_due ON ingest.source_family_candidates USING btree (checked_at NULLS FIRST, url) WHERE (state <> ALL (ARRAY['duplicate'::text, 'retracted'::text]));
+CREATE INDEX source_family_identity_url ON ingest.source_family_identity_keys USING btree (url_sha256);
+CREATE INDEX source_family_runs_expiry ON ingest.source_family_runs USING btree (created_at);
+"""
+for _family_table in (
+    "admissions",
+    "candidates",
+    "clock",
+    "control",
+    "identity_keys",
+    "runs",
+    "tombstones",
+):
+    SOURCE_FAMILY_SCHEMA_SQL += (
+        f"ALTER TABLE ONLY ingest.source_family_{_family_table} FORCE ROW LEVEL SECURITY;\n"
+        f"ALTER TABLE ingest.source_family_{_family_table} OWNER TO postgres;\n"
+        f"ALTER TABLE ingest.source_family_{_family_table} ENABLE ROW LEVEL SECURITY;\n"
+    ).encode("ascii")
+SOURCE_FAMILY_SCHEMA_STATEMENTS = frozenset(
+    b" ".join(statement.split()) + b";"
+    for statement in SOURCE_FAMILY_SCHEMA_SQL.split(b";")
+    if statement.strip()
+)
+SOURCE_FAMILY_DDL = re.compile(
+    rb"^\s*(?:CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE|ALTER\s+TABLE|"
+    rb"CREATE\s+(?:UNIQUE\s+)?INDEX|CREATE\s+POLICY|DROP\s+TABLE)\b.*"
+    rb'(?:"?ingest"?\s*\.\s*)?"?source_family_[a-z_]+',
+    re.IGNORECASE,
+)
+SOURCE_FAMILY_COLUMNS = {
+    ("ingest", "source_family_candidates"): (
+        "url",
+        "state",
+        "discovered_at",
+        "checked_at",
+        "reason",
+    ),
+    ("ingest", "source_family_admissions"): (
+        "url",
+        "policy_version",
+        "post_id",
+        "product",
+        "opening_ordinal",
+        "published_at",
+        "verified_at",
+        "resource_sha256",
+        "video_sha256",
+        "pack_count",
+    ),
+    ("ingest", "source_family_tombstones"): ("url_sha256", "reason"),
+    ("ingest", "source_family_identity_keys"): ("identity_sha256", "url_sha256"),
+    ("ingest", "source_family_clock"): ("singleton", "discovered_at"),
+    ("ingest", "source_family_control"): ("singleton", "enabled", "policy_version"),
+}
 BLUESKY_CANDIDATES = ("ingest", "bluesky_jetstream_candidates")
 BLUESKY_OBSERVATIONS = ("ingest", "bluesky_jetstream_observations")
 BLUESKY_CHECKPOINTS = ("ingest", "bluesky_jetstream_checkpoints")
@@ -220,12 +355,12 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
 PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V15
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
-DOLLAR_QUOTE_TAG = re.compile(
-    rb"\$(?:[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)?\$"
+DOLLAR_QUOTE_TAG = re.compile(rb"\$(?:[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)?\$")
+TARGET_TABLES = (
+    RETENTION_CONTROL_TABLES
+    | EPHEMERAL_ACTIVITY_TABLES
+    | {SOURCE_REQUEST_GATES, SOURCE_FAMILY_RUNS, *SOURCE_FAMILY_COLUMNS}
 )
-TARGET_TABLES = RETENTION_CONTROL_TABLES | EPHEMERAL_ACTIVITY_TABLES | {
-    SOURCE_REQUEST_GATES
-}
 INGEST_TARGET_TABLE_NAMES = tuple(
     sorted(table[1] for table in TARGET_TABLES if table[0] == "ingest")
 )
@@ -259,9 +394,8 @@ TARGET_INSERT = re.compile(
     re.IGNORECASE,
 )
 TARGET_DATA_STATEMENT = re.compile(
-    rb'(?:^|[\s;)])(?:INSERT\s+INTO\s+(?:ONLY\s+)?|'
-    rb'COPY\s+(?:BINARY\s+)?)'
-    + TARGET_TABLE_REFERENCE.encode("ascii"),
+    rb"(?:^|[\s;)])(?:INSERT\s+INTO\s+(?:ONLY\s+)?|"
+    rb"COPY\s+(?:BINARY\s+)?)" + TARGET_TABLE_REFERENCE.encode("ascii"),
     re.IGNORECASE,
 )
 ANY_COPY_STATEMENT_PREFIX = re.compile(rb"^\s*COPY\b", re.IGNORECASE)
@@ -302,14 +436,14 @@ def _append_statement_space(state: SqlLexState) -> None:
 
 def _reject_target_statement_prefix(state: SqlLexState) -> None:
     statement = bytes(state.statement_sql)
+    if SOURCE_FAMILY_DDL.match(statement):
+        raise SanitizationError("source-family DDL must use the reviewed pg_dump shape")
     if DO_STATEMENT_PREFIX.match(statement):
         raise SanitizationError(
             "executable DO bodies are not supported in managed backups"
         )
     if TARGET_DATA_STATEMENT.search(statement):
-        raise SanitizationError(
-            "retention-control table data must use COPY FROM stdin"
-        )
+        raise SanitizationError("retention-control table data must use COPY FROM stdin")
     if ANY_COPY_STATEMENT_PREFIX.match(statement):
         raise SanitizationError(
             "COPY headers must use the supported line-oriented pg_dump shape"
@@ -480,7 +614,7 @@ PUBLIC_STUDY_CREATE = re.compile(
 PUBLIC_STUDY_COVERAGE_CREATE_REFERENCE = re.compile(
     r"^\s*CREATE\s+(?:(?:UNLOGGED|TEMP|TEMPORARY)\s+)?TABLE\s+"
     r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
-    r'(?:public_study_coverage_observations(?![A-Za-z0-9_$])|'
+    r"(?:public_study_coverage_observations(?![A-Za-z0-9_$])|"
     r'"public_study_coverage_observations")'
     r"(?:\s|\()",
     re.IGNORECASE,
@@ -488,7 +622,7 @@ PUBLIC_STUDY_COVERAGE_CREATE_REFERENCE = re.compile(
 PUBLIC_STUDY_COVERAGE_CREATE = re.compile(
     r"^\s*CREATE\s+TABLE\s+"
     r'(?:ingest(?![A-Za-z0-9_$])|"ingest")\s*\.\s*'
-    r'(?:public_study_coverage_observations(?![A-Za-z0-9_$])|'
+    r"(?:public_study_coverage_observations(?![A-Za-z0-9_$])|"
     r'"public_study_coverage_observations")\s*\(',
     re.IGNORECASE,
 )
@@ -514,9 +648,7 @@ REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CREATE_REFERENCE = {
 }
 REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CREATE = {
     table: re.compile(
-        r"^\s*CREATE\s+TABLE\s+"
-        + _aggregate_bridge_table_expression(table)
-        + r"\s*\(",
+        r"^\s*CREATE\s+TABLE\s+" + _aggregate_bridge_table_expression(table) + r"\s*\(",
         re.IGNORECASE,
     )
     for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
@@ -824,9 +956,7 @@ REVIEWED_GLOBAL_AGGREGATE_BRIDGE_NAMED_STRUCTURAL_CONSTRAINTS = {
         ),
     },
     REVIEWED_GLOBAL_AGGREGATE_INPUT_ADMISSIONS: {
-        "rga_ia_fingerprint_key": (
-            "unique (canonical_opening_fingerprint_sha256)"
-        ),
+        "rga_ia_fingerprint_key": ("unique (canonical_opening_fingerprint_sha256)"),
         "rga_ia_observation_fkey": (
             "foreign key (accepted_observation_id) references "
             "ingest.authorized_opening_observations(id) on update restrict "
@@ -1424,34 +1554,52 @@ PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
     },
 }
 PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
-    b"auckland-show-mighty-ape-nz-105-v1": datetime(2025, 9, 30, 0, 8, 20, 972000, tzinfo=UTC),
+    b"auckland-show-mighty-ape-nz-105-v1": datetime(
+        2025, 9, 30, 0, 8, 20, 972000, tzinfo=UTC
+    ),
     b"bokunotebook-vstar-universe-th-1-v1": datetime(2026, 7, 1, 12, 1, 46, tzinfo=UTC),
     b"nanjakorya-paradigm-jp-100-v1": datetime(2022, 10, 21, 11, 10, 35, tzinfo=UTC),
     b"nanjakorya-star-birth-jp-100-v1": datetime(2022, 2, 21, 20, 40, 46, tzinfo=UTC),
     b"garbage-rips-gem-vol2-cn-1-v1": datetime(2026, 2, 13, 13, 30, 9, tzinfo=UTC),
-    b"bikuhime-hantaman-pertama-a-id-20-v1": datetime(2020, 5, 17, 7, 23, 58, tzinfo=UTC),
+    b"bikuhime-hantaman-pertama-a-id-20-v1": datetime(
+        2020, 5, 17, 7, 23, 58, tzinfo=UTC
+    ),
     b"cardchill-ascended-heroes-gb-90-v1": datetime(2026, 3, 3, 11, 26, 21, tzinfo=UTC),
-    b"bleedingcool-phantasmal-flames-us-36-v1": datetime(2026, 1, 3, 16, 12, 4, tzinfo=UTC),
+    b"bleedingcool-phantasmal-flames-us-36-v1": datetime(
+        2026, 1, 3, 16, 12, 4, tzinfo=UTC
+    ),
     b"tcgtalk-perfect-order-sg-54-v1": datetime(2026, 3, 25, 12, 40, tzinfo=UTC),
     b"pokesup-abyss-eye-jp-30-v1": datetime(2026, 5, 22, 12, 1, 44, tzinfo=UTC),
     b"limitsend-inferno-x-kr-30-v1": datetime(2026, 8, 20, 14, 20, 28, tzinfo=UTC),
     b"buyfunlife-ninja-spinner-tw-40-v1": datetime(2026, 4, 3, 13, 49, 13, tzinfo=UTC),
     b"allonline-mega-dream-ex-th-10-v1": datetime(2026, 1, 29, 10, 10, 35, tzinfo=UTC),
     b"pontocom-herois-excelsos-br-48-v1": datetime(2026, 1, 26, 23, 29, tzinfo=UTC),
-    b"richards-bricks-charizard-upc-pr-18-v1": datetime(2025, 12, 24, 11, 3, 10, tzinfo=UTC),
-    b"richards-bricks-mega-evolution-box-pr-36-v1": datetime(2025, 10, 20, 15, 30, 33, tzinfo=UTC),
+    b"richards-bricks-charizard-upc-pr-18-v1": datetime(
+        2025, 12, 24, 11, 3, 10, tzinfo=UTC
+    ),
+    b"richards-bricks-mega-evolution-box-pr-36-v1": datetime(
+        2025, 10, 20, 15, 30, 33, tzinfo=UTC
+    ),
     b"indigo-geek-megaevolucion-mx-50-v1": datetime(2025, 9, 12, 13, 0, 41, tzinfo=UTC),
     b"pokehanna-ascended-heroes-ca-9-v1": datetime(2026, 4, 5, 18, 0, 15, tzinfo=UTC),
     b"tcg-market-chaos-rising-pa-6-v1": datetime(2026, 8, 3, 0, 15, 39, tzinfo=UTC),
     b"tcg-market-pitch-black-pa-4-v1": datetime(2026, 8, 5, 19, 9, 10, tzinfo=UTC),
     b"pokeshow-mega-evolution-gt-3-v1": datetime(2025, 10, 6, 17, 21, 33, tzinfo=UTC),
-    b"cartas-pokemon-argentina-pitch-black-ar-36-v1": datetime(2026, 7, 17, 18, 18, 50, tzinfo=UTC),
-    b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1": datetime(2025, 11, 13, 16, 0, 6, tzinfo=UTC),
+    b"cartas-pokemon-argentina-pitch-black-ar-36-v1": datetime(
+        2026, 7, 17, 18, 18, 50, tzinfo=UTC
+    ),
+    b"pokemaniaco-lucas-phantasmal-flames-cl-36-v1": datetime(
+        2025, 11, 13, 16, 0, 6, tzinfo=UTC
+    ),
     b"cofre-lab-chilling-reign-cr-4-v1": datetime(2021, 6, 6, 5, 54, 3, tzinfo=UTC),
     b"pokeyabros-perfect-order-co-2-v1": datetime(2026, 9, 4, 14, 0, 23, tzinfo=UTC),
-    b"andree-insane-cards-cosmic-eclipse-ec-20-v1": datetime(2023, 6, 27, 21, 0, 7, tzinfo=UTC),
+    b"andree-insane-cards-cosmic-eclipse-ec-20-v1": datetime(
+        2023, 6, 27, 21, 0, 7, tzinfo=UTC
+    ),
     b"thekeiplay-lost-origin-pe-36-v1": datetime(2022, 9, 5, 18, 0, 12, tzinfo=UTC),
-    b"gringo-gameplays-silver-tempest-uy-36-v1": datetime(2023, 3, 30, 17, 14, 2, tzinfo=UTC),
+    b"gringo-gameplays-silver-tempest-uy-36-v1": datetime(
+        2023, 3, 30, 17, 14, 2, tzinfo=UTC
+    ),
 }
 PUBLIC_STUDY_COVERAGE_KEYS_BY_SOURCE_PROFILE = {
     profile: frozenset(
@@ -1948,9 +2096,7 @@ def _reviewed_global_aggregate_bridge_index_table(
         return None
     for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES:
         if re.search(
-            r"\bon\s+"
-            + _aggregate_bridge_table_expression(table)
-            + r"(?:\s|$)",
+            r"\bon\s+" + _aggregate_bridge_table_expression(table) + r"(?:\s|$)",
             statement,
             re.IGNORECASE,
         ):
@@ -2000,9 +2146,7 @@ def _split_create_declarations(
             depth += 1
         elif character == ")":
             if depth == 0:
-                raise SanitizationError(
-                    f"{label} schema has unbalanced parentheses"
-                )
+                raise SanitizationError(f"{label} schema has unbalanced parentheses")
             depth -= 1
         elif character == "," and depth == 0:
             declarations.append(_normalize_sql((body[start:index].encode("utf-8"),)))
@@ -2031,7 +2175,9 @@ def _validate_public_study_create(lines: list[bytes]) -> str:
         declaration for declaration in constraints if declaration in product_profiles
     ]
     common_declarations = [
-        declaration for declaration in constraints if declaration not in product_profiles
+        declaration
+        for declaration in constraints
+        if declaration not in product_profiles
     ]
     if (
         len(product_declarations) != 1
@@ -2064,7 +2210,9 @@ def _validate_public_study_coverage_create(lines: list[bytes]) -> str:
         declaration for declaration in constraints if declaration in product_profiles
     ]
     common_declarations = [
-        declaration for declaration in constraints if declaration not in product_profiles
+        declaration
+        for declaration in constraints
+        if declaration not in product_profiles
     ]
     if (
         len(product_declarations) != 1
@@ -2081,7 +2229,9 @@ def _validate_public_study_coverage_create(lines: list[bytes]) -> str:
 
 
 def _named_constraint(declaration: str, *, label: str) -> tuple[str, str]:
-    match = re.fullmatch(r"constraint (?P<name>[a-z_][a-z0-9_$]*) (?P<semantic>.+)", declaration)
+    match = re.fullmatch(
+        r"constraint (?P<name>[a-z_][a-z0-9_$]*) (?P<semantic>.+)", declaration
+    )
     if match is None:
         raise SanitizationError(f"{label} has an unnamed or malformed constraint")
     return match.group("name"), match.group("semantic")
@@ -2092,18 +2242,14 @@ def _validate_reviewed_global_aggregate_bridge_check(
 ) -> None:
     expected_tokens = REVIEWED_GLOBAL_AGGREGATE_BRIDGE_CHECK_TOKENS[table].get(name)
     if expected_tokens is None:
-        raise SanitizationError(
-            f"unsupported {table[1]} inline constraint schema"
-        )
+        raise SanitizationError(f"unsupported {table[1]} inline constraint schema")
     # pg_dump preserves CHECK expression semantics but may add parentheses and
     # explicit text casts.  Check every reviewed predicate token rather than
     # relying on layout, while the COPY validator independently enforces the
     # exact retained values.
     normalized = semantic.replace("::text", "")
     if any(token not in normalized for token in expected_tokens):
-        raise SanitizationError(
-            f"unsupported {table[1]} inline constraint schema"
-        )
+        raise SanitizationError(f"unsupported {table[1]} inline constraint schema")
     if (
         table == REVIEWED_GLOBAL_AGGREGATE_INDEPENDENT_SOURCES
         and name == "reviewed_global_aggregate_independent_sources_domain_check"
@@ -2115,9 +2261,7 @@ def _validate_reviewed_global_aggregate_bridge_check(
             normalized,
         )
         if pg16_range not in normalized and pg17_range is None:
-            raise SanitizationError(
-                f"unsupported {table[1]} inline constraint schema"
-            )
+            raise SanitizationError(f"unsupported {table[1]} inline constraint schema")
 
 
 def _validate_reviewed_global_aggregate_bridge_create(
@@ -2414,6 +2558,13 @@ class PlainBackupSanitizer:
             youtube_discoveries_present or mastodon_public_hashtag_present
         )
         self.seen = {table: 0 for table in RETENTION_CONTROL_TABLES}
+        self.family_seen: set[tuple[str, ...]] = set()
+        self.family_schema_seen: set[bytes] = set()
+        self.family_schema_lines: list[bytes] | None = None
+        self.family_singleton_rows = {
+            ("ingest", "source_family_clock"): 0,
+            ("ingest", "source_family_control"): 0,
+        }
         self.youtube_policy_rows: list[str] = []
         self.tcgdex_policy_rows = 0
         self.bluesky_policy_ids: list[str] = []
@@ -2451,9 +2602,7 @@ class PlainBackupSanitizer:
             None
         )
         self.reviewed_global_aggregate_bridge_create_lines: list[bytes] | None = None
-        self.reviewed_global_aggregate_bridge_alter_table: tuple[str, str] | None = (
-            None
-        )
+        self.reviewed_global_aggregate_bridge_alter_table: tuple[str, str] | None = None
         self.reviewed_global_aggregate_bridge_alter_lines: list[bytes] | None = None
         self.reviewed_global_aggregate_bridge_force_rls_counts = {
             table: 0 for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
@@ -2464,9 +2613,7 @@ class PlainBackupSanitizer:
         self.reviewed_global_aggregate_bridge_constraints = {
             table: set() for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
         }
-        self.reviewed_global_aggregate_bridge_index_table: tuple[str, str] | None = (
-            None
-        )
+        self.reviewed_global_aggregate_bridge_index_table: tuple[str, str] | None = None
         self.reviewed_global_aggregate_bridge_index_lines: list[bytes] | None = None
         self.reviewed_global_aggregate_bridge_indexes = {
             table: set() for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES
@@ -2474,9 +2621,7 @@ class PlainBackupSanitizer:
         self.reviewed_global_aggregate_independent_sources: dict[
             str, tuple[str, str, str]
         ] = {}
-        self.reviewed_global_aggregate_authorized_source_bindings: dict[
-            str, str
-        ] = {}
+        self.reviewed_global_aggregate_authorized_source_bindings: dict[str, str] = {}
         self.reviewed_global_aggregate_binding_identity_pairs: set[tuple[str, str]] = (
             set()
         )
@@ -2578,9 +2723,7 @@ class PlainBackupSanitizer:
             semantic = constraint_match.group("semantic")
             expected = REVIEWED_GLOBAL_AGGREGATE_BRIDGE_ALTER_CONSTRAINTS[table]
             expected_named = (
-                REVIEWED_GLOBAL_AGGREGATE_BRIDGE_NAMED_STRUCTURAL_CONSTRAINTS[
-                    table
-                ]
+                REVIEWED_GLOBAL_AGGREGATE_BRIDGE_NAMED_STRUCTURAL_CONSTRAINTS[table]
             )
             seen = self.reviewed_global_aggregate_bridge_constraints[table]
             named_semantic = expected_named.get(name)
@@ -2617,12 +2760,15 @@ class PlainBackupSanitizer:
                 )
             index_key = match.group("column")
         elif table == REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_SOURCE_BINDINGS:
-            if re.fullmatch(
-                r"create index [a-z_][a-z0-9_$]* on "
-                + _aggregate_bridge_table_expression(table)
-                + r" using btree \(independent_source_key, valid_from, valid_until\);",
-                statement,
-            ) is None:
+            if (
+                re.fullmatch(
+                    r"create index [a-z_][a-z0-9_$]* on "
+                    + _aggregate_bridge_table_expression(table)
+                    + r" using btree \(independent_source_key, valid_from, valid_until\);",
+                    statement,
+                )
+                is None
+            ):
                 raise SanitizationError("unsupported aggregate bridge binding index")
             index_key = REVIEWED_GLOBAL_AGGREGATE_AUTHORIZED_BINDING_INDEX
         else:
@@ -2653,6 +2799,15 @@ class PlainBackupSanitizer:
 
     def _start_block(self, header: CopyHeader) -> CopyBlock:
         indexes = _column_indexes(header)
+        if header.table in SOURCE_FAMILY_COLUMNS:
+            if (
+                header.table in self.family_seen
+                or header.columns != SOURCE_FAMILY_COLUMNS[header.table]
+            ):
+                raise SanitizationError(
+                    "source-family COPY schema or multiplicity mismatch"
+                )
+            self.family_seen.add(header.table)
         if header.table in RETENTION_CONTROL_TABLES:
             self.seen[header.table] += 1
             if self.seen[header.table] != 1:
@@ -2723,6 +2878,9 @@ class PlainBackupSanitizer:
         return fields
 
     def _inspect_control_row(self, block: CopyBlock, line: bytes) -> None:
+        if block.header.table in SOURCE_FAMILY_COLUMNS:
+            self._inspect_family_row(block, line)
+            return
         if block.header.table not in RETENTION_CONTROL_TABLES:
             return
         fields = self._target_fields(block, line)
@@ -2811,6 +2969,41 @@ class PlainBackupSanitizer:
                 "youtube_discoveries row does not use the exact YouTube policy"
             )
 
+    def _inspect_family_row(self, block: CopyBlock, line: bytes) -> None:
+        if block.header.table in self.family_singleton_rows:
+            self.family_singleton_rows[block.header.table] += 1
+            if self.family_singleton_rows[block.header.table] > 1:
+                raise SanitizationError("source-family singleton has multiple rows")
+        fields = dict(
+            zip(block.header.columns, self._target_fields(block, line), strict=True)
+        )
+        allowed = {
+            "url": rb"https://pokesup\.com/blog/unboxing-[a-z][a-z0-9]{0,15}(-([2-9]|[1-9][0-9]))?/",
+            "state": rb"pending_family|pending_evidence|quarantined|admitted|duplicate|retracted",
+            "reason": rb"pending_family|pending_evidence|invalid_evidence|fixed_duplicate|cohort_duplicate|valid|duplicate|retracted",
+            "policy_version": rb"pokesup-enumerated-v1",
+            "post_id": rb"[1-9][0-9]{0,12}",
+            "product": rb"m2|m3",
+            "opening_ordinal": rb"[1-9][0-9]?",
+            "pack_count": rb"30",
+            "singleton": rb"t",
+            "enabled": rb"t|f",
+        }
+        for column, value in fields.items():
+            if column == "video_sha256" and value == b"\\N":
+                continue
+            if column.endswith("sha256"):
+                _sha256_copy(value, field="source-family hash")
+            elif column.endswith("_at"):
+                if column in {"checked_at", "discovered_at"}:
+                    _optional_utc_copy_timestamp(value, field="source-family date")
+                else:
+                    _utc_copy_timestamp(value, field="source-family date")
+            elif column not in allowed or re.fullmatch(allowed[column], value) is None:
+                raise SanitizationError(
+                    "source-family retained field outside reviewed scope"
+                )
+
     def _inspect_bluesky_checkpoint_row(
         self, block: CopyBlock, fields: list[bytes]
     ) -> None:
@@ -2827,8 +3020,7 @@ class PlainBackupSanitizer:
             )
         exact_text = {
             "endpoint": (
-                "wss://jetstream.us-west.bsky.network/"
-                "xrpc/network.bsky.jetstream.subscribeEvents"
+                "wss://jetstream.us-west.bsky.network/xrpc/network.bsky.jetstream.subscribeEvents"
             ),
             "protocol": "xrpc.v1.json",
             "collection": "app.bsky.feed.post",
@@ -3161,7 +3353,9 @@ class PlainBackupSanitizer:
             fields[indexes["binding_key"]], field="aggregate admission binding key"
         )
         if binding_key is not None and SAFE_CONTRACT_KEY.fullmatch(binding_key) is None:
-            raise SanitizationError("aggregate admission binding key is not a contract key")
+            raise SanitizationError(
+                "aggregate admission binding key is not a contract key"
+            )
         fingerprint = _sha256_copy(
             fields[indexes["canonical_opening_fingerprint_sha256"]],
             field="aggregate admission opening fingerprint hash",
@@ -3204,7 +3398,9 @@ class PlainBackupSanitizer:
         self.reviewed_global_aggregate_input_fingerprints.add(fingerprint)
         if public_study_key is not None:
             if public_study_key in self.reviewed_global_aggregate_public_study_keys:
-                raise SanitizationError("aggregate admission public study key is duplicated")
+                raise SanitizationError(
+                    "aggregate admission public study key is duplicated"
+                )
             self.reviewed_global_aggregate_public_study_keys.add(public_study_key)
         if accepted_observation_id is not None:
             if (
@@ -3338,12 +3534,28 @@ class PlainBackupSanitizer:
         self.public_study_coverage_rows[study_key_value] = (source_key, policy_id)
 
     def _validate_complete(self) -> None:
+        if (self.family_seen or self.family_schema_seen) and (
+            self.family_schema_seen != SOURCE_FAMILY_SCHEMA_STATEMENTS
+            or self.family_seen != set(SOURCE_FAMILY_COLUMNS)
+        ):
+            raise SanitizationError(
+                "source-family backup requires the complete reviewed schema and data blocks"
+            )
+        if self.family_seen and self.family_seen != set(SOURCE_FAMILY_COLUMNS):
+            raise SanitizationError(
+                "source-family backup requires every durable ledger and control table"
+            )
+        if self.family_seen and any(
+            count != 1 for count in self.family_singleton_rows.values()
+        ):
+            raise SanitizationError(
+                "source-family backup requires exactly one row per singleton"
+            )
         for table, expected_present in self.expected.items():
             count = self.seen[table]
             if expected_present and count != 1:
                 raise SanitizationError(
-                    "expected retention-control COPY block is missing: "
-                    f"{'.'.join(table)}"
+                    f"expected retention-control COPY block is missing: {'.'.join(table)}"
                 )
             if not expected_present and count != 0:
                 raise SanitizationError(
@@ -3383,9 +3595,7 @@ class PlainBackupSanitizer:
             )
 
         for table in REVIEWED_GLOBAL_AGGREGATE_BRIDGE_TABLES:
-            expected_bridge_table = int(
-                self.reviewed_global_aggregate_bridge_present
-            )
+            expected_bridge_table = int(self.reviewed_global_aggregate_bridge_present)
             if (
                 self.reviewed_global_aggregate_bridge_create_counts[table]
                 != expected_bridge_table
@@ -3454,9 +3664,10 @@ class PlainBackupSanitizer:
                 raise SanitizationError(
                     "aggregate independent-source seed set does not match the reviewed contract"
                 )
-        for _binding_key, independent_source_key in (
-            self.reviewed_global_aggregate_authorized_source_bindings.items()
-        ):
+        for (
+            _binding_key,
+            independent_source_key,
+        ) in self.reviewed_global_aggregate_authorized_source_bindings.items():
             if (
                 independent_source_key
                 not in self.reviewed_global_aggregate_independent_sources
@@ -3464,9 +3675,10 @@ class PlainBackupSanitizer:
                 raise SanitizationError(
                     "aggregate binding has no retained independent source"
                 )
-        for _admission_key, (input_kind, binding_key) in (
-            self.reviewed_global_aggregate_input_admissions.items()
-        ):
+        for _admission_key, (
+            input_kind,
+            binding_key,
+        ) in self.reviewed_global_aggregate_input_admissions.items():
             if (
                 input_kind == "authorized_opening"
                 and binding_key
@@ -3578,7 +3790,10 @@ class PlainBackupSanitizer:
                     self.public_study_source_keys
                 ]
             )
-            if self.public_study_product_profile != expected_public_study_product_profile:
+            if (
+                self.public_study_product_profile
+                != expected_public_study_product_profile
+            ):
                 raise SanitizationError(
                     "public-study statistical product schema does not match the reviewed source profile"
                 )
@@ -3594,12 +3809,13 @@ class PlainBackupSanitizer:
                 raise SanitizationError(
                     "public-study coverage product schema does not match the reviewed source profile"
                 )
-            expected_coverage_study_keys = (
-                PUBLIC_STUDY_COVERAGE_KEYS_BY_SOURCE_PROFILE[
-                    self.public_study_source_keys
-                ]
-            )
-            if frozenset(self.public_study_coverage_rows) != expected_coverage_study_keys:
+            expected_coverage_study_keys = PUBLIC_STUDY_COVERAGE_KEYS_BY_SOURCE_PROFILE[
+                self.public_study_source_keys
+            ]
+            if (
+                frozenset(self.public_study_coverage_rows)
+                != expected_coverage_study_keys
+            ):
                 raise SanitizationError(
                     "public-study coverage ledger does not contain the exact reviewed row set"
                 )
@@ -3668,6 +3884,30 @@ class PlainBackupSanitizer:
                 _advance_sql_lex_state(line, sql_lex_state)
                 continue
 
+            if self.family_schema_lines is not None or SOURCE_FAMILY_DDL.match(line):
+                if self.family_schema_lines is None:
+                    self.family_schema_lines = []
+                self.family_schema_lines.append(line)
+                if (
+                    sum(map(len, self.family_schema_lines))
+                    > MAX_SQL_STATEMENT_PREFIX_BYTES
+                ):
+                    raise SanitizationError(
+                        "source-family schema statement is too large"
+                    )
+                if line.rstrip().endswith(b";"):
+                    statement = b" ".join(b"".join(self.family_schema_lines).split())
+                    if (
+                        statement not in SOURCE_FAMILY_SCHEMA_STATEMENTS
+                        or statement in self.family_schema_seen
+                    ):
+                        raise SanitizationError(
+                            "source-family schema drift or duplicate statement"
+                        )
+                    self.family_schema_seen.add(statement)
+                    self.family_schema_lines = None
+                continue
+
             if self.request_gates_create_lines is not None:
                 self.request_gates_create_lines.append(line)
                 if line.rstrip() == b");":
@@ -3723,6 +3963,10 @@ class PlainBackupSanitizer:
                 ):
                     raise SanitizationError(
                         "retention-control COPY targets must be schema-qualified"
+                    )
+                if header.table == SOURCE_FAMILY_RUNS:
+                    raise SanitizationError(
+                        "source-family transient runs must be excluded by pg_dump"
                     )
                 if header.table == SOURCE_REQUEST_GATES:
                     raise SanitizationError(
@@ -3842,6 +4086,8 @@ class PlainBackupSanitizer:
 
         if block is not None:
             raise SanitizationError("unterminated COPY data block")
+        if self.family_schema_lines is not None:
+            raise SanitizationError("unterminated source-family DDL")
         if sql_lex_state.mode != "normal":
             raise SanitizationError("unterminated SQL quoted body or comment")
         if self.request_gates_create_lines is not None:
@@ -3875,7 +4121,10 @@ class PlainBackupSanitizer:
                     destination.write(line)
                     block = None
                     continue
-                if block.header.table != YOUTUBE_DISCOVERIES:
+                if block.header.table == ("ingest", "source_family_control"):
+                    # Restore is inert even if the snapshot was taken enabled.
+                    destination.write(b"t\tf\tpokesup-enumerated-v1\n")
+                elif block.header.table != YOUTUBE_DISCOVERIES:
                     destination.write(line)
                 continue
 

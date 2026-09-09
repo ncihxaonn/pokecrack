@@ -95,6 +95,7 @@ class CompletionEffect(StrEnum):
     """Database effects that a repository may finalize atomically with a job."""
 
     PRUNE_EXPIRED_EPHEMERA = "prune_expired_ephemera"
+    FINALIZE_SOURCE_FAMILY = "finalize_source_family"
 
 
 @dataclass(frozen=True, slots=True)

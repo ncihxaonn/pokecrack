@@ -17,7 +17,7 @@ from enum import StrEnum
 from pathlib import Path
 from urllib.parse import parse_qsl, quote, unquote, urlencode, urlsplit, urlunsplit
 
-from pokecrack_worker import __version__
+from pokecrack_worker import __version__, source_families
 from pokecrack_worker.collectors.base import CollectionService, CollectorError, HTTPClient
 from pokecrack_worker.collectors.official_api.bluesky import (
     BlueskyCursorTooOldError,
@@ -2451,6 +2451,8 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
     enabled = list(job_types)
     if settings.youtube_collection_enabled:
         enabled.append(YOUTUBE_DISCOVERY_JOB_TYPE)
+    if source_families.POLICY.approved and settings.source_family_collection_enabled:
+        enabled.append(source_families.JOB_TYPE)
     if settings.public_study_collection_enabled:
         enabled.append(PUBLIC_STUDY_JOB_TYPE)
     if settings.mastodon_collection_enabled:
@@ -2778,6 +2780,14 @@ def write_health_heartbeat(
             "public_study_enabled": settings.public_study_collection_enabled,
         }
     dependency_rows = database.query(dependency_sql, dependency_params)
+    if settings.source_family_collection_enabled:
+        family_rows = database.query("SELECT ingest.source_family_ready_v1() AS ready", {})
+        # False is an intentional operational pause, not a missing dependency.
+        # Still fail closed for a missing or malformed database contract.
+        if len(family_rows) != 1 or type(family_rows[0].get("ready")) is not bool:
+            raise LiveCompositionError(
+                "source_family_unavailable", "source-family runtime contract is unavailable"
+            )
     if not dependency_rows or dependency_rows[0].get("ready") is not True:
         raise LiveCompositionError(
             "live_dependencies_unavailable",
@@ -3378,6 +3388,10 @@ def _handlers_for_role(
                 transport=youtube_transport,
                 clock=clock,
             )
+        if source_families.POLICY.approved and settings.source_family_collection_enabled:
+            handlers[source_families.JOB_TYPE] = source_families.make_handler(
+                executor, public_study_http_client or ScraplingHTTPClient.live(), worker_id
+            )
         if settings.public_study_collection_enabled:
             handlers[PUBLIC_STUDY_JOB_TYPE] = _public_study_handler(
                 settings=settings,
@@ -3540,7 +3554,21 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
     # Bluesky is scheduled by its fixed source-scoped claim wrapper. Keeping
     # it out of this scheduler prevents a generic queue producer from creating
     # jobs that a broad collector could accidentally claim.
-    return catalog + youtube + public_studies + mastodon + cleanup
+    families = (
+        (
+            ScheduleEntry(
+                name="source_family_pokesup",
+                job_type=source_families.JOB_TYPE,
+                interval=timedelta(hours=1),
+                payload={"family": source_families.FAMILY},
+                priority=12,
+                max_attempts=1,
+            ),
+        )
+        if source_families.POLICY.approved and settings.source_family_collection_enabled
+        else ()
+    )
+    return catalog + youtube + public_studies + mastodon + cleanup + families
 
 
 def build_live_scheduler(

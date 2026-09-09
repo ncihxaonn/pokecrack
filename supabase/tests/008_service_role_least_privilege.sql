@@ -28,7 +28,10 @@ select is(
            'authorized_opening_submissions',
            'authorized_opening_review_events',
            'authorized_opening_observations',
-           'authorized_opening_retractions'
+           'authorized_opening_retractions',
+           'source_family_candidates', 'source_family_admissions',
+           'source_family_tombstones', 'source_family_identity_keys',
+           'source_family_runs', 'source_family_clock', 'source_family_control'
          )
        )
      )),
@@ -59,7 +62,10 @@ select is(
            'authorized_opening_submissions',
            'authorized_opening_review_events',
            'authorized_opening_observations',
-           'authorized_opening_retractions'
+           'authorized_opening_retractions',
+           'source_family_candidates', 'source_family_admissions',
+           'source_family_tombstones', 'source_family_identity_keys',
+           'source_family_runs', 'source_family_clock', 'source_family_control'
          )
        )
      )

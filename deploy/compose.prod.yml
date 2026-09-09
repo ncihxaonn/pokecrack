@@ -63,6 +63,7 @@ services:
       YOUTUBE_MATON_CONNECTION_ID: '${YOUTUBE_MATON_CONNECTION_ID:-}'
       YOUTUBE_COLLECTION_ENABLED: "${YOUTUBE_COLLECTION_ENABLED:-false}"
       PUBLIC_STUDY_COLLECTION_ENABLED: "${PUBLIC_STUDY_COLLECTION_ENABLED:-false}"
+      SOURCE_FAMILY_COLLECTION_ENABLED: "${SOURCE_FAMILY_COLLECTION_ENABLED:-false}"
       # Bluesky is intentionally absent from the broad collector credential;
       # enable the separately profiled bluesky-collector instead.
       BLUESKY_COLLECTION_ENABLED: "false"
@@ -289,6 +290,7 @@ services:
       WORKER_ROLE: scheduler
       YOUTUBE_COLLECTION_ENABLED: "${YOUTUBE_COLLECTION_ENABLED:-false}"
       PUBLIC_STUDY_COLLECTION_ENABLED: "${PUBLIC_STUDY_COLLECTION_ENABLED:-false}"
+      SOURCE_FAMILY_COLLECTION_ENABLED: "${SOURCE_FAMILY_COLLECTION_ENABLED:-false}"
       # The isolated collectors own Bluesky/Nostr scheduling and execution;
       # the scheduler only services the remaining queue producers.
       BLUESKY_COLLECTION_ENABLED: "false"
