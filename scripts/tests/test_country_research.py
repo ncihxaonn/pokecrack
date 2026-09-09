@@ -34,11 +34,12 @@ class CountryResearchTests(unittest.TestCase):
                 "author": {"login": "app/github-actions", "is_bot": True}}
 
     def test_complete_country_area_inventory_no_cities_or_duplicate_codes(self):
-        self.assertEqual(REGION_ORDER, ("asia", "oceania", "europe", "africa"))
-        self.assertEqual([len(REGIONS[key]) for key in REGION_ORDER], [51, 29, 51, 60])
-        self.assertEqual(len(COUNTRIES), 191)
+        self.assertEqual(REGION_ORDER, ("asia", "oceania", "europe", "africa", "north-america", "latin-america", "antarctica"))
+        self.assertEqual([len(REGIONS[key]) for key in REGION_ORDER], [51, 29, 51, 60, 5, 52, 1])
+        self.assertEqual(len(COUNTRIES), 249)
         iso = set(json.loads((ROOT / "apps/web/src/data/iso-alpha2.json").read_text()))
-        self.assertLessEqual(set(COUNTRIES), iso)
+        self.assertEqual(set(COUNTRIES), iso)
+        self.assertEqual(sum(map(len, REGIONS.values())), len(COUNTRIES))
         self.assertEqual(COUNTRY_REGION["TR"], "asia")
         self.assertEqual(COUNTRY_REGION["RU"], "europe")
         self.assertEqual(COUNTRY_REGION["AU"], "oceania")
@@ -69,7 +70,26 @@ class CountryResearchTests(unittest.TestCase):
             history.append(self.report(selection))
         self.assertEqual(observed, list(COUNTRIES))
         self.assertEqual(selection, {**self.selection(), "sweep": 2})
+        self.assertEqual(len(history), 85)
+
+    def test_existing_four_region_history_resumes_in_americas_without_reset(self):
+        history = []
+        while (selection := module.select_targets(history))["targets"][0] != "US":
+            history.append(self.report(selection))
         self.assertEqual(len(history), 64)
+        self.assertEqual(selection["sweep"], 1)
+        self.assertEqual(selection["targets"], ["US", "CA", "BM"])
+        # Old report fingerprints and the campaign marker remain stable.
+        with patch.object(module.subprocess, "run", return_value=Mock(
+                stdout=json.dumps([self.issue(report) for report in history]))):
+            self.assertEqual(module.country_history(), history)
+
+    def test_each_global_phase_produces_a_valid_prompt_and_selection(self):
+        for region in REGION_ORDER:
+            with self.subTest(region=region):
+                selection = {**self.selection(), "targets": [REGIONS[region][0][0]]}
+                self.assertEqual(module.validate_selection(selection), selection)
+                self.assertIn(COUNTRIES[selection["targets"][0]], module.prompt(selection))
 
     def test_selection_rejects_cross_region_invalid_repeated_and_extra_values(self):
         for update in ({"targets": []}, {"targets": ["MY", "AU"]},

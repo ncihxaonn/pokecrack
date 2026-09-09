@@ -2,13 +2,14 @@
 
 The owner's 2026-09-08 scope freezes the current public UI and prioritizes data:
 **Asia → Oceania (Australia first) → Europe → Africa**, at country/area level,
-not cities. Existing Americas observations and their collectors remain intact.
+not cities. The owner's 2026-09-09 expansion adds all remaining countries/areas
+worldwide. Existing observations and collectors remain intact; the UI stays frozen.
 
 ## Target inventory
 
-`scripts/country_targets.py` covers all country/area entries in these four
+`scripts/country_targets.py` covers all 249 ISO-alpha2 country/area entries in the
 [UN M49 regions](https://unstats.un.org/unsd/methodology/m49/overview/), checked
-2026-09-08, plus the existing application's TW product-market bucket. Short
+2026-09-09, plus the existing application's TW product-market bucket. Short
 display names and statistical grouping make no claim about sovereignty.
 
 | Phase | Country/area targets | First targets |
@@ -17,6 +18,9 @@ display names and statistical grouping make no claim about sovereignty.
 | Oceania | 29 | Australia, New Zealand, Fiji |
 | Europe | 51 | France, Germany, Italy |
 | Africa | 60 | South Africa, Egypt, Kenya |
+| Northern America | 5 | United States, Canada, Bermuda |
+| Latin America and Caribbean | 52 | Mexico, Brazil, Argentina |
+| Antarctica | 1 | Antarctica |
 
 The inventory includes dependencies and small areas so missing map geometry
 does not silently omit them. A target is not a new observed country. Existing
@@ -35,7 +39,11 @@ phase of the current sweep. Selection reads validated bot-owned, content-hashed
 GitHub reports, including closed issues. Failed/invalid research does not record
 success and cannot skip a country because a time slot elapsed. Once a phase has
 a retained research result for every target, the next phase starts. Once all
-191 targets have been checked, another sweep starts in Asia.
+249 targets have been checked, another sweep starts in Asia. The campaign ID,
+existing country order and signed-by-hash bot reports are unchanged. An existing
+four-region sweep continues into the appended phases rather than resetting or
+silently omitting them. Antarctica is an area, not a sovereign country; its
+inclusion does not assert that any opening records exist there.
 
 One isolated MAM Codex call has a ten-minute deadline, 12 search queries total,
 two candidates per target and a 16 KiB report cap. It must search each country
@@ -44,7 +52,7 @@ retained as **no suitable candidate found in this bounded pass**, not zero
 activity or proof that no source exists. This makes research progress auditable
 without pretending source discovery is country publication.
 
-The first complete research sweep needs at least 64 successful jobs at these
+The first complete research sweep needs at least 85 successful jobs at these
 batch sizes. An hourly trigger is not an SLA: GitHub delays, usage limits,
 source availability and failed runs can extend it. Independent source review
 and publication have no fabricated completion deadline.

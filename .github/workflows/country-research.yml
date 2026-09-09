@@ -75,7 +75,7 @@ jobs:
           set -Eeuo pipefail
           python3 scripts/country_research.py --publish "$RUNNER_TEMP/country-report.json" \
             --selection "$RUNNER_TEMP/country-selection.json" > "$RUNNER_TEMP/country-ledger.json"
-          echo 'Country research retained. Asia → Oceania → Europe → Africa. No production samples automatically admitted.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Country research retained. All 249 ISO country/area targets: Asia → Oceania → Europe → Africa → Northern America → Latin America and Caribbean → Antarctica. No production samples automatically admitted by research.' >> "$GITHUB_STEP_SUMMARY"
       - name: Save country progress and deduplicated research snapshot
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
