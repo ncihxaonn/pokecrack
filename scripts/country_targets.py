@@ -1,12 +1,13 @@
 """Country/area research targets, never observations or city-level records.
 
-UN M49 regions, checked 2026-09-08:
+UN M49 regions, checked 2026-09-09:
 https://unstats.un.org/unsd/methodology/m49/overview/
 TW is retained as the existing application's distinct product-market bucket.
 Names are short display labels; grouping is statistical, not a sovereignty claim.
 """
 
-REGION_ORDER = ("asia", "oceania", "europe", "africa")
+# Append phases without renaming/reordering retained country reports.
+REGION_ORDER = ("asia", "oceania", "europe", "africa", "north-america", "latin-america", "antarctica")
 _TARGETS = {
     "asia": """MY|Malaysia
 VN|Viet Nam
@@ -199,6 +200,64 @@ YT|Mayotte
 RE|Réunion
 SH|Saint Helena
 EH|Western Sahara""",
+    "north-america": """US|United States of America
+CA|Canada
+BM|Bermuda
+GL|Greenland
+PM|Saint Pierre and Miquelon""",
+    "latin-america": """MX|Mexico
+BR|Brazil
+AR|Argentina
+CL|Chile
+CO|Colombia
+PE|Peru
+AI|Anguilla
+AG|Antigua and Barbuda
+AW|Aruba
+BS|Bahamas
+BB|Barbados
+BQ|Bonaire, Sint Eustatius and Saba
+VG|British Virgin Islands
+KY|Cayman Islands
+CU|Cuba
+CW|Curaçao
+DM|Dominica
+DO|Dominican Republic
+GD|Grenada
+GP|Guadeloupe
+HT|Haiti
+JM|Jamaica
+MQ|Martinique
+MS|Montserrat
+PR|Puerto Rico
+BL|Saint Barthélemy
+KN|Saint Kitts and Nevis
+LC|Saint Lucia
+MF|Saint Martin (French Part)
+VC|Saint Vincent and the Grenadines
+SX|Sint Maarten (Dutch part)
+TT|Trinidad and Tobago
+TC|Turks and Caicos Islands
+VI|United States Virgin Islands
+BZ|Belize
+CR|Costa Rica
+SV|El Salvador
+GT|Guatemala
+HN|Honduras
+NI|Nicaragua
+PA|Panama
+BO|Bolivia
+BV|Bouvet Island
+EC|Ecuador
+FK|Falkland Islands (Malvinas)
+GF|French Guiana
+GY|Guyana
+PY|Paraguay
+GS|South Georgia and the South Sandwich Islands
+SR|Suriname
+UY|Uruguay
+VE|Venezuela""",
+    "antarctica": """AQ|Antarctica""",
 }
 REGIONS = {
     region: tuple(tuple(line.split("|")) for line in _TARGETS[region].splitlines())
