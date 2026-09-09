@@ -15,6 +15,7 @@ from pokecrack_worker.composition import (
 )
 from pokecrack_worker.config.settings import Settings
 from pokecrack_worker.jobs.models import CompletionEffect, Job
+from pokecrack_worker.runtime import JobDeferred
 from pokecrack_worker.source_families import (
     EXCLUDED,
     LABELS,
@@ -216,6 +217,87 @@ def test_enabled_schedule_and_handler_order(
     schedules = live_schedule_entries(settings.model_copy(update={"worker_role": "scheduler"}))
     family = [entry for entry in schedules if entry.job_type == source_families.JOB_TYPE]
     assert len(family) == 1 and family[0].slot(NOW + timedelta(minutes=42)) == NOW
+
+
+def test_busy_family_acquisition_defers_before_any_network_or_staging() -> None:
+    class DB:
+        def query(self, sql, params):  # type: ignore[no-untyped-def]
+            assert "begin_source_family" in sql
+            return []
+
+    class HTTP:
+        def get(self, url, *, timeout_seconds):  # type: ignore[no-untyped-def]
+            raise AssertionError("a deferred acquisition must not perform network I/O")
+
+    before = datetime.now(UTC)
+    with pytest.raises(JobDeferred) as caught:
+        source_families.make_handler(DB(), HTTP(), "worker")(
+            Job(
+                "test",
+                source_families.JOB_TYPE,
+                {"family": source_families.FAMILY},
+                lease_generation=1,
+            )
+        )
+    assert caught.value.code == "source_family_acquisition_deferred"
+    assert before + timedelta(minutes=5) <= caught.value.retry_at
+    assert caught.value.retry_at <= datetime.now(UTC) + timedelta(minutes=5)
+    assert not caught.value.pause_applied
+
+
+def test_malformed_family_acquisition_is_not_deferred() -> None:
+    class DB:
+        def query(self, sql, params):  # type: ignore[no-untyped-def]
+            return [{"target_url": URL}, {"target_url": URL}]
+
+    class HTTP:
+        def get(self, url, *, timeout_seconds):  # type: ignore[no-untyped-def]
+            raise AssertionError("malformed acquisition must not perform network I/O")
+
+    with pytest.raises(ValueError, match="family_lease_or_gate"):
+        source_families.make_handler(DB(), HTTP(), "worker")(
+            Job(
+                "test",
+                source_families.JOB_TYPE,
+                {"family": source_families.FAMILY},
+                lease_generation=1,
+            )
+        )
+
+
+def test_family_cooldown_refunds_single_attempt_and_can_be_leased_again() -> None:
+    from pokecrack_worker.jobs import InMemoryJobRepository, JobStatus
+    from pokecrack_worker.runtime import RuntimeStatus, WorkerRuntime
+
+    class DB:
+        def query(self, sql, params):  # type: ignore[no-untyped-def]
+            assert "begin_source_family" in sql
+            return []
+
+    class HTTP:
+        def get(self, url, *, timeout_seconds):  # type: ignore[no-untyped-def]
+            raise AssertionError("a deferred acquisition must not perform network I/O")
+
+    now = datetime.now(UTC)
+    repository = InMemoryJobRepository()
+    job = repository.enqueue(
+        source_families.JOB_TYPE, {"family": source_families.FAMILY}, now=now, max_attempts=1
+    )
+    result = WorkerRuntime(
+        repository,
+        handlers={source_families.JOB_TYPE: source_families.make_handler(DB(), HTTP(), "worker")},
+        worker_id="worker",
+        clock=lambda: now,
+    ).run_once()
+    assert result.status is RuntimeStatus.DEFERRED
+    paused = repository.get(job.id)
+    assert paused is not None and paused.status is JobStatus.PENDING
+    assert paused.attempts == 0
+    assert paused.available_at >= now + timedelta(minutes=5)
+    assert repository.lease("worker", now=now, lease_for=timedelta(minutes=2)) is None
+    resumed = repository.lease("worker", now=paused.available_at, lease_for=timedelta(minutes=2))
+    assert resumed is not None and resumed.attempts == 1
+    assert resumed.lease_generation > paused.lease_generation
 
 
 @pytest.mark.parametrize("denied_request", [None, 1, 2, 3])
