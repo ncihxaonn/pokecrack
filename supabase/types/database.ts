@@ -2749,6 +2749,48 @@ export type Database = {
           },
         ]
       }
+      research_intake_control: {
+        Row: {
+          enabled: boolean
+          singleton: boolean
+        }
+        Insert: {
+          enabled?: boolean
+          singleton?: boolean
+        }
+        Update: {
+          enabled?: boolean
+          singleton?: boolean
+        }
+        Relationships: []
+      }
+      research_intake_references: {
+        Row: {
+          conflicting: boolean
+          first_seen_at: string
+          last_seen_at: string
+          report_group_sha256: string
+          snapshot_sha256: string
+          url: string
+        }
+        Insert: {
+          conflicting?: boolean
+          first_seen_at?: string
+          last_seen_at?: string
+          report_group_sha256: string
+          snapshot_sha256: string
+          url: string
+        }
+        Update: {
+          conflicting?: boolean
+          first_seen_at?: string
+          last_seen_at?: string
+          report_group_sha256?: string
+          snapshot_sha256?: string
+          url?: string
+        }
+        Relationships: []
+      }
       schedule_slots: {
         Row: {
           created_at: string
@@ -4413,6 +4455,7 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      import_research_intake_v1: { Args: { p_manifest: Json }; Returns: Json }
       list_authorized_opening_reviews_v1: {
         Args: { requested_limit: number; requested_state: string }
         Returns: {
@@ -4666,6 +4709,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      research_reference_url_valid_v1: {
+        Args: { p_url: string }
+        Returns: boolean
       }
       retract_authorized_opening_v1: {
         Args: {

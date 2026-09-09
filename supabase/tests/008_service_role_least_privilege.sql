@@ -31,7 +31,8 @@ select is(
            'authorized_opening_retractions',
            'source_family_candidates', 'source_family_admissions',
            'source_family_tombstones', 'source_family_identity_keys',
-           'source_family_runs', 'source_family_clock', 'source_family_control'
+           'source_family_runs', 'source_family_clock', 'source_family_control',
+           'research_intake_references', 'research_intake_control'
          )
        )
      )),
@@ -65,7 +66,8 @@ select is(
            'authorized_opening_retractions',
            'source_family_candidates', 'source_family_admissions',
            'source_family_tombstones', 'source_family_identity_keys',
-           'source_family_runs', 'source_family_clock', 'source_family_control'
+           'source_family_runs', 'source_family_clock', 'source_family_control',
+           'research_intake_references', 'research_intake_control'
          )
        )
      )

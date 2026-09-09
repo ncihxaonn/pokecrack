@@ -342,7 +342,9 @@ select ok(
          'source_family_identity_keys',
          'source_family_runs',
          'source_family_clock',
-         'source_family_control'
+         'source_family_control',
+         'research_intake_references',
+         'research_intake_control'
        )
      )),
   'service_role can read core state except the opaque gate and isolated Nostr/family ledgers, with no direct table mutation privileges'
