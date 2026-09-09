@@ -19,7 +19,7 @@ class ResearchIntakeRunnerTests(unittest.TestCase):
         self.assertEqual(result.returncode, 2)
         self.assertIn(b"unapproved_runtime_path", result.stderr)
 
-    def run_mock(self, **overrides):
+    def run_mock(self, args=(REVISION,), **overrides):
         with tempfile.TemporaryDirectory(prefix="pokecrack-intake-runner-") as temp:
             root = Path(temp)
             script = root / "deploy/scripts/import-research-intake.sh"
@@ -50,7 +50,7 @@ esac
                    "TEST_REVISION": REVISION, "TEST_CONTAINER": CONTAINER,
                    "TEST_IMAGE": IMAGE, "TEST_IMAGE_REVISION": REVISION,
                    "TEST_EXEC_LOG": str(log), **overrides}
-            result = subprocess.run(["bash", str(script)], input=b'{"references":[]}',
+            result = subprocess.run(["bash", str(script), *args], input=b'{"references":[]}',
                                     capture_output=True, env=env)
             return result, log.read_text() if log.exists() else None
 
@@ -70,6 +70,13 @@ esac
         ):
             with self.subTest(overrides=overrides):
                 result, log = self.run_mock(**overrides)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIsNone(log)
+
+    def test_manifest_workflow_revision_must_match_runtime_checkout(self):
+        for args in ((), ("d" * 40,), ("invalid",), (REVISION, "extra")):
+            with self.subTest(args=args):
+                result, log = self.run_mock(args=args)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIsNone(log)
 

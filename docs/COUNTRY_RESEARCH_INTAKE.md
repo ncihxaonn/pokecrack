@@ -17,8 +17,10 @@ public counts continue to use independently verified observations only.
    HTTPS reference URLs, report-group hashes, conflict flags and a snapshot hash.
    It does not transmit pack counts, country claims, prose or media.
 4. The SSH bridge targets only `/home/codex/pokecrack` on the approved MAM VPS.
-   It verifies that the running collector image revision matches the installed
-   GitHub checkout, then calls `pokecrack-worker intake-research` over stdin.
+   It requires the running collector image and installed checkout to match the
+   exact GitHub workflow revision, then calls `pokecrack-worker intake-research`
+   over stdin. A workflow/checkout/image mismatch pauses intake until the same
+   reviewed revision is deployed; the durable history retries on a later run.
 5. The collector uses its existing database connection for one private,
    transactionally bounded import. It cannot directly read/update the intake
    tables or enable the feature. Browser roles cannot access the importer.

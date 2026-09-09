@@ -10,8 +10,16 @@ repository_root=$(CDPATH='' cd -- "$script_dir/../.." && pwd -P)
   printf 'research-intake: unapproved_runtime_path\n' >&2
   exit 2
 }
+[[ $# -eq 1 && "${1:-}" =~ ^[0-9a-f]{40}$ ]] || {
+  printf 'research-intake: expected_revision_required\n' >&2
+  exit 2
+}
+expected_revision=$1
 revision=$(git -C "$repository_root" rev-parse --verify HEAD)
-[[ "$revision" =~ ^[0-9a-f]{40}$ ]]
+[[ "$revision" == "$expected_revision" ]] || {
+  printf 'research-intake: checkout_revision_mismatch\n' >&2
+  exit 2
+}
 container_id=$(timeout --kill-after=5 15 docker ps -q \
   --filter label=com.docker.compose.project=pokecrack \
   --filter label=com.docker.compose.service=collector)

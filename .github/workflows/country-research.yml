@@ -99,6 +99,7 @@ jobs:
           [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]]
           # The input is the reconstructed, deduplicated bot-owned history, not
           # the untrusted research process's output. No counts enter this lane.
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
           python3 scripts/research_intake.py "$RUNNER_TEMP/country-ledger.json" \
             > "$RUNNER_TEMP/research-intake.json"
           ssh_dir=$(mktemp -d "$RUNNER_TEMP/intake-ssh.XXXXXX")
@@ -114,7 +115,7 @@ jobs:
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
             -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            'bash /home/codex/pokecrack/deploy/scripts/import-research-intake.sh' \
+            "bash /home/codex/pokecrack/deploy/scripts/import-research-intake.sh '$GITHUB_SHA'" \
             < "$RUNNER_TEMP/research-intake.json" > "$RUNNER_TEMP/research-intake-result.json"
           echo 'Research references entered the private review queue. Source access and independently verified pack evidence remain separately gated.' >> "$GITHUB_STEP_SUMMARY"
       - name: Save bounded intake outcome

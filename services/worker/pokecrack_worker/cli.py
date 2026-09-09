@@ -82,7 +82,9 @@ _QUEUE: list[dict[str, Any]] = []
 
 @app.command("intake-research")
 def intake_research(
-    dry_run: bool = typer.Option(False, "--dry-run", help="Validate stdin without database access."),
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Validate stdin without database access."
+    ),
 ) -> None:
     """Accept private research references; never approve a source or import pack counts."""
     try:

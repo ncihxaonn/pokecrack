@@ -25,7 +25,7 @@ IMPORT_SQL = "SELECT ingest.import_research_intake_v1(%(manifest)s::jsonb) AS re
 
 def reference_url(value: object) -> str:
     """Same reference-only normalization as the research ledger; no redirects."""
-    if not isinstance(value, str) or len(value) > 1000 or re.search(r'[\s<>\\`]', value):
+    if not isinstance(value, str) or len(value) > 1000 or re.search(r"[\s<>\\`]", value):
         raise ValueError("invalid_reference_url")
     parsed = urlsplit(value)
     host = parsed.hostname or ""
@@ -83,16 +83,21 @@ def import_manifest(executor: QueryExecutor, raw: bytes) -> dict[str, Any]:
         raise ValueError("invalid_intake_result")
     result = rows[0]["result"]
     count_keys = {
-        "references_received", "references_inserted", "reference_count",
-        "conflicting_count", "family_queued",
+        "references_received",
+        "references_inserted",
+        "reference_count",
+        "conflicting_count",
+        "family_queued",
     }
     if (
         not isinstance(result, dict)
         or set(result) != {"status", "snapshot_sha256", *count_keys}
         or result["status"] not in {"accepted", "paused"}
         or result["snapshot_sha256"] != manifest["snapshot_sha256"]
-        or any(type(result[key]) is not int or not 0 <= result[key] <= MAX_REFERENCES
-               for key in count_keys)
+        or any(
+            type(result[key]) is not int or not 0 <= result[key] <= MAX_REFERENCES
+            for key in count_keys
+        )
         or result["references_received"] != len(manifest["references"])
         or result["references_inserted"] > result["references_received"]
         or result["family_queued"] > result["references_received"]

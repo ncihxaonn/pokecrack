@@ -68,6 +68,8 @@ class ResearchIntakeTests(unittest.TestCase):
         self.assertLess(workflow.index("country-research-ledger-"), workflow.index("scripts/research_intake.py"))
         self.assertIn("vars.COUNTRY_RESEARCH_INTAKE_ENABLED == 'true'", workflow)
         self.assertIn("bash /home/codex/pokecrack/deploy/scripts/import-research-intake.sh", workflow)
+        self.assertIn("import-research-intake.sh '$GITHUB_SHA'", workflow)
+        self.assertIn('[[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]', workflow)
         self.assertNotIn("SUPABASE", workflow)
         self.assertNotIn("OPENAI_API_KEY", workflow)
         self.assertNotIn("--prod", workflow)
