@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, NoReturn
@@ -50,6 +51,8 @@ from pokecrack_worker.release_evidence import (
     read_backup_marker,
     with_backup_marker,
 )
+from pokecrack_worker.research_intake import MAX_BYTES as INTAKE_MAX_BYTES
+from pokecrack_worker.research_intake import import_manifest, validate_manifest
 from pokecrack_worker.runtime import RuntimeStatus
 from pokecrack_worker.scheduler import Scheduler
 
@@ -75,6 +78,37 @@ app.add_typer(sync_catalog_app, name="sync-catalog")
 app.add_typer(authorized_opening_app, name="authorized-opening")
 
 _QUEUE: list[dict[str, Any]] = []
+
+
+@app.command("intake-research")
+def intake_research(
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Validate stdin without database access."
+    ),
+) -> None:
+    """Accept private research references; never approve a source or import pack counts."""
+    try:
+        raw = sys.stdin.buffer.read(INTAKE_MAX_BYTES + 1)
+        manifest = validate_manifest(raw)
+    except Exception:
+        _json({"status": "rejected", "reason": "invalid_intake_manifest"})
+        raise typer.Exit(code=2) from None
+    if dry_run:
+        _json({"dry_run": True, "mutated": False, "references": len(manifest["references"])})
+        return
+    settings = _settings()
+    if settings.data_mode is not DataMode.LIVE or settings.worker_role != "collector":
+        _json({"status": "rejected", "reason": "live_collector_required"})
+        raise typer.Exit(code=2)
+    try:
+        result = import_manifest(composition.executor_from_settings(settings), raw)
+    except Exception:
+        # Database errors can include the offending row. Never log one here.
+        _json({"status": "inconclusive", "reason": "research_intake_unavailable"})
+        raise typer.Exit(code=2) from None
+    _json(result)
+    if result["status"] != "accepted":
+        raise typer.Exit(code=2)
 
 
 def _settings() -> Settings:
