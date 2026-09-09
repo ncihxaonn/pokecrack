@@ -2,7 +2,7 @@ create extension if not exists pgtap with schema extensions;
 begin;
 set local search_path=public,extensions,pg_catalog;
 select no_plan();
-select is((select count(*)::integer from ingest.reviewed_public_study_contracts()),30,'fixed contracts unchanged');
+select is((select count(*)::integer from ingest.reviewed_public_study_contracts()),31,'fixed contracts unchanged');
 select is((select approved from ingest.source_family_policy_v1()),true,'source-reviewed family approved in code');
 select is((select count(*)::integer from ingest.enqueue_source_family_v1(date_trunc('hour',now()))),0,'disabled family cannot enqueue');
 select is((select count(*)::integer from ingest.source_family_public_rows_v1()),0,'no invented public packs');
