@@ -89,7 +89,7 @@ select is(
   'mixed_multi_expansion', 'mixed sets are not assigned an invented single catalog set'
 );
 select is(
-  (select count(*) from ingest.reviewed_public_study_contracts()), 30::bigint,
+  (select count(*) from ingest.reviewed_public_study_contracts()), 31::bigint,
   'all 29 earlier contracts survive'
 );
 select ok(ingest.reviewed_public_study_gates_ready_v1(), 'all source gates remain ready');

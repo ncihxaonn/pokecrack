@@ -409,6 +409,9 @@ PUBLIC_STUDY_SOURCE_KEYS_V14 = PUBLIC_STUDY_SOURCE_KEYS_V13 + (
 PUBLIC_STUDY_SOURCE_KEYS_V15 = PUBLIC_STUDY_SOURCE_KEYS_V14 + (
     b"public_study_auckland_nz_105",
 )
+PUBLIC_STUDY_SOURCE_KEYS_V16 = PUBLIC_STUDY_SOURCE_KEYS_V15 + (
+    b"public_study_hitpack_cz_36",
+)
 # Each migration adds an exact append-only reviewed source profile. Keep every
 # complete transition profile available for pre-apply backups, while rejecting
 # unions and partially migrated sets as ambiguous and restore-unsafe.
@@ -428,8 +431,9 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V13,
     PUBLIC_STUDY_SOURCE_KEYS_V14,
     PUBLIC_STUDY_SOURCE_KEYS_V15,
+    PUBLIC_STUDY_SOURCE_KEYS_V16,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V15
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V16
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(rb"\$(?:[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)?\$")
@@ -1152,6 +1156,7 @@ PUBLIC_STUDY_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V13: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V14: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V15: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V16: "v4_v5",
 }
 PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS = (
     "study_key text not null",
@@ -1204,6 +1209,7 @@ PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V13: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V14: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V15: "v7",
+    PUBLIC_STUDY_SOURCE_KEYS_V16: "v7",
 }
 PUBLIC_STUDY_POLICY_SOURCE_KEY = {
     b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
@@ -1266,6 +1272,7 @@ PUBLIC_STUDY_OBSERVED_AT = {
     b"pontocom-herois-excelsos-br-48-v1": datetime(2026, 1, 26, 23, 29, tzinfo=UTC),
 }
 PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
+    b"hitpack-pitch-black-cz-36-v1": b"public_study_hitpack_cz_36",
     b"auckland-show-mighty-ape-nz-105-v1": b"public_study_auckland_nz_105",
     b"bokunotebook-vstar-universe-th-1-v1": b"public_study_bokunotebook_th_1",
     b"nanjakorya-paradigm-jp-100-v1": b"public_study_nanjakorya_paradigm_100",
@@ -1296,6 +1303,18 @@ PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
     b"gringo-gameplays-silver-tempest-uy-36-v1": b"public_study_gringo_gameplays_silver_tempest_uy_36",
 }
 PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
+    b"hitpack-pitch-black-cz-36-v1": {
+        "country_code": b"CZ",
+        "country_name": b"Czechia",
+        "pack_count": b"36",
+        "set_external_id": b"me05",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-hitpack-pitch-black-v1",
+        "parser_version": b"hitpack-pitch-black-36-evidence-v1",
+        "source_policy_version": b"public-study-hitpack-pitch-black-v1",
+        "evidence_sha256": b"b7aca4213dc83f3fde4407985da20807f6cc4cb230db7ebadff32c2915f571ee",
+        "is_demo": b"f",
+    },
     b"auckland-show-mighty-ape-nz-105-v1": {
         "country_code": b"NZ",
         "country_name": b"New Zealand",
@@ -1634,6 +1653,8 @@ PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
     },
 }
 PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
+    # Publication date normalized to UTC midnight; not a physical opening time.
+    b"hitpack-pitch-black-cz-36-v1": datetime(2026, 7, 28, tzinfo=UTC),
     b"auckland-show-mighty-ape-nz-105-v1": datetime(
         2025, 9, 30, 0, 8, 20, 972000, tzinfo=UTC
     ),
@@ -3939,10 +3960,15 @@ class PlainBackupSanitizer:
             expected_coverage_study_keys = PUBLIC_STUDY_COVERAGE_KEYS_BY_SOURCE_PROFILE[
                 self.public_study_source_keys
             ]
-            if (
-                frozenset(self.public_study_coverage_rows)
-                != expected_coverage_study_keys
-            ):
+            allowed_coverage_row_sets = (expected_coverage_study_keys,)
+            if self.public_study_source_keys == PUBLIC_STUDY_SOURCE_KEYS_V16:
+                # V16 adds the policy before the first collector admission;
+                # only this unseeded study may be absent. Present rows still
+                # pass exact field, timestamp, duplicate and policy checks.
+                allowed_coverage_row_sets += (
+                    expected_coverage_study_keys - {b"hitpack-pitch-black-cz-36-v1"},
+                )
+            if frozenset(self.public_study_coverage_rows) not in allowed_coverage_row_sets:
                 raise SanitizationError(
                     "public-study coverage ledger does not contain the exact reviewed row set"
                 )

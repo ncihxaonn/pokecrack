@@ -599,7 +599,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 30
+        count(*) = 31
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -1641,8 +1641,49 @@ public_study_dependencies AS (
   "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
 }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_hitpack_cz_36'
+            AND policies.display_name = 'Hitpack Pitch Black 36-pack coverage'
+            AND policies.domain = 'www.hitpack.cz'
+            AND policies.base_url = 'https://www.hitpack.cz/nase-novinky/pokemon-pitch-black-pull-rates-36-boosteru/'
+            AND policies.version = 'public-study-hitpack-pitch-black-v1'
+            AND policies.config = '{
+  "study_key": "hitpack-pitch-black-cz-36-v1",
+  "canonical_url": "https://www.hitpack.cz/nase-novinky/pokemon-pitch-black-pull-rates-36-boosteru/",
+  "collector_version": "public-study-hitpack-pitch-black-v1",
+  "parser_version": "hitpack-pitch-black-36-evidence-v1",
+  "country_code": "CZ",
+  "country_name": "Czechia",
+  "geography_basis": "publisher_country",
+  "geography_confidence": "tier_b",
+  "publisher_country_url": "https://www.hitpack.cz/obchodni-podminky/",
+  "publisher_country_review_method": "source_business_identity_matched_to_official_ares_country",
+  "publisher_country_checked_at": "2026-09-09",
+  "opening_country": null,
+  "opened_at": null,
+  "set_external_id": "me05",
+  "set_language": "und",
+  "set_language_basis": "opening_report_does_not_state_card_language",
+  "set_name": "Pitch Black",
+  "product_scope": "booster_box",
+  "pack_count": 36,
+  "observed_at": "2026-07-28T00:00:00Z",
+  "source_publication_date": "2026-07-28",
+  "publication_time_precision": "day",
+  "observed_at_basis": "publication_date_utc_day_bucket_not_exact_timestamp",
+  "denominator_complete": true,
+  "cohort_id": "hitpack-pitch-black-box-20260728",
+  "robots_url": "https://www.hitpack.cz/robots.txt",
+  "robots_checked_at": "2026-09-09",
+  "terms_url": "https://www.hitpack.cz/obchodni-podminky/",
+  "terms_checked_at": "2026-09-09",
+  "terms_status": "public_site_policy_reviewed",
+  "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
+}'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
+        'public_study_hitpack_cz_36',
         'public_study_auckland_nz_105',
         'public_study_bokunotebook_th_1',
         'public_study_nanjakorya_jp_100',
