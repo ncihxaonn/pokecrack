@@ -2778,6 +2778,178 @@ export type Database = {
           },
         ]
       }
+      source_family_admissions: {
+        Row: {
+          opening_ordinal: number
+          pack_count: number
+          policy_version: string
+          post_id: number
+          product: string
+          published_at: string
+          resource_sha256: string
+          url: string
+          verified_at: string
+          video_sha256: string | null
+        }
+        Insert: {
+          opening_ordinal: number
+          pack_count: number
+          policy_version: string
+          post_id: number
+          product: string
+          published_at: string
+          resource_sha256: string
+          url: string
+          verified_at: string
+          video_sha256?: string | null
+        }
+        Update: {
+          opening_ordinal?: number
+          pack_count?: number
+          policy_version?: string
+          post_id?: number
+          product?: string
+          published_at?: string
+          resource_sha256?: string
+          url?: string
+          verified_at?: string
+          video_sha256?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_family_admissions_url_fkey"
+            columns: ["url"]
+            isOneToOne: true
+            referencedRelation: "source_family_candidates"
+            referencedColumns: ["url"]
+          },
+        ]
+      }
+      source_family_candidates: {
+        Row: {
+          checked_at: string | null
+          discovered_at: string
+          reason: string
+          state: string
+          url: string
+        }
+        Insert: {
+          checked_at?: string | null
+          discovered_at?: string
+          reason?: string
+          state?: string
+          url: string
+        }
+        Update: {
+          checked_at?: string | null
+          discovered_at?: string
+          reason?: string
+          state?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      source_family_clock: {
+        Row: {
+          discovered_at: string | null
+          singleton: boolean
+        }
+        Insert: {
+          discovered_at?: string | null
+          singleton?: boolean
+        }
+        Update: {
+          discovered_at?: string | null
+          singleton?: boolean
+        }
+        Relationships: []
+      }
+      source_family_control: {
+        Row: {
+          enabled: boolean
+          policy_version: string
+          singleton: boolean
+        }
+        Insert: {
+          enabled?: boolean
+          policy_version: string
+          singleton?: boolean
+        }
+        Update: {
+          enabled?: boolean
+          policy_version?: string
+          singleton?: boolean
+        }
+        Relationships: []
+      }
+      source_family_identity_keys: {
+        Row: {
+          identity_sha256: string
+          url_sha256: string
+        }
+        Insert: {
+          identity_sha256: string
+          url_sha256: string
+        }
+        Update: {
+          identity_sha256?: string
+          url_sha256?: string
+        }
+        Relationships: []
+      }
+      source_family_runs: {
+        Row: {
+          created_at: string
+          generation: number
+          job_id: string
+          last_request_at: string | null
+          requests: number
+          result: Json | null
+          target_url: string
+        }
+        Insert: {
+          created_at?: string
+          generation: number
+          job_id: string
+          last_request_at?: string | null
+          requests?: number
+          result?: Json | null
+          target_url: string
+        }
+        Update: {
+          created_at?: string
+          generation?: number
+          job_id?: string
+          last_request_at?: string | null
+          requests?: number
+          result?: Json | null
+          target_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "source_family_runs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      source_family_tombstones: {
+        Row: {
+          reason: string
+          url_sha256: string
+        }
+        Insert: {
+          reason: string
+          url_sha256: string
+        }
+        Update: {
+          reason?: string
+          url_sha256?: string
+        }
+        Relationships: []
+      }
       source_items: {
         Row: {
           access_mode: string
@@ -3127,6 +3299,15 @@ export type Database = {
         }
         Returns: Json
       }
+      authorize_source_family_request_v1: {
+        Args: {
+          p_generation: number
+          p_job: string
+          p_url: string
+          p_worker: string
+        }
+        Returns: boolean
+      }
       begin_bluesky_jetstream_job: {
         Args: { job_id: string; lease_generation: number; worker_id: string }
         Returns: {
@@ -3195,6 +3376,13 @@ export type Database = {
         Returns: {
           acquired: boolean
           retry_at: string
+        }[]
+      }
+      begin_source_family_v1: {
+        Args: { p_generation: number; p_job: string; p_worker: string }
+        Returns: {
+          product_name: string
+          target_url: string
         }[]
       }
       begin_tcgdex_sets_job: {
@@ -3519,6 +3707,37 @@ export type Database = {
           p_scheduled_for: string
           p_study_key: string
         }
+        Returns: {
+          attempts: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          is_demo: boolean
+          job_type: string
+          last_error_code: string | null
+          last_error_message: string | null
+          lease_generation: number
+          lock_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          retention_until: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      enqueue_source_family_v1: {
+        Args: { p_slot: string }
         Returns: {
           attempts: number
           available_at: string
@@ -3881,6 +4100,37 @@ export type Database = {
           result: Json
           worker_id: string
         }
+        Returns: {
+          attempts: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          is_demo: boolean
+          job_type: string
+          last_error_code: string | null
+          last_error_message: string | null
+          lease_generation: number
+          lock_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          retention_until: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      finalize_source_family_v1: {
+        Args: { p_generation: number; p_job: string; p_worker: string }
         Returns: {
           attempts: number
           available_at: string
@@ -4429,6 +4679,7 @@ export type Database = {
           retracted_at: string
         }[]
       }
+      retract_source_family_v1: { Args: { p_url: string }; Returns: undefined }
       review_authorized_opening_v1: {
         Args: {
           expected_revision: number
@@ -4463,6 +4714,53 @@ export type Database = {
         }[]
       }
       reviewed_public_study_gates_ready_v1: { Args: never; Returns: boolean }
+      source_family_access_v1: { Args: never; Returns: boolean }
+      source_family_policy_v1: {
+        Args: never
+        Returns: {
+          approved: boolean
+          family: string
+          review_expires_at: string
+          version: string
+        }[]
+      }
+      source_family_product_name_v1: {
+        Args: { p_product: string }
+        Returns: string
+      }
+      source_family_public_rows_v1: {
+        Args: never
+        Returns: {
+          attribution_basis: string
+          canonical_url: string
+          configured_set_name: string
+          country_code: string
+          country_name: string
+          domain: string
+          last_verified_at: string
+          ordinal: number
+          pack_count: number
+          product_scope: string
+          public_id: string
+          public_name: string
+          public_note: string
+          publisher_identity: string
+          set_external_id: string
+          set_language: string
+          source_observed_at: string
+          study_key: string
+        }[]
+      }
+      source_family_ready_v1: { Args: never; Returns: boolean }
+      stage_source_family_v1: {
+        Args: {
+          p_generation: number
+          p_job: string
+          p_result: Json
+          p_worker: string
+        }
+        Returns: undefined
+      }
       submit_authorized_opening_direct_v1: {
         Args: { payload: Json }
         Returns: {

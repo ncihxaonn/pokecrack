@@ -138,6 +138,35 @@ def _checkpoint_row(
     }
 
 
+@pytest.mark.parametrize("family_ready", [False, True])
+def test_optional_family_pause_preserves_shared_worker_health(family_ready: bool) -> None:
+    executor = RecordingExecutor(
+        [[{"ready": True}], [{"ready": family_ready}], [{"last_seen_at": NOW}]]
+    )
+    settings = _settings(
+        "collector",
+        public_study_collection_enabled=True,
+        source_family_collection_enabled=True,
+    )
+    assert write_health_heartbeat(settings, executor=executor).last_seen_at == NOW
+    assert len(executor.calls) == 3
+
+
+@pytest.mark.parametrize(
+    "rows", [[], [{}], [{"ready": None}], [{"ready": 0}], [{"ready": False}, {"ready": True}]]
+)
+def test_optional_family_missing_contract_still_fails_health(rows: list[dict[str, object]]) -> None:
+    executor = RecordingExecutor([[{"ready": True}], rows])
+    settings = _settings(
+        "collector",
+        public_study_collection_enabled=True,
+        source_family_collection_enabled=True,
+    )
+    with pytest.raises(LiveCompositionError, match="source-family runtime contract"):
+        write_health_heartbeat(settings, executor=executor)
+    assert len(executor.calls) == 2
+
+
 def test_live_health_probes_postgres_and_upserts_a_role_heartbeat() -> None:
     executor = RecordingExecutor([[{"ready": True}], [{"last_seen_at": NOW}]])
 

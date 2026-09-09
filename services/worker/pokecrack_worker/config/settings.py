@@ -93,6 +93,7 @@ class Settings(BaseSettings):
     youtube_maton_connection_id: UUID | None = None
     youtube_collection_enabled: bool = False
     public_study_collection_enabled: bool = False
+    source_family_collection_enabled: bool = False
     bluesky_collection_enabled: bool = False
     nostr_collection_enabled: bool = False
     mastodon_collection_enabled: bool = False
@@ -266,6 +267,13 @@ class Settings(BaseSettings):
                 missing.append("AI_OUTPUT_PER_MILLION_AUD")
             if missing:
                 raise ValueError("network AI provider requires " + ", ".join(missing))
+        if self.source_family_collection_enabled and (
+            not self.public_study_collection_enabled
+            or self.worker_role not in {"collector", "scheduler"}
+        ):
+            raise ValueError(
+                "SOURCE_FAMILY_COLLECTION_ENABLED requires public studies and collector/scheduler role"
+            )
         direct_youtube = self.youtube_api_key is not None and bool(
             self.youtube_api_key.get_secret_value().strip()
         )
