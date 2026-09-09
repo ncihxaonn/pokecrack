@@ -145,6 +145,21 @@
       "migration": "20260912000000_mastodon_public_hashtag_discovery.sql",
       "statement_sha256": "792e2df7f01d58bfcad6467e66417b30f66f3abd1ccde1baa42248ac0697bbdf",
       "reason": "Fenced cleanup deletes only expired private Mastodon event observations selected by ordered 10000-row SKIP LOCKED sub-batches inside the reviewed independent 500000-row recovery-window budget; all per-tag opaque checkpoints are retained."
+    },
+    {
+      "migration": "20261018000000_continuous_source_family.sql",
+      "statement_sha256": "7ba700c5de8a60ecaee9173fc7f47fd23a92b4d1f7df0fd4c0b809de5ad596b8",
+      "reason": "The lease- and access-checked family acquisition prunes only transient source_family_runs staging older than one day. Durable candidates, admitted pack facts, identity reservations and retraction tombstones are untouched."
+    },
+    {
+      "migration": "20261018000000_continuous_source_family.sql",
+      "statement_sha256": "56b72fe3b5d17012367f4792757570f381d2278a3dec5dc5b9d9739dfb2d3f41",
+      "reason": "The fenced family finalizer removes only the current locked job's transient staging row after atomic admission or quarantine. It does not delete durable observations or deduplication identities."
+    },
+    {
+      "migration": "20261018000000_continuous_source_family.sql",
+      "statement_sha256": "01dedc428fb4b26c1fd73e36c7317ae7ff5b0465500ea75da2fb49fb33177054",
+      "reason": "The existing lease-fenced maintenance finalizer deletes only source-family transient staging selected by an ordered, at-most-1000-row SKIP LOCKED batch older than one day. All durable family ledgers remain intact."
     }
   ]
 }
