@@ -21,7 +21,7 @@ class SchedulerRepository(Protocol):
         priority: int,
         now: datetime,
         max_attempts: int,
-    ) -> Job: ...
+    ) -> Job | None: ...
 
 
 _FIELD_RANGES = (
@@ -228,9 +228,10 @@ class Scheduler:
         due = tuple(
             (entry, slot) for entry in self.entries if (slot := entry.slot(now)) is not None
         )
+        created = 0
         if not dry_run:
             for entry, slot in due:
-                self.repository.enqueue_scheduled(
+                job = self.repository.enqueue_scheduled(
                     entry.job_type,
                     entry.payload,
                     schedule_name=entry.name,
@@ -239,9 +240,11 @@ class Scheduler:
                     max_attempts=entry.max_attempts,
                     now=now,
                 )
+                if job is not None:
+                    created += 1
         return SchedulerResult(
             due_names=tuple(entry.name for entry, _slot in due),
             planned=len(due),
-            created=0 if dry_run else len(due),
+            created=created,
             dry_run=dry_run,
         )

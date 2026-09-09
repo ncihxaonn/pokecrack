@@ -335,10 +335,17 @@ select ok(
        and c.relname in (
          'nostr_relay_candidates',
          'nostr_relay_observations',
-         'nostr_relay_checkpoints'
+         'nostr_relay_checkpoints',
+         'source_family_candidates',
+         'source_family_admissions',
+         'source_family_tombstones',
+         'source_family_identity_keys',
+         'source_family_runs',
+         'source_family_clock',
+         'source_family_control'
        )
      )),
-  'service_role can read core state except the opaque gate and isolated Nostr ledgers, with no direct table mutation privileges'
+  'service_role can read core state except the opaque gate and isolated Nostr/family ledgers, with no direct table mutation privileges'
 );
 
 select has_function('ingest', 'claim_jobs_v2', array['text', 'text[]', 'integer', 'integer'], 'claim_jobs_v2 has the required signature');

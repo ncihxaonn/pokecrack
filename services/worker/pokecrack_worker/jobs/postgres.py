@@ -328,6 +328,7 @@ FROM ingest.pause_bluesky_jetstream_job_v1(
 """.strip()
 
 _COMPLETION_EFFECT_SQL: Mapping[CompletionEffect, str] = {
+    CompletionEffect.FINALIZE_SOURCE_FAMILY: "SELECT * FROM ingest.finalize_source_family_v1(%(job_id)s::uuid, %(worker_id)s, %(lease_generation)s)",
     CompletionEffect.PRUNE_EXPIRED_EPHEMERA: FINALIZE_CLEANUP_SQL,
 }
 
@@ -432,8 +433,19 @@ class PostgresJobRepository:
         priority: int = 0,
         now: datetime,
         max_attempts: int = 5,
-    ) -> Job:
+    ) -> Job | None:
         del now
+        if kind == "source.family.cycle":
+            if dict(payload or {}) != {"family": "pokesup-enumerated"}:
+                raise ValueError("source family schedule requires its exact family payload")
+            rows = self._executor.query(
+                "SELECT * FROM ingest.enqueue_source_family_v1(%(slot)s)",
+                {"slot": scheduled_for},
+            )
+            if not rows:
+                # A disabled or expired optional family must not stop other schedules.
+                return None
+            return job_from_row(rows[0])
         job_payload = dict(payload or {})
         coverage_study_key = job_payload.get("study_key")
         coverage_enqueue = (
