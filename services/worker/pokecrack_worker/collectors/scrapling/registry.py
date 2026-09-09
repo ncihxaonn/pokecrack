@@ -13,6 +13,7 @@ from .adapters.auckland_coverage import auckland_show_mighty_ape_adapter
 from .adapters.bokunotebook_coverage import bokunotebook_vstar_universe_adapter
 from .adapters.dynamic_fixture import DynamicFixtureAdapter
 from .adapters.example_public import ExamplePublicAdapter
+from .adapters.hitpack_coverage import hitpack_pitch_black_adapter
 from .adapters.indonesia_coverage import bikuhime_hantaman_pertama_a_adapter
 from .adapters.nanjakorya_coverage import nanjakorya_star_birth_adapter
 from .adapters.paradigm_trigger_coverage import nanjakorya_paradigm_trigger_adapter
@@ -62,6 +63,9 @@ def build_live_static_registry(
     """Build only explicitly reviewed live static adapters; there is no catch-all."""
 
     static_registry = HTTPAdapterRegistry()
+    static_registry.register(
+        "hitpack_pitch_black_study", hitpack_pitch_black_adapter(client=http_client)
+    )
     static_registry.register(
         "auckland_show_mighty_ape_study",
         auckland_show_mighty_ape_adapter(client=auckland_http_client or http_client),

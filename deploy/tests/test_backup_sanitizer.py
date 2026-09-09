@@ -134,6 +134,9 @@ PUBLIC_STUDY_SOURCE_KEYS_V14 = PUBLIC_STUDY_SOURCE_KEYS_V13 + (
 PUBLIC_STUDY_SOURCE_KEYS_V15 = PUBLIC_STUDY_SOURCE_KEYS_V14 + (
     b"public_study_auckland_nz_105",
 )
+PUBLIC_STUDY_SOURCE_KEYS_V16 = PUBLIC_STUDY_SOURCE_KEYS_V15 + (
+    b"public_study_hitpack_cz_36",
+)
 PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V1
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
@@ -164,6 +167,7 @@ NANJAKORYA_POLICY = "fa666666-6666-4666-8666-666666666666"
 PARADIGM_POLICY = "fa777777-7777-4777-8777-777777777777"
 BOKUNOTEBOOK_POLICY = "fa888888-8888-4888-8888-888888888888"
 AUCKLAND_POLICY = "fa999999-9999-4999-8999-999999999999"
+HITPACK_POLICY = "fb999999-9999-4999-8999-999999999999"
 INDONESIA_POLICY = "fa555555-5555-4555-8555-555555555555"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
@@ -339,6 +343,7 @@ def public_study_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V13,
         PUBLIC_STUDY_SOURCE_KEYS_V14,
         PUBLIC_STUDY_SOURCE_KEYS_V15,
+        PUBLIC_STUDY_SOURCE_KEYS_V16,
     ):
         product_values += b", 'four_pack_blister'::text"
     return PUBLIC_STUDY_DDL.replace(b"{product_values}", product_values)
@@ -361,6 +366,7 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V13,
         PUBLIC_STUDY_SOURCE_KEYS_V14,
         PUBLIC_STUDY_SOURCE_KEYS_V15,
+        PUBLIC_STUDY_SOURCE_KEYS_V16,
     ):
         product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
         if source_keys in (
@@ -373,12 +379,21 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
             PUBLIC_STUDY_SOURCE_KEYS_V13,
             PUBLIC_STUDY_SOURCE_KEYS_V14,
             PUBLIC_STUDY_SOURCE_KEYS_V15,
+            PUBLIC_STUDY_SOURCE_KEYS_V16,
         ):
             product_values += b", 'build_and_battle'::text, 'three_pack_blister'::text"
     return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
 
 
 PUBLIC_STUDY_COVERAGE_FACTS = {
+    b"public_study_hitpack_cz_36": (
+        b"hitpack-pitch-black-cz-36-v1",
+        HITPACK_POLICY.encode(), b"CZ", b"Czechia", b"2026-07-28 00:00:00+00",
+        b"36", b"me05", b"booster_box",
+        b"public-study-hitpack-pitch-black-v1",
+        b"hitpack-pitch-black-36-evidence-v1",
+        b"b7aca4213dc83f3fde4407985da20807f6cc4cb230db7ebadff32c2915f571ee",
+    ),
     b"public_study_auckland_nz_105": (
         b"auckland-show-mighty-ape-nz-105-v1",
         AUCKLAND_POLICY.encode(), b"NZ", b"New Zealand", b"2025-09-30 00:08:20.972+00",
@@ -803,6 +818,7 @@ class BackupSanitizerTests(unittest.TestCase):
             b"public_study_nanjakorya_paradigm_100": PARADIGM_POLICY,
             b"public_study_bokunotebook_th_1": BOKUNOTEBOOK_POLICY,
             b"public_study_auckland_nz_105": AUCKLAND_POLICY,
+            b"public_study_hitpack_cz_36": HITPACK_POLICY,
         }
         policy_rows = b"".join(
             f"{policy_ids[source_key]}\t{source_key.decode()}\tpolicy\n".encode()
@@ -1223,6 +1239,151 @@ class BackupSanitizerTests(unittest.TestCase):
                 )
                 self.assertNotEqual(result.returncode, 0)
                 self.assertEqual(result.stdout, b"")
+
+    def test_hitpack_v16_preserves_all_previous_profiles_and_exact_coverage(self) -> None:
+        profiles = (
+            PUBLIC_STUDY_SOURCE_KEYS_V1, PUBLIC_STUDY_SOURCE_KEYS_V2,
+            PUBLIC_STUDY_SOURCE_KEYS_V3, PUBLIC_STUDY_SOURCE_KEYS_V4,
+            PUBLIC_STUDY_SOURCE_KEYS_V5, PUBLIC_STUDY_SOURCE_KEYS_V6,
+            PUBLIC_STUDY_SOURCE_KEYS_V7, PUBLIC_STUDY_SOURCE_KEYS_V8,
+            PUBLIC_STUDY_SOURCE_KEYS_V9, PUBLIC_STUDY_SOURCE_KEYS_V10,
+            PUBLIC_STUDY_SOURCE_KEYS_V11, PUBLIC_STUDY_SOURCE_KEYS_V12,
+            PUBLIC_STUDY_SOURCE_KEYS_V13, PUBLIC_STUDY_SOURCE_KEYS_V14,
+            PUBLIC_STUDY_SOURCE_KEYS_V15, PUBLIC_STUDY_SOURCE_KEYS_V16,
+        )
+        for profile in profiles:
+            with self.subTest(profile=len(profile)):
+                dump = self.with_public_study_ledger(
+                    self.complete_dump(), comicbook_ledger_row(), source_keys=profile,
+                )
+                result = self.run_sanitizer(dump, public_studies="present")
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                for key in profile:
+                    self.assertEqual(result.stdout.count(key + b"\n"), 1)
+                for row in public_study_coverage_rows(profile):
+                    self.assertIn(row, result.stdout)
+                if profile != PUBLIC_STUDY_SOURCE_KEYS_V16:
+                    self.assertNotIn(b"public_study_hitpack_cz_36", result.stdout)
+
+    def test_v16_before_and_after_first_hitpack_collection(self) -> None:
+        hitpack_row = public_study_coverage_row(b"public_study_hitpack_cz_36")
+        prior_rows = public_study_coverage_rows(PUBLIC_STUDY_SOURCE_KEYS_V15)
+        for collected in (False, True):
+            with self.subTest(collected=collected):
+                dump = self.with_public_study_ledger(
+                    self.complete_dump(), comicbook_ledger_row(),
+                    source_keys=PUBLIC_STUDY_SOURCE_KEYS_V16,
+                    coverage_rows=prior_rows + ((hitpack_row,) if collected else ()),
+                )
+                result = self.run_sanitizer(dump, public_studies="present")
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                for row in prior_rows:
+                    self.assertIn(row, result.stdout)
+                self.assertEqual(result.stdout.count(b"public_study_hitpack_cz_36\n"), 1)
+                self.assertEqual(result.stdout.count(hitpack_row), int(collected))
+
+    def test_v16_still_requires_every_prior_coverage_row(self) -> None:
+        prior_rows = public_study_coverage_rows(PUBLIC_STUDY_SOURCE_KEYS_V15)
+        hitpack_row = public_study_coverage_row(b"public_study_hitpack_cz_36")
+        for collected in (False, True):
+            base = self.with_public_study_ledger(
+                self.complete_dump(), comicbook_ledger_row(),
+                source_keys=PUBLIC_STUDY_SOURCE_KEYS_V16,
+                coverage_rows=prior_rows + ((hitpack_row,) if collected else ()),
+            )
+            for row in prior_rows:
+                with self.subTest(collected=collected, study=row.split(b"\t", 1)[0]):
+                    result = self.run_sanitizer(
+                        base.replace(row + b"\n", b"", 1), public_studies="present",
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(result.stdout, b"")
+
+    def test_hitpack_drift_duplicate_and_partial_profiles_fail_closed(self) -> None:
+        key = b"public_study_hitpack_cz_36"
+        original = public_study_coverage_row(key)
+        base = self.with_public_study_ledger(
+            self.complete_dump(), comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V16,
+        )
+        for field, value in (
+            ("pack_count", b"35"),
+            ("country_code", b"SK"),
+            ("country_name", b"Czech Republic"),
+            ("set_external_id", b"me04"),
+            ("product_scope", b"all"),
+            ("collector_version", b"public-study-hitpack-pitch-black-v2"),
+            ("parser_version", b"hitpack-pitch-black-36-evidence-v2"),
+            ("source_policy_version", b"public-study-hitpack-pitch-black-v2"),
+            ("evidence_sha256", b"0" * 64),
+            ("source_observed_at", b"2026-07-28 00:00:01+00"),
+            ("source_observed_at", b"2026-07-29 00:00:00+00"),
+            ("source_policy_id", WRONG_POLICY.encode()),
+            ("study_key", b"unreviewed-hitpack-v1"),
+            ("is_demo", b"t"),
+        ):
+            with self.subTest(field=field, value=value):
+                result = self.run_sanitizer(
+                    base.replace(original, public_study_coverage_row(key, **{field: value}), 1),
+                    public_studies="present",
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+        result = self.run_sanitizer(
+            base.replace(original + b"\n", original + b"\n" + original + b"\n", 1),
+            public_studies="present",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+        # Hitpack cannot stand in for Auckland or appear under the V15 policies.
+        malformed = (
+            base.replace(
+                f"{AUCKLAND_POLICY}\tpublic_study_auckland_nz_105\tpolicy\n".encode(),
+                b"", 1,
+            ).replace(
+                public_study_coverage_row(b"public_study_auckland_nz_105") + b"\n",
+                b"", 1,
+            ),
+            self.with_public_study_ledger(
+                self.complete_dump(), comicbook_ledger_row(),
+                source_keys=PUBLIC_STUDY_SOURCE_KEYS_V15,
+                coverage_rows=public_study_coverage_rows(PUBLIC_STUDY_SOURCE_KEYS_V16),
+            ),
+        )
+        for dump in malformed:
+            result = self.run_sanitizer(dump, public_studies="present")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, b"")
+
+    def test_hitpack_is_not_accepted_in_statistical_ledger(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(
+                study_key=b"hitpack-pitch-black-cz-36-v1",
+                source_policy_id=HITPACK_POLICY.encode(),
+            ),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V16,
+        )
+        result = self.run_sanitizer(dump, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+    def test_hitpack_preserves_family_and_intake_restore_controls(self) -> None:
+        from test_research_intake_backup import ROW, intake_dump
+        from test_source_family_backup import family_dump
+
+        dump = self.with_public_study_ledger(
+            self.complete_dump(), comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V16,
+        ) + family_dump() + intake_dump()
+        result = self.run_sanitizer(dump, public_studies="present")
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(public_study_coverage_row(b"public_study_hitpack_cz_36"), result.stdout)
+        self.assertIn(ROW, result.stdout)
+        self.assertIn(b"t\tf\tpokesup-enumerated-v1", result.stdout)
+        self.assertNotIn(b"t\tt\tpokesup-enumerated-v1", result.stdout)
+        self.assertIn(b"(singleton, enabled) FROM stdin;\nt\tf\n", result.stdout)
+        self.assertNotIn(b"(singleton, enabled) FROM stdin;\nt\tt\n", result.stdout)
 
     def test_new_worker_study_requires_a_reviewed_backup_contract(self) -> None:
         # CI must catch a new collector that would make the next backup fail.
