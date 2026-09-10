@@ -28,7 +28,9 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -Eeuo pipefail
-          python3 scripts/country_research.py --select > "$RUNNER_TEMP/country-selection.json"
+          umask 077
+          python3 scripts/country_research.py --select --context "$RUNNER_TEMP/country-context.json" \
+            > "$RUNNER_TEMP/country-selection.json"
       - name: Research selected countries on MAM
         env:
           VPS_HOST: ${{ vars.VPS_HOST }}
@@ -53,7 +55,7 @@ jobs:
           cleanup() {
             if [[ "$remote_dir" =~ ^/tmp/pokecrack-country-job\.[A-Za-z0-9]{8}$ ]]; then
               ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-                "rm -f -- '$remote_dir/country_research.py' '$remote_dir/country_targets.py' '$remote_dir/global_research.py' '$remote_dir/global_studies.py' '$remote_dir/asia_research.py' '$remote_dir/country-selection.json'; rmdir -- '$remote_dir'" || true
+                "rm -f -- '$remote_dir/country_research.py' '$remote_dir/country_targets.py' '$remote_dir/global_research.py' '$remote_dir/global_studies.py' '$remote_dir/asia_research.py' '$remote_dir/country-selection.json' '$remote_dir/country-context.json'; rmdir -- '$remote_dir'" || true
             fi
             rm -f -- "$ssh_dir/key" "$ssh_dir/known_hosts"
             rmdir -- "$ssh_dir"
@@ -64,9 +66,10 @@ jobs:
           [[ "$remote_dir" =~ ^/tmp/pokecrack-country-job\.[A-Za-z0-9]{8}$ ]]
           scp "${opts[@]}" -P "$VPS_PORT" scripts/country_research.py scripts/country_targets.py \
             scripts/global_research.py scripts/global_studies.py scripts/asia_research.py \
-            "$RUNNER_TEMP/country-selection.json" "$VPS_USER@$VPS_HOST:$remote_dir/"
+            "$RUNNER_TEMP/country-selection.json" "$RUNNER_TEMP/country-context.json" \
+            "$VPS_USER@$VPS_HOST:$remote_dir/"
           ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "PYTHONDONTWRITEBYTECODE=1 python3 '$remote_dir/country_research.py' --research '$remote_dir/country-selection.json'" \
+            "PYTHONDONTWRITEBYTECODE=1 python3 '$remote_dir/country_research.py' --research '$remote_dir/country-selection.json' --context '$remote_dir/country-context.json'" \
             > "$RUNNER_TEMP/country-report.json"
       - name: Preserve country checks and deduplicate original cohorts
         env:
