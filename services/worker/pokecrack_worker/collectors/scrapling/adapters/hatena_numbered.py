@@ -183,8 +183,10 @@ def parse_numbered_opening(
         raise CollectorError("numbered report identity or structure drifted")
     try:
         date = datetime.fromisoformat(parser.dates[0] or "")
-        if date.utcoffset() is None or date > now:
-            raise ValueError("publication must be timezone-aware and not future")
+        # Match stage_numbered_family_v1 so unsupported old metadata takes the
+        # CollectorError quarantine path instead of failing repeatedly in SQL.
+        if date.utcoffset() is None or not datetime(2020, 5, 17, tzinfo=UTC) <= date <= now:
+            raise ValueError("publication outside reviewed range")
         published = date.astimezone(UTC).isoformat()
     except (ValueError, OverflowError) as error:
         raise CollectorError("invalid numbered report publication date") from error

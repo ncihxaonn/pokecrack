@@ -95,11 +95,24 @@ def test_body_mentions_and_comments_are_not_captions(extra):
 
 
 @pytest.mark.parametrize(
-    "date", ["", "2026-01-10", "2027-01-01T00:00:00Z", "invalid", "0001-01-01T00:00:00+23:00"]
+    "date",
+    [
+        "",
+        "2026-01-10",
+        "2027-01-01T00:00:00Z",
+        "invalid",
+        "0001-01-01T00:00:00+23:00",
+        "2020-05-16T23:59:59Z",
+        "2020-05-17T00:00:00+01:00",
+    ],
 )
 def test_invalid_publication_fails(date):
     with pytest.raises(CollectorError):
         parse(page(date=date))
+
+
+def test_publication_lower_bound_matches_admission():
+    assert parse(page(date="2020-05-17T00:00:00Z")).pack_count == 10
 
 
 def test_identity_product_and_structure_drift_fail():

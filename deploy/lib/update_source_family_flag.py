@@ -20,8 +20,11 @@ from update_worker_database_url import (
 KEY = "SOURCE_FAMILY_COLLECTION_ENABLED"
 
 
-def update_flag(env_file: Path, value: str) -> None:
+def update_flag(env_file: Path, value: str, *, family: str = "pokesup") -> None:
     env_file = _safe_absolute_path(str(env_file))
+    if family not in {"pokesup", "numbered"}:
+        raise WorkerDatabaseUrlError("unsupported source family")
+    key = KEY if family == "pokesup" else "NUMBERED_FAMILY_COLLECTION_ENABLED"
     if value not in {"true", "false"}:
         raise WorkerDatabaseUrlError("source-family flag must be true or false")
     directory = descriptor = -1
@@ -48,10 +51,10 @@ def update_flag(env_file: Path, value: str) -> None:
         matches = [
             i
             for i, line in enumerate(lines)
-            if re.match(r"\s*(?:export\s+)?" + KEY + r"\s*=", line)
+            if re.match(r"\s*(?:export\s+)?" + key + r"\s*=", line)
         ]
         if len(matches) > 1 or (
-            matches and lines[matches[0]] not in {KEY + "=true", KEY + "=false"}
+            matches and lines[matches[0]] not in {key + "=true", key + "=false"}
         ):
             raise WorkerDatabaseUrlError("source-family assignment is ambiguous")
         if value == "true":
@@ -66,10 +69,19 @@ def update_flag(env_file: Path, value: str) -> None:
                 raise WorkerDatabaseUrlError(
                     "public-study collection must already be explicitly enabled"
                 )
+            if family == "numbered":
+                parent = [line for line in lines if re.match(
+                    r"\s*(?:export\s+)?SOURCE_FAMILY_COLLECTION_ENABLED\s*=", line)]
+                if parent != ["SOURCE_FAMILY_COLLECTION_ENABLED=true"]:
+                    raise WorkerDatabaseUrlError("source-family collection must already be explicitly enabled")
+        elif family == "pokesup" and any(re.match(
+            r"\s*(?:export\s+)?NUMBERED_FAMILY_COLLECTION_ENABLED\s*=", line
+        ) and line != "NUMBERED_FAMILY_COLLECTION_ENABLED=false" for line in lines):
+            raise WorkerDatabaseUrlError("disable numbered-family collection before its parent")
         if matches:
-            lines[matches[0]] = KEY + "=" + value
+            lines[matches[0]] = key + "=" + value
         else:
-            lines.append(KEY + "=" + value)
+            lines.append(key + "=" + value)
         updated = ("\n".join(lines) + "\n").encode()
         if len(updated) > MAX_ENV_BYTES:
             raise WorkerDatabaseUrlError("updated environment is too large")
@@ -127,9 +139,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--env-file", required=True)
     parser.add_argument("--value", required=True, choices=("true", "false"))
+    parser.add_argument("--family", choices=("pokesup", "numbered"), default="pokesup")
     args = parser.parse_args()
     try:
-        update_flag(Path(args.env_file), args.value)
+        update_flag(Path(args.env_file), args.value, family=args.family)
     except WorkerDatabaseUrlError as error:
         parser.error(str(error))
     print("source-family flag updated; database gate and services unchanged")

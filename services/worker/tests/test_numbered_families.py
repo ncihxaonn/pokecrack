@@ -60,6 +60,13 @@ def run(db, http, *, job=JOB):
     return result, sleeps
 
 
+def test_old_publication_quarantines_instead_of_failing_sql_admission():
+    db = DB()
+    result, _ = run(db, HTTP(body=page(date="2019-01-01T00:00:00Z")))
+    assert result is CompletionEffect.FINALIZE_NUMBERED_FAMILY
+    assert db.staged == {"quarantine": True}
+
+
 def test_article_reaches_minimal_staging_with_fencing():
     db, http = DB(), HTTP()
     result, sleeps = run(db, http)

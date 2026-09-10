@@ -9,14 +9,29 @@ HELPER = Path(__file__).resolve().parents[1] / "lib/update_source_family_flag.py
 
 class SourceFamilyFlagTests(unittest.TestCase):
     def run_helper(
-        self, path: Path, value: str = "true"
+        self, path: Path, value: str = "true", family: str = "pokesup"
     ) -> subprocess.CompletedProcess[str]:
         return subprocess.run(
-            ["python3", str(HELPER), "--env-file", str(path), "--value", value],
+            ["python3", str(HELPER), "--env-file", str(path), "--value", value, "--family", family],
             capture_output=True,
             text=True,
             check=False,
         )
+
+    def test_numbered_opt_in_and_parent_dependency(self) -> None:
+        with tempfile.TemporaryDirectory(prefix="pokecrack-numbered-flag-") as tmp:
+            path = Path(tmp) / "runtime.env"
+            original = "PUBLIC_STUDY_COLLECTION_ENABLED=true\nSOURCE_FAMILY_COLLECTION_ENABLED=true\nOTHER=untouched\n"
+            path.write_text(original)
+            path.chmod(0o600)
+            result = self.run_helper(path, family="numbered")
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertEqual(path.read_text(), original + "NUMBERED_FAMILY_COLLECTION_ENABLED=true\n")
+            self.assertNotEqual(self.run_helper(path, "false").returncode, 0)
+            self.assertEqual(self.run_helper(path, "false", "numbered").returncode, 0)
+            self.assertEqual(self.run_helper(path, "false").returncode, 0)
+            self.assertNotEqual(self.run_helper(path, "true", "numbered").returncode, 0)
+            self.assertEqual(path.stat().st_mode & 0o777, 0o600)
 
     def test_only_flag_changes_and_disable_is_idempotent(self) -> None:
         with tempfile.TemporaryDirectory(prefix="pokecrack-family-flag-") as tmp:

@@ -246,8 +246,10 @@ begin
         if (select count(*) from ingest.numbered_family_candidates)>=10000 then exit; end if;
         insert into ingest.numbered_family_candidates(url) values(u) on conflict do nothing;
       end loop;
-      update ingest.numbered_family_control set discovered_at=clock_timestamp() where singleton;
     end if;
+    -- Both successful and quarantined feed checks consume the daily discovery
+    -- slot. A permanent denial or malformed feed must not retry every cycle.
+    update ingest.numbered_family_control set discovered_at=clock_timestamp() where singleton;
   else
     u:=r.target_url; e:=r.result->'evidence'; outcome:='quarantined';
     perform 1 from ingest.numbered_family_candidates where url=u and state not in ('duplicate','retracted') for update;

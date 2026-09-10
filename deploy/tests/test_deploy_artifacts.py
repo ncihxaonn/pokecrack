@@ -5543,6 +5543,16 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stderr)
         return json.loads(result.stdout)
 
+    def test_numbered_flag_reaches_only_collector_and_scheduler(self) -> None:
+        for enabled in ("false", "true"):
+            with mock.patch.dict(os.environ, {"NUMBERED_FAMILY_COLLECTION_ENABLED": enabled}):
+                services = self.render()["services"]
+            for name, service in services.items():
+                if name in {"collector", "scheduler"}:
+                    self.assertEqual(service["environment"]["NUMBERED_FAMILY_COLLECTION_ENABLED"], enabled)
+                else:
+                    self.assertNotIn("NUMBERED_FAMILY_COLLECTION_ENABLED", service["environment"])
+
     def test_services_have_health_hardening_limits_and_private_egress(self) -> None:
         document = self.render()
         services = document["services"]

@@ -2403,6 +2403,156 @@ export type Database = {
           },
         ]
       }
+      numbered_family_admissions: {
+        Row: {
+          evidence_sha256: string
+          pack_count: number
+          policy_version: string
+          published_at: string
+          resource_sha256s: string[]
+          url: string
+          verified_at: string
+        }
+        Insert: {
+          evidence_sha256: string
+          pack_count: number
+          policy_version: string
+          published_at: string
+          resource_sha256s: string[]
+          url: string
+          verified_at: string
+        }
+        Update: {
+          evidence_sha256?: string
+          pack_count?: number
+          policy_version?: string
+          published_at?: string
+          resource_sha256s?: string[]
+          url?: string
+          verified_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "numbered_family_admissions_url_fkey"
+            columns: ["url"]
+            isOneToOne: true
+            referencedRelation: "numbered_family_candidates"
+            referencedColumns: ["url"]
+          },
+        ]
+      }
+      numbered_family_candidates: {
+        Row: {
+          checked_at: string | null
+          discovered_at: string
+          state: string
+          url: string
+        }
+        Insert: {
+          checked_at?: string | null
+          discovered_at?: string
+          state?: string
+          url: string
+        }
+        Update: {
+          checked_at?: string | null
+          discovered_at?: string
+          state?: string
+          url?: string
+        }
+        Relationships: []
+      }
+      numbered_family_control: {
+        Row: {
+          active_until: string
+          discovered_at: string | null
+          enabled: boolean
+          last_request_at: string | null
+          owner_generation: number | null
+          owner_job_id: string | null
+          policy_version: string
+          singleton: boolean
+        }
+        Insert: {
+          active_until?: string
+          discovered_at?: string | null
+          enabled?: boolean
+          last_request_at?: string | null
+          owner_generation?: number | null
+          owner_job_id?: string | null
+          policy_version: string
+          singleton?: boolean
+        }
+        Update: {
+          active_until?: string
+          discovered_at?: string | null
+          enabled?: boolean
+          last_request_at?: string | null
+          owner_generation?: number | null
+          owner_job_id?: string | null
+          policy_version?: string
+          singleton?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "numbered_family_control_owner_job_id_fkey"
+            columns: ["owner_job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      numbered_family_identity_keys: {
+        Row: {
+          resource_sha256: string
+          url_sha256: string
+        }
+        Insert: {
+          resource_sha256: string
+          url_sha256: string
+        }
+        Update: {
+          resource_sha256?: string
+          url_sha256?: string
+        }
+        Relationships: []
+      }
+      numbered_family_runs: {
+        Row: {
+          created_at: string
+          generation: number
+          job_id: string
+          requests: number
+          result: Json | null
+          target_url: string
+        }
+        Insert: {
+          created_at?: string
+          generation: number
+          job_id: string
+          requests?: number
+          result?: Json | null
+          target_url: string
+        }
+        Update: {
+          created_at?: string
+          generation?: number
+          job_id?: string
+          requests?: number
+          result?: Json | null
+          target_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "numbered_family_runs_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: true
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       opening_hits: {
         Row: {
           card_id: string | null
@@ -3341,6 +3491,15 @@ export type Database = {
         }
         Returns: Json
       }
+      authorize_numbered_family_request_v1: {
+        Args: {
+          p_generation: number
+          p_job: string
+          p_url: string
+          p_worker: string
+        }
+        Returns: boolean
+      }
       authorize_source_family_request_v1: {
         Args: {
           p_generation: number
@@ -3399,6 +3558,12 @@ export type Database = {
           retry_at: string
           since: string
           until: string
+        }[]
+      }
+      begin_numbered_family_v1: {
+        Args: { p_generation: number; p_job: string; p_worker: string }
+        Returns: {
+          target_url: string
         }[]
       }
       begin_public_study_job: {
@@ -3620,6 +3785,15 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      defer_numbered_family_v1: {
+        Args: {
+          p_generation: number
+          p_job: string
+          p_until: string
+          p_worker: string
+        }
+        Returns: boolean
+      }
       enqueue_due_bluesky_jetstream_jobs_v1: {
         Args: { p_worker_id: string }
         Returns: number
@@ -3637,6 +3811,37 @@ export type Database = {
           p_payload?: Json
           p_priority?: number
         }
+        Returns: {
+          attempts: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          is_demo: boolean
+          job_type: string
+          last_error_code: string | null
+          last_error_message: string | null
+          lease_generation: number
+          lock_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          retention_until: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      enqueue_numbered_family_v1: {
+        Args: { p_slot: string }
         Returns: {
           attempts: number
           available_at: string
@@ -4160,6 +4365,37 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      finalize_numbered_family_v1: {
+        Args: { p_generation: number; p_job: string; p_worker: string }
+        Returns: {
+          attempts: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          is_demo: boolean
+          job_type: string
+          last_error_code: string | null
+          last_error_message: string | null
+          lease_generation: number
+          lock_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          retention_until: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       finalize_public_study_coverage_job_v1: {
         Args: {
           job_id: string
@@ -4552,6 +4788,8 @@ export type Database = {
         Returns: string
       }
       nostr_worker_runtime_ready_v1: { Args: never; Returns: boolean }
+      numbered_family_access_v1: { Args: never; Returns: boolean }
+      numbered_family_ready_v1: { Args: never; Returns: boolean }
       pause_bluesky_jetstream_job_v1: {
         Args: {
           p_job_id: string
@@ -4788,6 +5026,10 @@ export type Database = {
           retracted_at: string
         }[]
       }
+      retract_numbered_family_v1: {
+        Args: { p_url: string }
+        Returns: undefined
+      }
       retract_source_family_v1: { Args: { p_url: string }; Returns: undefined }
       review_authorized_opening_v1: {
         Args: {
@@ -4872,6 +5114,15 @@ export type Database = {
       source_family_resource_paths_v1: {
         Args: { p_product: string; p_slug: string; p_width: number }
         Returns: string[]
+      }
+      stage_numbered_family_v1: {
+        Args: {
+          p_generation: number
+          p_job: string
+          p_result: Json
+          p_worker: string
+        }
+        Returns: undefined
       }
       stage_source_family_v1: {
         Args: {
@@ -5689,6 +5940,7 @@ export type Database = {
       get_public_study_coverage_v1: { Args: never; Returns: Json }
       get_public_study_coverage_v2: { Args: never; Returns: Json }
       get_public_study_coverage_v3: { Args: never; Returns: Json }
+      get_public_study_coverage_v4: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never

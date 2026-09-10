@@ -130,6 +130,12 @@ select is((select count(*)::integer from ingest.numbered_family_admissions),2,'t
 select is((select url_sha256 from ingest.numbered_family_identity_keys where resource_sha256=encode(digest('first1','sha256'),'hex')),
   encode(digest('https://www.kozaru02.com/entry/a','sha256'),'hex'),'original resource owner is preserved');
 
+select lives_ok($$select pg_temp.cycle('https://www.kozaru02.com/feed','{"quarantine":true}')$$,'failed feed finalizes without losing its check time');
+select ok((select discovered_at>=now() from ingest.numbered_family_control),'failed feed consumes daily discovery slot');
+update ingest.numbered_family_control set active_until=now()-interval '1 minute';
+select is((select count(*)::integer from ingest.enqueue_numbered_family_v1(
+  date_bin(interval '5 minutes',now(),'2000-01-01T00:00:00Z'::timestamptz))),0,'feed failure does not enqueue again after ownership cooldown');
+
 create temp table backoff_job as select pg_temp.acquire('https://www.kozaru02.com/feed') id;
 select ok((select ingest.defer_numbered_family_v1(id,'numbered-test',1,now()+interval '2 hours') from backoff_job),'backoff stored while lease valid');
 select ok((select active_until>=now()+interval '2 hours' from ingest.numbered_family_control),'backoff applies to domain');
