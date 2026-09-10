@@ -1363,6 +1363,33 @@ def test_public_study_flag_registers_all_reviewed_daily_jobs(
     assert all(entry.catch_up_check_interval == timedelta(hours=1) for entry in studies)
 
 
+@pytest.mark.parametrize("role", ["collector", "scheduler", "watchdog"])
+def test_fixed_study_pause_is_not_a_shared_health_dependency(role: str) -> None:
+    executor = RecordingExecutor([[{"ready": True}], [{"last_seen_at": NOW}]])
+
+    assert (
+        write_health_heartbeat(_public_study_settings(role), executor=executor).last_seen_at == NOW
+    )
+
+    sql, params = executor.calls[0]
+    before_studies, after_studies = sql.split("public_study_dependencies AS (", 1)
+    study_sql, _role_sql = after_studies.split("\n)\nSELECT", 1)
+    assert params["public_study_enabled"] is True
+    # A disabled policy still has to satisfy every immutable policy/ACL guard.
+    # This is only service readiness; begin/finalize/public RPCs stay fail-closed.
+    assert "policies.enabled" not in study_sql
+    assert "count(*) = 32" in study_sql
+    assert "NOT policies.is_demo" in study_sql
+    assert "policies.robots_policy = 'respect'" in study_sql
+    assert "policies.min_delay_seconds = 30" in study_sql
+    assert "policies.domain = 'comicbook.com'" in study_sql
+    assert "policies.version = 'public-study-comicbook-perfect-order-v1'" in study_sql
+    assert "NOT has_table_privilege" in study_sql
+    assert "ingest.reviewed_public_study_gates_ready_v1()" in study_sql
+    # Do not relax operational switches belonging to other collectors.
+    assert "policies.enabled" in before_studies
+
+
 def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -> None:
     executor = RecordingExecutor([[{"ready": False}]])
 

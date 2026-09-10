@@ -62,3 +62,21 @@ Defaults warn/critically alert around database 350/425 MB, storage 700/850 MB an
 - **Backup failure:** alert immediately, keep prior backups, fix credentials/disk, rerun and perform a fresh restore drill.
 
 For browser reauthentication, use the exact SSH tunnel in `OPENCLI_VPS.md`; manual CAPTCHA/2FA only. Record incident timeline, affected data/accounts, revocations, recovery SHA and follow-up controls without embedding secrets.
+
+### Fixed public-study source pauses
+
+An operator may disable a reviewed fixed source using its existing exact
+`ingest.source_policies` row. A disabled source is an operational pause, not a
+missing shared service dependency: health still requires all reviewed source
+identities, configuration bounds, tables, least-privilege ACLs and fenced RPCs.
+This does not authorize collection from a disabled source. Its begin/finalize
+gates and the live public projections continue to require `enabled=true`.
+An already-running HTTP request cannot be recalled by a later policy change.
+
+This health distinction does not delete observations, remove source-link
+metadata, change fixed daily schedules, or retry rejected jobs. Existing queued
+or scheduled jobs remain subject to the disabled-policy rejection; investigate
+their source-specific failures independently of the shared heartbeat. Public
+source metadata may remain visible with a paused status. Any required content
+or link removal needs its own exact scope; do not treat a healthy heartbeat as
+proof that a paused source has been removed or reauthorized.
