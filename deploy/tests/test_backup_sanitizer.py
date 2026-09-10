@@ -137,6 +137,9 @@ PUBLIC_STUDY_SOURCE_KEYS_V15 = PUBLIC_STUDY_SOURCE_KEYS_V14 + (
 PUBLIC_STUDY_SOURCE_KEYS_V16 = PUBLIC_STUDY_SOURCE_KEYS_V15 + (
     b"public_study_hitpack_cz_36",
 )
+PUBLIC_STUDY_SOURCE_KEYS_V17 = PUBLIC_STUDY_SOURCE_KEYS_V16 + (
+    b"public_study_tekemero_jp_30",
+)
 PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V1
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
@@ -168,6 +171,7 @@ PARADIGM_POLICY = "fa777777-7777-4777-8777-777777777777"
 BOKUNOTEBOOK_POLICY = "fa888888-8888-4888-8888-888888888888"
 AUCKLAND_POLICY = "fa999999-9999-4999-8999-999999999999"
 HITPACK_POLICY = "fb999999-9999-4999-8999-999999999999"
+TEKEMERO_POLICY = "fc999999-9999-4999-8999-999999999999"
 INDONESIA_POLICY = "fa555555-5555-4555-8555-555555555555"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
@@ -344,6 +348,7 @@ def public_study_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V14,
         PUBLIC_STUDY_SOURCE_KEYS_V15,
         PUBLIC_STUDY_SOURCE_KEYS_V16,
+        PUBLIC_STUDY_SOURCE_KEYS_V17,
     ):
         product_values += b", 'four_pack_blister'::text"
     return PUBLIC_STUDY_DDL.replace(b"{product_values}", product_values)
@@ -367,6 +372,7 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V14,
         PUBLIC_STUDY_SOURCE_KEYS_V15,
         PUBLIC_STUDY_SOURCE_KEYS_V16,
+        PUBLIC_STUDY_SOURCE_KEYS_V17,
     ):
         product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
         if source_keys in (
@@ -380,12 +386,21 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
             PUBLIC_STUDY_SOURCE_KEYS_V14,
             PUBLIC_STUDY_SOURCE_KEYS_V15,
             PUBLIC_STUDY_SOURCE_KEYS_V16,
+            PUBLIC_STUDY_SOURCE_KEYS_V17,
         ):
             product_values += b", 'build_and_battle'::text, 'three_pack_blister'::text"
     return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
 
 
 PUBLIC_STUDY_COVERAGE_FACTS = {
+    b"public_study_tekemero_jp_30": (
+        b"tekemero-munikis-zero-jp-30-v1",
+        TEKEMERO_POLICY.encode(), b"JP", b"Japan", b"2026-07-15 06:48:03+00",
+        b"30", b"M3", b"booster_box",
+        b"public-study-tekemero-munikis-zero-v1",
+        b"tekemero-munikis-zero-30-evidence-v1",
+        b"f13f9c05c779e0ce65a203f961420ffe7bec4fb7b688079c073824fd7dd40f93",
+    ),
     b"public_study_hitpack_cz_36": (
         b"hitpack-pitch-black-cz-36-v1",
         HITPACK_POLICY.encode(), b"CZ", b"Czechia", b"2026-07-28 00:00:00+00",
@@ -819,6 +834,7 @@ class BackupSanitizerTests(unittest.TestCase):
             b"public_study_bokunotebook_th_1": BOKUNOTEBOOK_POLICY,
             b"public_study_auckland_nz_105": AUCKLAND_POLICY,
             b"public_study_hitpack_cz_36": HITPACK_POLICY,
+            b"public_study_tekemero_jp_30": TEKEMERO_POLICY,
         }
         policy_rows = b"".join(
             f"{policy_ids[source_key]}\t{source_key.decode()}\tpolicy\n".encode()
@@ -1379,6 +1395,126 @@ class BackupSanitizerTests(unittest.TestCase):
         result = self.run_sanitizer(dump, public_studies="present")
         self.assertEqual(result.returncode, 0, result.stderr.decode())
         self.assertIn(public_study_coverage_row(b"public_study_hitpack_cz_36"), result.stdout)
+        self.assertIn(ROW, result.stdout)
+        self.assertIn(b"t\tf\tpokesup-enumerated-v1", result.stdout)
+        self.assertNotIn(b"t\tt\tpokesup-enumerated-v1", result.stdout)
+        self.assertIn(b"(singleton, enabled) FROM stdin;\nt\tf\n", result.stdout)
+        self.assertNotIn(b"(singleton, enabled) FROM stdin;\nt\tt\n", result.stdout)
+
+    def test_v17_before_and_after_first_tekemero_collection(self) -> None:
+        tekemero_row = public_study_coverage_row(b"public_study_tekemero_jp_30")
+        prior_rows = public_study_coverage_rows(PUBLIC_STUDY_SOURCE_KEYS_V16)
+        for collected in (False, True):
+            with self.subTest(collected=collected):
+                dump = self.with_public_study_ledger(
+                    self.complete_dump(), comicbook_ledger_row(),
+                    source_keys=PUBLIC_STUDY_SOURCE_KEYS_V17,
+                    coverage_rows=prior_rows + ((tekemero_row,) if collected else ()),
+                )
+                result = self.run_sanitizer(dump, public_studies="present")
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                for row in prior_rows:
+                    self.assertIn(row, result.stdout)
+                self.assertEqual(result.stdout.count(b"public_study_tekemero_jp_30\n"), 1)
+                self.assertEqual(result.stdout.count(tekemero_row), int(collected))
+
+    def test_v17_still_requires_every_prior_coverage_row(self) -> None:
+        prior_rows = public_study_coverage_rows(PUBLIC_STUDY_SOURCE_KEYS_V16)
+        tekemero_row = public_study_coverage_row(b"public_study_tekemero_jp_30")
+        for collected in (False, True):
+            base = self.with_public_study_ledger(
+                self.complete_dump(), comicbook_ledger_row(),
+                source_keys=PUBLIC_STUDY_SOURCE_KEYS_V17,
+                coverage_rows=prior_rows + ((tekemero_row,) if collected else ()),
+            )
+            for row in prior_rows:
+                with self.subTest(collected=collected, study=row.split(b"\t", 1)[0]):
+                    result = self.run_sanitizer(
+                        base.replace(row + b"\n", b"", 1), public_studies="present",
+                    )
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(result.stdout, b"")
+
+    def test_tekemero_drift_duplicate_and_partial_profiles_fail_closed(self) -> None:
+        key = b"public_study_tekemero_jp_30"
+        original = public_study_coverage_row(key)
+        base = self.with_public_study_ledger(
+            self.complete_dump(), comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V17,
+        )
+        for field, value in (
+            ("pack_count", b"29"),
+            ("country_code", b"CN"),
+            ("country_name", b"China"),
+            ("set_external_id", b"M2"),
+            ("product_scope", b"all"),
+            ("collector_version", b"public-study-tekemero-munikis-zero-v2"),
+            ("parser_version", b"tekemero-munikis-zero-30-evidence-v2"),
+            ("source_policy_version", b"public-study-tekemero-munikis-zero-v2"),
+            ("evidence_sha256", b"0" * 64),
+            ("source_observed_at", b"2026-07-15 06:48:04+00"),
+            ("source_observed_at", b"2026-07-15 00:00:00+00"),
+            ("source_policy_id", WRONG_POLICY.encode()),
+            ("study_key", b"unreviewed-tekemero-v1"),
+            ("is_demo", b"t"),
+        ):
+            with self.subTest(field=field, value=value):
+                result = self.run_sanitizer(
+                    base.replace(original, public_study_coverage_row(key, **{field: value}), 1),
+                    public_studies="present",
+                )
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+        result = self.run_sanitizer(
+            base.replace(original + b"\n", original + b"\n" + original + b"\n", 1),
+            public_studies="present",
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+        # Tekemero cannot stand in for Auckland or appear under the V16 policies.
+        malformed = (
+            base.replace(
+                f"{AUCKLAND_POLICY}\tpublic_study_auckland_nz_105\tpolicy\n".encode(),
+                b"", 1,
+            ).replace(
+                public_study_coverage_row(b"public_study_auckland_nz_105") + b"\n",
+                b"", 1,
+            ),
+            self.with_public_study_ledger(
+                self.complete_dump(), comicbook_ledger_row(),
+                source_keys=PUBLIC_STUDY_SOURCE_KEYS_V16,
+                coverage_rows=public_study_coverage_rows(PUBLIC_STUDY_SOURCE_KEYS_V17),
+            ),
+        )
+        for dump in malformed:
+            result = self.run_sanitizer(dump, public_studies="present")
+            self.assertNotEqual(result.returncode, 0)
+            self.assertEqual(result.stdout, b"")
+
+    def test_tekemero_is_not_accepted_in_statistical_ledger(self) -> None:
+        dump = self.with_public_study_ledger(
+            self.complete_dump(),
+            comicbook_ledger_row(
+                study_key=b"tekemero-munikis-zero-jp-30-v1",
+                source_policy_id=TEKEMERO_POLICY.encode(),
+            ),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V17,
+        )
+        result = self.run_sanitizer(dump, public_studies="present")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, b"")
+
+    def test_tekemero_preserves_family_and_intake_restore_controls(self) -> None:
+        from test_research_intake_backup import ROW, intake_dump
+        from test_source_family_backup import family_dump
+
+        dump = self.with_public_study_ledger(
+            self.complete_dump(), comicbook_ledger_row(),
+            source_keys=PUBLIC_STUDY_SOURCE_KEYS_V17,
+        ) + family_dump() + intake_dump()
+        result = self.run_sanitizer(dump, public_studies="present")
+        self.assertEqual(result.returncode, 0, result.stderr.decode())
+        self.assertIn(public_study_coverage_row(b"public_study_tekemero_jp_30"), result.stdout)
         self.assertIn(ROW, result.stdout)
         self.assertIn(b"t\tf\tpokesup-enumerated-v1", result.stdout)
         self.assertNotIn(b"t\tt\tpokesup-enumerated-v1", result.stdout)

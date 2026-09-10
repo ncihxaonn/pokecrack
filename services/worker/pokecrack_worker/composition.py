@@ -599,7 +599,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 31
+        count(*) = 32
         AND bool_and(
           policies.enabled
           AND NOT policies.is_demo
@@ -1681,8 +1681,44 @@ public_study_dependencies AS (
   "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
 }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_tekemero_jp_30'
+            AND policies.display_name = 'Tekemero M3 30-pack coverage'
+            AND policies.domain = 'tekemero.com'
+            AND policies.base_url = 'https://tekemero.com/260715-02/'
+            AND policies.version = 'public-study-tekemero-munikis-zero-v1'
+            AND policies.config = '{
+  "study_key": "tekemero-munikis-zero-jp-30-v1",
+  "canonical_url": "https://tekemero.com/260715-02/",
+  "collector_version": "public-study-tekemero-munikis-zero-v1",
+  "parser_version": "tekemero-munikis-zero-30-evidence-v1",
+  "country_code": "JP",
+  "country_name": "Japan",
+  "geography_basis": "product_market",
+  "geography_confidence": "tier_b",
+  "opening_country": null,
+  "opened_at": null,
+  "set_external_id": "M3",
+  "set_language": "ja",
+  "set_name": "ムニキスゼロ",
+  "set_official_url": "https://www.pokemon-card.com/ex/m3/",
+  "product_scope": "booster_box",
+  "pack_count": 30,
+  "observed_at": "2026-07-15T06:48:03Z",
+  "observed_at_basis": "original_article_publication_not_opening_time",
+  "denominator_complete": true,
+  "cohort_id": "tekemero-post-447-m3-complete-box",
+  "robots_url": "https://tekemero.com/robots.txt",
+  "robots_checked_at": "2026-09-09",
+  "terms_url": "https://tekemero.com/privacy-policy/",
+  "terms_checked_at": "2026-09-09",
+  "terms_status": "privacy_policy_reviewed_no_separate_terms_found",
+  "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
+}'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
+        'public_study_tekemero_jp_30',
         'public_study_hitpack_cz_36',
         'public_study_auckland_nz_105',
         'public_study_bokunotebook_th_1',

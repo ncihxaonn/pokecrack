@@ -1,6 +1,55 @@
 version: 1
 default: disabled
 sources:
+  tekemero.com:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    exact_urls: ["https://tekemero.com/260715-02/"]
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-tekemero-munikis-zero-v1
+    config: {
+      "study_key": "tekemero-munikis-zero-jp-30-v1",
+      "canonical_url": "https://tekemero.com/260715-02/",
+      "collector_version": "public-study-tekemero-munikis-zero-v1",
+      "parser_version": "tekemero-munikis-zero-30-evidence-v1",
+      "country_code": "JP",
+      "country_name": "Japan",
+      "geography_basis": "product_market",
+      "geography_confidence": "tier_b",
+      "opening_country": null,
+      "opened_at": null,
+      "set_external_id": "M3",
+      "set_language": "ja",
+      "set_name": "ムニキスゼロ",
+      "set_official_url": "https://www.pokemon-card.com/ex/m3/",
+      "product_scope": "booster_box",
+      "pack_count": 30,
+      "observed_at": "2026-07-15T06:48:03Z",
+      "observed_at_basis": "original_article_publication_not_opening_time",
+      "denominator_complete": true,
+      "cohort_id": "tekemero-post-447-m3-complete-box",
+      "robots_url": "https://tekemero.com/robots.txt",
+      "robots_checked_at": "2026-09-09",
+      "terms_url": "https://tekemero.com/privacy-policy/",
+      "terms_checked_at": "2026-09-09",
+      "terms_status": "privacy_policy_reviewed_no_separate_terms_found",
+      "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
+    }
+    reason: Explicitly approved minimum facts from one complete self-purchased 30-pack M3 box. Japanese product market only; opening country and time unknown. No prose, images, weighing tables, personal data or hit numerator retained. Post 447 query alias is the same cohort; other reports remain unapproved.
+    routes: [static]
+    adapter: tekemero_munikis_zero_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
   www.hitpack.cz:
     enabled: true
     collector: scrapling_http
