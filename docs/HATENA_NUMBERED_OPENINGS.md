@@ -1,6 +1,6 @@
 # Hatena numbered opening ingestion — implementation contract
 
-Status: **report/feed parsers and worker cycle implemented; database and composition integration not implemented or enabled**.
+Status: **report/feed parsers, worker cycle and private database lane implemented; composition, backup and public projection integration not enabled or complete**.
 This document does not admit observations.
 
 The parser and synthetic tests run on MAM. A direct bounded live-page probe
@@ -82,13 +82,24 @@ It never directly completes a job or publishes a record. The job DTO carries
 `is_demo`, defaulting to true when provenance is absent; only literal database
 false allows this collector to make requests.
 
-Required database RPCs (`begin_numbered_family_v1`,
+Migration `20261024000000_numbered_source_family.sql` implements private RPCs (`begin_numbered_family_v1`,
 `authorize_numbered_family_request_v1`, `stage_numbered_family_v1`,
-`finalize_numbered_family_v1`) are not installed yet. No schedule or composition
-handler enables this lane. The remaining atomic hash reservations, candidate
-selection, private intake, public projection, restore contracts and integration
-tests must ship together before enabling collection. Mocked worker tests alone
-do not prove this database contract or live admission.
+`finalize_numbered_family_v1`), a disabled-by-default owner control, five-minute
+enqueue slots, feed/candidate selection, permanent numbered-resource hash
+reservations and owner retraction. The collector persists server/transport backoff
+through `defer_numbered_family_v1` so other jobs cannot bypass a publisher delay.
+Enqueue allows only one outstanding cycle and skips idle/cooling publishers.
+Independent SQL tests exercise actual staging/finalization and repeat/repost
+deduplication, not merely mocked worker calls. Ephemeral staging is removed by
+the existing source-independent cleanup job even while collection is disabled.
+
+The migration has only been applied to isolated MAM test databases, not production.
+No schedule or composition handler enables this lane. Private research-intake
+routing, unknown-location public projection, generated types and restore contracts
+must ship together before enabling collection. Neither synthetic SQL admissions
+nor unit tests constitute live data. The database validates the fenced collector's
+minimal attestation; it does not independently fetch source pages or prove physical
+cohort identity from resource hashes.
 
 1. Use the observed article/body `figure > figcaption` boundaries, not headings.
    The research regex finding ten labels is not a production completeness parser.

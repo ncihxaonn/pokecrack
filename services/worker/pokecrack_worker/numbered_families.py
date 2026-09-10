@@ -13,6 +13,7 @@ from collections.abc import Callable
 from dataclasses import asdict
 from datetime import UTC, datetime, timedelta
 from email.utils import parsedate_to_datetime
+from typing import NoReturn
 from urllib.robotparser import RobotFileParser
 
 from pokecrack_worker.collectors.base import PUBLIC_COLLECTOR_USER_AGENT, CollectorError, HTTPClient
@@ -71,6 +72,15 @@ def make_handler(
         if not isinstance(target, str) or not (target == FEED_URL or ARTICLE.fullmatch(target)):
             raise ValueError("numbered_family_target_scope")
 
+        def defer(retry_at: datetime, code: str) -> NoReturn:
+            # Persist domain backoff before pausing this job: another queued
+            # job must not bypass a publisher's Retry-After response.
+            executor.query(
+                "select ingest.defer_numbered_family_v1(%(job)s::uuid, %(worker)s, %(generation)s, %(until)s::timestamptz)",
+                {**params, "until": retry_at.isoformat()},
+            )
+            raise JobDeferred(retry_at=retry_at, code=code)
+
         def fetch(url: str) -> str:
             # The acquired target is immutable for this invocation. Even a
             # malformed DB response cannot turn this worker into a URL proxy.
@@ -81,17 +91,17 @@ def make_handler(
                 {**params, "url": url},
             )
             if len(allowed) != 1 or allowed[0].get("allowed") is not True:
-                raise JobDeferred(
+                defer(
                     retry_at=clock() + timedelta(minutes=5),
                     code="numbered_family_access_deferred",
                 )
             try:
                 response = client.get(url, timeout_seconds=20)
-            except Exception as error:
-                raise JobDeferred(
+            except Exception:
+                defer(
                     retry_at=clock() + timedelta(minutes=5),
                     code="numbered_family_transport_deferred",
-                ) from error
+                )
             if response.status_code == 429 or response.status_code >= 500:
                 retry_at = clock() + timedelta(hours=1)
                 value = next(
@@ -109,16 +119,16 @@ def make_handler(
                     retry_at = datetime.max.replace(tzinfo=UTC)
                 except (TypeError, ValueError):
                     pass
-                raise JobDeferred(retry_at=retry_at, code="numbered_family_server_deferred")
+                defer(retry_at=retry_at, code="numbered_family_server_deferred")
             if response.status_code != 200 or response.url != url or len(response.body) > 1_000_000:
                 raise CollectorError("numbered_family_access_failed")
             try:
                 return response.body.decode("utf-8", errors="strict")
-            except UnicodeError as error:
-                raise JobDeferred(
+            except UnicodeError:
+                defer(
                     retry_at=clock() + timedelta(minutes=5),
                     code="numbered_family_encoding_deferred",
-                ) from error
+                )
 
         result: dict[str, object]
         try:

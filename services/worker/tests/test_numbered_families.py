@@ -19,6 +19,7 @@ class DB:
         self.authorizations = 0
         self.calls = []
         self.staged = None
+        self.deferred_until = None
 
     def query(self, sql, params):
         self.calls.append((sql, dict(params)))
@@ -27,6 +28,9 @@ class DB:
         if "authorize_numbered_family" in sql:
             self.authorizations += 1
             return [{"allowed": self.authorizations != self.denied}]
+        if "defer_numbered_family" in sql:
+            self.deferred_until = params["until"]
+            return [{"deferred": True}]
         assert "stage_numbered_family" in sql
         self.staged = json.loads(params["result"])
         return []
@@ -141,6 +145,7 @@ def test_server_retry_after_is_respected(value):
     with pytest.raises(JobDeferred) as raised:
         run(db, Busy())
     assert raised.value.retry_at >= NOW + timedelta(hours=2)
+    assert db.deferred_until == raised.value.retry_at.isoformat()
     assert db.staged is None
 
 
