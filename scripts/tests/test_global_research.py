@@ -19,6 +19,15 @@ spec.loader.exec_module(module)
 
 
 class GlobalResearchTests(unittest.TestCase):
+    def test_prompt_budgets_keep_legacy_defaults_and_bound_country_override(self):
+        self.assertIn("12 queries and return at most 6 studies", module.prompt("global"))
+        self.assertIn("24 queries and return at most 36 studies",
+                      module.prompt("asia", max_queries=24, max_studies=36))
+        for kwargs in ({"max_queries": True}, {"max_queries": 25}, {"max_queries": 0},
+                       {"max_studies": 37}, {"max_studies": False}, {"max_studies": 0}):
+            with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
+                module.prompt("global", **kwargs)
+
     def batch(self):
         row = json.loads((ROOT / "data/research/global-studies.json").read_text())["studies"][0]
         return module.validate_batch(json.dumps({"version": 1, "studies": [row]}).encode())

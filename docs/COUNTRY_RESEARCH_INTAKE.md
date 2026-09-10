@@ -1,6 +1,6 @@
 # Country research intake
 
-The hourly country research workflow searches the 249 ISO country/area entries
+The twice-hourly country research workflow searches the 249 ISO country/area entries
 in `scripts/country_targets.py`, in regional order. A successful sweep is
 research coverage, **not** proof that every country has qualifying opening data.
 An empty search result does not mean zero real-world openings. The map and its

@@ -29,12 +29,12 @@ opening locations. No city, address, person or contact field is introduced.
 
 ## Durable execution
 
-`country-research.yml` owns the hourly timer. The older global and six-country
+`country-research.yml` owns the twice-hourly timer. The older global and six-country
 Asia workflows remain manual-only. All share the reviewed research controls;
 the country and global workflows share one concurrency group. No new paid API,
 database credential, local-Mac workload or automatic source enablement exists.
 
-Each run selects up to three unchecked countries from the earliest unfinished
+Each run selects up to six unchecked countries from the earliest unfinished
 phase of the current sweep. Selection reads validated bot-owned, content-hashed
 GitHub reports, including closed issues. Failed/invalid research does not record
 success and cannot skip a country because a time slot elapsed. Once a phase has
@@ -45,21 +45,22 @@ four-region sweep continues into the appended phases rather than resetting or
 silently omitting them. Antarctica is an area, not a sovereign country; its
 inclusion does not assert that any opening records exist there.
 
-One isolated MAM Codex call has a ten-minute deadline, 12 search queries total,
-two candidates per target and a 16 KiB report cap. It must search each country
+One isolated MAM Codex call has a ten-minute deadline, 24 search queries total,
+six candidates per target and a 48 KiB report cap (each country's normalized
+sub-batch retains its 16 KiB bound). It must search each country
 in English and appropriate local languages. Empty results are permitted and
 retained as **no suitable candidate found in this bounded pass**, not zero
 activity or proof that no source exists. This makes research progress auditable
 without pretending source discovery is country publication.
 
-The first complete research sweep needs at least 85 successful jobs at these
-batch sizes. An hourly trigger is not an SLA: GitHub delays, usage limits,
+The first complete research sweep needs at least 44 successful jobs at these
+batch sizes. A twice-hourly trigger is not an SLA: GitHub delays, usage limits,
 source availability and failed runs can extend it. Independent source review
 and publication have no fabricated completion deadline.
 
 ### Continuing beyond the same leading reports
 
-The hourly selector now prepares a selection-bound continuation hint from the
+The scheduled selector prepares a selection-bound continuation hint from the
 same validated country history. MAM receives only prior pass counts, canonical
 reference URLs and cohort identifiers: no article text, counts, claimed geography,
 personal details, access approval or database credentials. The hint is at most
@@ -69,13 +70,20 @@ on later sweeps when history exceeds the hint budget; the full durable history a
 deduplication ledger are never truncated by this hint.
 
 The prompt prioritizes new original cohorts and varies source types across sweeps,
-within the same 12-query budget. It does not blacklist an entire host, prevent new
+within the 24-query budget. It does not blacklist an entire host, prevent new
 evidence about an existing cohort, or treat absent references as independent.
 These hints improve continuity, not guarantee discovery or replace independent
 deduplication. Empty passes still mean no eligible result in that bounded pass.
-Legacy manual invocations without `--context` remain supported; the hourly
+Legacy manual invocations without `--context` remain supported; the scheduled
 workflow always supplies it, and malformed or mismatched hints stop before search.
 The context is temporary and is not added to public observations or report schemas.
+
+Research prioritizes distinct author-reported opening samples without requiring
+hit numerators, known opening locations or exhaustive manual accuracy checks.
+Unknown geography, title claims, lower bounds and native box counts retain their
+uncertainty; they are not automatically verified packs. The theoretical batch
+capacity is 36 candidates, not a promise of new records or public pack growth.
+Legacy manual global/Asia output limits remain unchanged.
 
 This does not resolve the separate 1,000-issue history cap, 2,000-record ledger
 cap, or the need for independently reviewed repeatable collector families.
