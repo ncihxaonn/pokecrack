@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Resume country-first research from bot-owned evidence, never from a clock slot."""
+"""Resume country-first research from the unified ledger, never from a clock slot."""
 from __future__ import annotations
 
 import argparse
@@ -11,12 +11,11 @@ from asia_research import research_document
 from country_targets import COUNTRIES, COUNTRY_REGION, REGION_ORDER, REGIONS
 from global_studies import reference_url, token
 from global_research import (
-    REPO, accumulate, failure_code, fingerprint, load_history, prompt as global_prompt,
+    accumulate, failure_code, fingerprint, load_history, prompt as global_prompt,
     schema as study_schema, validate_batch,
 )
+from research_ledger import LEDGER_PATH, append_unique, load as load_research_ledger, save as save_research_ledger
 
-MARKER = "<!-- pokecrack-country-research-v1 -->"
-TITLE = "[Country research batch] "
 CAMPAIGN = "country-first-20260908-v1"
 MAX_TARGETS = 6
 MAX_STUDIES_PER_TARGET = 6
@@ -146,29 +145,11 @@ def validate_report(raw: bytes, selection: dict | None = None) -> dict:
     return report
 
 
-def country_history() -> list[dict]:
-    response = subprocess.run([
-        "gh", "issue", "list", "--repo", REPO, "--state", "all", "--limit", "1000",
-        "--json", "title,body,author",
-    ], check=True, capture_output=True, text=True)
-    issues = json.loads(response.stdout)
-    if not isinstance(issues, list) or len(issues) >= 1000:
-        raise ValueError("history_capacity_requires_archive")
-    reports = []
-    for issue in issues:
-        author = issue.get("author") or {}
-        if not (author.get("is_bot") is True and author.get("login") in {
-                "app/github-actions", "github-actions[bot]"}
-                and issue["title"].startswith(TITLE) and issue["body"].startswith(MARKER)):
-            continue
-        parts = issue["body"].split("```json\n")
-        if len(parts) != 2 or not parts[1].endswith("\n```\n"):
-            raise ValueError("invalid_history_body")
-        report = validate_report(parts[1][:-5].encode())
-        if issue["title"] != TITLE + fingerprint(report):
-            raise ValueError("history_fingerprint_mismatch")
-        reports.append(report)
-    return reports
+def country_history(ledger_path: Path | None = None) -> list[dict]:
+    """Return validated country reports from the single durable ledger."""
+    ledger = load_research_ledger(ledger_path or LEDGER_PATH)
+    return [validate_report(json.dumps(report).encode())
+            for report in ledger["country_reports"]]
 
 
 def select_targets(history: list[dict]) -> dict:
@@ -240,13 +221,6 @@ Research is NOT independent source approval and cannot mark a country live.
 """ + continuation
 
 
-def issue_body(report: dict) -> str:
-    return (MARKER + "\nCountry-level research only; no admitted observations.\n"
-            "Checked targets: " + ", ".join(report["targets"]) + "\n"
-            "An empty result means no suitable candidate in this pass, never zero activity.\n"
-            "```json\n" + json.dumps(report, sort_keys=True, ensure_ascii=True) + "\n```\n")
-
-
 def snapshot(report: dict, history: list[dict], seed: dict, global_history: list[dict]) -> dict:
     reports = {fingerprint(item): item for item in [*history, report]}
     rows = [row for item in reports.values() for result in item["results"] for row in result["studies"]]
@@ -261,10 +235,11 @@ def snapshot(report: dict, history: list[dict], seed: dict, global_history: list
             "production_admitted": False}
 
 
-def publish(report: dict, seed_path: Path) -> dict:
-    history = country_history()
-    # Compute the complete bounded ledger BEFORE making any GitHub write.
-    output = snapshot(report, history, json.loads(seed_path.read_bytes()), load_history())
+def publish(report: dict, seed_path: Path, ledger_path: Path | None = None) -> dict:
+    ledger_path = ledger_path or LEDGER_PATH
+    history = country_history(ledger_path)
+    # Compute the complete bounded ledger before persisting the report.
+    output = snapshot(report, history, json.loads(seed_path.read_bytes()), load_history(ledger_path))
     identical = any(fingerprint(item) == fingerprint(report) for item in history)
     overlapping = any(item["sweep"] == report["sweep"] and
                       set(item["targets"]) & set(report["targets"]) for item in history)
@@ -273,10 +248,9 @@ def publish(report: dict, seed_path: Path) -> dict:
     if not identical:
         if validate_selection({key: report[key] for key in ("campaign", "sweep", "targets")}) != select_targets(history):
             raise ValueError("country_selection_mismatch")
-        subprocess.run(["gh", "issue", "create", "--repo", REPO,
-                        "--title", TITLE + fingerprint(report), "--body-file", "-"],
-                       input=issue_body(report), text=True, check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        durable = load_research_ledger(ledger_path)
+        if append_unique(durable, "country_reports", report):
+            save_research_ledger(durable, ledger_path)
     return output
 
 

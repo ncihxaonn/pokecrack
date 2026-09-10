@@ -69,20 +69,20 @@ but no timer dispatches it. The legacy Asia workflow is also manual-only.
 Research runs on the approved MAM host using the existing Codex ChatGPT login,
 with no database or GitHub credentials passed to the research process. Each run
 is limited to 12 search queries, six candidate studies, 16 KiB output and ten
-minutes. Validation does not approve evidence. GitHub's separate publishing step
-stores new normalized reports in bot-owned, content-hashed issues, including
-closed issues when reconstructing history. Existing issues are never rewritten.
-Identical normalized reports produce no new issue. Related but changed reports
-are retained and fed through the cohort conflict detector rather than silently
-replacing prior counts. A combined deduplicated JSON snapshot is saved for 90
-days as an Actions artifact; durable research history remains in GitHub issues.
+minutes. Validation does not approve evidence. The publishing step stores new
+normalized reports in the versioned, unified
+`data/research/research-ledger.json` file through a reviewed pull request.
+Identical normalized reports produce no duplicate entry. Related but changed
+reports are retained and fed through the cohort conflict detector rather than
+silently replacing prior counts. A combined deduplicated JSON snapshot is saved
+for 90 days as an Actions artifact; durable research history remains in the
+versioned ledger.
 
-The history loader refuses to truncate at 1,000 repository issues or the ledger's
-2,000-report/2-MiB capacity. Reaching this guard requires an explicit reviewed
-archive/partition expansion, not dropping older samples. No snapshot or research
-issue creates production evidence. Research metadata is minimal public facts,
-never a cached page body or media. A successful test is not proof the schedule
-has run: verify a main-branch run and its artifact after merging.
+The history loader refuses malformed ledger entries rather than silently
+truncating or dropping older samples. No snapshot or research ledger entry
+creates production evidence. Research metadata is minimal public facts,
+never a cached page body or media. A successful test is not proof a manual run
+has completed: verify a main-branch run and its artifact after merging.
 
 Failures report a fixed stage and an allowlisted error code, not the original
 exception or generated document. `research_unavailable` means the isolated
@@ -95,7 +95,7 @@ their fingerprints are unchanged by diagnostics.
 
 ## Remaining work (not complete)
 
-Verify the scheduled discovery and accumulating ledger on main;
+Verify the manual discovery and accumulating ledger on main;
 review and admit real cohorts through the existing source-controlled release
 flow; expose reported references separately from verified production statistics;
 verify both the public result and recurring collection on MAM. This foundation

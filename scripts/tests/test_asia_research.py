@@ -4,10 +4,13 @@ import importlib.util
 import json
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+import sys
+import tempfile
 import unittest
 from unittest.mock import patch, Mock
 
 ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "scripts"))
 spec = importlib.util.spec_from_file_location("asia_research", ROOT / "scripts/asia_research.py")
 module = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(module)
@@ -63,7 +66,8 @@ class AsiaResearchTests(unittest.TestCase):
         self.assertEqual(data["candidates"][0]["missing_checks"], [
             "geography", "independent_review", "pack_count", "publication_date",
             "source_access", "source_rights"])
-        self.assertIn("尚未上线", module.issue_body(data))
+        self.assertEqual(data["country"], "VN")
+        self.assertIn("source_access", data["candidates"][0]["missing_checks"])
 
     def test_unsafe_urls_are_rejected(self):
         for url in ["http://example.com/a", "https://localhost/a", "https://127.0.0.1/a",
@@ -89,50 +93,52 @@ class AsiaResearchTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             module.validate(b" " * 16385, "VN")
 
-    def test_unchanged_bot_issue_is_not_written_again(self):
+    def test_publish_writes_to_the_unified_ledger(self):
         data = module.validate(json.dumps(self.example()).encode(), "VN")
-        issue = {"number": 42, "title": "[Asia research] VN — Vietnam",
-                 "author": {"login": "app/github-actions", "is_bot": True}, "state": "OPEN",
-                 "body": module.issue_body(data)}
-        with patch.object(module.subprocess, "run", return_value=Mock(
-            stdout=json.dumps([issue]))) as run:
-            module.publish(data)
-        self.assertEqual(run.call_count, 1)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({
+                "version": 1, "country_reports": [],
+                "global_batches": [], "asia_reports": []
+            }), encoding="utf-8")
+            module.publish(data, path)
+            saved = json.loads(path.read_text())
+            self.assertEqual(saved["asia_reports"], [data])
 
-    def test_user_issue_cannot_be_overwritten(self):
+    def test_publish_upserts_the_same_asia_country(self):
         data = module.validate(json.dumps(self.example()).encode(), "VN")
-        issue = {"number": 42, "title": "[Asia research] VN — Vietnam",
-                 "author": {"login": "ncihxaonn", "is_bot": False}, "state": "OPEN",
-                 "body": module.issue_body(data)}
-        with patch.object(module.subprocess, "run", side_effect=[
-            Mock(stdout=json.dumps([issue])), Mock()]) as run:
-            module.publish(data)
-        self.assertEqual(run.call_args_list[1].args[0][1:3], ["issue", "create"])
+        previous = {**data, "candidates": []}
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({
+                "version": 1, "country_reports": [],
+                "global_batches": [], "asia_reports": [previous]
+            }), encoding="utf-8")
+            module.publish(data, path)
+            saved = json.loads(path.read_text())
+            self.assertEqual(saved["asia_reports"], [data])
 
-    def test_closed_cli_bot_issue_is_not_reopened_or_duplicated(self):
+    def test_unchanged_asia_report_is_not_written_again(self):
         data = module.validate(json.dumps(self.example()).encode(), "VN")
-        issue = {"number": 42, "title": "[Asia research] VN — Vietnam",
-                 "author": {"login": "app/github-actions", "is_bot": True},
-                 "state": "CLOSED", "body": module.issue_body(data)}
-        with patch.object(module.subprocess, "run", return_value=Mock(
-            stdout=json.dumps([issue]))) as run:
-            module.publish(data)
-        self.assertEqual(run.call_count, 1)
-
-    def test_changed_cli_bot_issue_is_edited_not_duplicated(self):
-        data = module.validate(json.dumps(self.example()).encode(), "VN")
-        issue = {"number": 42, "title": "[Asia research] VN — Vietnam",
-                 "author": {"login": "app/github-actions", "is_bot": True}, "state": "OPEN",
-                 "body": "<!-- pokecrack-asia-research-v1:VN -->\nold result"}
-        with patch.object(module.subprocess, "run", side_effect=[
-            Mock(stdout=json.dumps([issue])), Mock()]) as run:
-            module.publish(data)
-        self.assertEqual(run.call_args_list[1].args[0][1:4], ["issue", "edit", "42"])
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({
+                "version": 1, "country_reports": [],
+                "global_batches": [], "asia_reports": [data]
+            }), encoding="utf-8")
+            with patch.object(module, "save_research_ledger") as save:
+                module.publish(data, path)
+                save.assert_not_called()
 
     def test_workflow_is_main_only_sequential_and_has_no_db_secret(self):
         source = (ROOT / ".github/workflows/asia-research.yml").read_text()
         self.assertIn("github.ref == 'refs/heads/main'", source)
         self.assertIn("cancel-in-progress: false", source)
+        self.assertIn("contents: write", source)
+        self.assertIn("pull-requests: write", source)
+        self.assertIn("group: pokecrack-research-ledger", source)
+        self.assertIn("queue_research_ledger.py", source)
+        self.assertNotIn("issues: write", source)
         self.assertNotIn("SUPABASE", source)
         self.assertNotIn("OPENAI_API_KEY", source)
         self.assertNotIn("self-hosted", source)

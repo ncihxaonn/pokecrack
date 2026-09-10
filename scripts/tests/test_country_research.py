@@ -7,7 +7,7 @@ from pathlib import Path
 import sys
 import tempfile
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -28,11 +28,6 @@ class CountryResearchTests(unittest.TestCase):
     def row(self):
         seed = json.loads((ROOT / "data/research/global-studies.json").read_text())
         return seed["studies"][0]
-
-    def issue(self, report):
-        return {"title": module.TITLE + module.fingerprint(report),
-                "body": module.issue_body(report),
-                "author": {"login": "app/github-actions", "is_bot": True}}
 
     def test_complete_country_area_inventory_no_cities_or_duplicate_codes(self):
         self.assertEqual(REGION_ORDER, ("asia", "oceania", "europe", "africa", "north-america", "latin-america", "antarctica"))
@@ -66,7 +61,7 @@ class CountryResearchTests(unittest.TestCase):
         output = module.snapshot(report, [], {"studies": []}, [])
         self.assertEqual(output["ledger"]["distinct_report_groups"], 36)
         self.assertIsNone(output["ledger"]["verified_unique_packs"])
-        self.assertLess(len(module.issue_body(report).encode()), 65536)
+        self.assertLess(len(json.dumps(report).encode()), 65536)
         self.assertIn("return at most 36 studies", module.prompt(self.selection()))
         self.assertNotIn("12 queries", module.prompt(self.selection()))
         result_schema = module.schema(self.selection())["properties"]["results"]["items"]
@@ -101,10 +96,13 @@ class CountryResearchTests(unittest.TestCase):
         self.assertEqual(len(history), 33)
         self.assertEqual(selection["sweep"], 1)
         self.assertEqual(selection["targets"], [code for code, _ in REGIONS["north-america"]])
-        # Old report fingerprints and the campaign marker remain stable.
-        with patch.object(module.subprocess, "run", return_value=Mock(
-                stdout=json.dumps([self.issue(report) for report in history]))):
-            self.assertEqual(module.country_history(), history)
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({
+                "version": 1, "country_reports": history,
+                "global_batches": [], "asia_reports": []
+            }), encoding="utf-8")
+            self.assertEqual(module.country_history(path), history)
 
     def test_each_global_phase_produces_a_valid_prompt_and_selection(self):
         for region in REGION_ORDER:
@@ -149,7 +147,7 @@ class CountryResearchTests(unittest.TestCase):
         self.assertEqual(output["next"]["targets"], [code for code, _ in REGIONS["asia"]][6:12])
         self.assertEqual(output["ledger"]["distinct_report_groups"], 1)
         self.assertFalse(output["ledger"]["production_admitted"])
-        self.assertIn("never zero activity", module.issue_body(report))
+        self.assertEqual(report["results"][0]["studies"], [])
 
     def test_limits_and_no_country_result_padding(self):
         report = self.report()
@@ -162,43 +160,36 @@ class CountryResearchTests(unittest.TestCase):
         with patch.object(module, "MAX_BYTES", len(raw) - 1), self.assertRaises(ValueError):
             module.validate_report(raw)
 
-    def test_bot_owned_history_only_and_fingerprint_integrity(self):
+    def test_ledger_history_validates_reports_and_fails_closed(self):
         report = self.report()
-        issue = self.issue(report)
-        with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([issue]))):
-            self.assertEqual(module.country_history(), [report])
-        issue["author"] = {"login": "ncihxaonn", "is_bot": False}
-        with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([issue]))):
-            self.assertEqual(module.country_history(), [])
-        issue = {**self.issue(report), "title": module.TITLE + "tampered"}
-        with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([issue]))), \
-                self.assertRaisesRegex(ValueError, "fingerprint"):
-            module.country_history()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({
+                "version": 1, "country_reports": [report],
+                "global_batches": [], "asia_reports": []
+            }), encoding="utf-8")
+            self.assertEqual(module.country_history(path), [report])
+            path.write_text(json.dumps({}), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "invalid_research_ledger"):
+                module.country_history(path)
 
-    def test_history_capacity_fails_without_silently_skipping_targets(self):
-        with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([{}] * 1000))), \
-                self.assertRaisesRegex(ValueError, "capacity"):
-            module.country_history()
-
-    def test_publish_retry_is_idempotent_and_stale_selection_fails(self):
+    def test_publish_is_idempotent_and_stale_selection_fails(self):
         report = self.report()
         seed = ROOT / "data/research/global-studies.json"
-        with patch.object(module, "country_history", return_value=[report]), \
-                patch.object(module, "load_history", return_value=[]), \
-                patch.object(module.subprocess, "run") as run:
-            module.publish(report, seed)
-            run.assert_not_called()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({
+                "version": 1, "country_reports": [],
+                "global_batches": [], "asia_reports": []
+            }), encoding="utf-8")
+            module.publish(report, seed, path)
+            self.assertEqual(module.country_history(path), [report])
             changed = self.report(studies=[self.row()])
             with self.assertRaisesRegex(ValueError, "progress_conflict"):
-                module.publish(changed, seed)
-            run.assert_not_called()
-        later = self.report({**self.selection(), "targets": ["AU", "NZ", "FJ"]})
-        with patch.object(module, "country_history", return_value=[]), \
-                patch.object(module, "load_history", return_value=[]), \
-                patch.object(module.subprocess, "run") as run:
+                module.publish(changed, seed, path)
+            later = self.report({**self.selection(), "targets": ["AU", "NZ", "FJ"]})
             with self.assertRaisesRegex(ValueError, "selection_mismatch"):
-                module.publish(later, seed)
-            run.assert_not_called()
+                module.publish(later, seed, path)
 
     def test_prompt_is_bounded_country_only_and_preserves_geo_and_access_rules(self):
         prompt = module.prompt(self.selection())
@@ -210,8 +201,12 @@ class CountryResearchTests(unittest.TestCase):
     def test_workflow_replaces_timer_without_db_or_paid_api_credentials(self):
         workflow = (ROOT / ".github/workflows/country-research.yml").read_text()
         self.assertIn("github.ref == 'refs/heads/main'", workflow)
-        self.assertIn("cron: '17,47 * * * *'", workflow)
-        self.assertIn("group: pokecrack-global-research", workflow)
+        self.assertNotIn("schedule:", workflow)
+        self.assertIn("contents: write", workflow)
+        self.assertIn("pull-requests: write", workflow)
+        self.assertIn("group: pokecrack-research-ledger", workflow)
+        self.assertIn("queue_research_ledger.py", workflow)
+        self.assertNotIn("issues: write", workflow)
         self.assertIn("cancel-in-progress: false", workflow)
         self.assertIn("StrictHostKeyChecking=yes", workflow)
         self.assertIn("--selection", workflow)

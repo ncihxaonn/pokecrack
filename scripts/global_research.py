@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Global multilingual discovery with append-only GitHub research batches."""
+"""Global multilingual discovery with an append-only unified research ledger."""
 from __future__ import annotations
 
 import argparse
@@ -11,18 +11,16 @@ from pathlib import Path
 
 from asia_research import MAX_BYTES, research_document
 from global_studies import build_ledger, validate_record
+from research_ledger import LEDGER_PATH, append_unique, load as load_research_ledger, save as save_research_ledger
 
 SCOPES = ("global", "asia", "europe", "north-america", "latin-america", "africa", "oceania")
-REPO = "ncihxaonn/pokecrack"
-MARKER = "<!-- pokecrack-global-research-v1 -->"
-TITLE = "[Global research batch] "
 # Public logs must contain only our finite diagnostic vocabulary, never a
 # provider response, generated report, local path, or exception traceback.
 SAFE_FAILURE_CODES = frozenset({
     "unsupported_scope", "timezone_required", "research_unavailable",
     "research_timeout", "invalid_report", "batch_too_large", "batch_study_limit",
     "normalized_batch_too_large", "history_capacity_requires_archive",
-    "invalid_history_body", "history_fingerprint_mismatch", "invalid_identity",
+    "invalid_research_ledger", "invalid_history_body", "history_fingerprint_mismatch", "invalid_identity",
     "invalid_reference_url", "invalid_pack_count", "invalid_study_fields",
     "invalid_list", "missing_provenance", "invalid_country",
     "invalid_geography_basis", "country_requires_evidence_basis",
@@ -140,35 +138,12 @@ def fingerprint(value: dict) -> str:
     return hashlib.sha256(json.dumps(value, sort_keys=True, separators=(",", ":")).encode()).hexdigest()
 
 
-def issue_body(batch: dict) -> str:
-    return (MARKER + "\nResearch candidates only; not admitted to production statistics.\n"
-            "Repeated reports are not independent packs. Original counts remain unverified.\n"
-            "```json\n" + json.dumps(batch, sort_keys=True, ensure_ascii=True) + "\n```\n")
-
-
-def load_history() -> list[dict]:
-    # No search index: list directly, so a just-created batch is not missed by
-    # eventual search indexing. Fail at the cap rather than silently drop history.
-    result = subprocess.run(["gh", "issue", "list", "--repo", REPO, "--state", "all",
-                             "--limit", "1000", "--json", "title,body,author"],
-                            check=True, capture_output=True, text=True)
-    issues = json.loads(result.stdout)
-    if len(issues) >= 1000:
-        raise ValueError("history_capacity_requires_archive")
+def load_history(ledger_path: Path | None = None) -> list[dict]:
+    """Return validated global studies from the single durable ledger."""
+    ledger = load_research_ledger(ledger_path or LEDGER_PATH)
     rows = []
-    for issue in issues:
-        author = issue.get("author") or {}
-        if not (author.get("is_bot") is True and author.get("login") in {
-                "app/github-actions", "github-actions[bot]"}
-                and issue["title"].startswith(TITLE) and issue["body"].startswith(MARKER)):
-            continue
-        body = issue["body"]
-        parts = body.split("```json\n")
-        if len(parts) != 2 or not parts[1].endswith("\n```\n"):
-            raise ValueError("invalid_history_body")
-        batch = validate_batch(parts[1][:-5].encode())
-        if issue["title"] != TITLE + fingerprint(batch):
-            raise ValueError("history_fingerprint_mismatch")
+    for raw_batch in ledger["global_batches"]:
+        batch = validate_batch(json.dumps(raw_batch).encode())
         rows.extend(batch["studies"])
     return rows
 
@@ -187,15 +162,15 @@ def accumulate(batch: dict, seed: dict, history: list[dict]) -> tuple[dict, dict
     return {"version": 1, "studies": new}, ledger
 
 
-def publish(batch: dict, seed_path: Path) -> dict:
+def publish(batch: dict, seed_path: Path, ledger_path: Path | None = None) -> dict:
+    ledger_path = ledger_path or LEDGER_PATH
     seed_raw = seed_path.read_bytes()
     build_ledger(seed_raw)
-    new, ledger = accumulate(batch, json.loads(seed_raw), load_history())
+    new, ledger = accumulate(batch, json.loads(seed_raw), load_history(ledger_path))
     if new["studies"]:
-        subprocess.run(["gh", "issue", "create", "--repo", REPO,
-                        "--title", TITLE + fingerprint(new), "--body-file", "-"],
-                       input=issue_body(new), text=True, check=True,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        durable = load_research_ledger(ledger_path)
+        if append_unique(durable, "global_batches", new):
+            save_research_ledger(durable, ledger_path)
     return ledger
 
 
