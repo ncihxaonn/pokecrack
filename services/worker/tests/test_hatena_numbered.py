@@ -11,10 +11,15 @@ URL = "https://www.kozaru02.com/entry/synthetic-opening"
 PRODUCT = "MEGAドリームex"
 DATE = "2026-01-10T08:11:34Z"
 NOW = datetime(2026, 9, 10, tzinfo=UTC)
+IMAGE = "https://cdn-ak.f.st-hatena.com/images/fotolife/k/kozaru02/20260110/"
 
 
 def page(numbers=range(1, 11), *, date=DATE, extra="", product=PRODUCT):
-    figures = "".join(f"<figure><figcaption>{n}パック目</figcaption></figure>" for n in numbers)
+    figures = "".join(
+        f'<figure><img src="{IMAGE}{20260110000000 + n}.jpg">'
+        f"<figcaption>{n}パック目</figcaption></figure>"
+        for n in numbers
+    )
     return (
         f'<link rel="canonical" href="{URL}">'
         f'<meta property="article:published_time" content="{date}">'
@@ -35,6 +40,8 @@ def test_complete_captions_return_minimal_candidate():
     assert result.opening_country is None and result.opened_at is None
     assert result.statistics_eligible is False
     assert result.evidence_sha256 == parse(page()).evidence_sha256
+    assert len(set(result.resource_sha256s)) == 10
+    assert all(len(value) == 64 for value in result.resource_sha256s)
 
 
 @pytest.mark.parametrize(
@@ -90,6 +97,7 @@ def test_identity_product_and_structure_drift_fail():
         page().replace("</figcaption>", "", 1),
         page().replace("</figure><figure>", ""),
         page().replace("</div></article>", ""),
+        page().removesuffix("</article>"),
         page().replace("</div></article>", "</article></div>"),
         page().replace(
             "<figcaption>1パック目</figcaption>", "<figcaption><b>1パック目</figcaption></b>"
@@ -138,3 +146,38 @@ def test_hidden_caption_cannot_close_the_visible_caption():
 def test_navigation_product_text_is_not_opening_product_evidence():
     with pytest.raises(CollectorError):
         parse(page(product="unrelated", extra=f"<nav>{PRODUCT}</nav>"))
+
+
+@pytest.mark.parametrize(
+    "replacement",
+    [
+        "",
+        '<img src="https://other.example/image.jpg">',
+        f'<img src="{IMAGE}20260110000001.jpg?resize=100">',
+        f'<img src="{IMAGE}20260110000001.jpg#fragment">',
+        f'<img src="{IMAGE}20260111000001.jpg">',
+        f'<img src="{IMAGE}20260110000001.jpg"><img src="{IMAGE}20260110000002.jpg">',
+    ],
+)
+def test_numbered_resource_must_be_singular_and_reviewed(replacement):
+    with pytest.raises(CollectorError):
+        parse(page().replace(f'<img src="{IMAGE}20260110000001.jpg">', replacement, 1))
+
+
+def test_reused_numbered_resource_fails():
+    with pytest.raises(CollectorError):
+        parse(page().replace("20260110000002.jpg", "20260110000001.jpg"))
+
+
+def test_decorative_resources_do_not_change_opening_identity():
+    original = parse(page())
+    decorated = parse(page(extra='<figure><img src="https://other.example/logo.jpg"></figure>'))
+    assert original == decorated
+
+
+def test_resource_keys_survive_page_reposting_but_evidence_keys_do_not():
+    other_url = URL + "-repost"
+    first = parse(page())
+    second = parse(page().replace(URL, other_url), expected_url=other_url)
+    assert first.resource_sha256s == second.resource_sha256s
+    assert first.evidence_sha256 != second.evidence_sha256

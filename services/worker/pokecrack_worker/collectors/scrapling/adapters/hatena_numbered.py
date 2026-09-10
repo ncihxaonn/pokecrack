@@ -15,6 +15,10 @@ from pokecrack_worker.collectors.base import CollectorError
 ROOT = "https://www.kozaru02.com/entry/"
 VOID = frozenset("area base br col embed hr img input link meta param source track wbr".split())
 HIDDEN = frozenset({"script", "style", "template", "noscript", "nav"})
+RESOURCE_URL = re.compile(
+    r"https://cdn-ak[.]f[.]st-hatena[.]com/images/fotolife/k/kozaru02/"
+    r"(?P<day>[0-9]{8})/(?P=day)[0-9]{6}[.]jpg"
+)
 
 
 def _normal(value: str) -> str:
@@ -28,6 +32,7 @@ class NumberedOpeningCandidate:
     product_label: str
     pack_count: int
     evidence_sha256: str
+    resource_sha256s: tuple[str, ...]
     # Caption enumeration alone does not prove cross-page cohort independence.
     opening_country: None = None
     opened_at: None = None
@@ -48,6 +53,7 @@ class _Captions(HTMLParser):
         self.figure_serial = 0
         self.caption_figure = 0
         self.numbered_figures: list[int] = []
+        self.figure_images: dict[int, list[str | None]] = {}
         self.malformed = False
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
@@ -71,6 +77,14 @@ class _Captions(HTMLParser):
                 if any(node[0] == "figure" for node in self.stack):
                     self.malformed = True
                 self.figure_serial += 1
+                self.figure_images[self.figure_serial] = []
+            if (
+                tag == "img"
+                and any(node[2] for node in self.stack)
+                and any(node[0] == "figure" for node in self.stack)
+            ):
+                # Read references only: never dereference an image or retain it.
+                self.figure_images[self.figure_serial].append(a.get("src"))
             if tag == "link" and a.get("rel") == "canonical":
                 self.canonicals.append(a.get("href"))
             if tag == "meta" and a.get("property") == "article:published_time":
@@ -155,7 +169,7 @@ def parse_numbered_opening(
         parser.malformed
         or parser.caption is not None
         or parser.body_count != 1
-        or any(node[2] for node in parser.stack)
+        or any(node[2] or node[0] == "article" for node in parser.stack)
         or parser.canonicals != [expected_url]
         or len(parser.dates) != 1
     ):
@@ -174,8 +188,18 @@ def parse_numbered_opening(
     ):
         raise CollectorError("numbered report has missing, repeated or reordered captions")
     published = date.astimezone(UTC).isoformat()
+    resources = []
+    for figure in parser.numbered_figures:
+        images = parser.figure_images.get(figure, [])
+        if len(images) != 1 or images[0] is None or not RESOURCE_URL.fullmatch(images[0]):
+            raise CollectorError("numbered figure has missing or ambiguous resource identity")
+        resources.append(
+            hashlib.sha256(("hatena-numbered-image-v1:" + images[0]).encode()).hexdigest()
+        )
+    if len(set(resources)) != len(resources):
+        raise CollectorError("numbered figures repeat the same resource")
     evidence = json.dumps(
-        [expected_url, published, _normal(product_label), parser.numbers],
+        [expected_url, published, _normal(product_label), parser.numbers, resources],
         ensure_ascii=True,
         separators=(",", ":"),
     )
@@ -185,4 +209,5 @@ def parse_numbered_opening(
         product_label,
         len(parser.numbers),
         hashlib.sha256(evidence.encode()).hexdigest(),
+        tuple(resources),
     )
