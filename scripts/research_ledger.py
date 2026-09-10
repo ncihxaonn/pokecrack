@@ -10,6 +10,7 @@ from pathlib import Path
 LEDGER_VERSION = 1
 LEDGER_PATH = Path(__file__).resolve().parents[1] / "data/research/research-ledger.json"
 LEDGER_KEYS = frozenset({"version", "country_reports", "global_batches", "asia_reports"})
+MAX_LEDGER_BYTES = 2 * 1024 * 1024
 
 
 def _path(path: Path | None = None) -> Path:
@@ -80,6 +81,58 @@ def append_unique(ledger: dict, collection: str, value: dict) -> bool:
         return False
     entries.append(value)
     return True
+
+
+def validate_checkpoint(raw: bytes) -> dict:
+    """Validate reference-only checkpoint data without executing branch code."""
+    if len(raw) > MAX_LEDGER_BYTES:
+        raise ValueError("research_checkpoint_too_large")
+    value = _validate_shape(json.loads(raw))
+    if type(value["version"]) is not int:
+        raise ValueError("invalid_research_ledger")
+    # Lazy imports avoid the research modules' shared-ledger import cycle.
+    from asia_research import validate as validate_asia
+    from country_research import validate_report
+    from global_research import validate_batch
+    for report in value["country_reports"]:
+        validate_report(_canonical(report).encode())
+    for batch in value["global_batches"]:
+        validate_batch(_canonical(batch).encode())
+    countries = set()
+    for report in value["asia_reports"]:
+        if not isinstance(report, dict):
+            raise ValueError("invalid_research_ledger")
+        validate_asia(_canonical(report).encode(), report.get("country"))
+        if report["country"] in countries:
+            raise ValueError("research_checkpoint_conflict")
+        countries.add(report["country"])
+    return value
+
+
+def merge_checkpoints(current: dict, pending: dict) -> dict:
+    """Append independent research; refuse competing progress or replacements."""
+    merged = validate_checkpoint(_canonical(current).encode())
+    incoming = validate_checkpoint(_canonical(pending).encode())
+    progress = {}
+    for report in merged["country_reports"]:
+        for country in report["targets"]:
+            progress[(report["sweep"], country)] = _fingerprint(report)
+    for report in incoming["country_reports"]:
+        digest = _fingerprint(report)
+        for country in report["targets"]:
+            key = (report["sweep"], country)
+            if key in progress and progress[key] != digest:
+                raise ValueError("research_checkpoint_conflict")
+            progress[key] = digest
+        append_unique(merged, "country_reports", report)
+    for batch in incoming["global_batches"]:
+        append_unique(merged, "global_batches", batch)
+    asia = {report["country"]: report for report in merged["asia_reports"]}
+    for report in incoming["asia_reports"]:
+        if report["country"] in asia and _canonical(asia[report["country"]]) != _canonical(report):
+            raise ValueError("research_checkpoint_conflict")
+        upsert_asia_report(merged, report)
+    return validate_checkpoint(_canonical(merged).encode())
 
 
 def upsert_asia_report(ledger: dict, report: dict) -> bool:
