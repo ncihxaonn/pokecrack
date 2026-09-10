@@ -1,0 +1,5037 @@
+{
+  "version": 1,
+  "country_reports": [
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "AD",
+        "AT",
+        "BY"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AE"
+        },
+        {
+          "studies": [],
+          "target": "UZ"
+        },
+        {
+          "studies": [],
+          "target": "YE"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "AE",
+        "UZ",
+        "YE"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "AF",
+        "AM",
+        "AZ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AI"
+        },
+        {
+          "studies": [],
+          "target": "AG"
+        },
+        {
+          "studies": [],
+          "target": "AW"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "AI",
+        "AG",
+        "AW"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "AO",
+        "BJ",
+        "BW"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AQ"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "AQ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "ozbargain-892506-initial-135"
+              ],
+              "country": "AU",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "later-approximate-and-separate-openings-excluded",
+                "nonrandom-mixed-retail-products",
+                "opening-location-not-explicit",
+                "self-reported-results",
+                "tampering-claims-unsubstantiated",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [
+                {
+                  "category": "ace-spec",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "master-ball-reverse-holo",
+                  "hits": 8,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 4,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 135,
+              "product": "mixed-collections-tins-and-sticker-products",
+              "set": "scarlet-violet-prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "au-ozbargain-prismatic-evolutions-135",
+              "urls": [
+                "https://www.ozbargain.com.au/node/892506"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-1o4tnq8"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "independent-review-pending",
+                "most_pull_counts_image_only_and_not_collected",
+                "no_known_reprints_found",
+                "opening_completeness_self_reported",
+                "publisher_country_not_established",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 5,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 210,
+              "product": "mega-evolution-booster-packs",
+              "set": "mega-evolution",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-mega-evolution-210-packs",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1o4tnq8/resultaten_pulls_210_packs_mega_evolution"
+              ]
+            }
+          ],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "BE",
+        "BA",
+        "BG"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "BF",
+        "BI",
+        "CV"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "BH",
+        "BD",
+        "BT"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [],
+          "target": "CN"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "BN",
+        "KH",
+        "CN"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BS"
+        },
+        {
+          "studies": [],
+          "target": "BB"
+        },
+        {
+          "studies": [],
+          "target": "BQ"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "BS",
+        "BB",
+        "BQ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BV"
+        },
+        {
+          "studies": [],
+          "target": "EC"
+        },
+        {
+          "studies": [],
+          "target": "FK"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "BV",
+        "EC",
+        "FK"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CI"
+        },
+        {
+          "studies": [],
+          "target": "DJ"
+        },
+        {
+          "studies": [],
+          "target": "GQ"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "CI",
+        "DJ",
+        "GQ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CK"
+        },
+        {
+          "studies": [],
+          "target": "CX"
+        },
+        {
+          "studies": [],
+          "target": "CC"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "CK",
+        "CX",
+        "CC"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CL"
+        },
+        {
+          "studies": [],
+          "target": "CO"
+        },
+        {
+          "studies": [],
+          "target": "PE"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "CL",
+        "CO",
+        "PE"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CM"
+        },
+        {
+          "studies": [],
+          "target": "CF"
+        },
+        {
+          "studies": [],
+          "target": "TD"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "CM",
+        "CF",
+        "TD"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CW"
+        },
+        {
+          "studies": [],
+          "target": "DM"
+        },
+        {
+          "studies": [],
+          "target": "DO"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "CW",
+        "DM",
+        "DO"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "CY",
+        "GE",
+        "ID"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "EE",
+        "FI",
+        "GR"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ER"
+        },
+        {
+          "studies": [],
+          "target": "SZ"
+        },
+        {
+          "studies": [],
+          "target": "ET"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "ER",
+        "SZ",
+        "ET"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "cardshoplive-crown-zenith-1000-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "independent-review-pending",
+                "opening_location_not_reported",
+                "page_also_mentions_over_1000_packs_but_tables_use_exact_1000_pack_cohort",
+                "rare_spot_and_reverse_holo_spot_metrics_can_cooccur_in_one_pack",
+                "reported_vstar_vmax_percentage_is_inconsistent_with_integer_count",
+                "unverified_research"
+              ],
+              "method": "original_pack_opening_tally",
+              "metrics": [
+                {
+                  "category": "galarian_gallery_gold",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "galarian_gallery_silver",
+                  "hits": 105,
+                  "unit": "cards"
+                },
+                {
+                  "category": "galarian_gallery_yellow",
+                  "hits": 190,
+                  "unit": "cards"
+                },
+                {
+                  "category": "gold_arceus_vstar",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "gold_giratina_vstar",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "gold_origin_forme_palkia_vstar",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "holo_v",
+                  "hits": 105,
+                  "unit": "cards"
+                },
+                {
+                  "category": "radiant_rare",
+                  "hits": 30,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret_rare_pikachu",
+                  "hits": 15,
+                  "unit": "cards"
+                },
+                {
+                  "category": "textured_energy",
+                  "hits": 24,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare_trainer",
+                  "hits": 35,
+                  "unit": "cards"
+                },
+                {
+                  "category": "vstar_vmax",
+                  "hits": 56,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1000,
+              "product": "crown_zenith",
+              "set": "crown_zenith",
+              "source_sample": null,
+              "study_id": "cardshoplive-crown-zenith-1000-packs",
+              "urls": [
+                "https://cardshoplive.com/pages/hit-rates-for-pokemon-crown-zenith"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "ES",
+        "GB",
+        "AL"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FM"
+        },
+        {
+          "studies": [],
+          "target": "MH"
+        },
+        {
+          "studies": [],
+          "target": "AS"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "FM",
+        "MH",
+        "AS"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [],
+          "target": "GI"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "FO",
+        "GG",
+        "GI"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bisafans-xy-furious-fists-display-001"
+              ],
+              "country": "DE",
+              "geography_basis": "publisher_country",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_categories_are_card_yields_not_hit_pack_probabilities",
+                "independent-review-pending",
+                "product_language_not_explicit",
+                "publisher_country_not_opening_location",
+                "single_display_sample",
+                "unverified_research_not_approved_for_collection_or_production_statistics"
+              ],
+              "method": "publisher_documented_complete_display_opening",
+              "metrics": [
+                {
+                  "category": "distinct_rare_or_higher",
+                  "hits": 33,
+                  "unit": "cards"
+                },
+                {
+                  "category": "holo_effect_rare_or_higher",
+                  "hits": 19,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mega_pokemon_ex",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "normal_rare",
+                  "hits": 24,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokemon_ex",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare_or_higher",
+                  "hits": 47,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "pokemon_xy_furious_fists",
+              "set": "xy_furious_fists",
+              "source_sample": null,
+              "study_id": "bisafans-xy-furious-fists-display-36",
+              "urls": [
+                "https://www.bisafans.de/sammelkarten/sets/xy/fliegende-faeuste/statistiken.php"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [],
+          "target": "IT"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "FR",
+        "DE",
+        "IT"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GA"
+        },
+        {
+          "studies": [],
+          "target": "GM"
+        },
+        {
+          "studies": [],
+          "target": "GH"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "GA",
+        "GM",
+        "GH"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GD"
+        },
+        {
+          "studies": [],
+          "target": "GP"
+        },
+        {
+          "studies": [],
+          "target": "HT"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "GD",
+        "GP",
+        "HT"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GF"
+        },
+        {
+          "studies": [],
+          "target": "GY"
+        },
+        {
+          "studies": [],
+          "target": "PY"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "GF",
+        "GY",
+        "PY"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "GL",
+        "PM"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GN"
+        },
+        {
+          "studies": [],
+          "target": "GW"
+        },
+        {
+          "studies": [],
+          "target": "LS"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "GN",
+        "GW",
+        "LS"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [],
+          "target": "SR"
+        },
+        {
+          "studies": [],
+          "target": "UY"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "GS",
+        "SR",
+        "UY"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "hk01-mixed-japanese-five-box-opening-2026"
+              ],
+              "country": "HK",
+              "geography_basis": "publisher_country",
+              "language": "zh-hant",
+              "limitations": [
+                "article-has-m1-versus-m1s-label-inconsistency",
+                "claimed-one-percent-rate-is-not-from-five-box-sample",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-set-cohort",
+                "no-eligible-exact-denominator-and-integer-numerator-pair",
+                "pack-total-not-directly-reported",
+                "unverified-research"
+              ],
+              "method": "reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese-booster-boxes",
+              "set": "mixed-m2-m2a-m1s",
+              "source_sample": {
+                "count": 5,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "hk01-mixed-japanese-five-box-opening-2026",
+              "urls": [
+                "https://www.hk01.com/%E7%A4%BE%E6%9C%83%E6%96%B0%E8%81%9E/60330325/pok%C3%A9mon%E5%8D%A1%E8%AE%8A%E9%87%91%E7%A3%9A-%E8%A8%98%E8%80%85%E5%AF%A6%E6%B8%AC-%E7%88%86%E7%9B%92-%E6%8A%BD%E5%8D%A1-%E6%8A%BD%E9%9A%9A%E5%8D%A1%E6%A9%9F%E7%8E%87%E5%83%85%E7%99%BE%E5%88%86%E4%B9%8B%E4%B8%80"
+              ]
+            }
+          ],
+          "target": "HK"
+        },
+        {
+          "studies": [],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "HK",
+        "IN",
+        "MO"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "hitpack-pitch-black-box-20260728"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "cs",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_established",
+                "external_753_pack_comparison_excluded_as_separate_derived_cohort",
+                "independent-review-pending",
+                "linked_video_appears_to_overlap_same_cohort_but_url_not_collected",
+                "ordinary_ex_and_holo_energy_not_recorded",
+                "single_box_small_sample",
+                "unverified_research_not_approved_for_collection_or_production_statistics"
+              ],
+              "method": "complete_sealed_booster_box_opening",
+              "metrics": [
+                {
+                  "category": "illustration_rare",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration_rare_or_higher",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "pokemon_tcg_mega_evolution_pitch_black",
+              "set": "pitch_black",
+              "source_sample": null,
+              "study_id": "hitpack-pitch-black-36-boosters-2026",
+              "urls": [
+                "https://www.hitpack.cz/nase-novinky/pokemon-pitch-black-pull-rates-36-boosteru"
+              ]
+            }
+          ],
+          "target": "CZ"
+        },
+        {
+          "studies": [],
+          "target": "DK"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "destined-rivals-six-packs-reddit-20260502"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_not_explicit",
+                "independent-review-pending",
+                "integer_hit_counts_not_transcribed",
+                "outcomes_presented_visually",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "self_reported_physical_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "loose_booster_packs",
+              "set": "destined-rivals",
+              "source_sample": null,
+              "study_id": "destined-rivals-six-pack-opening",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGIreland/comments/1t1wh7j/did_i_get_lucky"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "destined-rivals-ten-packs-reddit-comment-20260502"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_level_report",
+                "geography_not_explicit",
+                "independent-review-pending",
+                "other_hit_categories_not_enumerated",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "self_reported_comment_opening",
+              "metrics": [
+                {
+                  "category": "full_art",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "booster_packs",
+              "set": "destined-rivals",
+              "source_sample": null,
+              "study_id": "destined-rivals-ten-pack-full-art-report",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGIreland/comments/1t1wh7j/did_i_get_lucky"
+              ]
+            }
+          ],
+          "target": "IE"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "HU",
+        "IS",
+        "IE"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "IM"
+        },
+        {
+          "studies": [],
+          "target": "JE"
+        },
+        {
+          "studies": [],
+          "target": "SJ"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "IM",
+        "JE",
+        "SJ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "IO"
+        },
+        {
+          "studies": [],
+          "target": "TF"
+        },
+        {
+          "studies": [],
+          "target": "YT"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "IO",
+        "TF",
+        "YT"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "IR",
+        "IQ",
+        "IL"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "JM"
+        },
+        {
+          "studies": [],
+          "target": "MQ"
+        },
+        {
+          "studies": [],
+          "target": "MS"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "JM",
+        "MQ",
+        "MS"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "remix-bout-one-carton-opening-2019"
+              ],
+              "country": "JP",
+              "geography_basis": "publisher_country",
+              "language": "japanese",
+              "limitations": [
+                "carton-configuration-not-converted",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "pack-denominator-not-reported",
+                "retailer-published",
+                "unverified-research-not-approved-statistics"
+              ],
+              "method": "original-retailer-blog-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "remix-bout-carton",
+              "set": "remix-bout",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "cartons"
+              },
+              "study_id": "remix-bout-one-carton-opening-2019",
+              "urls": [
+                "https://ameblo.jp/minthiroshima/entry-12490483330.html"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "star-birth-loose-100-packs-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "japanese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-unverified",
+                "independent-review-pending",
+                "mixed-loose-and-premium-box-packs",
+                "purchase-sources-not-fully-documented",
+                "unverified-research-not-approved-statistics"
+              ],
+              "method": "original_article_opening",
+              "metrics": [
+                {
+                  "category": "double-rare",
+                  "hits": 16,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-rare-or-hyper-rare",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "triple-rare",
+                  "hits": 6,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "star-birth-booster-packs",
+              "set": "star-birth",
+              "source_sample": null,
+              "study_id": "star-birth-loose-100-packs-2022",
+              "urls": [
+                "https://nanjakorya.com/1123"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "JP",
+        "JO",
+        "KZ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "KI",
+        "NR",
+        "PW"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KM"
+        },
+        {
+          "studies": [],
+          "target": "CG"
+        },
+        {
+          "studies": [],
+          "target": "CD"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "KM",
+        "CG",
+        "CD"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "korean-mixed-sets-vendor-customer-740-packs"
+              ],
+              "country": "KR",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "convenience-sample-mixes-vendor-openings-and-customer-submissions",
+                "customer-results-were-reported-from-photos-and-not-independently-audited",
+                "independent-review-pending",
+                "manual-compilation-may-contain-errors",
+                "multiple-sets-and-eras-were-pooled",
+                "opening-location-not-reported",
+                "rarity-categories-are-not-uniform-across-every-included-set",
+                "unverified-research-not-approved-for-collection-or-production-statistics"
+              ],
+              "method": "manual-vendor-and-customer-opening-log",
+              "metrics": [
+                {
+                  "category": "ace",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ar",
+                  "hits": 73,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hr",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "masterball-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokeball-rare",
+                  "hits": 16,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rr",
+                  "hits": 114,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rrr",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sar",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sr",
+                  "hits": 18,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 740,
+              "product": "korean-pokemon-tcg-booster-packs",
+              "set": "mixed-korean-sets",
+              "source_sample": null,
+              "study_id": "korean-pokemon-pullrates-mixed-sets-740-packs",
+              "urls": [
+                "https://docs.google.com/spreadsheets/d/1FYoRLcK1N9AWol3SieFyHrTK2khcRWV2zzhccauT_Ow/edit",
+                "https://www.reddit.com/r/PokemonTCG/comments/1kz3a1y/korean_pokemon_pullrates_one_month_experience_as"
+              ]
+            }
+          ],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "KR",
+        "LK",
+        "SY"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [],
+          "target": "LA"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "KW",
+        "KG",
+        "LA"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "LB",
+        "MV",
+        "MN"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LC"
+        },
+        {
+          "studies": [],
+          "target": "MF"
+        },
+        {
+          "studies": [],
+          "target": "VC"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "LC",
+        "MF",
+        "VC"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LR"
+        },
+        {
+          "studies": [],
+          "target": "LY"
+        },
+        {
+          "studies": [],
+          "target": "MG"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "LR",
+        "LY",
+        "MG"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "LU",
+        "MT",
+        "MD"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "LV",
+        "LI",
+        "LT"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [],
+          "target": "NL"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "MC",
+        "ME",
+        "NL"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [],
+          "target": "PL"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "MK",
+        "NO",
+        "PL"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [],
+          "target": "KP"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "MM",
+        "NP",
+        "KP"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MP"
+        },
+        {
+          "studies": [],
+          "target": "PN"
+        },
+        {
+          "studies": [],
+          "target": "TK"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "MP",
+        "PN",
+        "TK"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MU"
+        },
+        {
+          "studies": [],
+          "target": "MZ"
+        },
+        {
+          "studies": [],
+          "target": "NA"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "MU",
+        "MZ",
+        "NA"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MW"
+        },
+        {
+          "studies": [],
+          "target": "ML"
+        },
+        {
+          "studies": [],
+          "target": "MR"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "MW",
+        "ML",
+        "MR"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MX"
+        },
+        {
+          "studies": [],
+          "target": "BR"
+        },
+        {
+          "studies": [],
+          "target": "AR"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "MX",
+        "BR",
+        "AR"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "phantasmal-flames-game-capital-157-boxes"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unreported",
+                "independent-review-pending",
+                "opening-images-hosted-in-private-discord",
+                "third-party-manual-transcription",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "manual-tally-of-complete-live-rip-images",
+              "metrics": [
+                {
+                  "category": "double-rare",
+                  "hits": 1170,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 626,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mega-hyper-rare",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 66,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 470,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 5652,
+              "product": "phantasmal-flames-english-booster-boxes",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "phantasmal-flames-157-boxes-5652-packs",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1owldhb/english_booster_boxes_are_definitely_seeded_heres"
+              ]
+            }
+          ],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "ascended-heroes-7047-friends-stores-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unreported",
+                "god-pack-sir-counting-ambiguous",
+                "independent-review-pending",
+                "multiple-manual-contributors",
+                "overlap-unresolved",
+                "possible-errors-self-reported",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "multi-contributor-manual-collection",
+              "metrics": [
+                {
+                  "category": "gold-card",
+                  "hits": 9,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 7047,
+              "product": "ascended-heroes-mixed-sealed-products",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "ascended-heroes-7047-packs",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "ascended-heroes-1004-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unreported",
+                "independent-review-pending",
+                "numerators-only-in-image",
+                "opening-method-unreported",
+                "overlap-unresolved",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "image-reported-opening-study",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1004,
+              "product": "ascended-heroes",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "ascended-heroes-1004-packs",
+              "urls": [
+                "https://www.reddit.com/r/PokeInvesting/comments/1qygcc0/ascended_heroes_pull_rates_based_on_1004_packs"
+              ]
+            }
+          ],
+          "target": "PH"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "MY",
+        "VN",
+        "PH"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "NC"
+        },
+        {
+          "studies": [],
+          "target": "NU"
+        },
+        {
+          "studies": [],
+          "target": "NF"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "NC",
+        "NU",
+        "NF"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "NE"
+        },
+        {
+          "studies": [],
+          "target": "RW"
+        },
+        {
+          "studies": [],
+          "target": "ST"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "NE",
+        "RW",
+        "ST"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "NG",
+        "MA",
+        "DZ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "NI"
+        },
+        {
+          "studies": [],
+          "target": "PA"
+        },
+        {
+          "studies": [],
+          "target": "BO"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "NI",
+        "PA",
+        "BO"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [],
+          "target": "PK"
+        },
+        {
+          "studies": [],
+          "target": "PS"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "OM",
+        "PK",
+        "PS"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "PF"
+        },
+        {
+          "studies": [],
+          "target": "GU"
+        },
+        {
+          "studies": [],
+          "target": "HM"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "PF",
+        "GU",
+        "HM"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "PG",
+        "SB",
+        "VU"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "PR"
+        },
+        {
+          "studies": [],
+          "target": "BL"
+        },
+        {
+          "studies": [],
+          "target": "KN"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "PR",
+        "BL",
+        "KN"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [],
+          "target": "RO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "brilliant-stars-1034-packs-v1"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "booster-case-provenance-not-fully-reported",
+                "collector-policy-not-enabled",
+                "country-unknown",
+                "independent-review-pending",
+                "selected-card-counts-only",
+                "unverified-research",
+                "updated-cohort-supersedes-936-pack-title-claim"
+              ],
+              "method": "self_reported_physical_opening_tally",
+              "metrics": [
+                {
+                  "category": "arceus-alt-art",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "boltund-v-trainer-gallery",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "charizard-alt-art",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "charizard-v",
+                  "hits": 10,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full-art-charizard",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full-art-cynthias-ambition",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full-art-roseannes-backup",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "gold-galarian-articuno",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "gold-galarian-moltres",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "gold-galarian-zapdos",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "gold-ultra-ball",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "gold-vstar-arceus",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "honchkrow-alt-art",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mimikyu-v-trainer-gallery",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mimikyu-vmax-trainer-gallery",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rainbow-cynthias-ambition",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rainbow-roseannes-backup",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rainbow-vstar-arceus",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rainbow-vstar-charizard",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rainbow-vstar-shaymin",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sylveon-v-trainer-gallery",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sylveon-vmax-trainer-gallery",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "umbreon-v-trainer-gallery",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "umbreon-vmax-trainer-gallery",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1034,
+              "product": "booster-boxes-and-loose-booster-packs",
+              "set": "brilliant-stars",
+              "source_sample": null,
+              "study_id": "brilliant-stars-1034-pack-opening-study",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/t4m1sh/pull_rate_data_for_brilliant_stars_out_of_26"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "ascended-heroes-7047-community-packs-v1"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collection-error-possible",
+                "collector-policy-not-enabled",
+                "country-unknown",
+                "god-pack-counting-method-affects-sir-rate",
+                "independent-review-pending",
+                "local-store-cohort-details-undisclosed",
+                "manual-data-collection",
+                "mixed-product-types",
+                "multiple-contributors",
+                "unverified-research"
+              ],
+              "method": "manual_multi_source_opening_tally",
+              "metrics": [
+                {
+                  "category": "god-packs",
+                  "hits": 5,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "gold-cards",
+                  "hits": 9,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare-cards",
+                  "hits": 105,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 7047,
+              "product": "mixed-blisters-etbs-tins-and-collection-boxes",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "ascended-heroes-7047-pack-community-study",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+              ]
+            }
+          ],
+          "target": "RU"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "PT",
+        "RO",
+        "RU"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-prismatic-evolutions-200-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "packs-sourced-across-multiple-product-types",
+                "primary-status-self-reported",
+                "several-hit-categories-lack-integer-counts",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "documented-community-opening",
+              "metrics": [
+                {
+                  "category": "hyper-rare-gold",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-art-rare",
+                  "hits": 4,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 200,
+              "product": "english-prismatic-evolutions-booster-packs",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "tcgtalk-prismatic-evolutions-200-pack-opening",
+              "urls": [
+                "https://tcgtalk.com/guides/prismatic-evolutions-pull-rates-god-pack"
+              ]
+            }
+          ],
+          "target": "SG"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "QA",
+        "SA",
+        "SG"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "RE"
+        },
+        {
+          "studies": [],
+          "target": "SH"
+        },
+        {
+          "studies": [],
+          "target": "EH"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "RE",
+        "SH",
+        "EH"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-chaos-rising-primary-168"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "known_swiss_reprint",
+                "manual_recording_details_not_reported",
+                "mixed_product_formats",
+                "only_primary_168_pack_cohort_retained",
+                "opening_location_unknown",
+                "page_combines_separate_168_and_100_pack_cohorts",
+                "pre_release_sample",
+                "unverified_research"
+              ],
+              "method": "publisher_opening_report",
+              "metrics": [
+                {
+                  "category": "illustration_rare",
+                  "hits": 18,
+                  "unit": "cards"
+                },
+                {
+                  "category": "master_hyper_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "named_ultra_rare_trainer",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "standard_ex",
+                  "hits": 39,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare_ex_full_art",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare_non_ex_full_art",
+                  "hits": 5,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 168,
+              "product": "chaos-rising-english",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "tcgtalk-chaos-rising-primary-168",
+              "urls": [
+                "https://catchandcollect.ch/news/wochen-blog-kw-23-2026",
+                "https://tcgtalk.com/guides/chaos-rising-pull-rates"
+              ]
+            }
+          ],
+          "target": "CH"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "SI",
+        "SE",
+        "CH"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "SM",
+        "RS",
+        "SK"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SN"
+        },
+        {
+          "studies": [],
+          "target": "SC"
+        },
+        {
+          "studies": [],
+          "target": "SL"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "SN",
+        "SC",
+        "SL"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SO"
+        },
+        {
+          "studies": [],
+          "target": "SS"
+        },
+        {
+          "studies": [],
+          "target": "SD"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "SO",
+        "SS",
+        "SD"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SV"
+        },
+        {
+          "studies": [],
+          "target": "GT"
+        },
+        {
+          "studies": [],
+          "target": "HN"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "SV",
+        "GT",
+        "HN"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SX"
+        },
+        {
+          "studies": [],
+          "target": "TT"
+        },
+        {
+          "studies": [],
+          "target": "TC"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "SX",
+        "TT",
+        "TC"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "TL",
+        "TR",
+        "TM"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [],
+          "target": "TH"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "TW",
+        "TJ",
+        "TH"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TZ"
+        },
+        {
+          "studies": [],
+          "target": "TG"
+        },
+        {
+          "studies": [],
+          "target": "TN"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "TZ",
+        "TG",
+        "TN"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "UA",
+        "VA",
+        "AX"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "UG"
+        },
+        {
+          "studies": [],
+          "target": "ZM"
+        },
+        {
+          "studies": [],
+          "target": "ZW"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "UG",
+        "ZM",
+        "ZW"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "UM"
+        },
+        {
+          "studies": [],
+          "target": "WF"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "UM",
+        "WF"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "vivid-voltage-2184-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "independent-review-pending",
+                "raw-count-page-not-reviewed",
+                "self-reported-results",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "self-reported-complete-opening",
+              "metrics": [
+                {
+                  "category": "rainbow-pikachu",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 2184,
+              "product": "vivid-voltage",
+              "set": "vivid-voltage",
+              "source_sample": null,
+              "study_id": "vivid-voltage-2184-pack-opening",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "scarlet-violet-151-1000-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "independent-review-pending",
+                "integer-results-only-in-images",
+                "metrics-omitted",
+                "self-reported-results",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "self-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1000,
+              "product": "scarlet-violet-151",
+              "set": "scarlet-violet-151",
+              "source_sample": null,
+              "study_id": "scarlet-violet-151-1000-pack-opening",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/18xr432/my_pull_rates_out_of_1000_scarlet_violet_151_packs"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-swsh-to-perfect-order-1502-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "independent-review-pending",
+                "later-456-pack-update-not-merged",
+                "multiple-sets-and-eras-combined",
+                "self-reported-results",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "self-reported-cumulative-opening-log",
+              "metrics": [
+                {
+                  "category": "mega-hyper-rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 7,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1502,
+              "product": "mixed-physical-pokemon-tcg",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "mixed-sets-1502-pack-opening-log",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1t1yuc8/pokemon_pull_rates"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "US",
+        "CA",
+        "BM"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "VE"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "VE"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "VG"
+        },
+        {
+          "studies": [],
+          "target": "KY"
+        },
+        {
+          "studies": [],
+          "target": "CU"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "VG",
+        "KY",
+        "CU"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "VI"
+        },
+        {
+          "studies": [],
+          "target": "BZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "indigo-geek-phantasmal-flames-40-packs"
+              ],
+              "country": "MX",
+              "geography_basis": "publisher_country",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "description-claims-50-packs-and-an-etb-but-title-and-video-products-support-40",
+                "independent-review-pending",
+                "integer-hit-counts-not-extracted",
+                "pokemon-company-supplied-products",
+                "publisher-country-evidence-supports-mexico-not-opening-location",
+                "target-search-did-not-establish-costa-rica-geography",
+                "unverified-research-not-approved-for-collection-or-production-statistics"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 40,
+              "product": "booster-box-and-build-and-battle",
+              "set": "mega-evolution-phantasmal-flames",
+              "source_sample": null,
+              "study_id": "indigo-geek-phantasmal-flames-40-pack-opening",
+              "urls": [
+                "https://www.dailymotion.com/video/x9to5yu"
+              ]
+            }
+          ],
+          "target": "CR"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "VI",
+        "BZ",
+        "CR"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "WS",
+        "TO",
+        "TV"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ZA"
+        },
+        {
+          "studies": [],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        }
+      ],
+      "sweep": 1,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "AF",
+        "AM",
+        "AZ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        },
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-151-china-single-box-opening-2026"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-textually-enumerated",
+                "image-evidence-not-independently-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "pack-count-not-reported",
+                "single-box-small-sample",
+                "unverified-research"
+              ],
+              "method": "complete_opening_image_log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-collect-151-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-151-china-single-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1qu7aw1/151_china_box_opening"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-first-chinese-box-chase-opening-2026"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-textually-enumerated",
+                "image-evidence-not-independently-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "pack-count-not-reported",
+                "single-box-small-sample",
+                "specific-product-unconfirmed",
+                "unverified-research"
+              ],
+              "method": "complete_opening_image_log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-first-chinese-box-chase-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1ua2hns/first_time_opening_chinese_box_and_pulled_my"
+              ]
+            }
+          ],
+          "target": "CN"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "BH",
+        "BD",
+        "BT",
+        "BN",
+        "KH",
+        "CN"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bikuhime-kebangkitan-legenda-eight-packs-2020"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "foil-categories-reported-only-in-aggregate",
+                "independent-review-pending",
+                "no-independent-authentication",
+                "opening-location-not-reported",
+                "packs-split-between-two-set-variants",
+                "publisher-country-not-used",
+                "small-convenience-sample",
+                "unverified-research-candidate"
+              ],
+              "method": "physical-weighing-opening",
+              "metrics": [
+                {
+                  "category": "gx-foil",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "regular-foil",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 8,
+              "product": "pokemon-tcg-indonesia-booster-packs",
+              "set": "kebangkitan-legenda-set-a-and-set-b",
+              "source_sample": null,
+              "study_id": "bikuhime-kebangkitan-legenda-eight-packs-2020",
+              "urls": [
+                "https://bikuhime.wordpress.com/2020/05/08/menimbang-booster-pack-pokemon-tcg"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "bikuhime-hantaman-pertama-three-boxes-2020"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-independent-authentication",
+                "opening-location-not-reported",
+                "packs-per-box-stated-but-not-converted",
+                "publisher-country-not-used",
+                "three-box-results-aggregated-across-two-set-variants",
+                "unverified-research-candidate"
+              ],
+              "method": "dated-opening-log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pokemon-tcg-indonesia-booster-box",
+              "set": "hantaman-pertama-set-a-and-set-b",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "bikuhime-hantaman-pertama-three-boxes-2020",
+              "urls": [
+                "https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokehood-first-partner-series-two-box-20260721"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "he",
+              "limitations": [
+                "article-contains-affiliate-links",
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-domain-or-language",
+                "independent-review-pending",
+                "no-independent-authentication",
+                "no-integer-booster-hit-count-reported",
+                "opening-location-not-reported",
+                "promotional-cards-excluded-from-hit-metrics",
+                "single-product-opening",
+                "unverified-research-candidate"
+              ],
+              "method": "dated-article-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 2,
+              "product": "first-partner-illustration-collection-series-2",
+              "set": "chaos-rising-and-perfect-order",
+              "source_sample": null,
+              "study_id": "pokehood-first-partner-series-two-box-20260721",
+              "urls": [
+                "https://il.pokehood.com/articles/reviews/first-partner-illustration-collection-series-2-review"
+              ]
+            }
+          ],
+          "target": "IL"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "HK",
+        "IN",
+        "MO"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mega-dream-ex-ten-pack-family-opening-20260105"
+              ],
+              "country": "JP",
+              "geography_basis": "opening_location",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "shrink-wrap-removed-at-purchase",
+                "single-box-sample",
+                "two-articles-same-cohort",
+                "unverified-research"
+              ],
+              "method": "pack-by-pack-opening-log",
+              "metrics": [
+                {
+                  "category": "ar",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ex",
+                  "hits": 10,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ma",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sar",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sr",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "mega-dream-ex-booster-box",
+              "set": "mega-dream-ex",
+              "source_sample": null,
+              "study_id": "jp-mega-dream-ex-ten-pack-log-20260105",
+              "urls": [
+                "https://www.kozaru02.com/entry/pokecakaifulog",
+                "https://www.kozaru02.com/entry/pokekakaifu"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "nojoy-pokemon-card-151-one-box-20231001"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opened-pack-count-not-explicitly-separated-from-product-contents",
+                "publisher-location-not-used",
+                "single-box-sample",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pokemon-card-151-booster-box",
+              "set": "pokemon-card-151",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "jp-pokemon-card-151-box-20231001",
+              "urls": [
+                "https://nojoy-nolife.com/pokemon-card-151-2"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "battle-partners-one-carton-20250408"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "card-counts-partly-image-only",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "packs-not-explicitly-reported",
+                "publisher-location-not-used",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "battle-partners-booster-carton",
+              "set": "battle-partners",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "cartons"
+              },
+              "study_id": "jp-battle-partners-carton-20250408",
+              "urls": [
+                "https://www.pokeca.net/diary-detail/176"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "nojoy-raging-surf-one-box-20231001"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opened-pack-count-not-explicitly-separated-from-product-contents",
+                "publisher-location-not-used",
+                "single-box-sample",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "raging-surf-booster-box",
+              "set": "raging-surf",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "jp-raging-surf-box-20231001",
+              "urls": [
+                "https://nojoy-nolife.com/pokemon-card-ragingsurf"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        },
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [],
+          "target": "LA"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "JP",
+        "JO",
+        "KZ",
+        "KW",
+        "KG",
+        "LA"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [],
+          "target": "PH"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "MY",
+        "VN",
+        "PH"
+      ]
+    }
+  ],
+  "global_batches": [
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "cardshoplive_scarlet_violet_1728"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "geography_unknown",
+            "independent-review-pending",
+            "product_mix_not_reported",
+            "publisher_disclaimer_unofficial",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_recorded",
+          "metrics": [
+            {
+              "category": "double_rare",
+              "hits": 234,
+              "unit": "cards"
+            },
+            {
+              "category": "gardevoir_ex_special_illustration_rare",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "hyper_rare_gold",
+              "hits": 32,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 130,
+              "unit": "cards"
+            },
+            {
+              "category": "koraidon_ex_hyper_rare_gold",
+              "hits": 4,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon_ex_hyper_rare_gold",
+              "hits": 5,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon_ex_special_illustration_rare",
+              "hits": 7,
+              "unit": "cards"
+            },
+            {
+              "category": "miriam_special_illustration_rare",
+              "hits": 4,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 52,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare",
+              "hits": 112,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1728,
+          "product": "mixed_physical_boosters",
+          "set": "scarlet_violet_base",
+          "source_sample": null,
+          "study_id": "cardshoplive_scarlet_violet_1728",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-scarlet-and-violet"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardshoplive_crown_zenith_1000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "geography_unknown",
+            "independent-review-pending",
+            "product_mix_not_reported",
+            "publisher_disclaimer_unofficial",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_recorded",
+          "metrics": [
+            {
+              "category": "galarian_gallery_gold",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "galarian_gallery_silver",
+              "hits": 105,
+              "unit": "cards"
+            },
+            {
+              "category": "galarian_gallery_yellow",
+              "hits": 190,
+              "unit": "cards"
+            },
+            {
+              "category": "gold_arceus_vstar",
+              "hits": 2,
+              "unit": "cards"
+            },
+            {
+              "category": "gold_giratina_vstar",
+              "hits": 3,
+              "unit": "cards"
+            },
+            {
+              "category": "gold_origin_forme_palkia_vstar",
+              "hits": 2,
+              "unit": "cards"
+            },
+            {
+              "category": "holo_v",
+              "hits": 105,
+              "unit": "cards"
+            },
+            {
+              "category": "radiant_rare",
+              "hits": 30,
+              "unit": "cards"
+            },
+            {
+              "category": "secret_rare_pikachu",
+              "hits": 15,
+              "unit": "cards"
+            },
+            {
+              "category": "textured_energy",
+              "hits": 24,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare_trainer",
+              "hits": 35,
+              "unit": "cards"
+            },
+            {
+              "category": "vstar_vmax",
+              "hits": 56,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1000,
+          "product": "mixed_physical_boosters",
+          "set": "crown_zenith",
+          "source_sample": null,
+          "study_id": "cardshoplive_crown_zenith_1000",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-crown-zenith"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "fusion_strike_observed_video_cohorts_4197"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "geography_unknown",
+            "independent-review-pending",
+            "mostly_booster_boxes_with_some_elite_trainer_boxes",
+            "multiple_video_sources",
+            "overlap_unresolved",
+            "percentage_only_categories_omitted",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "observed_complete_video_openings",
+          "metrics": [
+            {
+              "category": "alternate_art_v",
+              "hits": 41,
+              "unit": "cards"
+            },
+            {
+              "category": "alternate_art_vmax_secret_rare",
+              "hits": 14,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 4197,
+          "product": "mostly_booster_boxes_and_some_elite_trainer_boxes",
+          "set": "fusion_strike",
+          "source_sample": null,
+          "study_id": "fusion_strike_observed_openings_4197",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/qqpiol/fusion_strike_pull_rates_statistical_analysis_on"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardzard_battle_styles_1405"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "geography_unknown",
+            "independent-review-pending",
+            "integer_hit_counts_not_accessible_as_page_text",
+            "mixed_build_battle_and_booster_box_cases",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_recorded",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1405,
+          "product": "build_battle_boxes_and_booster_boxes",
+          "set": "battle_styles",
+          "source_sample": null,
+          "study_id": "cardzard_battle_styles_1405",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/m6zx5c/battle_styles_pull_rate_data_from_1405_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardzard_hidden_fates_2350"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "geography_unknown",
+            "independent-review-pending",
+            "integer_hit_counts_not_accessible_as_page_text",
+            "product_mix_not_reported",
+            "study_scope_limited_to_shiny_vault_cards",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_recorded",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2350,
+          "product": "physical_boosters",
+          "set": "hidden_fates_shiny_vault",
+          "source_sample": null,
+          "study_id": "cardzard_hidden_fates_2350",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/jsx9ye/hidden_fates_shiny_vault_pull_rate_data_from_2350"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardzard_vivid_voltage_2184"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "geography_unknown",
+            "independent-review-pending",
+            "mixed_booster_boxes_and_build_battle_products",
+            "most_metrics_only_available_in_image_or_external_raw_data",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_recorded",
+          "metrics": [
+            {
+              "category": "rainbow_pikachu_vmax",
+              "hits": 2,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 2184,
+          "product": "booster_boxes_and_build_battle_boxes",
+          "set": "vivid_voltage",
+          "source_sample": null,
+          "study_id": "cardzard_vivid_voltage_2184",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+          ]
+        }
+      ],
+      "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "cardzard_vivid_voltage_2184_2020"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "booster_and_build_and_battle_sources_mixed",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "linked_raw_numbers_page_not_verified",
+            "opening_location_unknown",
+            "unverified_research"
+          ],
+          "method": "self_opened_and_recorded",
+          "metrics": [
+            {
+              "category": "rainbow_pikachu_vmax",
+              "hits": 2,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 2184,
+          "product": "english_vivid_voltage_booster_packs",
+          "set": "vivid_voltage",
+          "study_id": "cardzard_vivid_voltage_2184",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit_ascended_heroes_friends_stores_7047_2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "god_pack_sir_counting_is_internally_ambiguous",
+            "independent-review-pending",
+            "manual_data_from_multiple_people",
+            "multiple_product_types_mixed",
+            "opening_location_unknown",
+            "overlap_unresolved",
+            "possible_overlap_with_tcgplayer_2000_pack_study_unresolved",
+            "unverified_research"
+          ],
+          "method": "multi_contributor_manual_collection",
+          "metrics": [
+            {
+              "category": "hyper_rare_gold_cards",
+              "hits": 9,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare_cards_reported",
+              "hits": 105,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 7047,
+          "product": "english_ascended_heroes_mixed_sealed_products",
+          "set": "ascended_heroes",
+          "study_id": "ascended_heroes_7047_manual_cohort",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit_lost_origin_36_boxes_2022"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer_hit_table_not_accessible_as_text",
+            "opening_location_unknown",
+            "pack_count_verified_only_from_title",
+            "possible_overlap_with_separate_video_studies_not_established",
+            "unverified_research"
+          ],
+          "method": "self_opened_booster_boxes",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 1296,
+          "product": "english_lost_origin_booster_boxes",
+          "set": "lost_origin",
+          "study_id": "lost_origin_36_boxes_1296",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/xb5aq0/lost_origin_pull_rates_36_booster_boxes_1296_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_authentication_center_surging_sparks_2024"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact_pack_denominator_not_reported",
+            "independent-review-pending",
+            "integer_hit_counts_not_reported",
+            "lower_bound_recorded_as_8000",
+            "opening_location_unknown",
+            "unverified_research"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english_surging_sparks_booster_packs",
+          "set": "surging_sparks",
+          "study_id": "tcgplayer_surging_sparks_8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Surging-Sparks-Pull-Rates/6ccfb6ab-f26a-4ce8-bab5-5f91c85ec70e"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardzard_shining_fates_1087_2021"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer_hit_table_not_accessible_as_text",
+            "opening_location_unknown",
+            "pack_count_verified_only_from_title",
+            "same_publisher_as_vivid_voltage_but_distinct_set_and_cohort",
+            "unverified_research"
+          ],
+          "method": "self_opened_and_recorded",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 1087,
+          "product": "english_shining_fates_booster_packs",
+          "set": "shining_fates",
+          "study_id": "cardzard_shining_fates_1087",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/lo8m1v/shining_fates_pull_rate_data_from_1087_packs"
+          ]
+        }
+      ],
+      "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "cardzard-vivid-voltage-2184"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "mixed-booster-box-and-build-and-battle-products",
+            "opening-location-not-reported",
+            "raw-data-link-could-not-be-opened",
+            "results-published-mainly-as-image",
+            "unverified-research-not-approved-for-collection-or-production-statistics"
+          ],
+          "method": "complete-recorded-opening",
+          "metrics": [
+            {
+              "category": "rainbow-rare-pikachu-vmax",
+              "hits": 2,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 2184,
+          "product": "english-vivid-voltage",
+          "set": "vivid-voltage",
+          "study_id": "vivid-voltage-2184-pack-opening",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-scarlet-violet-over-8000"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-pack-count-not-reported",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "publisher-country-is-not-opening-location",
+            "rounded-rates-and-confidence-intervals-not-integer-counts",
+            "unverified-research-not-approved-for-collection-or-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-scarlet-and-violet-base",
+          "set": "scarlet-and-violet-base",
+          "study_id": "scarlet-violet-over-8000-pack-opening",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-mega-evolution-over-5000"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-pack-count-not-reported",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "publisher-country-is-not-opening-location",
+            "rounded-rates-and-confidence-intervals-not-integer-counts",
+            "unverified-research-not-approved-for-collection-or-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 5000,
+          "product": "english-mega-evolution",
+          "set": "mega-evolution",
+          "study_id": "mega-evolution-over-5000-pack-opening",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Mega-Evolution-Pull-Rates/40cbeedc-21ce-473b-aef1-74e3969d9f91"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tallgrasscards-lost-origin-1296"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "booster-box-only-sample",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "opening-stopped-earlier-than-usual",
+            "results-published-mainly-as-images",
+            "unverified-research-not-approved-for-collection-or-production-statistics",
+            "zero-count-does-not-establish-true-rate"
+          ],
+          "method": "complete-recorded-opening",
+          "metrics": [
+            {
+              "category": "alternate-art",
+              "hits": 0,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1296,
+          "product": "english-lost-origin-booster-boxes",
+          "set": "lost-origin",
+          "study_id": "lost-origin-1296-pack-opening",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/xb5aq0/lost_origin_pull_rates_36_booster_boxes_1296_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "ebay-kentucky-black-bolt-over-350",
+            "ebay-kentucky-white-flare-over-350"
+          ],
+          "country": "US",
+          "geography_basis": "opening_location",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "equal-distribution-assumption-across-sets",
+            "exact-pack-count-not-reported",
+            "independent-review-pending",
+            "no-integer-hit-counts-reported",
+            "overlap-unresolved",
+            "two-distinct-set-cohorts-combined-for-analysis",
+            "unverified-research-not-approved-for-collection-or-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 700,
+          "product": "english-black-bolt-and-white-flare",
+          "set": "black-bolt-and-white-flare",
+          "study_id": "black-bolt-white-flare-over-700-pack-opening",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Black-Bolt-and-White-Flare-Pull-Rates/bac92199-a2a7-4668-b4a4-2647a111776f"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardzard-shining-fates-1087"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "no-verified-integer-metrics-transcribed",
+            "opening-location-not-reported",
+            "publisher-described-study-as-preliminary",
+            "results-published-mainly-as-image",
+            "sample-from-sealed-cases",
+            "unverified-research-not-approved-for-collection-or-production-statistics"
+          ],
+          "method": "complete-recorded-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1087,
+          "product": "english-shining-fates",
+          "set": "shining-fates",
+          "study_id": "shining-fates-1087-pack-opening",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/lo8m1v/shining_fates_pull_rate_data_from_1087_packs"
+          ]
+        }
+      ],
+      "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "digitaltq-pokemon-151-700"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "includes_own_and_third_party_openings",
+            "independent-review-pending",
+            "not_production_statistics",
+            "opening_geography_unknown",
+            "overlap_unresolved",
+            "rarity_categories_are_card_yields",
+            "source_cohorts_not_enumerated",
+            "unverified_research"
+          ],
+          "method": "mixed_source_aggregation",
+          "metrics": [
+            {
+              "category": "double_rare_holo",
+              "hits": 93,
+              "unit": "cards"
+            },
+            {
+              "category": "hyper_rare",
+              "hits": 20,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 54,
+              "unit": "cards"
+            },
+            {
+              "category": "rare_holo",
+              "hits": 563,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 25,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare",
+              "hits": 42,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 700,
+          "product": "international_english_booster_packs",
+          "set": "scarlet-violet-151",
+          "study_id": "digitaltq-pokemon-151-700",
+          "urls": [
+            "https://www.digitaltq.com/pokemon-151-pull-rates-pokemon-tcg"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "digitaltq-scarlet-violet-676"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "includes_own_and_third_party_openings",
+            "independent-review-pending",
+            "not_production_statistics",
+            "opening_geography_unknown",
+            "overlap_unresolved",
+            "rare_holo_categories_are_card_yields",
+            "source_cohorts_not_enumerated",
+            "unverified_research"
+          ],
+          "method": "mixed_source_aggregation",
+          "metrics": [
+            {
+              "category": "double_rare_holo",
+              "hits": 95,
+              "unit": "cards"
+            },
+            {
+              "category": "hyper_rare",
+              "hits": 13,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 52,
+              "unit": "cards"
+            },
+            {
+              "category": "rare_holo",
+              "hits": 533,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 21,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare",
+              "hits": 44,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 676,
+          "product": "international_english_booster_packs",
+          "set": "scarlet-violet-base",
+          "study_id": "digitaltq-scarlet-violet-676",
+          "urls": [
+            "https://www.digitaltq.com/scarlet-violet-pull-rates-pokemon-tcg"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "digitaltq-temporal-forces-691"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "includes_own_and_third_party_openings",
+            "independent-review-pending",
+            "not_production_statistics",
+            "opening_geography_unknown",
+            "overlap_unresolved",
+            "rarity_categories_are_card_yields",
+            "source_cohorts_not_enumerated",
+            "unverified_research"
+          ],
+          "method": "mixed_source_aggregation",
+          "metrics": [
+            {
+              "category": "double_rare_holo",
+              "hits": 124,
+              "unit": "cards"
+            },
+            {
+              "category": "hyper_rare",
+              "hits": 5,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 57,
+              "unit": "cards"
+            },
+            {
+              "category": "rare_holo",
+              "hits": 542,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 11,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare",
+              "hits": 54,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 691,
+          "product": "international_english_booster_packs",
+          "set": "temporal-forces",
+          "study_id": "digitaltq-temporal-forces-691",
+          "urls": [
+            "https://www.digitaltq.com/temporal-forces-pull-rates-pokemon-tcg"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "jp-scarlet-ex-500-boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "collection_method_insufficiently_documented",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer_hit_counts_not_published",
+            "not_production_statistics",
+            "reports_500_boxes_not_pack_denominator",
+            "rounded_percentages_excluded",
+            "unverified_research"
+          ],
+          "method": "manually_aggregated_carton_openings",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_booster_boxes",
+          "set": "scarlet-ex",
+          "study_id": "jp-scarlet-ex-500-box-study",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-scarletex"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "jp-start-deck-100-battle-collection-1020"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "category_counts_may_overlap",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "not_production_statistics",
+            "opened_units_are_constructed_deck_products_not_booster_packs",
+            "pack_denominator_not_applicable",
+            "unverified_research"
+          ],
+          "method": "documented_physical_product_opening",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_constructed_deck_products",
+          "set": "start-deck-100-battle-collection",
+          "study_id": "jp-start-deck-100-battle-collection-1020",
+          "urls": [
+            "https://lifematome.blog/pokeka-startdeck-secret"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "jp-star-birth-loose-100-2022"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "includes_20_packs_from_premium_box",
+            "independent-review-pending",
+            "mixed_pack_sources",
+            "not_production_statistics",
+            "unverified_research"
+          ],
+          "method": "documented_physical_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "japanese_loose_booster_packs",
+          "set": "star-birth",
+          "study_id": "jp-star-birth-100-loose-packs",
+          "urls": [
+            "https://nanjakorya.com/1123"
+          ]
+        }
+      ],
+      "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "hidden-fates-shiny-vault-2350-pack-cohort"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "geography_unknown",
+            "independent-review-pending",
+            "integer_category_counts_not_textually_available",
+            "linked_raw_data_not_verified",
+            "single_reporter_unverified",
+            "unverified_research_not_approved_for_collection_or_production_statistics"
+          ],
+          "method": "self_reported_complete_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2350,
+          "product": "booster_packs",
+          "set": "hidden-fates",
+          "source_sample": null,
+          "study_id": "hidden-fates-shiny-vault-2350-pack-opening",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/jsx9ye/hidden_fates_shiny_vault_pull_rate_data_from_2350"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "astral-radiance-60-box-2160-pack-cohort"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "geography_unknown",
+            "independent-review-pending",
+            "integer_category_counts_not_textually_available",
+            "rare_slot_only_in_primary_summary",
+            "single_reporter_unverified",
+            "trainer_gallery_and_radiant_cards_excluded_from_primary_analysis",
+            "unverified_research_not_approved_for_collection_or_production_statistics"
+          ],
+          "method": "self_reported_complete_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2160,
+          "product": "booster_boxes",
+          "set": "astral-radiance",
+          "source_sample": null,
+          "study_id": "astral-radiance-60-box-opening",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/uyu87e/astral_radiance_pulls_60_booster_boxes_2160_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-scarlet-violet-8000-plus-pack-cohort"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "cohort_overlap_with_reprints_unresolved",
+            "collector-policy-not-enabled",
+            "exact_pack_denominator_not_reported",
+            "geography_unknown",
+            "independent-review-pending",
+            "published_percentages_and_rounded_odds_not_converted_to_hit_counts",
+            "unverified_research_not_approved_for_collection_or_production_statistics"
+          ],
+          "method": "authentication_center_mass_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "booster_packs",
+          "set": "scarlet-violet",
+          "source_sample": null,
+          "study_id": "scarlet-violet-tcgplayer-8000-plus-opening",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "mega-evolution-157-box-5652-pack-cohort"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "distribution_claims_are_observational",
+            "geography_unknown",
+            "includes_discord_and_video_openings",
+            "independent-review-pending",
+            "multi_source_compilation",
+            "overlap_unresolved",
+            "unverified_research_not_approved_for_collection_or_production_statistics"
+          ],
+          "method": "compiled_complete_box_openings",
+          "metrics": [
+            {
+              "category": "double_rare",
+              "hits": 1170,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 626,
+              "unit": "cards"
+            },
+            {
+              "category": "mega_hyper_rare",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 66,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare",
+              "hits": 470,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 5652,
+          "product": "english_booster_boxes",
+          "set": "mega-evolution",
+          "source_sample": null,
+          "study_id": "mega-evolution-157-booster-box-study",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1owldhb/english_booster_boxes_are_definitely_seeded_heres"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "brilliant-stars-28-box-plus-26-pack-cohort"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "geography_unknown",
+            "independent-review-pending",
+            "single_reporter_unverified",
+            "specific_card_metrics_only",
+            "unverified_research_not_approved_for_collection_or_production_statistics",
+            "updated_cohort_supersedes_936_pack_title_cohort"
+          ],
+          "method": "self_reported_complete_opening",
+          "metrics": [
+            {
+              "category": "rainbow_vstar_arceus",
+              "hits": 1,
+              "unit": "cards"
+            },
+            {
+              "category": "rainbow_vstar_charizard",
+              "hits": 1,
+              "unit": "cards"
+            },
+            {
+              "category": "rainbow_vstar_shaymin",
+              "hits": 1,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1034,
+          "product": "booster_boxes_and_loose_packs",
+          "set": "brilliant-stars",
+          "source_sample": null,
+          "study_id": "brilliant-stars-1034-pack-opening",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/t4m1sh/pull_rate_data_for_brilliant_stars_out_of_26"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "mega-evolution-123-pack-opening"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "geography_unknown",
+            "hit_definition_reporter_defined",
+            "independent-review-pending",
+            "single_reporter_unverified",
+            "unverified_research_not_approved_for_collection_or_production_statistics"
+          ],
+          "method": "self_reported_complete_opening",
+          "metrics": [
+            {
+              "category": "alternate_art",
+              "hits": 12,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 15,
+              "unit": "cards"
+            },
+            {
+              "category": "standard_ex",
+              "hits": 26,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 123,
+          "product": "mixed_sealed_products",
+          "set": "mega-evolution",
+          "source_sample": null,
+          "study_id": "mega-evolution-australia-community-123-packs",
+          "urls": [
+            "https://www.reddit.com/r/PokemonFansAustralia/comments/1nsc8vv/hits_rates_question"
+          ]
+        }
+      ],
+      "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "tcgplayer-crown-zenith-1900-plus-packs-2023"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer_hit_numerators_not_reported",
+            "opening_location_not_explicitly_reported",
+            "publisher_country_is_not_opening_location",
+            "reported_percentages_are_not_integer_counts",
+            "sample_reported_only_as_more_than_1900_packs",
+            "unverified_research_not_approved_for_collection_or_production_statistics"
+          ],
+          "method": "authentication_center_bulk_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1900,
+          "product": "english_crown-zenith_booster_packs",
+          "set": "crown-zenith",
+          "source_sample": null,
+          "study_id": "us-crown-zenith-1900-pack-study",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Crown-Zenith-Pull-Rates/56af3032-cb34-4da1-92fb-9cf206d10c0f"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-scarlet-violet-8000-plus-packs-2023"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer_hit_numerators_not_reported",
+            "opening_location_not_explicitly_reported",
+            "publisher_country_is_not_opening_location",
+            "reported_rates_and_confidence_intervals_are_not_integer_counts",
+            "sample_reported_only_as_more_than_8000_packs",
+            "unverified_research_not_approved_for_collection_or_production_statistics"
+          ],
+          "method": "authentication_center_bulk_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english_scarlet-and-violet_booster_packs",
+          "set": "scarlet-and-violet",
+          "source_sample": null,
+          "study_id": "us-scarlet-violet-8000-pack-study",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "nanjakorya-star-birth-100-packs-2022"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "mixed_pack_sources_include_loose_packs_and_20_packs_from_premium_box",
+            "print_wave_not_reported",
+            "single_opening_cohort",
+            "unverified_research_not_approved_for_collection_or_production_statistics"
+          ],
+          "method": "documented_complete_opening",
+          "metrics": [
+            {
+              "category": "rr",
+              "hits": 16,
+              "unit": "cards"
+            },
+            {
+              "category": "rrr",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "sr_or_hr",
+              "hits": 5,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "japanese_star_birth_booster_packs",
+          "set": "star-birth",
+          "source_sample": null,
+          "study_id": "jp-star-birth-100-loose-packs",
+          "urls": [
+            "https://nanjakorya.com/1123"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget-scarlet-ex-500-boxes-2026"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "approximately_40_cartons_reported_but_not_used_as_sample_count",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer_hit_numerators_not_reported",
+            "only_box_denominator_reported",
+            "opening_locations_not_reported",
+            "possible_multiple_print_waves_not_resolved",
+            "published_percentages_are_rounded",
+            "unverified_research_not_approved_for_collection_or_production_statistics"
+          ],
+          "method": "publisher_original_manual_aggregation",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_scarlet-ex_booster_boxes",
+          "set": "scarlet-ex",
+          "source_sample": {
+            "count": 500,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "jp-scarlet-ex-500-box-study",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-scarletex"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-astral-radiance-8000-plus-packs-2022"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer_hit_numerators_not_reported",
+            "opening_location_not_explicitly_reported",
+            "publisher_country_is_not_opening_location",
+            "reported_percentages_are_not_integer_counts",
+            "sample_reported_only_as_more_than_8000_packs",
+            "unverified_research_not_approved_for_collection_or_production_statistics"
+          ],
+          "method": "authentication_center_bulk_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english_astral-radiance_booster_packs",
+          "set": "astral-radiance",
+          "source_sample": null,
+          "study_id": "us-astral-radiance-8000-pack-study",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Astral-Radiance-Pull-Rates/10da749f-9c8b-45c0-b80a-dbd86ca5dcde"
+          ]
+        }
+      ],
+      "version": 1
+    }
+  ],
+  "asia_reports": [
+    {
+      "country": "HK",
+      "candidates": [
+        {
+          "source_url": "https://www.hk01.com/%E7%A4%BE%E6%9C%83%E6%96%B0%E8%81%9E/60330325/pok%C3%A9mon%E5%8D%A1%E8%AE%8A%E9%87%91%E7%A3%9A-%E8%A8%98%E8%80%85%E5%AF%A6%E6%B8%AC-%E7%88%86%E7%9B%92-%E6%8A%BD%E5%8D%A1-%E6%8A%BD%E9%9D%9A%E5%8D%A1%E6%A9%9F%E7%8E%87%E5%83%85%E7%99%BE%E5%88%86%E4%B9%8B%E4%B8%80",
+          "supporting_url": null,
+          "pack_count": 30,
+          "observed_on": "2026-03-14",
+          "geography_basis": "publisher_country",
+          "missing_checks": [
+            "geography",
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ]
+        },
+        {
+          "source_url": "https://www.reddit.com/r/PokemonTCG/comments/1vu96wx/i_havent_bought_any_packs_since_1999_base_set_in/",
+          "supporting_url": null,
+          "pack_count": 6,
+          "observed_on": null,
+          "geography_basis": "unknown",
+          "missing_checks": [
+            "geography",
+            "independent_review",
+            "product_identity",
+            "publication_date",
+            "source_access",
+            "source_rights"
+          ]
+        },
+        {
+          "source_url": "https://www.tkww.hk/epaper/view/newsDetail/2070925294348406784.html",
+          "supporting_url": null,
+          "pack_count": 1,
+          "observed_on": "2026-06-28",
+          "geography_basis": "publisher_country",
+          "missing_checks": [
+            "geography",
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ]
+        }
+      ]
+    },
+    {
+      "country": "ID",
+      "candidates": [
+        {
+          "source_url": "https://bikuhime.wordpress.com/2020/05/08/menimbang-booster-pack-pokemon-tcg/",
+          "supporting_url": null,
+          "pack_count": 8,
+          "observed_on": "2020-05-08",
+          "geography_basis": "product_market",
+          "missing_checks": [
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ]
+        },
+        {
+          "source_url": "https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/",
+          "supporting_url": null,
+          "pack_count": 60,
+          "observed_on": "2020-05-17",
+          "geography_basis": "product_market",
+          "missing_checks": [
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ]
+        },
+        {
+          "source_url": "https://bikuhime.wordpress.com/2020/05/24/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-2/",
+          "supporting_url": "https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/",
+          "pack_count": 80,
+          "observed_on": "2020-05-24",
+          "geography_basis": "product_market",
+          "missing_checks": [
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ]
+        }
+      ]
+    },
+    {
+      "country": "IN",
+      "candidates": [
+        {
+          "source_url": "https://www.reddit.com/r/PokemonTcgIndia/comments/1rbfw59/just_opened_my_1st_two_booster_packs/",
+          "supporting_url": null,
+          "pack_count": 2,
+          "observed_on": "2026-02-22",
+          "geography_basis": "product_market",
+          "missing_checks": [
+            "independent_review",
+            "product_identity",
+            "source_access",
+            "source_rights"
+          ]
+        },
+        {
+          "source_url": "https://www.reddit.com/r/PokemonTcgIndia/comments/1sq3cam/where_to_buy_pok%C3%A9mon_151_korean_booster_box/",
+          "supporting_url": null,
+          "pack_count": null,
+          "observed_on": "2026-04-19",
+          "geography_basis": "unknown",
+          "missing_checks": [
+            "complete_opening",
+            "geography",
+            "independent_review",
+            "pack_count",
+            "source_access",
+            "source_rights"
+          ]
+        },
+        {
+          "source_url": "https://www.reddit.com/r/PokemonTcgIndia/comments/1vi3vj7/tcghub_full_detailed_review_unbiased/",
+          "supporting_url": null,
+          "pack_count": 3,
+          "observed_on": "2026-08-07",
+          "geography_basis": "opening_location",
+          "missing_checks": [
+            "independent_review",
+            "product_identity",
+            "source_access",
+            "source_rights"
+          ]
+        }
+      ]
+    },
+    {
+      "country": "MY",
+      "candidates": []
+    },
+    {
+      "country": "PH",
+      "candidates": [
+        {
+          "source_url": "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1v1s4kx/finally_after_28_packs_heres_what_i_got/",
+          "supporting_url": null,
+          "pack_count": 28,
+          "observed_on": null,
+          "geography_basis": "unknown",
+          "missing_checks": [
+            "complete_opening",
+            "geography",
+            "independent_review",
+            "product_identity",
+            "publication_date",
+            "source_access",
+            "source_rights"
+          ]
+        },
+        {
+          "source_url": "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1v2bzsg/first_time_buying_a_set_of_packs/",
+          "supporting_url": null,
+          "pack_count": 4,
+          "observed_on": "2026-07-21",
+          "geography_basis": "product_market",
+          "missing_checks": [
+            "complete_opening",
+            "geography",
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ]
+        },
+        {
+          "source_url": "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1w51um8/first_time_opening_pokemon_cards/",
+          "supporting_url": null,
+          "pack_count": 3,
+          "observed_on": "2026-09-02",
+          "geography_basis": "unknown",
+          "missing_checks": [
+            "complete_opening",
+            "geography",
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ]
+        }
+      ]
+    },
+    {
+      "country": "VN",
+      "candidates": []
+    }
+  ]
+}

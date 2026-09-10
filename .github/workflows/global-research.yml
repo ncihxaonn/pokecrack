@@ -10,11 +10,11 @@ on:
         options: [auto, global, asia, europe, north-america, latin-america, africa, oceania]
 
 permissions:
-  contents: read
-  issues: write
+  contents: write
+  pull-requests: write
 
 concurrency:
-  group: pokecrack-global-research
+  group: pokecrack-research-ledger
   cancel-in-progress: false
 
 jobs:
@@ -59,7 +59,7 @@ jobs:
           cleanup() {
             if [[ "$remote_dir" =~ ^/tmp/pokecrack-global-job\.[A-Za-z0-9]{8}$ ]]; then
               ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-                "rm -f -- '$remote_dir/global_research.py' '$remote_dir/global_studies.py' '$remote_dir/asia_research.py'; rmdir -- '$remote_dir'" || true
+                "rm -f -- '$remote_dir/global_research.py' '$remote_dir/global_studies.py' '$remote_dir/asia_research.py' '$remote_dir/research_ledger.py'; rmdir -- '$remote_dir'" || true
             fi
             rm -f -- "$ssh_dir/key" "$ssh_dir/known_hosts"
             rmdir -- "$ssh_dir"
@@ -69,6 +69,7 @@ jobs:
             'umask 077; mktemp -d /tmp/pokecrack-global-job.XXXXXXXX')
           [[ "$remote_dir" =~ ^/tmp/pokecrack-global-job\.[A-Za-z0-9]{8}$ ]]
           scp "${opts[@]}" -P "$VPS_PORT" scripts/global_research.py scripts/global_studies.py scripts/asia_research.py \
+            scripts/research_ledger.py \
             "$VPS_USER@$VPS_HOST:$remote_dir/"
           ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
             "PYTHONDONTWRITEBYTECODE=1 python3 '$remote_dir/global_research.py' --scope '$SCOPE'" > "$RUNNER_TEMP/global-report.json"
@@ -79,6 +80,10 @@ jobs:
           set -Eeuo pipefail
           python3 scripts/global_research.py --publish "$RUNNER_TEMP/global-report.json" > "$RUNNER_TEMP/global-ledger.json"
           echo 'Global research references accumulated and deduplicated. Not admitted production samples.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Queue unified research ledger update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/queue_research_ledger.py
       - name: Save deduplicated research snapshot
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:

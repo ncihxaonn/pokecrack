@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from urllib.parse import urlsplit
 
+from research_ledger import LEDGER_PATH, upsert_asia_report, load as load_research_ledger, save as save_research_ledger
+
 COUNTRIES = {"VN": "Vietnam", "MY": "Malaysia", "ID": "Indonesia",
              "PH": "Philippines", "HK": "Hong Kong", "IN": "India"}
 CHECKS = ["source_access", "source_rights", "complete_opening", "pack_count",
@@ -180,55 +182,31 @@ def research(country: str) -> dict:
     return validate(research_document(prompt(country), schema(country)), country)
 
 
-def issue_body(report: dict) -> str:
+def render_report(report: dict) -> str:
     country = report["country"]
-    lines = [f"<!-- pokecrack-asia-research-v1:{country} -->",
-             f"## {COUNTRIES[country]}：候选来源，尚未上线",
-             "自动研究结果不是审核证明；不计入开包数、国家覆盖或概率统计。",
+    lines = [f"## {COUNTRIES[country]} research candidates",
+             "Stored in the unified research ledger; not admitted to production statistics.",
              ""]
     for item in report["candidates"]:
-        lines.extend([f"- 来源：{item['source_url']}",
-                      f"  - 暂定包数：{item['pack_count']}；日期：{item['observed_on']}",
-                      f"  - 地域依据：{item['geography_basis']}",
-                      f"  - 待检查：{', '.join(item['missing_checks'])}"])
+        lines.extend([f"- Source: {item['source_url']}",
+                      f"  - Tentative packs: {item['pack_count']}; date: {item['observed_on']}",
+                      f"  - Geography basis: {item['geography_basis']}",
+                      f"  - Checks pending: {', '.join(item['missing_checks'])}"])
         if item["supporting_url"]:
-            lines.append(f"  - 辅助来源：{item['supporting_url']}")
+            lines.append(f"  - Supporting source: {item['supporting_url']}")
     if not report["candidates"]:
-        lines.append("本轮未找到合适的静态来源。下一周期继续检索，不生成虚假样本。")
-    lines.extend(["", "下一步：独立核实完整分母、日期、产品和地域，审查权限及 robots；",
-                  "添加精确来源适配器与测试，经 PR/CI、迁移（如需）及部署后核对线上结果。",
-                  "禁止依据此 Issue 自动批准或写入生产数据库。",
-                  "[自动化运行记录](https://github.com/ncihxaonn/pokecrack/actions/workflows/asia-research.yml)"])
+        lines.append("No suitable static source was found in this pass.")
+    lines.extend(["", "Independent review is required before any source can enter the live dataset."])
     return "\n".join(lines)
 
 
-def publish(report: dict) -> None:
-    repo = "ncihxaonn/pokecrack"
-    country = report["country"]
-    title = f"[Asia research] {country} — {COUNTRIES[country]}"
-    body = issue_body(report)
-    listing = subprocess.run(
-        ["gh", "issue", "list", "--repo", repo, "--state", "all", "--limit", "100",
-         "--search", f'"[Asia research] {country}" in:title',
-         "--json", "number,title,body,author,state"],
-        check=True, capture_output=True, text=True,
-    )
-    matches = [item for item in json.loads(listing.stdout)
-               if item["title"] == title and item["author"].get("is_bot") is True
-               and item["author"]["login"] in {"app/github-actions", "github-actions[bot]"}
-               and item["body"].startswith(f"<!-- pokecrack-asia-research-v1:{country} -->")]
-    if len(matches) > 1:
-        raise ValueError("duplicate_managed_issues")
-    # Closure is an operator-controlled stop for this country's notifications.
-    if matches and (matches[0]["state"] == "CLOSED" or matches[0]["body"] == body):
-        print("unchanged_or_closed")
-        return
-    command = ["gh", "issue", "edit", str(matches[0]["number"])] if matches else [
-        "gh", "issue", "create", "--title", title]
-    subprocess.run(command + ["--repo", repo, "--body-file", "-"],
-                   input=body, text=True, check=True, stdout=subprocess.DEVNULL,
-                   stderr=subprocess.DEVNULL)
-    print("research_issue_updated")
+def publish(report: dict, ledger_path: Path | None = None) -> None:
+    ledger_path = ledger_path or LEDGER_PATH
+    durable = load_research_ledger(ledger_path)
+    changed = upsert_asia_report(durable, report)
+    if changed:
+        save_research_ledger(durable, ledger_path)
+    print("research_ledger_updated" if changed else "research_ledger_unchanged")
 
 
 def main() -> None:
@@ -245,7 +223,7 @@ def main() -> None:
         elif args.publish:
             publish(validate(args.publish.read_bytes(), country))
         elif args.render:
-            print(issue_body(validate(args.render.read_bytes(), country)))
+            print(render_report(validate(args.render.read_bytes(), country)))
         else:
             print(json.dumps(research(country), ensure_ascii=True, sort_keys=True))
     except (ValueError, OSError, TypeError, KeyError, subprocess.CalledProcessError):
