@@ -1,5 +1,196 @@
 {
-  "version": 1,
+  "asia_reports": [
+    {
+      "candidates": [
+        {
+          "geography_basis": "publisher_country",
+          "missing_checks": [
+            "geography",
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": "2026-03-14",
+          "pack_count": 30,
+          "source_url": "https://www.hk01.com/%E7%A4%BE%E6%9C%83%E6%96%B0%E8%81%9E/60330325/pok%C3%A9mon%E5%8D%A1%E8%AE%8A%E9%87%91%E7%A3%9A-%E8%A8%98%E8%80%85%E5%AF%A6%E6%B8%AC-%E7%88%86%E7%9B%92-%E6%8A%BD%E5%8D%A1-%E6%8A%BD%E9%9D%9A%E5%8D%A1%E6%A9%9F%E7%8E%87%E5%83%85%E7%99%BE%E5%88%86%E4%B9%8B%E4%B8%80",
+          "supporting_url": null
+        },
+        {
+          "geography_basis": "unknown",
+          "missing_checks": [
+            "geography",
+            "independent_review",
+            "product_identity",
+            "publication_date",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": null,
+          "pack_count": 6,
+          "source_url": "https://www.reddit.com/r/PokemonTCG/comments/1vu96wx/i_havent_bought_any_packs_since_1999_base_set_in/",
+          "supporting_url": null
+        },
+        {
+          "geography_basis": "publisher_country",
+          "missing_checks": [
+            "geography",
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": "2026-06-28",
+          "pack_count": 1,
+          "source_url": "https://www.tkww.hk/epaper/view/newsDetail/2070925294348406784.html",
+          "supporting_url": null
+        }
+      ],
+      "country": "HK"
+    },
+    {
+      "candidates": [
+        {
+          "geography_basis": "product_market",
+          "missing_checks": [
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": "2020-05-08",
+          "pack_count": 8,
+          "source_url": "https://bikuhime.wordpress.com/2020/05/08/menimbang-booster-pack-pokemon-tcg/",
+          "supporting_url": null
+        },
+        {
+          "geography_basis": "product_market",
+          "missing_checks": [
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": "2020-05-17",
+          "pack_count": 60,
+          "source_url": "https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/",
+          "supporting_url": null
+        },
+        {
+          "geography_basis": "product_market",
+          "missing_checks": [
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": "2020-05-24",
+          "pack_count": 80,
+          "source_url": "https://bikuhime.wordpress.com/2020/05/24/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-2/",
+          "supporting_url": "https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/"
+        }
+      ],
+      "country": "ID"
+    },
+    {
+      "candidates": [
+        {
+          "geography_basis": "product_market",
+          "missing_checks": [
+            "independent_review",
+            "product_identity",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": "2026-02-22",
+          "pack_count": 2,
+          "source_url": "https://www.reddit.com/r/PokemonTcgIndia/comments/1rbfw59/just_opened_my_1st_two_booster_packs/",
+          "supporting_url": null
+        },
+        {
+          "geography_basis": "unknown",
+          "missing_checks": [
+            "complete_opening",
+            "geography",
+            "independent_review",
+            "pack_count",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": "2026-04-19",
+          "pack_count": null,
+          "source_url": "https://www.reddit.com/r/PokemonTcgIndia/comments/1sq3cam/where_to_buy_pok%C3%A9mon_151_korean_booster_box/",
+          "supporting_url": null
+        },
+        {
+          "geography_basis": "opening_location",
+          "missing_checks": [
+            "independent_review",
+            "product_identity",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": "2026-08-07",
+          "pack_count": 3,
+          "source_url": "https://www.reddit.com/r/PokemonTcgIndia/comments/1vi3vj7/tcghub_full_detailed_review_unbiased/",
+          "supporting_url": null
+        }
+      ],
+      "country": "IN"
+    },
+    {
+      "candidates": [],
+      "country": "MY"
+    },
+    {
+      "candidates": [
+        {
+          "geography_basis": "unknown",
+          "missing_checks": [
+            "complete_opening",
+            "geography",
+            "independent_review",
+            "product_identity",
+            "publication_date",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": null,
+          "pack_count": 28,
+          "source_url": "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1v1s4kx/finally_after_28_packs_heres_what_i_got/",
+          "supporting_url": null
+        },
+        {
+          "geography_basis": "product_market",
+          "missing_checks": [
+            "complete_opening",
+            "geography",
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": "2026-07-21",
+          "pack_count": 4,
+          "source_url": "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1v2bzsg/first_time_buying_a_set_of_packs/",
+          "supporting_url": null
+        },
+        {
+          "geography_basis": "unknown",
+          "missing_checks": [
+            "complete_opening",
+            "geography",
+            "independent_review",
+            "source_access",
+            "source_rights"
+          ],
+          "observed_on": "2026-09-02",
+          "pack_count": 3,
+          "source_url": "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1w51um8/first_time_opening_pokemon_cards/",
+          "supporting_url": null
+        }
+      ],
+      "country": "PH"
+    },
+    {
+      "candidates": [],
+      "country": "VN"
+    }
+  ],
   "country_reports": [
     {
       "campaign": "country-first-20260908-v1",
@@ -3531,6 +3722,44 @@
         "VN",
         "PH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        },
+        {
+          "studies": [],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [],
+          "target": "KP"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "LB",
+        "MV",
+        "MN",
+        "MM",
+        "NP",
+        "KP"
+      ]
     }
   ],
   "global_batches": [
@@ -4842,196 +5071,5 @@
       "version": 1
     }
   ],
-  "asia_reports": [
-    {
-      "country": "HK",
-      "candidates": [
-        {
-          "source_url": "https://www.hk01.com/%E7%A4%BE%E6%9C%83%E6%96%B0%E8%81%9E/60330325/pok%C3%A9mon%E5%8D%A1%E8%AE%8A%E9%87%91%E7%A3%9A-%E8%A8%98%E8%80%85%E5%AF%A6%E6%B8%AC-%E7%88%86%E7%9B%92-%E6%8A%BD%E5%8D%A1-%E6%8A%BD%E9%9D%9A%E5%8D%A1%E6%A9%9F%E7%8E%87%E5%83%85%E7%99%BE%E5%88%86%E4%B9%8B%E4%B8%80",
-          "supporting_url": null,
-          "pack_count": 30,
-          "observed_on": "2026-03-14",
-          "geography_basis": "publisher_country",
-          "missing_checks": [
-            "geography",
-            "independent_review",
-            "source_access",
-            "source_rights"
-          ]
-        },
-        {
-          "source_url": "https://www.reddit.com/r/PokemonTCG/comments/1vu96wx/i_havent_bought_any_packs_since_1999_base_set_in/",
-          "supporting_url": null,
-          "pack_count": 6,
-          "observed_on": null,
-          "geography_basis": "unknown",
-          "missing_checks": [
-            "geography",
-            "independent_review",
-            "product_identity",
-            "publication_date",
-            "source_access",
-            "source_rights"
-          ]
-        },
-        {
-          "source_url": "https://www.tkww.hk/epaper/view/newsDetail/2070925294348406784.html",
-          "supporting_url": null,
-          "pack_count": 1,
-          "observed_on": "2026-06-28",
-          "geography_basis": "publisher_country",
-          "missing_checks": [
-            "geography",
-            "independent_review",
-            "source_access",
-            "source_rights"
-          ]
-        }
-      ]
-    },
-    {
-      "country": "ID",
-      "candidates": [
-        {
-          "source_url": "https://bikuhime.wordpress.com/2020/05/08/menimbang-booster-pack-pokemon-tcg/",
-          "supporting_url": null,
-          "pack_count": 8,
-          "observed_on": "2020-05-08",
-          "geography_basis": "product_market",
-          "missing_checks": [
-            "independent_review",
-            "source_access",
-            "source_rights"
-          ]
-        },
-        {
-          "source_url": "https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/",
-          "supporting_url": null,
-          "pack_count": 60,
-          "observed_on": "2020-05-17",
-          "geography_basis": "product_market",
-          "missing_checks": [
-            "independent_review",
-            "source_access",
-            "source_rights"
-          ]
-        },
-        {
-          "source_url": "https://bikuhime.wordpress.com/2020/05/24/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-2/",
-          "supporting_url": "https://bikuhime.wordpress.com/2020/05/17/yang-perlu-diketahui-sebelum-beli-booster-box-pokemon-tcg-bag-1/",
-          "pack_count": 80,
-          "observed_on": "2020-05-24",
-          "geography_basis": "product_market",
-          "missing_checks": [
-            "independent_review",
-            "source_access",
-            "source_rights"
-          ]
-        }
-      ]
-    },
-    {
-      "country": "IN",
-      "candidates": [
-        {
-          "source_url": "https://www.reddit.com/r/PokemonTcgIndia/comments/1rbfw59/just_opened_my_1st_two_booster_packs/",
-          "supporting_url": null,
-          "pack_count": 2,
-          "observed_on": "2026-02-22",
-          "geography_basis": "product_market",
-          "missing_checks": [
-            "independent_review",
-            "product_identity",
-            "source_access",
-            "source_rights"
-          ]
-        },
-        {
-          "source_url": "https://www.reddit.com/r/PokemonTcgIndia/comments/1sq3cam/where_to_buy_pok%C3%A9mon_151_korean_booster_box/",
-          "supporting_url": null,
-          "pack_count": null,
-          "observed_on": "2026-04-19",
-          "geography_basis": "unknown",
-          "missing_checks": [
-            "complete_opening",
-            "geography",
-            "independent_review",
-            "pack_count",
-            "source_access",
-            "source_rights"
-          ]
-        },
-        {
-          "source_url": "https://www.reddit.com/r/PokemonTcgIndia/comments/1vi3vj7/tcghub_full_detailed_review_unbiased/",
-          "supporting_url": null,
-          "pack_count": 3,
-          "observed_on": "2026-08-07",
-          "geography_basis": "opening_location",
-          "missing_checks": [
-            "independent_review",
-            "product_identity",
-            "source_access",
-            "source_rights"
-          ]
-        }
-      ]
-    },
-    {
-      "country": "MY",
-      "candidates": []
-    },
-    {
-      "country": "PH",
-      "candidates": [
-        {
-          "source_url": "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1v1s4kx/finally_after_28_packs_heres_what_i_got/",
-          "supporting_url": null,
-          "pack_count": 28,
-          "observed_on": null,
-          "geography_basis": "unknown",
-          "missing_checks": [
-            "complete_opening",
-            "geography",
-            "independent_review",
-            "product_identity",
-            "publication_date",
-            "source_access",
-            "source_rights"
-          ]
-        },
-        {
-          "source_url": "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1v2bzsg/first_time_buying_a_set_of_packs/",
-          "supporting_url": null,
-          "pack_count": 4,
-          "observed_on": "2026-07-21",
-          "geography_basis": "product_market",
-          "missing_checks": [
-            "complete_opening",
-            "geography",
-            "independent_review",
-            "source_access",
-            "source_rights"
-          ]
-        },
-        {
-          "source_url": "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1w51um8/first_time_opening_pokemon_cards/",
-          "supporting_url": null,
-          "pack_count": 3,
-          "observed_on": "2026-09-02",
-          "geography_basis": "unknown",
-          "missing_checks": [
-            "complete_opening",
-            "geography",
-            "independent_review",
-            "source_access",
-            "source_rights"
-          ]
-        }
-      ]
-    },
-    {
-      "country": "VN",
-      "candidates": []
-    }
-  ]
+  "version": 1
 }
