@@ -2,6 +2,22 @@
 
 ## Routine checks
 
+### Public dashboard cache freshness
+
+The shared dashboard cache retains a fetch-completion timestamp. A request may
+reuse an entry only while its age is below 60 seconds; expired, future-dated or
+non-finite timestamps force an awaited fresh database load. This preserves the
+one-minute cache and per-render deduplication without relying exclusively on
+Next's stale-while-revalidate background task. A failed fresh load is not
+silently replaced by expired evidence. Source publication dates, admissions,
+verification windows and access rules are unchanged.
+
+On 2026-09-10 the public RPC reached 1,249 packs / 37 groups after 90 real SV8 packs were
+admitted, but the normal homepage retained 1,159 / 34 until its existing
+`public-dashboard` tag was invalidated. That intervention restored visibility;
+the request-time age guard addresses recurrence. Verify a normal homepage
+request after a cache interval, not just a deployment or an operator purge.
+
 For each released TCGdex UTC window (02:00 and 14:00): collector, scheduler, and watchdog healthy; no non-core containers; catalog job backlog/lease expiry; `catalog.sync_state` freshness/item count; database/storage/egress thresholds; backup marker age/size; and TCGdex terms/API errors. The durable slot list should show at most one catalog job per window; a missed window is eligible for bounded catch-up. After a release, run the optional aggregate verifier with the exact deployment SHA and release start:
 
 ```bash
