@@ -1,6 +1,6 @@
 """Bounded source-family discovery. Approval is reviewed code, never worker input.
 
-PokeSup M2/M3 numbered cohorts passed source review and real parser probes.
+PokeSup M2/M3 and historical SV8 numbered cohorts passed source review.
 Runtime opt-in and the owner-controlled database switch remain separate gates.
 """
 
@@ -41,7 +41,11 @@ class FamilyPolicy:
     version: str = VERSION
     approved: bool = True
     # Reviewed identities; every event must still pass deterministic admission.
-    products: tuple[tuple[str, str], ...] = (("m2", "インフェルノX"), ("m3", "ムニキスゼロ"))
+    products: tuple[tuple[str, str], ...] = (
+        ("m2", "インフェルノX"),
+        ("m3", "ムニキスゼロ"),
+        ("sv8", "超電ブレイカー"),
+    )
 
 
 POLICY = FamilyPolicy()
@@ -148,7 +152,9 @@ def verify(url: str, document: str, metadata: object, *, now: datetime) -> dict[
     if not isinstance(date, str) or not re.fullmatch(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}", date):
         raise ValueError("publication_date")
     published = datetime.fromisoformat(date).replace(tzinfo=UTC)
-    if not now - timedelta(days=365) < published <= now:
+    # Evidence age is not access-review expiry or recent verification freshness.
+    # Preserve the original date; PostgreSQL still owns those separate gates.
+    if published > now:
         raise ValueError("outside_window")
     parsed = OpeningHTML()
     parsed.feed(document)
@@ -157,7 +163,12 @@ def verify(url: str, document: str, metadata: object, *, now: datetime) -> dict[
         or parsed.headings.count(products[product] + f"開封（{ordinal}箱目）") != 1
     ):
         raise ValueError("opening_identity")
-    if tuple(parsed.labels) != LABELS:
+    labels = tuple(parsed.labels)
+    # The reviewed SV8 template labels the same numbered pack positions without
+    # the newer パック suffix. Normalize only this complete, ordered exact form.
+    if product == "sv8" and labels == tuple(label.removesuffix("パック") for label in LABELS):
+        labels = LABELS
+    if labels != LABELS:
         raise ValueError("pack_enumeration")
     expected_images = [
         f"/assets/img/blog/{slug}/pack_{side}_{n:02}.jpg"

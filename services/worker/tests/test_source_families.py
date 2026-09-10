@@ -127,12 +127,83 @@ def test_scope_and_fixed_duplicate(url: str) -> None:
         verify(url, body, meta, now=NOW)
 
 
-@pytest.mark.parametrize("date", [NOW + timedelta(seconds=1), NOW - timedelta(days=365)])
-def test_strict_window(date: datetime) -> None:
+def test_future_publication_is_rejected() -> None:
     body, meta = fixture()
-    meta[0]["date_gmt"] = date.replace(tzinfo=None).isoformat()
+    meta[0]["date_gmt"] = (NOW + timedelta(seconds=1)).replace(tzinfo=None).isoformat()
     with pytest.raises(ValueError, match="outside_window"):
         verify(URL, body, meta, now=NOW)
+
+
+@pytest.mark.parametrize("age", [365, 730])
+def test_original_historical_publication_is_preserved(age: int) -> None:
+    body, meta = fixture()
+    published = NOW - timedelta(days=age)
+    meta[0]["date_gmt"] = published.replace(tzinfo=None).isoformat()
+    assert verify(URL, body, meta, now=NOW)["published_at"] == published.isoformat()
+
+
+def sv8_fixture(ordinal: int = 1) -> tuple[str, str, list[dict[str, object]]]:
+    body, meta = fixture()
+    slug = "unboxing-sv8" + ("" if ordinal == 1 else f"-{ordinal}")
+    url = ROOT + "/blog/" + slug + "/"
+    body = body.replace("unboxing-m2", slug).replace("インフェルノX", "超電ブレイカー")
+    body = body.replace("（1箱目）", f"（{ordinal}箱目）").replace("パック</div>", "</div>")
+    # Synthetic markup follows the real historical template's unpadded paths.
+    for number in range(1, 10):
+        body = body.replace(f"_{number:02}.jpg", f"_{number}.jpg")
+    meta[0].update(id=120 + ordinal, slug=slug, link=url, date_gmt="2024-11-12T09:52:32")
+    return url, body, meta
+
+
+@pytest.mark.parametrize("ordinal", [1, 2, 3])
+def test_historical_sv8_exact_short_labels(ordinal: int) -> None:
+    url, body, meta = sv8_fixture(ordinal)
+    evidence = verify(url, body, meta, now=NOW)
+    assert evidence["product"] == "sv8"
+    assert evidence["opening_ordinal"] == ordinal
+    assert evidence["published_at"] == "2024-11-12T09:52:32+00:00"
+    assert evidence["labels"] == list(LABELS)
+    assert len(set(evidence["resource_sha256s"])) == 30
+    assert (
+        evidence["resource_sha256"]
+        == {
+            1: "994f0da10b5a7cfb1b31e384b24bd17f1efd0b305213e2847aec9f8df012245a",
+            2: "84c9dadf7bf719fd2a5e9fe905d61a83befa62b3b47d6391fa080dbb924c2384",
+            3: "154670373d7750d027600856d2a798fc324d531416e47c387dd06ea2bf304d84",
+        }[ordinal]
+    )
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        lambda body: body.replace("左1</div>", "左2</div>"),
+        lambda body: body.replace('<div class="_caption">右15</div>', ""),
+        lambda body: body.replace("右15</div>", "右15パック</div>"),
+        lambda body: body.replace("超電ブレイカー", "別の商品"),
+        lambda body: body.replace("（1箱目）", "（2箱目）"),
+        lambda body: body.replace("pack_l_1.jpg", "pack_l_2.jpg"),
+    ],
+)
+def test_sv8_short_labels_do_not_allow_missing_or_ambiguous_evidence(change) -> None:  # type: ignore[no-untyped-def]
+    url, body, meta = sv8_fixture()
+    with pytest.raises(ValueError):
+        verify(url, change(body), meta, now=NOW)
+
+
+def test_short_labels_are_not_enabled_for_unreviewed_templates() -> None:
+    body, meta = fixture()
+    with pytest.raises(ValueError, match="pack_enumeration"):
+        verify(URL, body.replace("パック</div>", "</div>"), meta, now=NOW)
+
+
+def test_other_products_still_need_review() -> None:
+    url, body, meta = sv8_fixture()
+    unknown = url.replace("sv8", "sv7")
+    body = body.replace("sv8", "sv7")
+    meta[0].update(slug="unboxing-sv7", link=unknown)
+    with pytest.raises(ValueError, match="pending_product_review"):
+        verify(unknown, body, meta, now=NOW)
 
 
 def test_comments_do_not_define_cohort_or_packs() -> None:
