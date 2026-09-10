@@ -7,9 +7,11 @@ const source = readFileSync(resolve(process.cwd(), "src/app/_lib/dashboard.ts"),
 describe("public dashboard cache", () => {
   it("uses a one-minute shared ISR cache for the live public snapshot", () => {
     expect(source).toContain("unstable_cache");
-    expect(source).toContain('"public-dashboard-v3-coverage-v4-source-coverage-v1-social-v4-live60"');
+    expect(source).toContain('"public-dashboard-v3-coverage-v4-source-coverage-v1-social-v4-live60-hard-age-v1"');
     expect(source).not.toContain('"public-dashboard-v3-coverage-v3-social-v4-live60"');
-    expect(source).toContain("revalidate: 60");
+    expect(source).toContain("revalidate: DASHBOARD_CACHE_TTL_SECONDS");
+    expect(source).toContain("cachedAt: Date.now()");
+    expect(source).toContain("resolveFreshDashboard(await cachedDashboard(), getDashboardData)");
     expect(source).toContain('tags: ["public-dashboard"]');
   });
 
