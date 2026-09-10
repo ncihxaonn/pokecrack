@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -17,7 +18,7 @@ from enum import StrEnum
 from pathlib import Path
 from urllib.parse import parse_qsl, quote, unquote, urlencode, urlsplit, urlunsplit
 
-from pokecrack_worker import __version__, source_families
+from pokecrack_worker import __version__, numbered_families, source_families
 from pokecrack_worker.collectors.base import CollectionService, CollectorError, HTTPClient
 from pokecrack_worker.collectors.official_api.bluesky import (
     BlueskyCursorTooOldError,
@@ -2529,7 +2530,9 @@ def require_worker_job_types(settings: Settings) -> tuple[str, ...]:
     enabled = list(job_types)
     if settings.youtube_collection_enabled:
         enabled.append(YOUTUBE_DISCOVERY_JOB_TYPE)
-    if source_families.POLICY.approved and settings.source_family_collection_enabled:
+    if settings.source_family_collection_enabled and (
+        source_families.POLICY.approved or settings.numbered_family_collection_enabled
+    ):
         enabled.append(source_families.JOB_TYPE)
     if settings.public_study_collection_enabled:
         enabled.append(PUBLIC_STUDY_JOB_TYPE)
@@ -2865,6 +2868,15 @@ def write_health_heartbeat(
         if len(family_rows) != 1 or type(family_rows[0].get("ready")) is not bool:
             raise LiveCompositionError(
                 "source_family_unavailable", "source-family runtime contract is unavailable"
+            )
+    if settings.numbered_family_collection_enabled:
+        numbered_rows = database.query("SELECT ingest.numbered_family_ready_v1() AS ready", {})
+        # False pauses only this optional publisher, as for the existing family
+        # above. It must not make the shared collector/scheduler unhealthy and
+        # interrupt other sources. Missing or malformed contracts still fail.
+        if len(numbered_rows) != 1 or type(numbered_rows[0].get("ready")) is not bool:
+            raise LiveCompositionError(
+                "numbered_family_unavailable", "numbered-family runtime contract is unavailable"
             )
     if not dependency_rows or dependency_rows[0].get("ready") is not True:
         raise LiveCompositionError(
@@ -3466,10 +3478,35 @@ def _handlers_for_role(
                 transport=youtube_transport,
                 clock=clock,
             )
-        if source_families.POLICY.approved and settings.source_family_collection_enabled:
-            handlers[source_families.JOB_TYPE] = source_families.make_handler(
-                executor, public_study_http_client or ScraplingHTTPClient.live(), worker_id
-            )
+        if settings.source_family_collection_enabled and (
+            source_families.POLICY.approved or settings.numbered_family_collection_enabled
+        ):
+            family_handlers: dict[str, Callable[[Job], CompletionEffect]] = {}
+            family_client = public_study_http_client or ScraplingHTTPClient.live()
+            if source_families.POLICY.approved:
+                family_handlers[source_families.FAMILY] = source_families.make_handler(
+                    executor, family_client, worker_id
+                )
+            if settings.numbered_family_collection_enabled:
+                family_handlers[numbered_families.FAMILY] = numbered_families.make_handler(
+                    executor,
+                    family_client,
+                    worker_id,
+                    sleeper=public_study_robots_sleeper or time.sleep,
+                    clock=clock or (lambda: datetime.now(UTC)),
+                )
+
+            def dispatch_family(job: Job) -> CompletionEffect:
+                family = job.payload.get("family")
+                if (
+                    set(job.payload) != {"family"}
+                    or not isinstance(family, str)
+                    or family not in family_handlers
+                ):
+                    raise ValueError("source_family_dispatch_scope")
+                return family_handlers[family](job)
+
+            handlers[source_families.JOB_TYPE] = dispatch_family
         if settings.public_study_collection_enabled:
             handlers[PUBLIC_STUDY_JOB_TYPE] = _public_study_handler(
                 settings=settings,
@@ -3646,7 +3683,21 @@ def live_schedule_entries(settings: Settings) -> tuple[ScheduleEntry, ...]:
         if source_families.POLICY.approved and settings.source_family_collection_enabled
         else ()
     )
-    return catalog + youtube + public_studies + mastodon + cleanup + families
+    numbered = (
+        (
+            ScheduleEntry(
+                name="source_family_kozaru",
+                job_type=numbered_families.JOB_TYPE,
+                interval=timedelta(minutes=5),
+                payload={"family": numbered_families.FAMILY},
+                priority=10,
+                max_attempts=1,
+            ),
+        )
+        if settings.numbered_family_collection_enabled
+        else ()
+    )
+    return catalog + youtube + public_studies + mastodon + cleanup + families + numbered
 
 
 def build_live_scheduler(

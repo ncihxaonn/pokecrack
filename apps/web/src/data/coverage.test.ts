@@ -216,6 +216,51 @@ function validSyntheticJapanCoveragePayload() {
 }
 
 describe("reviewed public-study coverage merge", () => {
+  it("accounts unknown-location packs without inventing countries and replaces on refresh", () => {
+    const payload = {
+      ...validRegistryCoveragePayload(), schemaVersion: "4.0.0",
+      unknownLocation: { packsObserved: 1500, openings: 150, independentSources: 1, updatedAt: collectedAt },
+    };
+    const baseline = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(DEMO_PUBLIC_DATA, validRegistryCoveragePayload()),
+    );
+    const merged = publicDashboardDataSchema.parse(mergePublicStudyCoverage(DEMO_PUBLIC_DATA, payload));
+    expect(merged.mapCells).toEqual(baseline.mapCells);
+    expect(merged.observations.observedPacks).toBe(baseline.observations.observedPacks + 1500);
+    expect(merged.observations.completeOpenings).toBe(baseline.observations.completeOpenings + 150);
+    expect(merged.observations.countriesObserved).toBe(baseline.observations.countriesObserved);
+    expect(merged.observations.sourceCountryContributions).toBe(baseline.observations.sourceCountryContributions);
+    expect(mergePublicStudyCoverage(merged, payload)).toEqual(merged);
+    const revoked = publicDashboardDataSchema.parse(mergePublicStudyCoverage(merged, { ...payload, unknownLocation: null }));
+    expect(revoked.observations.observedPacks).toBe(baseline.observations.observedPacks);
+  });
+
+  it("publishes a collecting global total even when no country is known", () => {
+    const payload = {
+      ...validRegistryCoveragePayload(), schemaVersion: "4.0.0", countries: [], sets: [],
+      unknownLocation: { packsObserved: 10, openings: 1, independentSources: 1, updatedAt: collectedAt },
+    };
+    const merged = publicDashboardDataSchema.parse(mergePublicStudyCoverage(emptyPublicSnapshot(), payload));
+    expect(merged.observations.status).toBe("collecting");
+    expect(merged.observations.observedPacks).toBe(10);
+    expect(merged.observations.countriesObserved).toBe(0);
+    expect(merged.mapCells).toEqual([]);
+    expect(merged.observations.asOf).toBe(collectedAt);
+    expect(publicDashboardDataSchema.safeParse({ ...merged,
+      observations: { ...merged.observations, observedPacks: 11 },
+    }).success).toBe(false);
+  });
+
+  it("rejects unknown-location rates, impossible counts and fabricated country fields", () => {
+    const unknown = { packsObserved: 10, openings: 1, independentSources: 1, updatedAt: collectedAt };
+    for (const invalid of [{ ...unknown, openings: 11 }, { ...unknown, independentSources: 2 },
+      { ...unknown, countryCode: "JP" }, { ...unknown, observedRate: 0.5 }]) {
+      expect(publicStudyCoverageSchema.safeParse({ ...validRegistryCoveragePayload(),
+        schemaVersion: "4.0.0", unknownLocation: invalid,
+      }).success).toBe(false);
+    }
+  });
+
   it("keeps payloads and snapshots without data versions backward compatible", () => {
     const coverage = publicStudyCoverageSchema.parse(validCoveragePayload());
     const snapshot = publicDashboardDataSchema.parse(DEMO_PUBLIC_DATA);

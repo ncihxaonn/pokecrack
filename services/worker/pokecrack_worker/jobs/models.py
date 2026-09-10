@@ -96,6 +96,7 @@ class CompletionEffect(StrEnum):
 
     PRUNE_EXPIRED_EPHEMERA = "prune_expired_ephemera"
     FINALIZE_SOURCE_FAMILY = "finalize_source_family"
+    FINALIZE_NUMBERED_FAMILY = "finalize_numbered_family"
 
 
 @dataclass(frozen=True, slots=True)
@@ -905,6 +906,10 @@ class Job:
     dedupe_key: str | None = None
     created_at: datetime = field(default_factory=lambda: datetime.now(UTC))
     updated_at: datetime = field(default_factory=lambda: datetime.now(UTC))
+
+    # Missing provenance is not proof of a production job. Source-family
+    # collectors require an explicit database is_demo=false before any I/O.
+    is_demo: bool = True
 
     @property
     def job_type(self) -> str:

@@ -504,6 +504,7 @@ if ! run_database_command pg_dump \
   --schema=supabase_migrations \
   --exclude-table-data=ingest.source_request_gates \
   --exclude-table-data=ingest.source_family_runs \
+  --exclude-table-data=ingest.numbered_family_runs \
   --exclude-table-data=ingest.bluesky_jetstream_candidates \
   --exclude-table-data=ingest.bluesky_jetstream_observations \
   --exclude-table-data=ingest.nostr_relay_candidates \

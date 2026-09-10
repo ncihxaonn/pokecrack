@@ -99,6 +99,12 @@ export interface CatalogSnapshot {
 }
 
 export interface ObservationReadiness {
+  readonly unknownLocation?: Readonly<{
+    packsObserved: number;
+    openings: number;
+    independentSources: number;
+    updatedAt: string;
+  }> | null;
   readonly status: "empty" | "collecting" | "published";
   readonly period: Readonly<{ start: string; end: string }> | null;
   readonly observedPacks: number;

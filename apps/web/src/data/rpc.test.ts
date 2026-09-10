@@ -14,14 +14,14 @@ describe("aggregate RPC adapter", () => {
   it("uses a versioned public aggregate snapshot contract", () => {
     expect(PUBLIC_DASHBOARD_RPC).toBe("get_public_dashboard_snapshot_v3");
     expect(PUBLIC_DASHBOARD_RPC).not.toMatch(/raw|ingest|observation/i);
-    expect(PUBLIC_STUDY_COVERAGE_RPC).toBe("get_public_study_coverage_v3");
+    expect(PUBLIC_STUDY_COVERAGE_RPC).toBe("get_public_study_coverage_v4");
     expect(PUBLIC_STUDY_COVERAGE_RPC).not.toMatch(/raw|evidence|hit/i);
     expect(PUBLIC_STUDY_COVERAGE_FALLBACK_RPC).toBe(
-      "get_public_study_coverage_v2",
+      "get_public_study_coverage_v3",
     );
     expect(PUBLIC_STUDY_COVERAGE_FALLBACK_RPC).not.toMatch(/raw|evidence|hit/i);
     expect(PUBLIC_STUDY_COVERAGE_LEGACY_RPC).toBe(
-      "get_public_study_coverage_v1",
+      "get_public_study_coverage_v2",
     );
     expect(PUBLIC_SOCIAL_DISCOVERY_RPC).toBe("get_public_social_discovery_v4");
     expect(PUBLIC_SOCIAL_DISCOVERY_RPC).not.toBe("get_public_social_discovery_v3");

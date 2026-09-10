@@ -12,6 +12,7 @@ import {
   PUBLIC_SOCIAL_DISCOVERY_RPC,
   PUBLIC_STUDY_COVERAGE_FALLBACK_RPC,
   PUBLIC_STUDY_COVERAGE_LEGACY_RPC,
+  PUBLIC_STUDY_COVERAGE_OLDEST_RPC,
   PUBLIC_STUDY_COVERAGE_RPC,
   unwrapRpcSnapshot,
 } from "./rpc";
@@ -64,29 +65,17 @@ export async function getDashboardData() {
           publicStudyCoverageSchema.safeParse(coverageResult.value.data).success)
         ? coverageResult.value.data
         : await (async () => {
-            try {
-              const fallback = await supabase.rpc(PUBLIC_STUDY_COVERAGE_FALLBACK_RPC);
-              if (
-                fallback.error === null &&
-                (fallback.data === null ||
-                  publicStudyCoverageSchema.safeParse(fallback.data).success)
-              ) return fallback.data;
-              const legacy = await supabase.rpc(PUBLIC_STUDY_COVERAGE_LEGACY_RPC);
-              return legacy.error === null &&
-                  publicStudyCoverageSchema.safeParse(legacy.data).success
-                ? legacy.data
-                : null;
-            } catch {
+            for (const rpc of [PUBLIC_STUDY_COVERAGE_FALLBACK_RPC,
+              PUBLIC_STUDY_COVERAGE_LEGACY_RPC, PUBLIC_STUDY_COVERAGE_OLDEST_RPC]) {
               try {
-                const legacy = await supabase.rpc(PUBLIC_STUDY_COVERAGE_LEGACY_RPC);
-                return legacy.error === null &&
-                    publicStudyCoverageSchema.safeParse(legacy.data).success
-                  ? legacy.data
-                  : null;
+                const fallback = await supabase.rpc(rpc);
+                if (fallback.error === null && (fallback.data === null ||
+                  publicStudyCoverageSchema.safeParse(fallback.data).success)) return fallback.data;
               } catch {
-                return null;
+                // A partially rolled-out database must retain older coverage.
               }
             }
+            return null;
           })();
     const withCoverage =
       coveragePayload === null ? snapshot : mergePublicStudyCoverage(snapshot, coveragePayload);

@@ -32,6 +32,8 @@ select is(
            'source_family_candidates', 'source_family_admissions',
            'source_family_tombstones', 'source_family_identity_keys',
            'source_family_runs', 'source_family_clock', 'source_family_control',
+           'numbered_family_control', 'numbered_family_candidates',
+           'numbered_family_admissions', 'numbered_family_identity_keys', 'numbered_family_runs',
            'research_intake_references', 'research_intake_control'
          )
        )
@@ -67,6 +69,8 @@ select is(
            'source_family_candidates', 'source_family_admissions',
            'source_family_tombstones', 'source_family_identity_keys',
            'source_family_runs', 'source_family_clock', 'source_family_control',
+           'numbered_family_control', 'numbered_family_candidates',
+           'numbered_family_admissions', 'numbered_family_identity_keys', 'numbered_family_runs',
            'research_intake_references', 'research_intake_control'
          )
        )

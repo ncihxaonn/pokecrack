@@ -329,6 +329,7 @@ FROM ingest.pause_bluesky_jetstream_job_v1(
 
 _COMPLETION_EFFECT_SQL: Mapping[CompletionEffect, str] = {
     CompletionEffect.FINALIZE_SOURCE_FAMILY: "SELECT * FROM ingest.finalize_source_family_v1(%(job_id)s::uuid, %(worker_id)s, %(lease_generation)s)",
+    CompletionEffect.FINALIZE_NUMBERED_FAMILY: "SELECT * FROM ingest.finalize_numbered_family_v1(%(job_id)s::uuid, %(worker_id)s, %(lease_generation)s)",
     CompletionEffect.PRUNE_EXPIRED_EPHEMERA: FINALIZE_CLEANUP_SQL,
 }
 
@@ -372,6 +373,7 @@ def job_from_row(row: Mapping[str, Any]) -> Job:
         dedupe_key=row.get("dedupe_key"),
         created_at=row["created_at"],
         updated_at=row["updated_at"],
+        is_demo=row.get("is_demo") is not False,
     )
 
 
@@ -436,10 +438,14 @@ class PostgresJobRepository:
     ) -> Job | None:
         del now
         if kind == "source.family.cycle":
-            if dict(payload or {}) != {"family": "pokesup-enumerated"}:
+            if dict(payload or {}) == {"family": "pokesup-enumerated"}:
+                family_sql = "SELECT * FROM ingest.enqueue_source_family_v1(%(slot)s)"
+            elif dict(payload or {}) == {"family": "kozaru-numbered"}:
+                family_sql = "SELECT * FROM ingest.enqueue_numbered_family_v1(%(slot)s)"
+            else:
                 raise ValueError("source family schedule requires its exact family payload")
             rows = self._executor.query(
-                "SELECT * FROM ingest.enqueue_source_family_v1(%(slot)s)",
+                family_sql,
                 {"slot": scheduled_for},
             )
             if not rows:
