@@ -206,5 +206,60 @@ create or replace function ingest.source_family_policy_v1()
 returns table(family text,version text,approved boolean,review_expires_at timestamptz)
 language sql stable as $$select 'pokesup-enumerated'::text,'pokesup-enumerated-v1'::text,true,now()-interval '1 second'$$;
 select is((select count(*)::integer from ingest.source_family_public_rows_v1()),0,'expired source review cannot be confused with allowed historical evidence');
+
+-- Variable layouts: restore the test-local review only. Fixtures use the
+-- independently observed counts/hashes, not box multipliers or live admissions.
+create or replace function ingest.source_family_policy_v1()
+returns table(family text,version text,approved boolean,review_expires_at timestamptz)
+language sql stable as $$select 'pokesup-enumerated'::text,'pokesup-enumerated-v1'::text,true,now()+interval '30 days'$$;
+select is(ingest.source_family_pack_count_v1('sv11b'),20,'Black Bolt enumeration has twenty packs');
+select is(ingest.source_family_pack_count_v1('sv8a'),10,'Terastal enumeration has ten packs');
+select is(ingest.source_family_pack_count_v1('sv9a'),30,'ten explicit three-pack ranges cover thirty packs');
+select is(ingest.source_family_pack_count_v1('sv7'),null::integer,'unknown products have no assumed box count');
+select is(ingest.source_family_expected_labels_v1('sv7'),null::jsonb,'unknown products have no synthetic labels');
+select ok(not has_function_privilege('service_role','ingest.enqueue_pokesup_variable_layout_backfill_v1()','EXECUTE'),'worker cannot initiate owner catch-up');
+
+create temp table variable_reports(product text,post_id bigint,ordinal integer,packs integer,resources integer,hash text,published text);
+insert into variable_reports values
+ ('sv11b',387,1,20,20,'a8da05c22685cc76a3b8c401dc9b7f1b19af4d7e3d4cdbcfd38ea123b790940f','2025-06-06T17:31:36+00:00'),
+ ('sv11w',389,1,20,20,'67140f3bf30d7e3e1ac95fda2c24508763fc8b1c168dde32048a1c18493306c4','2025-06-10T03:04:06+00:00'),
+ ('sv2a',190,1,20,20,'8d35f6c9e437672db8d4d4a6937361e4999f8c04bc8c93906d6360f363a00705','2024-12-01T17:06:13+00:00'),
+ ('sv8a',192,1,10,10,'16bad74523c81b6ad659ea0a01d5751b84fcb5858e2d9a1563aee6dfff32aad9','2024-12-26T15:34:32+00:00'),
+ ('sv9',217,1,30,30,'4069cf384299905ce0ff936ec80788323873cac1760cce505598393162d3a2d6','2025-01-24T00:05:43+00:00'),
+ ('sv9',221,2,30,30,'2eab648b6864fc41a429124ebddccab68ba90970444f645c3e678cf7189ccc1d','2025-01-26T09:42:07+00:00'),
+ ('sv9a',273,1,30,10,'1666e125ce7a6d0475759c1489cce375d528deb44c0ec64d8143ec5b2d589681','2025-03-16T09:27:42+00:00');
+create temp table variable_proofs as
+select r.*,jsonb_build_object('evidence',jsonb_build_object(
+ 'url','https://pokesup.com/blog/'||slug||'/', 'post_id',post_id,'product',product,
+ 'opening_ordinal',ordinal,'published_at',published,'resource_sha256',hash,
+ 'video_sha256s','[]'::jsonb,
+ 'labels',case when product='sv8a' then (select jsonb_agg(n||'パック' order by n) from generate_series(1,10)n)
+   else (select jsonb_agg(side||n||'パック' order by ord,n) from (values('左',1),('右',2))s(side,ord)
+     cross join generate_series(1,packs/2)n) end,
+ 'resource_sha256s',(select jsonb_agg(encode(digest(path,'sha256'),'hex') order by pos)
+   from (select '/assets/img/blog/'||slug||'/pack_'||
+      case when product='sv8a' then n::text
+        else (case when n<=resources/2 then 'l_' else 'r_' end)||((n-1)%(resources/2)+1)::text end
+      ||'.jpg' as path,n as pos from generate_series(1,resources)n)p)
+ ))proof
+from variable_reports r cross join lateral (select 'unboxing-'||product||case when ordinal=1 then '' else '-'||ordinal end slug)s;
+select lives_ok($$select pg_temp.run_cycle(proof->'evidence'->>'url',proof) from variable_proofs$$,'all seven real-shaped layouts pass fenced SQL validation');
+select is((select sum(pack_count)::integer from ingest.source_family_public_rows_v1()
+ where set_external_id in ('SV11B','SV11W','SV2A','SV8A','SV9','SV9A')),160,'seven independent reports total exactly 160 enumerated packs');
+select lives_ok($$select pg_temp.run_cycle(proof->'evidence'->>'url',proof) from variable_proofs$$,'variable layouts reverify without new counts');
+select is((select sum(pack_count)::integer from ingest.source_family_public_rows_v1()
+ where set_external_id in ('SV11B','SV11W','SV2A','SV8A','SV9','SV9A')),160,'retries preserve the 160-pack denominator');
+select throws_ok($$select pg_temp.run_cycle(proof->'evidence'->>'url',
+ jsonb_set(proof,'{evidence,labels,0}','"左2パック"')) from variable_proofs where product='sv11b'$$,
+ 'P0001','family evidence leaf invalid','variable layouts still reject duplicate pack positions');
+select throws_ok($$select pg_temp.run_cycle(proof->'evidence'->>'url',
+ jsonb_set(proof,'{evidence,resource_sha256s}',(proof->'evidence'->'resource_sha256s')-0))
+ from variable_proofs where product='sv9a'$$,'P0001','resource count invalid','grouped labels do not allow missing resource identity');
+update ingest.source_family_admissions set pack_count=30 where product='sv11b';
+select is((select count(*)::integer from ingest.source_family_public_rows_v1() where set_external_id='SV11B'),0,'mismatched persisted counts cannot appear in public projection');
+update ingest.source_family_admissions set pack_count=20 where product='sv11b';
+select is((select count(*)::integer from jsonb_array_elements(public.get_public_study_coverage_v3()->'sources')x
+ where x->>'id' in ('pokesup_family_387','pokesup_family_389','pokesup_family_190','pokesup_family_192','pokesup_family_217','pokesup_family_221','pokesup_family_273')
+ and x->'coverage' ? 'qualifyingHitPacks'),0,'variable layouts never invent hit numerators');
 select * from finish();
 rollback;

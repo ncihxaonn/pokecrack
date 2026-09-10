@@ -3697,6 +3697,37 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      enqueue_pokesup_variable_layout_backfill_v1: {
+        Args: never
+        Returns: {
+          attempts: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          is_demo: boolean
+          job_type: string
+          last_error_code: string | null
+          last_error_message: string | null
+          lease_generation: number
+          lock_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          retention_until: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       enqueue_public_study_coverage_job_v1: {
         Args: {
           p_available_at?: string
@@ -4793,6 +4824,14 @@ export type Database = {
       }
       reviewed_public_study_gates_ready_v1: { Args: never; Returns: boolean }
       source_family_access_v1: { Args: never; Returns: boolean }
+      source_family_expected_labels_v1: {
+        Args: { p_product: string }
+        Returns: Json
+      }
+      source_family_pack_count_v1: {
+        Args: { p_product: string }
+        Returns: number
+      }
       source_family_policy_v1: {
         Args: never
         Returns: {
@@ -4830,6 +4869,10 @@ export type Database = {
         }[]
       }
       source_family_ready_v1: { Args: never; Returns: boolean }
+      source_family_resource_paths_v1: {
+        Args: { p_product: string; p_slug: string; p_width: number }
+        Returns: string[]
+      }
       stage_source_family_v1: {
         Args: {
           p_generation: number

@@ -56,6 +56,29 @@ def family_dump() -> bytes:
 
 
 class SourceFamilyBackupTests(unittest.TestCase):
+    def test_variable_layouts_preserve_exact_counts_and_restore_disabled(self) -> None:
+        helper = fixtures.BackupSanitizerTests()
+        for product, count in ((b"sv11b", b"20"), (b"sv11w", b"20"), (b"sv2a", b"20"),
+                               (b"sv8a", b"10"), (b"sv9", b"30"), (b"sv9a", b"30")):
+            with self.subTest(product=product):
+                document = family_dump().replace(
+                    FAMILY_SCHEMA, SANITIZER_MODULE["SOURCE_FAMILY_VARIABLE_SCHEMA_SQL"]
+                ).replace(b"unboxing-m2", b"unboxing-" + product).replace(
+                    b"462\tm2\t", b"462\t" + product + b"\t"
+                ).replace(b"\t\\N\t30\n", b"\t\\N\t" + count + b"\n")
+                for value in (document, without_owners(document)):
+                    result = helper.run_sanitizer(helper.complete_dump() + value)
+                    self.assertEqual(result.returncode, 0, result.stderr)
+                    self.assertIn(b"\t\\N\t" + count + b"\n", result.stdout)
+                    self.assertIn(b"t\tf\tpokesup-enumerated-v1", result.stdout)
+                wrong = document.replace(b"\t\\N\t" + count + b"\n",
+                                         b"\t\\N\t" + (b"20" if count != b"20" else b"30") + b"\n")
+                result = helper.run_sanitizer(helper.complete_dump() + wrong)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(result.stdout, b"")
+                old_shape = document.replace(SANITIZER_MODULE["SOURCE_FAMILY_VARIABLE_SCHEMA_SQL"], FAMILY_SCHEMA)
+                self.assertNotEqual(helper.run_sanitizer(helper.complete_dump() + old_shape).returncode, 0)
+
     def test_historical_sv8_retains_facts_and_restores_disabled(self) -> None:
         helper = fixtures.BackupSanitizerTests()
         historical = family_dump().replace(b"unboxing-m2", b"unboxing-sv8").replace(

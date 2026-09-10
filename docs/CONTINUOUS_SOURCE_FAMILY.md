@@ -1,5 +1,13 @@
 # Continuous source-family first slice
 
+## 2026-09-10 variable-layout extension
+
+The [variable-layout review](SOURCE_FAMILY_VARIABLE_LAYOUTS.md) adds six named
+products with explicitly enumerated 10-, 20- and 30-pack layouts. It separates
+pack positions from resource identities, including SV9A's exact three-pack
+caption ranges. Existing access, deduplication and publication gates remain.
+Seven reviewed reports represent 160 candidate packs; that is not a live count.
+
 ## 2026-09-10 historical SV8 extension
 
 This reviewed extension adds source-native `sv8 / 超電ブレイカー` and accepts
