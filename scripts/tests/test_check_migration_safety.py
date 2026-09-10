@@ -9,6 +9,40 @@ from scripts.check_migration_safety import audit_migrations, scan_destructive_st
 
 
 class MigrationSafetyTests(unittest.TestCase):
+    def test_numbered_family_release_has_exactly_three_reviewed_staging_deletes(self) -> None:
+        root = Path(__file__).resolve().parents[2]
+        migrations = root / "supabase/migrations"
+        target = "20261024000000_numbered_source_family.sql"
+        with tempfile.TemporaryDirectory() as temporary:
+            applied = Path(temporary) / "applied.txt"
+            applied.write_text(
+                "\n".join(
+                    path.name.split("_", 1)[0]
+                    for path in sorted(migrations.glob("*.sql"))
+                    if path.name != target
+                ) + "\n", encoding="utf-8",
+            )
+            result = audit_migrations(
+                migrations, applied, root / "config/migration-safety-allowlist.json"
+            )
+        self.assertTrue(result.ok, result.errors)
+        self.assertEqual(result.pending, (target,))
+        self.assertEqual(result.reviewed_deletes, 3)
+        statements = scan_destructive_statements((migrations / target).read_text())
+        self.assertEqual(len(statements), 3)
+        # Pin independently of the mutable allowlist: changing a predicate or
+        # widening a deletion requires an explicit regression-contract review.
+        self.assertEqual({statement.fingerprint for statement in statements}, {
+            "f5e51c23d381716f7a3337f35b3c7a7481975fe260b13f43a85dd5df60609062",
+            "1e3ab7566ab21a4387aecf568dfff1e658163c19b299671d5fd5318329ca87d1",
+            "a7cfb4fadffeeaea31e59f461935a9b08f24090671496548a59db2d93c9abe9c",
+        })
+        self.assertTrue(all(
+            statement.kind == "delete"
+            and statement.normalized.startswith("delete from ingest.numbered_family_runs ")
+            for statement in statements
+        ))
+
     def test_source_family_release_has_exactly_three_reviewed_staging_deletes(self) -> None:
         root = Path(__file__).resolve().parents[2]
         migrations = root / "supabase/migrations"
