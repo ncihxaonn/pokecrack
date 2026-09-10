@@ -144,6 +144,24 @@ SOURCE_FAMILY_OWNER_STATEMENTS = frozenset(
 SOURCE_FAMILY_OWNERLESS_STATEMENTS = (
     SOURCE_FAMILY_SCHEMA_STATEMENTS - SOURCE_FAMILY_OWNER_STATEMENTS
 )
+# Support exact pre/post-migration shapes for a backup made before rollout.
+# Never accept a mixture or a relaxed positive-count constraint.
+SOURCE_FAMILY_VARIABLE_SCHEMA_SQL = SOURCE_FAMILY_SCHEMA_SQL.replace(
+    b"CHECK ((pack_count = 30))", b"CHECK ((pack_count = ANY (ARRAY[10, 20, 30])))"
+)
+SOURCE_FAMILY_VARIABLE_STATEMENTS = frozenset(
+    b" ".join(statement.split()) + b";"
+    for statement in SOURCE_FAMILY_VARIABLE_SCHEMA_SQL.split(b";")
+    if statement.strip()
+)
+SOURCE_FAMILY_VARIABLE_OWNERLESS = (
+    SOURCE_FAMILY_VARIABLE_STATEMENTS - SOURCE_FAMILY_OWNER_STATEMENTS
+)
+SOURCE_FAMILY_ALLOWED_STATEMENTS = SOURCE_FAMILY_SCHEMA_STATEMENTS | SOURCE_FAMILY_VARIABLE_STATEMENTS
+SOURCE_FAMILY_PACK_COUNTS = {
+    b"m2": b"30", b"m3": b"30", b"sv8": b"30", b"sv11b": b"20", b"sv11w": b"20",
+    b"sv2a": b"20", b"sv8a": b"10", b"sv9": b"30", b"sv9a": b"30",
+}
 _FAMILY_RELATION = (
     rb'(?:(?:"[a-z_][a-z0-9_$]*"|[a-z_][a-z0-9_$]*)\s*\.\s*)?'
     rb'"?source_family_[a-z_]+"?(?=\s|[;(]|$)'
@@ -2681,6 +2699,7 @@ class PlainBackupSanitizer:
         self.seen = {table: 0 for table in RETENTION_CONTROL_TABLES}
         self.family_seen: set[tuple[str, ...]] = set()
         self.family_schema_seen: set[bytes] = set()
+        self.family_requires_variable_schema = False
         self.family_schema_lines: list[bytes] | None = None
         self.intake_seen: set[tuple[str, ...]] = set()
         self.intake_schema_seen: set[bytes] = set()
@@ -3142,9 +3161,9 @@ class PlainBackupSanitizer:
             "reason": rb"pending_family|pending_evidence|invalid_evidence|fixed_duplicate|cohort_duplicate|valid|duplicate|retracted",
             "policy_version": rb"pokesup-enumerated-v1",
             "post_id": rb"[1-9][0-9]{0,12}",
-            "product": rb"m2|m3|sv8",
+            "product": rb"m2|m3|sv8|sv11b|sv11w|sv2a|sv8a|sv9|sv9a",
             "opening_ordinal": rb"[1-9][0-9]?",
-            "pack_count": rb"30",
+            "pack_count": rb"10|20|30",
             "singleton": rb"t",
             "enabled": rb"t|f",
         }
@@ -3162,6 +3181,13 @@ class PlainBackupSanitizer:
                 raise SanitizationError(
                     "source-family retained field outside reviewed scope"
                 )
+
+        if block.header.table == ("ingest", "source_family_admissions"):
+            product = fields["product"]
+            if fields["pack_count"] != SOURCE_FAMILY_PACK_COUNTS[product]:
+                raise SanitizationError("source-family product and pack count mismatch")
+            if product not in {b"m2", b"m3", b"sv8"}:
+                self.family_requires_variable_schema = True
 
     def _inspect_bluesky_checkpoint_row(
         self, block: CopyBlock, fields: list[bytes]
@@ -3703,12 +3729,17 @@ class PlainBackupSanitizer:
             raise SanitizationError("research-intake backup requires complete schema and data blocks")
         if (self.family_seen or self.family_schema_seen) and (
             self.family_schema_seen
-            not in (SOURCE_FAMILY_SCHEMA_STATEMENTS, SOURCE_FAMILY_OWNERLESS_STATEMENTS)
+            not in (SOURCE_FAMILY_SCHEMA_STATEMENTS, SOURCE_FAMILY_OWNERLESS_STATEMENTS,
+                    SOURCE_FAMILY_VARIABLE_STATEMENTS, SOURCE_FAMILY_VARIABLE_OWNERLESS)
             or self.family_seen != set(SOURCE_FAMILY_COLUMNS)
         ):
             raise SanitizationError(
                 "source-family backup requires the complete reviewed schema and data blocks"
             )
+        if self.family_requires_variable_schema and self.family_schema_seen not in (
+            SOURCE_FAMILY_VARIABLE_STATEMENTS, SOURCE_FAMILY_VARIABLE_OWNERLESS
+        ):
+            raise SanitizationError("variable source-family rows require the matching schema")
         if self.family_seen and self.family_seen != set(SOURCE_FAMILY_COLUMNS):
             raise SanitizationError(
                 "source-family backup requires every durable ledger and control table"
@@ -4092,7 +4123,7 @@ class PlainBackupSanitizer:
                 if line.rstrip().endswith(b";"):
                     statement = b" ".join(b"".join(self.family_schema_lines).split())
                     if (
-                        statement not in SOURCE_FAMILY_SCHEMA_STATEMENTS
+                        statement not in SOURCE_FAMILY_ALLOWED_STATEMENTS
                         or statement in self.family_schema_seen
                     ):
                         raise SanitizationError(

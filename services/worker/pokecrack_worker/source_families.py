@@ -1,6 +1,6 @@
 """Bounded source-family discovery. Approval is reviewed code, never worker input.
 
-PokeSup M2/M3 and historical SV8 numbered cohorts passed source review.
+Source-native numbered cohorts use independently reviewed product layouts.
 Runtime opt-in and the owner-controlled database switch remain separate gates.
 """
 
@@ -45,10 +45,49 @@ class FamilyPolicy:
         ("m2", "インフェルノX"),
         ("m3", "ムニキスゼロ"),
         ("sv8", "超電ブレイカー"),
+        ("sv11b", "ブラックボルト"),
+        ("sv11w", "ホワイトフレア"),
+        ("sv2a", "ポケモンカード151"),
+        ("sv8a", "テラスタルフェスex"),
+        ("sv9", "バトルパートナーズ"),
+        ("sv9a", "熱風のアリーナ"),
     )
 
 
 POLICY = FamilyPolicy()
+
+# These are observed complete enumeration layouts, not box-content multipliers.
+# Canonical labels count packs; resource positions count illustrations. SV9a
+# explicitly labels three consecutive packs per illustration, not one pack.
+PACK_COUNTS = {
+    "m2": 30,
+    "m3": 30,
+    "sv8": 30,
+    "sv11b": 20,
+    "sv11w": 20,
+    "sv2a": 20,
+    "sv8a": 10,
+    "sv9": 30,
+    "sv9a": 30,
+}
+
+
+def expected_labels(product: str) -> tuple[str, ...]:
+    count = PACK_COUNTS[product]
+    if product == "sv8a":
+        return tuple(f"{n}パック" for n in range(1, count + 1))
+    return tuple(f"{side}{n}パック" for side in ("左", "右") for n in range(1, count // 2 + 1))
+
+
+def resource_paths(product: str, slug: str, width: int) -> list[str]:
+    if product == "sv8a":
+        return [f"/assets/img/blog/{slug}/pack_{n:0{width}}.jpg" for n in range(1, 11)]
+    positions = 5 if product == "sv9a" else PACK_COUNTS[product] // 2
+    return [
+        f"/assets/img/blog/{slug}/pack_{side}_{n:0{width}}.jpg"
+        for side in ("l", "r")
+        for n in range(1, positions + 1)
+    ]
 
 
 def discover(document: str) -> tuple[str, ...]:
@@ -135,7 +174,7 @@ def verify(url: str, document: str, metadata: object, *, now: datetime) -> dict[
     product = match[1]
     ordinal = int(match[2] or "1")
     slug = url.rstrip("/").rsplit("/", 1)[1]
-    if product not in products:
+    if product not in products or product not in PACK_COUNTS:
         raise ValueError("pending_product_review")
     if not isinstance(metadata, list) or len(metadata) != 1 or not isinstance(metadata[0], dict):
         raise ValueError("metadata_identity")
@@ -158,26 +197,29 @@ def verify(url: str, document: str, metadata: object, *, now: datetime) -> dict[
         raise ValueError("outside_window")
     parsed = OpeningHTML()
     parsed.feed(document)
+    heading_name = products[product] + (" BOX" if product in {"sv2a", "sv8a"} else "")
     if (
         parsed.canonical != [url]
-        or parsed.headings.count(products[product] + f"開封（{ordinal}箱目）") != 1
+        or parsed.headings.count(heading_name + f"開封（{ordinal}箱目）") != 1
     ):
         raise ValueError("opening_identity")
     labels = tuple(parsed.labels)
-    # The reviewed SV8 template labels the same numbered pack positions without
-    # the newer パック suffix. Normalize only this complete, ordered exact form.
-    if product == "sv8" and labels == tuple(label.removesuffix("パック") for label in LABELS):
-        labels = LABELS
-    if labels != LABELS:
+    expected = expected_labels(product)
+    # Normalize only complete reviewed forms; never fill missing positions.
+    if product in {"sv8", "sv2a", "sv9"} and labels == tuple(
+        label.removesuffix("パック") for label in expected
+    ):
+        labels = expected
+    if product == "sv8a" and labels == tuple(f"{n}パック目" for n in range(1, 11)):
+        labels = expected
+    if product == "sv9a" and labels == tuple(
+        f"{side}{n}〜{n + 2}パック" for side in ("左", "右") for n in range(1, 16, 3)
+    ):
+        labels = expected
+    if labels != expected:
         raise ValueError("pack_enumeration")
-    expected_images = [
-        f"/assets/img/blog/{slug}/pack_{side}_{n:02}.jpg"
-        for side in ("l", "r")
-        for n in range(1, 16)
-    ]
-    unpadded_images = [
-        f"/assets/img/blog/{slug}/pack_{side}_{n}.jpg" for side in ("l", "r") for n in range(1, 16)
-    ]
+    expected_images = resource_paths(product, slug, 2)
+    unpadded_images = resource_paths(product, slug, 1)
     if parsed.images not in (expected_images, unpadded_images):
         raise ValueError("pack_resource_identity")
     # Resource identifiers are hashed, never fetched or persisted. A unique
@@ -203,7 +245,7 @@ def verify(url: str, document: str, metadata: object, *, now: datetime) -> dict[
         "published_at": published.isoformat(),
         "product": product,
         "opening_ordinal": ordinal,
-        "labels": list(LABELS),
+        "labels": list(expected),
         "resource_sha256": resource_hash,
         "resource_sha256s": [hashlib.sha256(path.encode()).hexdigest() for path in parsed.images],
         "video_sha256s": video_hashes,

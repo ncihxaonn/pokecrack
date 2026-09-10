@@ -91,6 +91,89 @@ def test_exact_enumeration_only() -> None:
     assert "pack_count" not in result
 
 
+NEW_LAYOUTS = [
+    ("sv11b", "ブラックボルト", 20, "paired"),
+    ("sv11w", "ホワイトフレア", 20, "paired"),
+    ("sv2a", "ポケモンカード151 BOX", 20, "short"),
+    ("sv8a", "テラスタルフェスex BOX", 10, "linear"),
+    ("sv9", "バトルパートナーズ", 30, "short"),
+    ("sv9a", "熱風のアリーナ", 30, "grouped"),
+]
+
+
+def variable_fixture(product: str, name: str, count: int, layout: str, ordinal: int = 1):  # type: ignore[no-untyped-def]
+    slug = "unboxing-" + product + ("" if ordinal == 1 else f"-{ordinal}")
+    url = ROOT + "/blog/" + slug + "/"
+    body = f'<link rel="canonical" href="{url}"><h2>{name}開封（{ordinal}箱目）</h2>'
+    if layout == "linear":
+        positions = [(f"{n}パック目", f"pack_{n}.jpg") for n in range(1, count + 1)]
+    elif layout == "grouped":
+        positions = [
+            (f"{side}{n}〜{n + 2}パック", f"pack_{letter}_{index}.jpg")
+            for side, letter in (("左", "l"), ("右", "r"))
+            for index, n in enumerate(range(1, count // 2 + 1, 3), 1)
+        ]
+    else:
+        positions = [
+            (f"{side}{n}" + ("" if layout == "short" else "パック"), f"pack_{letter}_{n}.jpg")
+            for side, letter in (("左", "l"), ("右", "r"))
+            for n in range(1, count // 2 + 1)
+        ]
+    for label, resource in positions:
+        body += f'<img src="/assets/img/blog/{slug}/{resource}"><div class="_caption">{label}</div>'
+    body += "<h2>封入率</h2>"
+    meta = [{"id": 10000 + ordinal, "slug": slug, "link": url, "date_gmt": "2025-07-01T00:00:00"}]
+    return url, body, meta
+
+
+@pytest.mark.parametrize("product,name,count,layout", NEW_LAYOUTS)
+def test_variable_enumeration_counts_packs_not_resources(product, name, count, layout) -> None:  # type: ignore[no-untyped-def]
+    url, body, meta = variable_fixture(product, name, count, layout)
+    evidence = verify(url, body, meta, now=NOW)
+    assert len(evidence["labels"]) == count
+    assert len(set(evidence["labels"])) == count
+    assert len(evidence["resource_sha256s"]) == (10 if layout in {"linear", "grouped"} else count)
+    assert "pack_count" not in evidence
+    assert "country" not in evidence
+
+
+@pytest.mark.parametrize("product,name,count,layout", NEW_LAYOUTS)
+def test_variable_layout_rejects_missing_duplicate_and_wrong_product(
+    product, name, count, layout
+) -> None:  # type: ignore[no-untyped-def]
+    url, body, meta = variable_fixture(product, name, count, layout)
+    for broken in (
+        body.replace('<div class="_caption">', '<div class="other">', 1),
+        body.replace("pack_l_2.jpg", "pack_l_1.jpg").replace("pack_2.jpg", "pack_1.jpg"),
+        body.replace(name, "Unknown product"),
+        body.replace("（1箱目）", "（2箱目）"),
+    ):
+        with pytest.raises(ValueError):
+            verify(url, broken, meta, now=NOW)
+
+
+def test_grouped_ranges_are_explicit_complete_ranges_not_image_multipliers() -> None:
+    url, body, meta = variable_fixture(*NEW_LAYOUTS[-1])
+    for replacement in ("左1〜2パック", "左1〜4パック", "左1パック", "左2〜4パック", "3パック"):
+        with pytest.raises(ValueError):
+            verify(url, body.replace("左1〜3パック", replacement), meta, now=NOW)
+    _, single_body, _ = variable_fixture("sv9", "バトルパートナーズ", 30, "short")
+    with pytest.raises(ValueError):
+        verify(
+            url,
+            single_body.replace("sv9/", "sv9a/").replace("バトルパートナーズ", "熱風のアリーナ"),
+            meta,
+            now=NOW,
+        )
+
+
+def test_new_ordinal_retains_a_distinct_canonical_cohort() -> None:
+    first = verify(*variable_fixture("sv9", "バトルパートナーズ", 30, "short"), now=NOW)
+    second = verify(*variable_fixture("sv9", "バトルパートナーズ", 30, "short", 2), now=NOW)
+    assert first["resource_sha256"] != second["resource_sha256"]
+    assert not set(first["resource_sha256s"]) & set(second["resource_sha256s"])
+
+
 @pytest.mark.parametrize(
     "change",
     [
