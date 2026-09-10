@@ -57,6 +57,29 @@ batch sizes. An hourly trigger is not an SLA: GitHub delays, usage limits,
 source availability and failed runs can extend it. Independent source review
 and publication have no fabricated completion deadline.
 
+### Continuing beyond the same leading reports
+
+The hourly selector now prepares a selection-bound continuation hint from the
+same validated country history. MAM receives only prior pass counts, canonical
+reference URLs and cohort identifiers: no article text, counts, claimed geography,
+personal details, access approval or database credentials. The hint is at most
+12,000 bytes, 64 URLs and 32 cohort IDs. Earlier results for the selected countries
+take priority, then shared cross-country references. A deterministic window rotates
+on later sweeps when history exceeds the hint budget; the full durable history and
+deduplication ledger are never truncated by this hint.
+
+The prompt prioritizes new original cohorts and varies source types across sweeps,
+within the same 12-query budget. It does not blacklist an entire host, prevent new
+evidence about an existing cohort, or treat absent references as independent.
+These hints improve continuity, not guarantee discovery or replace independent
+deduplication. Empty passes still mean no eligible result in that bounded pass.
+Legacy manual invocations without `--context` remain supported; the hourly
+workflow always supplies it, and malformed or mismatched hints stop before search.
+The context is temporary and is not added to public observations or report schemas.
+
+This does not resolve the separate 1,000-issue history cap, 2,000-record ledger
+cap, or the need for independently reviewed repeatable collector families.
+
 ## Deduplication, provenance and release
 
 Publication first constructs the full bounded ledger from the tracked seed,
