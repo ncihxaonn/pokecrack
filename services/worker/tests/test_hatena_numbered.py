@@ -63,7 +63,19 @@ def test_hidden_labels_do_not_complete_report(wrapper):
         )
 
 
-@pytest.mark.parametrize("attrs", ["hidden", 'aria-hidden="true"', 'style="display: none"'])
+@pytest.mark.parametrize(
+    "attrs",
+    [
+        "hidden",
+        'aria-hidden="true"',
+        'style="display: none"',
+        'class="hidden"',
+        'class="extra is-hidden"',
+        'class="d-none"',
+        'class="sr-only"',
+        'class="visually-hidden"',
+    ],
+)
 def test_hidden_elements_do_not_complete_report(attrs):
     with pytest.raises(CollectorError):
         parse(

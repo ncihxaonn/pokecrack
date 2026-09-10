@@ -289,6 +289,14 @@ const catalogSnapshot = z
     }
   });
 
+export const unknownLocationCoverageSchema = z.object({
+  packsObserved: z.number().int().positive().max(1_000_000),
+  openings: z.number().int().positive().max(1_000_000),
+  independentSources: z.number().int().positive().max(1_000_000),
+  updatedAt: isoDateTime,
+}).strict().refine((value) => value.openings <= value.packsObserved)
+  .refine((value) => value.independentSources <= value.openings);
+
 const observationReadiness = z
   .object({
     status: z.enum(["empty", "collecting", "published"]),
@@ -297,6 +305,7 @@ const observationReadiness = z
     completeOpenings: z.number().int().nonnegative(),
     independentSources: z.null(),
     sourceCountryContributions: z.number().int().nonnegative(),
+    unknownLocation: unknownLocationCoverageSchema.nullable().optional(),
     countriesObserved: z.number().int().min(0).max(249),
     countriesWithPublishedRate: z.number().int().min(0).max(249),
     asOf: isoDateTime.nullable(),
@@ -391,7 +400,7 @@ const trendPoint = z
 const sourceCoverage = z
   .object({
     packsObserved: z.number().int().positive().max(1_000_000),
-    countriesObserved: z.number().int().positive().max(249),
+    countriesObserved: z.number().int().nonnegative().max(249),
     completeOpenings: z.number().int().positive().max(1_000_000),
     ratePacksObserved: z.number().int().positive().max(1_000_000).optional(),
     qualifyingHitPacks: z.number().int().nonnegative().max(1_000_000).optional(),
@@ -705,8 +714,10 @@ function validateGlobalSnapshot(
   }
 
   const publishedCount = mapCells.filter((cell) => cell.hitRate !== null).length;
-  const packs = mapCells.reduce((total, cell) => total + cell.packsObserved, 0);
-  const openings = mapCells.reduce((total, cell) => total + cell.openings, 0);
+  const packs = mapCells.reduce((total, cell) => total + cell.packsObserved, 0)
+    + (observations.unknownLocation?.packsObserved ?? 0);
+  const openings = mapCells.reduce((total, cell) => total + cell.openings, 0)
+    + (observations.unknownLocation?.openings ?? 0);
   const sourceContributions = mapCells.reduce(
     (total, cell) => total + cell.independentSources,
     0,
@@ -735,7 +746,7 @@ function validateGlobalSnapshot(
     addIssue("Legacy summary totals must describe the same global map period", ["summary"]);
   }
 
-  const expectedStatus = mapCells.length === 0
+  const expectedStatus = packs === 0
     ? "empty"
     : publishedCount === 0
       ? "collecting"
@@ -744,7 +755,7 @@ function validateGlobalSnapshot(
     addIssue("Observation status must match the map publication state", ["observations", "status"]);
   }
 
-  if (mapCells.length === 0) {
+  if (packs === 0) {
     if (observations.period !== null || observations.asOf !== null) {
       addIssue("An empty observation state cannot fabricate a period or as-of time", ["observations"]);
     }

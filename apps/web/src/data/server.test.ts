@@ -234,6 +234,23 @@ const americasHistoricalCoveragePayload = {
 describe("public live-data client", () => {
   beforeEach(() => mocks.rpc.mockReset());
 
+  it("loads unknown-location counts from v4 into the live dashboard total", async () => {
+    mocks.rpc
+      .mockResolvedValueOnce({ data: DEMO_PUBLIC_DATA, error: null })
+      .mockResolvedValueOnce({ data: { ...v2CoveragePayload, schemaVersion: "4.0.0",
+        unknownLocation: { packsObserved: 10, openings: 1, independentSources: 1,
+          updatedAt: "2026-09-05T00:00:00Z" },
+      }, error: null })
+      .mockResolvedValueOnce({ data: null, error: null })
+      .mockResolvedValue({ data: null, error: null });
+    const result = await getDashboardData() as unknown as typeof DEMO_PUBLIC_DATA;
+    const countryPacks = result.mapCells.reduce((sum, cell) => sum + cell.packsObserved, 0);
+    expect(result.observations.observedPacks).toBe(countryPacks + 10);
+    expect(result.summary.observedPacks).toBe(countryPacks + 10);
+    expect(result.observations.unknownLocation?.openings).toBe(1);
+    expect(mocks.rpc.mock.calls[1]).toEqual(["get_public_study_coverage_v4"]);
+  });
+
   it("uses a cookie-free publishable client so public routes remain ISR-cacheable", () => {
     expect(source).toContain("createClient");
     expect(source).not.toContain("next/headers");
@@ -252,8 +269,9 @@ describe("public live-data client", () => {
     await expect(getDashboardData()).resolves.toBe(snapshot);
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v3",
+      "get_public_study_coverage_v4",
       "get_public_social_discovery_v4",
+      "get_public_study_coverage_v3",
       "get_public_study_coverage_v2",
       "get_public_study_coverage_v1",
       "get_public_social_discovery_v3",
@@ -290,7 +308,7 @@ describe("public live-data client", () => {
     );
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v3",
+      "get_public_study_coverage_v4",
       "get_public_social_discovery_v4",
       "get_public_social_discovery_v3",
     ]);
@@ -339,7 +357,7 @@ describe("public live-data client", () => {
     ]));
   });
 
-  it("falls back to the reviewed v2 projection when v3 returns malformed data", async () => {
+  it("falls back to the previous projection when v4 returns malformed data", async () => {
     mocks.rpc
       .mockResolvedValueOnce({ data: DEMO_PUBLIC_DATA, error: null })
       .mockResolvedValueOnce({ data: { schemaVersion: "3.0.0" }, error: null })
@@ -354,9 +372,9 @@ describe("public live-data client", () => {
       ]));
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v3",
+      "get_public_study_coverage_v4",
       "get_public_social_discovery_v4",
-      "get_public_study_coverage_v2",
+      "get_public_study_coverage_v3",
       "get_public_social_discovery_v3",
     ]);
   });
@@ -376,7 +394,7 @@ describe("public live-data client", () => {
     });
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v3",
+      "get_public_study_coverage_v4",
       "get_public_social_discovery_v4",
       "get_public_social_discovery_v3",
     ]);
@@ -404,7 +422,7 @@ describe("public live-data client", () => {
     );
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v3",
+      "get_public_study_coverage_v4",
       "get_public_social_discovery_v4",
       "get_public_social_discovery_v3",
     ]);
@@ -422,7 +440,7 @@ describe("public live-data client", () => {
     await expect(getDashboardData()).resolves.toBe(DEMO_PUBLIC_DATA);
     expect(mocks.rpc.mock.calls.map(([rpc]) => rpc)).toEqual([
       "get_public_dashboard_snapshot_v3",
-      "get_public_study_coverage_v3",
+      "get_public_study_coverage_v4",
       "get_public_social_discovery_v4",
     ]);
   });

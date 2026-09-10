@@ -5,6 +5,7 @@ import {
   countryDataVersionsSchema,
   coverageAttributionBasesSchema,
   publicDashboardDataSchema,
+  unknownLocationCoverageSchema,
 } from "./schema";
 import type {
   CountryMapCell,
@@ -152,7 +153,7 @@ const coverageSet = coverageMetric.extend({
 const reviewedSourceCoverage = z
   .object({
     packsObserved: z.number().int().positive().max(1_000_000),
-    countriesObserved: z.number().int().positive().max(249),
+    countriesObserved: z.number().int().nonnegative().max(249),
     completeOpenings: z.number().int().positive().max(1_000_000),
     ...directObservedRate,
   })
@@ -235,11 +236,19 @@ const publicStudyCoverageV3Schema = coverageEnvelope.extend({
   sources: z.array(reviewedCoverageSource).min(1).max(100),
 });
 
+const publicStudyCoverageV4Schema = coverageEnvelope.extend({
+  schemaVersion: z.literal("4.0.0"),
+  countries: z.array(coverageCountryV3).max(249),
+  sources: z.array(reviewedCoverageSource).min(1).max(1_000),
+  unknownLocation: unknownLocationCoverageSchema.nullable(),
+});
+
 export const publicStudyCoverageSchema = z
   .union([
     publicStudyCoverageV1Schema,
     publicStudyCoverageV2Schema,
     publicStudyCoverageV3Schema,
+    publicStudyCoverageV4Schema,
   ])
   .superRefine((value, context) => {
     if (value.period.start > value.period.end) {
@@ -480,6 +489,8 @@ export function mergePublicStudyCoverage(
 
   const base = snapshotResult.data;
   const coverage = coverageResult.data;
+  const unknownLocation = coverage.schemaVersion === "4.0.0"
+    ? coverage.unknownLocation : null;
   const replaceRegistryCoverageRows = coverage.schemaVersion !== "1.0.0";
   const periodsMatch = base.observations.period === null ||
     (base.observations.period.start === coverage.period.start &&
@@ -488,7 +499,8 @@ export function mergePublicStudyCoverage(
     return snapshot;
   }
   const sourceById = new Map<string, PublicSource>(
-    base.sources.map((source) => [source.id, source]),
+    base.sources.filter((source) => source.id !== "kozaru_numbered_openings")
+      .map((source) => [source.id, source]),
   );
   for (const source of coverage.sources) {
     const current = sourceById.get(source.id);
@@ -549,8 +561,10 @@ export function mergePublicStudyCoverage(
       right.releaseDate.localeCompare(left.releaseDate) || left.name.localeCompare(right.name),
   );
 
-  const observedPacks = mapCells.reduce((total, cell) => total + cell.packsObserved, 0);
-  const completeOpenings = mapCells.reduce((total, cell) => total + cell.openings, 0);
+  const observedPacks = mapCells.reduce((total, cell) => total + cell.packsObserved, 0)
+    + (unknownLocation?.packsObserved ?? 0);
+  const completeOpenings = mapCells.reduce((total, cell) => total + cell.openings, 0)
+    + (unknownLocation?.openings ?? 0);
   const sourceCountryContributions = mapCells.reduce(
     (total, cell) => total + cell.independentSources,
     0,
@@ -567,7 +581,7 @@ export function mergePublicStudyCoverage(
   ).length;
   const asOf = mapCells.reduce<string | null>(
     (latest, cell) => laterTimestamp(latest, cell.updatedAt),
-    null,
+    unknownLocation?.updatedAt ?? null,
   );
   const regions = mapCells.map((cell) => ({
     slug: cell.countryCode.toLowerCase(),
@@ -617,8 +631,9 @@ export function mergePublicStudyCoverage(
     },
     observations: {
       ...base.observations,
-      status: countriesWithObservedRate > 0 ? "published" : "collecting",
-      period: coverage.period,
+      status: observedPacks === 0 ? "empty" : countriesWithObservedRate > 0 ? "published" : "collecting",
+      period: observedPacks === 0 ? null : coverage.period,
+      unknownLocation,
       observedPacks,
       completeOpenings,
       sourceCountryContributions,

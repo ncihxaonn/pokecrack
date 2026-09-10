@@ -63,6 +63,13 @@ class _Captions(HTMLParser):
             or tag in HIDDEN
             or "hidden" in a
             or a.get("aria-hidden") == "true"
+            # Conservative conventional hiding markers; this static parser
+            # does not execute arbitrary publisher stylesheets.
+            or bool(
+                {"hidden", "is-hidden", "d-none", "sr-only", "visually-hidden"}.intersection(
+                    (a.get("class") or "").split()
+                )
+            )
             or bool(
                 re.search(
                     r"(?:display\s*:\s*none|visibility\s*:\s*hidden)", a.get("style") or "", re.I
