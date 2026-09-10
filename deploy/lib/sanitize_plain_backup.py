@@ -30,6 +30,88 @@ PUBLIC_STUDY_COVERAGE_OBSERVATIONS = (
 )
 SOURCE_REQUEST_GATES = ("ingest", "source_request_gates")
 SOURCE_FAMILY_RUNS = ("ingest", "source_family_runs")
+NUMBERED_FAMILY_RUNS = ("ingest", "numbered_family_runs")
+# Exact PostgreSQL 17.6 schema-only dump of migration24, verified on MAM.
+NUMBERED_FAMILY_SCHEMA_SQL = b"""
+CREATE TABLE ingest.numbered_family_admissions (
+    url text NOT NULL,
+    policy_version text NOT NULL,
+    published_at timestamp with time zone NOT NULL,
+    verified_at timestamp with time zone NOT NULL,
+    pack_count integer NOT NULL,
+    evidence_sha256 text NOT NULL,
+    resource_sha256s text[] NOT NULL,
+    CONSTRAINT numbered_family_admissions_evidence_sha256_check CHECK ((evidence_sha256 ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT numbered_family_admissions_pack_count_check CHECK ((pack_count = 10)),
+    CONSTRAINT numbered_family_admissions_policy_version_check CHECK ((policy_version = 'kozaru-numbered-v1'::text)),
+    CONSTRAINT numbered_family_admissions_resource_sha256s_check CHECK (((array_ndims(resource_sha256s) = 1) AND (cardinality(resource_sha256s) = 10) AND (array_to_string(resource_sha256s, ','::text) ~ '^[0-9a-f]{64}(,[0-9a-f]{64}){9}$'::text)))
+);
+CREATE TABLE ingest.numbered_family_candidates (
+    url text NOT NULL,
+    state text DEFAULT 'pending'::text NOT NULL,
+    discovered_at timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+    checked_at timestamp with time zone,
+    CONSTRAINT numbered_family_candidates_state_check CHECK ((state = ANY (ARRAY['pending'::text, 'admitted'::text, 'quarantined'::text, 'duplicate'::text, 'retracted'::text]))),
+    CONSTRAINT numbered_family_candidates_url_check CHECK ((url ~ '^https://www[.]kozaru02[.]com/entry/[a-z0-9-]{1,120}$'::text))
+);
+CREATE TABLE ingest.numbered_family_control (
+    singleton boolean DEFAULT true NOT NULL,
+    enabled boolean DEFAULT false NOT NULL,
+    policy_version text NOT NULL,
+    discovered_at timestamp with time zone,
+    active_until timestamp with time zone DEFAULT '-infinity'::timestamp with time zone NOT NULL,
+    owner_job_id uuid,
+    owner_generation bigint,
+    last_request_at timestamp with time zone,
+    CONSTRAINT numbered_family_control_policy_version_check CHECK ((policy_version = 'kozaru-numbered-v1'::text)),
+    CONSTRAINT numbered_family_control_singleton_check CHECK (singleton)
+);
+CREATE TABLE ingest.numbered_family_identity_keys (
+    resource_sha256 text NOT NULL,
+    url_sha256 text NOT NULL,
+    CONSTRAINT numbered_family_identity_keys_resource_sha256_check CHECK ((resource_sha256 ~ '^[0-9a-f]{64}$'::text)),
+    CONSTRAINT numbered_family_identity_keys_url_sha256_check CHECK ((url_sha256 ~ '^[0-9a-f]{64}$'::text))
+);
+CREATE TABLE ingest.numbered_family_runs (
+    job_id uuid NOT NULL,
+    generation bigint NOT NULL,
+    target_url text NOT NULL,
+    requests integer DEFAULT 0 NOT NULL,
+    result jsonb,
+    created_at timestamp with time zone DEFAULT clock_timestamp() NOT NULL,
+    CONSTRAINT numbered_family_runs_requests_check CHECK (((requests >= 0) AND (requests <= 2))),
+    CONSTRAINT numbered_family_runs_result_check CHECK ((octet_length((result)::text) <= 120000))
+);
+CREATE INDEX numbered_family_candidates_due ON ingest.numbered_family_candidates USING btree (checked_at NULLS FIRST, url) WHERE (state <> ALL (ARRAY['duplicate'::text, 'retracted'::text]));
+CREATE INDEX numbered_family_identity_url ON ingest.numbered_family_identity_keys USING btree (url_sha256);
+CREATE INDEX numbered_family_runs_expiry ON ingest.numbered_family_runs USING btree (created_at);
+ALTER TABLE ONLY ingest.numbered_family_admissions ADD CONSTRAINT numbered_family_admissions_url_fkey FOREIGN KEY (url) REFERENCES ingest.numbered_family_candidates(url);
+ALTER TABLE ONLY ingest.numbered_family_control ADD CONSTRAINT numbered_family_control_owner_job_id_fkey FOREIGN KEY (owner_job_id) REFERENCES ingest.jobs(id) ON DELETE SET NULL;
+ALTER TABLE ONLY ingest.numbered_family_runs ADD CONSTRAINT numbered_family_runs_job_id_fkey FOREIGN KEY (job_id) REFERENCES ingest.jobs(id) ON DELETE CASCADE;
+"""
+for _numbered_table, _numbered_key in {
+    "admissions": "url", "candidates": "url", "control": "singleton",
+    "identity_keys": "resource_sha256", "runs": "job_id",
+}.items():
+    NUMBERED_FAMILY_SCHEMA_SQL += (
+        f"ALTER TABLE ONLY ingest.numbered_family_{_numbered_table} ADD CONSTRAINT numbered_family_{_numbered_table}_pkey PRIMARY KEY ({_numbered_key});\n"
+        f"ALTER TABLE ONLY ingest.numbered_family_{_numbered_table} FORCE ROW LEVEL SECURITY;\n"
+        f"ALTER TABLE ingest.numbered_family_{_numbered_table} OWNER TO postgres;\n"
+        f"ALTER TABLE ingest.numbered_family_{_numbered_table} ENABLE ROW LEVEL SECURITY;\n"
+    ).encode()
+NUMBERED_FAMILY_STATEMENTS = frozenset(
+    b" ".join(statement.split()) + b";"
+    for statement in NUMBERED_FAMILY_SCHEMA_SQL.split(b";") if statement.strip()
+)
+NUMBERED_FAMILY_OWNERLESS = frozenset(
+    statement for statement in NUMBERED_FAMILY_STATEMENTS if b" OWNER TO " not in statement
+)
+NUMBERED_FAMILY_COLUMNS = {
+    ("ingest", "numbered_family_candidates"): ("url", "state", "discovered_at", "checked_at"),
+    ("ingest", "numbered_family_admissions"): ("url", "policy_version", "published_at", "verified_at", "pack_count", "evidence_sha256", "resource_sha256s"),
+    ("ingest", "numbered_family_control"): ("singleton", "enabled", "policy_version", "discovered_at", "active_until", "owner_job_id", "owner_generation", "last_request_at"),
+    ("ingest", "numbered_family_identity_keys"): ("resource_sha256", "url_sha256"),
+}
 # Exact pg_dump 17 table DDL from the reviewed isolated migration. Keep this
 # inline: backup bundles intentionally ship this sanitizer as one file.
 # Case is preserved inside SQL literals; only whitespace is normalized.
@@ -179,6 +261,10 @@ SOURCE_FAMILY_DDL = re.compile(
     + _FAMILY_RELATION
     + rb")",
     re.IGNORECASE | re.DOTALL,
+)
+NUMBERED_FAMILY_DDL = re.compile(
+    SOURCE_FAMILY_DDL.pattern.replace(b"source_family_", b"numbered_family_"),
+    SOURCE_FAMILY_DDL.flags,
 )
 SOURCE_FAMILY_COLUMNS = {
     ("ingest", "source_family_candidates"): (
@@ -462,7 +548,8 @@ DOLLAR_QUOTE_TAG = re.compile(rb"\$(?:[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)?
 TARGET_TABLES = (
     RETENTION_CONTROL_TABLES
     | EPHEMERAL_ACTIVITY_TABLES
-    | {SOURCE_REQUEST_GATES, SOURCE_FAMILY_RUNS, *SOURCE_FAMILY_COLUMNS,
+    | {SOURCE_REQUEST_GATES, SOURCE_FAMILY_RUNS, NUMBERED_FAMILY_RUNS,
+       *NUMBERED_FAMILY_COLUMNS, *SOURCE_FAMILY_COLUMNS,
        *RESEARCH_INTAKE_COLUMNS}
 )
 INGEST_TARGET_TABLE_NAMES = tuple(
@@ -540,6 +627,8 @@ def _append_statement_space(state: SqlLexState) -> None:
 
 def _reject_target_statement_prefix(state: SqlLexState) -> None:
     statement = bytes(state.statement_sql)
+    if NUMBERED_FAMILY_DDL.match(statement):
+        raise SanitizationError("numbered-family DDL must use the reviewed pg_dump shape")
     if SOURCE_FAMILY_DDL.match(statement):
         raise SanitizationError("source-family DDL must use the reviewed pg_dump shape")
     if RESEARCH_INTAKE_DDL.match(statement):
@@ -2698,6 +2787,10 @@ class PlainBackupSanitizer:
         )
         self.seen = {table: 0 for table in RETENTION_CONTROL_TABLES}
         self.family_seen: set[tuple[str, ...]] = set()
+        self.numbered_seen: set[tuple[str, ...]] = set()
+        self.numbered_schema_seen: set[bytes] = set()
+        self.numbered_schema_lines: list[bytes] | None = None
+        self.numbered_control_rows = 0
         self.family_schema_seen: set[bytes] = set()
         self.family_requires_variable_schema = False
         self.family_schema_lines: list[bytes] | None = None
@@ -2944,6 +3037,11 @@ class PlainBackupSanitizer:
 
     def _start_block(self, header: CopyHeader) -> CopyBlock:
         indexes = _column_indexes(header)
+        if header.table in NUMBERED_FAMILY_COLUMNS:
+            if (header.table in self.numbered_seen
+                or header.columns != NUMBERED_FAMILY_COLUMNS[header.table]):
+                raise SanitizationError("numbered-family COPY schema or multiplicity mismatch")
+            self.numbered_seen.add(header.table)
         if header.table in RESEARCH_INTAKE_COLUMNS:
             if (header.table in self.intake_seen
                 or header.columns != RESEARCH_INTAKE_COLUMNS[header.table]):
@@ -3028,6 +3126,9 @@ class PlainBackupSanitizer:
         return fields
 
     def _inspect_control_row(self, block: CopyBlock, line: bytes) -> None:
+        if block.header.table in NUMBERED_FAMILY_COLUMNS:
+            self._inspect_numbered_row(block, line)
+            return
         if block.header.table in RESEARCH_INTAKE_COLUMNS:
             self._inspect_intake_row(block, line)
             return
@@ -3146,6 +3247,45 @@ class PlainBackupSanitizer:
         last = _utc_copy_timestamp(fields[4], field="research last seen")
         if last < first:
             raise SanitizationError("research reference timestamps are out of order")
+
+    def _inspect_numbered_row(self, block: CopyBlock, line: bytes) -> None:
+        fields = dict(zip(block.header.columns, self._target_fields(block, line), strict=True))
+        if block.header.table == ("ingest", "numbered_family_control"):
+            self.numbered_control_rows += 1
+            if self.numbered_control_rows != 1:
+                raise SanitizationError("numbered-family control must be a singleton")
+        allowed = {
+            "url": rb"https://www[.]kozaru02[.]com/entry/[a-z0-9-]{1,120}",
+            "state": rb"pending|admitted|quarantined|duplicate|retracted",
+            "policy_version": rb"kozaru-numbered-v1",
+            "pack_count": rb"10", "singleton": rb"t", "enabled": rb"t|f",
+        }
+        for column, value in fields.items():
+            if column.endswith("sha256"):
+                _sha256_copy(value, field="numbered-family hash")
+            elif column == "resource_sha256s":
+                if not re.fullmatch(rb"\{[0-9a-f]{64}(,[0-9a-f]{64}){9}\}", value):
+                    raise SanitizationError("invalid numbered-family resource array")
+                if len(set(value[1:-1].split(b","))) != 10:
+                    raise SanitizationError("duplicate numbered-family resource hash")
+            elif column == "owner_job_id":
+                if value != b"\\N":
+                    _canonical_uuid(value, field="numbered-family owner")
+            elif column == "owner_generation":
+                if value != b"\\N" and re.fullmatch(rb"[1-9][0-9]{0,18}", value) is None:
+                    raise SanitizationError("invalid numbered-family generation")
+            elif column == "active_until":
+                if value not in (b"-infinity", b"infinity"):
+                    _utc_copy_timestamp(value, field="numbered-family cooldown")
+            elif column.endswith("_at"):
+                if column in {"checked_at", "last_request_at"} or (
+                    column == "discovered_at" and block.header.table == ("ingest", "numbered_family_control")
+                ):
+                    _optional_utc_copy_timestamp(value, field="numbered-family date")
+                else:
+                    _utc_copy_timestamp(value, field="numbered-family date")
+            elif column not in allowed or re.fullmatch(allowed[column], value) is None:
+                raise SanitizationError("numbered-family retained field outside reviewed scope")
 
     def _inspect_family_row(self, block: CopyBlock, line: bytes) -> None:
         if block.header.table in self.family_singleton_rows:
@@ -3719,6 +3859,12 @@ class PlainBackupSanitizer:
         self.public_study_coverage_rows[study_key_value] = (source_key, policy_id)
 
     def _validate_complete(self) -> None:
+        if (self.numbered_seen or self.numbered_schema_seen) and (
+            self.numbered_schema_seen not in (NUMBERED_FAMILY_STATEMENTS, NUMBERED_FAMILY_OWNERLESS)
+            or self.numbered_seen != set(NUMBERED_FAMILY_COLUMNS)
+            or self.numbered_control_rows != 1
+        ):
+            raise SanitizationError("numbered-family backup requires complete schema and data blocks")
         if (self.intake_seen or self.intake_schema_seen) and (
             self.intake_schema_seen not in (
                 RESEARCH_INTAKE_SCHEMA_STATEMENTS, RESEARCH_INTAKE_OWNERLESS_STATEMENTS,
@@ -4094,6 +4240,21 @@ class PlainBackupSanitizer:
                 _advance_sql_lex_state(line, sql_lex_state)
                 continue
 
+            if self.numbered_schema_lines is not None or NUMBERED_FAMILY_DDL.match(line):
+                if self.numbered_schema_lines is None:
+                    self.numbered_schema_lines = []
+                self.numbered_schema_lines.append(line)
+                if sum(map(len, self.numbered_schema_lines)) > MAX_SQL_STATEMENT_PREFIX_BYTES:
+                    raise SanitizationError("numbered-family schema statement is too large")
+                if line.rstrip().endswith(b";"):
+                    statement = b" ".join(b"".join(self.numbered_schema_lines).split())
+                    if (statement not in NUMBERED_FAMILY_STATEMENTS
+                        or statement in self.numbered_schema_seen):
+                        raise SanitizationError("numbered-family schema drift or duplicate statement")
+                    self.numbered_schema_seen.add(statement)
+                    self.numbered_schema_lines = None
+                continue
+
             if self.intake_schema_lines is not None or RESEARCH_INTAKE_DDL.match(line):
                 if self.intake_schema_lines is None:
                     self.intake_schema_lines = []
@@ -4189,7 +4350,7 @@ class PlainBackupSanitizer:
                     raise SanitizationError(
                         "retention-control COPY targets must be schema-qualified"
                     )
-                if header.table == SOURCE_FAMILY_RUNS:
+                if header.table in {SOURCE_FAMILY_RUNS, NUMBERED_FAMILY_RUNS}:
                     raise SanitizationError(
                         "source-family transient runs must be excluded by pg_dump"
                     )
@@ -4313,6 +4474,8 @@ class PlainBackupSanitizer:
             raise SanitizationError("unterminated COPY data block")
         if self.family_schema_lines is not None:
             raise SanitizationError("unterminated source-family DDL")
+        if self.numbered_schema_lines is not None:
+            raise SanitizationError("unterminated numbered-family DDL")
         if self.intake_schema_lines is not None:
             raise SanitizationError("unterminated research-intake DDL")
         if sql_lex_state.mode != "normal":
@@ -4351,6 +4514,8 @@ class PlainBackupSanitizer:
                 if block.header.table == ("ingest", "source_family_control"):
                     # Restore is inert even if the snapshot was taken enabled.
                     destination.write(b"t\tf\tpokesup-enumerated-v1\n")
+                elif block.header.table == ("ingest", "numbered_family_control"):
+                    destination.write(b"t\tf\tkozaru-numbered-v1\t\\N\t-infinity\t\\N\t\\N\t\\N\n")
                 elif block.header.table == RESEARCH_INTAKE_CONTROL:
                     destination.write(b"t\tf\n")
                 elif block.header.table != YOUTUBE_DISCOVERIES:
