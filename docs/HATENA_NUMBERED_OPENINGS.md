@@ -1,6 +1,8 @@
 # Hatena numbered opening ingestion — implementation contract
 
-Status: **report/feed parsers, worker cycle and private database lane implemented; composition, backup and public projection integration not enabled or complete**.
+Status: **report/feed parsers, worker cycle, private database lane, runtime routing,
+research intake, backup and public projection implemented and tested on isolated
+MAM; production release and real admission verification still pending**.
 This document does not admit observations.
 
 The parser and synthetic tests run on MAM. A direct bounded live-page probe
@@ -66,7 +68,8 @@ at 1 MB and 200 entries; rejects XML declarations that introduce DTD/entities.
 No feed prose, media, inferred geography or pack count is returned.
 
 This feed provides recent updates, not a complete historical archive. Historical
-sitemap discovery and periodic runtime ingestion remain to be connected. A feed
+sitemap discovery remains incomplete; periodic runtime ingestion is wired but
+disabled until release. A feed
 entry is not an admitted opening and cannot increment the public denominator.
 
 ### Admission integration
@@ -94,9 +97,15 @@ deduplication, not merely mocked worker calls. Ephemeral staging is removed by
 the existing source-independent cleanup job even while collection is disabled.
 
 The migration has only been applied to isolated MAM test databases, not production.
-No schedule or composition handler enables this lane. Private research-intake
-routing, unknown-location public projection, generated types and restore contracts
-must ship together before enabling collection. Neither synthetic SQL admissions
+The scheduler and composition handler are wired behind the default-off
+`NUMBERED_FAMILY_COLLECTION_ENABLED` flag, which requires the existing parent
+source-family flag. Migration `20261026000000_numbered_research_intake.sql`
+routes exact supported search URLs into the private evidence queue without
+per-article configuration; repeat imports preserve existing and retracted states.
+Migration `20261025000000_unknown_location_coverage.sql` adds a separate global
+unknown-location aggregate without inventing country buckets. Generated types,
+web RPC fallback and backup restore contracts must ship together before enabling
+collection. Restored collection controls remain disabled. Neither synthetic SQL admissions
 nor unit tests constitute live data. The database validates the fenced collector's
 minimal attestation; it does not independently fetch source pages or prove physical
 cohort identity from resource hashes.
