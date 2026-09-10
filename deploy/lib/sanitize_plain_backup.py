@@ -412,6 +412,9 @@ PUBLIC_STUDY_SOURCE_KEYS_V15 = PUBLIC_STUDY_SOURCE_KEYS_V14 + (
 PUBLIC_STUDY_SOURCE_KEYS_V16 = PUBLIC_STUDY_SOURCE_KEYS_V15 + (
     b"public_study_hitpack_cz_36",
 )
+PUBLIC_STUDY_SOURCE_KEYS_V17 = PUBLIC_STUDY_SOURCE_KEYS_V16 + (
+    b"public_study_tekemero_jp_30",
+)
 # Each migration adds an exact append-only reviewed source profile. Keep every
 # complete transition profile available for pre-apply backups, while rejecting
 # unions and partially migrated sets as ambiguous and restore-unsafe.
@@ -432,8 +435,9 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V14,
     PUBLIC_STUDY_SOURCE_KEYS_V15,
     PUBLIC_STUDY_SOURCE_KEYS_V16,
+    PUBLIC_STUDY_SOURCE_KEYS_V17,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V16
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V17
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(rb"\$(?:[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)?\$")
@@ -1157,6 +1161,7 @@ PUBLIC_STUDY_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V14: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V15: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V16: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V17: "v4_v5",
 }
 PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS = (
     "study_key text not null",
@@ -1210,6 +1215,7 @@ PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V14: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V15: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V16: "v7",
+    PUBLIC_STUDY_SOURCE_KEYS_V17: "v7",
 }
 PUBLIC_STUDY_POLICY_SOURCE_KEY = {
     b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
@@ -1273,6 +1279,7 @@ PUBLIC_STUDY_OBSERVED_AT = {
 }
 PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
     b"hitpack-pitch-black-cz-36-v1": b"public_study_hitpack_cz_36",
+    b"tekemero-munikis-zero-jp-30-v1": b"public_study_tekemero_jp_30",
     b"auckland-show-mighty-ape-nz-105-v1": b"public_study_auckland_nz_105",
     b"bokunotebook-vstar-universe-th-1-v1": b"public_study_bokunotebook_th_1",
     b"nanjakorya-paradigm-jp-100-v1": b"public_study_nanjakorya_paradigm_100",
@@ -1303,6 +1310,18 @@ PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
     b"gringo-gameplays-silver-tempest-uy-36-v1": b"public_study_gringo_gameplays_silver_tempest_uy_36",
 }
 PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
+    b"tekemero-munikis-zero-jp-30-v1": {
+        "country_code": b"JP",
+        "country_name": b"Japan",
+        "pack_count": b"30",
+        "set_external_id": b"M3",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-tekemero-munikis-zero-v1",
+        "parser_version": b"tekemero-munikis-zero-30-evidence-v1",
+        "source_policy_version": b"public-study-tekemero-munikis-zero-v1",
+        "evidence_sha256": b"f13f9c05c779e0ce65a203f961420ffe7bec4fb7b688079c073824fd7dd40f93",
+        "is_demo": b"f",
+    },
     b"hitpack-pitch-black-cz-36-v1": {
         "country_code": b"CZ",
         "country_name": b"Czechia",
@@ -1655,6 +1674,7 @@ PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
 PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
     # Publication date normalized to UTC midnight; not a physical opening time.
     b"hitpack-pitch-black-cz-36-v1": datetime(2026, 7, 28, tzinfo=UTC),
+    b"tekemero-munikis-zero-jp-30-v1": datetime(2026, 7, 15, 6, 48, 3, tzinfo=UTC),
     b"auckland-show-mighty-ape-nz-105-v1": datetime(
         2025, 9, 30, 0, 8, 20, 972000, tzinfo=UTC
     ),
@@ -3967,6 +3987,12 @@ class PlainBackupSanitizer:
                 # pass exact field, timestamp, duplicate and policy checks.
                 allowed_coverage_row_sets += (
                     expected_coverage_study_keys - {b"hitpack-pitch-black-cz-36-v1"},
+                )
+            elif self.public_study_source_keys == PUBLIC_STUDY_SOURCE_KEYS_V17:
+                # Only the newly unseeded Tekemero row may await first collection.
+                # Hitpack and every earlier coverage row remain mandatory in V17.
+                allowed_coverage_row_sets += (
+                    expected_coverage_study_keys - {b"tekemero-munikis-zero-jp-30-v1"},
                 )
             if frozenset(self.public_study_coverage_rows) not in allowed_coverage_row_sets:
                 raise SanitizationError(
