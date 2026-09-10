@@ -29,18 +29,18 @@ opening locations. No city, address, person or contact field is introduced.
 
 ## Durable execution
 
-`country-research.yml` owns the twice-hourly timer. The older global and six-country
-Asia workflows remain manual-only. All share the reviewed research controls;
-the country and global workflows share one concurrency group. No new paid API,
+`country-research.yml` is manual-only; it has no hourly timer. The global and
+six-country Asia workflows are also manual-only. All share the reviewed research controls;
+the three workflows share one concurrency group. No new paid API,
 database credential, local-Mac workload or automatic source enablement exists.
 
 Each run selects up to six unchecked countries from the earliest unfinished
-phase of the current sweep. Selection reads validated bot-owned, content-hashed
-GitHub reports, including closed issues. Failed/invalid research does not record
-success and cannot skip a country because a time slot elapsed. Once a phase has
+phase of the current sweep. Selection reads validated reports from the unified,
+content-addressed research ledger. Failed/invalid research does not record
+success and cannot skip a country. Once a phase has
 a retained research result for every target, the next phase starts. Once all
 249 targets have been checked, another sweep starts in Asia. The campaign ID,
-existing country order and signed-by-hash bot reports are unchanged. An existing
+existing country order and content-addressed reports are unchanged. An existing
 four-region sweep continues into the appended phases rather than resetting or
 silently omitting them. Antarctica is an area, not a sovereign country; its
 inclusion does not assert that any opening records exist there.
@@ -54,13 +54,13 @@ activity or proof that no source exists. This makes research progress auditable
 without pretending source discovery is country publication.
 
 The first complete research sweep needs at least 44 successful jobs at these
-batch sizes. A twice-hourly trigger is not an SLA: GitHub delays, usage limits,
+batch sizes. Manual dispatch frequency is not an SLA: GitHub delays, usage limits,
 source availability and failed runs can extend it. Independent source review
 and publication have no fabricated completion deadline.
 
 ### Continuing beyond the same leading reports
 
-The scheduled selector prepares a selection-bound continuation hint from the
+The manual selector prepares a selection-bound continuation hint from the
 same validated country history. MAM receives only prior pass counts, canonical
 reference URLs and cohort identifiers: no article text, counts, claimed geography,
 personal details, access approval or database credentials. The hint is at most
@@ -74,8 +74,8 @@ within the 24-query budget. It does not blacklist an entire host, prevent new
 evidence about an existing cohort, or treat absent references as independent.
 These hints improve continuity, not guarantee discovery or replace independent
 deduplication. Empty passes still mean no eligible result in that bounded pass.
-Legacy manual invocations without `--context` remain supported; the scheduled
-workflow always supplies it, and malformed or mismatched hints stop before search.
+Legacy manual invocations without `--context` remain supported; the workflow
+supplies it, and malformed or mismatched hints stop before search.
 The context is temporary and is not added to public observations or report schemas.
 
 Research prioritizes distinct author-reported opening samples without requiring
@@ -85,8 +85,8 @@ uncertainty; they are not automatically verified packs. The theoretical batch
 capacity is 36 candidates, not a promise of new records or public pack growth.
 Legacy manual global/Asia output limits remain unchanged.
 
-This does not resolve the separate 1,000-issue history cap, 2,000-record ledger
-cap, or the need for independently reviewed repeatable collector families.
+This does not replace independently reviewed repeatable collector families or
+the separate production release gates.
 
 ## Deduplication, provenance and release
 
@@ -99,14 +99,13 @@ unknown. Native boxes/cartons/decks are not converted into pack observations.
 
 Country report retries are idempotent. Changed reports overlapping a retained
 country/sweep fail rather than replacing history. Publication verifies the
-saved selection and current queue before creating a new bot report. It never
-edits existing country reports or marks production data admitted. History and
-ledger capacity limits fail explicitly instead of dropping older evidence.
+saved selection and current queue before updating the unified ledger. It never
+marks production data admitted or drops older evidence.
 
 Actions artifacts retain country progress and the combined deduplicated
-research ledger for 90 days. Durable minimal research facts remain in GitHub
-issues; no bodies, media, credentials, personal identities or private payloads
-are retained. Existing release gates still apply to every actual new source:
+research ledger for 90 days. Durable minimal research facts remain in the
+versioned unified ledger; no bodies, media, credentials, personal identities or
+private payloads are retained. Existing release gates still apply to every actual new source:
 original evidence, access/rights/robots, cohort independence, exact source
 policy and parser, tests, independent review, PR/CI, backup/restore and migration
 where required, reviewed MAM deployment, actual collection and public proof.

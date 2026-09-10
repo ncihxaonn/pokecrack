@@ -1,16 +1,14 @@
 name: Country-first multi-source research
 
 on:
-  schedule:
-    - cron: '17,47 * * * *'
   workflow_dispatch:
 
 permissions:
-  contents: read
-  issues: write
+  contents: write
+  pull-requests: write
 
 concurrency:
-  group: pokecrack-global-research
+  group: pokecrack-research-ledger
   cancel-in-progress: false
 
 jobs:
@@ -55,7 +53,7 @@ jobs:
           cleanup() {
             if [[ "$remote_dir" =~ ^/tmp/pokecrack-country-job\.[A-Za-z0-9]{8}$ ]]; then
               ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-                "rm -f -- '$remote_dir/country_research.py' '$remote_dir/country_targets.py' '$remote_dir/global_research.py' '$remote_dir/global_studies.py' '$remote_dir/asia_research.py' '$remote_dir/country-selection.json' '$remote_dir/country-context.json'; rmdir -- '$remote_dir'" || true
+                "rm -f -- '$remote_dir/country_research.py' '$remote_dir/country_targets.py' '$remote_dir/global_research.py' '$remote_dir/global_studies.py' '$remote_dir/asia_research.py' '$remote_dir/research_ledger.py' '$remote_dir/country-selection.json' '$remote_dir/country-context.json'; rmdir -- '$remote_dir'" || true
             fi
             rm -f -- "$ssh_dir/key" "$ssh_dir/known_hosts"
             rmdir -- "$ssh_dir"
@@ -66,6 +64,7 @@ jobs:
           [[ "$remote_dir" =~ ^/tmp/pokecrack-country-job\.[A-Za-z0-9]{8}$ ]]
           scp "${opts[@]}" -P "$VPS_PORT" scripts/country_research.py scripts/country_targets.py \
             scripts/global_research.py scripts/global_studies.py scripts/asia_research.py \
+            scripts/research_ledger.py \
             "$RUNNER_TEMP/country-selection.json" "$RUNNER_TEMP/country-context.json" \
             "$VPS_USER@$VPS_HOST:$remote_dir/"
           ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
@@ -79,6 +78,10 @@ jobs:
           python3 scripts/country_research.py --publish "$RUNNER_TEMP/country-report.json" \
             --selection "$RUNNER_TEMP/country-selection.json" > "$RUNNER_TEMP/country-ledger.json"
           echo 'Country research retained. All 249 ISO country/area targets: Asia → Oceania → Europe → Africa → Northern America → Latin America and Caribbean → Antarctica. No production samples automatically admitted by research.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Queue unified research ledger update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/queue_research_ledger.py
       - name: Save country progress and deduplicated research snapshot
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -100,7 +103,7 @@ jobs:
           [[ "$VPS_HOST" == 72.62.101.225 && "$VPS_USER" == codex ]]
           [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]]
           [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]]
-          # The input is the reconstructed, deduplicated bot-owned history, not
+          # The input is the reconstructed, deduplicated ledger history, not
           # the untrusted research process's output. No counts enter this lane.
           [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
           python3 scripts/research_intake.py "$RUNNER_TEMP/country-ledger.json" \

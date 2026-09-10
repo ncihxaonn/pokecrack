@@ -11,11 +11,11 @@ on:
         options: [auto, VN, MY, ID, PH, HK, IN]
 
 permissions:
-  contents: read
-  issues: write
+  contents: write
+  pull-requests: write
 
 concurrency:
-  group: pokecrack-asia-research
+  group: pokecrack-research-ledger
   cancel-in-progress: false
 
 jobs:
@@ -60,7 +60,7 @@ jobs:
           cleanup() {
             if [[ "$remote_dir" =~ ^/tmp/pokecrack-asia-job\.[A-Za-z0-9]{8}$ ]]; then
               ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-                "rm -f -- '$remote_dir/research.py'; rmdir -- '$remote_dir'" || true
+                "rm -f -- '$remote_dir/asia_research.py' '$remote_dir/research_ledger.py'; rmdir -- '$remote_dir'" || true
             fi
             rm -f -- "$ssh_dir/key" "$ssh_dir/known_hosts"
             rmdir -- "$ssh_dir"
@@ -69,10 +69,10 @@ jobs:
           remote_dir=$(ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
             'umask 077; mktemp -d /tmp/pokecrack-asia-job.XXXXXXXX')
           [[ "$remote_dir" =~ ^/tmp/pokecrack-asia-job\.[A-Za-z0-9]{8}$ ]]
-          scp "${opts[@]}" -P "$VPS_PORT" scripts/asia_research.py \
-            "$VPS_USER@$VPS_HOST:$remote_dir/research.py"
+          scp "${opts[@]}" -P "$VPS_PORT" scripts/asia_research.py scripts/research_ledger.py \
+            "$VPS_USER@$VPS_HOST:$remote_dir/"
           ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "python3 '$remote_dir/research.py' --country '$COUNTRY'" > "$RUNNER_TEMP/asia-report.json"
+            "python3 '$remote_dir/asia_research.py' --country '$COUNTRY'" > "$RUNNER_TEMP/asia-report.json"
       - name: Validate and publish candidate work item
         env:
           GH_TOKEN: ${{ github.token }}
@@ -80,3 +80,7 @@ jobs:
           set -Eeuo pipefail
           python3 scripts/asia_research.py --country "$COUNTRY" --render "$RUNNER_TEMP/asia-report.json" >> "$GITHUB_STEP_SUMMARY"
           python3 scripts/asia_research.py --country "$COUNTRY" --publish "$RUNNER_TEMP/asia-report.json"
+      - name: Queue unified research ledger update
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/queue_research_ledger.py

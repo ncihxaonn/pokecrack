@@ -1,6 +1,6 @@
 # Country research intake
 
-The twice-hourly country research workflow searches the 249 ISO country/area entries
+The manual country research workflow searches the 249 ISO country/area entries
 in `scripts/country_targets.py`, in regional order. A successful sweep is
 research coverage, **not** proof that every country has qualifying opening data.
 An empty search result does not mean zero real-world openings. The map and its
@@ -10,9 +10,9 @@ public counts continue to use independently verified observations only.
 
 1. The MAM research process has bounded web-search access and no production
    database credentials. Its output is untrusted research, not executable policy.
-2. The separate GitHub publishing step validates bot-owned report history and
-   reconstructs the deduplicated country ledger. It publishes that research
-   record and saves the ledger artifact **before** attempting runtime intake.
+2. The separate publishing step validates the unified research ledger and
+   reconstructs the deduplicated country ledger. It saves that research record
+   and ledger artifact **before** attempting runtime intake.
 3. `scripts/research_intake.py` produces a strict, count-free manifest: canonical
    HTTPS reference URLs, report-group hashes, conflict flags and a snapshot hash.
    It does not transmit pack counts, country claims, prose or media.
@@ -40,7 +40,7 @@ inferred from the country search, language, domain or publisher address.
 
 - Repeated URLs have one durable reference row. The report-group hash identifies
   a research grouping, not proof of independent physical packs. Full report
-  provenance remains in the validated GitHub research history.
+  provenance remains in the validated unified research ledger.
 - Conflict flags are sticky. Later research cannot silently clear them. They
   block new candidate creation; untrusted research also cannot retract an
   already independently admitted observation. Retractions use the reviewed

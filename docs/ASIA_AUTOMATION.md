@@ -1,21 +1,20 @@
 # Asia country automation
 
-## Legacy manual workflow
+## Manual workflow
 
-Scheduled discovery now belongs to [the country-first campaign](COUNTRY_DATA_CAMPAIGN.md).
 The six-country `Asia country research` workflow is retained for manual checks
-on `main`, not scheduled collection. It sends only the reviewed research script to a fresh MAM temporary
+on `main`; it has no timer. It sends only the reviewed research script to a fresh MAM temporary
 directory. MAM's existing Codex CLI runs one ephemeral, read-only research call
 using ChatGPT authentication, live web search, no shell tools, no inherited
 MCP configuration, and no production database/API credentials. There is no
 local-Mac timer, paid API fallback, browser login, or source-policy bypass.
 Existing Codex account usage limits still apply; this is not unlimited compute.
 
-The legacy `auto` selector still chooses Vietnam → Malaysia → Indonesia →
+The `auto` selector still chooses Vietnam → Malaysia → Indonesia →
 Philippines → Hong Kong → India by six-hour UTC slots anchored at 2026-09-08
-00:00 UTC, but no timer dispatches this workflow. Manual dispatch can select a
-region. The global workflow is also manual-only; the country campaign preserves
-its research history and deduplicates new country reports against it.
+00:00 UTC, but only a manual dispatch can run it. Manual dispatch can select a
+region. The global workflow is also manual-only; all three workflows preserve
+their research history in the single `data/research/research-ledger.json` file.
 
 The research call has a ten-minute hard timeout, no automatic failure retries,
 up to three candidates and a 16 KiB output cap. It is instructed to use at most
@@ -25,11 +24,11 @@ article text, account identifiers, private payloads or auth diagnostics are
 published. YouTube watch-page URLs are rejected because the current attempted
 route encountered access challenges; alternate routes must not bypass them.
 
-Each region has a bot-owned `[Asia research] XX` issue. Changed research results
-update that issue; identical results do not create comments or notifications.
-Closing the issue stops its updates (not manual research execution). Disable the
-workflow to stop all research. An unavailable Codex login/usage window fails the
-run rather than falling back to an API key or changing credentials.
+Research results are written to the single
+`data/research/research-ledger.json` file through a reviewed pull request.
+The workflow no longer creates, edits or reopens GitHub issues. Disable the
+workflow to stop manual dispatches. An unavailable Codex login/usage window
+fails the run rather than falling back to an API key or changing credentials.
 
 ## Evidence and release gates remain mandatory
 
@@ -50,7 +49,7 @@ For each promising candidate, the implementation agent must independently:
 5. Where a migration is required, complete the existing verified backup/restore
    and reviewed migration workflow before Worker deployment.
 6. Verify the deployed SHA, actual collection and public projection. Only then
-   mark the region/source live and close the candidate issue.
+   mark the region/source live and update the reviewed evidence record.
 
 The automation intentionally stops at the independent-review handoff. It does
 not claim autonomous end-to-end country publication or repair production
@@ -60,7 +59,7 @@ existing MAM scheduler independently of this research workflow.
 ## Operator links
 
 - [Run history / manual dispatch](https://github.com/ncihxaonn/pokecrack/actions/workflows/asia-research.yml)
-- [Candidate queue](https://github.com/ncihxaonn/pokecrack/issues?q=is%3Aissue+%22%5BAsia+research%5D%22)
+- [Research ledger](https://github.com/ncihxaonn/pokecrack/blob/main/data/research/research-ledger.json)
 - [Live sources](https://pokecrack.vercel.app/sources)
 
 The Codex controls follow [non-interactive mode](https://learn.chatgpt.com/docs/non-interactive-mode)

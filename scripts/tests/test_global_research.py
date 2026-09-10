@@ -8,8 +8,9 @@ from contextlib import redirect_stdout
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 import sys
+import tempfile
 import unittest
-from unittest.mock import Mock, patch
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "scripts"))
@@ -58,26 +59,27 @@ class GlobalResearchTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 module.validate_batch(raw)
 
-    def test_history_round_trip_and_bot_only(self):
+    def test_history_round_trip_uses_the_unified_ledger(self):
         batch = self.batch()
-        item = {"title": module.TITLE + module.fingerprint(batch),
-                "body": module.issue_body(batch),
-                "author": {"login": "app/github-actions", "is_bot": True}}
-        with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([item]))):
-            self.assertEqual(module.load_history(), batch["studies"])
-        item["author"] = {"login": "ncihxaonn", "is_bot": False}
-        with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([item]))):
-            self.assertEqual(module.load_history(), [])
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({
+                "version": 1, "country_reports": [],
+                "global_batches": [batch], "asia_reports": []
+            }), encoding="utf-8")
+            self.assertEqual(module.load_history(path), batch["studies"])
 
-    def test_legacy_history_fingerprint_survives_native_sample_extension(self):
+    def test_invalid_batch_in_ledger_fails_closed(self):
         batch = self.batch()
-        batch["studies"][0].pop("source_sample", None)
-        digest = module.fingerprint(batch)
-        item = {"title": module.TITLE + digest, "body": module.issue_body(batch),
-                "author": {"login": "app/github-actions", "is_bot": True}}
-        with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([item]))):
-            self.assertEqual(module.load_history(), batch["studies"])
-        self.assertEqual(module.fingerprint(module.validate_batch(json.dumps(batch).encode())), digest)
+        batch["studies"][0]["pack_precision"] = "tampered"
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({
+                "version": 1, "country_reports": [],
+                "global_batches": [batch], "asia_reports": []
+            }), encoding="utf-8")
+            with self.assertRaises(ValueError):
+                module.load_history(path)
 
     def test_new_schema_and_prompt_preserve_native_units(self):
         fields = module.schema()["properties"]["studies"]["items"]
@@ -87,11 +89,15 @@ class GlobalResearchTests(unittest.TestCase):
         self.assertIn("Never multiply box contents into packs", module.prompt("asia"))
 
     def test_tampered_history_fails_closed(self):
-        item = {"title": module.TITLE + "wrong", "body": module.issue_body(self.batch()),
-                "author": {"login": "app/github-actions", "is_bot": True}}
-        with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([item]))):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({
+                "version": 1, "country_reports": [],
+                "global_batches": [{"version": 1, "studies": [{"unexpected": True}]}],
+                "asia_reports": []
+            }), encoding="utf-8")
             with self.assertRaises(ValueError):
-                module.load_history()
+                module.load_history(path)
 
     def test_accumulation_retains_old_reports_and_skips_exact_replays(self):
         batch = self.batch()
@@ -101,21 +107,33 @@ class GlobalResearchTests(unittest.TestCase):
         self.assertIsNone(ledger["verified_unique_packs"])
 
     def test_history_at_capacity_does_not_silently_truncate(self):
-        with patch.object(module.subprocess, "run", return_value=Mock(stdout=json.dumps([{}]*1000))):
-            with self.assertRaises(ValueError):
-                module.load_history()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({}), encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "invalid_research_ledger"):
+                module.load_history(path)
 
     def test_no_rewrite_for_unchanged_batch(self):
         batch = self.batch()
-        with patch.object(module, "load_history", return_value=batch["studies"]), \
-                patch.object(module.subprocess, "run") as run:
-            module.publish(batch, ROOT / "data/research/global-studies.json")
-            run.assert_not_called()
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "ledger.json"
+            path.write_text(json.dumps({
+                "version": 1, "country_reports": [],
+                "global_batches": [batch], "asia_reports": []
+            }), encoding="utf-8")
+            with patch.object(module, "save_research_ledger") as save:
+                module.publish(batch, ROOT / "data/research/global-studies.json", path)
+                save.assert_not_called()
 
     def test_workflow_is_main_only_and_has_no_production_db_credentials(self):
         workflow = (ROOT / ".github/workflows/global-research.yml").read_text()
         self.assertIn("github.ref == 'refs/heads/main'", workflow)
         self.assertIn("cancel-in-progress: false", workflow)
+        self.assertIn("contents: write", workflow)
+        self.assertIn("pull-requests: write", workflow)
+        self.assertIn("group: pokecrack-research-ledger", workflow)
+        self.assertIn("queue_research_ledger.py", workflow)
+        self.assertNotIn("issues: write", workflow)
         self.assertIn("global-ledger.json", workflow)
         self.assertNotIn("SUPABASE", workflow)
         self.assertNotIn("OPENAI_API_KEY", workflow)

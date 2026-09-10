@@ -1,0 +1,23 @@
+{
+  "attribution": "Pok\u00e9mon artwork \u00a9 The Pok\u00e9mon Company / Nintendo / Creatures / GAME FREAK. Local fan-site preview.",
+  "files": [
+    {
+      "file": "pikachu.png",
+      "source": "https://www.pokemon.com/static-assets/content-assets/cms2/img/pokedex/full/025.png",
+      "sha256": "759ceafdb4b8d637dfcfe673cf672bc3c472354a3b2e7e0835d9cdcacd8d195d",
+      "bytes": 118057
+    },
+    {
+      "file": "charizard.png",
+      "source": "https://www.pokemon.com/static-assets/content-assets/cms2/img/pokedex/full/006.png",
+      "sha256": "b6d5b8ee9fb05dc6f53294b2cae660dec770b92762cdb19d16bcbd679e1ba43a",
+      "bytes": 144568
+    },
+    {
+      "file": "snorlax.png",
+      "source": "https://www.pokemon.com/static-assets/content-assets/cms2/img/pokedex/full/143.png",
+      "sha256": "1afd32e5f6053a50860d67c5d7cc3bc6ca9a174634097fe65880523a0a13a55a",
+      "bytes": 139225
+    }
+  ]
+}
