@@ -5,6 +5,7 @@ import {
   countryDataVersionsSchema,
   coverageAttributionBasesSchema,
   publicDashboardDataSchema,
+  publicSourceNoteSchema,
   unknownLocationCoverageSchema,
 } from "./schema";
 import type {
@@ -185,7 +186,7 @@ const reviewedCoverageSource = z
     status: z.enum(["operational", "delayed", "attention", "paused"]),
     lastCollectedAt: isoDateTime.nullable(),
     url: publicHttpUrl,
-    note: z.string().min(1).max(500),
+    note: publicSourceNoteSchema,
     coverage: reviewedSourceCoverage.optional(),
   })
   .strict();
