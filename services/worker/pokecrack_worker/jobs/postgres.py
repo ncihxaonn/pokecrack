@@ -438,10 +438,14 @@ class PostgresJobRepository:
     ) -> Job | None:
         del now
         if kind == "source.family.cycle":
-            if dict(payload or {}) != {"family": "pokesup-enumerated"}:
+            if dict(payload or {}) == {"family": "pokesup-enumerated"}:
+                family_sql = "SELECT * FROM ingest.enqueue_source_family_v1(%(slot)s)"
+            elif dict(payload or {}) == {"family": "kozaru-numbered"}:
+                family_sql = "SELECT * FROM ingest.enqueue_numbered_family_v1(%(slot)s)"
+            else:
                 raise ValueError("source family schedule requires its exact family payload")
             rows = self._executor.query(
-                "SELECT * FROM ingest.enqueue_source_family_v1(%(slot)s)",
+                family_sql,
                 {"slot": scheduled_for},
             )
             if not rows:

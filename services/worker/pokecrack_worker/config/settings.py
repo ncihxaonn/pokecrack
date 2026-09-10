@@ -94,6 +94,7 @@ class Settings(BaseSettings):
     youtube_collection_enabled: bool = False
     public_study_collection_enabled: bool = False
     source_family_collection_enabled: bool = False
+    numbered_family_collection_enabled: bool = False
     bluesky_collection_enabled: bool = False
     nostr_collection_enabled: bool = False
     mastodon_collection_enabled: bool = False
@@ -267,6 +268,10 @@ class Settings(BaseSettings):
                 missing.append("AI_OUTPUT_PER_MILLION_AUD")
             if missing:
                 raise ValueError("network AI provider requires " + ", ".join(missing))
+        if self.numbered_family_collection_enabled and not self.source_family_collection_enabled:
+            raise ValueError(
+                "NUMBERED_FAMILY_COLLECTION_ENABLED requires SOURCE_FAMILY_COLLECTION_ENABLED"
+            )
         if self.source_family_collection_enabled and (
             not self.public_study_collection_enabled
             or self.worker_role not in {"collector", "scheduler"}
