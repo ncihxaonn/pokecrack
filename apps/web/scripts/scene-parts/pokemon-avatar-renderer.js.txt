@@ -1,0 +1,145 @@
+/* A single transparent WebGL layer renders the mesh characters at their UI
+ * anchors. It runs only when Kage renders: no independent animation clock/RAF. */
+const POKEMON_AVATARS = { renderer: null, items: [], disabled: false, visible: false, width: 0, height: 0 };
+function initPokemonAvatars() {
+  const state = POKEMON_AVATARS, canvas = document.getElementById('pokemon-characters');
+  if (state.renderer || state.disabled) return;
+  try {
+    const r = state.renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false, powerPreference: 'low-power' });
+    r.setClearColor(0x000000, 0); r.autoClear = false;
+    r.outputEncoding = THREE.sRGBEncoding;
+    r.physicallyCorrectLights = true;
+    r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.10;
+    state.scene = new THREE.Scene();
+    state.scene.add(new THREE.HemisphereLight(0xcfeaff, 0x243342, .70));
+    const key = new THREE.DirectionalLight(0xffedcf, 2.4); key.position.set(-3, 5, 6); state.scene.add(key);
+    const rim = new THREE.DirectionalLight(0x7acbe8, 1.3); rim.position.set(4, 3, -4); state.scene.add(rim);
+    const fill = new THREE.DirectionalLight(0xe9f4ff, .35); fill.position.set(3, 1, 5); state.scene.add(fill);
+    state.target = new THREE.WebGLRenderTarget(512, 512, { type: THREE.UnsignedByteType, depthBuffer: true, stencilBuffer: false });
+    // Render each solid model first, then fade its complete silhouette. Fading
+    // all body materials separately would expose eyes/limbs through the torso.
+    state.composite = new THREE.Scene();
+    state.compositeCamera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 2);
+    state.compositeCamera.position.z = 1;
+    state.compositeMaterial = new THREE.MeshBasicMaterial({ map: state.target.texture, transparent: true, depthTest: false, depthWrite: false, toneMapped: false });
+    state.composite.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), state.compositeMaterial));
+    document.querySelectorAll('[data-character]').forEach(anchor => {
+      const actor = createPokemonCharacter(anchor.dataset.character);
+      if (!actor) return;
+      const turntable = new THREE.Group(); turntable.add(actor.group); turntable.visible = false; state.scene.add(turntable);
+      actor.update(0, true);
+      state.items.push({ anchor, actor, turntable, card: anchor.closest('.dashboard-stage')?.querySelector('.glass-card'), camera: createPokemonJourneyCamera(actor, anchor.dataset.character) });
+    });
+    canvas.addEventListener('webglcontextlost', event => {
+      event.preventDefault(); disablePokemonAvatars();
+    });
+    addEventListener('pagehide', event => { if (!event.persisted) disposePokemonAvatars(); });
+    resizePokemonAvatars();
+    document.documentElement.dataset.characterStatus = state.items.length === 3 ? 'ready' : 'partial';
+  } catch (error) {
+    disablePokemonAvatars(); disposePokemonAvatars();
+    console.warn('Character rendering unavailable; the dashboard remains usable.', error);
+  }
+}
+function disablePokemonAvatars() {
+  POKEMON_AVATARS.disabled = true;
+  document.getElementById('pokemon-characters').style.visibility = 'hidden';
+  const sleep = document.getElementById('pokemon-sleep'); if (sleep) sleep.style.opacity = '0';
+  document.documentElement.dataset.characterStatus = 'unavailable';
+}
+function resizePokemonAvatars() {
+  const s = POKEMON_AVATARS; if (!s.renderer || s.disabled) return;
+  s.width = vpW(); s.height = vpH();
+  const ratio = Math.min(devicePixelRatio || 1, COARSE ? 1.5 : 1.75) * Math.max(.65, PERF.scale);
+  s.renderer.setPixelRatio(ratio); s.renderer.setSize(s.width, s.height, true);
+  const size = s.width < 821 ? 384 : 640;
+  s.target.setSize(size, size);
+}
+function renderPokemonAvatars() {
+  const s = POKEMON_AVATARS; if (!s.renderer || s.disabled) return;
+  const r = s.renderer;
+  const views = s.items.flatMap(item => {
+    const opacity = (item.anchor._characterOpacity || 0) * fadeIn;
+    if (opacity < .005) return [];
+    const kind = item.anchor.dataset.character;
+    const motion = item.anchor._characterMotion;
+    if (!motion) return [];
+    let base = item.anchor.getBoundingClientRect();
+    if (kind === 'snorlax' && item.card) {
+      const heading = document.querySelector('#pathways .beat-heading h2 span');
+      const titleRange = document.createRange();
+      titleRange.selectNodeContents(heading);
+      const ledge = titleRange.getBoundingClientRect();
+      const size = Math.min(410, s.height * .40, Math.max(175, s.width * .32));
+      // Rest the torso on the actual second text line, not the heading box.
+      // The lowest projected vertex is a dangling paw below the belly.
+      base = { width:size, height:size,
+        left:ledge.left + ledge.width * .60 - size * .5,
+        top:ledge.top - size * (item.camera.userData.frame.foot - .19) };
+    }
+    if (kind === 'charizard' && item.card) {
+      const ledge = document.querySelector('#lessons .beat-heading h2').getBoundingClientRect();
+      const size = Math.min(510, s.height * .49, Math.max(230, s.width * .38));
+      base = {width:size,height:size,
+        left:ledge.left + ledge.width*.5-size*.5,
+        top:ledge.top-size*(item.camera.userData.frame.foot+.025)};
+    }
+    const frame = item.camera.userData.frame;
+    const expanded = { left: base.left + frame.x * base.width, top: base.top + frame.y * base.height,
+      width: base.width * frame.scale, height: base.height * frame.scale };
+    const rect = pokemonScreenPose(kind, motion, expanded, { width: s.width, height: s.height });
+    if (rect.width < 2 || rect.height < 2 || rect.bottom <= 0 || rect.top >= s.height || rect.right <= 0 || rect.left >= s.width) return [];
+    return [{ item, rect, opacity, motion }];
+  });
+  if (!views.length && !s.visible) return;
+  r.setRenderTarget(null); r.setScissorTest(false); r.clear(true, true, false);
+  s.visible = views.length > 0;
+  r.domElement.style.visibility = s.visible ? 'visible' : 'hidden';
+  const still = REDUCE || journeyPaused;
+  const sleep = document.getElementById('pokemon-sleep');
+  if (sleep) sleep.style.opacity = '0';
+  for (const { item, rect, opacity, motion } of views) {
+    // When paused, navigation shows a settled static pose at the frozen clock.
+    item.actor.update(REDUCE ? 0 : clock, false, motion);
+    item.turntable.visible = true;
+    item.turntable.rotation.y = still || motion.phase !== 'rest' || item.anchor.dataset.character === 'charizard' ? 0 : Math.sin(clock * .45) * .025;
+    const camera = item.camera;
+    // The close fly-by magnifies the silhouette. Use a larger texture for
+    // this chapter only, with hysteresis to avoid reallocating on tiny scrubs.
+    if (motion.depart > .12) item.nearFlight = true;
+    else if (!(motion.depart > .04)) item.nearFlight = false;
+    const targetSize = item.nearFlight ? (s.width < 821 ? 768 : 1024) : (s.width < 821 ? 384 : 640);
+    if (s.target.width !== targetSize) s.target.setSize(targetSize,targetSize);
+    r.setRenderTarget(s.target); r.setScissorTest(false); r.clear(true, true, false);
+    r.render(s.scene, camera);
+    item.turntable.visible = false;
+    r.setRenderTarget(null);
+    r.setViewport(rect.left, s.height - rect.bottom, rect.width, rect.height);
+    const left = Math.max(0, rect.left), bottom = Math.max(0, s.height - rect.bottom);
+    r.setScissor(left, bottom, Math.min(s.width, rect.right) - left, Math.min(s.height, s.height - rect.top) - bottom);
+    r.setScissorTest(true); s.compositeMaterial.opacity = opacity;
+    r.render(s.composite, s.compositeCamera);
+    if (sleep && item.anchor.dataset.character === 'snorlax') {
+      sleep.style.opacity = String(opacity * motion.sleepOpacity);
+      sleep.style.transform = `translate3d(${rect.left + rect.width * .76}px,${rect.top + rect.height * .23}px,0)`;
+      [...sleep.children].forEach((puff, i) => {
+        const phase = still ? .35 + i * .19 : (clock * .27 + i / 3) % 1;
+        puff.style.opacity = String(Math.sin(phase * Math.PI));
+        puff.style.transform = `translate3d(${phase * 20}px,${-phase * 36}px,0)`;
+      });
+    }
+  }
+  r.setScissorTest(false);
+}
+function disposePokemonAvatars() {
+  const s = POKEMON_AVATARS; if (!s.renderer) return;
+  s.disabled = true;
+  const geometries = new Set(), materials = new Set();
+  for (const scene of [s.scene, s.composite]) scene?.traverse(object => {
+    if (object.geometry) geometries.add(object.geometry);
+    if (object.material) (Array.isArray(object.material) ? object.material : [object.material]).forEach(material => materials.add(material));
+  });
+  geometries.forEach(geometry => geometry.dispose()); materials.forEach(material => material.dispose());
+  s.items.forEach(item => item.actor.dispose());
+  s.target?.dispose(); s.renderer.dispose(); s.renderer = null;
+}

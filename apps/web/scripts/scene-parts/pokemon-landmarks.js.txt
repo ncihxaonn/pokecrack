@@ -1,0 +1,281 @@
+/* Insert this entire fragment inside the original Kage IIFE.
+ * Boot replacements: buildPokemonLandmarks(), buildPokemonGateway(), and
+ * buildPokemonRouteLight(x, z, scale, y). All three share the same lazy kit.
+ * Prism Tower reference: https://legends.pokemon.com/en-us/story-world/lumiose-city
+ * The original ground, stairs, camera and atmospheric motion remain in place. */
+function pokemonSceneKit() {
+  if (WORLD.pokemonKit) return WORLD.pokemonKit;
+  const woodTexture = lib('pokemonRedwood', () => texWood(29, { boards: 0, base: [111, 43, 29] }));
+  const redwood = surface(woodTexture, [1.1, 1], { color: 0xe2a78d, normal: .9, metalness: .02 });
+  redwood.emissive.setHex(0x30120a); redwood.emissiveIntensity = .12;
+  const rf = lib('roof', () => texRoof());
+  const roofNormal = tx(rf.normal, { wrap: THREE.RepeatWrapping, repeat: [1.2, 1.2], srgb: false });
+  const tiled = (color, metalness) => new THREE.MeshStandardMaterial({
+    color, roughness: .63, metalness: metalness || .06,
+    normalMap: roofNormal, normalScale: new THREE.Vector2(.75, .75)
+  });
+  const goldEdge = new THREE.MeshStandardMaterial({ color: 0xc99c4b, roughness: .42, metalness: .48 });
+  const redRoof = tiled(0xe94637, .05); redRoof.emissive.setHex(0x741b0e); redRoof.emissiveIntensity = .27;
+  const greenRoof = tiled(0x409889, .05); greenRoof.emissive.setHex(0x194d45); greenRoof.emissiveIntensity = .20;
+  const plaster = new THREE.MeshStandardMaterial({ color: 0xe4cfaa, roughness: .84, emissive: 0x493b2b, emissiveIntensity: .18 });
+  const cream = new THREE.MeshStandardMaterial({ color: 0xe6e3ca, roughness: .82, emissive: 0x42453a, emissiveIntensity: .18 });
+  const stone = surface(lib('pokemonStone', () => texStone(71, { base: [74, 82, 84] })), [2, 1], { color: 0xb7b9ad, normal: .65 });
+  const dark = new THREE.MeshStandardMaterial({ color: 0x171d20, roughness: .76 });
+  const trim = new THREE.MeshStandardMaterial({ color: 0xb4d0cf, roughness: .60, metalness: .15, emissive: 0x2a4247, emissiveIntensity: .2 });
+  const steel = new THREE.MeshStandardMaterial({ color: 0x80bdcf, roughness: .47, metalness: .25, emissive: 0x184755, emissiveIntensity: .35 });
+  const glass = new THREE.MeshBasicMaterial({ color: hdr(.085, .64, .91), fog: true, toneMapped: false });
+  const cyan = new THREE.MeshBasicMaterial({ color: hdr(.18, 1.32, 1.55), fog: true, toneMapped: false });
+  const yellow = new THREE.MeshStandardMaterial({ color: 0xffce32, roughness: .78, emissive: 0x8b5908, emissiveIntensity: .34, flatShading: true });
+  const blue = new THREE.MeshStandardMaterial({ color: 0x32757a, roughness: .86, emissive: 0x163a3a, emissiveIntensity: .30, flatShading: true });
+  const belly = new THREE.MeshStandardMaterial({ color: 0xf4dcab, roughness: .88, emissive: 0x605134, emissiveIntensity: .26, flatShading: true });
+  const brown = new THREE.MeshStandardMaterial({ color: 0x845735, roughness: .89 });
+  const paper = new THREE.MeshBasicMaterial({ color: hdr(1.06, .48, .18), fog: true, toneMapped: false });
+  const windowGlow = new THREE.MeshBasicMaterial({ color: hdr(.38, .64, .62), fog: true, toneMapped: false });
+  const signWhite = new THREE.MeshBasicMaterial({ color: hdr(.95, .88, .65), fog: true, toneMapped: false });
+  const signRed = new THREE.MeshBasicMaterial({ color: hdr(.88, .095, .055), fog: true, toneMapped: false });
+  WORLD.paper = paper;
+
+  function mesh(parent, geometry, material, x, y, z, shadow) {
+    const m = new THREE.Mesh(geometry, material);
+    m.position.set(x || 0, y || 0, z || 0);
+    m.castShadow = shadow !== false; m.receiveShadow = true;
+    parent.add(m); return m;
+  }
+  /* Source mergeGeos consumes indexed geometries. Batch solid details by
+   * material, keeping the tower's hundreds of rails/brackets to a few calls. */
+  function batch(parent) {
+    const buckets = new Map();
+    function add(material, geometry) {
+      if (!buckets.has(material)) buckets.set(material, []);
+      buckets.get(material).push(geometry);
+    }
+    return {
+      box(material, x, y, z, w, h, d, rotation) {
+        const geometry = new THREE.BoxGeometry(w, h, d);
+        if (rotation) geometry.rotateY(rotation);
+        geometry.translate(x, y, z); add(material, geometry);
+      },
+      cylinder(material, x, y, z, rTop, rBottom, h, rotation) {
+        const geometry = new THREE.CylinderGeometry(rTop, rBottom, h, 16);
+        if (rotation) geometry.rotateX(rotation);
+        geometry.translate(x, y, z); add(material, geometry);
+      },
+      beam(material, a, b, radius) {
+        const p = new THREE.Vector3(...a), q = new THREE.Vector3(...b), delta = q.clone().sub(p);
+        const geometry = new THREE.CylinderGeometry(radius, radius, delta.length(), 6);
+        geometry.applyQuaternion(new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 1, 0), delta.normalize()));
+        geometry.translate((p.x + q.x) / 2, (p.y + q.y) / 2, (p.z + q.z) / 2); add(material, geometry);
+      },
+      geometry: add,
+      flush() {
+        buckets.forEach((geometries, material) => {
+          mesh(parent, mergeGeos(geometries), material, 0, 0, 0, !material.isMeshBasicMaterial);
+        });
+      }
+    };
+  }
+  function windowBay(b, x, y, z, w, h, side, light) {
+    const rot = side || 0, c = Math.cos(rot), s = Math.sin(rot);
+    b.box(light || paper, x, y, z, w, h, .06, rot);
+    const bar = (dx, dy, width, height) => b.box(redwood, x + dx * c + .06 * s, y + dy, z - dx * s + .06 * c, width, height, .07, rot);
+    bar(-w / 2, 0, .09, h + .14); bar(w / 2, 0, .09, h + .14);
+    bar(0, -h / 2, w + .14, .09); bar(0, h / 2, w + .14, .09);
+    bar(0, 0, .065, h); bar(0, 0, w, .055);
+  }
+  function pokeball(parent, x, y, z, radius) {
+    const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g);
+    mesh(g, new THREE.SphereGeometry(radius, 32, 20, 0, Math.PI * 2, 0, Math.PI / 2), signRed);
+    mesh(g, new THREE.SphereGeometry(radius, 32, 20, 0, Math.PI * 2, Math.PI / 2, Math.PI / 2), signWhite);
+    const band = mesh(g, new THREE.TorusGeometry(radius * .996, radius * .08, 8, 36), dark); band.rotation.x = Math.PI / 2;
+    const rim = mesh(g, new THREE.CylinderGeometry(radius * .27, radius * .27, radius * .12, 24), dark, 0, 0, radius * .96); rim.rotation.x = Math.PI / 2;
+    const button = mesh(g, new THREE.CylinderGeometry(radius * .15, radius * .15, radius * .13, 24), signWhite, 0, 0, radius * 1.04); button.rotation.x = Math.PI / 2;
+    return g;
+  }
+  function label(parent, text, x, y, z, w, h) {
+    const c = cvs(1024, 192), ctx = c.getContext('2d');
+    ctx.fillStyle = '#192725'; ctx.fillRect(0, 0, 1024, 192);
+    ctx.strokeStyle = '#ae8b4e'; ctx.lineWidth = 10; ctx.strokeRect(7, 7, 1010, 178);
+    ctx.fillStyle = '#e6d4aa'; ctx.font = '500 76px Onest, sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText(text, 512, 100, 945);
+    return mesh(parent, new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tx(c), fog: true, toneMapped: false }), x, y, z, false);
+  }
+  function ellipsoid(parent, material, x, y, z, sx, sy, sz, rotation) {
+    const m = mesh(parent, new THREE.SphereGeometry(1, 14, 10), material, x, y, z);
+    m.scale.set(sx, sy, sz); m.rotation.z = rotation || 0; return m;
+  }
+  return (WORLD.pokemonKit = { mesh, batch, windowBay, pokeball, label, ellipsoid, redwood, goldEdge, redRoof, greenRoof, plaster, cream, stone, dark, trim, paper, windowGlow, signWhite, signRed, steel, glass, cyan, yellow, blue, belly, brown });
+}
+
+function buildPokemonLandmarks() {
+  const { mesh, batch, windowBay, pokeball, label, ellipsoid, redwood, goldEdge, redRoof, greenRoof, plaster, cream, stone, dark, trim, paper, windowGlow, signWhite, signRed, steel, glass, cyan, yellow, blue, belly, brown } = pokemonSceneKit();
+  const landmarks = new THREE.Group(); landmarks.name = 'Pokemon world: Lumiose and Kanto'; scene.add(landmarks);
+
+  // Prism Tower: four splayed lattice feet, luminous observation rooms, a slim spire.
+  const tower = new THREE.Group(); tower.name = 'Lumiose City Prism Tower';
+  tower.position.set(0, PODIUM, TEMPLE_Z); landmarks.add(tower);
+  const tb = batch(tower);
+  tb.box(stone, 0, .18, 0, 13.6, .36, 11.2);
+  const stations = [[.45, 5.3, 4.2], [2.4, 4.65, 3.8], [5.6, 3.2, 2.8], [7.55, 2.43, 2.17], [10.7, 1.40, 1.32], [13.9, .62, .57], [17.6, .07, .07]];
+  for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+    const points = stations.map(([y, x, z]) => new THREE.Vector3(sx * x, y, sz * z));
+    tb.geometry(steel, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, .29, 8, false));
+    tb.box(trim, sx * 5.3, .53, sz * 4.2, 1.62, .35, 1.50);
+    for (let i = 2; i < stations.length - 2; i++) {
+      const a = stations[i], b = stations[i + 1], rad = i < 3 ? .070 : .042;
+      tb.beam(trim, [sx * a[1], a[0], sz * a[2]], [sx * b[1], b[0], -sz * b[2]], rad);
+      tb.beam(trim, [sx * a[1], a[0], sz * a[2]], [-sx * b[1], b[0], sz * b[2]], rad);
+    }
+  }
+  for (let i = 1; i < stations.length - 1; i++) {
+    const [y, x, z] = stations[i];
+    for (const side of [-1, 1]) { tb.box(steel, 0, y, side * z, x * 2, .17, .16); tb.box(steel, side * x, y, 0, .16, .17, z * 2); }
+  }
+  // Open arches leave the courtyard visible between the four legs.
+  for (let side = 0; side < 4; side++) {
+    const points = [];
+    for (let i = 0; i <= 24; i++) {
+      const t = i / 24, span = side % 2 ? 4.1 : 5.2, edge = side % 2 ? 5.2 : 4.1;
+      const p = new THREE.Vector3(-span + t * span * 2, .7 + Math.sin(t * Math.PI) * 4.05, edge - Math.sin(t * Math.PI) * 1.15);
+      p.applyAxisAngle(new THREE.Vector3(0, 1, 0), side * Math.PI / 2); points.push(p);
+    }
+    tb.geometry(steel, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points), 24, .15, 6, false));
+  }
+  for (const [y, r, h] of [[7.6, 3.7, .32], [8.02, 3.32, .22], [10.10, 3.35, .28], [10.4, 2.85, .25], [13.25, 1.42, .19]]) {
+    tb.geometry(trim, new THREE.CylinderGeometry(r, r, h, 8).rotateY(Math.PI / 8).translate(0, y, 0));
+    tb.geometry(cyan, new THREE.CylinderGeometry(r + .025, r + .025, .055, 8).rotateY(Math.PI / 8).translate(0, y + h / 2, 0));
+  }
+  tb.geometry(glass, new THREE.CylinderGeometry(2.75, 3.02, 1.78, 8).rotateY(Math.PI / 8).translate(0, 9.08, 0));
+  for (let i = 0; i < 8; i++) {
+    const angle = i * Math.PI / 4 + Math.PI / 8;
+    tb.beam(trim, [Math.sin(angle) * 3.05, 8.18, Math.cos(angle) * 3.05], [Math.sin(angle) * 2.79, 10.0, Math.cos(angle) * 2.79], .068);
+  }
+  tb.geometry(glass, new THREE.CylinderGeometry(.87, 1.13, 1.13, 8).rotateY(Math.PI / 8).translate(0, 12.57, 0));
+  tb.geometry(steel, new THREE.ConeGeometry(.66, 3.88, 8).translate(0, 15.48, 0));
+  tb.cylinder(cyan, 0, 17.63, 0, .045, .085, .60);
+  tb.geometry(signWhite, new THREE.SphereGeometry(.15, 12, 8).translate(0, 17.94, 0));
+  tb.flush(); label(tower, 'PRISM TOWER', 0, 7.55, 3.54, 3.33, .50);
+  WORLD.temple = tower; WORLD.prismTower = tower; WORLD.templeTop = PODIUM + 18.10;
+
+  // A full-scale roadside Pokémon Center; its glowing emblem reads through the mist.
+  const center = new THREE.Group(); center.name = 'Pokemon Center';
+  center.position.set(-12, 0, -24); landmarks.add(center);
+  const cb = batch(center);
+  cb.box(stone, 0, .22, 0, 11.0, .44, 8.25);
+  cb.box(cream, 0, 2.21, 0, 10.0, 3.72, 7.3);
+  cb.box(redRoof, 0, .79, 0, 10.13, .59, 7.44);
+  cb.box(trim, 0, 3.83, 0, 10.36, .22, 7.6);
+  const cap = new THREE.Shape(); cap.moveTo(-5.58, 0); cap.lineTo(-5.58, .32);
+  cap.quadraticCurveTo(-4.55, 1.63, 0, 1.85); cap.quadraticCurveTo(4.55, 1.63, 5.58, .32); cap.lineTo(5.58, 0); cap.closePath();
+  mesh(center, new THREE.ExtrudeGeometry(cap, { depth: 8.35, bevelEnabled: true, bevelSize: .10, bevelThickness: .10, bevelSegments: 2, steps: 1 }), redRoof, 0, 3.96, -4.175);
+  cb.box(dark, 0, 1.75, 3.72, 2.13, 2.79, .10);
+  for (const s of [-1, 1]) {
+    cb.box(windowGlow, s * .48, 1.79, 3.80, .88, 2.61, .035);
+    cb.box(trim, s * .98, 1.77, 3.84, .08, 2.8, .07);
+    windowBay(cb, s * 3.17, 2.25, 3.71, 2.10, 1.47, 0, windowGlow);
+    windowBay(cb, s * 5.04, 2.22, .50, 2.28, 1.42, s * Math.PI / 2, windowGlow);
+  }
+  cb.box(trim, 0, 1.75, 3.85, .11, 2.8, .08);
+  cb.box(cream, 0, 3.86, 4.0, 3.05, .96, .46);
+  cb.box(stone, 0, .20, 4.50, 3.15, .24, 1.5);
+  cb.cylinder(trim, -5.6, 2.2, 2.8, .095, .12, 4.4);
+  cb.flush(); pokeball(center, 0, 4.38, 4.40, .92); pokeball(center, -5.6, 5.08, 2.8, .82);
+  label(center, 'POKÉMON CENTER', 0, 3.11, 3.96, 2.65, .40);
+  WORLD.pokemonCenter = center;
+
+  // Oak's lab stands across the same ground-level path, with its own roof instruments.
+  const lab = new THREE.Group(); lab.name = "Professor Oak's laboratory";
+  lab.position.set(13, 0, -28); landmarks.add(lab);
+  const lb = batch(lab);
+  lb.box(stone, 0, .23, 0, 11.8, .46, 8.5);
+  lb.box(plaster, 0, 2.37, 0, 10.8, 4.25, 7.7);
+  lb.box(redwood, 0, .65, 0, 10.9, .35, 7.8);
+  const roofShape = new THREE.Shape(); roofShape.moveTo(-4.58, 0); roofShape.lineTo(4.58, 0); roofShape.lineTo(0, 2.08); roofShape.closePath();
+  const labRoof = new THREE.ExtrudeGeometry(roofShape, { depth: 11.75, bevelEnabled: false, steps: 1 });
+  labRoof.rotateY(Math.PI / 2); labRoof.translate(-5.875, 4.54, 0);
+  mesh(lab, labRoof, greenRoof);
+  lb.box(trim, 0, 6.62, 0, 12.05, .22, .24);
+  lb.box(cream, 3.1, 5.22, -.4, 2.10, 2.74, 2.6);
+  lb.box(greenRoof, 3.1, 6.67, -.4, 2.55, .23, 2.98);
+  lb.box(dark, .2, 1.75, 3.91, 1.43, 2.85, .10);
+  windowBay(lb, .2, 2.17, 4.00, 1.07, 1.49, 0, paper);
+  for (const x of [-3.85, -2.15, 2.48, 4.02]) windowBay(lb, x, 2.42, 3.91, 1.04, 1.69, 0, windowGlow);
+  for (const s of [-1, 1]) windowBay(lb, s * 5.43, 2.45, 0, 2.52, 1.62, s * Math.PI / 2, windowGlow);
+  lb.box(stone, .2, .17, 4.55, 2.4, .22, 1.38);
+  lb.cylinder(trim, 3.1, 7.69, -.4, .065, .095, 2.07);
+  lb.box(trim, 3.1, 8.22, -.4, 2.45, .09, .09);
+  lb.box(goldEdge, 4.19, 8.22, -.4, .30, .34, .035);
+  lb.cylinder(trim, -3.45, 6.35, -.4, .12, .16, 1.6);
+  const dish = mesh(lab, new THREE.SphereGeometry(.87, 24, 12, 0, Math.PI * 2, 0, Math.PI / 2), cream, -3.45, 7.0, -.4); dish.rotation.z = -.52;
+  lb.cylinder(trim, -3.80, 7.50, -.4, .035, .035, 1.15);
+  lb.flush(); label(lab, "PROF. OAK'S LAB", .20, 3.54, 4.04, 3.17, .46);
+  WORLD.oakLab = lab;
+
+  // The same rigged characters also inhabit the actual 3D route.
+  WORLD.pokemonActors = [];
+  for (const [kind, x, y, z, height] of [['pikachu', -6.15, .05, -7.15, 2.9], ['snorlax', 7.15, .15, -10.5, 3.75]]) {
+    const actor = createPokemonCharacter(kind);
+    if (!actor) continue;
+    const placement = new THREE.Group(); placement.position.set(x, y, z);
+    placement.scale.setScalar(height / actor.height); placement.add(actor.group); landmarks.add(placement);
+    actor.group.traverse(object => { if (object.isMesh) { object.castShadow = false; object.receiveShadow = true; } });
+    WORLD[kind] = placement; WORLD.pokemonActors.push(actor);
+  }
+
+  // Retain the exact original hall glow/mist anchors for updateWorld().
+  const spill = mesh(landmarks, new THREE.PlaneGeometry(30, 16), new THREE.MeshBasicMaterial({
+    map: tx(texGlow('rgba(255,150,66,.80)', 'rgba(240,96,26,.24)')),
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, opacity: .30
+  }), 0, PODIUM + 3, TEMPLE_Z + 5.6, false);
+  spill.renderOrder = 2; WORLD.hallHalo = spill;
+  const mist = mesh(landmarks, new THREE.PlaneGeometry(64, 20), new THREE.MeshBasicMaterial({
+    map: tx(texGlow('rgba(150,178,190,.62)', 'rgba(104,138,154,.20)')),
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, opacity: .17
+  }), 0, PODIUM - 1.4, TEMPLE_Z + 10, false);
+  mist.renderOrder = 2;
+  WORLD.pokemonLandmarks = landmarks;
+}
+
+/* Large circular Pokéball gate at the original torii's location. The center
+ * stays open so the source camera still travels into the avenue and stairs. */
+function buildPokemonGateway() {
+  const { mesh, batch, pokeball, stone, dark, trim, signRed, signWhite, cyan } = pokemonSceneKit();
+  const gate = new THREE.Group(); gate.name = 'Pokeball avenue gateway';
+  gate.position.set(0, 0, -8.6); scene.add(gate);
+  const radius = 3.80, centerY = 4.15;
+  mesh(gate, new THREE.TorusGeometry(radius, .28, 10, 48, Math.PI), signRed, 0, centerY, 0);
+  const lower = mesh(gate, new THREE.TorusGeometry(radius, .28, 10, 48, Math.PI), signWhite, 0, centerY, 0); lower.rotation.z = Math.PI;
+  mesh(gate, new THREE.TorusGeometry(radius + .34, .095, 8, 64), trim, 0, centerY, -.08);
+  mesh(gate, new THREE.TorusGeometry(radius - .34, .045, 6, 64), cyan, 0, centerY, .08, false);
+  const gb = batch(gate);
+  for (const s of [-1, 1]) {
+    gb.box(stone, s * 3.25, .23, 0, 1.15, .46, 1.56);
+    gb.box(trim, s * 3.25, .72, 0, .29, 1.05, .45);
+    gb.box(dark, s * 3.42, centerY, .15, 1.17, .30, .31);
+    gb.cylinder(trim, s * 4.56, 1.45, -.12, .08, .11, 2.9);
+  }
+  gb.flush(); pokeball(gate, 0, centerY + radius, .26, .51);
+  pokeball(gate, -4.56, 3.3, -.12, .52); pokeball(gate, 4.56, 3.3, -.12, .52);
+  WORLD.torii = gate; WORLD.pokemonGateway = gate; return gate;
+}
+
+/* Same argument order and optional stair elevation as Kage buildLantern. */
+function buildPokemonRouteLight(x, z, scale, y) {
+  const { mesh, batch, pokeball, trim, dark, stone, signWhite } = pokemonSceneKit();
+  const g = new THREE.Group(); g.name = 'Pokeball route light';
+  g.position.set(x, y || 0, z); g.scale.setScalar(scale || 1); scene.add(g);
+  const b = batch(g);
+  b.cylinder(stone, 0, .13, 0, .35, .45, .26);
+  b.cylinder(trim, 0, 1.08, 0, .08, .11, 1.87);
+  b.cylinder(dark, 0, 1.96, 0, .23, .17, .14);
+  b.flush(); pokeball(g, 0, 2.26, 0, .36);
+  const glow = mesh(g, new THREE.PlaneGeometry(2.5, 2.5), new THREE.MeshBasicMaterial({
+    map: tx(texGlow('rgba(210,245,240,.62)', 'rgba(85,190,210,.17)')),
+    transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, opacity: .33
+  }), 0, 2.26, 0, false);
+  glow.renderOrder = 2; glow.userData.billboard = true;
+  const light = new THREE.PointLight(0xaff6e3, 2.6, 8, 2); light.position.set(0, 2.26, 0); g.add(light);
+  WORLD.lanternPane = WORLD.lanternPane || signWhite;
+  WORLD.lanternLights = WORLD.lanternLights || []; WORLD.lanternLights.push(light);
+  WORLD.lanternGlows = WORLD.lanternGlows || []; WORLD.lanternGlows.push(glow);
+  return g;
+}

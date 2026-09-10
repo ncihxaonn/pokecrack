@@ -8,7 +8,7 @@ const contentSecurityPolicy = [
   "form-action 'self'",
   "script-src 'self' 'unsafe-inline'",
   "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
+  "img-src 'self' data: blob: https://images.pokemontcg.io https://tcg.pokemon.com https://poke-holo.b-cdn.net",
   "font-src 'self' data:",
   "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
   "worker-src 'self' blob:",
@@ -32,6 +32,13 @@ const nextConfig: NextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
           { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
           { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+        ],
+      },
+      {
+        source: "/landing-pages/pokemon-kage.html",
+        headers: [
+          { key: "Content-Security-Policy", value: contentSecurityPolicy.replace("frame-ancestors 'none'", "frame-ancestors 'self'") },
+          { key: "X-Frame-Options", value: "SAMEORIGIN" },
         ],
       },
     ];

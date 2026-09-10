@@ -1,0 +1,1135 @@
+/* Faithful rigged GLB assets, pinned in vendor/pokemon-models/sources.json.
+ * Only uniform outer scale/placement changes; original mesh and bones survive.
+ * Animation uses Kage's clock, so pausing the journey freezes these actors too. */
+const POKEMON_MODELS = new Map();
+async function loadPokemonModels() {
+  const loader = new PokemonGLTF.GLTFLoader();
+  // Embedded GLB images use blob URLs. HTMLImageElement follows img-src;
+  // ImageBitmapLoader would fetch them under the stricter connect-src policy.
+  loader.register(parser => {
+    parser.textureLoader = new THREE.TextureLoader(parser.options.manager);
+    return { name: 'LOCAL_IMAGE_TEXTURES' };
+  });
+  await Promise.all(['pikachu', 'snorlax', 'charizard'].map(async kind => {
+    try {
+      const gltf = await loader.loadAsync('pokemon-models/' + kind + '.glb');
+      gltf.scene.traverse(node => {
+        if (!node.isMesh) return;
+        // r149 culls skinned submeshes using their undeformed bounds. Eye
+        // meshes can otherwise vanish in the tightly framed square overlay.
+        node.frustumCulled = false;
+        for (const material of Array.isArray(node.material) ? node.material : [node.material]) {
+          // Keep the authored colour textures but soften realistic micro-bumps
+          // into the clean animated-film surface used by the surrounding scene.
+          material.normalMap = null;
+          material.roughness = .8;
+          if (material.name === 'fire_gltf') {
+            material.emissive.setHex(0xff6b08).convertSRGBToLinear();
+            material.emissiveIntensity = 1.4;
+          }
+        }
+      });
+      POKEMON_MODELS.set(kind, gltf);
+    } catch (error) { console.warn('Model unavailable: ' + kind, error); }
+  }));
+}
+// r149 Box3 uses undeformed geometry bounds. Measure the skinned idle pose,
+// including the real wing and tail extent, before framing or normalizing it.
+function pokemonPoseBounds(root) {
+  root.updateMatrixWorld(true);
+  root.traverse(node => { if (node.isSkinnedMesh) node.skeleton.update(); });
+  const bounds = new THREE.Box3(), vertex = new THREE.Vector3();
+  root.traverse(node => {
+    if (!node.isMesh || !node.visible) return;
+    const position = node.geometry.getAttribute('position');
+    for (let i = 0; i < position.count; i++) {
+      vertex.fromBufferAttribute(position, i);
+      if (node.isSkinnedMesh) node.boneTransform(i, vertex);
+      bounds.expandByPoint(vertex.applyMatrix4(node.matrixWorld));
+    }
+  });
+  return bounds;
+}
+function createPokemonCharacter(kind) {
+  const source = POKEMON_MODELS.get(kind);
+  if (!source) return null;
+  const group = new THREE.Group(),
+    model = PokemonSkeletonUtils.clone(source.scene);
+  group.add(model);
+  const mixer = new THREE.AnimationMixer(model);
+  const idle = mixer.clipAction(
+    THREE.AnimationClip.findByName(source.animations, "idle"),
+  );
+  idle.play();
+  mixer.setTime(0);
+  const bounds = pokemonPoseBounds(model),
+    size = bounds.getSize(new THREE.Vector3());
+  const scale = 3.4 / size.y;
+  // Center by the original model's origin, not by an asymmetric tail's bounds.
+  model.scale.multiplyScalar(scale);
+  model.position.y -= bounds.min.y * scale;
+  const height = 3.4,
+    centerY = height / 2;
+  const happyClip =
+    kind === "pikachu" &&
+    THREE.AnimationClip.findByName(source.animations, "happy");
+  const happy = happyClip ? mixer.clipAction(happyClip).play() : null;
+  if (happy) happy.setEffectiveWeight(0);
+  const actions = {};
+  for (const name of ["run", "sleep"]) {
+    const clip = THREE.AnimationClip.findByName(source.animations, name);
+    if (clip)
+      actions[name] = mixer.clipAction(clip).play().setEffectiveWeight(0);
+  }
+  // Restore every additive joint, including ones whose source track is static.
+  // Offsets are expressed in model axes, then transformed into the joint's
+  // parent space: these imported bones do NOT share intuitive local XYZ axes.
+  const joints = new Map();
+  model.traverse((bone) => {
+    if (bone.isBone || /^(spine_0[12]|waist|hips)$/.test(bone.name))
+      joints.set(bone.name, { bone, base: bone.quaternion.clone() });
+  });
+  const wingRest = new Map();
+  if (kind === "charizard")
+    joints.forEach(({ bone }, name) => {
+      if (name.includes("_wing_")) wingRest.set(name, bone.quaternion.clone());
+    });
+  // The pinned Charizard mesh already carries membrane-spar skin weights.
+  // Clone just that geometry; body/eyes/fire and the cached GLB stay untouched.
+  // A bind-space camber corrective complements the spar articulation instead
+  // of replacing skinning. Blended spar weights taper it at rigid attachments.
+  const membranes = [];
+  if (kind === "charizard")
+    model.traverse((mesh) => {
+      if (!mesh.isSkinnedMesh) return;
+      const indices = mesh.geometry.getAttribute("skinIndex"),
+        weights = mesh.geometry.getAttribute("skinWeight"),
+        mask = [];
+      for (let i = 0; i < weights.count; i++) {
+        let spar = 0;
+        for (let j = 0; j < 4; j++) {
+          const bone = mesh.skeleton.bones[indices.array[i * 4 + j]];
+          if (bone.name.endsWith("_wing_b")) spar += weights.array[i * 4 + j];
+        }
+        if (spar > 0.001 && spar < 0.999)
+          mask.push({ index: i, amount: 4 * spar * (1 - spar) });
+      }
+      if (!mask.length) return;
+      mesh.geometry = mesh.geometry.clone();
+      const geometry = mesh.geometry,
+        normals = geometry.attributes.normal.array.slice();
+      geometry.computeVertexNormals();
+      const geometricNormals = geometry.attributes.normal.array.slice();
+      geometry.attributes.normal.array.set(normals);
+      membranes.push({
+        geometry,
+        mask,
+        rest: geometry.attributes.position.array.slice(),
+        normals,
+        geometricNormals,
+      });
+    });
+  const membraneNormal = new THREE.Vector3();
+  function flexMembranes(beat, effort) {
+    for (const {
+      geometry,
+      mask,
+      rest,
+      normals,
+      geometricNormals,
+    } of membranes) {
+      const position = geometry.attributes.position;
+      position.array.set(rest);
+      for (const { index, amount } of mask) {
+        // Load travels from the inner panel toward the tip. The recovery is
+        // softer, with a small delayed reverse bend at stroke reversal.
+        const span = Math.min(1, Math.abs(rest[index * 3]) / 1.25),
+          lag = 0.065 + span * 0.09,
+          pressure = beat ? beat.power(lag) : 0,
+          recovery = beat ? beat.fold(lag) : 0,
+          recoil = beat ? beat.stroke(lag + 0.07) - beat.stroke(lag) : 0;
+        position.array[index * 3 + 2] -=
+          effort *
+          amount *
+          (0.085 * pressure - 0.035 * recovery + 0.025 * recoil);
+      }
+      position.needsUpdate = true;
+      if (effort > 0) {
+        geometry.computeVertexNormals();
+        // Apply only the change in geometric normal to the authored smooth
+        // normal. Replacing it outright would pop at the first nonzero load.
+        const bent = geometry.attributes.normal.array.slice();
+        geometry.attributes.normal.array.set(normals);
+        for (const { index } of mask) {
+          membraneNormal.fromArray(normals, index * 3);
+          membraneNormal.x += bent[index * 3] - geometricNormals[index * 3];
+          membraneNormal.y +=
+            bent[index * 3 + 1] - geometricNormals[index * 3 + 1];
+          membraneNormal.z +=
+            bent[index * 3 + 2] - geometricNormals[index * 3 + 2];
+          membraneNormal
+            .normalize()
+            .toArray(geometry.attributes.normal.array, index * 3);
+        }
+      } else geometry.attributes.normal.array.set(normals);
+      geometry.attributes.normal.needsUpdate = true;
+      geometry.computeBoundingSphere();
+    }
+  }
+  const axis = new THREE.Vector3(),
+    parentRotation = new THREE.Quaternion(),
+    offset = new THREE.Quaternion();
+  const jointFrame = new THREE.Matrix4(),
+    framePosition = new THREE.Vector3(),
+    frameScale = new THREE.Vector3();
+  function rotateJoint(name, x, y, z, angle) {
+    const joint = joints.get(name);
+    if (!joint || Math.abs(angle) < 1e-7) return;
+    joint.bone.parent.updateWorldMatrix(true, false);
+    // Remove the containing turntable before decomposing imported transforms;
+    // its orientation must not change the body-local follow-through axes.
+    jointFrame
+      .copy(group.matrixWorld)
+      .invert()
+      .multiply(joint.bone.parent.matrixWorld)
+      .decompose(framePosition, parentRotation, frameScale);
+    parentRotation.invert();
+    axis.set(x, y, z).applyQuaternion(parentRotation).normalize();
+    joint.bone.quaternion.premultiply(offset.setFromAxisAngle(axis, angle));
+  }
+  // Analytic two-segment IK preserves original limb lengths. Targets are
+  // captured in the actor parent's coordinates, so feet can bear weight while
+  // the hips lower, chest pitches and knees flex without sliding on the card.
+  group.updateMatrixWorld(true);
+  const plantedFeet =
+    kind === "charizard"
+      ? ["left", "right"].map((side) => {
+          const hip = model.getObjectByName(side + "_leg_01"),
+            knee = model.getObjectByName(side + "_leg_02"),
+            foot = model.getObjectByName(side + "_foot");
+          return {
+            hip,
+            knee,
+            foot,
+            target: foot.getWorldPosition(new THREE.Vector3()),
+            orientation: foot.getWorldQuaternion(new THREE.Quaternion()),
+            toeOffset: model
+              .getObjectByName(side + "_toe")
+              .getWorldPosition(new THREE.Vector3())
+              .sub(foot.getWorldPosition(new THREE.Vector3())),
+          };
+        })
+      : [];
+  const ik = Array.from({ length: 10 }, () => new THREE.Vector3());
+  const ikDelta = new THREE.Quaternion(),
+    ikParent = new THREE.Quaternion(),
+    ikWorld = new THREE.Quaternion();
+  function turnSegment(bone, from, to) {
+    ikDelta.setFromUnitVectors(from.normalize(), to.normalize());
+    bone.parent.getWorldQuaternion(ikParent);
+    ikWorld.copy(ikParent).invert().multiply(ikDelta).multiply(ikParent);
+    bone.quaternion.premultiply(ikWorld);
+    bone.updateWorldMatrix(false, true);
+  }
+  const heelRotation = new THREE.Quaternion(),
+    heelOffset = new THREE.Vector3();
+  const airborneJoints = Array.from(
+    { length: 3 },
+    () => new THREE.Quaternion(),
+  );
+  function plantFeet(weight, push) {
+    if (weight <= 0) return;
+    for (const leg of plantedFeet) {
+      const [hip, knee, foot, target, dir, pole, wanted, from, to, plane] = ik;
+      const chain = [leg.hip, leg.knee, leg.foot];
+      chain.forEach((joint, i) => airborneJoints[i].copy(joint.quaternion));
+      leg.hip.getWorldPosition(hip);
+      leg.knee.getWorldPosition(knee);
+      leg.foot.getWorldPosition(foot);
+      // The heel rises around the fixed toe during the final extension.
+      heelRotation.setFromAxisAngle(axis.set(1, 0, 0), 0.32 * push);
+      target
+        .copy(leg.target)
+        .add(leg.toeOffset)
+        .sub(heelOffset.copy(leg.toeOffset).applyQuaternion(heelRotation));
+      if (group.parent) target.applyMatrix4(group.parent.matrixWorld);
+      const upper = hip.distanceTo(knee),
+        lower = knee.distanceTo(foot);
+      dir.subVectors(target, hip);
+      const reach = Math.min(dir.length(), upper + lower - 0.00001);
+      dir.normalize();
+      pole.set(0, 0, 1);
+      if (group.parent) pole.transformDirection(group.parent.matrixWorld);
+      plane.copy(dir).multiplyScalar(pole.dot(dir));
+      pole.sub(plane).normalize();
+      const along =
+        (upper * upper - lower * lower + reach * reach) / (2 * reach);
+      const bend = Math.sqrt(Math.max(0, upper * upper - along * along));
+      wanted.copy(hip).addScaledVector(dir, along).addScaledVector(pole, bend);
+      turnSegment(
+        leg.hip,
+        from.subVectors(knee, hip),
+        to.subVectors(wanted, hip),
+      );
+      leg.knee.getWorldPosition(knee);
+      leg.foot.getWorldPosition(foot);
+      turnSegment(
+        leg.knee,
+        from.subVectors(foot, knee),
+        to.subVectors(target, knee),
+      );
+      ikWorld.copy(leg.orientation).premultiply(heelRotation);
+      if (group.parent) {
+        group.parent.getWorldQuaternion(ikParent);
+        ikWorld.premultiply(ikParent);
+      }
+      leg.foot.parent.getWorldQuaternion(ikParent).invert();
+      leg.foot.quaternion.copy(ikParent.multiply(ikWorld));
+      // Blend the complete solution, including the knee's bend plane. Merely
+      // lerping the ankle target still snaps the knee when IK first engages.
+      chain.forEach((joint, i) =>
+        joint.quaternion.slerp(airborneJoints[i], 1 - weight),
+      );
+      leg.hip.updateWorldMatrix(false, true);
+    }
+  }
+  const pivot = new THREE.Vector3(),
+    pivotOffset = new THREE.Vector3();
+  const clamp = (x) => Math.max(0, Math.min(1, x));
+  const ease = (a, b, x) => {
+    const t = clamp((x - a) / (b - a));
+    return t * t * (3 - 2 * t);
+  };
+  // Sample the authored beat behind the current pose, never the last frame.
+  // This makes follow-through independent of refresh rate and scrub history.
+  const laggedMotion = (motion, delay) =>
+    pokemonScrollMotion(
+      kind,
+      motion.distance - delay,
+      motion.entry - (delay / 0.62) * Math.sin(Math.PI * motion.entry),
+      motion.still,
+    );
+  const impulse = (progress, onset, delay, speed = 6, damping = 3.2) => {
+    const t = Math.max(0, (progress - onset) * speed - delay);
+    return Math.sin(t * 11) * Math.exp(-t * damping) * ease(0, 0.045, t);
+  };
+  const tailRates = Array.from({ length: 7 }, () => ({ pitch: 0, yaw: 0 }));
+  const flame =
+    kind === "charizard"
+      ? [1, 2, 3].map((i) => model.getObjectByName("center_feeler_0" + i))
+      : [];
+  const flow = new THREE.Vector3(),
+    tipVelocity = new THREE.Vector3(),
+    arm = new THREE.Vector3();
+  const angularVelocity = new THREE.Vector3(),
+    flamePoint = new THREE.Vector3(),
+    tailPoint = new THREE.Vector3();
+  const flameFrom = new THREE.Vector3(),
+    flameTo = new THREE.Vector3(),
+    actorRotation = new THREE.Quaternion();
+  function animateFlame(local, motion) {
+    // The flame's first joint is the fixed fuel source at the tail tip. Only
+    // rotations change: no mesh replacement, stretching or detached particles.
+    group.updateMatrixWorld(true);
+    group.getWorldQuaternion(actorRotation);
+    flame[0].getWorldPosition(flamePoint);
+    tipVelocity.set(0, 0, 0);
+    for (let i = 0; i < 7; i++) {
+      model.getObjectByName("tail_0" + (i + 1)).getWorldPosition(tailPoint);
+      arm.subVectors(flamePoint, tailPoint);
+      angularVelocity
+        .set(tailRates[i].pitch, tailRates[i].yaw, 0)
+        .applyQuaternion(actorRotation);
+      tipVelocity.add(angularVelocity.cross(arm));
+    }
+    const prior = laggedMotion(motion, 0.012);
+    angularVelocity
+      .set(
+        (motion.pitch - prior.pitch) / 0.045,
+        (motion.yaw - prior.yaw) / 0.045,
+        (motion.roll - prior.roll) / 0.045,
+      )
+      .applyQuaternion(actorRotation);
+    arm.copy(flamePoint).sub(group.localToWorld(tailPoint.set(0, 1.55, 0)));
+    tipVelocity.add(angularVelocity.cross(arm)).clampLength(0, 4);
+    // Relative air flows aft during forward flight; tail sweep adds local
+    // crossflow. Buoyant rise stays world-up even while the creature banks.
+    flow
+      .set(
+        0,
+        0,
+        -motion.flight * (0.65 + 1.1 * motion.legSweep + 0.7 * motion.depart),
+      )
+      .applyQuaternion(actorRotation);
+    flow.addScaledVector(tipVelocity, -0.16);
+    flow.y += 1.15;
+    for (let i = 0; i < 3; i++) {
+      const bone = flame[i];
+      bone.getWorldQuaternion(ikWorld);
+      flameFrom.set(1, 0, 0).applyQuaternion(ikWorld);
+      const t = local - i * 0.085;
+      flameTo.copy(flow);
+      // Small, rising irregular tongues ride on the causal flow direction.
+      flameTo.x +=
+        (0.045 + 0.055 * i) * (Math.sin(t * 8.7) + 0.35 * Math.sin(t * 15.3));
+      flameTo.z += (0.035 + 0.035 * i) * Math.sin(t * 10.1 + 0.7);
+      flameTo.normalize();
+      // Root bends least; the hot tip is freer. Bounded rotations avoid kinks.
+      flameTo.lerpVectors(flameFrom, flameTo, 0.58 + i * 0.15).normalize();
+      turnSegment(bone, flameFrom, flameTo);
+    }
+  }
+  let lastTime = 0;
+  return {
+    group,
+    height,
+    centerY,
+    frameSpan: Math.max(height, size.x * scale, size.z * scale) * 1.18,
+    update(time, still = false, motion = null) {
+      if (still) return;
+      // A brief cheerful ear/body gesture every 12 seconds, gently blended with
+      // the native idle. No squashing, stretched limbs or invented proportions.
+      const local = Math.max(0, time),
+        phase = local % 12;
+      const waveTime = Math.max(0, phase - 7);
+      const weight =
+        happy && phase >= 7 && waveTime < happyClip.duration
+          ? 0.25 *
+            Math.min(1, waveTime / 0.22, (happyClip.duration - waveTime) / 0.28)
+          : 0;
+      const run = motion?.run || 0,
+        sleep = motion?.sleep || 0;
+      const cheer = motion ? 0 : weight;
+      idle.setEffectiveWeight(Math.max(0, 1 - run - sleep - cheer));
+      for (const [name, action] of Object.entries(actions)) {
+        action.setEffectiveWeight(name === "run" ? run : sleep);
+        action.time =
+          (name === "run" ? motion?.clipTime || 0 : local) %
+          action.getClip().duration;
+      }
+      if (happy) {
+        happy.setEffectiveWeight(cheer);
+        happy.time = waveTime % happyClip.duration;
+      }
+      idle.time = local % idle.getClip().duration;
+      // Native clip first, layered joint animation second, body placement last.
+      joints.forEach(({ bone, base }) => bone.quaternion.copy(base));
+      group.position.set(0, 0, 0);
+      group.rotation.set(0, 0, 0);
+      group.updateMatrixWorld(true);
+      mixer.update(0);
+      lastTime = local;
+      joints.forEach(({ bone, base }) => base.copy(bone.quaternion));
+      let bob = 0;
+      if (kind === "charizard" && (!motion || motion.still))
+        flexMembranes(null, 0);
+      if (kind === "pikachu" && motion && !motion.still) {
+        // The original run clip keeps ownership of stride and foot contact.
+        // Chest -> head -> ears and hips -> tail inherit that same gait beat.
+        const gait =
+          (motion.clipTime / actions.run.getClip().duration) * Math.PI * 2;
+        const stop = (lag) =>
+          impulse(motion.entry, 0.78, lag, 4, 4) *
+          (1 - ease(0.94, 1, motion.entry)) *
+          (1 - ease(0, 0.12, motion.exit));
+        const start = (lag) => impulse(motion.exit, 0.025, lag, 4, 4);
+        const sway = (lag) => Math.sin(gait - lag) * motion.run;
+        const recoil = (lag) => 0.16 * stop(lag) - 0.12 * start(lag);
+        rotateJoint("spine_01", 1, 0, 0, 0.045 * sway(0.1) + recoil(0));
+        rotateJoint(
+          "spine_02",
+          1,
+          0,
+          0,
+          0.035 * sway(0.3) + 0.65 * recoil(0.09),
+        );
+        rotateJoint("head", 1, 0, 0, -0.065 * sway(0.46) - 0.65 * recoil(0.17));
+        const old = laggedMotion(motion, 0.025);
+        rotateJoint("head", 0, 1, 0, 0.22 * (old.yaw - motion.yaw));
+        for (const [side, sign] of [
+          ["left", 1],
+          ["right", -1],
+        ]) {
+          for (let i = 1; i <= 3; i++) {
+            rotateJoint(
+              side + "_ear_0" + i,
+              1,
+              0,
+              0,
+              -(0.055 + 0.035 * i) * sway(0.3 + i * 0.24) +
+                recoil(0.13 + i * 0.12) * (1 + i * 0.3),
+            );
+            rotateJoint(
+              side + "_ear_0" + i,
+              0,
+              0,
+              1,
+              sign * 0.025 * sway(0.5 + i * 0.3),
+            );
+          }
+          rotateJoint(
+            side + "_arm_02",
+            1,
+            0,
+            0,
+            sign * 0.05 * sway(0.35) + recoil(0.18) * 0.5,
+          );
+          rotateJoint(
+            side + "_hand",
+            1,
+            0,
+            0,
+            sign * 0.075 * sway(0.62) + recoil(0.29),
+          );
+        }
+        for (let i = 1; i <= 3; i++) {
+          const oldTail = laggedMotion(motion, 0.018 * i);
+          rotateJoint(
+            "tail_0" + i,
+            1,
+            0,
+            0,
+            -(0.065 + 0.025 * i) * sway(0.55 + i * 0.3) -
+              recoil(0.18 + i * 0.13),
+          );
+          rotateJoint(
+            "tail_0" + i,
+            0,
+            1,
+            0,
+            0.32 * (oldTail.yaw - motion.yaw) + 0.035 * sway(0.8 + i * 0.35),
+          );
+        }
+      }
+      if (kind === "snorlax" && motion && !motion.still) {
+        const { entry, exit, incoming, impact, turn, slip, fall } = motion;
+        const clamp = (x) => Math.max(0, Math.min(1, x));
+        const ease = (a, b, x) => {
+          const t = clamp((x - a) / (b - a));
+          return t * t * (3 - 2 * t);
+        };
+        // A contact impulse rings through shoulder -> elbow -> wrist. Use
+        // unclamped chapter distance so the landing reaction can finish after
+        // the body has reached its perch, rather than freezing at entry = 1.
+        const spring = (position, onset, speed, delay, damping = 2.3) => {
+          const t = Math.max(0, (position - onset) * speed - delay);
+          return Math.sin(t * 11) * Math.exp(-t * damping) * ease(0, 0.045, t);
+        };
+        const swing = (delay, frequency) => {
+          const t = Math.max(0, fall - delay);
+          return Math.sin(t * frequency) * Math.exp(-t * 2) * ease(0, 0.065, t);
+        };
+        for (const [side, sign, delay] of [
+          ["left", 1, 0],
+          ["right", -1, 0.08],
+        ]) {
+          const lag = ease(0.12 + delay, 0.55 + delay, exit);
+          const hit = spring(motion.distance, -0.2736, 6, delay);
+          const elbowHit = spring(motion.distance, -0.2736, 6, delay + 0.065);
+          const wristHit = spring(motion.distance, -0.2736, 6, delay + 0.13);
+          const slipHit = spring(exit, 0.31, 3.5, delay, 1.8);
+          const armSwing = swing(delay, 11);
+          const legSwing = swing(delay + 0.07, 10);
+          // One release response rather than independent, clock-driven waving
+          // in free fall. Distal joints lag and settle after the shoulder.
+          const drift = incoming * Math.sin(entry * 7 + delay * 4);
+          rotateJoint(
+            side + "_arm_01",
+            0,
+            0,
+            1,
+            sign * (0.65 * drift + 0.35 * incoming + 0.85 * hit) -
+              0.8 * (turn - lag) +
+              sign * (0.85 * armSwing + 0.32 * slip + 0.42 * slipHit),
+          );
+          rotateJoint(
+            side + "_arm_01",
+            1,
+            0,
+            0,
+            -0.18 * lag + 0.32 * armSwing + 0.22 * hit,
+          );
+          rotateJoint(
+            side + "_arm_02",
+            0,
+            0,
+            1,
+            sign *
+              (0.25 * incoming +
+                0.65 * swing(delay + 0.05, 11) +
+                0.75 * elbowHit +
+                0.2 * lag),
+          );
+          rotateJoint(
+            side + "_hand",
+            0,
+            0,
+            1,
+            sign * (0.48 * wristHit + 0.35 * swing(delay + 0.11, 12)),
+          );
+          rotateJoint(
+            side + "_hand",
+            1,
+            0,
+            0,
+            -0.35 * swing(delay + 0.1, 11) - 0.28 * wristHit,
+          );
+          rotateJoint(
+            side + "_leg_01",
+            1,
+            0,
+            0,
+            -0.38 * drift - 0.2 * incoming + 0.68 * legSwing + 0.48 * elbowHit,
+          );
+          rotateJoint(
+            side + "_leg_01",
+            0,
+            1,
+            0,
+            sign * (0.18 * lag + 0.3 * legSwing + 0.16 * slipHit),
+          );
+          rotateJoint(
+            side + "_foot",
+            1,
+            0,
+            0,
+            -0.45 * swing(delay + 0.16, 11) - 0.42 * wristHit,
+          );
+        }
+        // The near hand reaches across the belly and makes three short
+        // scratching strokes. The shoulder leads; wrist and fingers follow.
+        const scratch = motion.scratch,
+          rub = motion.scratchStroke;
+        const reach = motion.armReach * scratch,
+          shoulder = motion.shoulderLead * (1 - ease(0.05, 0.4, fall));
+        rotateJoint("left_arm_01", 0, 0, 1, 0.85 * scratch + 0.42 * reach);
+        rotateJoint(
+          "left_arm_02",
+          0,
+          0,
+          1,
+          0.85 * scratch + 0.22 * rub - 0.65 * reach,
+        );
+        rotateJoint("left_arm_01", 1, 0, 0, 0.25 * scratch - 0.38 * reach);
+        rotateJoint("left_hand", 1, 0, 0, 0.22 * rub);
+        rotateJoint("left_hand", 0, 1, 0, 0.18 * rub);
+        for (const finger of ["index", "middle", "ring"])
+          rotateJoint("left_" + finger, 1, 0, 0, 0.12 * scratch + 0.1 * rub);
+        rotateJoint("left_shoulder", 0, 0, 1, 0.18 * shoulder);
+        rotateJoint("spine_02", 0, 0, 1, 0.2 * shoulder);
+        rotateJoint("spine_01", 0, 0, 1, 0.12 * motion.turn * (1 - fall));
+        rotateJoint("head", 1, 0, 0, 0.12 * scratch);
+        rotateJoint("right_foot", 1, 0, 0, 0.09 * rub);
+        rotateJoint("spine_02", 0, 0, 1, -0.16 * (turn - ease(0.2, 0.6, exit)));
+        rotateJoint(
+          "head",
+          1,
+          0,
+          0,
+          -0.15 * incoming + 0.14 * impact - 0.22 * swing(0.16, 6),
+        );
+        rotateJoint("head", 0, 0, 1, -0.2 * (turn - ease(0.25, 0.64, exit)));
+        // The heavy core reacts first; the smaller extremities finish later.
+        // Preserve the reaching hand's lead and let the belly/head catch up.
+        const bodyHit = spring(motion.distance, -0.2736, 6, 0.025, 3.8);
+        const bellyHit = spring(motion.distance, -0.2736, 6, 0.1, 3.4);
+        const oldBody = laggedMotion(motion, 0.025),
+          oldHead = laggedMotion(motion, 0.055);
+        rotateJoint("hips", 1, 0, 0, 0.055 * bodyHit - 0.07 * swing(0.06, 7));
+        rotateJoint(
+          "spine_01",
+          1,
+          0,
+          0,
+          0.1 * bellyHit + 0.16 * (oldBody.pitch - motion.pitch),
+        );
+        rotateJoint(
+          "spine_02",
+          1,
+          0,
+          0,
+          0.08 * spring(motion.distance, -0.2736, 6, 0.17, 3.4),
+        );
+        rotateJoint("head", 0, 0, 1, 0.18 * (oldHead.roll - motion.roll));
+        for (const [side, sign, delay] of [
+          ["left", 1, 0],
+          ["right", -1, 0.06],
+        ]) {
+          rotateJoint(
+            side + "_ear",
+            0,
+            0,
+            1,
+            sign *
+              (0.07 * spring(motion.distance, -0.2736, 6, 0.22 + delay) +
+                0.08 * swing(0.22 + delay, 9)),
+          );
+          rotateJoint(
+            side + "_toe",
+            1,
+            0,
+            0,
+            -0.14 * spring(motion.distance, -0.2736, 6, 0.25 + delay) -
+              0.16 * swing(0.26 + delay, 10),
+          );
+          for (const finger of ["thumb", "index", "middle", "ring", "pinky"]) {
+            const released = side === "left" ? 1 - scratch : 1;
+            rotateJoint(
+              side + "_" + finger,
+              1,
+              0,
+              0,
+              released *
+                (0.09 * spring(motion.distance, -0.2736, 6, 0.25 + delay) +
+                  0.12 * swing(0.25 + delay, 10)),
+            );
+          }
+        }
+      }
+      if (kind === "charizard" && motion && !motion.still) {
+        // The native mixer was sampled above. Pin its wing tracks now, before
+        // authored offsets, so an idle cycle cannot be added to the power stroke.
+        wingRest.forEach((rotation, name) =>
+          joints.get(name).bone.quaternion.copy(rotation),
+        );
+        const { flight, crouch, landingLoad, windup, push, reach, brake } =
+          motion;
+        const beat = pokemonCharizardWingBeat(local, motion);
+        const wingStroke = beat.stroke,
+          wingFold = beat.fold;
+        const effort = motion.wingDrive;
+        flexMembranes(beat, effort);
+        // Wing loading already acts on the torso during the leg push. The final
+        // IK pass keeps the toes planted while both sources of effort overlap.
+        const wingLoad = Math.max(flight, push * motion.support);
+        const delayedLoad = pokemonCharizardMechanics(
+          Math.max(0, motion.entry - 0.035 * Math.sin(Math.PI * motion.entry)),
+          Math.max(0, motion.exit - 0.04),
+        ).crouch;
+        for (const [side, sign] of [
+          ["left", 1],
+          ["right", -1],
+        ]) {
+          const bank = sign * motion.roll * 0.2;
+          // The imported chain is shoulder (01/02), elbow (03), wrist (04)
+          // and outer spars (05/06). Shoulder depression supplies the stroke;
+          // elbow extension opens the wing, then the wrist changes its shape.
+          rotateJoint(
+            side + "_wing_a_01",
+            0,
+            0,
+            1,
+            sign * (-0.35 + 0.75 * wingStroke(0) + bank) * effort,
+          );
+          rotateJoint(
+            side + "_wing_a_02",
+            0,
+            0,
+            1,
+            sign * 0.09 * wingStroke(0.025) * effort,
+          );
+          rotateJoint(
+            side + "_wing_a_03",
+            0,
+            0,
+            1,
+            sign * (0.2 * wingStroke(0.065) + 0.18) * effort,
+          );
+          rotateJoint(
+            side + "_wing_a_03",
+            0,
+            1,
+            0,
+            sign *
+              ((0.04 + 0.82 * wingFold(0.065)) * effort + 0.52 * (1 - effort)),
+          );
+          rotateJoint(
+            side + "_wing_a_04",
+            0,
+            0,
+            1,
+            sign * (0.04 + 0.15 * wingStroke(0.115)) * effort,
+          );
+          rotateJoint(
+            side + "_wing_a_04",
+            0,
+            1,
+            0,
+            sign * 0.25 * wingFold(0.14) * effort,
+          );
+          rotateJoint(
+            side + "_wing_a_05",
+            0,
+            1,
+            0,
+            sign * 0.22 * wingFold(0.17) * effort,
+          );
+          rotateJoint(
+            side + "_wing_a_06",
+            0,
+            0,
+            1,
+            sign * 0.1 * wingStroke(0.19) * effort,
+          );
+          // The trailing membrane spar yields after the leading edge. Its
+          // delayed pitch changes the panel's curvature, then unwinds on recovery.
+          rotateJoint(
+            side + "_wing_b",
+            1,
+            0,
+            0,
+            effort *
+              (0.32 * beat.power(0.1) -
+                0.18 * wingFold(0.16) +
+                0.1 * (wingStroke(0.21) - wingStroke(0.1))),
+          );
+          rotateJoint(
+            side + "_wing_b",
+            0,
+            1,
+            0,
+            sign * effort * (0.14 * beat.power(0.16) - 0.12 * wingFold(0.2)),
+          );
+          // Long-legged birds trail their extended hindlimbs in flight. Keep
+          // a soft knee, sweep from the hip, and point the toes aft. Ground IK
+          // still owns the whole leg until the toes release from the card.
+          const extended = flight * (1 - reach);
+          rotateJoint(
+            side + "_leg_01",
+            1,
+            0,
+            0,
+            (0.9 + 0.45 * motion.legSweep) * extended - 0.48 * reach,
+          );
+          rotateJoint(
+            side + "_leg_02",
+            1,
+            0,
+            0,
+            -0.72 * extended + 0.25 * reach,
+          );
+          rotateJoint(
+            side + "_foot",
+            1,
+            0,
+            0,
+            (0.4 + 0.85 * motion.ankleSweep) * extended - 0.2 * reach,
+          );
+          // Forearms spread to balance impact, swing behind the crouch, then
+          // follow the chest upward on the push. Wrists arrive later.
+          rotateJoint(
+            side + "_arm_01",
+            1,
+            0,
+            0,
+            0.16 * flight + 0.58 * windup - 0.68 * push - 0.52 * landingLoad,
+          );
+          rotateJoint(
+            side + "_arm_01",
+            0,
+            0,
+            1,
+            sign * (0.5 * landingLoad + 0.26 * brake + 0.12 * windup),
+          );
+          rotateJoint(
+            side + "_arm_02",
+            1,
+            0,
+            0,
+            -0.22 * flight - 0.34 * delayedLoad + 0.3 * push,
+          );
+          rotateJoint(
+            side + "_hand",
+            1,
+            0,
+            0,
+            -0.24 * delayedLoad + 0.12 * push,
+          );
+          // Wing impulse reaches the free limbs after the chest. Keep knees
+          // softly extended and leave supported feet to the final IK pass.
+          rotateJoint(
+            side + "_arm_01",
+            1,
+            0,
+            0,
+            0.09 * wingStroke(0.2) * flight,
+          );
+          rotateJoint(
+            side + "_arm_02",
+            1,
+            0,
+            0,
+            0.11 * wingStroke(0.28) * flight,
+          );
+          rotateJoint(
+            side + "_hand",
+            1,
+            0,
+            0,
+            0.14 * wingStroke(0.36) * flight,
+          );
+          rotateJoint(
+            side + "_arm_01",
+            0,
+            0,
+            1,
+            -0.35 * motion.roll + 0.07 * sign * wingStroke(0.24) * flight,
+          );
+          rotateJoint(
+            side + "_leg_01",
+            1,
+            0,
+            0,
+            0.055 * wingStroke(0.24) * flight,
+          );
+          rotateJoint(
+            side + "_foot",
+            1,
+            0,
+            0,
+            0.075 * wingStroke(0.34) * flight,
+          );
+          rotateJoint(
+            side + "_toe",
+            1,
+            0,
+            0,
+            0.025 * wingStroke(0.42) * flight,
+          );
+          for (const finger of ["index", "middle", "ring"])
+            rotateJoint(
+              side + "_" + finger + "_02",
+              1,
+              0,
+              0,
+              0.065 * wingStroke(0.43) * flight,
+            );
+        }
+        rotateJoint(
+          "spine_01",
+          1,
+          0,
+          0,
+          0.1 * flight + 0.2 * crouch - 0.1 * push,
+        );
+        rotateJoint("spine_02", 1, 0, 0, 0.12 * delayedLoad - 0.08 * push);
+        rotateJoint(
+          "neck_01",
+          1,
+          0,
+          0,
+          -0.15 * flight - motion.pitch * 0.48 - 0.14 * crouch,
+        );
+        rotateJoint(
+          "neck_02",
+          1,
+          0,
+          0,
+          -0.07 * flight + 0.1 * delayedLoad - 0.06 * push,
+        );
+        rotateJoint("head", 1, 0, 0, 0.14 * delayedLoad - 0.09 * crouch);
+        const oldChest = laggedMotion(motion, 0.022),
+          oldHead = laggedMotion(motion, 0.045);
+        rotateJoint("spine_01", 1, 0, 0, -0.065 * wingStroke(0.08) * wingLoad);
+        rotateJoint(
+          "spine_02",
+          1,
+          0,
+          0,
+          -0.035 * wingStroke(0.14) * wingLoad +
+            0.22 * (oldChest.pitch - motion.pitch),
+        );
+        rotateJoint(
+          "neck_01",
+          1,
+          0,
+          0,
+          0.045 * wingStroke(0.16) * wingLoad +
+            0.18 * (oldHead.pitch - motion.pitch),
+        );
+        rotateJoint("neck_03", 1, 0, 0, 0.03 * wingStroke(0.23) * wingLoad);
+        rotateJoint("head", 1, 0, 0, 0.025 * wingStroke(0.3) * wingLoad);
+        rotateJoint("neck_01", 0, 0, 1, -0.32 * motion.roll);
+        rotateJoint("neck_02", 0, 1, 0, 0.12 * (oldHead.yaw - motion.yaw));
+        // Look at the destination before the trunk commits to the move.
+        // Distribute the aim through the neck rather than snapping the head.
+        for (const [joint, weight] of [
+          ["neck_01", 0.5],
+          ["neck_02", 0.3],
+          ["head", 0.2],
+        ]) {
+          rotateJoint(joint, 0, 1, 0, motion.gazeYaw * weight);
+          rotateJoint(joint, 1, 0, 0, motion.gazePitch * weight);
+        }
+        const tailPose = (i, delay = 0) => {
+          const now = laggedMotion(motion, delay),
+            delayed = laggedMotion(motion, 0.012 * i + delay);
+          const landing = impulse(
+            motion.distance - delay,
+            -0.2736,
+            0.07 * i,
+            5,
+            3.6,
+          );
+          return {
+            pitch:
+              (-0.022 +
+                0.055 * wingStroke(0.12 + i * 0.065 + (delay * 0.82) / 0.28)) *
+                now.flight +
+              0.095 * delayed.crouch -
+              0.075 * delayed.push +
+              0.055 * delayed.brake +
+              0.2 * (delayed.pitch - now.pitch) +
+              0.026 * landing,
+            yaw:
+              -0.1 * now.roll -
+              0.05 * delayed.gazeYaw +
+              0.26 * (delayed.yaw - now.yaw) +
+              0.025 *
+                wingStroke(0.22 + i * 0.07 + (delay * 0.82) / 0.28) *
+                now.flight,
+          };
+        };
+        for (let i = 1; i <= 7; i++) {
+          const current = tailPose(i),
+            prior = tailPose(i, 0.01);
+          rotateJoint("tail_0" + i, 1, 0, 0, current.pitch);
+          rotateJoint("tail_0" + i, 0, 1, 0, current.yaw);
+          tailRates[i - 1].pitch =
+            (current.pitch - prior.pitch) / (0.01 / 0.28);
+          tailRates[i - 1].yaw = (current.yaw - prior.yaw) / (0.01 / 0.28);
+        }
+        // The chest rises after the power stroke; it must not drop with the wings.
+        bob =
+          -0.085 * wingStroke(0.09) * flight -
+          0.3 * crouch +
+          0.025 * push +
+          0.07 * beat.power(0.05) * push * motion.support;
+      }
+      group.rotation.set(
+        motion?.pitch || 0,
+        motion?.yaw || 0,
+        motion?.roll || 0,
+      );
+      if (motion && kind !== "pikachu") {
+        // Tumble about the belly, not the feet. Preserve the actual mesh scale.
+        pivot.set(
+          0,
+          kind === "snorlax" ? 0.75 : 1.55,
+          kind === "snorlax" ? -0.65 : 0,
+        );
+        group.position
+          .copy(pivot)
+          .sub(pivotOffset.copy(pivot).applyQuaternion(group.quaternion));
+        group.position.y += bob;
+      }
+      group.updateMatrixWorld(true);
+      if (kind === "charizard" && motion && !motion.still)
+        plantFeet(motion.support, motion.push);
+      if (kind === "charizard" && motion && !motion.still)
+        animateFlame(local, motion);
+    },
+    get time() {
+      return lastTime;
+    },
+    dispose() {
+      mixer.stopAllAction();
+      mixer.uncacheRoot(model);
+      for (const { geometry } of membranes) geometry.dispose();
+    },
+  };
+}
+
+// Fit the actual posed vertices in camera space, rather than shrinking a long
+// tail by its depth or clipping it by assuming the body origin is the centre.
+function createPokemonCamera(
+  actor,
+  angle = 0.3,
+  elevation = 0.65,
+  aspect = 1,
+  poses = null,
+) {
+  const camera = new THREE.OrthographicCamera(-3, 3, 3, -3, 0.1, 100);
+  camera.position.set(
+    Math.sin(angle) * 10,
+    actor.centerY + elevation,
+    Math.cos(angle) * 10,
+  );
+  camera.lookAt(0, actor.centerY, 0);
+  camera.updateMatrixWorld(true);
+  const bounds = new THREE.Box3(),
+    vertex = new THREE.Vector3();
+  for (const pose of poses || [null]) {
+    if (pose) actor.update(pose.time || 0, false, pose.motion);
+    actor.group.updateMatrixWorld(true);
+    actor.group.traverse((node) => {
+      if (!node.isMesh || !node.visible) return;
+      if (node.isSkinnedMesh) node.skeleton.update();
+      const position = node.geometry.getAttribute("position");
+      for (let i = 0; i < position.count; i++) {
+        vertex.fromBufferAttribute(position, i);
+        if (node.isSkinnedMesh) node.boneTransform(i, vertex);
+        bounds.expandByPoint(
+          vertex
+            .applyMatrix4(node.matrixWorld)
+            .applyMatrix4(camera.matrixWorldInverse),
+        );
+      }
+    });
+  }
+  const center = bounds.getCenter(new THREE.Vector3()),
+    size = bounds.getSize(new THREE.Vector3());
+  const height = Math.max(size.y, size.x / aspect) * 1.32,
+    width = height * aspect;
+  camera.left = center.x - width / 2;
+  camera.right = center.x + width / 2;
+  camera.bottom = center.y - height / 2;
+  camera.top = center.y + height / 2;
+  camera.updateProjectionMatrix();
+  return camera;
+}
+
+function createPokemonJourneyCamera(actor, kind) {
+  const elevation = kind === "snorlax" ? 9 : 0.65;
+  const angle = kind === "snorlax" ? 1.65 : 0.3;
+  actor.update(0, false, pokemonScrollMotion(kind, 0, 1));
+  const reference = createPokemonCamera(actor, angle, elevation);
+  const poses = [];
+  for (const distance of [
+    -0.7, -0.55, -0.4, -0.25, -0.1, 0, 0.25, 0.4, 0.55, 0.7,
+  ]) {
+    const intro = Math.max(0, Math.min(1, (distance + 0.72) / 0.62));
+    poses.push({ time: 0, motion: pokemonScrollMotion(kind, distance, intro) });
+  }
+  for (const time of [0, 0.15, 0.3, 0.45, 0.6, 0.8, 1, 1.15, 2.5, 4]) {
+    for (const distance of kind === "pikachu"
+      ? [0]
+      : [-0.5, 0, 0.38, 0.48, 0.6])
+      poses.push({ time, motion: pokemonScrollMotion(kind, distance, 1) });
+  }
+  const camera = createPokemonCamera(actor, angle, elevation, 1, poses);
+  actor.update(0, false, pokemonScrollMotion(kind, 0, 1));
+  // Expand only the offscreen render viewport for moving wings/tails, keeping
+  // the resting body the same on-screen size as the approved static version.
+  const span = reference.right - reference.left;
+  const vertex = new THREE.Vector3();
+  let bottom = 1;
+  actor.group.traverse((node) => {
+    if (!node.isMesh) return;
+    if (node.isSkinnedMesh) node.skeleton.update();
+    const position = node.geometry.getAttribute("position");
+    for (let i = 0; i < position.count; i++) {
+      vertex.fromBufferAttribute(position, i);
+      if (node.isSkinnedMesh) node.boneTransform(i, vertex);
+      vertex.applyMatrix4(node.matrixWorld).project(reference);
+      bottom = Math.min(bottom, vertex.y);
+    }
+  });
+  camera.userData.frame = {
+    scale: (camera.right - camera.left) / span,
+    x: (camera.left - reference.left) / span,
+    y: (reference.top - camera.top) / span,
+    foot: (1 - bottom) / 2,
+  };
+  return camera;
+}

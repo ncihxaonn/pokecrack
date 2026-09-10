@@ -1,0 +1,237 @@
+/* Public presentation data only; the scene never fetches private dashboard state. */
+let journeyVisible = true, journeyStarted = false, journeyPaused = false;
+let showcaseBeats = [], showcaseCounters = [];
+const counterStates = new WeakMap();
+function finishCounters() { showcaseCounters.forEach(el => { el.textContent=showNumber(+el.dataset.targetValue); const state=counterStates.get(el);if(state)state.done=true; }); }
+function notifyParent(type, extra) { if (parent !== window) parent.postMessage(Object.assign({ type }, extra), location.origin); }
+function syncJourneyVisibility() {
+  if (!journeyStarted) return;
+  const shouldRun = journeyVisible && !journeyPaused && !document.hidden;
+  document.documentElement.toggleAttribute('data-motion-paused', !shouldRun);
+  if (!shouldRun) {
+    running = false; cancelJourneyFrame(); finishCounters();
+    if (journeyPaused && document.documentElement.dataset.sceneStatus === 'ready') {
+      RIG.smooth = RIG.prog = progressFor(scrollY);
+      applyCamera(); updateShowcaseMotion(0); render();
+    }
+  }
+  else if (!running) { running = true; tPrev = performance.now(); queue(); }
+}
+const validCount = value => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+const boundedText = (value, length) => typeof value === 'string' ? value.slice(0, length || 100) : '';
+const showNumber = value => new Intl.NumberFormat('en-AU').format(Math.round(value));
+function svgNode(tag, attrs) {
+  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
+  Object.entries(attrs || {}).forEach(([key, value]) => el.setAttribute(key, String(value)));
+  return el;
+}
+function fillTrend(rows) {
+  const valid = Array.isArray(rows) ? rows.filter(row => row && validCount(row.packsObserved) && /^\d{4}-\d{2}-\d{2}$/.test(row.date) && Number.isFinite(Date.parse(row.date))).slice(-8) : [];
+  const bars = document.getElementById('trend-bars'), mini = document.querySelector('[data-mini-trend]');
+  bars.replaceChildren(); mini?.replaceChildren();
+  document.getElementById('trend-latest').textContent = valid.length ? showNumber(valid[valid.length - 1].packsObserved) : '—';
+  const dates = valid.map(row => Date.parse(row.date));
+  const minDate = Math.min(...dates), maxDate = Math.max(...dates), range = Math.max(1, maxDate - minDate);
+  const peak = Math.max(1, ...valid.map(row => row.packsObserved));
+  const defs = svgNode('defs'), gradient = svgNode('linearGradient', { id:'bar-gradient', x1:0,y1:1,x2:0,y2:0 });
+  gradient.append(svgNode('stop', { offset:0,'stop-color':'#a785d1' }), svgNode('stop',{offset:1,'stop-color':'#ffe1b8'})); defs.append(gradient); bars.append(defs);
+  const width = Math.min(40, 380 / Math.max(valid.length, 1));
+  const minGap = dates.length > 1 ? Math.min(...dates.slice(1).map((date,i)=>date-dates[i])) : range;
+  const barWidth = Math.max(2, Math.min(width, 472 * minGap / range * .72));
+  valid.forEach((row, i) => {
+    const x = valid.length === 1 ? 280 : 44 + (dates[i] - minDate) / range * 472;
+    const h = row.packsObserved / peak * 150;
+    const group = svgNode('g');
+    const bar = svgNode('rect',{x:x-barWidth/2,y:190-h,width:barWidth,height:h,rx:Math.min(7,barWidth/2),class:'chart-bar'});
+    const title = svgNode('title');title.textContent = row.date + ': ' + showNumber(row.packsObserved) + ' observed packs';bar.append(title);
+    const label = svgNode('text',{x,y:213,class:'chart-label'});label.textContent = row.date.slice(5).replace('-','/');
+    const value = svgNode('text',{x,y:181-h,class:'chart-value'});value.textContent = showNumber(row.packsObserved);
+    group.append(bar,label,value);bars.append(group);
+    mini?.append(svgNode('rect',{x:valid.length===1?112:8+(dates[i]-minDate)/range*218,y:57-row.packsObserved/peak*48,width:8,height:row.packsObserved/peak*48,rx:3,fill:'#a1eff2'}));
+  });
+  document.getElementById('trend-period').textContent = valid.length ? valid[0].date + ' — ' + valid[valid.length-1].date + ' · Observed packs' : 'History is building.';
+}
+function fillCoverage(rows) {
+  const valid = Array.isArray(rows) ? rows.filter(row=>row && validCount(row.packsObserved) && row.packsObserved > 0 && /^[A-Z]{2}$/.test(row.countryCode)).slice(0,200) : [];
+  document.querySelectorAll('#showcase-map [data-country]').forEach(el => {
+    const rows = valid.filter(row=>row.countryCode === el.dataset.country);
+    el.toggleAttribute('data-covered',rows.length > 0);
+    if (rows.length) { const title=svgNode('title');title.textContent=boundedText(rows[0].countryName) + ' · ' + showNumber(rows.reduce((total,row)=>total+row.packsObserved,0)) + ' packs';el.replaceChildren(title); }
+    else el.replaceChildren();
+  });
+  const list=document.getElementById('coverage-list');list.replaceChildren();
+  valid.sort((a,b)=>b.packsObserved-a.packsObserved).slice(0,3).forEach(row=>{
+    const item=document.createElement('div');item.className='coverage-row';
+    const name=document.createElement('span');name.textContent=boundedText(row.countryName);
+    const value=document.createElement('b');value.textContent=showNumber(row.packsObserved)+' packs';
+    const bar=document.createElement('i');bar.className='coverage-bar';bar.style.width=(row.packsObserved/Math.max(valid[0].packsObserved,1)*100)+'%';
+    item.append(name,value,bar);list.append(item);
+  });
+  if (!valid.length) { const empty=document.createElement('p');empty.className='empty-copy';empty.textContent='Coverage is building.';list.append(empty); }
+}
+function fillCatalog(catalog) {
+  const valid=Array.isArray(catalog?.sets)?catalog.sets.filter(row=>row && typeof row.name==='string' && row.name.trim()).slice(0,3):[];
+  document.querySelectorAll('.set-slot').forEach((slot,i)=>{
+    const row=valid[i];slot.hidden=!row;
+    if (!row) return;
+    slot.querySelector('[data-set-name]').textContent=boundedText(row.name,80);
+    slot.querySelector('.set-series').textContent=boundedText(row.series || 'Pokémon TCG',60);
+    const link=slot.querySelector('a');
+    link.dataset.catalogSlug=/^[a-zA-Z0-9_-]+$/.test(row.slug)?row.slug:'';
+    link.setAttribute('aria-label','Explore '+boundedText(row.name,80));
+  });
+  const fan=document.getElementById('catalog-fan');
+  let empty=fan.querySelector('.empty-copy');
+  if (!valid.length && !empty) { empty=document.createElement('p');empty.className='empty-copy';empty.textContent='The catalog is building.';fan.append(empty); }
+  if (valid.length && empty) empty.remove();
+}
+addEventListener('message',event=>{
+  if (event.origin!==location.origin || event.source!==parent || parent===window) return;
+  const msg=event.data;if (!msg || typeof msg!=='object') return;
+  if (msg.type==='pokecrack:visibility' && typeof msg.visible==='boolean') { journeyVisible=msg.visible;syncJourneyVisibility(); }
+  if (msg.type!=='pokecrack:metrics' || !msg.metrics || typeof msg.metrics!=='object') return;
+  document.querySelectorAll('[data-metric]').forEach(el=>{
+    const value=msg.metrics[el.dataset.metric];if (!validCount(value)) return;
+    el.dataset.targetValue=String(value);el.textContent=showNumber(value);counterStates.set(el,{start:null,done:REDUCE || journeyPaused || !journeyVisible});
+  });
+  showcaseCounters=[...document.querySelectorAll('[data-target-value]')];
+  const demo=msg.mode==='demo';
+  const label=demo?'Demo data · Illustrative samples':msg.observationStatus==='published'?'Published opening samples':msg.observationStatus==='collecting'?'Opening observations · Collecting':'Opening observations · Building coverage';
+  document.querySelectorAll('[data-provenance]').forEach(el=>el.textContent=label);
+  document.documentElement.dataset.dataMode=demo?'demo':'live';
+  fillTrend(msg.trend);fillCoverage(msg.coverage);fillCatalog(msg.catalog);
+});
+document.addEventListener('click',event=>{
+  const target=event.target.closest('[data-explore]');if (!target) return;
+  event.preventDefault();
+  if (parent!==window) notifyParent('pokecrack:explore',{target:target.dataset.catalogSlug?'catalog':'map'});
+  else location.href='/#world-coverage';
+});
+document.getElementById('journey-motion').addEventListener('click',event=>{
+  journeyPaused=!journeyPaused;event.currentTarget.textContent=journeyPaused?'Resume motion':'Pause motion';
+  event.currentTarget.setAttribute('aria-pressed',String(journeyPaused));syncJourneyVisibility();
+});
+function wireShowcase() {
+  showcaseBeats=[...document.querySelectorAll('[data-beat]')].map(el=>({el,index:+el.dataset.beat,pops:[...el.querySelectorAll('[data-pop]')],characters:[...el.querySelectorAll('[data-character]')],lastActive:null}));
+  document.querySelectorAll('.reference-card-image').forEach(img=>{
+    const fallback=img.dataset.fallback;
+    if (!fallback) return;
+    img.addEventListener('error',()=>{
+      if (img.getAttribute('src') !== fallback) img.setAttribute('src',fallback);
+    },{once:true});
+  });
+  document.querySelectorAll('[data-tilt]').forEach(el=>{
+    if ((COARSE || REDUCE) && !el.classList.contains('reference-card')) return;
+    const state={el,x:0,y:0,tx:0,ty:0,hover:false,phase:document.querySelectorAll('.reference-card').length ? [...document.querySelectorAll('.reference-card')].indexOf(el)*2.1 : 0};el._showcaseTilt=state;
+    const setFoil=(x,y,opacity)=>{
+      const px=Math.max(0,Math.min(100,(x+.5)*100)), py=Math.max(0,Math.min(100,(y+.5)*100));
+      el.style.setProperty('--pointer-x',px.toFixed(2)+'%');
+      el.style.setProperty('--pointer-y',py.toFixed(2)+'%');
+      if (el.classList.contains('reference-card')) {
+        const fromCenter=Math.min(1,Math.hypot(x,y)*1.41421356);
+        el.style.setProperty('--pointer-from-center',fromCenter.toFixed(4));
+        el.style.setProperty('--pointer-from-top',((y+.5)).toFixed(4));
+        el.style.setProperty('--pointer-from-left',((x+.5)).toFixed(4));
+        el.style.setProperty('--background-x',(50+x*25).toFixed(2)+'%');
+        el.style.setProperty('--background-y',(50+y*25).toFixed(2)+'%');
+        el.style.setProperty('--rotate-x',(x*14).toFixed(2)+'deg');
+        el.style.setProperty('--rotate-y',(-y*14).toFixed(2)+'deg');
+        el.style.setProperty('--rotate-delta',(x*5).toFixed(2)+'deg');
+        el.style.setProperty('--card-scale','1');
+      }
+      el.style.setProperty('--card-opacity',String(opacity));
+    };
+    setFoil(0,0,.34);
+    el.addEventListener('pointermove',event=>{const r=el.getBoundingClientRect();const width=Math.max(1,r.width),height=Math.max(1,r.height);state.hover=true;state.tx=(event.clientX-r.left)/width-.5;state.ty=(event.clientY-r.top)/height-.5;setFoil(state.tx,state.ty,1);},{passive:true});
+    el.addEventListener('pointerleave',()=>{state.hover=false;state.tx=state.ty=0;setFoil(0,0,.7);},{passive:true});
+  });
+  // Keep the catalog and teaser cards' authored layout transforms intact while
+  // still giving every TCG surface the same pointer-driven foil response.
+  document.querySelectorAll('.tcg-card:not([data-tilt])').forEach(el=>{
+    if (COARSE || REDUCE) return;
+    const setFoil=(x,y,opacity)=>{
+      const px=Math.max(0,Math.min(100,(x+.5)*100)), py=Math.max(0,Math.min(100,(y+.5)*100));
+      el.style.setProperty('--pointer-x',px.toFixed(2)+'%');
+      el.style.setProperty('--pointer-y',py.toFixed(2)+'%');
+      el.style.setProperty('--card-opacity',String(opacity));
+    };
+    setFoil(0,0,.34);
+    el.addEventListener('pointermove',event=>{const r=el.getBoundingClientRect();const width=Math.max(1,r.width),height=Math.max(1,r.height);const x=(event.clientX-r.left)/width-.5,y=(event.clientY-r.top)/height-.5;setFoil(x,y,1);},{passive:true});
+    el.addEventListener('pointerleave',()=>setFoil(0,0,.34),{passive:true});
+  });
+  let pausedFrame=0;
+  addEventListener('scroll',()=>{
+    if (!journeyPaused || !journeyStarted || !journeyVisible || document.hidden || document.documentElement.classList.contains('showcase-fallback') || pausedFrame) return;
+    pausedFrame=requestAnimationFrame(()=>{pausedFrame=0;RIG.smooth=RIG.prog=progressFor(scrollY);applyCamera();updateShowcaseMotion(0);render();});
+  },{passive:true});
+}
+let showcaseNavProgress = 0;
+function updateShowcaseMotion(dt) {
+  const progress=RIG.smooth, still=REDUCE || journeyPaused;
+  const nav=document.getElementById('nav');
+  if (nav) {
+    const delta=progress-showcaseNavProgress;
+    const menuOpen=nav.querySelector('[aria-expanded="true"]');
+    if (progress<.08 || menuOpen || delta<-.025) {
+      nav.classList.remove('journey-nav-hidden');
+      showcaseNavProgress=progress;
+    } else if (delta>.025) {
+      nav.classList.add('journey-nav-hidden');
+      showcaseNavProgress=progress;
+    }
+  }
+  showcaseBeats.forEach(beat=>{
+    const distance=progress-beat.index, abs=Math.abs(distance);
+    const opacity=still?(Math.round(progress)===beat.index?1:0):1-smooth(.14,.64,abs);
+    const active=opacity>.52;
+    beat.el.style.visibility=opacity>.001?'visible':'hidden';beat.el.style.opacity=String(opacity);
+    if (beat.lastActive!==active) { beat.el.classList.toggle('is-current',active);beat.el.inert=!active;beat.lastActive=active; }
+    // Characters travel beyond the card crossfade instead of disappearing
+    // halfway through a run, fall or flight. The overlay owns their opacity.
+    beat.characters.forEach(anchor=>{
+      anchor._characterMotion=pokemonScrollMotion(anchor.dataset.character,distance,RIG.intro,still);
+      anchor._characterOpacity=anchor._characterMotion.opacity;
+      anchor.dataset.motionPhase=anchor._characterMotion.phase;
+      anchor.style.transform='none';anchor.style.opacity='1';
+    });
+    if (opacity<.001) return;
+    beat.el.style.transform=still?'none':'translate3d(0,'+(-distance*44).toFixed(2)+'px,0)';
+    const enter=beat.index===0?RIG.intro:smooth(beat.index-.56,beat.index-.08,progress);
+    beat.pops.forEach(el=>{
+      if (el.dataset.character) return;
+      const stagger=+el.dataset.pop || 0;
+      const reveal=still?1:smooth(stagger,Math.min(1,stagger+.7),enter);
+      el.style.opacity=String(reveal);
+      el.style.transform=still?'none':'translate3d(0,'+((1-reveal)*85).toFixed(2)+'px,0) rotateX('+((1-reveal)*14).toFixed(2)+'deg) scale('+(0.85+reveal*.15).toFixed(4)+')';
+    });
+    if (active && !beat.chartStart) beat.chartStart=performance.now();
+    const chartProgress=beat.chartStart?clamp((performance.now()-beat.chartStart)/750,0,1):0;
+    beat.el.querySelectorAll('.chart-bar').forEach((bar,i)=>{bar.style.transform='scaleY('+(still?1:smooth(i*.04,.55+i*.04,chartProgress)).toFixed(4)+')';});
+    beat.el.querySelectorAll('.coverage-bar').forEach((bar,i)=>{bar.style.transform='scaleX('+(still?1:smooth(i*.09,.6+i*.09,chartProgress)).toFixed(4)+')';});
+    beat.el.querySelectorAll('[data-tilt]').forEach(el=>{
+      const t=el._showcaseTilt;if(!t)return;
+      t.x=damp(t.x,t.tx,7,dt);t.y=damp(t.y,t.ty,7,dt);
+      if (el.classList.contains('reference-card')) {
+        t.clock=(t.clock||0)+(still?0:dt);
+        const phase=t.clock*.65+t.phase;
+        const idleX=still?0:Math.sin(phase)*.32,idleY=still?0:Math.cos(phase*.83)*.24;
+        const x=still?0:t.x+(t.hover?0:idleX),y=still?0:t.y+(t.hover?0:idleY),fromCenter=Math.min(1,Math.hypot(x,y)*1.41421356);
+        el.style.setProperty('--translate-y',(still?0:Math.sin(phase)*5).toFixed(2)+'px');
+        el.style.setProperty('--card-opacity',still?'.35':t.hover?'1':'.8');
+        el.style.setProperty('--pointer-x',((x+.5)*100).toFixed(2)+'%');
+        el.style.setProperty('--pointer-y',((y+.5)*100).toFixed(2)+'%');
+        el.style.setProperty('--pointer-from-center',fromCenter.toFixed(4));
+        el.style.setProperty('--pointer-from-top',(y+.5).toFixed(4));
+        el.style.setProperty('--pointer-from-left',(x+.5).toFixed(4));
+        el.style.setProperty('--background-x',(50+x*25).toFixed(2)+'%');
+        el.style.setProperty('--background-y',(50+y*25).toFixed(2)+'%');
+        el.style.setProperty('--rotate-x',(x*14).toFixed(2)+'deg');
+        el.style.setProperty('--rotate-y',(-y*14).toFixed(2)+'deg');
+        el.style.setProperty('--rotate-delta',(x*5).toFixed(2)+'deg');
+        return;
+      }
+      const base=el.classList.contains('pokemon-card-front')?'translateX(-50%) rotate(-2deg) translateZ(30px) ':'';el.style.transform=base+'rotateX('+(-t.y*7).toFixed(2)+'deg) rotateY('+(t.x*8).toFixed(2)+'deg)';
+    });
+    showcaseCounters.filter(el=>el.closest('[data-beat]')===beat.el).forEach(el=>{const state=counterStates.get(el);if(!state || state.done || !active)return;const now=performance.now();if(state.start===null)state.start=now;const t=clamp((now-state.start)/650,0,1);el.textContent=showNumber(+el.dataset.targetValue*(1-Math.pow(1-t,3)));if(t===1)state.done=true;});
+  });
+}
