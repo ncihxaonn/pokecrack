@@ -39,7 +39,7 @@ returns jsonb language sql as $$
  'post_id',p_post,'product',p_product,'opening_ordinal',p_ordinal,'published_at',p_date,
  'resource_sha256',p_hash,'video_sha256s','[]'::jsonb,'resource_sha256s',(select jsonb_agg(encode(digest(
  '/assets/img/blog/unboxing-'||p_product||(case when p_ordinal=1 then '' else '-'||p_ordinal end)||'/pack_'||side||'_'||
- (case when p_product='m2' then n::text else lpad(n::text,2,'0') end)||'.jpg','sha256'),'hex') order by ord,n)
+ (case when p_product in ('m2','sv8') then n::text else lpad(n::text,2,'0') end)||'.jpg','sha256'),'hex') order by ord,n)
  from (values('l',1),('r',2)) s(side,ord) cross join generate_series(1,15)n),
  'labels',(select jsonb_agg(side||n||'パック' order by ord,n)
  from (values('左',1),('右',2)) s(side,ord) cross join generate_series(1,15)n)))
@@ -161,12 +161,50 @@ select lives_ok($$select pg_temp.run_cycle('https://pokesup.com/blog/unboxing-m2
 select is((select reason from ingest.source_family_candidates where url='https://pokesup.com/blog/unboxing-m2-4/'),'cohort_duplicate','video reuse blocks new cohort');
 select is((select count(*)::integer from ingest.source_family_admissions where post_id=1001),0,'duplicate video contributes no admission');
 
--- Simulate passage beyond the public window by aging the original fixture.
+-- Evidence age alone no longer hides a recently verified historical report.
 update ingest.source_family_admissions set published_at=now()-interval '366 days' where post_id=484;
 create temp table old_identity as select published_at from ingest.source_family_admissions where post_id=484;
-select is((select count(*)::integer from ingest.source_family_public_rows_v1() where study_key='family-484'),0,'expired original cohort is hidden');
+select is((select count(*)::integer from ingest.source_family_public_rows_v1() where study_key='family-484'),1,'historical original cohort remains visible');
 select lives_ok($$select pg_temp.run_cycle('https://pokesup.com/blog/unboxing-m3/',proof) from proofs where product='m3'$$,'reappearance with fresher source date quarantines');
-select is((select published_at from ingest.source_family_admissions where post_id=484),(select published_at from old_identity),'original expired date cannot be refreshed');
-select is((select count(*)::integer from ingest.source_family_public_rows_v1() where study_key='family-484'),0,'expired cohort never resurrects via edited date');
+select is((select published_at from ingest.source_family_admissions where post_id=484),(select published_at from old_identity),'original historical date cannot be refreshed');
+select is((select count(*)::integer from ingest.source_family_public_rows_v1() where study_key='family-484'),0,'historical cohort never resurrects via edited date');
+
+-- Three historical source reports: transaction-local replay is test evidence,
+-- not proof that production has collected or admitted these reported packs.
+select is(ingest.source_family_product_name_v1('sv8'),'超電ブレイカー','reviewed source-native SV8 identity');
+select is(ingest.source_family_product_name_v1('sv7'),null::text,'unreviewed product still unmapped');
+create temp table historical_proofs as
+ select n,pg_temp.proof('sv8',post_id,resource_hash,published,n) proof
+ from (values
+   (1,120::bigint,'994f0da10b5a7cfb1b31e384b24bd17f1efd0b305213e2847aec9f8df012245a','2024-10-18T16:10:30+00:00'),
+   (2,124::bigint,'84c9dadf7bf719fd2a5e9fe905d61a83befa62b3b47d6391fa080dbb924c2384','2024-11-08T13:24:46+00:00'),
+   (3,126::bigint,'154670373d7750d027600856d2a798fc324d531416e47c387dd06ea2bf304d84','2024-11-12T09:52:32+00:00')
+ ) reports(n,post_id,resource_hash,published);
+select lives_ok($$select pg_temp.run_cycle(proof->'evidence'->>'url',proof) from historical_proofs$$,'three historical SV8 reports pass actual fenced SQL admission');
+select is((select sum(pack_count)::integer from ingest.source_family_public_rows_v1() where set_external_id='SV8'),90,'three historical cohorts add exactly ninety packs');
+select lives_ok($$select pg_temp.run_cycle(proof->'evidence'->>'url',proof) from historical_proofs$$,'historical re-verification is idempotent');
+select is((select sum(pack_count)::integer from ingest.source_family_public_rows_v1() where set_external_id='SV8'),90,'historical retries add zero packs');
+select is((select count(*)::integer from jsonb_array_elements(public.get_public_study_coverage_v3()->'sources') x
+ where x->>'id' in ('pokesup_family_120','pokesup_family_124','pokesup_family_126')),3,'v3 publishes all historical events within its existing period');
+select is((select count(*)::integer from jsonb_array_elements(public.get_public_study_coverage_v3()->'sources') x
+ where x->>'id' in ('pokesup_family_120','pokesup_family_124','pokesup_family_126')
+ and x->'coverage' ? 'qualifyingHitPacks'),0,'historical reports have no invented numerator');
+select throws_ok($$select pg_temp.run_cycle(proof->'evidence'->>'url',
+ jsonb_set(proof,'{evidence,labels,0}','"左2パック"')) from historical_proofs where n=1$$,
+ 'P0001','family evidence leaf invalid','normalization does not weaken database enumeration');
+update ingest.source_family_admissions set verified_at=now()-interval '49 hours' where product='sv8';
+select is((select count(*)::integer from ingest.source_family_public_rows_v1() where set_external_id='SV8'),0,'historical evidence still needs recent verification');
+select lives_ok($$select pg_temp.run_cycle(proof->'evidence'->>'url',proof) from historical_proofs$$,'fresh source verification restores historical visibility');
+select is((select sum(pack_count)::integer from ingest.source_family_public_rows_v1() where set_external_id='SV8'),90,'freshness recovery preserves ninety-pack denominator');
+update ingest.source_family_control set enabled=false;
+select is((select count(*)::integer from ingest.source_family_public_rows_v1()),0,'runtime kill still hides historical and recent families');
+update ingest.source_family_control set enabled=true;
+update ingest.source_policies set enabled=false where source_key='public_study_pokesup_jp_30';
+select is((select count(*)::integer from ingest.source_family_public_rows_v1()),0,'source access revocation still hides every family');
+update ingest.source_policies set enabled=true where source_key='public_study_pokesup_jp_30';
+create or replace function ingest.source_family_policy_v1()
+returns table(family text,version text,approved boolean,review_expires_at timestamptz)
+language sql stable as $$select 'pokesup-enumerated'::text,'pokesup-enumerated-v1'::text,true,now()-interval '1 second'$$;
+select is((select count(*)::integer from ingest.source_family_public_rows_v1()),0,'expired source review cannot be confused with allowed historical evidence');
 select * from finish();
 rollback;

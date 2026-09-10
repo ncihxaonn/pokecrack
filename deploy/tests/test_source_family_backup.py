@@ -56,6 +56,23 @@ def family_dump() -> bytes:
 
 
 class SourceFamilyBackupTests(unittest.TestCase):
+    def test_historical_sv8_retains_facts_and_restores_disabled(self) -> None:
+        helper = fixtures.BackupSanitizerTests()
+        historical = family_dump().replace(b"unboxing-m2", b"unboxing-sv8").replace(
+            b"462\tm2", b"120\tsv8"
+        ).replace(b"2025-09-30 10:44:54+00", b"2024-10-18 16:10:30+00")
+        result = helper.run_sanitizer(helper.complete_dump() + historical)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn(b"120\tsv8\t1\t2024-10-18 16:10:30+00", result.stdout)
+        self.assertIn(b"t\tf\tpokesup-enumerated-v1", result.stdout)
+        self.assertNotIn(b"t\tt\tpokesup-enumerated-v1", result.stdout)
+        for product in (b"sv7", b"sv8a", b"sv8-2", b"SV8"):
+            with self.subTest(product=product):
+                bad = historical.replace(b"120\tsv8\t", b"120\t" + product + b"\t")
+                rejected = helper.run_sanitizer(helper.complete_dump() + bad)
+                self.assertNotEqual(rejected.returncode, 0)
+                self.assertEqual(rejected.stdout, b"")
+
     def test_managed_no_owner_dump_is_complete_and_restores_disabled(self) -> None:
         self.assertEqual(len(SANITIZER_MODULE["SOURCE_FAMILY_OWNER_STATEMENTS"]), 7)
         self.assertEqual(OWNER_SQL.count(b" OWNER TO postgres;"), 7)

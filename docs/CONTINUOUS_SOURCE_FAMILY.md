@@ -1,5 +1,56 @@
 # Continuous source-family first slice
 
+## 2026-09-10 historical SV8 extension
+
+This reviewed extension adds source-native `sv8 / 超電ブレイカー` and accepts
+historical original publication dates. It does not enable arbitrary products or
+websites. The official [SV8 product page](https://www.pokemon-card.com/ex/sv8/index.html)
+confirms the Japanese product identity and release on 2024-10-18, not a physical
+opening location. Geography remains Japan **product market**.
+
+An independent bounded MAM review used the production User-Agent, robots first,
+30-second minimum spacing, no redirects/proxies, 1 MB page caps and the existing
+four-field post-metadata route. The current homepage exposed no independent
+terms/privacy link. Robots allowed the reviewed routes; this is not a reuse
+licence. The existing minimum-fact scope and no-body/no-media-retention rule stay
+in force. Review expiry remains 2026-10-09; this extension does not renew it.
+Robots SHA256: `394ec82b5475a8be35c452c161b6db395066a13f349aa1e17e8b633a98a86237`.
+
+| Canonical report | Post | Original publication UTC | Opening ordinal | Numbered positions | Ordered resource SHA256 |
+| --- | ---: | --- | ---: | ---: | --- |
+| [SV8 first](https://pokesup.com/blog/unboxing-sv8/) | 120 | 2024-10-18 16:10:30 | 1 | 30 | `994f0da10b5a7cfb1b31e384b24bd17f1efd0b305213e2847aec9f8df012245a` |
+| [SV8 second](https://pokesup.com/blog/unboxing-sv8-2/) | 124 | 2024-11-08 13:24:46 | 2 | 30 | `84c9dadf7bf719fd2a5e9fe905d61a83befa62b3b47d6391fa080dbb924c2384` |
+| [SV8 third](https://pokesup.com/blog/unboxing-sv8-3/) | 126 | 2024-11-12 09:52:32 | 3 | 30 | `154670373d7750d027600856d2a798fc324d531416e47c387dd06ea2bf304d84` |
+
+These historical pages use exact ordered labels `左1`–`左15`, `右1`–`右15`.
+Only SV8 may normalize this complete short form to the existing canonical pack
+labels. The parser still requires the exact named opening section, canonical
+post/ordinal, all 30 expected resource paths and unique numbered positions.
+Mixed, missing or repeated labels fail. Each report has 30 distinct resource
+identifiers, no pairwise identifier overlap and no active video. This supports
+independent **reported** cohorts, not a claim of verified physical ground truth.
+No image is fetched; a resource hash alone does not establish independence.
+
+Historical evidence age is now separate from the source review's expiry and the
+48-hour verification requirement. Future dates are rejected; admitted original
+dates cannot be edited, quarantine cannot recycle identities, and tombstones
+remain permanent. The currently published coverage period begins 2020-05-17,
+so these 2024 reports fit without a UI or statistical-rate period change.
+Coverage-only rows never create qualifying-hit numerators or probabilities.
+
+The owner-only `ingest.enqueue_pokesup_sv8_backfill_v1()` may enqueue at most
+three initial cycles for the three existing pending report references, spaced
+five minutes apart. It uses durable job dedupe keys and the unchanged live
+selection, lease, robots, request and finalization gates. It cannot accept a URL
+or asserted count, enable a source, revive a tombstone, or write an observation.
+Workers and browser roles cannot invoke it. Normal hourly updates remain
+unchanged. Do not treat queued jobs, migrations or this document as live data:
+verify real admissions, original dates, duplicate-safe totals and the public
+website after reviewed GitHub release, backup/restore, migration and deployment.
+
+The sections below preserve the original September 9 review; the historical
+window and SV8 product additions above supersede their narrower scope.
+
 This is a reviewed PokeSup M2/M3 ingestion loop, not worldwide automatic
 website onboarding. The existing 30 fixed contracts remain unchanged. Country
 research still produces GitHub reports: no bridge from those reports into this
