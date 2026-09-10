@@ -1316,7 +1316,7 @@ def test_scheduler_flag_off_registers_no_youtube_jobs() -> None:
     assert all(entry.job_type != YOUTUBE_DISCOVERY_JOB_TYPE for entry in entries)
 
 
-def test_public_study_flag_registers_all_thirty_reviewed_daily_jobs(
+def test_public_study_flag_registers_all_reviewed_daily_jobs(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     _ensure_pokesup_schedule_identity(monkeypatch)
@@ -1355,6 +1355,7 @@ def test_public_study_flag_registers_all_thirty_reviewed_daily_jobs(
         {"study_key": "bokunotebook-vstar-universe-th-1-v1"},
         {"study_key": "auckland-show-mighty-ape-nz-105-v1"},
         {"study_key": "hitpack-pitch-black-cz-36-v1"},
+        {"study_key": "tekemero-munikis-zero-jp-30-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1377,7 +1378,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 31" in sql
+    assert "count(*) = 32" in sql
     # A source must be counted inside the correct CTE, never another provider.
     before_studies, study_sql = sql.split("public_study_dependencies AS (", 1)
     assert "public_study_nanjakorya_jp_100" not in before_studies
@@ -1388,6 +1389,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert study_sql.count("'public_study_bokunotebook_th_1'") == 2
     assert study_sql.count("'public_study_auckland_nz_105'") == 2
     assert study_sql.count("'public_study_hitpack_cz_36'") == 2
+    assert study_sql.count("'public_study_tekemero_jp_30'") == 2
     assert "public_study_bikuhime_id_20" in sql
     assert "public_study_garbage_rips_cn_1" in sql
     assert '"geography_basis": "product_market"' in sql

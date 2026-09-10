@@ -43,6 +43,7 @@ from .adapters.public_studies import (
     thekeiplay_lost_origin_adapter,
     wargamer_chaos_rising_adapter,
 )
+from .adapters.tekemero_coverage import tekemero_munikis_zero_adapter
 
 
 def build_fixture_registries(
@@ -63,6 +64,9 @@ def build_live_static_registry(
     """Build only explicitly reviewed live static adapters; there is no catch-all."""
 
     static_registry = HTTPAdapterRegistry()
+    static_registry.register(
+        "tekemero_munikis_zero_study", tekemero_munikis_zero_adapter(client=http_client)
+    )
     static_registry.register(
         "hitpack_pitch_black_study", hitpack_pitch_black_adapter(client=http_client)
     )
