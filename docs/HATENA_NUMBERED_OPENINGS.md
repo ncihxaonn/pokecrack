@@ -1,6 +1,6 @@
 # Hatena numbered opening ingestion — implementation contract
 
-Status: **pure parser implemented; runtime integration not implemented or enabled**.
+Status: **pure report and feed parsers implemented; runtime integration not implemented or enabled**.
 This document does not admit observations.
 
 The parser and synthetic tests run on MAM. A direct bounded live-page probe
@@ -52,6 +52,24 @@ extraction, not article/image copying. No credentials, media or article bodies
 are retained. This review does not automatically approve Hatena-wide crawling.
 
 ## Implementation requirements
+
+### Publisher update discovery
+
+On 2026-09-10 a bounded MAM homepage check found advertised Atom `/feed` and RSS
+`/rss` links. A robots-checked Atom request, spaced 30 seconds after robots,
+returned 30 entries, including both opening references above. Entry article links
+omit `rel` (Atom's default alternate relation); enclosure links point to images
+and must not be followed. The pure `hatena_discovery` module returns only sorted,
+unique canonical article candidates from direct entry links. It excludes nested
+content, foreign hosts, query/fragment URLs and non-article relations; caps input
+at 1 MB and 200 entries; rejects XML declarations that introduce DTD/entities.
+No feed prose, media, inferred geography or pack count is returned.
+
+This feed provides recent updates, not a complete historical archive. Historical
+sitemap discovery and periodic runtime ingestion remain to be connected. A feed
+entry is not an admitted opening and cannot increment the public denominator.
+
+### Admission integration
 
 1. Use the observed article/body `figure > figcaption` boundaries, not headings.
    The research regex finding ten labels is not a production completeness parser.

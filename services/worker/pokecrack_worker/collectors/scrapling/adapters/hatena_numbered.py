@@ -178,7 +178,8 @@ def parse_numbered_opening(
         date = datetime.fromisoformat(parser.dates[0] or "")
         if date.utcoffset() is None or date > now:
             raise ValueError("publication must be timezone-aware and not future")
-    except ValueError as error:
+        published = date.astimezone(UTC).isoformat()
+    except (ValueError, OverflowError) as error:
         raise CollectorError("invalid numbered report publication date") from error
     if _normal(product_label) not in _normal("".join(parser.body_parts)):
         raise CollectorError("numbered report product mismatch")
@@ -187,7 +188,6 @@ def parse_numbered_opening(
         or len(set(parser.numbered_figures)) != expected_pack_count
     ):
         raise CollectorError("numbered report has missing, repeated or reordered captions")
-    published = date.astimezone(UTC).isoformat()
     resources = []
     for figure in parser.numbered_figures:
         images = parser.figure_images.get(figure, [])

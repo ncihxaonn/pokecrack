@@ -82,7 +82,9 @@ def test_body_mentions_and_comments_are_not_captions(extra):
         parse(page(range(1, 10), extra=extra))
 
 
-@pytest.mark.parametrize("date", ["", "2026-01-10", "2027-01-01T00:00:00Z", "invalid"])
+@pytest.mark.parametrize(
+    "date", ["", "2026-01-10", "2027-01-01T00:00:00Z", "invalid", "0001-01-01T00:00:00+23:00"]
+)
 def test_invalid_publication_fails(date):
     with pytest.raises(CollectorError):
         parse(page(date=date))
