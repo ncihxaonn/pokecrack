@@ -601,8 +601,9 @@ public_study_dependencies AS (
       SELECT
         count(*) = 32
         AND bool_and(
-          policies.enabled
-          AND NOT policies.is_demo
+          -- Operator pause is not a missing dependency. Collection/finalization
+          -- and public projections independently require an enabled policy.
+          NOT policies.is_demo
           AND policies.source_kind = 'public_web'
           AND policies.collector_type = 'scrapling_http'
           AND policies.access_mode = 'public'
