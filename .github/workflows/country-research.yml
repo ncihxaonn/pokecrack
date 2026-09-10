@@ -20,6 +20,7 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
+          fetch-depth: 0
           persist-credentials: false
       - name: Resume country priority from verified research history
         env:
@@ -71,6 +72,7 @@ jobs:
             "PYTHONDONTWRITEBYTECODE=1 python3 '$remote_dir/country_research.py' --research '$remote_dir/country-selection.json' --context '$remote_dir/country-context.json'" \
             > "$RUNNER_TEMP/country-report.json"
       - name: Preserve country checks and deduplicate original cohorts
+        id: publication
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -78,10 +80,6 @@ jobs:
           python3 scripts/country_research.py --publish "$RUNNER_TEMP/country-report.json" \
             --selection "$RUNNER_TEMP/country-selection.json" > "$RUNNER_TEMP/country-ledger.json"
           echo 'Country research retained. All 249 ISO country/area targets: Asia → Oceania → Europe → Africa → Northern America → Latin America and Caribbean → Antarctica. No production samples automatically admitted by research.' >> "$GITHUB_STEP_SUMMARY"
-      - name: Queue unified research ledger update
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: python3 scripts/queue_research_ledger.py
       - name: Save country progress and deduplicated research snapshot
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
@@ -117,11 +115,15 @@ jobs:
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$ssh_dir/key"
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
           unset SSH_PRIVATE_KEY SSH_KNOWN_HOSTS
+          runtime_sha=$(python3 scripts/research_runtime.py \
+            --workflow-sha "$GITHUB_SHA" --host "$VPS_HOST" --user "$VPS_USER" \
+            --port "$VPS_PORT" --identity-file "$ssh_dir/key" --known-hosts "$ssh_dir/known_hosts")
+          [[ "$runtime_sha" =~ ^[0-9a-f]{40}$ ]]
           ssh -i "$ssh_dir/key" -o "UserKnownHostsFile=$ssh_dir/known_hosts" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
             -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "bash /home/codex/pokecrack/deploy/scripts/import-research-intake.sh '$GITHUB_SHA'" \
+            "bash /home/codex/pokecrack/deploy/scripts/import-research-intake.sh '$runtime_sha'" \
             < "$RUNNER_TEMP/research-intake.json" > "$RUNNER_TEMP/research-intake-result.json"
           echo 'Research references entered the private review queue. Source access and independently verified pack evidence remain separately gated.' >> "$GITHUB_STEP_SUMMARY"
       - name: Save bounded intake outcome
@@ -132,3 +134,10 @@ jobs:
           path: ${{ runner.temp }}/research-intake-result.json
           retention-days: 90
           if-no-files-found: warn
+      # This helper switches to the ledger branch. Keep it after every pinned
+      # workflow-revision script, including intake and runtime verification.
+      - name: Queue unified research ledger update
+        if: ${{ !cancelled() && steps.publication.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: python3 scripts/queue_research_ledger.py
