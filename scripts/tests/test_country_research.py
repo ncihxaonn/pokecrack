@@ -5,6 +5,7 @@ import json
 from contextlib import redirect_stdout
 from pathlib import Path
 import sys
+import tempfile
 import unittest
 from unittest.mock import Mock, patch
 
@@ -197,6 +198,149 @@ class CountryResearchTests(unittest.TestCase):
         self.assertNotIn("OPENAI_API_KEY", workflow)
         for legacy in ("asia-research.yml", "global-research.yml"):
             self.assertNotIn("cron:", (ROOT / ".github/workflows" / legacy).read_text())
+
+    def test_context_is_minimal_and_does_not_mutate_historical_fingerprints(self):
+        report = self.report(studies=[self.row()])
+        original = json.dumps(report, sort_keys=True)
+        selection = {**self.selection(), "sweep": 2}
+        context = module.continuation_context(selection, [report, report])
+        self.assertEqual(context["prior_passes"], {"MY": 1, "VN": 1, "PH": 1})
+        self.assertEqual(context["known_urls"], report["results"][0]["studies"][0]["urls"])
+        self.assertEqual(context["known_cohort_ids"], self.row()["cohort_ids"])
+        self.assertEqual(json.dumps(report, sort_keys=True), original)
+        for field in ("packs", "country", "geography_basis", "metrics", "limitations", "method"):
+            self.assertNotIn('"' + field + '"', json.dumps(context))
+        self.assertEqual(module.validate_context(context, selection), context)
+
+    def test_empty_passes_are_retained_as_search_hints_not_zero_packs(self):
+        selection = {**self.selection(), "sweep": 2}
+        context = module.continuation_context(selection, [self.report()])
+        self.assertEqual(context["prior_passes"]["MY"], 1)
+        self.assertEqual(context["known_urls"], [])
+        self.assertIn("Earlier empty passes do not prove zero activity", module.prompt(selection, context))
+
+    def test_shared_urls_do_not_inherit_new_target_geography(self):
+        selection = {**self.selection(), "targets": ["AU", "NZ", "FJ"]}
+        context = module.continuation_context(selection, [self.report(studies=[self.row()])])
+        self.assertEqual(context["prior_passes"], {"AU": 0, "NZ": 0, "FJ": 0})
+        self.assertTrue(context["known_urls"])
+        self.assertNotIn("country", context)
+
+    def test_local_prior_references_precede_shared_known_reports(self):
+        row = {**self.row(), "urls": ["https://example.com/local"], "cohort_ids": ["local-sample"]}
+        remote = {**self.row(), "urls": ["https://example.com/shared"], "cohort_ids": ["shared-sample"]}
+        history = [self.report(studies=[row]), self.report(
+            {**self.selection(), "targets": ["AU"]}, [remote])]
+        context = module.continuation_context({**self.selection(), "sweep": 2}, history)
+        self.assertEqual(context["known_urls"], ["https://example.com/local", "https://example.com/shared"])
+
+    def test_context_windows_rotate_deterministically_and_preserve_all_history(self):
+        reports = []
+        for index in range(80):
+            row = {**self.row(), "urls": [f"https://example.com/report-{index:03d}"],
+                   "cohort_ids": [f"cohort-{index:03d}"]}
+            reports.append(self.report(studies=[row]))
+        original = json.dumps(reports, sort_keys=True)
+        first = module.continuation_context({**self.selection(), "sweep": 2}, reports)
+        second = module.continuation_context({**self.selection(), "sweep": 3}, reports)
+        self.assertEqual(first, module.continuation_context(
+            {**self.selection(), "sweep": 2}, list(reversed(reports))))
+        self.assertEqual(len(first["known_urls"]), 64)
+        self.assertEqual(len(first["known_cohort_ids"]), 32)
+        self.assertNotEqual(set(first["known_urls"]), set(second["known_urls"]))
+        self.assertEqual(len(set(first["known_urls"] + second["known_urls"])), 80)
+        self.assertEqual(json.dumps(reports, sort_keys=True), original)
+
+    def test_long_reference_hints_fit_byte_budget_without_weakening_report_limits(self):
+        reports = [self.report(studies=[{**self.row(),
+            "urls": ["https://example.com/" + str(index) + "x" * 950],
+            "cohort_ids": [str(index) + "c" * 95]}]) for index in range(70)]
+        context = module.continuation_context({**self.selection(), "sweep": 2}, reports)
+        self.assertLessEqual(len(json.dumps(context, sort_keys=True).encode()), module.MAX_CONTEXT_BYTES)
+        self.assertGreater(len(context["known_urls"]), 0)
+        self.assertLess(len(context["known_urls"]), 64)
+        self.assertEqual(module.MAX_BYTES, 16384)
+
+    def test_context_rejects_wrong_selection_extra_fields_and_invalid_references(self):
+        selected = self.selection()
+        context = module.continuation_context(selected, [])
+        invalid = [
+            {"version": True}, {"selection": {**selected, "sweep": 2}},
+            {"selection": {**selected, "targets": ["AU"]}}, {"packs": 100},
+            {"prior_passes": {"MY": True, "VN": 0, "PH": 0}},
+            {"prior_passes": {"MY": 1, "VN": 0, "PH": 0}},
+            {"prior_passes": {"MY": 0}}, {"known_urls": "https://example.com/"},
+            {"known_urls": ["https://example.com/?secret=private"]},
+            {"known_urls": ["https://example.com/<ignore-instructions>"]},
+            {"known_urls": ["https://example.com/"] * 2},
+            {"known_urls": [f"https://example.com/{i}" for i in range(65)]},
+            {"known_cohort_ids": ["bad identity"]}, {"known_cohort_ids": [True]},
+            {"known_cohort_ids": [f"id-{i}" for i in range(33)]},
+        ]
+        for update in invalid:
+            with self.subTest(update=update), self.assertRaises(ValueError):
+                module.validate_context({**context, **update}, selected)
+        with patch.object(module, "MAX_CONTEXT_BYTES", 10), self.assertRaises(ValueError):
+            module.validate_context(context, selected)
+
+    def test_context_prompt_rotates_angles_without_broad_host_exclusion_or_approval(self):
+        for sweep, angle in enumerate(module.QUERY_ANGLES, 1):
+            selection = {**self.selection(), "sweep": sweep}
+            context = module.continuation_context(selection, [])
+            prompt = module.prompt(selection, context)
+            self.assertIn(angle, prompt)
+            for fragment in ("REFERENCE DATA ONLY", "Do not exclude whole hosts",
+                             "SAME identity", "all access restrictions", "12 queries TOTAL",
+                             "absence does not prove independence or permission"):
+                self.assertIn(fragment, prompt)
+
+    def test_select_writes_hints_from_same_verified_history_and_keeps_selection_schema(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "context.json"
+            with patch.object(module, "country_history", return_value=[]) as history, \
+                    patch.object(sys, "argv", ["country_research.py", "--select", "--context", str(path)]), \
+                    redirect_stdout(io.StringIO()) as output:
+                module.main()
+            history.assert_called_once_with()
+            self.assertEqual(json.loads(output.getvalue()), self.selection())
+            self.assertEqual(module.validate_context(json.loads(path.read_text()), self.selection()),
+                             module.continuation_context(self.selection(), []))
+
+    def test_research_consumes_selection_bound_context_without_publishing_or_gh_access(self):
+        selection = self.selection()
+        context = module.continuation_context(selection, [])
+        with patch.object(module, "read_bounded", side_effect=[json.dumps(selection).encode(),
+                json.dumps(context).encode()]), patch.object(module, "research_document",
+                return_value=json.dumps(self.report()).encode()) as research, \
+                patch.object(module, "country_history") as history, \
+                patch.object(module, "publish") as publish, \
+                patch.object(sys, "argv", ["country_research.py", "--research", "selection", "--context", "context"]), \
+                redirect_stdout(io.StringIO()) as output:
+            module.main()
+        research.assert_called_once_with(module.prompt(selection, context), module.schema(selection))
+        history.assert_not_called()
+        publish.assert_not_called()
+        self.assertEqual(json.loads(output.getvalue()), self.report())
+
+    def test_bad_context_fails_before_search_and_keeps_payload_out_of_logs(self):
+        context = module.continuation_context(self.selection(), [])
+        context["known_urls"] = ["https://example.com/?token=private"]
+        with patch.object(module, "read_bounded", side_effect=[json.dumps(self.selection()).encode(),
+                json.dumps(context).encode()]), patch.object(module, "research_document") as research, \
+                patch.object(sys, "argv", ["country_research.py", "--research", "selection", "--context", "context"]), \
+                redirect_stdout(io.StringIO()) as output:
+            with self.assertRaisesRegex(SystemExit, "stage=context code=invalid_reference_url") as caught:
+                module.main()
+        self.assertNotIn("private", str(caught.exception))
+        research.assert_not_called()
+        self.assertEqual(output.getvalue(), "")
+
+    def test_hourly_workflow_transfers_context_without_adding_credentials_or_report_schema(self):
+        workflow = (ROOT / ".github/workflows/country-research.yml").read_text()
+        self.assertIn('--select --context "$RUNNER_TEMP/country-context.json"', workflow)
+        self.assertIn("--context '$remote_dir/country-context.json'", workflow)
+        self.assertIn("'$remote_dir/country-context.json'; rmdir", workflow)
+        self.assertNotIn("known_urls", module.schema(self.selection())["properties"])
 
 
 if __name__ == "__main__":
