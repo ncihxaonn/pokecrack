@@ -3,6 +3,10 @@ import { z } from "zod";
 import { isIsoAlpha2 } from "./iso-alpha2";
 
 const probability = z.number().min(0).max(1);
+// Reviewed source notes include attribution and rate limitations (the Brazil
+// public study currently needs 601 characters). Share the bounded contract
+// with coverage RPCs so a valid note cannot discard an entire fresh snapshot.
+export const publicSourceNoteSchema = z.string().min(1).max(1024);
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
 const isoDateTime = z.string().datetime({ offset: true });
 const publicHttpUrl = z.string().url().refine((value) => {
@@ -473,7 +477,7 @@ const source = z
     status: z.enum(["operational", "delayed", "attention", "paused"]),
     lastCollectedAt: isoDateTime.nullable(),
     url: publicHttpUrl,
-    note: z.string().min(1).max(500),
+    note: publicSourceNoteSchema,
     coverage: sourceCoverage.optional(),
   })
   .strict()

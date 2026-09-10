@@ -216,6 +216,36 @@ function validSyntheticJapanCoveragePayload() {
 }
 
 describe("reviewed public-study coverage merge", () => {
+  it.each([601, 1024])("preserves fresh v4 counts with a %i-character source note", (length) => {
+    const coverage = validRegistryCoveragePayload();
+    const note = "n".repeat(length);
+    const payload = {
+      ...coverage,
+      schemaVersion: "4.0.0",
+      sources: coverage.sources.map((source, index) => index === 0 ? { ...source, note } : source),
+      unknownLocation: { packsObserved: 10, openings: 1, independentSources: 1, updatedAt: collectedAt },
+    };
+    expect(publicStudyCoverageSchema.safeParse(payload).success).toBe(true);
+    const baseline = publicDashboardDataSchema.parse(mergePublicStudyCoverage(DEMO_PUBLIC_DATA, coverage));
+    const merged = publicDashboardDataSchema.parse(mergePublicStudyCoverage(DEMO_PUBLIC_DATA, payload));
+    expect(merged.sources.find((source) => source.id === "comicbook_perfect_order_study")?.note).toBe(note);
+    expect(merged.observations.observedPacks).toBe(baseline.observations.observedPacks + 10);
+    expect(merged.observations.completeOpenings).toBe(baseline.observations.completeOpenings + 1);
+    expect(merged.mapCells).toEqual(baseline.mapCells);
+  });
+
+  it.each([0, 1025])("rejects a %i-character source note at both public boundaries", (length) => {
+    const coverage = validRegistryCoveragePayload();
+    const note = "n".repeat(length);
+    const invalid = { ...coverage, sources: coverage.sources.map((source) => ({ ...source, note })) };
+    expect(publicStudyCoverageSchema.safeParse(invalid).success).toBe(false);
+    expect(mergePublicStudyCoverage(DEMO_PUBLIC_DATA, invalid)).toEqual(DEMO_PUBLIC_DATA);
+    const merged = publicDashboardDataSchema.parse(mergePublicStudyCoverage(DEMO_PUBLIC_DATA, coverage));
+    expect(publicDashboardDataSchema.safeParse({ ...merged,
+      sources: merged.sources.map((source) => ({ ...source, note })),
+    }).success).toBe(false);
+  });
+
   it("accounts unknown-location packs without inventing countries and replaces on refresh", () => {
     const payload = {
       ...validRegistryCoveragePayload(), schemaVersion: "4.0.0",
