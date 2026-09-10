@@ -1,6 +1,6 @@
 # Hatena numbered opening ingestion — implementation contract
 
-Status: **pure report and feed parsers implemented; runtime integration not implemented or enabled**.
+Status: **report/feed parsers and worker cycle implemented; database and composition integration not implemented or enabled**.
 This document does not admit observations.
 
 The parser and synthetic tests run on MAM. A direct bounded live-page probe
@@ -70,6 +70,25 @@ sitemap discovery and periodic runtime ingestion remain to be connected. A feed
 entry is not an admitted opening and cannot increment the public denominator.
 
 ### Admission integration
+
+The `numbered_families` worker cycle now acquires a database-selected target,
+authorizes each request with job/worker/lease-generation fencing, checks robots,
+paces reads, and stages either count-free feed candidates or minimal numbered
+evidence. Bad source content stages only a quarantine flag, not raw content or
+exception text. It returns a dedicated completion effect for atomic admission.
+Transport failures, lost request authorization and temporary server failures
+defer without quarantining the source. Server retry delays are respected.
+It never directly completes a job or publishes a record. The job DTO carries
+`is_demo`, defaulting to true when provenance is absent; only literal database
+false allows this collector to make requests.
+
+Required database RPCs (`begin_numbered_family_v1`,
+`authorize_numbered_family_request_v1`, `stage_numbered_family_v1`,
+`finalize_numbered_family_v1`) are not installed yet. No schedule or composition
+handler enables this lane. The remaining atomic hash reservations, candidate
+selection, private intake, public projection, restore contracts and integration
+tests must ship together before enabling collection. Mocked worker tests alone
+do not prove this database contract or live admission.
 
 1. Use the observed article/body `figure > figcaption` boundaries, not headings.
    The research regex finding ten labels is not a production completeness parser.
