@@ -79,12 +79,17 @@ def schema() -> dict:
                 "properties": fields, "required": list(fields)}}}, "required": ["version", "studies"]}
 
 
-def prompt(scope: str) -> str:
+def prompt(scope: str, *, max_queries: int = 12, max_studies: int = 6) -> str:
+    if (type(max_queries) is not int or not 1 <= max_queries <= 24
+            or type(max_studies) is not int or not 1 <= max_studies <= 36):
+        raise ValueError("invalid_report")
     return f"""Research credible public PRIMARY reports of complete physical Pokemon TCG
 openings and large original pull-rate studies worldwide; this run emphasizes {scope}.
 All countries are in scope; retain unknown geography. Search English and multiple
-relevant local languages. Use at most 12 queries and return at most 6 studies.
-Open original pages. Prefer actual pack denominators and explicit integer hit counts.
+relevant local languages. Use at most {max_queries} queries and return at most {max_studies} studies.
+Open original pages. Author-reported opening counts are eligible without hit counts.
+Prioritize discovering more distinct original samples over exhaustive manual review.
+Keep uncertainty labels; missing hit counts or opening location do not exclude research.
 Follow citations to original studies; identify reprints, translations and overlapping
 video/article cohorts. Never treat website count as sample count. A retailer listing,
 simulation, demo, TCG Pocket data, or highlights without a denominator is not a study.

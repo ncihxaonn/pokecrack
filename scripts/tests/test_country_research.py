@@ -48,8 +48,29 @@ class CountryResearchTests(unittest.TestCase):
         self.assertNotIn("Sydney", COUNTRIES.values())
 
     def test_missing_asia_targets_are_first(self):
-        self.assertEqual(self.selection()["targets"], ["MY", "VN", "PH"])
-        self.assertEqual(module.select_targets([self.report()])["targets"], ["HK", "IN", "MO"])
+        self.assertEqual(self.selection()["targets"], ["MY", "VN", "PH", "HK", "IN", "MO"])
+        self.assertEqual(module.select_targets([self.report()])["targets"],
+                         [code for code, _ in REGIONS["asia"]][6:12])
+
+    def test_full_capacity_preserves_uncertainty_and_legacy_reports(self):
+        legacy_selection = {**self.selection(), "targets": ["MY", "VN", "PH"]}
+        legacy = self.report(legacy_selection, [self.row()])
+        self.assertEqual(module.validate_report(json.dumps(legacy).encode()), legacy)
+        report = self.report()
+        for index, result in enumerate(report["results"]):
+            result["studies"] = [{**self.row(), "study_id": f"sample-{index}-{j}",
+                                  "cohort_ids": [f"sample-{index}-{j}"],
+                                  "urls": [f"https://example.com/sample-{index}-{j}"]}
+                                 for j in range(6)]
+        report = module.validate_report(json.dumps(report).encode())
+        output = module.snapshot(report, [], {"studies": []}, [])
+        self.assertEqual(output["ledger"]["distinct_report_groups"], 36)
+        self.assertIsNone(output["ledger"]["verified_unique_packs"])
+        self.assertLess(len(module.issue_body(report).encode()), 65536)
+        self.assertIn("return at most 36 studies", module.prompt(self.selection()))
+        self.assertNotIn("12 queries", module.prompt(self.selection()))
+        result_schema = module.schema(self.selection())["properties"]["results"]["items"]
+        self.assertEqual(result_schema["properties"]["studies"]["maxItems"], 6)
 
     def test_progress_is_success_evidence_not_wall_clock(self):
         self.assertEqual(module.select_targets([]), module.select_targets([]))
@@ -71,15 +92,15 @@ class CountryResearchTests(unittest.TestCase):
             history.append(self.report(selection))
         self.assertEqual(observed, list(COUNTRIES))
         self.assertEqual(selection, {**self.selection(), "sweep": 2})
-        self.assertEqual(len(history), 85)
+        self.assertEqual(len(history), 44)
 
     def test_existing_four_region_history_resumes_in_americas_without_reset(self):
         history = []
         while (selection := module.select_targets(history))["targets"][0] != "US":
             history.append(self.report(selection))
-        self.assertEqual(len(history), 64)
+        self.assertEqual(len(history), 33)
         self.assertEqual(selection["sweep"], 1)
-        self.assertEqual(selection["targets"], ["US", "CA", "BM"])
+        self.assertEqual(selection["targets"], [code for code, _ in REGIONS["north-america"]])
         # Old report fingerprints and the campaign marker remain stable.
         with patch.object(module.subprocess, "run", return_value=Mock(
                 stdout=json.dumps([self.issue(report) for report in history]))):
@@ -95,7 +116,7 @@ class CountryResearchTests(unittest.TestCase):
     def test_selection_rejects_cross_region_invalid_repeated_and_extra_values(self):
         for update in ({"targets": []}, {"targets": ["MY", "AU"]},
                        {"targets": ["MY", "MY"]}, {"targets": ["ZZ"]},
-                       {"targets": ["MY", "VN", "PH", "HK"]}, {"sweep": True},
+                       {"targets": [code for code, _ in REGIONS["asia"]][:7]}, {"sweep": True},
                        {"sweep": 0}, {"sweep": 101}, {"campaign": "untrusted"}, {"city": "x"}):
             with self.subTest(update=update), self.assertRaises(ValueError):
                 module.validate_selection({**self.selection(), **update})
@@ -124,15 +145,15 @@ class CountryResearchTests(unittest.TestCase):
     def test_empty_reports_advance_research_only_and_keep_existing_global_evidence(self):
         report = self.report()
         output = module.snapshot(report, [], {"studies": [self.row()]}, [])
-        self.assertEqual(output["checked_this_sweep"], ["MY", "VN", "PH"])
-        self.assertEqual(output["next"]["targets"], ["HK", "IN", "MO"])
+        self.assertEqual(output["checked_this_sweep"], self.selection()["targets"])
+        self.assertEqual(output["next"]["targets"], [code for code, _ in REGIONS["asia"]][6:12])
         self.assertEqual(output["ledger"]["distinct_report_groups"], 1)
         self.assertFalse(output["ledger"]["production_admitted"])
         self.assertIn("never zero activity", module.issue_body(report))
 
     def test_limits_and_no_country_result_padding(self):
         report = self.report()
-        report["results"][0]["studies"] = [self.row()] * 3
+        report["results"][0]["studies"] = [self.row()] * 7
         with self.assertRaises(ValueError):
             module.validate_report(json.dumps(report).encode())
         with self.assertRaises(ValueError):
@@ -181,7 +202,7 @@ class CountryResearchTests(unittest.TestCase):
 
     def test_prompt_is_bounded_country_only_and_preserves_geo_and_access_rules(self):
         prompt = module.prompt(self.selection())
-        for fragment in ("12 queries TOTAL", "not city research", "Unknown geography stays null",
+        for fragment in ("24 queries TOTAL", "not city research", "Unknown geography stays null",
                          "Do not collect cities", "counterfeit/resealed", "Never multiply box contents"):
             self.assertIn(fragment, prompt)
         self.assertEqual(module.schema(self.selection())["properties"]["sweep"]["enum"], [1])
@@ -189,7 +210,7 @@ class CountryResearchTests(unittest.TestCase):
     def test_workflow_replaces_timer_without_db_or_paid_api_credentials(self):
         workflow = (ROOT / ".github/workflows/country-research.yml").read_text()
         self.assertIn("github.ref == 'refs/heads/main'", workflow)
-        self.assertIn("cron: '17 * * * *'", workflow)
+        self.assertIn("cron: '17,47 * * * *'", workflow)
         self.assertIn("group: pokecrack-global-research", workflow)
         self.assertIn("cancel-in-progress: false", workflow)
         self.assertIn("StrictHostKeyChecking=yes", workflow)
@@ -204,7 +225,7 @@ class CountryResearchTests(unittest.TestCase):
         original = json.dumps(report, sort_keys=True)
         selection = {**self.selection(), "sweep": 2}
         context = module.continuation_context(selection, [report, report])
-        self.assertEqual(context["prior_passes"], {"MY": 1, "VN": 1, "PH": 1})
+        self.assertEqual(context["prior_passes"], dict.fromkeys(selection["targets"], 1))
         self.assertEqual(context["known_urls"], report["results"][0]["studies"][0]["urls"])
         self.assertEqual(context["known_cohort_ids"], self.row()["cohort_ids"])
         self.assertEqual(json.dumps(report, sort_keys=True), original)
@@ -259,7 +280,7 @@ class CountryResearchTests(unittest.TestCase):
         self.assertLessEqual(len(json.dumps(context, sort_keys=True).encode()), module.MAX_CONTEXT_BYTES)
         self.assertGreater(len(context["known_urls"]), 0)
         self.assertLess(len(context["known_urls"]), 64)
-        self.assertEqual(module.MAX_BYTES, 16384)
+        self.assertEqual(module.MAX_BYTES, 49152)
 
     def test_context_rejects_wrong_selection_extra_fields_and_invalid_references(self):
         selected = self.selection()
@@ -290,7 +311,7 @@ class CountryResearchTests(unittest.TestCase):
             prompt = module.prompt(selection, context)
             self.assertIn(angle, prompt)
             for fragment in ("REFERENCE DATA ONLY", "Do not exclude whole hosts",
-                             "SAME identity", "all access restrictions", "12 queries TOTAL",
+                             "SAME identity", "all access restrictions", "24 queries TOTAL",
                              "absence does not prove independence or permission"):
                 self.assertIn(fragment, prompt)
 
@@ -317,7 +338,8 @@ class CountryResearchTests(unittest.TestCase):
                 patch.object(sys, "argv", ["country_research.py", "--research", "selection", "--context", "context"]), \
                 redirect_stdout(io.StringIO()) as output:
             module.main()
-        research.assert_called_once_with(module.prompt(selection, context), module.schema(selection))
+        research.assert_called_once_with(module.prompt(selection, context), module.schema(selection),
+                                         max_bytes=module.MAX_BYTES)
         history.assert_not_called()
         publish.assert_not_called()
         self.assertEqual(json.loads(output.getvalue()), self.report())

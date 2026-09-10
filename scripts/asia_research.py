@@ -143,7 +143,9 @@ paid services or request credentials. Output only the supplied JSON schema.
 """
 
 
-def research_document(prompt_text: str, output_schema: dict) -> bytes:
+def research_document(prompt_text: str, output_schema: dict, *, max_bytes: int = MAX_BYTES) -> bytes:
+    if type(max_bytes) is not int or not 1 <= max_bytes <= 49152:
+        raise ValueError("invalid_report")
     # An empty, private working directory prevents project hooks/instructions or
     # production files from entering the task. Auth stays with the existing CLI.
     with tempfile.TemporaryDirectory(prefix="pokecrack-asia-research-") as directory:
@@ -169,7 +171,7 @@ def research_document(prompt_text: str, output_schema: dict) -> bytes:
                 raise ValueError("research_timeout") from None
             if proc.returncode != 0:
                 raise ValueError("research_unavailable")
-        if not output.is_file() or output.stat().st_size > MAX_BYTES:
+        if not output.is_file() or output.stat().st_size > max_bytes:
             raise ValueError("invalid_report")
         return output.read_bytes()
 

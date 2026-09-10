@@ -14,6 +14,28 @@ spec.loader.exec_module(module)
 
 
 class AsiaResearchTests(unittest.TestCase):
+    def test_research_output_budget_defaults_and_explicit_larger_limit(self):
+        for size, kwargs, accepted in ((16384, {}, True), (16385, {}, False),
+                                      (49152, {"max_bytes": 49152}, True),
+                                      (49153, {"max_bytes": 49152}, False)):
+            with self.subTest(size=size, kwargs=kwargs), patch.object(module.subprocess, "Popen") as popen:
+                process = popen.return_value.__enter__.return_value
+                process.returncode = 0
+                def write_output(*args, **unused):
+                    command = popen.call_args.args[0]
+                    Path(command[command.index("-o") + 1]).write_bytes(b"x" * size)
+                process.communicate.side_effect = write_output
+                if accepted:
+                    self.assertEqual(len(module.research_document("test", {}, **kwargs)), size)
+                else:
+                    with self.assertRaisesRegex(ValueError, "invalid_report"):
+                        module.research_document("test", {}, **kwargs)
+        for value in (True, 0, -1, 49153, "49152"):
+            with self.subTest(value=value), patch.object(module.subprocess, "Popen") as popen:
+                with self.assertRaises(ValueError):
+                    module.research_document("test", {}, max_bytes=value)
+                popen.assert_not_called()
+
     def example(self):
         return {"country": "VN", "candidates": [{
             "source_url": "https://example.com/opening", "supporting_url": None,

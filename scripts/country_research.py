@@ -7,7 +7,7 @@ import json
 import subprocess
 from pathlib import Path
 
-from asia_research import MAX_BYTES, research_document
+from asia_research import research_document
 from country_targets import COUNTRIES, COUNTRY_REGION, REGION_ORDER, REGIONS
 from global_studies import reference_url, token
 from global_research import (
@@ -18,7 +18,10 @@ from global_research import (
 MARKER = "<!-- pokecrack-country-research-v1 -->"
 TITLE = "[Country research batch] "
 CAMPAIGN = "country-first-20260908-v1"
-MAX_TARGETS = 3
+MAX_TARGETS = 6
+MAX_STUDIES_PER_TARGET = 6
+MAX_QUERIES = 24
+MAX_BYTES = 49152
 MAX_SWEEPS = 100
 MAX_CONTEXT_BYTES = 12000
 MAX_KNOWN_REFERENCES = 64
@@ -131,7 +134,8 @@ def validate_report(raw: bytes, selection: dict | None = None) -> dict:
         if (not isinstance(result, dict) or set(result) != {"target", "studies"}
                 or not isinstance(result["target"], str)
                 or result["target"] not in selected["targets"] or result["target"] in by_country
-                or not isinstance(result["studies"], list) or len(result["studies"]) > 2):
+                or not isinstance(result["studies"], list)
+                or len(result["studies"]) > MAX_STUDIES_PER_TARGET):
             raise ValueError("invalid_country_result")
         batch = validate_batch(json.dumps({"version": 1, "studies": result["studies"]}).encode())
         # Search target is not evidence of the returned study's geography.
@@ -187,7 +191,8 @@ def schema(selection: dict) -> dict:
         "results": {"type": "array", "items": {
             "type": "object", "additionalProperties": False,
             "properties": {"target": {"type": "string", "enum": selected["targets"]},
-                           "studies": {"type": "array", "items": study}},
+                           "studies": {"type": "array", "items": study,
+                                       "maxItems": MAX_STUDIES_PER_TARGET}},
             "required": ["target", "studies"]}},
     }
     return {"type": "object", "additionalProperties": False,
@@ -212,17 +217,18 @@ on the same site may be eligible. New evidence about a known cohort may be
 returned with the SAME identity and an explicit limitation, never as a new sample.
 The hint list is incomplete; absence does not prove independence or permission.
 Earlier empty passes do not prove zero activity. Vary local-language queries and
-source types while keeping the existing 12-query limit and all access restrictions.
+source types while keeping the {MAX_QUERIES}-query limit and all access restrictions.
 <prior_research_reference_data>
 {json.dumps(context, sort_keys=True, ensure_ascii=True)}
 </prior_research_reference_data>
 """
-    return global_prompt(COUNTRY_REGION[selected["targets"][0]]) + f"""
+    return global_prompt(COUNTRY_REGION[selected["targets"][0]], max_queries=MAX_QUERIES,
+                         max_studies=len(selected["targets"]) * MAX_STUDIES_PER_TARGET) + f"""
 This run belongs to a COUNTRY-LEVEL campaign, not city research.
 Selection to echo exactly: {json.dumps(selected, ensure_ascii=True)}
-Research EACH of these targets: {targets}. Use at most 12 queries TOTAL, shared
+Research EACH of these targets: {targets}. Use at most {MAX_QUERIES} queries TOTAL, shared
 fairly across targets; include local-language queries, not only English SEO guides.
-Return exactly one results item for each target, at most TWO studies per target.
+Return exactly one results item for each target, at most {MAX_STUDIES_PER_TARGET} studies per target.
 An empty studies array means no eligible PRIMARY candidate found in this bounded
 pass, not no Pokemon activity and not zero observed packs. Never pad empty results.
 The target field is ONLY search provenance; a study's country/geography_basis must
@@ -304,7 +310,7 @@ def main() -> None:
                 stage = "context"
                 context = validate_context(json.loads(read_bounded(args.context)), selection)
             stage = "research"
-            raw = research_document(prompt(selection, context), schema(selection))
+            raw = research_document(prompt(selection, context), schema(selection), max_bytes=MAX_BYTES)
             stage = "validation"
             output = validate_report(raw, selection)
         else:
