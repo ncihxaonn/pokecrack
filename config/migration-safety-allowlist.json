@@ -2,6 +2,21 @@
   "version": 1,
   "reviewed_deletes": [
     {
+      "migration": "20261024000000_numbered_source_family.sql",
+      "statement_sha256": "f5e51c23d381716f7a3337f35b3c7a7481975fe260b13f43a85dd5df60609062",
+      "reason": "Lease- and publisher-access-fenced acquisition expires only transient numbered_family_runs staging older than one day. Durable candidates, admissions, resource identities and retractions are untouched."
+    },
+    {
+      "migration": "20261024000000_numbered_source_family.sql",
+      "statement_sha256": "1e3ab7566ab21a4387aecf568dfff1e658163c19b299671d5fd5318329ca87d1",
+      "reason": "The lease- and generation-fenced finalizer removes only the current locked job's transient staging after atomic admission or quarantine. Durable observations and identity reservations remain intact."
+    },
+    {
+      "migration": "20261024000000_numbered_source_family.sql",
+      "statement_sha256": "a7cfb4fadffeeaea31e59f461935a9b08f24090671496548a59db2d93c9abe9c",
+      "reason": "Existing lease-fenced maintenance removes only transient numbered-family staging older than one day in an ordered at-most-1000-row SKIP LOCKED batch. Durable ledgers and retractions are retained."
+    },
+    {
       "migration": "20260825000500_public_rpc_security.sql",
       "statement_sha256": "45402bc4e7ee1fcb0e2bef5c84bc9cd0c9c1943a0caff8b1a4700809754b7162",
       "reason": "Bounded retention RPC deletes only candidate extraction runs selected by its audited CTE."
