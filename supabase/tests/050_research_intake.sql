@@ -52,7 +52,10 @@ select is((ingest.import_research_intake_v1(pg_temp.manifest('https://pokesup.co
 select is((select state from ingest.source_family_candidates where url='https://pokesup.com/blog/unboxing-m2-2/'),'pending_evidence','a reference is not an admission');
 select is((ingest.import_research_intake_v1(pg_temp.manifest('https://pokesup.com/blog/unboxing-m2-2'))->>'family_queued')::integer,0,'repeat cannot requeue existing event');
 select is((ingest.import_research_intake_v1(pg_temp.manifest('https://pokesup.com/blog/unboxing-m5'))->>'family_queued')::integer,0,'existing fixed contract cannot double count');
-select is((ingest.import_research_intake_v1(pg_temp.manifest('https://pokesup.com/blog/unboxing-sv8'))->>'family_queued')::integer,0,'unreviewed product cannot be fetched');
+select is((ingest.import_research_intake_v1(pg_temp.manifest('https://pokesup.com/blog/unboxing-sv8'))->>'family_queued')::integer,1,'reviewed historical SV8 enters independent evidence queue');
+select is((select state from ingest.source_family_candidates where url='https://pokesup.com/blog/unboxing-sv8/'),'pending_evidence','historical reference is not a pack admission');
+select is((ingest.import_research_intake_v1(pg_temp.manifest('https://pokesup.com/blog/unboxing-sv7'))->>'family_queued')::integer,0,'other unreviewed products cannot be fetched');
+select is((ingest.import_research_intake_v1(pg_temp.manifest('https://pokesup.com/blog/unboxing-sv8-2',true))->>'family_queued')::integer,0,'conflicting historical reference cannot enter fetch queue');
 select is((ingest.import_research_intake_v1(pg_temp.manifest('https://pokesup.com/blog/unboxing-m3-2',true))->>'family_queued')::integer,0,'conflicting reference does not queue a new event');
 select lives_ok($$select ingest.retract_source_family_v1('https://pokesup.com/blog/unboxing-m2-3/')$$,'owner can tombstone an event before discovery');
 select is((ingest.import_research_intake_v1(pg_temp.manifest('https://pokesup.com/blog/unboxing-m2-3'))->>'family_queued')::integer,0,'intake cannot resurrect owner-retracted event');

@@ -3666,6 +3666,37 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      enqueue_pokesup_sv8_backfill_v1: {
+        Args: never
+        Returns: {
+          attempts: number
+          available_at: string
+          completed_at: string | null
+          created_at: string
+          dedupe_key: string | null
+          id: string
+          is_demo: boolean
+          job_type: string
+          last_error_code: string | null
+          last_error_message: string | null
+          lease_generation: number
+          lock_expires_at: string | null
+          locked_at: string | null
+          locked_by: string | null
+          max_attempts: number
+          payload: Json
+          priority: number
+          retention_until: string
+          status: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "jobs"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       enqueue_public_study_coverage_job_v1: {
         Args: {
           p_available_at?: string

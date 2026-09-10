@@ -3142,7 +3142,7 @@ class PlainBackupSanitizer:
             "reason": rb"pending_family|pending_evidence|invalid_evidence|fixed_duplicate|cohort_duplicate|valid|duplicate|retracted",
             "policy_version": rb"pokesup-enumerated-v1",
             "post_id": rb"[1-9][0-9]{0,12}",
-            "product": rb"m2|m3",
+            "product": rb"m2|m3|sv8",
             "opening_ordinal": rb"[1-9][0-9]?",
             "pack_count": rb"30",
             "singleton": rb"t",
