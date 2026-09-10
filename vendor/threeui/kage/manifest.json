@@ -1,0 +1,46 @@
+{
+  "source": "User-provided ThreeUI Pro export",
+  "canonical": "https://threeui.com/landing-pages/kage.html",
+  "files": [
+    {
+      "path": "src/shaders/landing-pages/LandingPages.tsx",
+      "sha256": "4d379461ad00eb4de7900df312878035383de7e1ed4e13283b8143a2eea9d30a",
+      "bytes": 40525
+    },
+    {
+      "path": "src/shaders/landing-pages/pageTypography.ts",
+      "sha256": "809cc65797d531cd3b3ca5a56815d55d24b3ee8d293e4e4bad6fdfe6c83244cc",
+      "bytes": 15028
+    },
+    {
+      "path": "src/shaders/landing-pages/pageRecipes.ts",
+      "sha256": "c9d9849cc255bac2d1d938d088c50917f84916f1c516d2bbb27fcfd803523233",
+      "bytes": 74927
+    },
+    {
+      "path": "src/shaders/landing-pages/LandingPageFrame.tsx",
+      "sha256": "61de2cc50888aac4ac5557420b07fa47ed3543bb57c1e0055fafdefa53dbaa78",
+      "bytes": 6756
+    },
+    {
+      "path": "public/landing-pages/kage.html",
+      "sha256": "c8e06b90397ac246baf0ab6f32f5f6b570acc6fe03c7009f711b579fb72d9f49",
+      "bytes": 243963
+    },
+    {
+      "path": "public/landing-pages/secret-pathways-assets/fonts.css",
+      "sha256": "985f85a904a4096f92c06552b06f42a45973ac004af4780d68f18af65ddcc1b0",
+      "bytes": 99356
+    },
+    {
+      "path": "public/landing-pages/secret-pathways-assets/three.min.js",
+      "sha256": "8a5f7249903b54d30f79f708699d2fed2d6a1d0741a4cd41377d1f01bb5a2271",
+      "bytes": 608081
+    },
+    {
+      "path": "src/shaders/threeui.css",
+      "sha256": "efe4447139f1358dd8e9be68edf6fa46cbefbd1de423a4d6c439ca61d2c8eccf",
+      "bytes": 40715
+    }
+  ]
+}

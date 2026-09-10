@@ -7,6 +7,7 @@ import type { PublicDashboardData } from "@/data/types";
 import { formatDate, formatDateTime, formatProbability } from "@/lib/format";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { WorldHeatmap } from "./world-heatmap";
+import { PokemonWorldHero } from "./pokemon-world-hero";
 import { OverviewHighlights } from "./overview-highlights";
 import { DataModeNotice, MetricDisclaimer, Panel, SectionHeading, SignalBadge, TableFrame } from "@/components/ui/dashboard-ui";
 
@@ -29,14 +30,7 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
 
   return (
     <div className="page-shell home-page">
-      {/* Synthetic provenance must precede the map and all other metrics. */}
-      {synthetic ? modeNotice : null}
-      <section className="dashboard-intro" aria-labelledby="hero-title">
-        <div className="dashboard-intro__copy">
-          <h1 id="hero-title">Pokémon opening analysis</h1>
-          <p>Explore Pokémon TCG opening data across sets, countries and product markets.</p>
-        </div>
-      </section>
+      <PokemonWorldHero data={data} provenance={synthetic ? modeNotice : undefined} />
 
       <div id="world-coverage"><WorldHeatmap
         cells={data.mapCells}

@@ -1,0 +1,11 @@
+.journey { position: relative; width: auto; height: 100svh; margin: 0 -20px 36px; background: #05070a; color: #dfe7e0; }
+.scene { display: block; width: 100%; height: 100%; border: 0; }
+.accessibleIntro { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.skip { position: absolute; top: 12px; left: 24px; z-index: 3; transform: translateY(-200%); padding: 12px 18px; color: #05070a; background: #e0e7dc; border-radius: 6px; }
+.skip:focus { transform: none; }
+.fallback { position: absolute; left: 20px; bottom: 18px; padding: 10px 14px; max-width: 300px; border-radius: 8px; background: #081513; font-size: 12px; z-index: 2; }
+.fallback a { text-decoration: underline; }
+:global(body:has(.home-page) .app-header) { position: fixed; inset: 0 0 auto; }
+:global(html[data-pokemon-journey="active"] .app-header) { visibility: hidden; pointer-events: none; }
+:global(#world-coverage) { scroll-margin-top: 0; }
+:global(.page-shell.home-page) { width: auto; max-width: none; margin-inline: 20px; padding-top: 0; }
