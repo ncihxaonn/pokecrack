@@ -68,6 +68,7 @@ const coverageCountry = coverageMetric.extend({
   dataVersions: countryDataVersionsSchema.optional(),
   collectionClass: z.literal("coverage_only").optional(),
   coverageAttributionBases: coverageAttributionBasesSchema.optional(),
+  reportedVolume: z.boolean().optional(),
 });
 
 const coverageCountryV2 = coverageCountry.safeExtend({
@@ -141,6 +142,7 @@ const coverageCountryV3 = coverageMetric.extend({
   dataVersions: countryDataVersionsSchema.optional(),
   collectionClass: z.enum(["coverage_only", "observed_sample", "mixed"]),
   coverageAttributionBases: coverageAttributionBasesSchema,
+  reportedVolume: z.boolean().optional(),
   ...directObservedRate,
 }).superRefine(validateDirectObservedRate);
 
@@ -153,7 +155,7 @@ const coverageSet = coverageMetric.extend({
 
 const reviewedSourceCoverage = z
   .object({
-    packsObserved: z.number().int().positive().max(1_000_000),
+    packsObserved: z.number().int().positive().max(100_000_000_000),
     countriesObserved: z.number().int().nonnegative().max(249),
     completeOpenings: z.number().int().positive().max(1_000_000),
     ...directObservedRate,
@@ -297,7 +299,11 @@ function sampleNote(
   packs: number,
   sources: number,
   rawRate?: Readonly<{ ratePacksObserved: number; qualifyingHitPacks: number }>,
+  reportedVolume = false,
 ): string {
+  if (reportedVolume) {
+    return `Includes ${packs} publicly reported packs across ${sources} source${sources === 1 ? "" : "s"}. This quantity-only coverage is deduplicated by report group; it is not an independently audited sample and provides no hit-rate or inference.`;
+  }
   if (rawRate !== undefined) {
     const rate = rawRate.qualifyingHitPacks / rawRate.ratePacksObserved;
     return `Direct observed sample: ${rawRate.qualifyingHitPacks} qualifying-hit ${rawRate.qualifyingHitPacks === 1 ? "pack" : "packs"} among ${rawRate.ratePacksObserved} eligible rate-sample packs (${(rate * 100).toFixed(2)}%). This descriptive sample rate is not a representative probability, baseline comparison, posterior estimate, or anomaly signal.`;
@@ -320,7 +326,7 @@ function mergeDataVersions(
 
 type CoverageOverlay = Pick<
   CountryMapCell,
-  "dataVersions" | "collectionClass" | "coverageAttributionBases"
+  "dataVersions" | "collectionClass" | "coverageAttributionBases" | "reportedVolume"
 >;
 
 function mergeCoverageOverlay(
@@ -341,6 +347,9 @@ function mergeCoverageOverlay(
         ...(current?.coverageAttributionBases ?? []),
         ...coverage.coverageAttributionBases,
       ])];
+  const reportedVolume = coverage.reportedVolume === undefined
+    ? current?.reportedVolume
+    : coverage.reportedVolume;
   return {
     ...(dataVersions === undefined ? {} : { dataVersions }),
     ...(coverage.collectionClass === undefined
@@ -351,6 +360,7 @@ function mergeCoverageOverlay(
     ...(coverageAttributionBases === undefined
       ? {}
       : { coverageAttributionBases }),
+    ...(reportedVolume === undefined ? {} : { reportedVolume }),
   };
 }
 
@@ -408,6 +418,7 @@ function mergeCountry(
       }
     : undefined;
   const rawRate = incomingRawRate ?? existingRawRate;
+  const includesReportedVolume = coverage.reportedVolume === true || current?.reportedVolume === true;
   const base = current ?? {
     periodStart: period.start,
     periodEnd: period.end,
@@ -440,7 +451,7 @@ function mergeCountry(
           hitRate: rawRate.observedRate,
         }),
     state: withheldState(packsObserved, independentSources),
-    sampleNote: sampleNote(packsObserved, independentSources, rawRate),
+    sampleNote: sampleNote(packsObserved, independentSources, rawRate, includesReportedVolume),
     updatedAt: laterTimestamp(current?.updatedAt ?? null, coverage.updatedAt),
   };
 }
@@ -588,7 +599,9 @@ export function mergePublicStudyCoverage(
     slug: cell.countryCode.toLowerCase(),
     name: cell.countryName,
     countryCode: cell.countryCode,
-    coverage: `${cell.packsObserved} observed packs from ${cell.independentSources} independent sources in the reviewed evidence range.`,
+    coverage: cell.reportedVolume
+      ? `${cell.packsObserved} publicly reported packs from ${cell.independentSources} sources in the reviewed evidence range.`
+      : `${cell.packsObserved} observed packs from ${cell.independentSources} independent sources in the reviewed evidence range.`,
     packsObserved: cell.packsObserved,
     openings: cell.openings,
     independentSources: cell.independentSources,
@@ -597,6 +610,7 @@ export function mergePublicStudyCoverage(
     ...(cell.coverageAttributionBases === undefined
       ? {}
       : { coverageAttributionBases: cell.coverageAttributionBases }),
+    ...(cell.reportedVolume === undefined ? {} : { reportedVolume: cell.reportedVolume }),
     ...(cell.ratePacksObserved === undefined
       ? {}
       : { ratePacksObserved: cell.ratePacksObserved }),

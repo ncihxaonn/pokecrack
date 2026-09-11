@@ -9131,6 +9131,238 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-ascended-heroes-30-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "author-defined-total-hits-not-coded",
+                "collector-policy-not-enabled",
+                "comment-report-within-discussion",
+                "complete-card-inventory-not-provided",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [
+                {
+                  "category": "hyper-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "mixed-ascended-heroes-products",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-ascended-heroes-30-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1rctj7q/hoe_zijn_de_ascended_heroes_hitrates"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-chaos-rising-30-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete-card-inventory-not-provided",
+                "independent-review-pending",
+                "mixed-product-opening",
+                "one-hyper-rare-reported-from-promotional-booster-pack",
+                "opening-location-unknown",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [
+                {
+                  "category": "hyper-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "mixed-chaos-rising-products",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-chaos-rising-30-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1tme8j5/chaos_rising_30_packs_geluk_met_3_sirs_2_irs_en"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-perfect-order-18-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-report-within-discussion",
+                "complete-card-inventory-not-provided",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "product-described-only-as-three-pack-blisters",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [
+                {
+                  "category": "illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "three-pack-blisters",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-perfect-order-18-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1s5w9d0/perfect_order_opening"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-ascended-heroes-7-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-report-within-discussion",
+                "complete-card-inventory-not-provided",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "rarity-terminology-author-reported",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [
+                {
+                  "category": "hyper-rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mega-attack-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 7,
+              "product": "ascended-heroes-packs",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-ascended-heroes-7-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1rctj7q/hoe_zijn_de_ascended_heroes_hitrates"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-ascended-heroes-15-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "metrics-omitted-because-explicit-integer-numerators-unavailable-in-page-text",
+                "opening-location-unknown",
+                "pulls-presented-visually-and-not-transcribed",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 15,
+              "product": "ascended-heroes-packs",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-ascended-heroes-15-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1tdwm6w/smyths_had_weer_ascended_laatst_15_pakjes_totaal"
+              ]
+            }
+          ],
+          "target": "NL"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL"
+      ]
     }
   ],
   "global_batches": [

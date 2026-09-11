@@ -40,6 +40,10 @@ from pokecrack_worker.config.source_policy import (
     PolicyDeniedError,
     SourcePolicyRegistry,
 )
+from pokecrack_worker.global_volume import MAX_BYTES as GLOBAL_VOLUME_MAX_BYTES
+from pokecrack_worker.global_volume import import_manifest as import_global_volume_manifest
+from pokecrack_worker.global_volume import process_candidates
+from pokecrack_worker.global_volume import validate_manifest as validate_global_volume_manifest
 from pokecrack_worker.jobs import InMemoryJobRepository
 from pokecrack_worker.release_evidence import (
     RUNTIME_RELEASE_SERVICE_SETS,
@@ -109,6 +113,66 @@ def intake_research(
     _json(result)
     if result["status"] != "accepted":
         raise typer.Exit(code=2)
+
+
+@app.command("intake-global-volume")
+def intake_global_volume(
+    dry_run: bool = typer.Option(
+        False, "--dry-run", help="Validate stdin without database access."
+    ),
+) -> None:
+    """Queue bounded public report counts for the quantity-only coverage lane."""
+
+    try:
+        raw = sys.stdin.buffer.read(GLOBAL_VOLUME_MAX_BYTES + 1)
+        manifest = validate_global_volume_manifest(raw)
+    except Exception:
+        _json({"status": "rejected", "reason": "invalid_global_volume_manifest"})
+        raise typer.Exit(code=2) from None
+    if dry_run:
+        _json({"dry_run": True, "mutated": False, "candidates": len(manifest["candidates"])})
+        return
+    settings = _settings()
+    if settings.data_mode is not DataMode.LIVE or settings.worker_role != "collector":
+        _json({"status": "rejected", "reason": "live_collector_required"})
+        raise typer.Exit(code=2)
+    try:
+        result = import_global_volume_manifest(composition.executor_from_settings(settings), raw)
+    except Exception:
+        _json({"status": "inconclusive", "reason": "global_volume_intake_unavailable"})
+        raise typer.Exit(code=2) from None
+    _json(result)
+    if result["status"] != "accepted":
+        raise typer.Exit(code=2)
+
+
+@app.command("process-global-volume")
+def process_global_volume(
+    limit: int = typer.Option(8, "--limit", min=1, max=25, help="Maximum pages to check."),
+    dry_run: bool = typer.Option(False, "--dry-run", help="Do not claim or fetch pages."),
+) -> None:
+    """Check public report pages without storing page text or personal data."""
+
+    settings = _settings()
+    if settings.data_mode is DataMode.DEMO:
+        _json({"event": "global_volume_cycle", "dry_run": dry_run, "mutated": False, "claimed": 0})
+        return
+    if settings.worker_role != "collector" or not settings.scrapling_enabled:
+        _json({"status": "rejected", "reason": "live_scrapling_collector_required"})
+        raise typer.Exit(code=2)
+    if dry_run:
+        _json({"event": "global_volume_cycle", "dry_run": True, "mutated": False, "claimed": 0})
+        return
+    try:
+        result = process_candidates(
+            composition.executor_from_settings(settings),
+            worker_id=settings.worker_id,
+            limit=limit,
+        )
+    except Exception:
+        _json({"status": "inconclusive", "reason": "global_volume_cycle_unavailable"})
+        raise typer.Exit(code=1) from None
+    _json({"event": "global_volume_cycle", "dry_run": False, "mutated": True, **result})
 
 
 def _settings() -> Settings:
