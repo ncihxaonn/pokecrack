@@ -9363,6 +9363,130 @@
         "ME",
         "NL"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [],
+          "target": "RO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "rutube-surging-sparks-one-pack-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ru",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "single-pack-opening",
+                "unverified-research",
+                "video-content-not-manually-reviewed"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "booster-pack",
+              "set": "surging-sparks",
+              "source_sample": null,
+              "study_id": "rutube-surging-sparks-one-pack-2025",
+              "urls": [
+                "https://rutube.ru/plst/871036"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "rutube-prismatic-evolutions-one-pack-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ru",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "single-pack-opening",
+                "unverified-research",
+                "video-content-not-manually-reviewed"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "booster-pack",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "rutube-prismatic-evolutions-one-pack-2025",
+              "urls": [
+                "https://rutube.ru/plst/871036"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "rutube-shrouded-fable-four-visible-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ru",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "playlist-shows-four-numbered-shrouded-fable-pack-videos-from-a-six-pack-bundle",
+                "remaining-two-bundle-packs-not-documented-on-the-opened-page",
+                "unverified-research",
+                "video-content-not-manually-reviewed"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 4,
+              "product": "shrouded-fable-booster-bundle",
+              "set": "shrouded-fable",
+              "source_sample": null,
+              "study_id": "rutube-shrouded-fable-four-pack-playlist-2025",
+              "urls": [
+                "https://rutube.ru/plst/871036"
+              ]
+            }
+          ],
+          "target": "RU"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
