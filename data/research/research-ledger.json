@@ -5227,6 +5227,29 @@
         "GG",
         "GI"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "IM"
+        },
+        {
+          "studies": [],
+          "target": "JE"
+        },
+        {
+          "studies": [],
+          "target": "SJ"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "IM",
+        "JE",
+        "SJ"
+      ]
     }
   ],
   "global_batches": [
