@@ -3899,6 +3899,90 @@
         "TJ",
         "TH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokemon-m3-jp-25-pack-cohort-20260827"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "tr",
+              "limitations": [
+                "author-reports-living-abroad",
+                "collector-policy-not-enabled",
+                "five-box-packs-not-opened",
+                "independent-review-pending",
+                "opening-country-unknown",
+                "publisher-forum-targeted-to-turkiye",
+                "rare-count-reported-as-lower-bound-and-omitted",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [
+                {
+                  "category": "ar",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ex",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sar",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 25,
+              "product": "pokemon-m3-jp",
+              "set": "m3-jp",
+              "source_sample": null,
+              "study_id": "pokemon-m3-jp-25-pack-opening-20260827",
+              "urls": [
+                "https://www.reddit.com/r/PokeTurkiye/comments/1w02fiu/pokemon_m3_jp_kutu_a%C3%A7%C4%B1l%C4%B1m%C4%B1"
+              ]
+            }
+          ],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        },
+        {
+          "studies": [],
+          "target": "AE"
+        },
+        {
+          "studies": [],
+          "target": "UZ"
+        },
+        {
+          "studies": [],
+          "target": "YE"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "TL",
+        "TR",
+        "TM",
+        "AE",
+        "UZ",
+        "YE"
+      ]
     }
   ],
   "global_batches": [
