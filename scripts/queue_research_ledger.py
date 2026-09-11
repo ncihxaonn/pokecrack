@@ -1,76 +1,96 @@
-"""Queue a checked-out research ledger behind one reviewed pull request."""
+"""Persist research progress without switching or executing a data branch."""
 from __future__ import annotations
 
 import argparse
+import json
 import os
-import re
-import subprocess
 from pathlib import Path
+import subprocess
+import tempfile
 
-REPOSITORY_PATTERN = re.compile(r"^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$")
-LEDGER_BRANCH = "automation/research-ledger"
-REPOSITORY = os.environ.get("GITHUB_REPOSITORY", "ncihxaonn/pokecrack")
+from research_checkpoint import BRANCH, LEDGER_FILE, REPOSITORY, SHA, pending_checkpoint, run, workflow_revision
+from research_ledger import MAX_LEDGER_BYTES, merge_checkpoints, validate_checkpoint
 
 
-def run(command: list[str], *, check: bool = True) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(command, check=check, capture_output=True, text=True)
+def commit_checkpoint(revision: str, previous: str | None, raw: str) -> bool:
+    """Fast-forward the checkpoint using an isolated index; never force push."""
+    with tempfile.TemporaryDirectory(prefix="pokecrack-ledger-index-") as directory:
+        environment = {**os.environ, "GIT_INDEX_FILE": str(Path(directory) / "index"),
+                       "GIT_AUTHOR_NAME": "github-actions[bot]",
+                       "GIT_COMMITTER_NAME": "github-actions[bot]",
+                       "GIT_AUTHOR_EMAIL": "41898282+github-actions[bot]@users.noreply.github.com",
+                       "GIT_COMMITTER_EMAIL": "41898282+github-actions[bot]@users.noreply.github.com"}
+        blob = run(["git", "hash-object", "-w", "--stdin"], input=raw, env=environment).stdout.strip()
+        if not SHA.fullmatch(blob):
+            raise ValueError("invalid_checkpoint_blob")
+        old_blob = run(["git", "rev-parse", f"{previous or revision}:{LEDGER_FILE}"]).stdout.strip()
+        if blob == old_blob:
+            return False
+        run(["git", "read-tree", revision], env=environment)
+        run(["git", "update-index", "--add", "--cacheinfo", f"100644,{blob},{LEDGER_FILE}"], env=environment)
+        tree = run(["git", "write-tree"], env=environment).stdout.strip()
+        if not SHA.fullmatch(tree):
+            raise ValueError("invalid_checkpoint_tree")
+        parents = ["-p", previous or revision]
+        if previous is not None:
+            ancestry = run(["git", "merge-base", "--is-ancestor", revision, previous], check=False)
+            if ancestry.returncode == 1:
+                parents += ["-p", revision]
+            elif ancestry.returncode != 0:
+                raise ValueError("invalid_checkpoint_ancestry")
+        commit = run(["git", "commit-tree", tree, *parents,
+                      "-m", "chore(research): update unified research ledger"], env=environment).stdout.strip()
+        if not SHA.fullmatch(commit):
+            raise ValueError("invalid_checkpoint_commit")
+        run(["git", "push", "origin", f"{commit}:refs/heads/{BRANCH}"])
+        return True
+
+
+def request_review() -> bool:
+    """A persisted data checkpoint does not depend on bot PR-creation rights."""
+    try:
+        existing = json.loads(run([
+            "gh", "pr", "list", "--repo", REPOSITORY, "--base", "main",
+            "--head", f"ncihxaonn:{BRANCH}", "--state", "open", "--json", "number",
+        ]).stdout)
+        if not isinstance(existing, list):
+            return False
+        if not existing:
+            run(["gh", "pr", "create", "--repo", REPOSITORY, "--base", "main",
+                 "--head", BRANCH, "--title", "chore(research): update unified research ledger",
+                 "--body", "Validated research-only checkpoint. No application code or production pack counts are admitted by this data update."])
+        return True
+    except (ValueError, OSError, subprocess.SubprocessError):
+        return False
 
 
 def main() -> None:
-    if not REPOSITORY_PATTERN.fullmatch(REPOSITORY) or not os.environ.get("GH_TOKEN"):
-        raise SystemExit("research_ledger_queue_failed: invalid_workflow_context")
-
     parser = argparse.ArgumentParser()
-    parser.add_argument("path", nargs="?", default="data/research/research-ledger.json")
+    parser.add_argument("path", nargs="?", default=LEDGER_FILE)
     args = parser.parse_args()
-    ledger_path = Path(args.path)
     try:
-        raw = ledger_path.read_bytes()
-    except OSError:
-        raise SystemExit("research_ledger_queue_failed: ledger_unavailable") from None
-
-    try:
+        if args.path != LEDGER_FILE or not os.environ.get("GH_TOKEN"):
+            raise ValueError("invalid_workflow_context")
+        revision = workflow_revision()
+        with Path(args.path).open("rb") as source:
+            current = validate_checkpoint(source.read(MAX_LEDGER_BYTES + 1))
         run(["gh", "auth", "setup-git"])
-        run(["git", "fetch", "origin", "main"])
-        branch_exists = bool(run(["git", "ls-remote", "--exit-code", "--heads",
-                                  "origin", LEDGER_BRANCH], check=False).stdout.strip())
-        if branch_exists:
-            run(["git", "fetch", "origin", LEDGER_BRANCH])
-            run(["git", "switch", "--force-create", LEDGER_BRANCH,
-                 f"refs/remotes/origin/{LEDGER_BRANCH}"])
+        previous, pending = pending_checkpoint(revision)
+        ledger = merge_checkpoints(current, pending) if pending is not None else current
+        raw = json.dumps(ledger, ensure_ascii=True, indent=2, sort_keys=True) + "\n"
+        validate_checkpoint(raw.encode())
+        changed = commit_checkpoint(revision, previous, raw)
+        print("research_ledger_saved" if changed else "research_ledger_unchanged")
+    except (ValueError, TypeError, KeyError, OSError, subprocess.SubprocessError):
+        raise SystemExit("research_ledger_queue_failed: checkpoint_not_saved") from None
+    if changed or previous is not None:
+        if request_review():
+            print("research_ledger_review_queued")
         else:
-            run(["git", "switch", "--create", LEDGER_BRANCH, "origin/main"])
-        ledger_path.write_bytes(raw)
-        run(["git", "add", "--", str(ledger_path)])
-        staged = run(["git", "diff", "--cached", "--quiet"], check=False)
-        if staged.returncode == 0:
-            print("research_ledger_unchanged")
-            return
-        if staged.returncode != 1:
-            raise subprocess.CalledProcessError(staged.returncode, staged.args)
-        run(["git", "config", "user.name", "github-actions[bot]"])
-        run(["git", "config", "user.email", "41898282+github-actions[bot]@users.noreply.github.com"])
-        run(["git", "commit", "-m", "chore(research): update unified research ledger"])
-        run(["git", "push", "origin", f"HEAD:{LEDGER_BRANCH}"])
-    except subprocess.CalledProcessError:
-        raise SystemExit("research_ledger_queue_failed: git_operation_failed") from None
-
-    head = f"ncihxaonn:{LEDGER_BRANCH}"
-    try:
-        existing = run(["gh", "pr", "list", "--repo", REPOSITORY, "--base", "main",
-                        "--head", head, "--state", "open", "--json", "number,url"]).stdout
-        if existing.strip() == "[]":
-            created = run([
-                "gh", "pr", "create", "--repo", REPOSITORY, "--base", "main",
-                "--head", LEDGER_BRANCH,
-                "--title", "chore(research): update unified research ledger",
-                "--body", "Automated research history update. This PR keeps the single machine-readable ledger current without creating public issue records.",
-            ]).stdout.strip()
-            print(f"research_ledger_pr_created: {created}")
-        else:
-            print("research_ledger_pr_updated")
-    except subprocess.CalledProcessError:
-        raise SystemExit("research_ledger_queue_failed: pull_request_operation_failed") from None
+            # Do not enable broader repository permissions or bypass review.
+            # The next run resumes this validated reference-only checkpoint;
+            # application code stays on main, and source admission is separate.
+            print("::warning::Research checkpoint saved; review PR unavailable. No merge performed.")
 
 
 if __name__ == "__main__":

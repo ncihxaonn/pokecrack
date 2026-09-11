@@ -201,7 +201,10 @@ class CountryResearchTests(unittest.TestCase):
     def test_workflow_replaces_timer_without_db_or_paid_api_credentials(self):
         workflow = (ROOT / ".github/workflows/country-research.yml").read_text()
         self.assertIn("github.ref == 'refs/heads/main'", workflow)
-        self.assertNotIn("schedule:", workflow)
+        self.assertIn("schedule:", workflow)
+        self.assertIn("cron: '17,47 * * * *'", workflow)
+        self.assertLess(workflow.index("scripts/research_checkpoint.py"),
+                        workflow.index("scripts/country_research.py --select"))
         self.assertIn("contents: write", workflow)
         self.assertIn("pull-requests: write", workflow)
         self.assertIn("group: pokecrack-research-ledger", workflow)

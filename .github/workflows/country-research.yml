@@ -1,6 +1,8 @@
 name: Country-first multi-source research
 
 on:
+  schedule:
+    - cron: '17,47 * * * *'
   workflow_dispatch:
 
 permissions:
@@ -22,6 +24,8 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Resume saved research checkpoint without executing branch code
+        run: python3 scripts/research_checkpoint.py
       - name: Resume country priority from verified research history
         env:
           GH_TOKEN: ${{ github.token }}
@@ -134,8 +138,7 @@ jobs:
           path: ${{ runner.temp }}/research-intake-result.json
           retention-days: 90
           if-no-files-found: warn
-      # This helper switches to the ledger branch. Keep it after every pinned
-      # workflow-revision script, including intake and runtime verification.
+      # Persist the reference-only checkpoint after the pinned-revision scripts.
       - name: Queue unified research ledger update
         if: ${{ !cancelled() && steps.publication.outcome == 'success' }}
         env:
