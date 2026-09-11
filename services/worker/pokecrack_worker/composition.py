@@ -600,7 +600,7 @@ public_study_dependencies AS (
     )
     AND (
       SELECT
-        count(*) = 32
+        count(*) = 33
         AND bool_and(
           -- Operator pause is not a missing dependency. Collection/finalization
           -- and public projections independently require an enabled policy.
@@ -1718,9 +1718,48 @@ public_study_dependencies AS (
   "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
 }'::jsonb
         ) = 1
+        AND count(*) FILTER (
+          WHERE policies.source_key = 'public_study_bisafans_de_36'
+            AND policies.display_name = 'Bisafans Fliegende Fäuste 36-pack coverage'
+            AND policies.domain = 'www.bisafans.de'
+            AND policies.base_url = 'https://www.bisafans.de/sammelkarten/sets/xy/fliegende-faeuste/statistiken.php'
+            AND policies.version = 'public-study-bisafans-flying-fists-v1'
+            AND policies.config = '{
+  "study_key": "bisafans-flying-fists-de-36-v1",
+  "canonical_url": "https://www.bisafans.de/sammelkarten/sets/xy/fliegende-faeuste/statistiken.php",
+  "collector_version": "public-study-bisafans-flying-fists-v1",
+  "parser_version": "bisafans-flying-fists-evidence-v1",
+  "country_code": "DE",
+  "country_name": "Germany",
+  "geography_basis": "publisher_country",
+  "geography_confidence": "tier_b",
+  "publisher_country_url": "https://www.bisafans.de/impressum.php",
+  "publisher_country_review_method": "source_business_identity_matched_to_public_site_impressum",
+  "publisher_country_checked_at": "2026-09-11",
+  "opening_country": null,
+  "opened_at": null,
+  "set_external_id": "xy3",
+  "set_language": "de",
+  "set_language_basis": "source_page_is_german",
+  "set_name": "Fliegende Fäuste",
+  "set_official_url": "https://www.pokemon.com/de/pokemon-sammelkartenspiel/pokemon-karten/series/xy3/49/",
+  "product_scope": "booster_box",
+  "pack_count": 36,
+  "observed_at": "2026-09-11T00:00:00Z",
+  "observed_at_basis": "initial_mam_verification_date_not_opening_time",
+  "denominator_complete": true,
+  "cohort_id": "bisafans-fliegende-faeuste-display-36",
+  "robots_url": "https://www.bisafans.de/robots.txt",
+  "robots_checked_at": "2026-09-11",
+  "terms_checked_at": "2026-09-11",
+  "terms_status": "no_separate_content_reuse_license_found",
+  "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
+}'::jsonb
+        ) = 1
       FROM ingest.source_policies AS policies
       WHERE policies.source_key IN (
         'public_study_tekemero_jp_30',
+        'public_study_bisafans_de_36',
         'public_study_hitpack_cz_36',
         'public_study_auckland_nz_105',
         'public_study_bokunotebook_th_1',

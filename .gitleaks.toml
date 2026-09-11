@@ -17,6 +17,7 @@ regexTarget = "secret"
 regexes = [
   '''^allonline-mega-dream-ex-th-10-v1$''',
   '''^andree-insane-cards-cosmic-eclipse-ec-20-v1$''',
+  '''^bisafans-flying-fists-de-36-v1$''',
   '''^bleedingcool-phantasmal-flames-us-36-v1$''',
   '''^buyfunlife-ninja-spinner-tw-40-v1$''',
   '''^cardchill-ascended-heroes-gb-90-v1$''',

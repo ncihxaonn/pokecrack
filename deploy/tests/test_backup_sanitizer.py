@@ -140,6 +140,9 @@ PUBLIC_STUDY_SOURCE_KEYS_V16 = PUBLIC_STUDY_SOURCE_KEYS_V15 + (
 PUBLIC_STUDY_SOURCE_KEYS_V17 = PUBLIC_STUDY_SOURCE_KEYS_V16 + (
     b"public_study_tekemero_jp_30",
 )
+PUBLIC_STUDY_SOURCE_KEYS_V18 = PUBLIC_STUDY_SOURCE_KEYS_V17 + (
+    b"public_study_bisafans_de_36",
+)
 PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V1
 COMICBOOK_POLICY = "55555555-5555-4555-8555-555555555555"
 WARGAMER_POLICY = "66666666-6666-4666-8666-666666666666"
@@ -172,6 +175,7 @@ BOKUNOTEBOOK_POLICY = "fa888888-8888-4888-8888-888888888888"
 AUCKLAND_POLICY = "fa999999-9999-4999-8999-999999999999"
 HITPACK_POLICY = "fb999999-9999-4999-8999-999999999999"
 TEKEMERO_POLICY = "fc999999-9999-4999-8999-999999999999"
+BISAFANS_POLICY = "fd999999-9999-4999-8999-999999999999"
 INDONESIA_POLICY = "fa555555-5555-4555-8555-555555555555"
 PUBLIC_STUDY_COLUMNS = (
     "study_key, source_policy_id, source_item_id, extraction_run_id, opening_id, "
@@ -349,6 +353,7 @@ def public_study_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V15,
         PUBLIC_STUDY_SOURCE_KEYS_V16,
         PUBLIC_STUDY_SOURCE_KEYS_V17,
+        PUBLIC_STUDY_SOURCE_KEYS_V18,
     ):
         product_values += b", 'four_pack_blister'::text"
     return PUBLIC_STUDY_DDL.replace(b"{product_values}", product_values)
@@ -373,6 +378,7 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
         PUBLIC_STUDY_SOURCE_KEYS_V15,
         PUBLIC_STUDY_SOURCE_KEYS_V16,
         PUBLIC_STUDY_SOURCE_KEYS_V17,
+        PUBLIC_STUDY_SOURCE_KEYS_V18,
     ):
         product_values += b", 'value_bundle'::text, 'four_pack_blister'::text"
         if source_keys in (
@@ -387,6 +393,7 @@ def public_study_coverage_ddl(source_keys: tuple[bytes, ...]) -> bytes:
             PUBLIC_STUDY_SOURCE_KEYS_V15,
             PUBLIC_STUDY_SOURCE_KEYS_V16,
             PUBLIC_STUDY_SOURCE_KEYS_V17,
+            PUBLIC_STUDY_SOURCE_KEYS_V18,
         ):
             product_values += b", 'build_and_battle'::text, 'three_pack_blister'::text"
     return PUBLIC_STUDY_COVERAGE_DDL.replace(b"{product_values}", product_values)
@@ -613,6 +620,14 @@ PUBLIC_STUDY_COVERAGE_FACTS = {
         b"gringo-gameplays-silver-tempest-evidence-v1",
         b"5f65c8f1ceca00fe06f56dbf684c50f1ca4116ce084aa9fbd4ead930b19d7264",
     ),
+    b"public_study_bisafans_de_36": (
+        b"bisafans-flying-fists-de-36-v1",
+        BISAFANS_POLICY.encode(), b"DE", b"Germany", b"2026-09-11 00:00:00+00",
+        b"36", b"xy3", b"booster_box",
+        b"public-study-bisafans-flying-fists-v1",
+        b"bisafans-flying-fists-evidence-v1",
+        b"d31a4d8e74d80d5835f1613b4d392068a0fe91b2bf04d84462f54eae5f5824f4",
+    ),
 }
 
 
@@ -835,6 +850,7 @@ class BackupSanitizerTests(unittest.TestCase):
             b"public_study_auckland_nz_105": AUCKLAND_POLICY,
             b"public_study_hitpack_cz_36": HITPACK_POLICY,
             b"public_study_tekemero_jp_30": TEKEMERO_POLICY,
+            b"public_study_bisafans_de_36": BISAFANS_POLICY,
         }
         policy_rows = b"".join(
             f"{policy_ids[source_key]}\t{source_key.decode()}\tpolicy\n".encode()
@@ -1520,6 +1536,23 @@ class BackupSanitizerTests(unittest.TestCase):
         self.assertNotIn(b"t\tt\tpokesup-enumerated-v1", result.stdout)
         self.assertIn(b"(singleton, enabled) FROM stdin;\nt\tf\n", result.stdout)
         self.assertNotIn(b"(singleton, enabled) FROM stdin;\nt\tt\n", result.stdout)
+
+    def test_v18_before_and_after_first_bisafans_collection(self) -> None:
+        bisafans_row = public_study_coverage_row(b"public_study_bisafans_de_36")
+        prior_rows = public_study_coverage_rows(PUBLIC_STUDY_SOURCE_KEYS_V17)
+        for collected in (False, True):
+            with self.subTest(collected=collected):
+                dump = self.with_public_study_ledger(
+                    self.complete_dump(), comicbook_ledger_row(),
+                    source_keys=PUBLIC_STUDY_SOURCE_KEYS_V18,
+                    coverage_rows=prior_rows + ((bisafans_row,) if collected else ()),
+                )
+                result = self.run_sanitizer(dump, public_studies="present")
+                self.assertEqual(result.returncode, 0, result.stderr.decode())
+                for row in prior_rows:
+                    self.assertIn(row, result.stdout)
+                self.assertEqual(result.stdout.count(b"public_study_bisafans_de_36\n"), 1)
+                self.assertEqual(result.stdout.count(bisafans_row), int(collected))
 
     def test_new_worker_study_requires_a_reviewed_backup_contract(self) -> None:
         # CI must catch a new collector that would make the next backup fail.

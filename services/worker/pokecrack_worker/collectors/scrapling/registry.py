@@ -10,6 +10,7 @@ from pokecrack_worker.collectors.base import (
 
 from .adapters.asia_coverage import garbage_rips_gem_vol2_adapter
 from .adapters.auckland_coverage import auckland_show_mighty_ape_adapter
+from .adapters.bisafans_coverage import bisafans_flying_fists_adapter
 from .adapters.bokunotebook_coverage import bokunotebook_vstar_universe_adapter
 from .adapters.dynamic_fixture import DynamicFixtureAdapter
 from .adapters.example_public import ExamplePublicAdapter
@@ -66,6 +67,9 @@ def build_live_static_registry(
     static_registry = HTTPAdapterRegistry()
     static_registry.register(
         "tekemero_munikis_zero_study", tekemero_munikis_zero_adapter(client=http_client)
+    )
+    static_registry.register(
+        "bisafans_flying_fists_study", bisafans_flying_fists_adapter(client=http_client)
     )
     static_registry.register(
         "hitpack_pitch_black_study", hitpack_pitch_black_adapter(client=http_client)

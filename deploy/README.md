@@ -100,8 +100,9 @@ The workflow returns a `gha-run-<run-id>:<encrypted-filename>` reference for the
 migration gate.
 
 `.github/workflows/backup-production.yml` is the legacy VPS retention path. It
-requires an owner-capable `supabase-db-url` file next to the explicitly selected
-`worker-production` `VPS_ENV_FILE`; it never substitutes the runtime worker DSN.
+requires an owner-capable database URL file next to the explicitly selected
+`worker-production` `VPS_ENV_FILE`; on the MAM PokeCrack host that URL is stored
+as the sibling `db-url` file and it never substitutes the runtime worker DSN.
 A root-owned `/etc/pokecrack/production.env` remains suitable for a manual
 root-operated VPS backup.
 

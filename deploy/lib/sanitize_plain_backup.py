@@ -519,6 +519,9 @@ PUBLIC_STUDY_SOURCE_KEYS_V16 = PUBLIC_STUDY_SOURCE_KEYS_V15 + (
 PUBLIC_STUDY_SOURCE_KEYS_V17 = PUBLIC_STUDY_SOURCE_KEYS_V16 + (
     b"public_study_tekemero_jp_30",
 )
+PUBLIC_STUDY_SOURCE_KEYS_V18 = PUBLIC_STUDY_SOURCE_KEYS_V17 + (
+    b"public_study_bisafans_de_36",
+)
 # Each migration adds an exact append-only reviewed source profile. Keep every
 # complete transition profile available for pre-apply backups, while rejecting
 # unions and partially migrated sets as ambiguous and restore-unsafe.
@@ -540,8 +543,9 @@ PUBLIC_STUDY_SOURCE_KEY_PROFILES = (
     PUBLIC_STUDY_SOURCE_KEYS_V15,
     PUBLIC_STUDY_SOURCE_KEYS_V16,
     PUBLIC_STUDY_SOURCE_KEYS_V17,
+    PUBLIC_STUDY_SOURCE_KEYS_V18,
 )
-PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V17
+PUBLIC_STUDY_SOURCE_KEYS = PUBLIC_STUDY_SOURCE_KEYS_V18
 IDENTIFIER = re.compile(r"[A-Za-z_][A-Za-z0-9_$]*\Z")
 COPY_SUFFIX = re.compile(r"FROM\s+stdin;\s*\Z", re.IGNORECASE)
 DOLLAR_QUOTE_TAG = re.compile(rb"\$(?:[A-Za-z_\x80-\xff][A-Za-z0-9_\x80-\xff]*)?\$")
@@ -1269,6 +1273,7 @@ PUBLIC_STUDY_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V15: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V16: "v4_v5",
     PUBLIC_STUDY_SOURCE_KEYS_V17: "v4_v5",
+    PUBLIC_STUDY_SOURCE_KEYS_V18: "v4_v5",
 }
 PUBLIC_STUDY_COVERAGE_COLUMN_DECLARATIONS = (
     "study_key text not null",
@@ -1323,6 +1328,7 @@ PUBLIC_STUDY_COVERAGE_PRODUCT_PROFILE_BY_SOURCE_KEYS = {
     PUBLIC_STUDY_SOURCE_KEYS_V15: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V16: "v7",
     PUBLIC_STUDY_SOURCE_KEYS_V17: "v7",
+    PUBLIC_STUDY_SOURCE_KEYS_V18: "v7",
 }
 PUBLIC_STUDY_POLICY_SOURCE_KEY = {
     b"comicbook-perfect-order-us-55-v1": b"public_study_comicbook_us_55",
@@ -1415,6 +1421,7 @@ PUBLIC_STUDY_COVERAGE_POLICY_SOURCE_KEY = {
     b"andree-insane-cards-cosmic-eclipse-ec-20-v1": b"public_study_andree_insane_cards_cosmic_eclipse_ec_20",
     b"thekeiplay-lost-origin-pe-36-v1": b"public_study_thekeiplay_lost_origin_pe_36",
     b"gringo-gameplays-silver-tempest-uy-36-v1": b"public_study_gringo_gameplays_silver_tempest_uy_36",
+    b"bisafans-flying-fists-de-36-v1": b"public_study_bisafans_de_36",
 }
 PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
     b"tekemero-munikis-zero-jp-30-v1": {
@@ -1777,11 +1784,24 @@ PUBLIC_STUDY_COVERAGE_EXACT_FIELDS = {
         "evidence_sha256": b"5f65c8f1ceca00fe06f56dbf684c50f1ca4116ce084aa9fbd4ead930b19d7264",
         "is_demo": b"f",
     },
+    b"bisafans-flying-fists-de-36-v1": {
+        "country_code": b"DE",
+        "country_name": b"Germany",
+        "pack_count": b"36",
+        "set_external_id": b"xy3",
+        "product_scope": b"booster_box",
+        "collector_version": b"public-study-bisafans-flying-fists-v1",
+        "parser_version": b"bisafans-flying-fists-evidence-v1",
+        "source_policy_version": b"public-study-bisafans-flying-fists-v1",
+        "evidence_sha256": b"d31a4d8e74d80d5835f1613b4d392068a0fe91b2bf04d84462f54eae5f5824f4",
+        "is_demo": b"f",
+    },
 }
 PUBLIC_STUDY_COVERAGE_OBSERVED_AT = {
     # Publication date normalized to UTC midnight; not a physical opening time.
     b"hitpack-pitch-black-cz-36-v1": datetime(2026, 7, 28, tzinfo=UTC),
     b"tekemero-munikis-zero-jp-30-v1": datetime(2026, 7, 15, 6, 48, 3, tzinfo=UTC),
+    b"bisafans-flying-fists-de-36-v1": datetime(2026, 9, 11, tzinfo=UTC),
     b"auckland-show-mighty-ape-nz-105-v1": datetime(
         2025, 9, 30, 0, 8, 20, 972000, tzinfo=UTC
     ),
@@ -4170,6 +4190,12 @@ class PlainBackupSanitizer:
                 # Hitpack and every earlier coverage row remain mandatory in V17.
                 allowed_coverage_row_sets += (
                     expected_coverage_study_keys - {b"tekemero-munikis-zero-jp-30-v1"},
+                )
+            elif self.public_study_source_keys == PUBLIC_STUDY_SOURCE_KEYS_V18:
+                # Only the newly unseeded Bisafans row may await first collection.
+                # Every earlier coverage row remains mandatory in V18.
+                allowed_coverage_row_sets += (
+                    expected_coverage_study_keys - {b"bisafans-flying-fists-de-36-v1"},
                 )
             if frozenset(self.public_study_coverage_rows) not in allowed_coverage_row_sets:
                 raise SanitizationError(

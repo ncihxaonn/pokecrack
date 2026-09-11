@@ -6,7 +6,7 @@ select no_plan();
 
 select is(
   (select array_agg(ordinal order by ordinal) from ingest.reviewed_public_study_contracts()),
-  array(select generate_series(1, 32)), 'all 32 reviewed contract ordinals exist'
+  array(select generate_series(1, 33)), 'all 33 reviewed contract ordinals exist'
 );
 select is(
   (select count(*) from ingest.public_study_coverage_observations
@@ -55,7 +55,7 @@ select ok(exists (
     and p.statistics_eligible_default and p.retention_days = 730
     and p.expected_interval_seconds = 86400
 ), 'the immutable policy retains the existing bounded static collection contract');
-select ok(ingest.reviewed_public_study_gates_ready_v1(), '32 policy gates are ready');
+select ok(ingest.reviewed_public_study_gates_ready_v1(), '33 policy gates are ready');
 select ok(exists (
   select 1 from ingest.source_request_gates where source_key = 'public_study_hitpack_cz_36'
     and owner_job_id is null and active_until is null
