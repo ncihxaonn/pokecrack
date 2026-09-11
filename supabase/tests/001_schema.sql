@@ -346,7 +346,9 @@ select ok(
          'numbered_family_control', 'numbered_family_candidates',
          'numbered_family_admissions', 'numbered_family_identity_keys', 'numbered_family_runs',
          'research_intake_references',
-         'research_intake_control'
+         'research_intake_control',
+         'global_volume_candidates',
+         'global_volume_observations'
        )
      )),
   'service_role can read core state except the opaque gate and isolated Nostr/family ledgers, with no direct table mutation privileges'

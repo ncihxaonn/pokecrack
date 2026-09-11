@@ -1,6 +1,7 @@
 import type { CoverageAttributionBasis } from "@/data/types";
 
 const coverageAttributionLabels: Record<CoverageAttributionBasis, string> = {
+  opening_location: "Opening location",
   publisher_country: "Publisher country",
   author_public_residence: "Author public residence",
   product_market: "Product market",
