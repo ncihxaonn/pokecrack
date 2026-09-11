@@ -8042,6 +8042,72 @@
         "MV",
         "MN"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [],
+          "target": "KP"
+        },
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pakistan-guardians-rising-three-pack-opening-20210114"
+              ],
+              "country": "PK",
+              "geography_basis": "opening_location",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-explicit-integer-hit-counts",
+                "same-reporter-separate-earlier-cohort-from-known-20210327-opening",
+                "small-sample",
+                "unverified-research-not-approved-for-collection-or-production-statistics"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": "guardians-rising-three-pack-blister",
+              "set": "guardians-rising",
+              "source_sample": null,
+              "study_id": "pakistan-guardians-rising-three-pack-opening-20210114",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/kx7bk5/a_humongous_thank_you_to_uicyrope7786_for_sending"
+              ]
+            }
+          ],
+          "target": "PK"
+        },
+        {
+          "studies": [],
+          "target": "PS"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "MM",
+        "NP",
+        "KP",
+        "OM",
+        "PK",
+        "PS"
+      ]
     }
   ],
   "global_batches": [
