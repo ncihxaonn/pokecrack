@@ -8785,6 +8785,116 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FR"
+        },
+        {
+          "studies": [],
+          "target": "DE"
+        },
+        {
+          "studies": [],
+          "target": "IT"
+        },
+        {
+          "studies": [],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokebeach-oof-tcg-pitch-black-84-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-unreported",
+                "percentage-only-categories-omitted",
+                "small-self-reported-sample",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "self_reported_forum",
+              "metrics": [
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 84,
+              "product": "pitch-black",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "pokebeach-pitch-black-84-packs-2026",
+              "urls": [
+                "https://www.pokebeach.com/forums/threads/the-look-what-i-pulled-pull-rates-thread.111190/page-103"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "cardzard-battle-styles-1405-packs-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "most-hit-counts-only-visible-in-uncollected-infographic",
+                "opening-location-unreported",
+                "original-linked-page-fetch-failed",
+                "reddit-summary-opened",
+                "sample-mixes-build-and-battle-boxes-and-sealed-booster-cases",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "retailer_opening_study",
+              "metrics": [
+                {
+                  "category": "golden-houndoom",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1405,
+              "product": "battle-styles",
+              "set": "battle-styles",
+              "source_sample": null,
+              "study_id": "cardzard-battle-styles-1405-packs-2021",
+              "urls": [
+                "https://cardzard.com/blogs/news/battle-styles-pull-rate-data",
+                "https://www.reddit.com/r/PokemonTCG/comments/m6zx5c/battle_styles_pull_rate_data_from_1405_packs"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL"
+      ]
     }
   ],
   "global_batches": [
