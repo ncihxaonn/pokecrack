@@ -3983,6 +3983,243 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "gx-ultra-shiny-150-pack-cohort"
+              ],
+              "country": "US",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "japanese-product",
+                "opening-location-not-explicit",
+                "publisher-country-used",
+                "unverified-research"
+              ],
+              "method": "multi-box-opening-study",
+              "metrics": [
+                {
+                  "category": "foil",
+                  "hits": 276,
+                  "unit": "cards"
+                },
+                {
+                  "category": "prism-star",
+                  "hits": 24,
+                  "unit": "cards"
+                },
+                {
+                  "category": "reverse-holo",
+                  "hits": 120,
+                  "unit": "cards"
+                },
+                {
+                  "category": "shiny-pokemon",
+                  "hits": 21,
+                  "unit": "cards"
+                },
+                {
+                  "category": "shiny-pokemon-gx",
+                  "hits": 15,
+                  "unit": "cards"
+                },
+                {
+                  "category": "standard-pokemon-gx",
+                  "hits": 162,
+                  "unit": "cards"
+                },
+                {
+                  "category": "super-rare",
+                  "hits": 7,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 150,
+              "product": "gx-ultra-shiny-booster-boxes",
+              "set": "gx-ultra-shiny",
+              "source_sample": null,
+              "study_id": "gx-ultra-shiny-150-pack-study-2019",
+              "urls": [
+                "https://flipsidegaming.com/blogs/pokemon-blog/gx-ultra-shiny-set-review"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "lost-origin-36-pack-opening-20221014"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "pulls-mainly-documented-in-images",
+                "separate-prior-12-pack-cohort-excluded",
+                "unverified-research"
+              ],
+              "method": "complete-box-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "lost-origin-booster-box",
+              "set": "lost-origin",
+              "source_sample": null,
+              "study_id": "lost-origin-36-pack-opening-20221014",
+              "urls": [
+                "https://www.nikouusitalo.com/blog/pulls-from-opening-36-pokemon-lost-origins-booster-packs"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "champions-path-about-38-pack-cohort-20201001"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "approximate-title-count",
+                "collector-policy-not-enabled",
+                "comment-cohorts-excluded",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "pulls-documented-by-image",
+                "unverified-research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 38,
+              "product": "champions-path-mixed-products",
+              "set": "champions-path",
+              "source_sample": null,
+              "study_id": "champions-path-about-38-pack-opening-20201001",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/j3f1rp/finaly_did_it_opened_about_38_packs_2_etb_today"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "new-zealand-dollar-12-pack-cohort-20201001"
+              ],
+              "country": "NZ",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-cohort-separate-from-post",
+                "independent-review-pending",
+                "new-zealand-market-evidenced-by-reported-currency",
+                "opening-location-not-explicit",
+                "some-rarity-wording-ambiguous",
+                "unverified-research"
+              ],
+              "method": "complete-opening-comment",
+              "metrics": [
+                {
+                  "category": "dud-pack",
+                  "hits": 1,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "v-or-better",
+                  "hits": 10,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "without-v-or-better",
+                  "hits": 2,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 12,
+              "product": "six-double-booster-packs",
+              "set": "mixed-sword-shield-base-darkness-ablaze",
+              "source_sample": null,
+              "study_id": "new-zealand-dollar-12-pack-comment-20201001",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/j3f1rp/finaly_did_it_opened_about_38_packs_2_etb_today"
+              ]
+            }
+          ],
+          "target": "NZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbage-rips-video-catalog-through-20260905"
+              ],
+              "country": "US",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "dynamic-catalog-snapshot",
+                "independent-review-pending",
+                "individual-video-cohorts-aggregated",
+                "mixed-products-and-languages",
+                "possible-future-count-changes",
+                "publisher-country-used",
+                "unverified-research"
+              ],
+              "method": "video-catalog-aggregate",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 474,
+              "product": "mixed-sealed-pokemon-tcg-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "garbage-rips-474-pack-catalog-snapshot-202609",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            }
+          ],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU"
+      ]
     }
   ],
   "global_batches": [
