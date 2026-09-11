@@ -442,6 +442,8 @@ do $projection$
 declare
   definition text;
   anchor text := E'\n),\ndata_version_rows as (';
+  country_anchor text := $country_anchor$'coverageAttributionBases', bases.value,$country_anchor$;
+  aggregate_anchor text := $aggregate_anchor$count(distinct rows.publisher_identity)::integer as independent_sources,$aggregate_anchor$;
 begin
   select pg_get_functiondef('public.get_public_study_coverage_v2()'::regprocedure)
     into definition;
@@ -476,8 +478,8 @@ begin
         from ingest.global_volume_public_rows_v1()
         group by domain order by domain) v),'[]'::jsonb)$sources$
   );
-  if position($country_marker$'coverageAttributionBases', bases.value,$country_marker$ in definition) = 0
-    or position($aggregate_marker$count(distinct rows.domain)::integer as independent_sources,$aggregate_marker$ in definition) = 0 then
+  if position(country_anchor in definition) = 0
+    or position(aggregate_anchor in definition) = 0 then
     raise exception 'coverage country aggregation boundary drift';
   end if;
   definition := replace(
@@ -488,11 +490,8 @@ begin
   );
   definition := replace(
     definition,
-    $aggregate_marker$count(distinct rows.domain)::integer as independent_sources,
-      max(rows.last_verified_at) as updated_at$aggregate_marker$,
-    $aggregate_replacement$count(distinct rows.domain)::integer as independent_sources,
-      bool_or(rows.public_id like 'global_volume_%') as reported_volume,
-      max(rows.last_verified_at) as updated_at$aggregate_replacement$
+    aggregate_anchor,
+    aggregate_anchor || E'\n      bool_or(rows.public_id like ''global_volume_%'') as reported_volume,'
   );
   execute definition;
 end;
@@ -583,7 +582,7 @@ declare f regprocedure;
 begin
   for f in select p.oid::regprocedure
     from pg_proc p join pg_namespace n on n.oid=p.pronamespace
-    where n.nspname='ingest' and p.proname like 'global_volume_%' loop
+    where n.nspname='ingest' and p.proname like '%global_volume%' loop
     execute format('alter function %s owner to postgres', f);
     execute format('revoke all on function %s from public,anon,authenticated,service_role', f);
   end loop;

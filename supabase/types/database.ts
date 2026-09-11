@@ -2018,15 +2018,7 @@ export type Database = {
           state?: string
           url?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "global_volume_candidates_country_code_fkey"
-            columns: ["country_code"]
-            isOneToOne: false
-            referencedRelation: "iso_alpha2_codes"
-            referencedColumns: ["code"]
-          },
-        ]
+        Relationships: []
       }
       global_volume_observations: {
         Row: {
@@ -2084,13 +2076,6 @@ export type Database = {
           source_url?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "global_volume_observations_country_code_fkey"
-            columns: ["country_code"]
-            isOneToOne: false
-            referencedRelation: "iso_alpha2_codes"
-            referencedColumns: ["code"]
-          },
           {
             foreignKeyName: "global_volume_observations_source_url_fkey"
             columns: ["source_url"]
@@ -3790,6 +3775,22 @@ export type Database = {
           isSetofReturn: true
         }
       }
+      claim_global_volume_candidates_v1: {
+        Args: { p_limit?: number; p_worker_id: string }
+        Returns: {
+          attempts: number
+          country_code: string
+          geography_basis: string
+          pack_count: number
+          pack_precision: string
+          product_scope: string
+          report_group_sha256: string
+          set_external_id: string
+          source_language: string
+          state: string
+          url: string
+        }[]
+      }
       claim_jobs: {
         Args: {
           batch_size?: number
@@ -4333,22 +4334,6 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      claim_global_volume_candidates_v1: {
-        Args: { p_limit?: number; p_worker_id: string }
-        Returns: {
-          attempts: number
-          country_code: string
-          geography_basis: string
-          pack_count: number
-          pack_precision: string
-          product_scope: string
-          report_group_sha256: string
-          set_external_id: string
-          source_language: string
-          state: string
-          url: string
-        }[]
-      }
       finalize_bluesky_jetstream_job: {
         Args: {
           job_id: string
@@ -4451,6 +4436,10 @@ export type Database = {
           isOneToOne: false
           isSetofReturn: true
         }
+      }
+      finalize_global_volume_candidate_v1: {
+        Args: { p_result: Json; p_url: string; p_worker_id: string }
+        Returns: Json
       }
       finalize_mastodon_public_hashtag_job: {
         Args: {
@@ -4731,33 +4720,6 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      finalize_global_volume_candidate_v1: {
-        Args: { p_result: Json; p_url: string; p_worker_id: string }
-        Returns: Json
-      }
-      global_volume_public_rows_v1: {
-        Args: never
-        Returns: {
-          attribution_basis: string
-          canonical_url: string
-          configured_set_name: string
-          country_code: string
-          country_name: string
-          domain: string
-          last_verified_at: string
-          ordinal: number
-          pack_count: number
-          product_scope: string
-          public_id: string
-          public_name: string
-          public_note: string
-          publisher_identity: string
-          set_external_id: string
-          set_language: string
-          source_observed_at: string
-          study_key: string
-        }[]
-      }
       get_admin_dashboard_snapshot_v1: { Args: never; Returns: Json }
       get_bluesky_worker_policy_snapshot_v1: {
         Args: never
@@ -4831,6 +4793,29 @@ export type Database = {
             }
             Returns: Json
           }
+      global_volume_public_rows_v1: {
+        Args: never
+        Returns: {
+          attribution_basis: string
+          canonical_url: string
+          configured_set_name: string
+          country_code: string
+          country_name: string
+          domain: string
+          last_verified_at: string
+          ordinal: number
+          pack_count: number
+          product_scope: string
+          public_id: string
+          public_name: string
+          public_note: string
+          publisher_identity: string
+          set_external_id: string
+          set_language: string
+          source_observed_at: string
+          study_key: string
+        }[]
+      }
       heartbeat_bluesky_jetstream_job_v1: {
         Args: {
           p_job_id: string
@@ -4939,7 +4924,10 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      import_global_volume_intake_v1: { Args: { p_manifest: Json }; Returns: Json }
+      import_global_volume_intake_v1: {
+        Args: { p_manifest: Json }
+        Returns: Json
+      }
       import_research_intake_v1: { Args: { p_manifest: Json }; Returns: Json }
       list_authorized_opening_reviews_v1: {
         Args: { requested_limit: number; requested_state: string }
