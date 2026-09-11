@@ -6091,6 +6091,8 @@ class ComposeSecurityPolicyTests(unittest.TestCase):
             "isolated_restore_check.sh",
             "verify-runtime-release.sh",
             "import-research-intake.sh",
+            "import-global-volume.sh",
+            "process-global-volume.sh",
         }
         scripts = DEPLOY_ROOT / "scripts"
         self.assertEqual({path.name for path in scripts.glob("*.sh")}, required)
