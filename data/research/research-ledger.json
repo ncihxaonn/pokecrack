@@ -8445,6 +8445,104 @@
         "TR",
         "TM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "9to5toys-chaos-rising-one-box-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "embedded-video-not-fetched",
+                "hit-definition-not-stated",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "single-booster-box-sample",
+                "study-is-not-established-as-local-to-target",
+                "unverified-research"
+              ],
+              "method": "article-and-video-opening-report",
+              "metrics": [
+                {
+                  "category": "reported-hits",
+                  "hits": 15,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "9to5toys-chaos-rising-36-packs-2026",
+              "urls": [
+                "https://9to5toys.com/2026/05/12/pokemon-chaos-rising-rising-booster-box-opening"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "ecency-korean-battle-partners-one-box-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-supported-only-by-publisher-statement",
+                "reported-pull-categories-overlap",
+                "single-booster-box-sample",
+                "study-is-not-local-to-target",
+                "unverified-research"
+              ],
+              "method": "article-opening-report",
+              "metrics": [
+                {
+                  "category": "ex-full-art-or-illustration-rare",
+                  "hits": 8,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare-or-better",
+                  "hits": 17,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "korean-booster-box",
+              "set": "battle-partners",
+              "source_sample": null,
+              "study_id": "ecency-korean-battle-partners-30-packs-2025",
+              "urls": [
+                "https://ecency.com/@dkmathstats/opening-a-korean-booster-box"
+              ]
+            }
+          ],
+          "target": "AE"
+        },
+        {
+          "studies": [],
+          "target": "UZ"
+        },
+        {
+          "studies": [],
+          "target": "YE"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "AE",
+        "UZ",
+        "YE"
+      ]
     }
   ],
   "global_batches": [
