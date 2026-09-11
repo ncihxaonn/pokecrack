@@ -44,6 +44,7 @@ export type CoverageCollectionClass =
   | "mixed";
 
 export type CoverageAttributionBasis =
+  | "opening_location"
   | "publisher_country"
   | "author_public_residence"
   | "product_market";
@@ -56,6 +57,7 @@ export interface RegionMetric extends ObservedMetric {
   readonly dataVersions?: readonly string[];
   readonly collectionClass?: CoverageCollectionClass;
   readonly coverageAttributionBases?: readonly CoverageAttributionBasis[];
+  readonly reportedVolume?: boolean;
 }
 
 export interface CountryMapCell extends ObservedMetric {
@@ -64,6 +66,8 @@ export interface CountryMapCell extends ObservedMetric {
   readonly dataVersions?: readonly string[];
   readonly collectionClass?: CoverageCollectionClass;
   readonly coverageAttributionBases?: readonly CoverageAttributionBasis[];
+  /** The bucket includes quantity-only public report counts. */
+  readonly reportedVolume?: boolean;
   readonly periodStart: string;
   readonly periodEnd: string;
   readonly setScope: "all";

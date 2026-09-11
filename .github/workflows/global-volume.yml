@@ -1,0 +1,85 @@
+name: Global reported volume intake
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: pokecrack-research-ledger
+  cancel-in-progress: false
+
+jobs:
+  volume:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: worker-production
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Resume the validated research checkpoint
+        run: python3 scripts/research_checkpoint.py
+      - name: Build the bounded quantity-only manifest
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          python3 scripts/global_volume_intake.py data/research/research-ledger.json \
+            --seed data/research/global-studies.json > "$RUNNER_TEMP/global-volume.json"
+      - name: Import and process on MAM
+        env:
+          VPS_HOST: ${{ vars.VPS_HOST }}
+          VPS_USER: ${{ vars.VPS_USER }}
+          VPS_PORT: ${{ vars.VPS_PORT || '22' }}
+          SSH_PRIVATE_KEY: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.VPS_KNOWN_HOSTS }}
+        run: |
+          set -Eeuo pipefail
+          umask 077
+          [[ "$VPS_HOST" == 72.62.101.225 && "$VPS_USER" == codex ]]
+          [[ "$VPS_PORT" =~ ^[0-9]{1,5}$ ]]
+          [[ -n "$SSH_PRIVATE_KEY" && -n "$SSH_KNOWN_HOSTS" ]]
+          [[ "$GITHUB_SHA" =~ ^[0-9a-f]{40}$ ]]
+          ssh_dir=$(mktemp -d "$RUNNER_TEMP/global-volume-ssh.XXXXXX")
+          cleanup() {
+            rm -f -- "$ssh_dir/key" "$ssh_dir/known_hosts"
+            rmdir -- "$ssh_dir"
+          }
+          trap cleanup EXIT
+          printf '%s\n' "$SSH_PRIVATE_KEY" > "$ssh_dir/key"
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
+          unset SSH_PRIVATE_KEY SSH_KNOWN_HOSTS
+          opts=(-i "$ssh_dir/key" -o "UserKnownHostsFile=$ssh_dir/known_hosts"
+                -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
+                -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=3)
+          runtime_sha=$(python3 scripts/research_runtime.py \
+            --workflow-sha "$GITHUB_SHA" --host "$VPS_HOST" --user "$VPS_USER" \
+            --port "$VPS_PORT" --identity-file "$ssh_dir/key" --known-hosts "$ssh_dir/known_hosts")
+          [[ "$runtime_sha" == "$GITHUB_SHA" ]]
+          ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "bash /home/codex/pokecrack/deploy/scripts/import-global-volume.sh '$runtime_sha'" \
+            < "$RUNNER_TEMP/global-volume.json" > "$RUNNER_TEMP/global-volume-import.json"
+          ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "bash /home/codex/pokecrack/deploy/scripts/process-global-volume.sh '$runtime_sha'" \
+            > "$RUNNER_TEMP/global-volume-process.json"
+      - name: Publish bounded cycle telemetry
+        run: |
+          set -Eeuo pipefail
+          echo 'Global reported-volume candidates were imported and a bounded public-page check was attempted on MAM.' >> "$GITHUB_STEP_SUMMARY"
+      - name: Save bounded intake outcome
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: global-volume-cycle-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/global-volume-import.json
+            ${{ runner.temp }}/global-volume-process.json
+          retention-days: 30
+          if-no-files-found: warn

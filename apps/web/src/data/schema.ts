@@ -26,6 +26,7 @@ const evidenceState = z.enum([
 ]);
 const productType = z.enum(["Booster Box", "ETB", "Booster Bundle"]);
 export const coverageAttributionBasisSchema = z.enum([
+  "opening_location",
   "publisher_country",
   "author_public_residence",
   "product_market",
@@ -33,7 +34,7 @@ export const coverageAttributionBasisSchema = z.enum([
 export const coverageAttributionBasesSchema = z
   .array(coverageAttributionBasisSchema)
   .min(1)
-  .max(3)
+  .max(4)
   .superRefine((bases, context) => {
     if (new Set(bases).size !== bases.length) {
       context.addIssue({
@@ -202,6 +203,7 @@ const coverageAttributionMetadata = {
   dataVersions: countryDataVersionsSchema.optional(),
   collectionClass: z.enum(["coverage_only", "observed_sample", "mixed"]).optional(),
   coverageAttributionBases: coverageAttributionBasesSchema.optional(),
+  reportedVolume: z.boolean().optional(),
 } as const;
 const regionMetric = observedMetric
   .extend({
