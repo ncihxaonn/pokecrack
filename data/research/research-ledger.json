@@ -5696,6 +5696,107 @@
         "ML",
         "MR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MU"
+        },
+        {
+          "studies": [],
+          "target": "MZ"
+        },
+        {
+          "studies": [],
+          "target": "NA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-mega-brave-display-20-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "pull-counts-not-tabulated",
+                "target-query-provenance-only",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "video-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "japanese-mega-brave-booster-display",
+              "set": "mega-brave",
+              "source_sample": null,
+              "study_id": "dailymotion-mega-brave-display-20-packs-2025",
+              "urls": [
+                "https://www.dailymotion.com/video/x9qi1ji"
+              ]
+            }
+          ],
+          "target": "NE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "9to5toys-chaos-rising-36-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-definition-not-specified",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "target-query-provenance-only",
+                "unverified-research-not-approved-for-statistics",
+                "video-cohort-overlaps-article"
+              ],
+              "method": "article-and-video-complete-opening",
+              "metrics": [
+                {
+                  "category": "hits",
+                  "hits": 15,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "chaos-rising-booster-box",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "9to5toys-chaos-rising-36-packs-2026",
+              "urls": [
+                "https://9to5toys.com/2026/05/12/pokemon-chaos-rising-rising-booster-box-opening"
+              ]
+            }
+          ],
+          "target": "RW"
+        },
+        {
+          "studies": [],
+          "target": "ST"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "MU",
+        "MZ",
+        "NA",
+        "NE",
+        "RW",
+        "ST"
+      ]
     }
   ],
   "global_batches": [
