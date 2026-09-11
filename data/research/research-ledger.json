@@ -4515,6 +4515,329 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokemontcgfr-mixed-approximately-400-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "approximately_400_packs_reported",
+                "collector-policy-not-enabled",
+                "exact_denominator_not_reported",
+                "hit_counts_not_enumerated",
+                "independent-review-pending",
+                "mixed_products_and_languages",
+                "opening_location_unknown",
+                "unverified_research_not_source_approved"
+              ],
+              "method": "self_reported_dated_opening_summary",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed_pokemon_tcg_products",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "pokemontcgfr-mixed-approximately-400-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1u2sj44/conclusion_apr%C3%A8s_3000e_de_booster_ouvert"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokemontcgde-mixed-three-sets-120-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "initial_total_121_corrected_to_120_in_comment",
+                "opening_location_unknown",
+                "results_selectively_described",
+                "unverified_research_not_source_approved"
+              ],
+              "method": "self_reported_complete_opening_log",
+              "metrics": [
+                {
+                  "category": "demigod_pack",
+                  "hits": 1,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 120,
+              "product": "mixed_german_language_sets",
+              "set": "mixed_stellarkrone_stuermische_funken_prismatische_entwicklungen",
+              "source_sample": null,
+              "study_id": "pokemontcgde-mixed-three-sets-120-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDe/comments/1jeepha/januar_mit_sammeln_angefangen_hier_das_ergebnis"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "pokemontcgde-reisegefaehrten-30-packs-comment-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_cohort_distinct_from_post_cohort",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "unverified_research_not_source_approved"
+              ],
+              "method": "self_reported_comment_opening_log",
+              "metrics": [
+                {
+                  "category": "art_rare",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full_art_trainer",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "gold_card",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "journey_together",
+              "set": "reisegefaehrten",
+              "source_sample": null,
+              "study_id": "pokemontcgde-reisegefaehrten-30-packs-comment-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDe/comments/1js02np/reisegef%C3%A4hrten_g%C3%B6nnt"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "pokemontcgde-prismatische-412-title-claim-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "author_comment_mentions_410_packs_acquired",
+                "collector-policy-not-enabled",
+                "exact_denominator_conflict",
+                "image_dependent_pull_inventory",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "title_claims_412_packs",
+                "unverified_research_not_source_approved"
+              ],
+              "method": "self_reported_complete_opening_summary",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 412,
+              "product": "prismatic_evolutions",
+              "set": "prismatische_entwicklungen",
+              "source_sample": null,
+              "study_id": "pokemontcgde-prismatische-412-title-claim-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDe/comments/1in2ctr/prismatische_entwicklung_412_booster_ge%C3%B6ffnet"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-gedis-minimum-500-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "it",
+              "limitations": [
+                "authenticity_not_independently_verified",
+                "collector-policy-not-enabled",
+                "good_card_not_formally_defined",
+                "independent-review-pending",
+                "minimum_500_packs_reported",
+                "opening_location_unknown",
+                "products_distributed_through_gedis",
+                "unverified_research_not_source_approved"
+              ],
+              "method": "self_reported_cumulative_opening_summary",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 500,
+              "product": "mixed_pokemon_tcg_products",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "reddit-gedis-minimum-500-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1rdo7xa/gedis"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "pokemonfansita-nearly-200-packs-charizard-trio-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "it",
+              "limitations": [
+                "approximately_200_packs_reported",
+                "collector-policy-not-enabled",
+                "exact_denominator_not_reported",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "set_not_identified_in_text",
+                "unverified_research_not_source_approved"
+              ],
+              "method": "self_reported_dated_opening_summary",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "pokemonfansita-nearly-200-packs-charizard-trio-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFans_ITA/comments/1q5up1j/finalmente_li_ho_tutti_e_3"
+              ]
+            }
+          ],
+          "target": "IT"
+        },
+        {
+          "studies": [],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokemondealsuk-prismatic-66-pack-comment-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_cohort_distinct_from_post_cohort",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "percentages_ignored",
+                "unverified_research_not_source_approved"
+              ],
+              "method": "self_reported_comment_opening_log",
+              "metrics": [
+                {
+                  "category": "ace_spec",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full_art_or_ultra_rare_trainer",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper_rare_or_gold",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "master_ball_reverse_holo",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 66,
+              "product": "prismatic_evolutions",
+              "set": "prismatic_evolutions",
+              "source_sample": null,
+              "study_id": "pokemondealsuk-prismatic-66-pack-comment-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDealsUK/comments/1j7v1aj/pok%C3%A9mon_adventure_awaits"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "pokemondealsuk-prismatic-36-pack-comment-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_cohort_distinct_from_other_page_cohorts",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "other_trainer_hits_not_enumerated",
+                "unverified_research_not_source_approved"
+              ],
+              "method": "self_reported_comment_opening_summary",
+              "metrics": [
+                {
+                  "category": "master_ball_reverse_holo",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokemon_secret_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "prismatic_evolutions",
+              "set": "prismatic_evolutions",
+              "source_sample": null,
+              "study_id": "pokemondealsuk-prismatic-36-pack-comment-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDealsUK/comments/1j7v1aj/pok%C3%A9mon_adventure_awaits"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL"
+      ]
     }
   ],
   "global_batches": [
