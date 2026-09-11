@@ -29,7 +29,8 @@ class GlobalReportedVolumeContractTests(unittest.TestCase):
         self.assertIn("ingest.global_volume_public_rows_v1()", MIGRATION)
         self.assertIn("where candidates.country_code is not null", MIGRATION)
         self.assertIn("where c.country_code is null", MIGRATION)
-        self.assertIn("'reportedVolume', rows.reported_volume", MIGRATION)
+        self.assertIn("case when rows.reported_volume then jsonb_build_object", MIGRATION)
+        self.assertIn("'reportedVolume', true", MIGRATION)
         self.assertIn("'unknownLocation',unknown_location", MIGRATION)
 
     def test_generated_types_include_the_three_worker_rpcs_and_private_tables(self) -> None:

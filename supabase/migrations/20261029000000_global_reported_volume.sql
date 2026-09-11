@@ -442,7 +442,8 @@ do $projection$
 declare
   definition text;
   anchor text := E'\n),\ndata_version_rows as (';
-  country_anchor text := $country_anchor$'coverageAttributionBases', bases.value,$country_anchor$;
+  country_object_anchor text := $country_object_anchor$'updatedAt', rows.updated_at
+      ) order by rows.country_name, rows.country_code$country_object_anchor$;
   aggregate_anchor text := $aggregate_anchor$count(distinct rows.publisher_identity)::integer as independent_sources,$aggregate_anchor$;
 begin
   select pg_get_functiondef('public.get_public_study_coverage_v2()'::regprocedure)
@@ -478,15 +479,17 @@ begin
         from ingest.global_volume_public_rows_v1()
         group by domain order by domain) v),'[]'::jsonb)$sources$
   );
-  if position(country_anchor in definition) = 0
+  if position(country_object_anchor in definition) = 0
     or position(aggregate_anchor in definition) = 0 then
     raise exception 'coverage country aggregation boundary drift';
   end if;
   definition := replace(
     definition,
-    $country_marker$'coverageAttributionBases', bases.value,$country_marker$,
-    $country_replacement$'reportedVolume', rows.reported_volume,
-        'coverageAttributionBases', bases.value,$country_replacement$
+    country_object_anchor,
+    $country_object_replacement$'updatedAt', rows.updated_at
+      ) || case when rows.reported_volume then jsonb_build_object(
+        'reportedVolume', true
+      ) else '{}'::jsonb end order by rows.country_name, rows.country_code$country_object_replacement$
   );
   definition := replace(
     definition,
