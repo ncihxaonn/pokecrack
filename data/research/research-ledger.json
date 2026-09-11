@@ -6828,6 +6828,111 @@
         "MF",
         "VC"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SX"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-chaos-rising-one-booster-box-20260720"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "pulls-shown-in-image-not-transcribed",
+                "single-box-sample",
+                "target-geography-not-established",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "chaos-rising-booster-box",
+              "set": "chaos-rising",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-chaos-rising-one-booster-box-20260720",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v1zzvm/first_time_pack_opener_and_i_pulled_these_in_one"
+              ]
+            }
+          ],
+          "target": "TT"
+        },
+        {
+          "studies": [],
+          "target": "TC"
+        },
+        {
+          "studies": [],
+          "target": "VI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bleedingcool-lost-origin-booster-box-20220907"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "category-counts-not-used-without-exact-pack-denominator",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "pack-count-not-explicitly-reported",
+                "single-box-sample",
+                "target-geography-not-established",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "complete-opening-article",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "lost-origin-booster-box",
+              "set": "lost-origin",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "bleedingcool-lost-origin-booster-box-20220907",
+              "urls": [
+                "https://bleedingcool.com/games/pokemon-tcg-pull-rate-quest-lost-origin-booster-box-opening-1"
+              ]
+            }
+          ],
+          "target": "BZ"
+        },
+        {
+          "studies": [],
+          "target": "CR"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "SX",
+        "TT",
+        "TC",
+        "VI",
+        "BZ",
+        "CR"
+      ]
     }
   ],
   "global_batches": [
