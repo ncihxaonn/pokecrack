@@ -6933,6 +6933,218 @@
         "BZ",
         "CR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SV"
+        },
+        {
+          "studies": [],
+          "target": "GT"
+        },
+        {
+          "studies": [],
+          "target": "HN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-first-packs-mixed-approximately-ten-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "approximate_pack_count_not_representable_by_pack_precision",
+                "author_uncertainly_reported_six_destined_rivals_and_four_journey_together",
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "hit_counts_not_available_as_text",
+                "independent-review-pending",
+                "target_query_did_not_establish_nicaragua_geography",
+                "unverified_research"
+              ],
+              "method": "photo_post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "destined-rivals-and-journey-together",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-first-packs-mixed-approximately-ten-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r84rxz/i_opened_my_first_ever_packs"
+              ]
+            }
+          ],
+          "target": "NI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-60-pack-title-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "denominator_reported_in_title",
+                "independent-review-pending",
+                "integer_category_numerators_not_available_as_text",
+                "pulls_presented_by_image",
+                "target_query_did_not_establish_panama_geography",
+                "unverified_research"
+              ],
+              "method": "photo_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 60,
+              "product": "ascended-heroes",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-60-pack-title-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1twvzpe/i_opened_60_packs_so_you_dont_have_to"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-mixed-650-pack-title-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "denominator_conflict_precludes_metrics",
+                "independent-review-pending",
+                "pulls_presented_by_images",
+                "target_query_did_not_establish_panama_geography",
+                "title_reports_650_packs_but_set_breakdown_sums_to_653",
+                "unverified_research"
+              ],
+              "method": "photo_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 650,
+              "product": "mixed",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-650-pack-title-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pz6xq8/opened_650_packs_heres_what_i_got"
+              ]
+            }
+          ],
+          "target": "PA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-silver-tempest-sleeved-case-144-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "independent-review-pending",
+                "linked_spreadsheet_not_separately_reviewed",
+                "self_reported_opening",
+                "target_query_did_not_establish_bolivia_geography",
+                "unverified_research"
+              ],
+              "method": "tracked_opening",
+              "metrics": [
+                {
+                  "category": "black-code-cards",
+                  "hits": 62,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full-art-pokemon",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokemon-v",
+                  "hits": 18,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokemon-vmax",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokemon-vstar",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "radiant-pokemon",
+                  "hits": 8,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-rare-gold-pokemon",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-rare-rainbow-pokemon",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-rare-rainbow-trainer",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "trainer-gallery",
+                  "hits": 19,
+                  "unit": "cards"
+                },
+                {
+                  "category": "white-code-cards",
+                  "hits": 82,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 144,
+              "product": "silver-tempest-sleeved-booster-case",
+              "set": "silver-tempest",
+              "source_sample": null,
+              "study_id": "reddit-silver-tempest-sleeved-case-144-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/10e5fss/pulls_from_full_case_144_of_silver_tempest"
+              ]
+            }
+          ],
+          "target": "BO"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "SV",
+        "GT",
+        "HN",
+        "NI",
+        "PA",
+        "BO"
+      ]
     }
   ],
   "global_batches": [
