@@ -8004,6 +8004,44 @@
         "JO",
         "KZ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [],
+          "target": "LA"
+        },
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "KW",
+        "KG",
+        "LA",
+        "LB",
+        "MV",
+        "MN"
+      ]
     }
   ],
   "global_batches": [
