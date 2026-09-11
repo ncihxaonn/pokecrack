@@ -4944,6 +4944,79 @@
         "FI",
         "GR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokemontcgireland-four-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "pack_and_hit_counts_stated_in_comment",
+                "product_set_not_identified",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "photo_log",
+              "metrics": [
+                {
+                  "category": "full_art",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 4,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "pokemontcgireland-four-packs-two-full-arts-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGIreland/comments/1uiy1w5/found_in_the_wild_today"
+              ]
+            }
+          ],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
