@@ -5624,6 +5624,78 @@
         "GW",
         "LS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LR"
+        },
+        {
+          "studies": [],
+          "target": "LY"
+        },
+        {
+          "studies": [],
+          "target": "MG"
+        },
+        {
+          "studies": [],
+          "target": "MW"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "rockhellmag-detective-pikachu-two-boxes-2019"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "individual_pull_counts_not_reported",
+                "opening_location_not_reported",
+                "pack_count_not_reported",
+                "target_search_provenance_only",
+                "two_different_collection_boxes_combined",
+                "unverified_research_not_approved_for_statistics"
+              ],
+              "method": "self_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "detective_pikachu_collection_boxes",
+              "set": "detective_pikachu_and_sun_moon_mixed",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "rockhellmag-detective-pikachu-two-boxes-2019",
+              "urls": [
+                "https://rockhellmag.fr/pokemon-jcc-presentation-globale-et-unboxing"
+              ]
+            }
+          ],
+          "target": "ML"
+        },
+        {
+          "studies": [],
+          "target": "MR"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "LR",
+        "LY",
+        "MG",
+        "MW",
+        "ML",
+        "MR"
+      ]
     }
   ],
   "global_batches": [
