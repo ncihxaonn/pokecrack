@@ -6535,6 +6535,44 @@
         "DM",
         "DO"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GD"
+        },
+        {
+          "studies": [],
+          "target": "GP"
+        },
+        {
+          "studies": [],
+          "target": "HT"
+        },
+        {
+          "studies": [],
+          "target": "JM"
+        },
+        {
+          "studies": [],
+          "target": "MQ"
+        },
+        {
+          "studies": [],
+          "target": "MS"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "GD",
+        "GP",
+        "HT",
+        "JM",
+        "MQ",
+        "MS"
+      ]
     }
   ],
   "global_batches": [
