@@ -6497,6 +6497,44 @@
         "BB",
         "BQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "VG"
+        },
+        {
+          "studies": [],
+          "target": "KY"
+        },
+        {
+          "studies": [],
+          "target": "CU"
+        },
+        {
+          "studies": [],
+          "target": "CW"
+        },
+        {
+          "studies": [],
+          "target": "DM"
+        },
+        {
+          "studies": [],
+          "target": "DO"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "VG",
+        "KY",
+        "CU",
+        "CW",
+        "DM",
+        "DO"
+      ]
     }
   ],
   "global_batches": [
