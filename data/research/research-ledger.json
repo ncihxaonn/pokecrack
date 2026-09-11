@@ -7592,6 +7592,119 @@
         "IN",
         "MO"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "collectorshuki-steam-siege-dollar-tree-display-120-packs-2016"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "article_may_overlap_with_companion_video",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "nonstandard_three_card_dollar_tree_packs",
+                "opening_location_unknown",
+                "single_display_sample",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [
+                {
+                  "category": "breaks",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "commons",
+                  "hits": 173,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ex",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full_arts",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "holos",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rares",
+                  "hits": 21,
+                  "unit": "cards"
+                },
+                {
+                  "category": "reverse_holos",
+                  "hits": 30,
+                  "unit": "cards"
+                },
+                {
+                  "category": "trainers",
+                  "hits": 38,
+                  "unit": "cards"
+                },
+                {
+                  "category": "uncommons",
+                  "hits": 82,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 120,
+              "product": "xy-steam-siege-dollar-tree-three-card-packs",
+              "set": "xy-steam-siege",
+              "source_sample": null,
+              "study_id": "collectorshuki-steam-siege-dollar-tree-display-120-packs-2016",
+              "urls": [
+                "https://collectorshuki.com/2016/09/02/opening-a-full-dollar-tree-pokemon-tcg-steam-siege-booster-box-120-packs-feat-kittenfaerie"
+              ]
+            }
+          ],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
