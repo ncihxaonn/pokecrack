@@ -8108,6 +8108,157 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-phantasmal-flames-100-pack-opening-2025"
+              ],
+              "country": "SG",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "article-mixes-the-original-100-pack-session-with-community-aggregate-estimates",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "primary-opening-ownership-not-explicit",
+                "separate-prior-booster-box-session-excluded-as-denominator-not-explicit",
+                "some-rarity-labels-are-internally-ambiguous",
+                "unverified-research"
+              ],
+              "method": "documented_article_opening",
+              "metrics": [
+                {
+                  "category": "illustration_rare",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "phantasmal-flames",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "tcgtalk-phantasmal-flames-100-pack-opening-2025",
+              "urls": [
+                "https://tcgtalk.com/guides/phantasmal-flames-pull-rates-case-opening"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "vortex-gaming-korean-evolving-heroes-one-box-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-available-in-opened-page-text",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "overlap-unresolved",
+                "pack-count-not-reported",
+                "possible-embedded-video-cohort",
+                "unverified-research"
+              ],
+              "method": "video_article_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "korean-evolving-heroes-booster-box",
+              "set": "evolving-heroes",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "vortex-gaming-korean-evolving-heroes-one-box-2026",
+              "urls": [
+                "https://vortexgaming.io/en/postdetail/1193935"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "ecency-korean-battle-partners-one-box-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "korean-language-product-opened-outside-korea",
+                "reported-hit-categories-overlap",
+                "single-booster-box-sample",
+                "unverified-research"
+              ],
+              "method": "first_person_article_opening",
+              "metrics": [
+                {
+                  "category": "pokemon_ex_full_art_or_illustration_cards",
+                  "hits": 8,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare_or_better_cards",
+                  "hits": 17,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "korean-battle-partners-booster-box",
+              "set": "battle-partners",
+              "source_sample": null,
+              "study_id": "ecency-korean-battle-partners-one-box-2025",
+              "urls": [
+                "https://ecency.com/@dkmathstats/opening-a-korean-booster-box"
+              ]
+            }
+          ],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY"
+      ]
     }
   ],
   "global_batches": [
