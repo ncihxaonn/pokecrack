@@ -9487,6 +9487,181 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-serbia-two-pack-opening-2024"
+              ],
+              "country": "RS",
+              "geography_basis": "opening_location",
+              "language": "sr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "mixed_sets",
+                "opening_location_supported_by_post_context",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "self_reported_text_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 2,
+              "product": "loose_booster_packs",
+              "set": "mixed-shrouded-fable-and-japanese-scarlet-violet",
+              "source_sample": null,
+              "study_id": "reddit-serbia-two-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/AskSerbia/comments/1f4wy2z/pokemon_tcg_u_srbiji"
+              ]
+            }
+          ],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-birthday-400-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "denominator_from_title",
+                "geography_unknown",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "product_mix_not_transcribed",
+                "target_query_provenance_only",
+                "unverified_research"
+              ],
+              "method": "self_reported_image_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 400,
+              "product": null,
+              "set": "mixed_or_unspecified",
+              "source_sample": null,
+              "study_id": "reddit-birthday-400-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1w5omix/opened_400_packs_for_my_23rd_birthday"
+              ]
+            }
+          ],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-erhabene-helden-100-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_transcribed",
+                "image_based_results",
+                "independent-review-pending",
+                "target_query_provenance_only",
+                "unverified_research"
+              ],
+              "method": "self_reported_image_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "mixed_packs",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-erhabene-helden-100-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1sd3e7o/wawu_100_packs_erhabene_helden"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-sv-mixed-214-pack-study-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "author_defined_rarity_categories",
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "independent-review-pending",
+                "multiple_sets_and_product_types",
+                "target_query_provenance_only",
+                "unverified_research"
+              ],
+              "method": "self_reported_pull_rate_tally",
+              "metrics": [
+                {
+                  "category": "art_rare",
+                  "hits": 13,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper_rare",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare",
+                  "hits": 19,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 214,
+              "product": "mixed_bundles_etbs_and_tins",
+              "set": "scarlet-violet-mixed",
+              "source_sample": null,
+              "study_id": "reddit-sv-mixed-214-pack-study-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1mao00s/pull_rates_pack_luck"
+              ]
+            }
+          ],
+          "target": "CH"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH"
+      ]
     }
   ],
   "global_batches": [
