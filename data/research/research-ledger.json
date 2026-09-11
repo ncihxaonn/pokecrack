@@ -8895,6 +8895,166 @@
         "GB",
         "AL"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemonde-bavarian-austrian-meet-20-packs-2025"
+              ],
+              "country": "DE",
+              "geography_basis": "opening_location",
+              "language": "german",
+              "limitations": [
+                "austrian_participant_but_not_austrian_opening",
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_reported_in_germany",
+                "small_mixed_set_sample",
+                "unverified_research"
+              ],
+              "method": "community_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "mixed_display_and_loose_packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-pokemonde-bavarian-austrian-meet-20-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDe/comments/1k277hs/1st_bavarianaustrian_pokemonkarten_usertreffen"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-de-ten-etbs-mixed-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "german",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "mixed_set_sample",
+                "opening_location_not_explicit",
+                "pack_count_not_reported",
+                "ten_etbs_enumerated_and_reported_opened",
+                "unverified_research"
+              ],
+              "method": "community_post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed_elite_trainer_boxes",
+              "set": "mixed",
+              "source_sample": {
+                "count": 10,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-pokemontcg-de-ten-etbs-mixed-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1odk2oj/was_war_was_wurde_bestellung_von_2_h%C3%A4ndlern"
+              ]
+            }
+          ],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-destined-rivals-153-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "dutch",
+              "limitations": [
+                "author_correction_says_153_packs",
+                "belgian_supplier_does_not_establish_opening_location",
+                "collector-policy-not-enabled",
+                "hit_counts_only_shown_in_images",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "title_says_129_packs",
+                "two_people_combined_in_one_report",
+                "unverified_research"
+              ],
+              "method": "community_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 153,
+              "product": "mixed_sealed_products",
+              "set": "destined_rivals",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-destined-rivals-153-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1l5pioa/destined_rivals_pulls_total_129packs"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "cardworld-live-episode-47-24-packs-2026"
+              ],
+              "country": "BE",
+              "geography_basis": "publisher_country",
+              "language": "dutch",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "publisher_page_may_rotate_archived_episode",
+                "set_not_identified",
+                "stream_not_fetched",
+                "unverified_research"
+              ],
+              "method": "store_live_stream_archive",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 24,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "cardworld-live-episode-47-24-packs-2026",
+              "urls": [
+                "https://cardworld.be/pages/live"
+              ]
+            }
+          ],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
