@@ -5442,6 +5442,188 @@
         "SZ",
         "ET"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GA"
+        },
+        {
+          "studies": [],
+          "target": "GM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-69-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "discovered_during_ghana_target_search_but_no_ghana_geography_evidence",
+                "hit_counts_not_completely_enumerated",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "complete_opening_log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 69,
+              "product": "mixed_sealed_products",
+              "set": "pitch_black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-69-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v50ffn/pitch_black_pulls_can_you_guess_how_many_packs_i"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-mixed-250-packs-birthday-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "discovered_during_ghana_target_search_but_no_ghana_geography_evidence",
+                "hit_counts_not_explicitly_enumerated",
+                "independent-review-pending",
+                "mixed_sets",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "complete_opening_log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 250,
+              "product": "mixed_booster_packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-250-packs-birthday-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1vkbudx/opened_250_packs_for_my_20th_birthday"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-chinese-gem-pack-vol-3-18-packs-2026"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_reflects_product_market_only",
+                "discovered_during_ghana_target_search_but_no_ghana_geography_evidence",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "complete_opening_log",
+              "metrics": [
+                {
+                  "category": "common",
+                  "hits": 36,
+                  "unit": "cards"
+                },
+                {
+                  "category": "double_rare_stamped",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ex",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare",
+                  "hits": 8,
+                  "unit": "cards"
+                },
+                {
+                  "category": "triple_rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "uncommon",
+                  "hits": 18,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "simplified_chinese_booster_box",
+              "set": "gem_pack_vol_3",
+              "source_sample": null,
+              "study_id": "reddit-chinese-gem-pack-vol-3-18-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1rh0shi/chinese_pok%C3%A9mon_gem_pack_3_cbb3c_booster_box_pulls"
+              ]
+            }
+          ],
+          "target": "GH"
+        },
+        {
+          "studies": [],
+          "target": "GN"
+        },
+        {
+          "studies": [],
+          "target": "GW"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-400-packs-birthday-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "discovered_during_lesotho_target_search_but_no_lesotho_geography_evidence",
+                "hit_counts_not_explicitly_enumerated",
+                "independent-review-pending",
+                "mixed_sets",
+                "opening_location_unknown",
+                "pack_count_supported_by_title_claim",
+                "unverified_research"
+              ],
+              "method": "complete_opening_log",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 400,
+              "product": "mixed_sealed_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-400-packs-birthday-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1w5omix/opened_400_packs_for_my_23rd_birthday"
+              ]
+            }
+          ],
+          "target": "LS"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "GA",
+        "GM",
+        "GH",
+        "GN",
+        "GW",
+        "LS"
+      ]
     }
   ],
   "global_batches": [
