@@ -5366,6 +5366,44 @@
         "BI",
         "CV"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CM"
+        },
+        {
+          "studies": [],
+          "target": "CF"
+        },
+        {
+          "studies": [],
+          "target": "TD"
+        },
+        {
+          "studies": [],
+          "target": "KM"
+        },
+        {
+          "studies": [],
+          "target": "CG"
+        },
+        {
+          "studies": [],
+          "target": "CD"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "CM",
+        "CF",
+        "TD",
+        "KM",
+        "CG",
+        "CD"
+      ]
     }
   ],
   "global_batches": [
