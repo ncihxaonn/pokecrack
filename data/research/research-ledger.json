@@ -7407,6 +7407,191 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [],
+          "target": "PH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "4gamers-mask-of-change-40-packs-2024"
+              ],
+              "country": "TW",
+              "geography_basis": "publisher_country",
+              "language": "zh-hant",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "publisher-is-taiwan-not-hong-kong",
+                "single-opening-cohort",
+                "small-sample",
+                "target-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "editorial-opening",
+              "metrics": [
+                {
+                  "category": "ace-spec",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ar",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "r",
+                  "hits": 10,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rr",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sr",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 40,
+              "product": "traditional-chinese-mask-of-change",
+              "set": "mask-of-change",
+              "source_sample": null,
+              "study_id": "4gamers-mask-of-change-40-packs-2024",
+              "urls": [
+                "https://www.4gamers.com.tw/news/detail/64504/pokemon-tcg-phantom-mask"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "4gamers-tag-team-gx-set-a-b-60-packs-2020"
+              ],
+              "country": "TW",
+              "geography_basis": "publisher_country",
+              "language": "zh-hant",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "metrics-omitted-because-numerator-scope-is-ambiguous",
+                "opening-location-unknown",
+                "publisher-is-taiwan-not-hong-kong",
+                "reported-rarity-summary-may-cover-set-a-only",
+                "sample-combines-set-a-and-set-b",
+                "target-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "editorial-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 60,
+              "product": "traditional-chinese-sun-and-moon-tag-team-gx-set-a-b",
+              "set": "sun-and-moon-tag-team-gx-set-a-b",
+              "source_sample": null,
+              "study_id": "4gamers-tag-team-gx-set-a-b-60-packs-2020",
+              "urls": [
+                "https://www.4gamers.com.tw/news/detail/42998/pokemon-tcg-unboxing-review"
+              ]
+            }
+          ],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "hobbykartindia-one-booster-box-pack-battle-2025"
+              ],
+              "country": "IN",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "image-dependent-pull-details-not-collected",
+                "independent-review-pending",
+                "no-eligible-explicit-integer-hit-tally",
+                "opening-location-unknown",
+                "publisher-country-based-on-first-party-indian-retailer-context",
+                "set-not-explicit-in-accessible-text",
+                "single-box-sample",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "hobbykartindia-one-booster-box-pack-battle-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1ogk2li/still_cant_believe_it_what_a_crazyyy_pull"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-india-mixed-five-sets-30-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "approximately-six-packs-per-set",
+                "collector-policy-not-enabled",
+                "image-dependent-pull-details-not-collected",
+                "independent-review-pending",
+                "mixed-set-sample",
+                "no-eligible-explicit-integer-hit-tally",
+                "opening-location-unknown",
+                "packs-purchased-in-india-and-united-arab-emirates",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "mixed-english-booster-packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-india-mixed-five-sets-30-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1ikt8pb/pulls_from_30_packs"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO"
+      ]
     }
   ],
   "global_batches": [
