@@ -4415,6 +4415,73 @@
         "CX",
         "CC"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "PF"
+        },
+        {
+          "studies": [],
+          "target": "GU"
+        },
+        {
+          "studies": [],
+          "target": "HM"
+        },
+        {
+          "studies": [],
+          "target": "NC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "auckland-card-show-mighty-ape-105-packs-2025"
+              ],
+              "country": "NZ",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "event-recap-not-dedicated-pull-rate-study",
+                "independent-review-pending",
+                "mixed-sets-and-products",
+                "no-complete-hit-tally-reported",
+                "target-provenance-only-not-niue",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "event-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 105,
+              "product": "mixed-pokemon-tcg-packs",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "auckland-card-show-105-pack-opening-2025",
+              "urls": [
+                "https://www.aucklandcardshow.com/post/auckland-card-show-2025-recap"
+              ]
+            }
+          ],
+          "target": "NU"
+        },
+        {
+          "studies": [],
+          "target": "NF"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "PF",
+        "GU",
+        "HM",
+        "NC",
+        "NU",
+        "NF"
+      ]
     }
   ],
   "global_batches": [
