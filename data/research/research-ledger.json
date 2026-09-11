@@ -5797,6 +5797,78 @@
         "RW",
         "ST"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "note-black-bolt-white-flare-four-boxes-2025"
+              ],
+              "country": "JP",
+              "geography_basis": "opening_location",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "discovered-during-seychelles-target-search-but-not-seychelles-sample",
+                "english-view-is-ai-translation-of-japanese-primary",
+                "four-native-boxes-reported-without-converting-boxes-to-packs",
+                "hit-totals-not-explicitly-tabulated",
+                "independent-review-pending",
+                "separate-one-pack-opening-excluded-from-four-box-cohort",
+                "unverified-research"
+              ],
+              "method": "dated-complete-opening-log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "black-bolt-and-white-flare-booster-boxes",
+              "set": "black-bolt-white-flare",
+              "source_sample": {
+                "count": 4,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "note-black-bolt-white-flare-four-boxes-2025",
+              "urls": [
+                "https://note.com/sendagitter/n/n3eaf4a116a92"
+              ]
+            }
+          ],
+          "target": "SC"
+        },
+        {
+          "studies": [],
+          "target": "SL"
+        },
+        {
+          "studies": [],
+          "target": "SO"
+        },
+        {
+          "studies": [],
+          "target": "SS"
+        },
+        {
+          "studies": [],
+          "target": "SD"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "SN",
+        "SC",
+        "SL",
+        "SO",
+        "SS",
+        "SD"
+      ]
     }
   ],
   "global_batches": [
