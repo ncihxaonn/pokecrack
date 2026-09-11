@@ -1356,6 +1356,7 @@ def test_public_study_flag_registers_all_reviewed_daily_jobs(
         {"study_key": "auckland-show-mighty-ape-nz-105-v1"},
         {"study_key": "hitpack-pitch-black-cz-36-v1"},
         {"study_key": "tekemero-munikis-zero-jp-30-v1"},
+        {"study_key": "bisafans-flying-fists-de-36-v1"},
     ]
     assert all(entry.cron == "15 4 * * *" for entry in studies)
     assert all(entry.max_attempts == 3 for entry in studies)
@@ -1378,7 +1379,7 @@ def test_fixed_study_pause_is_not_a_shared_health_dependency(role: str) -> None:
     # A disabled policy still has to satisfy every immutable policy/ACL guard.
     # This is only service readiness; begin/finalize/public RPCs stay fail-closed.
     assert "policies.enabled" not in study_sql
-    assert "count(*) = 32" in study_sql
+    assert "count(*) = 33" in study_sql
     assert "NOT policies.is_demo" in study_sql
     assert "policies.robots_policy = 'respect'" in study_sql
     assert "policies.min_delay_seconds = 30" in study_sql
@@ -1405,7 +1406,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
         "mastodon_enabled": False,
         "public_study_enabled": True,
     }
-    assert "count(*) = 32" in sql
+    assert "count(*) = 33" in sql
     # A source must be counted inside the correct CTE, never another provider.
     before_studies, study_sql = sql.split("public_study_dependencies AS (", 1)
     assert "public_study_nanjakorya_jp_100" not in before_studies
@@ -1417,6 +1418,7 @@ def test_enabled_public_study_health_requires_private_ledger_and_fenced_rpcs() -
     assert study_sql.count("'public_study_auckland_nz_105'") == 2
     assert study_sql.count("'public_study_hitpack_cz_36'") == 2
     assert study_sql.count("'public_study_tekemero_jp_30'") == 2
+    assert study_sql.count("'public_study_bisafans_de_36'") == 2
     assert "public_study_bikuhime_id_20" in sql
     assert "public_study_garbage_rips_cn_1" in sql
     assert '"geography_basis": "product_market"' in sql
