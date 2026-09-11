@@ -6148,6 +6148,317 @@
         "GL",
         "PM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "marvin-palday-evolved-36-pack-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "count_only_confirmed_in_title",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "publisher_country_not_established"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "paldea-evolved",
+              "source_sample": null,
+              "study_id": "marvin-palday-evolved-36-pack-video-2023",
+              "urls": [
+                "https://youtu.be/MlFRMWC3bjk"
+              ]
+            }
+          ],
+          "target": "MX"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-brazil-prismatic-evolutions-18-pack-2026"
+              ],
+              "country": "BR",
+              "geography_basis": "product_market",
+              "language": "pt-br",
+              "limitations": [
+                "category-list-may-not-represent-all-notable-cards",
+                "collector-policy-not-enabled",
+                "country_based_on-six-card-brazil-market-product",
+                "independent-review-pending",
+                "opening_location_unknown"
+              ],
+              "method": "opening_report",
+              "metrics": [
+                {
+                  "category": "double-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "foil-energy",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare",
+                  "hits": 7,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "mini-booster-box",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-brazil-prismatic-evolutions-18-pack-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1t1e17l/mini_booster-d%C3%BAvida-de-iniciante"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-brazil-surging-sparks-36-pack-shared-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt-br",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "historical-comparison-cohort",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "shared-opening-participant-count-unspecified"
+              ],
+              "method": "opening_report",
+              "metrics": [
+                {
+                  "category": "full-art",
+                  "hits": 8,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "surging-sparks",
+              "source_sample": null,
+              "study_id": "reddit-brazil-surging-sparks-36-pack-shared-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1i7b4hf/resultado_de_uma_etb_de_evolu%C3%A7%C3%B5es_prism%C3%A1ticas"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-brazil-chaos-rising-36-pack-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt-br",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_author_differs_from_post_author",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "results_described_without_complete_category_counts"
+              ],
+              "method": "comment_report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-brazil-chaos-rising-36-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1tps0cy/sugest%C3%A3o_de_cole%C3%A7%C3%A3o_para_iniciante"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-brazil-unknown-set-36-pack-three-ir-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt-br",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_author_differs_from_post_author",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "set_not_reported"
+              ],
+              "method": "comment_report",
+              "metrics": [
+                {
+                  "category": "illustration-rare",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-brazil-unknown-set-36-pack-three-ir-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1tjhr9t/qual_box_comprar_de_inicio"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-brazil-prismatic-evolutions-20-pack-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt-br",
+              "limitations": [
+                "authors-cohort-kept-separate-from-friends-cohort",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "product-description-conflicts-with-standard-etb-size"
+              ],
+              "method": "opening_report",
+              "metrics": [
+                {
+                  "category": "ace-spec",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full-art",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokeball-reverse-holo",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokemon-ex",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "sealed-product-mix-described-as-etb",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-brazil-prismatic-evolutions-20-pack-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1i7b4hf/resultado_de_uma_etb_de_evolu%C3%A7%C3%B5es_prism%C3%A1ticas"
+              ]
+            }
+          ],
+          "target": "BR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-argnime-paldean-fates-one-box-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "only-one-pull-discussed",
+                "opening_location_unknown",
+                "pack-count-not-reported",
+                "subreddit-and-marketplace-context-do-not-prove-location"
+              ],
+              "method": "opening_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "box-unspecified",
+              "set": "paldean-fates",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-argnime-paldean-fates-one-box-2024",
+              "urls": [
+                "https://www.reddit.com/r/Argnime/comments/1f9ws0o/cu%C3%A1nto_saldr%C3%A1_esta_carta"
+              ]
+            }
+          ],
+          "target": "AR"
+        },
+        {
+          "studies": [],
+          "target": "CL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "indigo-geek-surging-sparks-45-pack-2024"
+              ],
+              "country": "MX",
+              "geography_basis": "publisher_country",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_based_on-mexican-publisher-identity",
+                "hit-category-definition-author-specific",
+                "independent-review-pending",
+                "opening_location_not_explicit"
+              ],
+              "method": "video_opening",
+              "metrics": [
+                {
+                  "category": "hits",
+                  "hits": 15,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 45,
+              "product": "elite-trainer-box-and-booster-box",
+              "set": "surging-sparks",
+              "source_sample": null,
+              "study_id": "indigo-geek-surging-sparks-etb-box-2024",
+              "urls": [
+                "https://www.dailymotion.com/video/x98unnk"
+              ]
+            }
+          ],
+          "target": "CO"
+        },
+        {
+          "studies": [],
+          "target": "PE"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "MX",
+        "BR",
+        "AR",
+        "CL",
+        "CO",
+        "PE"
+      ]
     }
   ],
   "global_batches": [
