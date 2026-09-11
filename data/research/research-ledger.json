@@ -7145,6 +7145,255 @@
         "PA",
         "BO"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BV"
+        },
+        {
+          "studies": [],
+          "target": "EC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-black-bolt-white-flare-thirty-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-categories-not-fully-enumerated",
+                "independent-review-pending",
+                "initial-opened-pack-count-narrative-is-arithmetically-ambiguous",
+                "japan-is-purchase-location-only",
+                "opening-location-unknown",
+                "opening-spanned-two-dates",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "black-bolt-and-white-flare-japanese",
+              "set": "discovery",
+              "source_sample": null,
+              "study_id": "reddit-black-bolt-white-flare-thirty-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r7f59h/it_really_is_in_the_pack_you_didnt_open"
+              ]
+            }
+          ],
+          "target": "FK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-quebec-mixed-english-korean-one-hundred-packs-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-products-and-languages",
+                "only-subset-yield-explicit",
+                "overall-hit-count-not-reported",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [
+                {
+                  "category": "vstar-universe-notable-cards",
+                  "hits": 14,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "mixed-english-etbs-and-korean-booster-boxes",
+              "set": "discovery",
+              "source_sample": null,
+              "study_id": "reddit-quebec-mixed-english-korean-one-hundred-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1isgyvt/une_soir%C3%A9e_m%C3%A9morable"
+              ]
+            }
+          ],
+          "target": "GF"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-7047-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "god-pack-sir-counting-method-ambiguous",
+                "independent-review-pending",
+                "manually-collected-by-multiple-contributors",
+                "opening-location-unknown",
+                "possible-recording-errors-self-reported",
+                "random-mix-of-product-formats",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "multi-contributor-pull-rate-study",
+              "metrics": [
+                {
+                  "category": "gold-card",
+                  "hits": 9,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 105,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 7047,
+              "product": "ascended-heroes",
+              "set": "discovery",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-seven-thousand-forty-seven-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-eighty-two-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "double-rare-count-not-enumerated",
+                "independent-review-pending",
+                "mixed-sealed-product-formats",
+                "opening-location-unknown",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [
+                {
+                  "category": "hyper-rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 4,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 82,
+              "product": "pitch-black",
+              "set": "discovery",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-eighty-two-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGCollectors/comments/1v0chgb/so_is_my_luck_just_atrocious_or_are_pitch_black"
+              ]
+            }
+          ],
+          "target": "GY"
+        },
+        {
+          "studies": [],
+          "target": "PY"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "BV",
+        "EC",
+        "FK",
+        "GF",
+        "GY",
+        "PY"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [],
+          "target": "SR"
+        },
+        {
+          "studies": [],
+          "target": "UY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-venezuela-three-pack-opening-20260415"
+              ],
+              "country": "VE",
+              "geography_basis": "opening_location",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_level_report",
+                "completeness_not_independently_verified",
+                "independent-review-pending",
+                "no_explicit_integer_hit_count",
+                "opening_location_supported_by_venezuela_context",
+                "product_and_set_not_reported",
+                "unverified_research"
+              ],
+              "method": "self_reported_comment",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-venezuela-three-pack-opening-20260415",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1mbx3pu/vale_la_pena_comprar_cartas_de_pokemon_en"
+              ]
+            }
+          ],
+          "target": "VE"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
     }
   ],
   "global_batches": [
