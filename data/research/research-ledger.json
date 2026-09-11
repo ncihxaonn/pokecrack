@@ -7705,6 +7705,110 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-indonesia-vmax-one-box-2021"
+              ],
+              "country": "ID",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-supported-by-author-comment",
+                "pack-count-not-reported",
+                "single-box-small-sample",
+                "unverified-research"
+              ],
+              "method": "personal-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "indonesian-vmax-booster-box",
+              "set": "koleksi-vmax-berkilau",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-indonesia-vmax-one-box-2021",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/m9qulf/todays_pull_from_indonesia_vmax_booster_box"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-indonesian-151-one-box-2023"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-reflects-product-market",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "pack-count-not-reported",
+                "single-box-small-sample",
+                "unverified-research"
+              ],
+              "method": "personal-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "indonesian-pokemon-151-booster-box",
+              "set": "pokemon-151-indonesia",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-indonesian-151-one-box-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/16ruwz4/got_back_from_jakarta_over_the_weekend_and_had_a"
+              ]
+            }
+          ],
+          "target": "ID"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID"
+      ]
     }
   ],
   "global_batches": [
