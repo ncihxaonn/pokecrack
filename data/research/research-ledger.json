@@ -5328,6 +5328,44 @@
         "MA",
         "DZ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
