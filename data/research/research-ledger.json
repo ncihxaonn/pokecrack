@@ -3827,6 +3827,78 @@
         "SA",
         "SG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "thai-set-b-one-box-video-opening"
+              ],
+              "country": "TH",
+              "geography_basis": "product_market",
+              "language": "thai",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "eligibility-based-on-public-search-metadata",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "pack-total-treated-as-product-contents-not-observed-denominator",
+                "unverified-research-not-approved-for-production-statistics",
+                "youtube-watch-page-not-fetched"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pokemon-tcg-thai-booster-pack-set-b",
+              "set": "discovery-sweep-2",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "thai-set-b-one-box-video-opening",
+              "urls": [
+                "https://youtu.be/lPhs-nmQykU"
+              ]
+            }
+          ],
+          "target": "TH"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH"
+      ]
     }
   ],
   "global_batches": [
