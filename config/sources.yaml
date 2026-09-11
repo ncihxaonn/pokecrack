@@ -50,6 +50,58 @@ sources:
     requests_per_minute: 2
     cache_ttl_seconds: 86400
     retain_raw_html: false
+  www.bisafans.de:
+    enabled: true
+    collector: scrapling_http
+    access_mode: public
+    robots_policy: respect
+    exact_urls: ["https://www.bisafans.de/sammelkarten/sets/xy/fliegende-faeuste/statistiken.php"]
+    min_delay_seconds: 30
+    max_pages_per_run: 2
+    max_concurrency: 1
+    dynamic_allowed: false
+    login_required: false
+    statistics_eligible_default: true
+    retention_days: 730
+    version: public-study-bisafans-flying-fists-v1
+    config: {
+      "study_key": "bisafans-flying-fists-de-36-v1",
+      "canonical_url": "https://www.bisafans.de/sammelkarten/sets/xy/fliegende-faeuste/statistiken.php",
+      "collector_version": "public-study-bisafans-flying-fists-v1",
+      "parser_version": "bisafans-flying-fists-evidence-v1",
+      "country_code": "DE",
+      "country_name": "Germany",
+      "geography_basis": "publisher_country",
+      "geography_confidence": "tier_b",
+      "publisher_country_url": "https://www.bisafans.de/impressum.php",
+      "publisher_country_review_method": "source_business_identity_matched_to_public_site_impressum",
+      "publisher_country_checked_at": "2026-09-11",
+      "opening_country": null,
+      "opened_at": null,
+      "set_external_id": "xy3",
+      "set_language": "de",
+      "set_language_basis": "source_page_is_german",
+      "set_name": "Fliegende Fäuste",
+      "set_official_url": "https://www.pokemon.com/de/pokemon-sammelkartenspiel/pokemon-karten/series/xy3/49/",
+      "product_scope": "booster_box",
+      "pack_count": 36,
+      "observed_at": "2026-09-11T00:00:00Z",
+      "observed_at_basis": "initial_mam_verification_date_not_opening_time",
+      "denominator_complete": true,
+      "cohort_id": "bisafans-fliegende-faeuste-display-36",
+      "robots_url": "https://www.bisafans.de/robots.txt",
+      "robots_checked_at": "2026-09-11",
+      "terms_checked_at": "2026-09-11",
+      "terms_status": "no_separate_content_reuse_license_found",
+      "rights_scope": "minimal_noncreative_facts_no_media_or_body_reuse"
+    }
+    reason: One complete 36-pack display documented on the German Bisafans statistics page. Germany identifies the publisher, not the physical opening location; the page's 47-card yield is not a hit-pack numerator. The adapter retains only the minimum denominator evidence, never page body, images, media or personal identity data.
+    routes: [static]
+    adapter: bisafans_flying_fists_study
+    metadata_only: false
+    requests_per_minute: 2
+    cache_ttl_seconds: 86400
+    retain_raw_html: false
   www.hitpack.cz:
     enabled: true
     collector: scrapling_http

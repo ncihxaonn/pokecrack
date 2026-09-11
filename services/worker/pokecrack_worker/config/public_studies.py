@@ -387,6 +387,18 @@ PUBLIC_STUDIES += (
     ),
 )
 
+PUBLIC_STUDIES += (
+    PublicStudyIdentity(
+        study_key="bisafans-flying-fists-de-36-v1",
+        source_url="https://www.bisafans.de/sammelkarten/sets/xy/fliegende-faeuste/statistiken.php",
+        fetch_url="https://www.bisafans.de/sammelkarten/sets/xy/fliegende-faeuste/statistiken.php",
+        domain="www.bisafans.de",
+        adapter="bisafans_flying_fists_study",
+        collector_version="public-study-bisafans-flying-fists-v1",
+        parser_version="bisafans-flying-fists-evidence-v1",
+    ),
+)
+
 PUBLIC_STUDIES_BY_KEY = {study.study_key: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDIES_BY_URL = {study.source_url: study for study in PUBLIC_STUDIES}
 PUBLIC_STUDIES_BY_FETCH_URL = {study.fetch_url: study for study in PUBLIC_STUDIES}
@@ -394,6 +406,7 @@ PUBLIC_STUDY_COVERAGE_KEYS = frozenset(
     {
         "tekemero-munikis-zero-jp-30-v1",
         "hitpack-pitch-black-cz-36-v1",
+        "bisafans-flying-fists-de-36-v1",
         "auckland-show-mighty-ape-nz-105-v1",
         "bokunotebook-vstar-universe-th-1-v1",
         "nanjakorya-paradigm-jp-100-v1",
