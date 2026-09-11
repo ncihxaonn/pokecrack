@@ -3760,6 +3760,73 @@
         "NP",
         "KP"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pakistan-mixed-fifteen-pack-opening-20210327"
+              ],
+              "country": "PK",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed_sets",
+                "no_explicit_aggregate_hit_numerator",
+                "self_reported_opening_location",
+                "small_sample",
+                "unverified_research_not_approved_for_collection_or_production_statistics"
+              ],
+              "method": "author_reported_complete_opening_log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 15,
+              "product": "mixed_booster_packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "pakistan-mixed-fifteen-pack-opening-20210327",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/mefpow/this_is_my_thank_you_to_udjpekingente_for_giving"
+              ]
+            }
+          ],
+          "target": "PK"
+        },
+        {
+          "studies": [],
+          "target": "PS"
+        },
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [],
+          "target": "SG"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "OM",
+        "PK",
+        "PS",
+        "QA",
+        "SA",
+        "SG"
+      ]
     }
   ],
   "global_batches": [
