@@ -7809,6 +7809,201 @@
         "GE",
         "ID"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokeca-pocket-paradise-dragona-thirty-packs-20240914"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_totals_not_normalized_in_bounded_review",
+                "independent-review-pending",
+                "opening_location_not_reported",
+                "purchase_location_reported_but_not_used_as_opening_location",
+                "unverified_research"
+              ],
+              "method": "complete_sequential_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "japanese_paradise_dragona_booster_box",
+              "set": "paradise_dragona",
+              "source_sample": null,
+              "study_id": "pokeca-pocket-paradise-dragona-thirty-packs-20240914",
+              "urls": [
+                "https://pokeca-pocket.dbfw-days.com/pokeca-lawson-kaifuu"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "tokeino-china-thirtieth-celebration-ten-boxes-20260606"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "each_box_includes_non_card_accessories",
+                "independent-review-pending",
+                "native_box_count_preserved_without_pack_conversion",
+                "opening_location_not_reported",
+                "sample_is_chinese_product_market_not_japanese_product_market",
+                "unverified_research"
+              ],
+              "method": "complete_opening_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified_chinese_30th_celebration_card_sets_vol_1",
+              "set": "pokemon_card_30th_celebration_card_sets_vol_1",
+              "source_sample": {
+                "count": 10,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "tokeino-china-thirtieth-celebration-ten-boxes-20260606",
+              "urls": [
+                "https://tokeino.com/2026/06/06/%E3%80%90%E9%96%8B%E5%B0%81%E7%B5%90%E6%9E%9C%E3%80%91%E3%83%9D%E3%82%B1%E3%83%A2%E3%83%B3%E3%82%AB%E3%83%BC%E3%83%8930th-celebration-%E3%82%AB%E3%83%BC%E3%83%89%E3%82%BB%E3%83%83%E3%83%88-vol-1"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "murasakiko-battle-partners-one-box-20250124"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "general_pull_rate_comparisons_are_not_sample_results",
+                "independent-review-pending",
+                "opening_location_not_reported",
+                "possible_video_article_same_cohort",
+                "publisher_reports_one_box_only",
+                "unverified_research"
+              ],
+              "method": "complete_opening_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese_battle_partners_booster_box",
+              "set": "battle_partners",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "murasakiko-battle-partners-one-box-20250124",
+              "urls": [
+                "https://pokecadiary.murasakikonoheya.com/pokeca-battlepartners-open"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "pokesup-battle-partners-one-box-2025"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_not_reported",
+                "possible_video_article_same_cohort",
+                "publisher_reports_one_box_only",
+                "purchase_location_reported_but_not_used_as_opening_location",
+                "results_partly_image_based",
+                "unverified_research"
+              ],
+              "method": "complete_sequential_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese_battle_partners_booster_box",
+              "set": "battle_partners",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "pokesup-battle-partners-one-box-2025",
+              "urls": [
+                "https://pokesup.com/blog/unboxing-sv9"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "mmk-crimson-haze-one-carton-20240328"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_totals_not_available_in_page_text",
+                "images_not_reviewed",
+                "independent-review-pending",
+                "opening_location_not_reported",
+                "publisher_reports_one_carton_only",
+                "unverified_research"
+              ],
+              "method": "complete_opening_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese_crimson_haze_carton",
+              "set": "crimson_haze",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "cartons"
+              },
+              "study_id": "mmk-crimson-haze-one-carton-20240328",
+              "urls": [
+                "https://www.mmk.jp/blog/2024/03/28/post-22696"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
