@@ -4838,6 +4838,74 @@
         "GB",
         "AL"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokemontcgfr-equilibre-parfait-16-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-explicit-integer-hit-counts-in-page-text",
+                "opening-location-unknown",
+                "pull-results-shown-in-image-not-transcribed",
+                "small-sample",
+                "target-query-found-global-french-language-report",
+                "unverified-research"
+              ],
+              "method": "image_report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 16,
+              "product": "four-prerelease-kits",
+              "set": "equilibre-parfait",
+              "source_sample": null,
+              "study_id": "pokemontcgfr-equilibre-parfait-16-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1ruc505/jai_ouvert_4_ap_4_decks_et_16_boosters_de_la"
+              ]
+            }
+          ],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
