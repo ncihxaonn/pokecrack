@@ -8543,6 +8543,101 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemonfansaustralia-mixed-thirty-six-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "friends-opening-excluded-because-pack-denominator-not-reported",
+                "independent-review-pending",
+                "only-authors-explicit-thirty-six-pack-sample-counted",
+                "opening-location-not-explicit",
+                "possible-overlap-with-earlier-post-unresolved",
+                "pulls-described-selectively-without-complete-integer-tally",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "mixed-tins-and-elite-trainer-boxes",
+              "set": "mixed-151-and-prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-pokemonfansaustralia-mixed-thirty-six-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFansAustralia/comments/1mg5xlh/update_to_the_no_limits_post_from_yesterday"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-australia-surging-sparks-ten-packs-2025"
+              ],
+              "country": "AU",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-explicit-integer-hit-tally",
+                "pulls-shown-in-images-not-transcribed",
+                "single-small-opening",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "loose-booster-packs",
+              "set": "surging-sparks",
+              "source_sample": null,
+              "study_id": "reddit-australia-surging-sparks-ten-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1iy8pls/my_pulls_from_about_the_only_stock_ive_managed_to"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU"
+      ]
     }
   ],
   "global_batches": [
