@@ -4220,6 +4220,163 @@
         "SB",
         "VU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-products-140-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "card_yield_not_hit_pack_probability",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed_sets_and_products",
+                "opening_location_not_reported",
+                "selection_bias_possible",
+                "unverified_research"
+              ],
+              "method": "complete_opening_log",
+              "metrics": [
+                {
+                  "category": "ace_spec",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "double_rare",
+                  "hits": 21,
+                  "unit": "cards"
+                },
+                {
+                  "category": "energy",
+                  "hits": 24,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration_rare",
+                  "hits": 11,
+                  "unit": "cards"
+                },
+                {
+                  "category": "masterball_pattern",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "masterball_reverse",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokeball_pattern",
+                  "hits": 16,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokeball_reverse",
+                  "hits": 20,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare_pokemon",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare_trainer",
+                  "hits": 9,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 140,
+              "product": "mixed_products",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "mixed-products-140-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1nnq95h/140_pack_opening"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "mixed-products-62-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed_sets_and_products",
+                "opening_location_not_reported",
+                "promotional_cards_shown_but_excluded_by_publisher_note",
+                "pull_numerators_not_explicit_in_page_text",
+                "selection_bias_possible",
+                "unverified_research"
+              ],
+              "method": "complete_opening_log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 62,
+              "product": "mixed_products",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "mixed-products-62-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1iw195x/opened_62_packs_heres_the_pulls"
+              ]
+            }
+          ],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
