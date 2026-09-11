@@ -6573,6 +6573,261 @@
         "MQ",
         "MS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "meristation-phantasmal-flames-etb-nine-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "article-embeds-video",
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "unverified-research-not-approved-statistics"
+              ],
+              "method": "publisher-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 9,
+              "product": "phantasmal-flames-elite-trainer-box",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "meristation-phantasmal-flames-etb-nine-packs-2025",
+              "urls": [
+                "https://as.com/meristation/noticias/unboxing-en-video-de-pokemon-tcg-fuegos-fantasmales-una-de-las-cajas-de-entrenador-elite-mas-bonitas-f202511-n"
+              ]
+            }
+          ],
+          "target": "PR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgfr-pitch-black-first-display-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "image-dependent-results",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "pack-count-not-explicit",
+                "selected-pulls-shown-without-complete-integer-counts",
+                "unverified-research-not-approved-statistics"
+              ],
+              "method": "self-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pitch-black-booster-display",
+              "set": "pitch-black",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-pokemontcgfr-pitch-black-first-display-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1vcpbei/voici_les_meilleurs_cartes_que_jai_eu_suite_a"
+              ]
+            }
+          ],
+          "target": "BL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-first-partner-series-two-three-packs-2026",
+                "reddit-gem-pack-four-two-boxes-2026",
+                "reddit-mixed-123-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "main-123-pack-cohort-reported-separately-from-three-first-partner-packs-and-two-gem-pack-boxes",
+                "mixed-products",
+                "opening-location-unknown",
+                "possible-cohort-boundary-ambiguity",
+                "results-and-rates-primarily-image-dependent",
+                "unverified-research-not-approved-statistics"
+              ],
+              "method": "self-reported-opening-study",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 123,
+              "product": null,
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-123-packs-plus-separate-products-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1uohylg/i_opened_123_packs_this_weekend"
+              ]
+            }
+          ],
+          "target": "KN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-silver-tempest-booster-box-36-packs-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "black-code-card-count-not-treated-as-hit-metric",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "selected-rarity-counts-only",
+                "unverified-research-not-approved-statistics"
+              ],
+              "method": "self-reported-complete-opening",
+              "metrics": [
+                {
+                  "category": "radiant",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "vstar",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "silver-tempest-booster-box",
+              "set": "silver-tempest",
+              "source_sample": null,
+              "study_id": "reddit-silver-tempest-booster-box-36-packs-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/10oidej/first_box_opening_ever_pokemon_silver_tempest"
+              ]
+            }
+          ],
+          "target": "LC"
+        },
+        {
+          "studies": [],
+          "target": "MF"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "cardshoplive-scarlet-violet-1728-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "box-break-company-sample",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "rarity-slot-categories-can-overlap-with-named-card-subcategories",
+                "sampling-and-product-mix-not-described",
+                "unverified-research-not-approved-statistics"
+              ],
+              "method": "retailer-original-opening-study",
+              "metrics": [
+                {
+                  "category": "double-rare",
+                  "hits": 234,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper-rare-gold",
+                  "hits": 32,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper-rare-gold-koraidon-ex",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper-rare-gold-miraidon-ex",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 130,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 52,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare-gardevoir-ex",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare-miraidon-ex",
+                  "hits": 7,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare-miriam",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 112,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1728,
+              "product": "scarlet-violet",
+              "set": "scarlet-violet",
+              "source_sample": null,
+              "study_id": "cardshoplive-scarlet-violet-1728-packs",
+              "urls": [
+                "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-scarlet-and-violet"
+              ]
+            }
+          ],
+          "target": "VC"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "PR",
+        "BL",
+        "KN",
+        "LC",
+        "MF",
+        "VC"
+      ]
     }
   ],
   "global_batches": [
