@@ -5017,6 +5017,102 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-malta-easter-mixed-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed-from-image",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "pack-count-not-reported",
+                "products-purchased-in-malta-but-market-not-established",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening-photo",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-malta-easter-mixed-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1sfo368/i_spent_easter_in_malta_and_bought_packs_howd_i_do"
+              ]
+            }
+          ],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-ascended-heroes-12-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed-from-image",
+                "independent-review-pending",
+                "opening-location-not-reported",
+                "single-card-focused-post",
+                "subreddit-does-not-establish-country",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening-photo",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 12,
+              "product": "ascended-heroes",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-ascended-heroes-12-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1rkx1x6/deze_mag_er_ook_nog_wel_bij"
+              ]
+            }
+          ],
+          "target": "NL"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL"
+      ]
     }
   ],
   "global_batches": [
