@@ -5250,6 +5250,84 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ZA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "ecency-battle-partners-korean-box-30-packs-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "english",
+              "limitations": [
+                "canadian-opening-not-egyptian",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-supported-by-toronto-area-wording",
+                "rarity-categories-author-defined",
+                "single-booster-box",
+                "unverified-research"
+              ],
+              "method": "complete-box-opening-log",
+              "metrics": [
+                {
+                  "category": "pokemon-ex-full-art-or-illustration-rare",
+                  "hits": 8,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare-cards-or-better",
+                  "hits": 17,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "korean-booster-box",
+              "set": "battle-partners",
+              "source_sample": null,
+              "study_id": "ecency-battle-partners-korean-box-30-packs-2025",
+              "urls": [
+                "https://ecency.com/@dkmathstats/opening-a-korean-booster-box"
+              ]
+            }
+          ],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ"
+      ]
     }
   ],
   "global_batches": [
