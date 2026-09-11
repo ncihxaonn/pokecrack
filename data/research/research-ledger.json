@@ -7336,6 +7336,64 @@
         "GY",
         "PY"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [],
+          "target": "SR"
+        },
+        {
+          "studies": [],
+          "target": "UY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-venezuela-three-pack-opening-20260415"
+              ],
+              "country": "VE",
+              "geography_basis": "opening_location",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_level_report",
+                "completeness_not_independently_verified",
+                "independent-review-pending",
+                "no_explicit_integer_hit_count",
+                "opening_location_supported_by_venezuela_context",
+                "product_and_set_not_reported",
+                "unverified_research"
+              ],
+              "method": "self_reported_comment",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-venezuela-three-pack-opening-20260415",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1mbx3pu/vale_la_pena_comprar_cartas_de_pokemon_en"
+              ]
+            }
+          ],
+          "target": "VE"
+        }
+      ],
+      "sweep": 2,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
     }
   ],
   "global_batches": [
