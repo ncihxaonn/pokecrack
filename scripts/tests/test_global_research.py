@@ -163,18 +163,33 @@ class GlobalResearchTests(unittest.TestCase):
                 self.assertEqual(output.getvalue(), "")
                 publish.assert_not_called()
 
-    def test_invalid_generated_batch_is_rejected_not_repaired(self):
+    def test_generated_bad_record_is_quarantined_but_history_stays_strict(self):
         batch = self.batch()
         batch["studies"][0]["pack_precision"] = "private-error-payload"
+        raw = json.dumps(batch).encode()
+        with self.assertRaisesRegex(ValueError, "invalid_pack_precision"):
+            module.validate_batch(raw)
         with patch.object(sys, "argv", ["global_research.py"]), \
-                patch.object(module, "research_document", return_value=json.dumps(batch).encode()), \
+                patch.object(module, "research_document", return_value=raw), \
                 patch.object(module, "publish") as publish, redirect_stdout(io.StringIO()) as output:
-            with self.assertRaises(SystemExit) as caught:
-                module.main()
-            self.assertEqual(str(caught.exception),
-                "global_research_failed: stage=validation code=invalid_pack_precision; no production data admitted")
-            self.assertEqual(output.getvalue(), "")
+            module.main()
+            self.assertEqual(json.loads(output.getvalue()), {"version": 1, "studies": []})
             publish.assert_not_called()
+
+    def test_generated_country_mismatch_is_downgraded_to_unknown(self):
+        batch = self.batch()
+        batch["studies"][0].update(country="DE", geography_basis="unknown")
+        result = module.validate_batch(json.dumps(batch).encode(), allow_quarantine=True)
+        self.assertIsNone(result["studies"][0]["country"])
+        self.assertEqual(result["studies"][0]["geography_basis"], "unknown")
+
+    def test_generated_quarantine_keeps_valid_siblings(self):
+        valid = self.batch()["studies"][0]
+        invalid = dict(valid, study_id="bad", pack_precision="invalid")
+        result = module.validate_batch(json.dumps({"version": 1,
+                                                    "studies": [invalid, valid]}).encode(),
+                                      allow_quarantine=True)
+        self.assertEqual([row["study_id"] for row in result["studies"]], [valid["study_id"]])
 
     def test_invalid_json_does_not_expose_document_or_traceback(self):
         with patch.object(sys, "argv", ["global_research.py"]), \

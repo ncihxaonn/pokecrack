@@ -357,6 +357,18 @@ class CountryResearchTests(unittest.TestCase):
         publish.assert_not_called()
         self.assertEqual(json.loads(output.getvalue()), self.report())
 
+    def test_generated_country_report_quarantines_invalid_studies(self):
+        selection = self.selection()
+        invalid = dict(self.row(), pack_precision="invalid")
+        raw = {**selection, "results": [
+            {"target": code, "studies": [invalid]
+             if code == selection["targets"][0] else []}
+            for code in selection["targets"]
+        ]}
+        result = module.validate_report(json.dumps(raw).encode(), selection,
+                                        allow_quarantine=True)
+        self.assertEqual(result["results"][0]["studies"], [])
+
     def test_bad_context_fails_before_search_and_keeps_payload_out_of_logs(self):
         context = module.continuation_context(self.selection(), [])
         context["known_urls"] = ["https://example.com/?token=private"]

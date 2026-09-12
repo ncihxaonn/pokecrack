@@ -121,7 +121,8 @@ def validate_selection(value: object) -> dict:
 
 
 def validate_report(raw: bytes, selection: dict | None = None, *,
-                    allow_historical: bool = False) -> dict:
+                    allow_historical: bool = False,
+                    allow_quarantine: bool = False) -> dict:
     if len(raw) > MAX_BYTES:
         raise ValueError("batch_too_large")
     value = json.loads(raw)
@@ -143,7 +144,10 @@ def validate_report(raw: bytes, selection: dict | None = None, *,
                 or not isinstance(result["studies"], list)
                 or len(result["studies"]) > max_studies):
             raise ValueError("invalid_country_result")
-        batch = validate_batch(json.dumps({"version": 1, "studies": result["studies"]}).encode())
+        batch = validate_batch(
+            json.dumps({"version": 1, "studies": result["studies"]}).encode(),
+            allow_quarantine=allow_quarantine,
+        )
         # Search target is not evidence of the returned study's geography.
         by_country[result["target"]] = {"target": result["target"], "studies": batch["studies"]}
     report = {**selected, "results": [by_country[code] for code in selected["targets"]]}
@@ -293,7 +297,7 @@ def main() -> None:
             stage = "research"
             raw = research_document(prompt(selection, context), schema(selection), max_bytes=MAX_BYTES)
             stage = "validation"
-            output = validate_report(raw, selection)
+            output = validate_report(raw, selection, allow_quarantine=True)
         else:
             if args.selection is None:
                 raise ValueError("invalid_country_selection")
