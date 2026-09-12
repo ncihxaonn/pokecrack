@@ -83,25 +83,26 @@ class CheckpointMergeTests(unittest.TestCase):
                 subprocess.CalledProcessError(1, "gh")]) as run:
             self.assertFalse(queue.request_review())
             self.assertEqual(run.call_count, 2)
-            self.assertEqual(run.call_args.args[0][:3], ["gh", "pr", "create"])
+            self.assertEqual(run.call_args.args[0][:3], ["gh", "api", "--method"])
 
     def test_review_uses_same_repository_head_branch(self):
         with patch.object(queue, "run", side_effect=[outcome("[]"),
                 subprocess.CalledProcessError(1, "gh")]) as run:
             queue.request_review()
-        self.assertEqual(run.call_args.args[0][run.call_args.args[0].index("--head") + 1], queue.BRANCH)
+        create_command = run.call_args_list[1].args[0]
+        self.assertIn(f"head=ncihxaonn:{queue.BRANCH}", create_command)
 
     def test_checkpoint_pr_uses_github_auto_merge_without_bypassing_checks(self):
         with patch.object(queue, "run", side_effect=[
             outcome("[]"),
-            outcome(),
-            outcome('[{"number": 286}]'),
+            outcome('{"number": 286}'),
             outcome(),
         ]) as run:
             self.assertTrue(queue.request_review())
         self.assertEqual(run.call_args.args[0], [
-            "gh", "pr", "merge", "286", "--repo", queue.REPOSITORY,
-            "--auto", "--squash",
+            "gh", "api", "--method", "PUT",
+            f"repos/{queue.REPOSITORY}/pulls/286/auto-merge",
+            "-f", "merge_method=squash",
         ])
 
     def test_main_and_exact_origin_are_required(self):
