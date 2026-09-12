@@ -24394,6 +24394,395 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "cn_japanese_cards_100_pack_bilibili_2020"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "zh",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit_counts_not_transcribed",
+            "independent-review-pending",
+            "mixed_products",
+            "opening_location_unknown",
+            "title_claim_only",
+            "unverified_research"
+          ],
+          "method": "complete_video_opening",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 100,
+          "product": "japanese_pokemon_tcg_mixed_packs",
+          "set": "mixed_japanese_products",
+          "source_sample": null,
+          "study_id": "cn_japanese_cards_100_pack_bilibili_2020",
+          "urls": [
+            "https://www.bilibili.com/video/BV137411u761"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "jp_pokemon_center_loose_100_pack_bilibili_2021"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "zh",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit_counts_not_transcribed",
+            "independent-review-pending",
+            "mixed_sets",
+            "opening_location_unknown",
+            "title_claim_only",
+            "unverified_research"
+          ],
+          "method": "complete_video_opening",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 100,
+          "product": "japanese_pokemon_center_loose_packs",
+          "set": "mixed_japanese_sets",
+          "source_sample": null,
+          "study_id": "jp_pokemon_center_loose_100_pack_bilibili_2021",
+          "urls": [
+            "https://www.bilibili.com/video/BV1Vy4y1M7JF"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_prismatic_evolutions_january_2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_location_not_stated",
+            "percentages_not_converted_to_counts",
+            "possible_demigod_pack_clustering",
+            "reported_as_more_than_1200",
+            "unverified_research"
+          ],
+          "method": "authentication_center_mass_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1200,
+          "product": "english_prismatic_evolutions",
+          "set": "prismatic_evolutions",
+          "source_sample": null,
+          "study_id": "unknown_prismatic_evolutions_over_1200_tcgplayer",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Prismatic-Evolutions-Pull-Rates/d94889ea-f76a-4a13-b74d-5b0b071220a7"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cn_brave_glamorous_stars_100_boxes_bilibili_2024"
+          ],
+          "country": "CN",
+          "geography_basis": "product_market",
+          "language": "zh",
+          "limitations": [
+            "box_count_from_title",
+            "collector-policy-not-enabled",
+            "hit_counts_not_transcribed",
+            "independent-review-pending",
+            "packs_per_box_not_converted",
+            "unverified_research"
+          ],
+          "method": "complete_video_opening",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "simplified_chinese_brave_glamorous_stars_brave",
+          "set": "brave_glamorous_stars_brave",
+          "source_sample": {
+            "count": 100,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "cn_brave_glamorous_stars_100_boxes_bilibili_2024",
+          "urls": [
+            "https://www.bilibili.com/video/BV11y411q7N2"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_mega_evolution_september_2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_location_not_stated",
+            "percentages_not_converted_to_counts",
+            "reported_as_more_than_5000",
+            "unverified_research"
+          ],
+          "method": "authentication_center_mass_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 5000,
+          "product": "english_mega_evolution",
+          "set": "mega_evolution",
+          "source_sample": null,
+          "study_id": "unknown_mega_evolution_over_5000_tcgplayer",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Mega-Evolution-Pull-Rates/40cbeedc-21ce-473b-aef1-74e3969d9f91"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_evolving_skies_august_2021"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_location_not_stated",
+            "percentages_not_converted_to_counts",
+            "reported_as_more_than_8000",
+            "unverified_research"
+          ],
+          "method": "authentication_center_mass_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english_evolving_skies",
+          "set": "evolving_skies",
+          "source_sample": null,
+          "study_id": "unknown_evolving_skies_over_8000_tcgplayer",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Evolving-Skies-Pull-Rates/6a743d7b-e5ee-4fd6-9d18-64a636990e8c"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "unknown_ascended_heroes_7000_pack_community_2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer_hit_counts_not_safely_extractable",
+            "multi_opener_aggregation",
+            "opening_locations_unknown",
+            "same_report_crossposted",
+            "unverified_research"
+          ],
+          "method": "community_aggregated_openings",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 7000,
+          "product": "english_ascended_heroes",
+          "set": "ascended_heroes",
+          "source_sample": null,
+          "study_id": "unknown_ascended_heroes_7000_pack_community_2026",
+          "urls": [
+            "https://www.reddit.com/r/PokeInvesting/comments/1s76yx3/ascended_heroes_sir_pull_rates_from_7000_packs",
+            "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "jp_start_deck_100_battle_collection_1000_decks"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "deck_sample_not_booster_packs",
+            "hit_counts_not_safely_extractable",
+            "independent-review-pending",
+            "same_cohort_multiple_articles",
+            "unverified_research"
+          ],
+          "method": "documented_article_opening",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_start_deck_100_battle_collection",
+          "set": "start_deck_100_battle_collection",
+          "source_sample": {
+            "count": 1000,
+            "precision": "exact_reported",
+            "unit": "decks"
+          },
+          "study_id": "jp_start_deck_100_battle_collection_1000_decks",
+          "urls": [
+            "https://lifematome.blog/pokeca-secret-nanko",
+            "https://lifematome.blog/pokeka-startdeck-secret"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_black_bolt_white_flare_2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "combined_set_denominator",
+            "independent-review-pending",
+            "no_integer_hit_counts_recorded",
+            "opening_location_not_stated",
+            "reported_as_over_700",
+            "same_cohort_discussed_in_two_articles",
+            "unverified_research"
+          ],
+          "method": "authentication_center_mass_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 700,
+          "product": "english_black_bolt_and_white_flare",
+          "set": "black_bolt_and_white_flare",
+          "source_sample": null,
+          "study_id": "unknown_black_bolt_white_flare_over_700_tcgplayer",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/The-10-Most-Expensive-Pok%C3%A9mon-Cards-in-Black-Bolt/6876a631-641d-408d-a881-3cf72e516295",
+            "https://www.tcgplayer.com/content/article/The-10-Most-Expensive-Pok%C3%A9mon-Cards-in-White-Flare/d80295c5-2b19-461f-9a2f-adda4a12d215"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "jp_star_birth_loose_100_2022"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "card_yield_not_hit_pack_probability",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "mixed_retail_products",
+            "single_cohort",
+            "unverified_research"
+          ],
+          "method": "documented_article_opening",
+          "metrics": [
+            {
+              "category": "rr",
+              "hits": 16,
+              "unit": "cards"
+            },
+            {
+              "category": "rrr",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "sr_or_hr",
+              "hits": 5,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "japanese_star_birth_loose_packs",
+          "set": "star_birth",
+          "source_sample": null,
+          "study_id": "jp_star_birth_loose_100_pack_2022",
+          "urls": [
+            "https://nanjakorya.com/1123"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_phantasmal_flames_november_2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_location_not_stated",
+            "percentages_not_converted_to_counts",
+            "reported_as_more_than_5000",
+            "unverified_research"
+          ],
+          "method": "authentication_center_mass_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 5000,
+          "product": "english_phantasmal_flames",
+          "set": "phantasmal_flames",
+          "source_sample": null,
+          "study_id": "unknown_phantasmal_flames_over_5000_tcgplayer",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Phantasmal-Flames-Pull-Rates/9abae60d-b7fb-448f-874e-176f78d6a6ca"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cn_simplified_151_gem_100_pack_bilibili_2025"
+          ],
+          "country": "CN",
+          "geography_basis": "product_market",
+          "language": "zh",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit_counts_not_transcribed",
+            "independent-review-pending",
+            "mixed_sets",
+            "title_claim_only",
+            "unverified_research"
+          ],
+          "method": "complete_video_opening",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 100,
+          "product": "simplified_chinese_151_and_gem_pack",
+          "set": "pokemon_151_and_gem_pack",
+          "source_sample": null,
+          "study_id": "cn_simplified_151_gem_100_pack_bilibili_2025",
+          "urls": [
+            "https://www.bilibili.com/video/BV1gshAzQEbh"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "sg_phantasmal_flames_core_100_pack_2025"
+          ],
+          "country": "SG",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit_counts_not_safely_extractable",
+            "independent-review-pending",
+            "prior_box_session_excluded_from_core_cohort",
+            "publisher_country_not_opening_location",
+            "unverified_research"
+          ],
+          "method": "documented_article_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "english_phantasmal_flames",
+          "set": "phantasmal_flames",
+          "source_sample": null,
+          "study_id": "sg_phantasmal_flames_100_pack_2025",
+          "urls": [
+            "https://tcgtalk.com/guides/phantasmal-flames-pull-rates-case-opening"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
