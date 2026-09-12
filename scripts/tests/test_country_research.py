@@ -68,6 +68,20 @@ class CountryResearchTests(unittest.TestCase):
         result_schema = module.schema(self.selection())["properties"]["results"]["items"]
         self.assertEqual(result_schema["properties"]["studies"]["maxItems"], module.MAX_STUDIES_PER_TARGET)
 
+    def test_historical_six_study_reports_remain_readable(self):
+        selection = {**self.selection(), "targets": ["MY"]}
+        studies = [{**self.row(), "study_id": f"historical-{index}",
+                    "cohort_ids": [f"historical-{index}"],
+                    "urls": [f"https://example.com/historical-{index}"]}
+                   for index in range(module.MAX_HISTORICAL_STUDIES_PER_TARGET)]
+        raw = json.dumps({**selection,
+                          "results": [{"target": "MY", "studies": studies}]}).encode()
+        with self.assertRaises(ValueError):
+            module.validate_report(raw, selection)
+        restored = module.validate_report(raw, allow_historical=True)
+        self.assertEqual(len(restored["results"][0]["studies"]),
+                         module.MAX_HISTORICAL_STUDIES_PER_TARGET)
+
     def test_progress_is_success_evidence_not_wall_clock(self):
         self.assertEqual(module.select_targets([]), module.select_targets([]))
         with patch.object(module, "research_document", side_effect=ValueError("research_timeout")), \

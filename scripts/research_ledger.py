@@ -95,7 +95,7 @@ def validate_checkpoint(raw: bytes) -> dict:
     from country_research import validate_report
     from global_research import validate_batch
     for report in value["country_reports"]:
-        validate_report(_canonical(report).encode())
+        validate_report(_canonical(report).encode(), allow_historical=True)
     for batch in value["global_batches"]:
         validate_batch(_canonical(batch).encode())
     countries = set()

@@ -87,6 +87,8 @@ uncertainty; they are not automatically verified packs. The theoretical country
 batch capacity is 36 candidates, not a promise of new records or public pack
 growth. The global research batch has the same 36-row ceiling. The legacy
 six-country Asia output limits remain unchanged.
+Historical country passes that used the earlier six-candidate ceiling remain
+readable; only newly submitted country reports use the three-candidate cap.
 
 This does not replace independently reviewed repeatable collector families or
 the separate production release gates.
