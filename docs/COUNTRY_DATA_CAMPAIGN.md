@@ -30,8 +30,10 @@ opening locations. No city, address, person or contact field is introduced.
 ## Durable execution
 
 `country-research.yml` runs every 30 minutes on `main`; `global-research.yml`
-runs hourly; and `global-volume.yml` refreshes the quantity-only intake every
-15 minutes. The legacy six-country Asia workflow remains manual-only. All
+runs every 30 minutes; and `global-volume.yml` refreshes the quantity-only intake
+every 15 minutes. The MAM scheduler also syncs and processes up to eight quantity
+candidates on each 60-second loop. The legacy six-country Asia workflow remains
+manual-only. All
 share the reviewed research controls and one concurrency group. No new paid
 API, database credential, local-Mac workload or automatic source enablement
 exists.
@@ -47,8 +49,8 @@ four-region sweep continues into the appended phases rather than resetting or
 silently omitting them. Antarctica is an area, not a sovereign country; its
 inclusion does not assert that any opening records exist there.
 
-One isolated MAM Codex call has a ten-minute deadline, 24 search queries total,
-three candidates per target and a 48 KiB report cap (each country's normalized
+One isolated MAM Codex call has a ten-minute deadline, 32 search queries total,
+up to 48 global candidates and a 48 KiB report cap (each country's normalized
 sub-batch retains its 16 KiB bound). It must search each country
 in English and appropriate local languages. Empty results are permitted and
 retained as **no suitable candidate found in this bounded pass**, not zero
@@ -72,7 +74,8 @@ on later sweeps when history exceeds the hint budget; the full durable history a
 deduplication ledger are never truncated by this hint.
 
 The prompt prioritizes new original cohorts and varies source types across sweeps,
-within the 24-query budget. It does not blacklist an entire host, prevent new
+within the 32-query budget, including public social/video pages when an explicit
+pack count is visible. It does not blacklist an entire host, prevent new
 evidence about an existing cohort, or treat absent references as independent.
 These hints improve continuity, not guarantee discovery or replace independent
 deduplication. Empty passes still mean no eligible result in that bounded pass.
@@ -85,7 +88,7 @@ hit numerators, known opening locations or exhaustive manual accuracy checks.
 Unknown geography, title claims, lower bounds and native box counts retain their
 uncertainty; they are not automatically verified packs. The theoretical country
 batch capacity is 36 candidates, not a promise of new records or public pack
-growth. The global research batch has the same 36-row ceiling. The legacy
+growth. The global research batch now has a 48-row ceiling. The legacy
 six-country Asia output limits remain unchanged.
 Historical country passes that used the earlier six-candidate ceiling remain
 readable; only newly submitted country reports use the three-candidate cap.

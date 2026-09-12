@@ -62,14 +62,14 @@ is retained at title-claim level only, not as a verified denominator.
 
 The [country-first campaign](COUNTRY_DATA_CAMPAIGN.md) now owns scheduled
 research, following Asia → Oceania → Europe → Africa at country/area level.
-`global-research.yml` runs hourly for global/regional diagnostics, including the
+`global-research.yml` runs every 30 minutes for global/regional diagnostics, including the
 Americas; its `auto` selector still rotates focus in six-hour windows so each
 region receives a predictable search emphasis. The legacy six-country Asia
 workflow remains manual-only.
 
 Research runs on the approved MAM host using the existing Codex ChatGPT login,
 with no database or GitHub credentials passed to the research process. Each run
-is limited to 24 search queries, 36 candidate studies, 48 KiB output and ten
+is limited to 32 search queries, 48 candidate studies, 48 KiB output and ten
 minutes. The country-first run covers up to 12 countries in one region,
 retaining up to three candidates per country. Validation does not approve evidence. The publishing step stores new
 normalized reports in the versioned, unified

@@ -14,11 +14,10 @@ from global_studies import build_ledger, validate_record
 from research_ledger import LEDGER_PATH, append_unique, load as load_research_ledger, save as save_research_ledger
 
 SCOPES = ("global", "asia", "europe", "north-america", "latin-america", "africa", "oceania")
-DEFAULT_MAX_QUERIES = 24
-DEFAULT_MAX_STUDIES = 36
-# Thirty-six bounded candidate rows do not reliably fit the historical Asia
-# 16 KiB cap. Keep the global result bounded, but align it with the provider's
-# already-supported 48 KiB maximum instead of discarding a complete batch.
+DEFAULT_MAX_QUERIES = 32
+DEFAULT_MAX_STUDIES = 48
+# Forty-eight bounded global candidate rows fit the provider's already-supported
+# 48 KiB maximum; the country worker keeps its separate 16 KiB sub-batch cap.
 MAX_BYTES = 49152
 # Public logs must contain only our finite diagnostic vocabulary, never a
 # provider response, generated report, local path, or exception traceback.
@@ -105,8 +104,8 @@ def prompt(
     max_queries: int = DEFAULT_MAX_QUERIES,
     max_studies: int = DEFAULT_MAX_STUDIES,
 ) -> str:
-    if (type(max_queries) is not int or not 1 <= max_queries <= 24
-            or type(max_studies) is not int or not 1 <= max_studies <= 36):
+    if (type(max_queries) is not int or not 1 <= max_queries <= DEFAULT_MAX_QUERIES
+            or type(max_studies) is not int or not 1 <= max_studies <= DEFAULT_MAX_STUDIES):
         raise ValueError("invalid_report")
     return f"""Research credible public PRIMARY reports of complete physical Pokemon TCG
 openings and large original pull-rate studies worldwide; this run emphasizes {scope}.
@@ -116,7 +115,15 @@ Open original pages when they are publicly accessible. Public social/video posts
 also eligible when an explicit pack count is visible in a public title, caption or
 description; use pack_precision=title_claim and never bypass a login wall, challenge,
 robots denial or access restriction. Author-reported opening counts are eligible without hit counts.
-Prioritize discovering more distinct original samples over exhaustive manual review.
+For volume-first discovery, deliberately vary source families across public articles,
+forums and public post/video pages (including Reddit, Bilibili, public Mastodon or
+Bluesky pages and other openly accessible platform pages). Use search snippets only
+to discover a canonical page; output the page URL only when it is public, stable and
+accessible without a session. Search local-language pack terms for Chinese, Japanese,
+Korean, German, French, Spanish, Portuguese, Italian, Dutch, Polish, Turkish, Russian,
+Arabic, Thai, Vietnamese, Indonesian and Hindi. A visible follower count may prioritize
+a source, but it is never evidence and must not be stored. Aim for more distinct
+original opening cohorts, including title-only claims, before exhaustive manual review.
 Keep uncertainty labels; missing hit counts or opening location do not exclude research.
 Follow citations to original studies; identify reprints, translations and overlapping
 video/article cohorts. Never treat website count as sample count. A retailer listing,
