@@ -12222,6 +12222,619 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "reddit-english-box-seeding-157-boxes-5652-packs"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "compiled-from-public-posts",
+            "independent-review-pending",
+            "multiple-sets",
+            "not-all-openings-performed-by-reporter",
+            "opening-location-not-reported",
+            "selection-bias-possible",
+            "unverified-research"
+          ],
+          "method": "compiled-public-opening-reports",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 5652,
+          "product": "english-physical-booster-boxes",
+          "set": "mega-evolution-and-phantasmal-flames",
+          "source_sample": null,
+          "study_id": "reddit-english-booster-box-seeding-5652",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1owldhb/english_booster_boxes_are_definitely_seeded_heres"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-stellar-crown-8000plus"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-pack-count-not-reported",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "possible-dachsbun-ex-distribution-anomaly-reported",
+            "rounded-rates-not-converted-to-hit-counts",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-physical-booster-packs",
+          "set": "stellar-crown",
+          "source_sample": null,
+          "study_id": "tcgplayer-stellar-crown-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Stellar-Crown-Pull-Rates/2c0743dd-dbd0-4504-9ff8-be5a72dd04d1"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-lost-origin-36-boxes-1296-packs"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-explicitly-stated",
+            "independent-review-pending",
+            "metrics-not-transcribed",
+            "single-opening-source",
+            "unverified-research"
+          ],
+          "method": "first-party-recorded-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1296,
+          "product": "physical-booster-boxes",
+          "set": "lost-origin",
+          "source_sample": null,
+          "study_id": "reddit-lost-origin-1296",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/xb5aq0/lost_origin_pull_rates_36_booster_boxes_1296_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokemon-information-start-campaign-1000"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "japanese-promotional-pack-not-standard-booster",
+            "opening-location-not-reported",
+            "underlying-opening-sources-not-enumerated",
+            "unverified-research"
+          ],
+          "method": "compiled-opening-results",
+          "metrics": [
+            {
+              "category": "arcanine",
+              "hits": 118,
+              "unit": "cards"
+            },
+            {
+              "category": "cyclizar-ex",
+              "hits": 133,
+              "unit": "cards"
+            },
+            {
+              "category": "dondozo",
+              "hits": 119,
+              "unit": "cards"
+            },
+            {
+              "category": "espathra",
+              "hits": 128,
+              "unit": "cards"
+            },
+            {
+              "category": "koraidon",
+              "hits": 131,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon",
+              "hits": 123,
+              "unit": "cards"
+            },
+            {
+              "category": "oinkologne",
+              "hits": 121,
+              "unit": "cards"
+            },
+            {
+              "category": "spidops",
+              "hits": 127,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1000,
+          "product": "japanese-physical-promotional-packs",
+          "set": "pokemon-card-game-start-campaign-promo",
+          "source_sample": null,
+          "study_id": "pokemon-information-start-campaign-1000",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-pokemoncardsv-startprom"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-ascended-heroes-7000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-explicitly-stated",
+            "data-from-friends-and-local-stores",
+            "independent-review-pending",
+            "metrics-not-transcribed",
+            "product-mix-not-reported",
+            "unverified-research"
+          ],
+          "method": "multi-source-recorded-openings",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 7000,
+          "product": "physical-booster-packs",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "reddit-ascended-heroes-7000",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokemon-information-scarlet-ex-500-boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "box-level-percentages-only",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "pack-count-not-reported-and-not-derived",
+            "underlying-opening-sources-not-enumerated",
+            "unverified-research"
+          ],
+          "method": "compiled-carton-opening-results",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese-physical-booster-boxes",
+          "set": "scarlet-ex",
+          "source_sample": {
+            "count": 500,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokemon-information-scarlet-ex-500-boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-scarletex"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardzard-vivid-voltage-2184"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-explicitly-stated",
+            "independent-review-pending",
+            "metrics-presented-in-image-not-transcribed",
+            "mixed-build-and-battle-and-booster-box-products",
+            "unverified-research"
+          ],
+          "method": "first-party-recorded-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2184,
+          "product": "physical-booster-packs",
+          "set": "vivid-voltage",
+          "source_sample": null,
+          "study_id": "cardzard-vivid-voltage-2184",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paradox-rift-8000plus"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-pack-count-not-reported",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "rounded-rates-not-converted-to-hit-counts",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-physical-booster-packs",
+          "set": "paradox-rift",
+          "source_sample": null,
+          "study_id": "tcgplayer-paradox-rift-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paradox-Rift-Pull-Rates/0b5fb648-38fc-4f61-a6af-57c2737b4a48"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardzard-battle-styles-1405"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-explicitly-stated",
+            "independent-review-pending",
+            "metrics-presented-in-linked-or-image-data-not-transcribed",
+            "mixed-build-and-battle-and-booster-box-products",
+            "unverified-research"
+          ],
+          "method": "first-party-recorded-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1405,
+          "product": "physical-booster-packs",
+          "set": "battle-styles",
+          "source_sample": null,
+          "study_id": "cardzard-battle-styles-1405",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/m6zx5c/battle_styles_pull_rate_data_from_1405_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardzard-hidden-fates-2350"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-explicitly-stated",
+            "independent-review-pending",
+            "metrics-presented-in-image-or-linked-data-not-transcribed",
+            "specific-card-frequency-variation-not-resolved",
+            "unverified-research"
+          ],
+          "method": "first-party-recorded-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2350,
+          "product": "physical-booster-packs",
+          "set": "hidden-fates-shiny-vault",
+          "source_sample": null,
+          "study_id": "cardzard-hidden-fates-2350",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/jsx9ye/hidden_fates_shiny_vault_pull_rate_data_from_2350"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-obsidian-flames-8000plus"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-pack-count-not-reported",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "rounded-rates-not-converted-to-hit-counts",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-physical-booster-packs",
+          "set": "obsidian-flames",
+          "source_sample": null,
+          "study_id": "tcgplayer-obsidian-flames-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Obsidian-Flames-Pull-Rates/e2a66999-a7b5-4621-9765-c9a132e04bd2"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-journey-together-8000plus"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-pack-count-not-reported",
+            "hit-counts-not-reviewed",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-physical-booster-packs",
+          "set": "journey-together",
+          "source_sample": null,
+          "study_id": "tcgplayer-journey-together-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Journey-Together-Pull-Rates/1b9f379f-97cb-45cc-b6f6-a1a070a422cd"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-scarlet-violet-151-1500plus"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-pack-count-not-reported",
+            "god-packs-may-affect-card-level-distribution",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "possible-caterpie-distribution-anomaly-reported",
+            "rounded-rates-not-converted-to-hit-counts",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1500,
+          "product": "english-physical-booster-packs",
+          "set": "scarlet-violet-151",
+          "source_sample": null,
+          "study_id": "tcgplayer-scarlet-violet-151-1500plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%EF%BF%BDmon-TCG-Scarlet-Violet%EF%BF%BD151-Pull-Rates/b237df74-fbb0-40d0-9e13-d69ee6e804d9"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardzard-shining-fates-1087"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-explicitly-stated",
+            "early-sample",
+            "independent-review-pending",
+            "metrics-presented-in-image-not-transcribed",
+            "unverified-research"
+          ],
+          "method": "first-party-recorded-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1087,
+          "product": "physical-booster-packs",
+          "set": "shining-fates",
+          "source_sample": null,
+          "study_id": "cardzard-shining-fates-1087",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/lo8m1v/shining_fates_pull_rate_data_from_1087_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardshoplive-sv-base-1728"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "product-mix-not-reported",
+            "single-publisher-sample",
+            "unverified-research"
+          ],
+          "method": "first-party-recorded-opening",
+          "metrics": [
+            {
+              "category": "double-rare",
+              "hits": 234,
+              "unit": "cards"
+            },
+            {
+              "category": "gardevoir-ex-special-illustration-rare",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "hyper-rare",
+              "hits": 32,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration-rare",
+              "hits": 130,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon-ex-hyper-rare",
+              "hits": 5,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon-ex-special-illustration-rare",
+              "hits": 7,
+              "unit": "cards"
+            },
+            {
+              "category": "special-illustration-rare",
+              "hits": 52,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1728,
+          "product": "english-physical-booster-packs",
+          "set": "scarlet-violet-base",
+          "source_sample": null,
+          "study_id": "cardshoplive-scarlet-violet-1728",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-scarlet-and-violet"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-surging-sparks-8000plus"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-pack-count-not-reported",
+            "hit-counts-not-reviewed",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-physical-booster-packs",
+          "set": "surging-sparks",
+          "source_sample": null,
+          "study_id": "tcgplayer-surging-sparks-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%EF%BF%BDmon-TCG-Surging-Sparks-Pull-Rates/6ccfb6ab-f26a-4ce8-bab5-5f91c85ec70e"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardshoplive-crown-zenith-1000"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening-location-not-reported",
+            "product-mix-not-reported",
+            "single-publisher-sample",
+            "unverified-research"
+          ],
+          "method": "first-party-recorded-opening",
+          "metrics": [
+            {
+              "category": "galarian-gallery-gold",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "galarian-gallery-silver",
+              "hits": 105,
+              "unit": "cards"
+            },
+            {
+              "category": "galarian-gallery-yellow",
+              "hits": 190,
+              "unit": "cards"
+            },
+            {
+              "category": "gold-arceus-vstar",
+              "hits": 2,
+              "unit": "cards"
+            },
+            {
+              "category": "gold-giratina-vstar",
+              "hits": 3,
+              "unit": "cards"
+            },
+            {
+              "category": "gold-origin-forme-palkia-vstar",
+              "hits": 2,
+              "unit": "cards"
+            },
+            {
+              "category": "holo-v",
+              "hits": 105,
+              "unit": "cards"
+            },
+            {
+              "category": "radiant-rare",
+              "hits": 30,
+              "unit": "cards"
+            },
+            {
+              "category": "secret-rare-pikachu",
+              "hits": 15,
+              "unit": "cards"
+            },
+            {
+              "category": "textured-energy",
+              "hits": 24,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra-rare-trainer",
+              "hits": 35,
+              "unit": "cards"
+            },
+            {
+              "category": "vstar-or-vmax",
+              "hits": 56,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1000,
+          "product": "english-physical-booster-packs",
+          "set": "crown-zenith",
+          "source_sample": null,
+          "study_id": "cardshoplive-crown-zenith-1000",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-crown-zenith"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
