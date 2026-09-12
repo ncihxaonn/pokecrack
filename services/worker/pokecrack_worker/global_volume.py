@@ -3,8 +3,10 @@
 This lane is deliberately separate from the reviewed hit-rate pipeline.  It
 publishes counts that a public report claims, deduplicated by report group, and
 never creates a numerator, probability, or personal profile.  A later check
-may confirm that the public page still contains the claimed count; an access
-denial, login wall, redirect, or challenge is never bypassed.
+may confirm that the public page still contains the claimed count; when that
+bounded check cannot confirm it, the already-reported quantity remains
+quantity-visible with its failure code and is never relabeled as verified. An
+access denial, login wall, redirect, or challenge is never bypassed.
 """
 
 from __future__ import annotations
@@ -377,10 +379,21 @@ class PublicRobotsGate:
             return "unavailable"
 
 
-def _retry_or_reject(status_code: int) -> tuple[str, str]:
+def _retain_reported(status_code: int) -> tuple[str, str]:
+    """Keep a valid public report visible when optional page evidence fails.
+
+    The intake manifest is already limited to a public URL and a bounded,
+    source-reported quantity.  Page checking is a confidence upgrade, not a
+    prerequisite for the quantity-only projection.  Returning ``retry``
+    makes the database finalizer keep the candidate in ``reported`` state
+    while retaining the allowlisted reason and the three-attempt cap.  This
+    deliberately does not fetch a denied or challenged page again outside the
+    normal bounded attempts.
+    """
+
     if status_code in {408, 425, 429} or status_code >= 500:
         return "retry", "source_temporarily_unavailable"
-    return "rejected", "source_http_status"
+    return "retry", "source_http_status"
 
 
 def verify_candidate(
@@ -404,7 +417,7 @@ def verify_candidate(
         return {"status": "verified", "error_code": None, "evidence_sha256": evidence}
     robots_decision = robots.decision(url, user_agent=user_agent)
     if robots_decision == "denied":
-        return {"status": "rejected", "error_code": "robots_denied", "evidence_sha256": None}
+        return {"status": "retry", "error_code": "robots_denied", "evidence_sha256": None}
     if robots_decision == "unavailable":
         return {"status": "retry", "error_code": "robots_unavailable", "evidence_sha256": None}
     try:
@@ -418,41 +431,41 @@ def verify_candidate(
     try:
         if reference_url(response.url) != url:
             return {
-                "status": "rejected",
+                "status": "retry",
                 "error_code": "source_redirected",
                 "evidence_sha256": None,
             }
     except ValueError:
-        return {"status": "rejected", "error_code": "source_redirected", "evidence_sha256": None}
+        return {"status": "retry", "error_code": "source_redirected", "evidence_sha256": None}
     if response.status_code != 200:
-        status, error_code = _retry_or_reject(response.status_code)
+        status, error_code = _retain_reported(response.status_code)
         return {"status": status, "error_code": error_code, "evidence_sha256": None}
     if len(response.body) > MAX_RESPONSE_BYTES:
-        return {"status": "rejected", "error_code": "source_too_large", "evidence_sha256": None}
+        return {"status": "retry", "error_code": "source_too_large", "evidence_sha256": None}
     content_type = _header(response.headers, "content-type").casefold()
     if content_type and "text/html" not in content_type:
-        return {"status": "rejected", "error_code": "source_not_html", "evidence_sha256": None}
+        return {"status": "retry", "error_code": "source_not_html", "evidence_sha256": None}
     try:
         document = response.body.decode("utf-8", errors="strict")
     except UnicodeDecodeError:
-        return {"status": "rejected", "error_code": "source_invalid_utf8", "evidence_sha256": None}
+        return {"status": "retry", "error_code": "source_invalid_utf8", "evidence_sha256": None}
     parser = _VisibleTextParser()
     try:
         parser.feed(document)
         parser.close()
     except (ValueError, TypeError):
-        return {"status": "rejected", "error_code": "page_scope_not_found", "evidence_sha256": None}
+        return {"status": "retry", "error_code": "page_scope_not_found", "evidence_sha256": None}
     text = parser.text
     if not _POKEMON_MARKER.search(text):
-        return {"status": "rejected", "error_code": "page_scope_not_found", "evidence_sha256": None}
+        return {"status": "retry", "error_code": "page_scope_not_found", "evidence_sha256": None}
     count_match = _count_pattern(validated["pack_count"]).search(text)
     if count_match is None:
-        return {"status": "rejected", "error_code": "pack_count_not_found", "evidence_sha256": None}
+        return {"status": "retry", "error_code": "pack_count_not_found", "evidence_sha256": None}
     start = max(0, count_match.start() - 120)
     end = min(len(text), count_match.end() + 120)
     context = text[start:end]
     if not _PACK_WORD.search(context):
-        return {"status": "rejected", "error_code": "pack_count_not_found", "evidence_sha256": None}
+        return {"status": "retry", "error_code": "pack_count_not_found", "evidence_sha256": None}
     evidence = hashlib.sha256(
         f"{url}|{validated['pack_count']}|{validated['pack_precision']}|{context}".encode()
     ).hexdigest()
