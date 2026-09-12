@@ -26,6 +26,14 @@ case $role in
   *) fail "unsupported role: $role" ;;
 esac
 [[ $interval =~ ^[0-9]+([.][0-9]+)?$ ]] || fail "loop interval must be numeric"
+if [[ "$role" == scheduler && "${GLOBAL_VOLUME_PROCESS_ENABLED:-true}" == true ]]; then
+  volume_limit=${GLOBAL_VOLUME_PROCESS_LIMIT:-4}
+  [[ $volume_limit =~ ^[1-9][0-9]*$ && $volume_limit -le 25 ]] || {
+    fail "GLOBAL_VOLUME_PROCESS_LIMIT must be an integer between 1 and 25"
+  }
+elif [[ "$role" == scheduler && "${GLOBAL_VOLUME_PROCESS_ENABLED:-true}" != false ]]; then
+  fail "GLOBAL_VOLUME_PROCESS_ENABLED must be true or false"
+fi
 
 child_pid=''
 terminate() {
@@ -50,6 +58,14 @@ while true; do
   child_pid=''
   if ((status != 0)); then
     fail "$role command exited unsuccessfully with status $status"
+  fi
+  if [[ "$role" == scheduler && "${GLOBAL_VOLUME_PROCESS_ENABLED:-true}" == true ]]; then
+    if ! pokecrack-worker sync-social-volume; then
+      fail "social volume sync exited unsuccessfully"
+    fi
+    if ! pokecrack-worker process-global-volume --limit "$volume_limit"; then
+      fail "global volume processing exited unsuccessfully"
+    fi
   fi
   sleep "$interval" &
   child_pid=$!

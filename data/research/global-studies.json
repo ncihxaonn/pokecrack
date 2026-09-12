@@ -182,6 +182,66 @@
       ],
       "method": "consecutive-opening-segments",
       "limitations": ["opening-location-unknown", "opening-date-unknown", "mixed-product-sampling", "card-yield-not-hit-pack-probability", "original-cohort-audit-pending", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "meristation-spain-unboxing-event-1500",
+      "cohort_ids": ["meristation-spain-unboxing-event-1500"],
+      "urls": ["https://as.com/meristation/noticias/dos-espanoles-hacen-historia-participando-en-el-mayor-unboxing-de-la-historia-de-pokemon-tcg-n/"],
+      "set": "mixed-era",
+      "language": "es",
+      "product": "booster-packs-and-licensed-products",
+      "country": "ES",
+      "geography_basis": "publisher_country",
+      "packs": 1500,
+      "pack_precision": "lower_bound",
+      "metrics": [],
+      "method": "public-event-report",
+      "limitations": ["event-total-not-country-total", "mixed-products", "opening-location-unknown", "source-report-not-independently-audited", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "pkmcards-france-100-title",
+      "cohort_ids": ["pkmcards-france-100-title"],
+      "urls": ["https://www.pkmcards.fr/videos/wiKbZKOC03A"],
+      "set": "unknown",
+      "language": "fr",
+      "product": "booster-packs",
+      "country": "FR",
+      "geography_basis": "publisher_country",
+      "packs": 100,
+      "pack_precision": "title_claim",
+      "metrics": [],
+      "method": "public-video-title-claim",
+      "limitations": ["title-only", "opening-location-unknown", "access-policy-review-pending", "source-report-not-independently-audited", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "bilibili-china-151-100-title",
+      "cohort_ids": ["bilibili-china-151-100-title"],
+      "urls": ["https://www.bilibili.com/video/BV1gshAzQEbh/"],
+      "set": "pokemon-151",
+      "language": "zh",
+      "product": "booster-packs",
+      "country": "CN",
+      "geography_basis": "product_market",
+      "packs": 100,
+      "pack_precision": "title_claim",
+      "metrics": [],
+      "method": "public-video-title-claim",
+      "limitations": ["title-only", "mixed-product-sampling", "opening-location-unknown", "source-report-not-independently-audited", "collector-policy-not-enabled"]
+    },
+    {
+      "study_id": "bilibili-china-japan-import-100-description",
+      "cohort_ids": ["bilibili-china-japan-import-100-description"],
+      "urls": ["https://www.bilibili.com/video/BV137411u761/"],
+      "set": "unknown",
+      "language": "zh",
+      "product": "booster-packs",
+      "country": null,
+      "geography_basis": "unknown",
+      "packs": 100,
+      "pack_precision": "title_claim",
+      "metrics": [],
+      "method": "public-video-description-claim",
+      "limitations": ["description-only", "opening-location-unknown", "imported-product-market", "source-report-not-independently-audited", "collector-policy-not-enabled"]
     }
   ]
 }

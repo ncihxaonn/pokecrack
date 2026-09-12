@@ -15,7 +15,8 @@ Every source route uses one of the following exact values and no aliases: `offic
 5. Manual synthetic fixture import for tests.
 
 The current registry enables TCGdex catalog metadata, YouTube Data API metadata
-(credential required; no video download), exact reviewed public-study pages,
+(credential required; no video download), bounded Bluesky public-post metadata,
+exact reviewed public-study pages,
 and `example.com` only as a fixture-safe adapter. Live TCGdex collection accepts
 two independent daily UTC
 scheduled windows at 02:00 and 14:00 for
@@ -36,9 +37,11 @@ receives a dedicated YouTube Data API key. Every request is fenced by
 the exact minimal video identity, URL, title, publication timestamp and policy
 lifecycle fields in a dedicated transient table. Neither live path accepts an
 arbitrary URL or fetches video, audio, captions, thumbnails, descriptions,
-channel metadata, cards, rarity, openings, or probability evidence. The
-disabled fixture proves fail-closed behavior. Real retailer domains are not
-enabled by default.
+channel metadata, cards, rarity, openings, or probability evidence. A separate
+quantity-only projector may parse an explicit pack count already present in a
+bounded title or excerpt; it stores no title/text, account, follower metric, or
+media and never refetches a title claim. The disabled fixture proves fail-closed
+behavior. Real retailer domains are not enabled by default.
 
 ### Pokesup M5 exact coverage source
 
@@ -115,4 +118,4 @@ No CAPTCHA bypass, stealth/proxy rotation, credential sharing, purchased dataset
 
 ## Provenance
 
-Store source policy/version, canonical identity, collection timestamp, adapter version and only the source-specific fields approved by its exact contract. YouTube discovery is an explicit minimal-field exception: it retains a source-policy reference, while the fenced finalizer validates but does not store the collector/policy version strings; no hashes, query/rank provenance, channel data, inferred classifications, or derived hints are retained. Public output should expose source class/diversity and methodology, not sensitive account identity or raw payload. Takedown/terms incidents disable the policy first, preserve only permitted audit evidence, and remove retained content as required.
+Store source policy/version, canonical identity, collection timestamp, adapter version and only the source-specific fields approved by its exact contract. YouTube discovery is an explicit minimal-field exception: it retains a source-policy reference, while the fenced finalizer validates but does not store the collector/policy version strings; no hashes, query/rank provenance, channel data, inferred classifications, or derived hints are retained. The `reported_volume` projector stores only an explicit pack count, public URL, report-group hash and precision; title claims are never page-fetched and never become statistical evidence. Public output should expose source class/diversity and methodology, not sensitive account identity or raw payload. Takedown/terms incidents disable the policy first, preserve only permitted audit evidence, and remove retained content as required.

@@ -19,6 +19,7 @@ Catalog rows carry `is_demo`; synthetic and live rows must not be conflated.
 - `ingest.source_policies`: exact domain, source kind, enabled routes, limits and freshness.
 - `ingest.source_items`: canonical discovery identity, bounded private excerpt/payload, hashes and retention.
 - `ingest.youtube_discoveries`: dedicated `UNLOGGED`, forced-RLS cache containing only exact YouTube video identity, canonical URL, title, publication time, source-policy reference, first/last seen and per-row expiry. The fenced finalizer validates exact collector/policy versions but does not retain those version strings. The cache has no query/rank, channel, description, hash, inferred classification, product/batch hint, geography, evidence, or generic-source relationship.
+- `ingest.global_volume_candidates` and `ingest.global_volume_observations`: separate quantity-only relations for an explicit pack count, public URL, report-group hash, precision and optional country basis. The social projector may populate them from bounded YouTube title or Bluesky excerpt metadata, but it never stores the source text, account, follower count or media. `title_claim` rows are public quantity coverage only and are excluded from page-check claims and all statistical relations.
 - `ingest.nostr_relay_candidates` and `ingest.nostr_relay_observations`: disposable, private NIP-01 activity ledgers. They are excluded from logical backups and never enter the generic source/evidence/opening/statistics path. A Nostr backup retains only the three relay checkpoints (`ingest.nostr_relay_checkpoints`) and their exact policy/relay/endpoint/protocol binding; raw event content, public keys, signatures, and event IDs are not backup material.
 - `ingest.public_study_observations`: immutable, forced-RLS ledger for the
   exact reviewed public studies. It links one bounded source item,
@@ -132,7 +133,9 @@ including routes, robots behavior, limits, retention, and a SHA-256 comparison
 of the private config; no private config value is returned. The YouTube count in
 v3 remains activity metadata only. Video identity, title,
 query, channel, geography, content, and all evidence fields stay private and
-cannot become an opening, hit, denominator, or rate. v3 reads only exact source
+cannot become an opening, hit, denominator, or rate. The separate
+`reported_volume` projection is quantity-only and retains no social text or
+account identity. v3 reads only exact source
 keys and policy versions, caps reviewed sets at 100 and countries at 249,
 inherits v2's 1,000-set catalog bound, and grants execution only to browser
 roles.

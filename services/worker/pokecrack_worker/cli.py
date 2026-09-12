@@ -59,6 +59,7 @@ from pokecrack_worker.research_intake import MAX_BYTES as INTAKE_MAX_BYTES
 from pokecrack_worker.research_intake import import_manifest, validate_manifest
 from pokecrack_worker.runtime import RuntimeStatus
 from pokecrack_worker.scheduler import Scheduler
+from pokecrack_worker.social_volume import sync_social_volume
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 CONFIG_DIR = PROJECT_ROOT / "config"
@@ -157,7 +158,7 @@ def process_global_volume(
     if settings.data_mode is DataMode.DEMO:
         _json({"event": "global_volume_cycle", "dry_run": dry_run, "mutated": False, "claimed": 0})
         return
-    if settings.worker_role != "collector" or not settings.scrapling_enabled:
+    if settings.worker_role not in {"collector", "scheduler"} or not settings.scrapling_enabled:
         _json({"status": "rejected", "reason": "live_scrapling_collector_required"})
         raise typer.Exit(code=2)
     if dry_run:
@@ -173,6 +174,25 @@ def process_global_volume(
         _json({"status": "inconclusive", "reason": "global_volume_cycle_unavailable"})
         raise typer.Exit(code=1) from None
     _json({"event": "global_volume_cycle", "dry_run": False, "mutated": True, **result})
+
+
+@app.command("sync-social-volume")
+def sync_social_volume_command() -> None:
+    """Project explicit pack-count claims from retained public social metadata."""
+
+    settings = _settings()
+    if settings.data_mode is DataMode.DEMO:
+        _json({"event": "social_volume_sync", "mutated": False, "metadata_candidates": 0})
+        return
+    if settings.worker_role not in {"collector", "scheduler"}:
+        _json({"status": "rejected", "reason": "live_scheduler_or_collector_required"})
+        raise typer.Exit(code=2)
+    try:
+        result = sync_social_volume(composition.executor_from_settings(settings))
+    except Exception:
+        _json({"status": "inconclusive", "reason": "social_volume_sync_unavailable"})
+        raise typer.Exit(code=1) from None
+    _json({"event": "social_volume_sync", "mutated": True, **result})
 
 
 def _settings() -> Settings:

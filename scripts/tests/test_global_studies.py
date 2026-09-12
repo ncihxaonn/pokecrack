@@ -175,11 +175,14 @@ class GlobalStudiesTests(unittest.TestCase):
 
     def test_real_catalog_is_reference_only_and_no_fabricated_total(self):
         data = module.build_ledger((ROOT / "data/research/global-studies.json").read_bytes())
-        self.assertEqual(data["input_reports"], 11)
-        self.assertEqual(data["distinct_report_groups"], 10)
+        self.assertEqual(data["input_reports"], 15)
+        self.assertEqual(data["distinct_report_groups"], 14)
         self.assertFalse(data["production_admitted"])
         self.assertIsNone(data["verified_unique_packs"])
-        self.assertTrue(all(row["country"] is None for row in data["studies"]))
+        self.assertEqual(
+            {row["country"] for row in data["studies"] if row["country"] is not None},
+            {"CN", "ES", "FR"},
+        )
 
     def test_real_same_page_disagreement_is_one_quarantined_cohort(self):
         data = module.build_ledger((ROOT / "data/research/global-studies.json").read_bytes())
