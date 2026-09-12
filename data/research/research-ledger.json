@@ -24783,6 +24783,536 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "mega-dream-ex-2000-boxes-100-cartons"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "box-level-study",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-numerators-not-published",
+            "linked-video-may-overlap-with-first-1000-boxes",
+            "unverified-research"
+          ],
+          "method": "manual-carton-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "mega-dream-ex",
+          "set": "mega-dream-ex",
+          "source_sample": {
+            "count": 2000,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "mega-dream-ex-2000-boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-megadreamex"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "vivid-voltage-2184-self-opened"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit-numerators-not-transcribed",
+            "independent-review-pending",
+            "mixed-product-formats",
+            "raw-data-linked-but-not-reviewed",
+            "unverified-research"
+          ],
+          "method": "author-opened-recorded-tally",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2184,
+          "product": "vivid-voltage",
+          "set": "vivid-voltage",
+          "source_sample": null,
+          "study_id": "vivid-voltage-2184-packs",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "shining-fates-1087-opening-cohort"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "author-stated-sample-not-yet-large-enough-for-accuracy",
+            "collector-policy-not-enabled",
+            "early-sample",
+            "hit-numerators-not-transcribed",
+            "independent-review-pending",
+            "unverified-research"
+          ],
+          "method": "author-opened-recorded-tally",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1087,
+          "product": "shining-fates",
+          "set": "shining-fates",
+          "source_sample": null,
+          "study_id": "shining-fates-1087-packs",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/lo8m1v/shining_fates_pull_rate_data_from_1087_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "ascended-heroes-7000-friends-and-stores"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "contributors-included-friends-and-local-stores",
+            "hit-numerators-not-transcribed",
+            "independent-review-pending",
+            "sampling-frame-not-random",
+            "unverified-research"
+          ],
+          "method": "multi-participant-local-store-tally",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 7000,
+          "product": "ascended-heroes",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "ascended-heroes-7000-packs",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "start-campaign-promo-1000-packs"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "promotional-pack-product",
+            "sampling-provenance-not-fully-described",
+            "unverified-research"
+          ],
+          "method": "manual-pack-opening-aggregation",
+          "metrics": [
+            {
+              "category": "arcanine",
+              "hits": 118,
+              "unit": "cards"
+            },
+            {
+              "category": "cyclizar-ex",
+              "hits": 133,
+              "unit": "cards"
+            },
+            {
+              "category": "dondozo",
+              "hits": 119,
+              "unit": "cards"
+            },
+            {
+              "category": "espathra",
+              "hits": 128,
+              "unit": "cards"
+            },
+            {
+              "category": "koraidon",
+              "hits": 131,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon",
+              "hits": 123,
+              "unit": "cards"
+            },
+            {
+              "category": "oinkologne",
+              "hits": 121,
+              "unit": "cards"
+            },
+            {
+              "category": "spidops",
+              "hits": 127,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1000,
+          "product": "start-campaign-promo-pack",
+          "set": "pokemon-card-game-start-campaign-promo",
+          "source_sample": null,
+          "study_id": "start-campaign-promo-1000-packs",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-pokemoncardsv-startprom"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "battle-partners-approximately-1000-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "approximate-box-count",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-numerators-not-published",
+            "possible-overlap-with-site-wide-archive",
+            "site-reports-aggregated-opening-results",
+            "unverified-research"
+          ],
+          "method": "manual-carton-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "battle-partners",
+          "set": "battle-partners",
+          "source_sample": {
+            "count": 1000,
+            "precision": "approximate_reported",
+            "unit": "boxes"
+          },
+          "study_id": "battle-partners-1000-boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-battlepartner"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "shiny-star-v-1000-japanese-packs"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit-numerators-not-transcribed",
+            "independent-review-pending",
+            "raw-data-was-promised-later-not-reviewed",
+            "reported-rates-were-adjusted",
+            "unverified-research"
+          ],
+          "method": "author-opened-recorded-tally",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1000,
+          "product": "japanese-shiny-star-v",
+          "set": "shiny-star-v",
+          "source_sample": null,
+          "study_id": "shiny-star-v-1000-packs",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/ktv23v"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "mega-evolution-157-english-booster-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit-numerators-not-transcribed",
+            "independent-review-pending",
+            "observational-box-sample",
+            "selection-and-reporting-bias-possible",
+            "unverified-research"
+          ],
+          "method": "manual-box-level-observational-study",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 5652,
+          "product": "english-booster-boxes",
+          "set": "mega-evolution",
+          "source_sample": null,
+          "study_id": "mega-evolution-seeding-157-boxes",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1owldhb/english_booster_boxes_are_definitely_seeded_heres"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokemon-card-151-960-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "box-level-study",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-numerators-not-published",
+            "possible-overlap-with-site-wide-archive",
+            "unverified-research"
+          ],
+          "method": "manual-carton-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "pokemon-card-151",
+          "set": "pokemon-card-151",
+          "source_sample": {
+            "count": 960,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokemon-card-151-960-boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-pokemoncard151"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "hidden-fates-2350-self-opened"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit-numerators-not-transcribed",
+            "independent-review-pending",
+            "raw-data-linked-but-not-reviewed",
+            "specific-card-rates-may-reflect-sampling-variance",
+            "unverified-research"
+          ],
+          "method": "author-opened-recorded-tally",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2350,
+          "product": "hidden-fates",
+          "set": "hidden-fates",
+          "source_sample": null,
+          "study_id": "hidden-fates-shiny-vault-2350-packs",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/jsx9ye"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "inferno-x-approximately-1000-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "approximate-box-count",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-numerators-not-published",
+            "possible-overlap-with-series-level-sample",
+            "unverified-research"
+          ],
+          "method": "manual-carton-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "inferno-x",
+          "set": "inferno-x",
+          "source_sample": {
+            "count": 1000,
+            "precision": "approximate_reported",
+            "unit": "boxes"
+          },
+          "study_id": "inferno-x-1000-boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-infernox"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "violet-ex-500-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "box-level-study",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-numerators-not-published",
+            "possible-overlap-with-site-wide-archive",
+            "unverified-research"
+          ],
+          "method": "manual-carton-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "violet-ex",
+          "set": "violet-ex",
+          "source_sample": {
+            "count": 500,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "violet-ex-500-boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-violetex"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "vstar-universe-1000-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "box-level-study",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-numerators-not-published",
+            "possible-overlap-with-site-wide-archive",
+            "unverified-research"
+          ],
+          "method": "manual-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "vstar-universe",
+          "set": "vstar-universe",
+          "source_sample": {
+            "count": 1000,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "vstar-universe-1000-boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-vstaruniverse"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokemon-30th-preliminary-732-leaked-packs"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "double-rare-denominator-differs-and-is-excluded",
+            "independent-review-pending",
+            "largely-collated-from-streams",
+            "pre-release-leaked-product",
+            "reprints-of-same-cohort",
+            "unverified-research"
+          ],
+          "method": "manual-aggregation-of-leaked-and-streamed-openings",
+          "metrics": [
+            {
+              "category": "classic-reprint",
+              "hits": 70,
+              "unit": "cards"
+            },
+            {
+              "category": "futuristic-ultra-rare",
+              "hits": 7,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration-rare",
+              "hits": 130,
+              "unit": "cards"
+            },
+            {
+              "category": "special-illustration-rare",
+              "hits": 37,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 732,
+          "product": "pre-release-leaked-packs",
+          "set": "pokemon-30th-anniversary",
+          "source_sample": null,
+          "study_id": "pokemon-30th-preliminary-732-packs",
+          "urls": [
+            "https://www.reddit.com/r/PokemonDealsUSA/comments/1w8e3r4/pok%C3%A9mon_30th_anniversary_pull_rates_preliminary",
+            "https://www.reddit.com/r/PokemonDropNotify/comments/1w8e3sz/pok%C3%A9mon_30th_anniversary_pull_rates_preliminary",
+            "https://www.reddit.com/r/TheTrainersCollective/comments/1w8e3og/pok%C3%A9mon_30th_anniversary_pull_rates_preliminary"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "battle-styles-1405-mixed-sealed-products"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "additional-data-link-not-reviewed",
+            "collector-policy-not-enabled",
+            "hit-numerators-not-transcribed",
+            "independent-review-pending",
+            "mixed-build-and-battle-and-booster-box-products",
+            "unverified-research"
+          ],
+          "method": "author-opened-recorded-tally",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1405,
+          "product": "battle-styles",
+          "set": "battle-styles",
+          "source_sample": null,
+          "study_id": "battle-styles-1405-packs",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/m6zx5c/battle_styles_pull_rate_data_from_1405_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "scarlet-ex-1000-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "box-level-study",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-numerators-not-published",
+            "possible-overlap-with-site-wide-archive",
+            "unverified-research"
+          ],
+          "method": "manual-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "scarlet-ex",
+          "set": "scarlet-ex",
+          "source_sample": {
+            "count": 1000,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "scarlet-ex-1000-boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-scarletex"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
