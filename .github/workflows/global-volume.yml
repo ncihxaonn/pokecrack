@@ -62,7 +62,10 @@ jobs:
           runtime_sha=$(python3 scripts/research_runtime.py \
             --workflow-sha "$GITHUB_SHA" --host "$VPS_HOST" --user "$VPS_USER" \
             --port "$VPS_PORT" --identity-file "$ssh_dir/key" --known-hosts "$ssh_dir/known_hosts")
-          [[ "$runtime_sha" == "$GITHUB_SHA" ]]
+          # research_runtime.py already proves that the deployed runtime is a
+          # reviewed ancestor of this data-only main commit. Data checkpoints
+          # do not require rebuilding the worker image on every ledger merge.
+          [[ "$runtime_sha" =~ ^[0-9a-f]{40}$ ]]
           ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
             "bash /home/codex/pokecrack/deploy/scripts/import-global-volume.sh '$runtime_sha'" \
             < "$RUNNER_TEMP/global-volume.json" > "$RUNNER_TEMP/global-volume-import.json"

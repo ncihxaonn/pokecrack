@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from pathlib import Path
 import os
 import subprocess
 import sys
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -66,9 +66,9 @@ class ResearchRuntimeTests(unittest.TestCase):
             [result(WORKFLOW), result(RUNTIME), subprocess.CalledProcessError(1, "git")],
             [result(WORKFLOW), subprocess.TimeoutExpired("ssh", 45)],
         ):
-            with patch.object(module.subprocess, "run", side_effect=outcomes):
-                with self.assertRaises(subprocess.SubprocessError):
-                    module.resolve_runtime(WORKFLOW, ["ssh"])
+            with patch.object(module.subprocess, "run", side_effect=outcomes), \
+                    self.assertRaises(subprocess.SubprocessError):
+                module.resolve_runtime(WORKFLOW, ["ssh"])
 
     def test_cli_pins_target_and_host_key_checks(self):
         args = ["research_runtime.py", "--workflow-sha", WORKFLOW,
@@ -89,6 +89,13 @@ class ResearchRuntimeTests(unittest.TestCase):
                 with self.assertRaisesRegex(SystemExit, "runtime_revision_unverified"):
                     module.main()
                 resolve.assert_not_called()
+
+    def test_global_volume_accepts_reviewed_ancestor_runtime_for_data_checkpoint(self):
+        workflow = (Path(__file__).resolve().parents[2]
+                    / ".github/workflows/global-volume.yml").read_text()
+        self.assertIn('runtime_sha=$(python3 scripts/research_runtime.py', workflow)
+        self.assertIn('[[ "$runtime_sha" =~ ^[0-9a-f]{40}$ ]]', workflow)
+        self.assertNotIn('[[ "$runtime_sha" == "$GITHUB_SHA" ]]', workflow)
 
 
 if __name__ == "__main__":
