@@ -42,6 +42,14 @@ again outside the normal three-attempt cap, and no access restriction is
 bypassed. This preserves a large, clearly labelled source-reported denominator
 without confusing it with independently verified opening evidence.
 
+The global research sweeper runs every 30 minutes and rotates across worldwide
+regional focus. Each pass is deliberately broad but bounded at 64 public-search
+queries, 96 research rows, and a 96 KiB response. The checkpoint queue writes
+only the reference ledger, opens or updates one `automation/research-ledger` PR,
+and requests GitHub auto-merge after required checks; if repository settings do
+not permit auto-merge, the PR remains reviewable and no code or credential path
+is bypassed. The separate quantity-intake schedule continues every 15 minutes.
+
 ## Reviewed public-study boundary
 
 The public-study path accepts only its immutable study identities, URLs, policy

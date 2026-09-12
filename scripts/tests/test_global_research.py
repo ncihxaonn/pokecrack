@@ -21,17 +21,17 @@ spec.loader.exec_module(module)
 
 class GlobalResearchTests(unittest.TestCase):
     def test_prompt_budgets_keep_volume_defaults_and_bound_country_override(self):
-        self.assertIn("32 queries and return at most 48 studies", module.prompt("global"))
+        self.assertIn("64 queries and return at most 96 studies", module.prompt("global"))
         self.assertIn("Reddit, Bilibili", module.prompt("global"))
         self.assertIn("Chinese, Japanese,\nKorean", module.prompt("asia"))
         for kwargs in ({"max_queries": True}, {"max_queries": 0},
-                       {"max_queries": 33}, {"max_studies": 49},
+                       {"max_queries": 65}, {"max_studies": 97},
                        {"max_studies": False}, {"max_studies": 0}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 module.prompt("global", **kwargs)
         self.assertIn(
-            "32 queries and return at most 48 studies",
-            module.prompt("global", max_queries=32, max_studies=48),
+            "64 queries and return at most 96 studies",
+            module.prompt("global", max_queries=64, max_studies=96),
         )
 
     def batch(self):
@@ -240,7 +240,7 @@ class GlobalResearchTests(unittest.TestCase):
             module.main()
         research.assert_called_once_with(module.prompt("oceania"), module.schema(),
                                          max_bytes=module.MAX_BYTES)
-        self.assertEqual(module.MAX_BYTES, 49152)
+        self.assertEqual(module.MAX_BYTES, 96 * 1024)
 
 
 if __name__ == "__main__":
