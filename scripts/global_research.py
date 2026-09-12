@@ -11,11 +11,27 @@ from pathlib import Path
 
 from asia_research import research_document
 from global_studies import build_ledger, validate_record
-from research_ledger import LEDGER_PATH, append_unique, load as load_research_ledger, save as save_research_ledger
+from research_ledger import LEDGER_PATH, append_unique
+from research_ledger import load as load_research_ledger
+from research_ledger import save as save_research_ledger
 
 SCOPES = ("global", "asia", "europe", "north-america", "latin-america", "africa", "oceania")
 DEFAULT_MAX_QUERIES = 64
 DEFAULT_MAX_STUDIES = 96
+# The workflow runs twice per hour. Rotate the query-allocation hint on the
+# same cadence so one regional focus cannot occupy an entire day of research.
+# This is a search hint only; every run still keeps all countries eligible.
+FOCUS_ROTATION_SECONDS = 30 * 60
+FOCUS_COUNTRY_HINTS = {
+    "asia": "Prioritize fresh public sources explicitly tied to CN, JP, IN, ID, KR, SG, TW, TH, VN, MY and PH, then rotate through the remaining Asian markets.",
+    "europe": "Prioritize fresh public sources explicitly tied to DE, FR, IT, ES, NL, PL, GB, BE, AT, CH, SE, NO, DK, FI, PT and TR, then rotate through the remaining European markets.",
+    "north-america": "Prioritize fresh public sources explicitly tied to CA, MX and the Caribbean and Central American markets, then rotate through the remaining North American targets.",
+    "latin-america": "Prioritize fresh public sources explicitly tied to BR, AR, CL, CO, PE, VE and the remaining Latin American markets.",
+    "africa": "Prioritize fresh public sources explicitly tied to ZA, EG, NG, KE, MA, GH and the remaining African markets.",
+    "oceania": "Prioritize fresh public sources explicitly tied to AU, NZ, FJ, PG and the remaining Oceania markets.",
+    "antarctica": "Keep the Antarctic target eligible for any explicitly stated source, but do not manufacture local activity where none is publicly reported.",
+    "global": "Use a broad cross-region mix and deliberately include markets that have had fewer recent original sources.",
+}
 # Keep the broader volume pass bounded while giving the provider enough room
 # to return distinct public-source cohorts instead of stopping after the first
 # few repeated results. The country worker keeps its separate 16 KiB sub-batch
@@ -75,7 +91,7 @@ def select_scope(requested: str, now: datetime) -> str:
     if now.tzinfo is None:
         raise ValueError("timezone_required")
     anchor = datetime(2026, 9, 8, tzinfo=timezone.utc)
-    return SCOPES[int((now - anchor).total_seconds() // 21600) % len(SCOPES)]
+    return SCOPES[int((now - anchor).total_seconds() // FOCUS_ROTATION_SECONDS) % len(SCOPES)]
 
 
 def schema() -> dict:
@@ -113,6 +129,9 @@ def prompt(
 openings and large original pull-rate studies worldwide; this run emphasizes {scope}.
 All countries are in scope; retain unknown geography. Search English and multiple
 relevant local languages. Use at most {max_queries} queries and return at most {max_studies} studies.
+{FOCUS_COUNTRY_HINTS[scope]} This priority is only a query-allocation hint: never
+assign a country unless the source explicitly states it, and do not omit other
+countries just because they are outside the current focus.
 Open original pages when they are publicly accessible. Public social/video posts are
 also eligible when an explicit pack count is visible in a public title, caption or
 description; use pack_precision=title_claim and never bypass a login wall, challenge,
