@@ -135,6 +135,8 @@ class GlobalResearchTests(unittest.TestCase):
         self.assertIn("queue_research_ledger.py", workflow)
         self.assertNotIn("issues: write", workflow)
         self.assertIn("global-ledger.json", workflow)
+        self.assertIn("schedule:", workflow)
+        self.assertIn("cron: '7 */6 * * *'", workflow)
         self.assertNotIn("SUPABASE", workflow)
         self.assertNotIn("OPENAI_API_KEY", workflow)
         legacy = (ROOT / ".github/workflows/asia-research.yml").read_text()

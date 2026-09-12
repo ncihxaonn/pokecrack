@@ -17,14 +17,18 @@ not yet live-observed.
 | --- | --- | --- |
 | `catalog` | TCGdex set metadata | Set/language identity and catalog matching only |
 | `activity_only` | Minimal YouTube search-result metadata; bounded Mastodon public hashtag activity | Private discovery coverage only |
+| `reported_volume` | Explicit pack counts from reviewed references or bounded public title/text metadata | Public quantity coverage; never an opening, hit, rate, or inference |
 | Denominator coverage | Complete reviewed public-study opening persisted in `ingest.public_study_coverage_observations` | Public pack/opening/source counts; a sample rate only when the reviewed contract also has an exact normalized numerator |
 | `statistics` | Complete, nonduplicate opening with a verified pack denominator and tier A/B evidence | Aggregate inference after deterministic and independent validation |
 
 The tier-D YouTube discovery records defined here never create an opening, hit,
-denominator, aggregate, or public signal. Other separately reviewed activity-only
-opening records may contribute an explicitly labelled activity count, but never a
-pack denominator, hit rate, or anomaly claim. A popular video, a rare-card post,
-a listing, or a channel country is not evidence that a region has better packs.
+denominator, aggregate, or public signal. A separate `reported_volume` projector
+may read one bounded title or Bluesky excerpt and retain only an explicit pack
+count, public URL, report-group hash, and precision. It does not retain the
+title, post text, account, follower count, or media. A title-derived count is
+published as quantity coverage only and is excluded from page-check work and
+all rate calculations. A popular video, a rare-card post, a listing, or a
+channel country is not evidence that a region has better packs.
 Denominator coverage is neither `activity_only` nor automatic statistical
 eligibility: the coverage ledger can retain a real `pack_count` while excluding
 the row from every numerator, rate, inference, and statistical-promotion path.
@@ -107,10 +111,12 @@ HMAC; a conflicting domain mapping for the same identity excludes the affected
 records. Retractions are evaluated as of the requested cohort timestamp, so
 later retractions remove the input without rewriting historical evidence.
 
-This private bridge has no worker promotion from Bluesky, Nostr, Mastodon,
-YouTube, catalog, or other social discovery ledgers. It does not calculate a
-rate, baseline, posterior, interval, or map colour. Those require the separate
-reviewed publisher and exact statistical implementation.
+The private authorized-opening bridge has no promotion to an opening, hit,
+denominator, rate, baseline, posterior, interval, or map colour from Bluesky,
+Nostr, Mastodon, YouTube, catalog, or other social discovery ledgers. The
+separate quantity projector may promote a bounded explicit pack-count claim to
+`reported_volume`, with unknown geography unless the source itself supplies a
+country basis. That lane is deliberately excluded from statistical inference.
 
 ## YouTube discovery boundary
 
@@ -145,7 +151,9 @@ official API refresh updates that same exact record.
 
 YouTube `regionCode` describes availability in a viewer market, not the physical
 location of an opening, so it is neither requested nor used. Search metadata has
-no route to a country, store, purchase, batch, opening, denominator, or rate.
+no route to a country, store, purchase, batch, opening, denominator, or rate. The
+separate quantity projector can use an explicit pack number in the retained
+title, but emits unknown geography by default and never fetches the video again.
 
 ## Mastodon public hashtag activity boundary
 
@@ -230,7 +238,8 @@ Australia/English-only contract. The forward global-dashboard migration adds a
 separate strict ISO country dimension, country-period publication table, and
 public v3 snapshot; it does not loosen v1 or v2. The dedicated reviewed-study
 finalizer is the only current writer for real country denominators. YouTube and
-catalog metadata still have no route to that table. Historical rolling cells
+catalog metadata still have no route to that table; they can only feed the
+separate `reported_volume` quantity lane. Historical rolling cells
 remain readable to the service boundary for audit, while browser RLS exposes
 only the current UTC-ending period so aged-out evidence cannot look fresh.
 

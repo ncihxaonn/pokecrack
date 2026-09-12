@@ -85,6 +85,19 @@ class CheckpointMergeTests(unittest.TestCase):
             self.assertEqual(run.call_count, 2)
             self.assertEqual(run.call_args.args[0][:3], ["gh", "pr", "create"])
 
+    def test_checkpoint_pr_uses_github_auto_merge_without_bypassing_checks(self):
+        with patch.object(queue, "run", side_effect=[
+            outcome("[]"),
+            outcome(),
+            outcome('[{"number": 286}]'),
+            outcome(),
+        ]) as run:
+            self.assertTrue(queue.request_review())
+        self.assertEqual(run.call_args.args[0], [
+            "gh", "pr", "merge", "286", "--repo", queue.REPOSITORY,
+            "--auto", "--squash",
+        ])
+
     def test_main_and_exact_origin_are_required(self):
         env = {"GITHUB_REPOSITORY": "ncihxaonn/pokecrack", "GITHUB_REF": "refs/heads/main",
                "GITHUB_SHA": "a" * 40}

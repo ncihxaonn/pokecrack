@@ -47,7 +47,7 @@ def commit_checkpoint(revision: str, previous: str | None, raw: str) -> bool:
 
 
 def request_review() -> bool:
-    """A persisted data checkpoint does not depend on bot PR-creation rights."""
+    """Queue the exact checkpoint PR and ask GitHub to merge it when checks pass."""
     try:
         existing = json.loads(run([
             "gh", "pr", "list", "--repo", REPOSITORY, "--base", "main",
@@ -59,6 +59,22 @@ def request_review() -> bool:
             run(["gh", "pr", "create", "--repo", REPOSITORY, "--base", "main",
                  "--head", BRANCH, "--title", "chore(research): update unified research ledger",
                  "--body", "Validated research-only checkpoint. No application code or production pack counts are admitted by this data update."])
+        current = json.loads(run([
+            "gh", "pr", "list", "--repo", REPOSITORY, "--base", "main",
+            "--head", f"ncihxaonn:{BRANCH}", "--state", "open", "--json", "number",
+        ]).stdout)
+        if not isinstance(current, list) or len(current) != 1:
+            return False
+        number = current[0].get("number")
+        if type(number) is not int or number < 1:
+            return False
+        try:
+            run(["gh", "pr", "merge", str(number), "--repo", REPOSITORY,
+                 "--auto", "--squash"])
+        except (ValueError, OSError, subprocess.SubprocessError):
+            # A repository setting may disable auto-merge. The validated PR
+            # still exists and remains reviewable; never bypass its checks.
+            print("::warning::Research checkpoint PR queued; GitHub auto-merge was unavailable.")
         return True
     except (ValueError, OSError, subprocess.SubprocessError):
         return False
