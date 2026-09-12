@@ -20,12 +20,19 @@ spec.loader.exec_module(module)
 
 
 class GlobalResearchTests(unittest.TestCase):
-    def test_prompt_budgets_keep_legacy_defaults_and_bound_country_override(self):
-        self.assertIn("24 queries and return at most 36 studies", module.prompt("global"))
-        for kwargs in ({"max_queries": True}, {"max_queries": 25}, {"max_queries": 0},
-                       {"max_studies": 37}, {"max_studies": False}, {"max_studies": 0}):
+    def test_prompt_budgets_keep_volume_defaults_and_bound_country_override(self):
+        self.assertIn("32 queries and return at most 48 studies", module.prompt("global"))
+        self.assertIn("Reddit, Bilibili", module.prompt("global"))
+        self.assertIn("Chinese, Japanese,\nKorean", module.prompt("asia"))
+        for kwargs in ({"max_queries": True}, {"max_queries": 0},
+                       {"max_queries": 33}, {"max_studies": 49},
+                       {"max_studies": False}, {"max_studies": 0}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
                 module.prompt("global", **kwargs)
+        self.assertIn(
+            "32 queries and return at most 48 studies",
+            module.prompt("global", max_queries=32, max_studies=48),
+        )
 
     def batch(self):
         row = json.loads((ROOT / "data/research/global-studies.json").read_text())["studies"][0]
@@ -134,7 +141,7 @@ class GlobalResearchTests(unittest.TestCase):
         self.assertNotIn("issues: write", workflow)
         self.assertIn("global-ledger.json", workflow)
         self.assertIn("schedule:", workflow)
-        self.assertIn("cron: '17 * * * *'", workflow)
+        self.assertIn("cron: '7,37 * * * *'", workflow)
         self.assertNotIn("SUPABASE", workflow)
         self.assertNotIn("OPENAI_API_KEY", workflow)
         legacy = (ROOT / ".github/workflows/asia-research.yml").read_text()

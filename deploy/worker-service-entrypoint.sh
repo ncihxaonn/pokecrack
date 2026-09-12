@@ -27,7 +27,7 @@ case $role in
 esac
 [[ $interval =~ ^[0-9]+([.][0-9]+)?$ ]] || fail "loop interval must be numeric"
 if [[ "$role" == scheduler && "${GLOBAL_VOLUME_PROCESS_ENABLED:-true}" == true ]]; then
-  volume_limit=${GLOBAL_VOLUME_PROCESS_LIMIT:-4}
+  volume_limit=${GLOBAL_VOLUME_PROCESS_LIMIT:-8}
   [[ $volume_limit =~ ^[1-9][0-9]*$ && $volume_limit -le 25 ]] || {
     fail "GLOBAL_VOLUME_PROCESS_LIMIT must be an integer between 1 and 25"
   }

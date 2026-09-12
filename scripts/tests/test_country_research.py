@@ -231,7 +231,7 @@ class CountryResearchTests(unittest.TestCase):
         self.assertNotIn("SUPABASE", workflow)
         self.assertNotIn("OPENAI_API_KEY", workflow)
         self.assertNotIn("cron:", (ROOT / ".github/workflows" / "asia-research.yml").read_text())
-        self.assertIn("cron: '17 * * * *'", (ROOT / ".github/workflows" / "global-research.yml").read_text())
+        self.assertIn("cron: '7,37 * * * *'", (ROOT / ".github/workflows" / "global-research.yml").read_text())
 
     def test_context_is_minimal_and_does_not_mutate_historical_fingerprints(self):
         report = self.report(studies=[self.row()])
