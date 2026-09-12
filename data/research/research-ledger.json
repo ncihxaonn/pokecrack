@@ -13699,6 +13699,598 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "cardshoplive_crown_zenith_1000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "nonrandom_commercial_opening",
+            "opening_location_not_reported",
+            "publisher_country_not_used",
+            "unverified_research"
+          ],
+          "method": "publisher_pack_tally",
+          "metrics": [
+            {
+              "category": "galarian_gallery_gold",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "galarian_gallery_silver",
+              "hits": 105,
+              "unit": "cards"
+            },
+            {
+              "category": "galarian_gallery_yellow",
+              "hits": 190,
+              "unit": "cards"
+            },
+            {
+              "category": "gold_arceus_vstar",
+              "hits": 2,
+              "unit": "cards"
+            },
+            {
+              "category": "gold_giratina_vstar",
+              "hits": 3,
+              "unit": "cards"
+            },
+            {
+              "category": "gold_origin_forme_palkia_vstar",
+              "hits": 2,
+              "unit": "cards"
+            },
+            {
+              "category": "holo_v",
+              "hits": 105,
+              "unit": "cards"
+            },
+            {
+              "category": "radiant_rare",
+              "hits": 30,
+              "unit": "cards"
+            },
+            {
+              "category": "secret_rare_pikachu",
+              "hits": 15,
+              "unit": "cards"
+            },
+            {
+              "category": "textured_energy",
+              "hits": 24,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare_trainer",
+              "hits": 35,
+              "unit": "cards"
+            },
+            {
+              "category": "vstar_vmax",
+              "hits": 56,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1000,
+          "product": "english_crown_zenith",
+          "set": "crown_zenith",
+          "source_sample": null,
+          "study_id": "cardshoplive_crown_zenith_1000",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-crown-zenith"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget_mega_dream_ex_2000_boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "box_sample_preserved_without_pack_conversion",
+            "collector-policy-not-enabled",
+            "hit_percentages_not_converted_to_counts",
+            "independent-review-pending",
+            "linked_video_may_cover_earlier_1000_box_subset",
+            "opening_location_not_reported",
+            "overlap_unresolved",
+            "unverified_research"
+          ],
+          "method": "manual_box_tally",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_mega_dream_ex",
+          "set": "mega_dream_ex",
+          "source_sample": {
+            "count": 2000,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget_mega_dream_ex_2000_boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-megadreamex"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget_future_flash_600_boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "box_sample_preserved_without_pack_conversion",
+            "collector-policy-not-enabled",
+            "hit_percentages_not_converted_to_counts",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "manual_box_tally",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_future_flash",
+          "set": "future_flash",
+          "source_sample": {
+            "count": 600,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget_future_flash_600_boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-mirainoissen"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget_inferno_x_1000_boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "approximate_box_count",
+            "box_sample_preserved_without_pack_conversion",
+            "collector-policy-not-enabled",
+            "hit_percentages_not_converted_to_counts",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "manual_box_tally",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_inferno_x",
+          "set": "inferno_x",
+          "source_sample": {
+            "count": 1000,
+            "precision": "approximate_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget_inferno_x_1000_boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-infernox"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_evolving_skies_2021"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact_denominator_not_reported",
+            "independent-review-pending",
+            "integer_numerators_not_visible",
+            "more_than_8000_reported",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "authentication_center_pack_tally",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english_evolving_skies",
+          "set": "evolving_skies",
+          "source_sample": null,
+          "study_id": "tcgplayer_evolving_skies_8000_plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Evolving-Skies-Pull-Rates/6a743d7b-e5ee-4fd6-9d18-64a636990e8c"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget_mega_series_combined_1000_boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "approximate_box_count",
+            "box_sample_preserved_without_pack_conversion",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "overlap_unresolved",
+            "possible_combined_cohort_with_mega_symphonia",
+            "unverified_research"
+          ],
+          "method": "manual_box_tally",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_mega_brave",
+          "set": "mega_brave",
+          "source_sample": {
+            "count": 1000,
+            "precision": "approximate_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget_mega_brave_1000_boxes",
+          "urls": [
+            "https://pokemon-infomation.com/https-pokemon-infomation-com-pull-rates-megabrave"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget_mega_series_combined_1000_boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "approximate_box_count",
+            "box_sample_preserved_without_pack_conversion",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "overlap_unresolved",
+            "possible_combined_cohort_with_mega_brave",
+            "unverified_research"
+          ],
+          "method": "manual_box_tally",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_mega_symphonia",
+          "set": "mega_symphonia",
+          "source_sample": {
+            "count": 1000,
+            "precision": "approximate_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget_mega_symphonia_1000_boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-megasymphonia"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget_heat_wave_arena_1000_boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "approximate_box_count",
+            "box_sample_preserved_without_pack_conversion",
+            "collector-policy-not-enabled",
+            "hit_percentages_not_converted_to_counts",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "manual_box_tally",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_heat_wave_arena",
+          "set": "heat_wave_arena",
+          "source_sample": {
+            "count": 1000,
+            "precision": "approximate_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget_heat_wave_arena_1000_boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-neppuuarina"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget_vstar_universe_1800_boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "box_sample_preserved_without_pack_conversion",
+            "collector-policy-not-enabled",
+            "hit_percentages_not_converted_to_counts",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "overlap_unresolved",
+            "page_contains_earlier_500_box_and_640_box_results",
+            "unverified_research"
+          ],
+          "method": "manual_box_tally",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_vstar_universe",
+          "set": "vstar_universe",
+          "source_sample": {
+            "count": 1800,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget_vstar_universe_1800_boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-vstaruniverse"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardshoplive_sv_base_1728"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "nonrandom_commercial_opening",
+            "opening_location_not_reported",
+            "publisher_country_not_used",
+            "unverified_research"
+          ],
+          "method": "publisher_pack_tally",
+          "metrics": [
+            {
+              "category": "double_rare",
+              "hits": 234,
+              "unit": "cards"
+            },
+            {
+              "category": "hyper_rare",
+              "hits": 32,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 130,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 52,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare",
+              "hits": 112,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1728,
+          "product": "english_scarlet_violet",
+          "set": "scarlet_violet_base",
+          "source_sample": null,
+          "study_id": "cardshoplive_scarlet_violet_1728",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-scarlet-and-violet"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "nanjakorya_star_birth_100"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "mixed_loose_and_premium_box_packs",
+            "nonrandom_purchase_channels",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "documented_pack_opening",
+          "metrics": [
+            {
+              "category": "rr",
+              "hits": 16,
+              "unit": "cards"
+            },
+            {
+              "category": "rrr",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "sr_hr",
+              "hits": 5,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "japanese_star_birth",
+          "set": "star_birth",
+          "source_sample": null,
+          "study_id": "nanjakorya_star_birth_100_packs",
+          "urls": [
+            "https://nanjakorya.com/1123"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit_nl_mega_evolution_210"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "nl",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_explicitly_reported",
+            "hit_counts_not_taken_from_comments",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "public_forum_opening_report",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 210,
+          "product": "english_mega_evolution",
+          "set": "mega_evolution",
+          "source_sample": null,
+          "study_id": "reddit_nl_mega_evolution_210",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCGNL/comments/1o4tnq8/resultaten_pulls_210_packs_mega_evolution"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget_wild_force_1000_boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "box_sample_preserved_without_pack_conversion",
+            "collector-policy-not-enabled",
+            "hit_percentages_not_converted_to_counts",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "manual_box_tally",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_wild_force",
+          "set": "wild_force",
+          "source_sample": {
+            "count": 1000,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget_wild_force_1000_boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-wildforce"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_sv_base_8000_plus"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact_denominator_not_reported",
+            "independent-review-pending",
+            "integer_numerators_not_visible",
+            "more_than_8000_reported",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "authentication_center_pack_tally",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english_scarlet_violet",
+          "set": "scarlet_violet_base",
+          "source_sample": null,
+          "study_id": "tcgplayer_scarlet_violet_8000_plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget_night_wanderer_1000_boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "box_sample_preserved_without_pack_conversion",
+            "collector-policy-not-enabled",
+            "hit_percentages_not_converted_to_counts",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "manual_box_tally",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_night_wanderer",
+          "set": "night_wanderer",
+          "source_sample": {
+            "count": 1000,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget_night_wanderer_1000_boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-nightwanderer"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget_cyber_judge_1000_boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "box_sample_preserved_without_pack_conversion",
+            "collector-policy-not-enabled",
+            "hit_percentages_not_converted_to_counts",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "manual_box_tally",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "japanese_cyber_judge",
+          "set": "cyber_judge",
+          "source_sample": {
+            "count": 1000,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget_cyber_judge_1000_boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-cyberjudge"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
