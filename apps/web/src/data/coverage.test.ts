@@ -265,6 +265,26 @@ describe("reviewed public-study coverage merge", () => {
     expect(revoked.observations.observedPacks).toBe(baseline.observations.observedPacks);
   });
 
+  it("accepts a large denominator-only global volume bucket", () => {
+    const payload = {
+      ...validRegistryCoveragePayload(), schemaVersion: "4.0.0" as const,
+      unknownLocation: {
+        packsObserved: 1_150_898,
+        openings: 360,
+        independentSources: 20,
+        updatedAt: collectedAt,
+      },
+    };
+    const merged = publicDashboardDataSchema.parse(
+      mergePublicStudyCoverage(DEMO_PUBLIC_DATA, payload),
+    );
+
+    expect(merged.observations.unknownLocation?.packsObserved).toBe(1_150_898);
+    expect(merged.observations.observedPacks).toBe(
+      merged.mapCells.reduce((total, cell) => total + cell.packsObserved, 0) + 1_150_898,
+    );
+  });
+
   it("publishes a collecting global total even when no country is known", () => {
     const payload = {
       ...validRegistryCoveragePayload(), schemaVersion: "4.0.0", countries: [], sets: [],
