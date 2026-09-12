@@ -3,6 +3,10 @@ import { z } from "zod";
 import { isIsoAlpha2 } from "./iso-alpha2";
 
 const probability = z.number().min(0).max(1);
+// Aggregate denominator-only coverage can legitimately exceed one million
+// packs. Keep the JSON number safe while avoiding an arbitrary low ceiling on
+// the public global volume bucket.
+const publicAggregateCount = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER);
 // Reviewed source notes include attribution and rate limitations (the Brazil
 // public study currently needs 601 characters). Share the bounded contract
 // with coverage RPCs so a valid note cannot discard an entire fresh snapshot.
@@ -296,9 +300,9 @@ const catalogSnapshot = z
   });
 
 export const unknownLocationCoverageSchema = z.object({
-  packsObserved: z.number().int().positive().max(1_000_000),
-  openings: z.number().int().positive().max(1_000_000),
-  independentSources: z.number().int().positive().max(1_000_000),
+  packsObserved: publicAggregateCount.positive(),
+  openings: publicAggregateCount.positive(),
+  independentSources: publicAggregateCount.positive(),
   updatedAt: isoDateTime,
 }).strict().refine((value) => value.openings <= value.packsObserved)
   .refine((value) => value.independentSources <= value.openings);
