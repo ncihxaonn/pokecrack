@@ -10155,6 +10155,300 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "comicbook-destined-rivals-55-pack-preview-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "combined-rarity-metric",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "preview-product",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "publisher-preview-opening",
+              "metrics": [
+                {
+                  "category": "gold-star-or-better",
+                  "hits": 4,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 55,
+              "product": "preview-packs",
+              "set": "destined-rivals",
+              "source_sample": null,
+              "study_id": "comicbook-destined-rivals-55-packs-2025",
+              "urls": [
+                "https://comicbook.com/gaming/news/pokemon-tcg-destined-rivals-expansion-worth-it"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "destructoid-journey-together-38-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "four-etbs",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "publisher-opening-report",
+              "metrics": [
+                {
+                  "category": "double-rare-ex",
+                  "hits": 12,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full-art",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 38,
+              "product": "elite-trainer-boxes",
+              "set": "journey-together",
+              "source_sample": null,
+              "study_id": "destructoid-journey-together-38-packs-2025",
+              "urls": [
+                "https://www.destructoid.com/pokemon-tcg-journey-together-estimated-pull-rates"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-crown-zenith-1000-pack-opening-cohort-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-claim-only",
+                "unverified-research",
+                "video-not-fetched"
+              ],
+              "method": "public-video-title-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1000,
+              "product": "booster-packs",
+              "set": "crown-zenith",
+              "source_sample": null,
+              "study_id": "youtube-crown-zenith-1000-pack-title-2023",
+              "urls": [
+                "https://youtu.be/fGdNYo9eQbc"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-prismatic-evolutions-63-pack-opening-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "public-forum-title-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 63,
+              "product": "booster-packs",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-prismatic-evolutions-63-pack-title-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1jlvjga/opening_63_packs_of_prismatic_evolutions"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-destined-rivals-journey-together-ten-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicit-in-text",
+                "independent-review-pending",
+                "mixed-sets",
+                "opening-location-not-stated",
+                "self-reported",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "loose-packs-and-tins",
+              "set": "mixed-modern",
+              "source_sample": null,
+              "study_id": "reddit-first-packs-ten-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r84rxz/i_opened_my_first_ever_packs"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-140-pack-opening-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-products",
+                "mixed-sets",
+                "opening-location-not-stated",
+                "self-reported",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-report",
+              "metrics": [
+                {
+                  "category": "ace-spec",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "double-rare",
+                  "hits": 21,
+                  "unit": "cards"
+                },
+                {
+                  "category": "energy",
+                  "hits": 24,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 11,
+                  "unit": "cards"
+                },
+                {
+                  "category": "masterball-pattern",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "masterball-reverse",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokeball-pattern",
+                  "hits": 16,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokeball-reverse",
+                  "hits": 20,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare-pokemon",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare-trainer",
+                  "hits": 9,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 140,
+              "product": "mixed-packs-and-products",
+              "set": "mixed-modern",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-140-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1nnq95h/140_pack_opening"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
