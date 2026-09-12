@@ -21,6 +21,9 @@ CHECKS = ["source_access", "source_rights", "complete_opening", "pack_count",
           "publication_date", "geography", "product_identity", "independent_review"]
 BASES = ["opening_location", "publisher_country", "product_market", "unknown"]
 MAX_BYTES = 16384
+# The global worker reuses this isolated document runner with a larger,
+# explicitly bounded response budget; country reports still use MAX_BYTES.
+MAX_RESEARCH_DOCUMENT_BYTES = 96 * 1024
 CODEX = "/home/codex/.local/bin/codex"
 
 
@@ -146,7 +149,7 @@ paid services or request credentials. Output only the supplied JSON schema.
 
 
 def research_document(prompt_text: str, output_schema: dict, *, max_bytes: int = MAX_BYTES) -> bytes:
-    if type(max_bytes) is not int or not 1 <= max_bytes <= 49152:
+    if type(max_bytes) is not int or not 1 <= max_bytes <= MAX_RESEARCH_DOCUMENT_BYTES:
         raise ValueError("invalid_report")
     # An empty, private working directory prevents project hooks/instructions or
     # production files from entering the task. Auth stays with the existing CLI.

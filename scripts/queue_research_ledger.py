@@ -51,7 +51,7 @@ def request_review() -> bool:
     try:
         existing = json.loads(run([
             "gh", "pr", "list", "--repo", REPOSITORY, "--base", "main",
-            "--head", f"ncihxaonn:{BRANCH}", "--state", "open", "--json", "number",
+            "--head", BRANCH, "--state", "open", "--json", "number",
         ]).stdout)
         if not isinstance(existing, list):
             return False
@@ -61,7 +61,7 @@ def request_review() -> bool:
                  "--body", "Validated research-only checkpoint. No application code or production pack counts are admitted by this data update."])
         current = json.loads(run([
             "gh", "pr", "list", "--repo", REPOSITORY, "--base", "main",
-            "--head", f"ncihxaonn:{BRANCH}", "--state", "open", "--json", "number",
+            "--head", BRANCH, "--state", "open", "--json", "number",
         ]).stdout)
         if not isinstance(current, list) or len(current) != 1:
             return False

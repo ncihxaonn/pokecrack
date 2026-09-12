@@ -85,6 +85,12 @@ class CheckpointMergeTests(unittest.TestCase):
             self.assertEqual(run.call_count, 2)
             self.assertEqual(run.call_args.args[0][:3], ["gh", "pr", "create"])
 
+    def test_review_uses_same_repository_head_branch(self):
+        with patch.object(queue, "run", side_effect=[outcome("[]"),
+                subprocess.CalledProcessError(1, "gh")]) as run:
+            queue.request_review()
+        self.assertEqual(run.call_args.args[0][run.call_args.args[0].index("--head") + 1], queue.BRANCH)
+
     def test_checkpoint_pr_uses_github_auto_merge_without_bypassing_checks(self):
         with patch.object(queue, "run", side_effect=[
             outcome("[]"),

@@ -19,8 +19,8 @@ spec.loader.exec_module(module)
 class AsiaResearchTests(unittest.TestCase):
     def test_research_output_budget_defaults_and_explicit_larger_limit(self):
         for size, kwargs, accepted in ((16384, {}, True), (16385, {}, False),
-                                      (49152, {"max_bytes": 49152}, True),
-                                      (49153, {"max_bytes": 49152}, False)):
+                                      (96 * 1024, {"max_bytes": 96 * 1024}, True),
+                                      (96 * 1024 + 1, {"max_bytes": 96 * 1024}, False)):
             with self.subTest(size=size, kwargs=kwargs), patch.object(module.subprocess, "Popen") as popen:
                 process = popen.return_value.__enter__.return_value
                 process.returncode = 0
@@ -33,7 +33,7 @@ class AsiaResearchTests(unittest.TestCase):
                 else:
                     with self.assertRaisesRegex(ValueError, "invalid_report"):
                         module.research_document("test", {}, **kwargs)
-        for value in (True, 0, -1, 49153, "49152"):
+        for value in (True, 0, -1, 96 * 1024 + 1, "98304"):
             with self.subTest(value=value), patch.object(module.subprocess, "Popen") as popen:
                 with self.assertRaises(ValueError):
                     module.research_document("test", {}, max_bytes=value)
