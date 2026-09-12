@@ -21,9 +21,7 @@ spec.loader.exec_module(module)
 
 class GlobalResearchTests(unittest.TestCase):
     def test_prompt_budgets_keep_legacy_defaults_and_bound_country_override(self):
-        self.assertIn("12 queries and return at most 6 studies", module.prompt("global"))
-        self.assertIn("24 queries and return at most 36 studies",
-                      module.prompt("asia", max_queries=24, max_studies=36))
+        self.assertIn("24 queries and return at most 36 studies", module.prompt("global"))
         for kwargs in ({"max_queries": True}, {"max_queries": 25}, {"max_queries": 0},
                        {"max_studies": 37}, {"max_studies": False}, {"max_studies": 0}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
@@ -47,7 +45,7 @@ class GlobalResearchTests(unittest.TestCase):
 
     def test_batch_limit(self):
         batch = self.batch()
-        batch["studies"] *= 7
+        batch["studies"] *= module.DEFAULT_MAX_STUDIES + 1
         with self.assertRaises(ValueError):
             module.validate_batch(json.dumps(batch).encode())
 
@@ -135,6 +133,8 @@ class GlobalResearchTests(unittest.TestCase):
         self.assertIn("queue_research_ledger.py", workflow)
         self.assertNotIn("issues: write", workflow)
         self.assertIn("global-ledger.json", workflow)
+        self.assertIn("schedule:", workflow)
+        self.assertIn("cron: '17 * * * *'", workflow)
         self.assertNotIn("SUPABASE", workflow)
         self.assertNotIn("OPENAI_API_KEY", workflow)
         legacy = (ROOT / ".github/workflows/asia-research.yml").read_text()
@@ -163,18 +163,33 @@ class GlobalResearchTests(unittest.TestCase):
                 self.assertEqual(output.getvalue(), "")
                 publish.assert_not_called()
 
-    def test_invalid_generated_batch_is_rejected_not_repaired(self):
+    def test_generated_bad_record_is_quarantined_but_history_stays_strict(self):
         batch = self.batch()
         batch["studies"][0]["pack_precision"] = "private-error-payload"
+        raw = json.dumps(batch).encode()
+        with self.assertRaisesRegex(ValueError, "invalid_pack_precision"):
+            module.validate_batch(raw)
         with patch.object(sys, "argv", ["global_research.py"]), \
-                patch.object(module, "research_document", return_value=json.dumps(batch).encode()), \
+                patch.object(module, "research_document", return_value=raw), \
                 patch.object(module, "publish") as publish, redirect_stdout(io.StringIO()) as output:
-            with self.assertRaises(SystemExit) as caught:
-                module.main()
-            self.assertEqual(str(caught.exception),
-                "global_research_failed: stage=validation code=invalid_pack_precision; no production data admitted")
-            self.assertEqual(output.getvalue(), "")
+            module.main()
+            self.assertEqual(json.loads(output.getvalue()), {"version": 1, "studies": []})
             publish.assert_not_called()
+
+    def test_generated_country_mismatch_is_downgraded_to_unknown(self):
+        batch = self.batch()
+        batch["studies"][0].update(country="DE", geography_basis="unknown")
+        result = module.validate_batch(json.dumps(batch).encode(), allow_quarantine=True)
+        self.assertIsNone(result["studies"][0]["country"])
+        self.assertEqual(result["studies"][0]["geography_basis"], "unknown")
+
+    def test_generated_quarantine_keeps_valid_siblings(self):
+        valid = self.batch()["studies"][0]
+        invalid = dict(valid, study_id="bad", pack_precision="invalid")
+        result = module.validate_batch(json.dumps({"version": 1,
+                                                    "studies": [invalid, valid]}).encode(),
+                                      allow_quarantine=True)
+        self.assertEqual([row["study_id"] for row in result["studies"]], [valid["study_id"]])
 
     def test_invalid_json_does_not_expose_document_or_traceback(self):
         with patch.object(sys, "argv", ["global_research.py"]), \
@@ -209,6 +224,16 @@ class GlobalResearchTests(unittest.TestCase):
                 redirect_stdout(io.StringIO()) as output:
             module.main()
             self.assertEqual(json.loads(output.getvalue()), batch)
+
+    def test_global_research_passes_the_expanded_bounded_output_cap(self):
+        batch = self.batch()
+        with patch.object(sys, "argv", ["global_research.py", "--scope", "oceania"]), \
+                patch.object(module, "research_document", return_value=json.dumps(batch).encode()) as research, \
+                redirect_stdout(io.StringIO()):
+            module.main()
+        research.assert_called_once_with(module.prompt("oceania"), module.schema(),
+                                         max_bytes=module.MAX_BYTES)
+        self.assertEqual(module.MAX_BYTES, 49152)
 
 
 if __name__ == "__main__":

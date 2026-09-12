@@ -64,6 +64,15 @@ _POKEMON_MARKER = re.compile(
     r"pokemon|pokémon|ポケモン|寶可夢|宝可梦|tcg|trading\s+card|集換式卡牌|トレカ",
     re.IGNORECASE,
 )
+_YOUTUBE_EMBED_URL = re.compile(r"^https://www\.youtube\.com/embed/[A-Za-z0-9_-]{11}$")
+
+
+def _canonical_global_volume_url(value: object) -> str:
+    """Accept normal reference URLs plus the query-free YouTube embed form."""
+
+    if isinstance(value, str) and _YOUTUBE_EMBED_URL.fullmatch(value):
+        return value
+    return reference_url(value)
 
 
 def _header(headers: object, name: str) -> str:
@@ -129,7 +138,7 @@ def validate_candidate(value: object) -> dict[str, Any]:
     if not isinstance(value, dict) or set(value) != fields:
         raise ValueError("invalid_global_volume_candidate")
     candidate = dict(value)
-    if reference_url(candidate["url"]) != candidate["url"]:
+    if _canonical_global_volume_url(candidate["url"]) != candidate["url"]:
         raise ValueError("noncanonical_global_volume_url")
     if not isinstance(candidate["report_group_sha256"], str) or not HASH.fullmatch(
         candidate["report_group_sha256"]
@@ -296,7 +305,7 @@ def finalize_candidate(
     executor: QueryExecutor, worker_id: str, url: str, result: Mapping[str, object]
 ) -> dict[str, Any]:
     _validate_worker_id(worker_id)
-    canonical = reference_url(url)
+    canonical = _canonical_global_volume_url(url)
     if canonical != url:
         raise ValueError("noncanonical_global_volume_url")
     validated = validate_result(dict(result))
@@ -383,6 +392,16 @@ def verify_candidate(
 ) -> dict[str, Any]:
     validated = validate_candidate(dict(candidate))
     url = validated["url"]
+    if validated["pack_precision"] == "title_claim":
+        # Social metadata claims are already bounded by the official/public
+        # collector. They are quantity-only rows, so do not fetch a video or
+        # post page, follow a redirect, or turn a metadata claim into page
+        # evidence. The database migration normally keeps these rows out of
+        # the page-check queue; this branch is defensive for old leases.
+        evidence = hashlib.sha256(
+            f"{url}|{validated['pack_count']}|title-claim-metadata-v1".encode()
+        ).hexdigest()
+        return {"status": "verified", "error_code": None, "evidence_sha256": evidence}
     robots_decision = robots.decision(url, user_agent=user_agent)
     if robots_decision == "denied":
         return {"status": "rejected", "error_code": "robots_denied", "evidence_sha256": None}

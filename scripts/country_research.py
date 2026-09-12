@@ -17,8 +17,11 @@ from global_research import (
 from research_ledger import LEDGER_PATH, append_unique, load as load_research_ledger, save as save_research_ledger
 
 CAMPAIGN = "country-first-20260908-v1"
-MAX_TARGETS = 6
-MAX_STUDIES_PER_TARGET = 6
+MAX_TARGETS = 12
+MAX_STUDIES_PER_TARGET = 3
+# Older validated sweeps were allowed six studies per target. Keep that
+# historical ceiling readable while enforcing the smaller cap for new reports.
+MAX_HISTORICAL_STUDIES_PER_TARGET = 6
 MAX_QUERIES = 24
 MAX_BYTES = 49152
 MAX_SWEEPS = 100
@@ -61,7 +64,8 @@ def validate_context(value: object, selection: dict) -> dict:
 
 def continuation_context(selection: dict, history: list[dict]) -> dict:
     selected = validate_selection(selection)
-    reports = [validate_report(json.dumps(item).encode()) for item in history]
+    reports = [validate_report(json.dumps(item).encode(), allow_historical=True)
+               for item in history]
     # Prioritize this target's earlier results, then shared cross-country
     # references. Search provenance must not become a study's geography.
     preferred = {"urls": set(), "cohort_ids": set()}
@@ -116,7 +120,9 @@ def validate_selection(value: object) -> dict:
     return {"campaign": CAMPAIGN, "sweep": value["sweep"], "targets": list(targets)}
 
 
-def validate_report(raw: bytes, selection: dict | None = None) -> dict:
+def validate_report(raw: bytes, selection: dict | None = None, *,
+                    allow_historical: bool = False,
+                    allow_quarantine: bool = False) -> dict:
     if len(raw) > MAX_BYTES:
         raise ValueError("batch_too_large")
     value = json.loads(raw)
@@ -129,14 +135,19 @@ def validate_report(raw: bytes, selection: dict | None = None) -> dict:
     if not isinstance(results, list) or len(results) != len(selected["targets"]):
         raise ValueError("country_results_incomplete")
     by_country = {}
+    max_studies = (MAX_HISTORICAL_STUDIES_PER_TARGET
+                   if allow_historical else MAX_STUDIES_PER_TARGET)
     for result in results:
         if (not isinstance(result, dict) or set(result) != {"target", "studies"}
                 or not isinstance(result["target"], str)
                 or result["target"] not in selected["targets"] or result["target"] in by_country
                 or not isinstance(result["studies"], list)
-                or len(result["studies"]) > MAX_STUDIES_PER_TARGET):
+                or len(result["studies"]) > max_studies):
             raise ValueError("invalid_country_result")
-        batch = validate_batch(json.dumps({"version": 1, "studies": result["studies"]}).encode())
+        batch = validate_batch(
+            json.dumps({"version": 1, "studies": result["studies"]}).encode(),
+            allow_quarantine=allow_quarantine,
+        )
         # Search target is not evidence of the returned study's geography.
         by_country[result["target"]] = {"target": result["target"], "studies": batch["studies"]}
     report = {**selected, "results": [by_country[code] for code in selected["targets"]]}
@@ -148,7 +159,7 @@ def validate_report(raw: bytes, selection: dict | None = None) -> dict:
 def country_history(ledger_path: Path | None = None) -> list[dict]:
     """Return validated country reports from the single durable ledger."""
     ledger = load_research_ledger(ledger_path or LEDGER_PATH)
-    return [validate_report(json.dumps(report).encode())
+    return [validate_report(json.dumps(report).encode(), allow_historical=True)
             for report in ledger["country_reports"]]
 
 
@@ -286,7 +297,7 @@ def main() -> None:
             stage = "research"
             raw = research_document(prompt(selection, context), schema(selection), max_bytes=MAX_BYTES)
             stage = "validation"
-            output = validate_report(raw, selection)
+            output = validate_report(raw, selection, allow_quarantine=True)
         else:
             if args.selection is None:
                 raise ValueError("invalid_country_selection")
