@@ -14,11 +14,13 @@ from global_studies import build_ledger, validate_record
 from research_ledger import LEDGER_PATH, append_unique, load as load_research_ledger, save as save_research_ledger
 
 SCOPES = ("global", "asia", "europe", "north-america", "latin-america", "africa", "oceania")
-DEFAULT_MAX_QUERIES = 32
-DEFAULT_MAX_STUDIES = 48
-# Forty-eight bounded global candidate rows fit the provider's already-supported
-# 48 KiB maximum; the country worker keeps its separate 16 KiB sub-batch cap.
-MAX_BYTES = 49152
+DEFAULT_MAX_QUERIES = 64
+DEFAULT_MAX_STUDIES = 96
+# Keep the broader volume pass bounded while giving the provider enough room
+# to return distinct public-source cohorts instead of stopping after the first
+# few repeated results. The country worker keeps its separate 16 KiB sub-batch
+# cap.
+MAX_BYTES = 96 * 1024
 # Public logs must contain only our finite diagnostic vocabulary, never a
 # provider response, generated report, local path, or exception traceback.
 SAFE_FAILURE_CODES = frozenset({
