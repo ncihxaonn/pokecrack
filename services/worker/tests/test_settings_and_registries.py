@@ -545,7 +545,10 @@ def test_owned_policy_registries_are_explicit_and_safe_by_default() -> None:
     assert len(queries.queries) == 5
     assert all(query.metadata_only for query in queries.queries)
     assert all(query.enabled is False and query.region_code is None for query in queries.queries)
-    assert queries.require("pokemon-tcg-pack-opening").query == "Pokemon TCG pack opening"
+    assert (
+        queries.require("pokemon-tcg-pack-opening").query
+        == dict(REQUIRED_YOUTUBE_QUERIES)["pokemon-tcg-pack-opening"]
+    )
     assert taxonomy.baseline_priority == (
         ("set_id", "language", "product_type"),
         ("set_id", "language"),
