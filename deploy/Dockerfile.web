@@ -1,0 +1,39 @@
+ARG NODE_IMAGE=node:22.13.0-bookworm-slim
+
+FROM ${NODE_IMAGE} AS base
+
+RUN npm install --global pnpm@11.23.0
+WORKDIR /repo
+
+FROM base AS builder
+
+COPY . .
+RUN pnpm install --frozen-lockfile
+
+ARG DEPLOY_SHA
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN pnpm --filter @pokecrack/web build
+
+FROM ${NODE_IMAGE} AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV HOSTNAME=0.0.0.0
+ENV PORT=3000
+ENV NEXT_TELEMETRY_DISABLED=1
+
+COPY --from=builder /repo/apps/web/.next/standalone ./
+COPY --from=builder /repo/apps/web/.next/static ./apps/web/.next/static
+COPY --from=builder /repo/apps/web/public ./apps/web/public
+
+ARG DEPLOY_SHA
+LABEL org.opencontainers.image.title="PokeCrack web" \
+  org.opencontainers.image.description="PokeCrack public dashboard" \
+  org.opencontainers.image.revision="${DEPLOY_SHA}"
+
+RUN chown -R node:node /app
+USER node
+
+EXPOSE 3000
+CMD ["node", "apps/web/server.js"]

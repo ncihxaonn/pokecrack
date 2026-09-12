@@ -1,3 +1,5 @@
+import path from "node:path";
+
 import type { NextConfig } from "next";
 
 const contentSecurityPolicy = [
@@ -18,6 +20,8 @@ const contentSecurityPolicy = [
 
 const nextConfig: NextConfig = {
   reactStrictMode: true,
+  output: "standalone",
+  outputFileTracingRoot: path.join(__dirname, "../.."),
   poweredByHeader: false,
   typedRoutes: true,
   async headers() {
