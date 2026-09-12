@@ -9927,6 +9927,166 @@
         "ML",
         "MR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MU"
+        },
+        {
+          "studies": [],
+          "target": "MZ"
+        },
+        {
+          "studies": [],
+          "target": "NA"
+        },
+        {
+          "studies": [],
+          "target": "NE"
+        },
+        {
+          "studies": [],
+          "target": "RW"
+        },
+        {
+          "studies": [],
+          "target": "ST"
+        },
+        {
+          "studies": [],
+          "target": "SN"
+        },
+        {
+          "studies": [],
+          "target": "SC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "elitefourum-mixed-vintage-six-packs-2019"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "forum_report",
+                "independent-review-pending",
+                "mixed_sets",
+                "opening_location_unknown",
+                "pull_counts_not_structured",
+                "unverified_research"
+              ],
+              "method": "author_reported",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "loose-booster-packs",
+              "set": "base-set-2-and-team-rocket",
+              "source_sample": null,
+              "study_id": "elitefourum-mixed-vintage-six-packs-2019",
+              "urls": [
+                "https://www.elitefourum.com/t/classic-pickups-from-a-local-card-shop/25044"
+              ]
+            }
+          ],
+          "target": "SL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "serebii-base-jungle-fossil-six-packs-2010"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "forum_report",
+                "independent-review-pending",
+                "linked_opening_media_not_reviewed",
+                "mixed_sets",
+                "opening_location_unknown",
+                "pull_counts_not_structured",
+                "unverified_research"
+              ],
+              "method": "author_reported",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "loose-booster-packs",
+              "set": "base-jungle-and-fossil",
+              "source_sample": null,
+              "study_id": "serebii-base-jungle-fossil-six-packs-2010",
+              "urls": [
+                "https://forums.serebii.net/threads/opened-original-pokemon-packs.467183"
+              ]
+            }
+          ],
+          "target": "SO"
+        },
+        {
+          "studies": [],
+          "target": "SS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-south-africa-hundreds-of-boosters-2022"
+              ],
+              "country": "ZA",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "approximate_hundreds_not_representable_as_exact_packs",
+                "collector-policy-not-enabled",
+                "exact_denominator_not_reported",
+                "hit_metric_omitted",
+                "independent-review-pending",
+                "mixed_or_unknown_sets",
+                "opening_completeness_not_independently_verified",
+                "outside_target_country",
+                "unverified_research"
+              ],
+              "method": "author_reported",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-south-africa-hundreds-of-boosters-2022",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/u0b9p4/south_african_collectors_where_to_find_the_best"
+              ]
+            }
+          ],
+          "target": "SD"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "MU",
+        "MZ",
+        "NA",
+        "NE",
+        "RW",
+        "ST",
+        "SN",
+        "SC",
+        "SL",
+        "SO",
+        "SS",
+        "SD"
+      ]
     }
   ],
   "global_batches": [
