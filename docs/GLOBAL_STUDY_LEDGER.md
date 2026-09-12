@@ -86,11 +86,19 @@ creates production evidence. Research metadata is minimal public facts,
 never a cached page body or media. A successful test is not proof a manual run
 has completed: verify a main-branch run and its artifact after merging.
 
+Generated provider output has a separate bounded-ingest mode: a malformed
+candidate row is quarantined so one bad result cannot block the rest of a
+regional pass, and unsafe country attribution is downgraded to unknown. The
+durable history/checkpoint readers remain strict and fail closed; quarantine
+does not approve a source or create production pack data.
+
 Failures report a fixed stage and an allowlisted error code, not the original
 exception or generated document. `research_unavailable` means the isolated
 research command failed; it is not evidence of an invalid login. A `validation`
-failure means the returned batch was rejected. A `publication` failure means
-history reconstruction or publication failed; it must not trigger a blind retry
+failure means the returned document was malformed, oversized or otherwise not
+safely processable; record-level candidates may be quarantined only during
+generated-input validation. A `publication` failure means history reconstruction
+or publication failed; it must not trigger a blind retry
 without checking the existing run and history. No failure repairs a candidate,
 weakens admission checks, or exposes raw provider output. Historical batches and
 their fingerprints are unchanged by diagnostics.
