@@ -5,6 +5,7 @@ import json
 from pokecrack_worker.global_volume import SCHEMA_VERSION
 from pokecrack_worker.social_volume import (
     BLUESKY_CANDIDATES_SQL,
+    SOCIAL_SOURCE_QUERY_LIMIT,
     YOUTUBE_DISCOVERIES_SQL,
     build_manifest,
     extract_pack_count,
@@ -74,6 +75,8 @@ def test_social_manifest_is_bounded_and_does_not_persist_claim_text() -> None:
     assert "100 BOOSTERS" not in serialized
     assert "25包开箱" not in serialized
     assert "text_excerpt" not in serialized
+    assert f"LIMIT {SOCIAL_SOURCE_QUERY_LIMIT}" in YOUTUBE_DISCOVERIES_SQL
+    assert f"LIMIT {SOCIAL_SOURCE_QUERY_LIMIT}" in BLUESKY_CANDIDATES_SQL
 
 
 def test_social_sync_imports_only_typed_quantity_candidates() -> None:

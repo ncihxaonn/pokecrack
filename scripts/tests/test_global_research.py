@@ -4,12 +4,12 @@ import importlib.util
 import io
 import json
 import subprocess
-from contextlib import redirect_stdout
-from datetime import datetime, timedelta, timezone
-from pathlib import Path
 import sys
 import tempfile
 import unittest
+from contextlib import redirect_stdout
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -40,9 +40,14 @@ class GlobalResearchTests(unittest.TestCase):
 
     def test_focus_rotation_is_worldwide(self):
         start = datetime(2026, 9, 8, tzinfo=timezone.utc)
-        self.assertEqual([module.select_scope("auto", start + timedelta(hours=6*i))
+        self.assertEqual([module.select_scope("auto", start + timedelta(minutes=30*i))
                           for i in range(7)], list(module.SCOPES))
-        self.assertEqual(module.select_scope("auto", start + timedelta(hours=42)), "global")
+        self.assertEqual(module.select_scope("auto", start + timedelta(hours=3, minutes=30)), "global")
+
+    def test_focus_prompt_prioritizes_underrepresented_country_hints_without_relabeling(self):
+        prompt = module.prompt("asia")
+        self.assertIn("CN, JP, IN, ID, KR, SG, TW, TH, VN, MY and PH", prompt)
+        self.assertIn("assign a country unless the source explicitly states it", prompt)
 
     def test_research_results_never_self_approve(self):
         row = self.batch()["studies"][0]
@@ -60,9 +65,8 @@ class GlobalResearchTests(unittest.TestCase):
         batch = self.batch()
         batch["studies"][0]["limitations"] = []
         raw = json.dumps(batch).encode()
-        with patch.object(module, "MAX_BYTES", len(raw) + 1):
-            with self.assertRaises(ValueError):
-                module.validate_batch(raw)
+        with patch.object(module, "MAX_BYTES", len(raw) + 1), self.assertRaises(ValueError):
+            module.validate_batch(raw)
 
     def test_history_round_trip_uses_the_unified_ledger(self):
         batch = self.batch()
