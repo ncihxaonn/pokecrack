@@ -225,6 +225,16 @@ class GlobalResearchTests(unittest.TestCase):
             module.main()
             self.assertEqual(json.loads(output.getvalue()), batch)
 
+    def test_global_research_passes_the_expanded_bounded_output_cap(self):
+        batch = self.batch()
+        with patch.object(sys, "argv", ["global_research.py", "--scope", "oceania"]), \
+                patch.object(module, "research_document", return_value=json.dumps(batch).encode()) as research, \
+                redirect_stdout(io.StringIO()):
+            module.main()
+        research.assert_called_once_with(module.prompt("oceania"), module.schema(),
+                                         max_bytes=module.MAX_BYTES)
+        self.assertEqual(module.MAX_BYTES, 49152)
+
 
 if __name__ == "__main__":
     unittest.main()

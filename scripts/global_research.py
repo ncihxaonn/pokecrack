@@ -9,13 +9,17 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
-from asia_research import MAX_BYTES, research_document
+from asia_research import research_document
 from global_studies import build_ledger, validate_record
 from research_ledger import LEDGER_PATH, append_unique, load as load_research_ledger, save as save_research_ledger
 
 SCOPES = ("global", "asia", "europe", "north-america", "latin-america", "africa", "oceania")
 DEFAULT_MAX_QUERIES = 24
 DEFAULT_MAX_STUDIES = 36
+# Thirty-six bounded candidate rows do not reliably fit the historical Asia
+# 16 KiB cap. Keep the global result bounded, but align it with the provider's
+# already-supported 48 KiB maximum instead of discarding a complete batch.
+MAX_BYTES = 49152
 # Public logs must contain only our finite diagnostic vocabulary, never a
 # provider response, generated report, local path, or exception traceback.
 SAFE_FAILURE_CODES = frozenset({
@@ -255,7 +259,7 @@ def main() -> None:
             print(json.dumps(publish(batch, args.seed), sort_keys=True))
         else:
             stage = "research"
-            raw = research_document(prompt(scope), schema())
+            raw = research_document(prompt(scope), schema(), max_bytes=MAX_BYTES)
             stage = "validation"
             print(json.dumps(validate_batch(raw, allow_quarantine=True), sort_keys=True))
     except (ValueError, OSError, TypeError, KeyError, subprocess.CalledProcessError) as error:

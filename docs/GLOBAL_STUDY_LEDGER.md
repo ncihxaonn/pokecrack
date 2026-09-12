@@ -69,7 +69,7 @@ workflow remains manual-only.
 
 Research runs on the approved MAM host using the existing Codex ChatGPT login,
 with no database or GitHub credentials passed to the research process. Each run
-is limited to 24 search queries, 36 candidate studies, 16 KiB output and ten
+is limited to 24 search queries, 36 candidate studies, 48 KiB output and ten
 minutes. The country-first run covers up to 12 countries in one region,
 retaining up to three candidates per country. Validation does not approve evidence. The publishing step stores new
 normalized reports in the versioned, unified
