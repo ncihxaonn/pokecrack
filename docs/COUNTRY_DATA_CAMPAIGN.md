@@ -29,12 +29,14 @@ opening locations. No city, address, person or contact field is introduced.
 
 ## Durable execution
 
-`country-research.yml` is manual-only; it has no hourly timer. The global and
-six-country Asia workflows are also manual-only. All share the reviewed research controls;
-the three workflows share one concurrency group. No new paid API,
-database credential, local-Mac workload or automatic source enablement exists.
+`country-research.yml` runs every 30 minutes on `main`; `global-research.yml`
+runs hourly; and `global-volume.yml` refreshes the quantity-only intake every
+15 minutes. The legacy six-country Asia workflow remains manual-only. All
+share the reviewed research controls and one concurrency group. No new paid
+API, database credential, local-Mac workload or automatic source enablement
+exists.
 
-Each run selects up to six unchecked countries from the earliest unfinished
+Each run selects up to twelve unchecked countries from the earliest unfinished
 phase of the current sweep. Selection reads validated reports from the unified,
 content-addressed research ledger. Failed/invalid research does not record
 success and cannot skip a country. Once a phase has
@@ -46,14 +48,14 @@ silently omitting them. Antarctica is an area, not a sovereign country; its
 inclusion does not assert that any opening records exist there.
 
 One isolated MAM Codex call has a ten-minute deadline, 24 search queries total,
-six candidates per target and a 48 KiB report cap (each country's normalized
+three candidates per target and a 48 KiB report cap (each country's normalized
 sub-batch retains its 16 KiB bound). It must search each country
 in English and appropriate local languages. Empty results are permitted and
 retained as **no suitable candidate found in this bounded pass**, not zero
 activity or proof that no source exists. This makes research progress auditable
 without pretending source discovery is country publication.
 
-The first complete research sweep needs at least 44 successful jobs at these
+The first complete research sweep needs at least 25 successful jobs at these
 batch sizes. Manual dispatch frequency is not an SLA: GitHub delays, usage limits,
 source availability and failed runs can extend it. Independent source review
 and publication have no fabricated completion deadline.
@@ -81,9 +83,10 @@ The context is temporary and is not added to public observations or report schem
 Research prioritizes distinct author-reported opening samples without requiring
 hit numerators, known opening locations or exhaustive manual accuracy checks.
 Unknown geography, title claims, lower bounds and native box counts retain their
-uncertainty; they are not automatically verified packs. The theoretical batch
-capacity is 36 candidates, not a promise of new records or public pack growth.
-Legacy manual global/Asia output limits remain unchanged.
+uncertainty; they are not automatically verified packs. The theoretical country
+batch capacity is 36 candidates, not a promise of new records or public pack
+growth. The global research batch has the same 36-row ceiling. The legacy
+six-country Asia output limits remain unchanged.
 
 This does not replace independently reviewed repeatable collector families or
 the separate production release gates.
