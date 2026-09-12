@@ -16478,6 +16478,400 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "paldea_evolved_personal_opening_252"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer_category_counts_not_visible_in_indexed_text",
+            "opening_location_unknown",
+            "unverified_research"
+          ],
+          "method": "complete_pack_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 252,
+          "product": "paldea_evolved",
+          "set": "paldea_evolved",
+          "source_sample": null,
+          "study_id": "reddit_paldea_evolved_252",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1463d9m/i_opened_252_packs_of_paldea_evolved_so_your_dont"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_paldean_fates_authentication_center"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact_denominator_unavailable",
+            "independent-review-pending",
+            "published_percentages_not_converted_to_integer_hits",
+            "reported_as_more_than_1500_packs",
+            "unverified_research"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1500,
+          "product": "paldean_fates",
+          "set": "paldean_fates",
+          "source_sample": null,
+          "study_id": "tcgplayer_paldean_fates_1500plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paldean-Fates-Pull-Rates/23de3e93-0d0f-4ae0-abc4-13664f3001a3"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "fusion_strike_promotional_box_video_sample_4197"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "aggregates_multiple_video_openings",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_locations_unknown",
+            "possible_creator_cohort_overlap",
+            "unverified_research"
+          ],
+          "method": "observed_video_aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 4197,
+          "product": "fusion_strike",
+          "set": "fusion_strike",
+          "source_sample": null,
+          "study_id": "reddit_fusion_strike_4197",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/qqpiol"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_paldea_evolved_authentication_center"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact_denominator_unavailable",
+            "independent-review-pending",
+            "integer_hit_counts_not_reported",
+            "reported_as_more_than_8000_packs",
+            "unverified_research"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "paldea_evolved",
+          "set": "paldea_evolved",
+          "source_sample": null,
+          "study_id": "tcgplayer_paldea_evolved_8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paldea-Evolved-Pull-Rates/1b7d3e70-9542-4a50-8692-1661e2316521"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "japanese_mixed_loose_pack_opening_100"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "japanese",
+          "limitations": [
+            "article_reprints_or_summarizes_video_cohort",
+            "collector-policy-not-enabled",
+            "country_not_inferred_from_language",
+            "independent-review-pending",
+            "multiple_sets_combined",
+            "opening_location_unknown",
+            "original_video_url_not_stably_resolved",
+            "unverified_research"
+          ],
+          "method": "complete_pack_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "mixed_japanese_booster_packs",
+          "set": "mixed_sets",
+          "source_sample": null,
+          "study_id": "japan_clay_burst_mixed_100",
+          "urls": [
+            "https://tcg-lab.com/pokemon-card/19929"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "lost_origin_36_booster_boxes_1296"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_location_unknown",
+            "opening_stopped_earlier_than_usual",
+            "unverified_research"
+          ],
+          "method": "complete_box_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1296,
+          "product": "lost_origin",
+          "set": "lost_origin",
+          "source_sample": null,
+          "study_id": "reddit_lost_origin_1296",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/xb5aq0"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "personal_mixed_era_tracking_1502"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "category_definition_changes_across_eras",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "multiple_sets_and_eras_combined",
+            "opening_location_unknown",
+            "unverified_research"
+          ],
+          "method": "self_reported_tracking",
+          "metrics": [
+            {
+              "category": "mega_hyper_rare",
+              "hits": 0,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 7,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1502,
+          "product": null,
+          "set": "mixed_sets",
+          "source_sample": null,
+          "study_id": "reddit_personal_tracking_1502",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1t1yuc8/pok%C3%A9mon_pull_rates"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "mixed_sleeved_pack_opening_119"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "multiple_sets_combined",
+            "opening_location_unknown",
+            "set_level_hit_counts_incompletely_visible",
+            "unverified_research"
+          ],
+          "method": "complete_pack_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 119,
+          "product": "sleeved_booster_packs",
+          "set": "mixed_sets",
+          "source_sample": null,
+          "study_id": "reddit_mixed_sleeved_119",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/16qo0x8"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "silver_tempest_sleeved_case_144"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_location_unknown",
+            "spreadsheet_results_not_fully_visible_in_indexed_text",
+            "unverified_research"
+          ],
+          "method": "complete_pack_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 144,
+          "product": "silver_tempest_sleeved_boosters",
+          "set": "silver_tempest",
+          "source_sample": null,
+          "study_id": "reddit_silver_tempest_144",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/10e5fss"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_silver_tempest_authentication_center"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact_denominator_unavailable",
+            "independent-review-pending",
+            "integer_hit_counts_not_reported",
+            "reported_as_more_than_8000_packs",
+            "unverified_research"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "silver_tempest",
+          "set": "silver_tempest",
+          "source_sample": null,
+          "study_id": "tcgplayer_silver_tempest_8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Silver-Tempest-Pull-Rates/6490d591-e582-4930-8446-00e190876d30"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "star_birth_loose_pack_test_100"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "japanese",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_inferred_from_language",
+            "independent-review-pending",
+            "integer_hit_counts_not_extracted",
+            "opening_location_unknown",
+            "unverified_research"
+          ],
+          "method": "complete_pack_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "star_birth_loose_packs",
+          "set": "star_birth",
+          "source_sample": null,
+          "study_id": "japan_star_birth_loose_100",
+          "urls": [
+            "https://nanjakorya.com/1123"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_astral_radiance_authentication_center"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact_denominator_unavailable",
+            "independent-review-pending",
+            "integer_hit_counts_not_reported",
+            "reported_as_more_than_8000_packs",
+            "unverified_research"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "astral_radiance",
+          "set": "astral_radiance",
+          "source_sample": null,
+          "study_id": "tcgplayer_astral_radiance_8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%83%C2%AF%C3%82%C2%BF%C3%82%C2%BDmon-TCG-Astral-Radiance-Pull-Rates/10da749f-9c8b-45c0-b80a-dbd86ca5dcde"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "phantasmal_flames_core_opening_100"
+          ],
+          "country": "SG",
+          "geography_basis": "publisher_country",
+          "language": "english",
+          "limitations": [
+            "article_mentions_additional_prior_box_session",
+            "collector-policy-not-enabled",
+            "core_analysis_uses_100_packs",
+            "independent-review-pending",
+            "integer_hit_counts_not_extracted",
+            "possible_overlap_unresolved",
+            "unverified_research"
+          ],
+          "method": "documented_pack_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "phantasmal_flames",
+          "set": "phantasmal_flames",
+          "source_sample": null,
+          "study_id": "singapore_phantasmal_flames_100",
+          "urls": [
+            "https://tcgtalk.com/guides/phantasmal-flames-pull-rates-case-opening"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer_lost_origin_authentication_center"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact_denominator_unavailable",
+            "independent-review-pending",
+            "integer_hit_counts_not_reported",
+            "reported_as_more_than_8000_packs",
+            "unverified_research"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "lost_origin",
+          "set": "lost_origin",
+          "source_sample": null,
+          "study_id": "tcgplayer_lost_origin_8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Lost-Origin-Pull-Rates/ba20ac4d-9448-45ce-b919-d856d107c744"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
