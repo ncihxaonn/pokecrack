@@ -15,6 +15,10 @@ from pokecrack_worker.social_volume import (
 def test_extract_pack_count_prefers_the_number_adjacent_to_pack_unit() -> None:
     assert extract_pack_count("Pokémon TCG opening: 100 BOOSTERS, 5 hits") == 100
     assert extract_pack_count("宝可梦卡牌 100包开箱") == 100
+    assert extract_pack_count("포켓몬 카드 20팩 개봉") == 20
+    assert extract_pack_count("โปเกมอน เปิด 12 ซอง") == 12
+    assert extract_pack_count("بوكيمون فتح 15 باك") == 15
+    assert extract_pack_count("पोकेमोन कार्ड 18 पैक") == 18
     assert extract_pack_count("Pokemon TCG opening 1.5 packs") is None
     assert extract_pack_count("Pokemon TCG opening 100 boxes") is None
     assert extract_pack_count("100 packs opened") is None

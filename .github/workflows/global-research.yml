@@ -2,7 +2,7 @@ name: Global multi-source research
 
 on:
   schedule:
-    - cron: '17 * * * *'
+    - cron: '7,37 * * * *'
   workflow_dispatch:
     inputs:
       scope:

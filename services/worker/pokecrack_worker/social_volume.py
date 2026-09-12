@@ -45,7 +45,8 @@ LIMIT 500
 
 _YOUTUBE_WATCH_URL = re.compile(r"^https://www\.youtube\.com/watch\?v=([A-Za-z0-9_-]{11})$")
 _POKEMON_MARKER = re.compile(
-    r"pokemon|pokémon|ポケモン|寶可夢|宝可梦|tcg|trading\s+card|集換式卡牌|トレカ",
+    r"pokemon|pokémon|покемон|ポケモン|寶可夢|宝可梦|포켓몬|โปเกมอน|"
+    r"पोकेमोन|पोकेमॉन|بوكيمون|tcg|trading\s+card|集換式卡牌|トレカ",
     re.IGNORECASE,
 )
 # Deliberately exclude boxes, bundles and ETBs: without an explicit pack
@@ -53,7 +54,8 @@ _POKEMON_MARKER = re.compile(
 _PACK_UNIT = re.compile(
     r"(?:\bpacks?\b|\bboosters?\b|\bsobres?\b|\bpaquetes?\b|"
     r"\bpacotes?\b|\bbustine?\b|\bpak(?:ken)?\b|\bpakiet(?:y|ów)?\b|"
-    r"\bпакет(?:а|ов)?\b|パック|卡包|包)",
+    r"\bpaket(?:e|y)?\b|\bпакет(?:а|ов)?\b|पैक(?:स)?|बूस्टर|"
+    r"باك(?:ات)?|بستر|パック|팩|부스터|ซอง|gói|卡包|包)",
     re.IGNORECASE,
 )
 _NUMBER = re.compile(r"(?<!\d)(?:\d{1,3}(?:[,. ]\d{3})+|\d{1,8})(?!\d)")
