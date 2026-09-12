@@ -2,10 +2,7 @@ ARG NODE_IMAGE=node:22.13.0-bookworm-slim
 
 FROM ${NODE_IMAGE} AS base
 
-ENV PNPM_HOME=/pnpm
-ENV PATH=${PNPM_HOME}:${PATH}
-
-RUN corepack enable
+RUN npm install --global pnpm@11.23.0
 WORKDIR /repo
 
 FROM base AS builder
