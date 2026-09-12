@@ -21,9 +21,7 @@ spec.loader.exec_module(module)
 
 class GlobalResearchTests(unittest.TestCase):
     def test_prompt_budgets_keep_legacy_defaults_and_bound_country_override(self):
-        self.assertIn("12 queries and return at most 6 studies", module.prompt("global"))
-        self.assertIn("24 queries and return at most 36 studies",
-                      module.prompt("asia", max_queries=24, max_studies=36))
+        self.assertIn("24 queries and return at most 36 studies", module.prompt("global"))
         for kwargs in ({"max_queries": True}, {"max_queries": 25}, {"max_queries": 0},
                        {"max_studies": 37}, {"max_studies": False}, {"max_studies": 0}):
             with self.subTest(kwargs=kwargs), self.assertRaises(ValueError):
@@ -47,7 +45,7 @@ class GlobalResearchTests(unittest.TestCase):
 
     def test_batch_limit(self):
         batch = self.batch()
-        batch["studies"] *= 7
+        batch["studies"] *= module.DEFAULT_MAX_STUDIES + 1
         with self.assertRaises(ValueError):
             module.validate_batch(json.dumps(batch).encode())
 
@@ -136,7 +134,7 @@ class GlobalResearchTests(unittest.TestCase):
         self.assertNotIn("issues: write", workflow)
         self.assertIn("global-ledger.json", workflow)
         self.assertIn("schedule:", workflow)
-        self.assertIn("cron: '7 */6 * * *'", workflow)
+        self.assertIn("cron: '17 * * * *'", workflow)
         self.assertNotIn("SUPABASE", workflow)
         self.assertNotIn("OPENAI_API_KEY", workflow)
         legacy = (ROOT / ".github/workflows/asia-research.yml").read_text()

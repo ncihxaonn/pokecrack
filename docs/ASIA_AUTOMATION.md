@@ -13,7 +13,7 @@ Existing Codex account usage limits still apply; this is not unlimited compute.
 The `auto` selector still chooses Vietnam → Malaysia → Indonesia →
 Philippines → Hong Kong → India by six-hour UTC slots anchored at 2026-09-08
 00:00 UTC. Manual dispatch can select a region. The global workflow now also
-runs on its six-hour schedule and accepts the same explicit scope choices; all
+runs hourly and accepts the same explicit scope choices; all
 three workflows preserve their research history in the single
 `data/research/research-ledger.json` file.
 

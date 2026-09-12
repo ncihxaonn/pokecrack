@@ -14,6 +14,8 @@ from global_studies import build_ledger, validate_record
 from research_ledger import LEDGER_PATH, append_unique, load as load_research_ledger, save as save_research_ledger
 
 SCOPES = ("global", "asia", "europe", "north-america", "latin-america", "africa", "oceania")
+DEFAULT_MAX_QUERIES = 24
+DEFAULT_MAX_STUDIES = 36
 # Public logs must contain only our finite diagnostic vocabulary, never a
 # provider response, generated report, local path, or exception traceback.
 SAFE_FAILURE_CODES = frozenset({
@@ -77,7 +79,12 @@ def schema() -> dict:
                 "properties": fields, "required": list(fields)}}}, "required": ["version", "studies"]}
 
 
-def prompt(scope: str, *, max_queries: int = 12, max_studies: int = 6) -> str:
+def prompt(
+    scope: str,
+    *,
+    max_queries: int = DEFAULT_MAX_QUERIES,
+    max_studies: int = DEFAULT_MAX_STUDIES,
+) -> str:
     if (type(max_queries) is not int or not 1 <= max_queries <= 24
             or type(max_studies) is not int or not 1 <= max_studies <= 36):
         raise ValueError("invalid_report")
@@ -85,7 +92,10 @@ def prompt(scope: str, *, max_queries: int = 12, max_studies: int = 6) -> str:
 openings and large original pull-rate studies worldwide; this run emphasizes {scope}.
 All countries are in scope; retain unknown geography. Search English and multiple
 relevant local languages. Use at most {max_queries} queries and return at most {max_studies} studies.
-Open original pages. Author-reported opening counts are eligible without hit counts.
+Open original pages when they are publicly accessible. Public social/video posts are
+also eligible when an explicit pack count is visible in a public title, caption or
+description; use pack_precision=title_claim and never bypass a login wall, challenge,
+robots denial or access restriction. Author-reported opening counts are eligible without hit counts.
 Prioritize discovering more distinct original samples over exhaustive manual review.
 Keep uncertainty labels; missing hit counts or opening location do not exclude research.
 Follow citations to original studies; identify reprints, translations and overlapping
@@ -107,7 +117,11 @@ Metrics only when BOTH exact denominator and integer numerator are explicit. uni
 cards or packs_with_hit; do not conflate card yield with probability of a hit pack.
 Missing language/product are null. Unknown method uses unverified. Record limitations.
 Every result is unverified research, not approved for collection or production statistics.
-Never copy bodies, author identities, contacts, images, videos, or private content.
+Never copy bodies, author identities, account names, handles, follower counts,
+comments, contacts, images, videos, or private content. A visible follower count may
+help prioritize a public source, but it is never evidence of accuracy and must not be
+stored. Social-source country is allowed only when the source explicitly states it;
+never infer country from language, username, platform, follower count or search target.
 URLs must have no credentials, queries or fragments. Do not fetch YouTube watch pages
 or denied/challenged pages, retry through another route, use paid services, or contact
 publishers. Do not access local files, execute commands, use MCP or credentials, or
@@ -121,7 +135,7 @@ def validate_batch(raw: bytes) -> dict:
     # Use the same canonical validation as the downstream global ledger.
     build_ledger(raw)
     data = json.loads(raw)
-    if len(data["studies"]) > 6:
+    if len(data["studies"]) > DEFAULT_MAX_STUDIES:
         raise ValueError("batch_study_limit")
     rows = [validate_record(row) for row in data["studies"]]
     for row in rows:
