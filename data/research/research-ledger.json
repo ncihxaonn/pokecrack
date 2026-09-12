@@ -23826,6 +23826,574 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "tcgplayer-perfect-order-2026-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-3500-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 3500,
+          "product": "perfect-order-booster-packs",
+          "set": "perfect-order",
+          "source_sample": null,
+          "study_id": "tcgplayer-perfect-order-2026",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Perfect-Order-Pull-Rates/73148119-ebcb-40b7-84b6-52b3a6d0c631"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-surging-sparks-2024-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-8000-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "surging-sparks-booster-packs",
+          "set": "surging-sparks",
+          "source_sample": null,
+          "study_id": "tcgplayer-surging-sparks-2024",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Surging-Sparks-Pull-Rates/6ccfb6ab-f26a-4ce8-bab5-5f91c85ec70e"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-obsidian-flames-2023-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-8000-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "obsidian-flames-booster-packs",
+          "set": "obsidian-flames",
+          "source_sample": null,
+          "study_id": "tcgplayer-obsidian-flames-2023",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Obsidian-Flames-Pull-Rates/e2a66999-a7b5-4621-9765-c9a132e04bd2"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-white-flare-2025-kentucky"
+          ],
+          "country": "US",
+          "geography_basis": "opening_location",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "combined-analysis-assumes-two-sets-have-similar-rates",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-350-packs-reported-for-this-set",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 350,
+          "product": "white-flare-booster-packs",
+          "set": "white-flare",
+          "source_sample": null,
+          "study_id": "tcgplayer-white-flare-2025",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Black-Bolt-and-White-Flare-Pull-Rates/bac92199-a2a7-4668-b4a4-2647a111776f"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-brilliant-stars-65-packs-2022-original"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening-location-not-stated",
+            "product-mix-includes-booster-box-etb-sleeved-packs-and-blisters",
+            "single-author-opening-reported-within-discussion-thread",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "author-tracked-opening",
+          "metrics": [
+            {
+              "category": "trainer-gallery",
+              "hits": 5,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 65,
+          "product": "mixed-brilliant-stars-products",
+          "set": "brilliant-stars",
+          "source_sample": null,
+          "study_id": "reddit-brilliant-stars-trainer-gallery-65-packs-2022",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/t28msa"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-prismatic-evolutions-2025-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-1200-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1200,
+          "product": "prismatic-evolutions-booster-packs",
+          "set": "prismatic-evolutions",
+          "source_sample": null,
+          "study_id": "tcgplayer-prismatic-evolutions-2025",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Prismatic-Evolutions-Pull-Rates/d94889ea-f76a-4a13-b74d-5b0b071220a7"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-temporal-forces-2024-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-8000-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "temporal-forces-booster-packs",
+          "set": "temporal-forces",
+          "source_sample": null,
+          "study_id": "tcgplayer-temporal-forces-2024",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/robot/28c0ad22-00a4-428f-b22d-e7fee9ec50bc"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-journey-together-2025-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-8000-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "journey-together-booster-packs",
+          "set": "journey-together",
+          "source_sample": null,
+          "study_id": "tcgplayer-journey-together-2025",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Journey-Together-Pull-Rates/1b9f379f-97cb-45cc-b6f6-a1a070a422cd"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-silver-tempest-2022-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-8000-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "silver-tempest-booster-packs",
+          "set": "silver-tempest",
+          "source_sample": null,
+          "study_id": "tcgplayer-silver-tempest-2022",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Silver-Tempest-Pull-Rates/6490d591-e582-4930-8446-00e190876d30"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-phantasmal-flames-2025-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-5000-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 5000,
+          "product": "phantasmal-flames-booster-packs",
+          "set": "phantasmal-flames",
+          "source_sample": null,
+          "study_id": "tcgplayer-phantasmal-flames-2025",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Phantasmal-Flames-Pull-Rates/9abae60d-b7fb-448f-874e-176f78d6a6ca"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-crown-zenith-2023-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-1900-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1900,
+          "product": "crown-zenith-booster-packs",
+          "set": "crown-zenith",
+          "source_sample": null,
+          "study_id": "tcgplayer-crown-zenith-2023",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Crown-Zenith-Pull-Rates/56af3032-cb34-4da1-92fb-9cf206d10c0f"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-mixed-sets-1502-packs-2026-original"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "later-update-reports-additional-packs-and-hits-separately",
+            "multiple-sets-and-eras-combined",
+            "opening-location-not-stated",
+            "set-level-denominators-not-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "author-tracked-opening",
+          "metrics": [
+            {
+              "category": "mega-hyper-rare",
+              "hits": 0,
+              "unit": "cards"
+            },
+            {
+              "category": "special-illustration-rare",
+              "hits": 7,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1502,
+          "product": "mixed-physical-booster-packs",
+          "set": "mixed-sword-shield-through-perfect-order",
+          "source_sample": null,
+          "study_id": "reddit-mixed-sets-1502-packs-2026",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1t1yuc8/pok%C3%A9mon_pull_rates"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paldea-evolved-2023-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-8000-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "paldea-evolved-booster-packs",
+          "set": "paldea-evolved",
+          "source_sample": null,
+          "study_id": "tcgplayer-paldea-evolved-2023",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paldea-Evolved-Pull-Rates/1b7d3e70-9542-4a50-8692-1661e2316521"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-evolving-skies-2021-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-8000-packs-reported",
+            "retrospective-publication-or-update",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "evolving-skies-booster-packs",
+          "set": "evolving-skies",
+          "source_sample": null,
+          "study_id": "tcgplayer-evolving-skies-2021",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Evolving-Skies-Pull-Rates/6a743d7b-e5ee-4fd6-9d18-64a636990e8c"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-black-bolt-2025-kentucky"
+          ],
+          "country": "US",
+          "geography_basis": "opening_location",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "combined-analysis-assumes-two-sets-have-similar-rates",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-350-packs-reported-for-this-set",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 350,
+          "product": "black-bolt-booster-packs",
+          "set": "black-bolt",
+          "source_sample": null,
+          "study_id": "tcgplayer-black-bolt-2025",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Black-Bolt-and-White-Flare-Pull-Rates/bac92199-a2a7-4668-b4a4-2647a111776f"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-twilight-masquerade-2024-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-8000-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "twilight-masquerade-booster-packs",
+          "set": "twilight-masquerade",
+          "source_sample": null,
+          "study_id": "tcgplayer-twilight-masquerade-2024",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Twilight-Masquerade-Pull-Rates/f3eea967-e5fb-4108-8655-bb1c89587628"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokebeach-pitch-black-84-packs-2026-original"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "displayed-percentages-not-converted-to-integer-counts",
+            "forum-post-within-long-running-multi-cohort-thread",
+            "independent-review-pending",
+            "opening-location-not-stated",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "author-tracked-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 84,
+          "product": "pitch-black-booster-packs",
+          "set": "pitch-black",
+          "source_sample": null,
+          "study_id": "pokebeach-pitch-black-84-packs-2026",
+          "urls": [
+            "https://www.pokebeach.com/forums/threads/the-look-what-i-pulled-pull-rates-thread.111190/page-103"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paldean-fates-2024-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "at-least-1500-packs-supported-by-page-wording",
+            "collector-policy-not-enabled",
+            "final-exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1500,
+          "product": "paldean-fates-booster-packs",
+          "set": "paldean-fates",
+          "source_sample": null,
+          "study_id": "tcgplayer-paldean-fates-2024",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paldean-Fates-Pull-Rates/23de3e93-0d0f-4ae0-abc4-13664f3001a3"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-scarlet-violet-2023-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-8000-packs-reported",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "scarlet-violet-booster-packs",
+          "set": "scarlet-violet",
+          "source_sample": null,
+          "study_id": "tcgplayer-scarlet-violet-2023",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-ascended-heroes-2026-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact-denominator-not-reported",
+            "independent-review-pending",
+            "integer-hit-counts-not-reported",
+            "more-than-2000-packs-reported",
+            "pokebeach-page-is-a-reprint-summary",
+            "unverified-research-not-approved-for-production-statistics"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 2000,
+          "product": "ascended-heroes-booster-packs",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "tcgplayer-ascended-heroes-2026",
+          "urls": [
+            "https://www.pokebeach.com/2026/02/ascended-heroes-pull-rates-finally-determined-better-than-usual",
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Ascended-Heroes-Pull-Rates/60143d94-88a7-42ce-8e73-babd7b3fabd6"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1

@@ -24,23 +24,28 @@ from pokecrack_worker.global_volume import (
 )
 from pokecrack_worker.jobs.postgres import QueryExecutor
 
-YOUTUBE_DISCOVERIES_SQL = """
+# Read a larger disposable window from each source, then apply a fair
+# round-robin selection below. The manifest remains capped by the shared
+# global-volume contract, so this cannot turn into an unbounded query or write.
+SOCIAL_SOURCE_QUERY_LIMIT = 1_000
+
+YOUTUBE_DISCOVERIES_SQL = f"""
 SELECT source_url, title
 FROM ingest.youtube_discoveries
 WHERE not is_demo
   AND expires_at > statement_timestamp()
 ORDER BY last_seen_at DESC, video_id
-LIMIT 500
+LIMIT {SOCIAL_SOURCE_QUERY_LIMIT}
 """.strip()
 
-BLUESKY_CANDIDATES_SQL = """
+BLUESKY_CANDIDATES_SQL = f"""
 SELECT public_url, text_excerpt
 FROM ingest.bluesky_jetstream_candidates
 WHERE not is_demo
   AND deleted_at IS NULL
   AND expires_at > statement_timestamp()
 ORDER BY last_seen_at DESC, at_uri
-LIMIT 500
+LIMIT {SOCIAL_SOURCE_QUERY_LIMIT}
 """.strip()
 
 _YOUTUBE_WATCH_URL = re.compile(r"^https://www\.youtube\.com/watch\?v=([A-Za-z0-9_-]{11})$")
@@ -147,6 +152,7 @@ def build_manifest(executor: QueryExecutor) -> dict[str, Any]:
     """Build a bounded, deterministic manifest from disposable public metadata."""
 
     candidates: dict[str, dict[str, Any]] = {}
+    source_urls: list[list[str]] = [[], []]
     for row in _rows(executor, YOUTUBE_DISCOVERIES_SQL, {"source_url", "title"}):
         url = _youtube_embed_url(row["source_url"])
         claim = row["title"]
@@ -154,7 +160,9 @@ def build_manifest(executor: QueryExecutor) -> dict[str, Any]:
             continue
         item = _candidate(url=url, claim=claim, source_identity=str(row["source_url"]))
         if item is not None:
-            candidates[url] = item
+            if url not in candidates:
+                candidates[url] = item
+                source_urls[0].append(url)
 
     for row in _rows(executor, BLUESKY_CANDIDATES_SQL, {"public_url", "text_excerpt"}):
         url = row["public_url"]
@@ -163,9 +171,27 @@ def build_manifest(executor: QueryExecutor) -> dict[str, Any]:
             continue
         item = _candidate(url=url, claim=claim, source_identity=url)
         if item is not None:
-            candidates[url] = item
+            if url not in candidates:
+                candidates[url] = item
+                source_urls[1].append(url)
 
-    selected = [candidates[url] for url in sorted(candidates)[:MAX_CANDIDATES]]
+    # Query results are newest-first, but the manifest contract requires URL
+    # sorting. Select in source-fair recency order before applying that final
+    # canonical sort; otherwise the alphabetically smallest host could starve
+    # every later source once the shared cap is reached.
+    selected_urls: list[str] = []
+    while len(selected_urls) < MAX_CANDIDATES and any(source_urls):
+        progressed = False
+        for bucket in source_urls:
+            if bucket and len(selected_urls) < MAX_CANDIDATES:
+                selected_urls.append(bucket.pop(0))
+                progressed = True
+        if not progressed:
+            break
+    selected = sorted(
+        (candidates[url] for url in selected_urls),
+        key=lambda item: item["url"],
+    )
     source_hash = hashlib.sha256(
         json.dumps(selected, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
