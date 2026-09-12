@@ -19,11 +19,26 @@ from .bluesky import (
 )
 
 REQUIRED_YOUTUBE_QUERIES: tuple[tuple[str, str], ...] = (
-    ("pokemon-tcg-booster-box-opening", "Pokemon TCG booster box opening"),
-    ("pokemon-tcg-etb-opening", "Pokemon TCG ETB opening"),
-    ("pokemon-tcg-booster-bundle-opening", "Pokemon TCG booster bundle opening"),
-    ("pokemon-tcg-pack-opening", "Pokemon TCG pack opening"),
-    ("pokemon-tcg-opening-batch-code", "Pokemon TCG opening batch code"),
+    (
+        "pokemon-tcg-booster-box-opening",
+        "Pokemon TCG booster box opening|Pokemon card booster box opening|Pokemon Karten Display oeffnen|cartes Pokemon boite ouverture|cartas Pokemon caja apertura|carte Pokemon box opening|ポケモンカード ボックス 開封|宝可梦 卡盒 开箱|寶可夢 卡盒 開箱|포켓몬 카드 박스 개봉|покемон карты бокс открытие|Pokemon kaarten box openen|cartas Pokemon caixa abertura",
+    ),
+    (
+        "pokemon-tcg-etb-opening",
+        "Pokemon TCG ETB opening|Pokemon Elite Trainer Box opening|Pokemon Karten ETB oeffnen|cartes Pokemon ETB ouverture|cartas Pokemon ETB apertura|ポケモンカード ETB 開封|宝可梦 ETB 开箱|寶可夢 ETB 開箱|포켓몬 ETB 개봉|Pokemon kaarten ETB openen|apertura ETB Pokemon",
+    ),
+    (
+        "pokemon-tcg-booster-bundle-opening",
+        "Pokemon TCG booster bundle opening|Pokemon card bundle opening|Pokemon Karten Bundle oeffnen|cartes Pokemon bundle ouverture|cartas Pokemon bundle apertura|ポケモンカード バンドル 開封|宝可梦 礼盒 开箱|寶可夢 禮盒 開箱|포켓몬 카드 번들 개봉|Pokemon kaarten bundel openen|abertura bundle Pokemon",
+    ),
+    (
+        "pokemon-tcg-pack-opening",
+        "Pokemon TCG pack opening|Pokemon card pack opening|Pokemon Karten Pack oeffnen|cartes Pokemon boosters ouverture|cartas Pokemon sobres apertura|pacchetti Pokemon apertura|ポケモンカード パック 開封|宝可梦 卡包 开箱|寶可夢 卡包 開箱|포켓몬 카드 팩 개봉|покемон карты паки открытие|ซองโปเกมอน เปิด|buka pack Pokemon",
+    ),
+    (
+        "pokemon-tcg-opening-batch-code",
+        "Pokemon TCG opening batch code|Pokemon card bulk packs opening|Pokemon Karten viele Packs oeffnen|cartes Pokemon ouverture lots|cartas Pokemon apertura lote|ポケモンカード 開封 ロット|宝可梦 开箱 批次|寶可夢 開箱 批次|포켓몬 카드 대량 개봉|покемон карты открытие партии|Pokemon kaarten grote opening",
+    ),
 )
 
 
@@ -62,7 +77,7 @@ class YouTubeQueryDocument(BaseModel):
             raise ValueError("YouTube query names must be unique")
         configured = tuple((query.name, query.query) for query in self.queries)
         if configured != REQUIRED_YOUTUBE_QUERIES:
-            raise ValueError("YouTube registry must contain the exact five approved queries")
+            raise ValueError("YouTube registry must contain the exact five approved query slots")
         if any(query.enabled for query in self.queries):
             raise ValueError("YouTube queries must remain disabled in the static registry")
         if any(query.region_code is not None for query in self.queries):

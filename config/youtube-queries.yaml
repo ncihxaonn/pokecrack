@@ -2,35 +2,35 @@ version: 1
 default_enabled: false
 queries:
   - name: pokemon-tcg-booster-box-opening
-    query: Pokemon TCG booster box opening
+    query: Pokemon TCG booster box opening|Pokemon card booster box opening|Pokemon Karten Display oeffnen|cartes Pokemon boite ouverture|cartas Pokemon caja apertura|carte Pokemon box opening|ポケモンカード ボックス 開封|宝可梦 卡盒 开箱|寶可夢 卡盒 開箱|포켓몬 카드 박스 개봉|покемон карты бокс открытие|Pokemon kaarten box openen|cartas Pokemon caixa abertura
     enabled: false
     metadata_only: true
     max_results: 25
     published_within_days: 30
     order: date
   - name: pokemon-tcg-etb-opening
-    query: Pokemon TCG ETB opening
+    query: Pokemon TCG ETB opening|Pokemon Elite Trainer Box opening|Pokemon Karten ETB oeffnen|cartes Pokemon ETB ouverture|cartas Pokemon ETB apertura|ポケモンカード ETB 開封|宝可梦 ETB 开箱|寶可夢 ETB 開箱|포켓몬 ETB 개봉|Pokemon kaarten ETB openen|apertura ETB Pokemon
     enabled: false
     metadata_only: true
     max_results: 25
     published_within_days: 30
     order: date
   - name: pokemon-tcg-booster-bundle-opening
-    query: Pokemon TCG booster bundle opening
+    query: Pokemon TCG booster bundle opening|Pokemon card bundle opening|Pokemon Karten Bundle oeffnen|cartes Pokemon bundle ouverture|cartas Pokemon bundle apertura|ポケモンカード バンドル 開封|宝可梦 礼盒 开箱|寶可夢 禮盒 開箱|포켓몬 카드 번들 개봉|Pokemon kaarten bundel openen|abertura bundle Pokemon
     enabled: false
     metadata_only: true
     max_results: 25
     published_within_days: 30
     order: date
   - name: pokemon-tcg-pack-opening
-    query: Pokemon TCG pack opening
+    query: Pokemon TCG pack opening|Pokemon card pack opening|Pokemon Karten Pack oeffnen|cartes Pokemon boosters ouverture|cartas Pokemon sobres apertura|pacchetti Pokemon apertura|ポケモンカード パック 開封|宝可梦 卡包 开箱|寶可夢 卡包 開箱|포켓몬 카드 팩 개봉|покемон карты паки открытие|ซองโปเกมอน เปิด|buka pack Pokemon
     enabled: false
     metadata_only: true
     max_results: 25
     published_within_days: 30
     order: date
   - name: pokemon-tcg-opening-batch-code
-    query: Pokemon TCG opening batch code
+    query: Pokemon TCG opening batch code|Pokemon card bulk packs opening|Pokemon Karten viele Packs oeffnen|cartes Pokemon ouverture lots|cartas Pokemon apertura lote|ポケモンカード 開封 ロット|宝可梦 开箱 批次|寶可夢 開箱 批次|포켓몬 카드 대량 개봉|покемон карты открытие партии|Pokemon kaarten grote opening
     enabled: false
     metadata_only: true
     max_results: 25

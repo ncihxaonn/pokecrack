@@ -615,7 +615,8 @@ def test_enabled_collector_runs_fenced_global_youtube_activity_pipeline() -> Non
     assert len(transport.calls) == 1
     assert transport.calls[0][0].endswith("/search")
     assert all("key" not in params for _url, params, _timeout in transport.calls)
-    assert transport.calls[0][1]["q"] == "Pokemon TCG ETB opening"
+    etb_query = dict(REQUIRED_YOUTUBE_QUERIES)["pokemon-tcg-etb-opening"]
+    assert transport.calls[0][1]["q"] == etb_query
     assert transport.calls[0][1]["relevanceLanguage"] == "en"
     assert transport.calls[0][1]["publishedBefore"] == "2026-08-25T12:00:00Z"
     assert transport.calls[0][1]["fields"] == ("items(id(kind,videoId),snippet(publishedAt,title))")
