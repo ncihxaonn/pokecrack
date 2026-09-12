@@ -26817,6 +26817,703 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "tcgplayer-surging-sparks-over-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "exact_denominator_not_published",
+            "independent-review-pending",
+            "integer_numerators_not_published_in_text",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "surging_sparks",
+          "set": "surging_sparks",
+          "source_sample": null,
+          "study_id": "tcgplayer-surging-sparks-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%EF%BF%BDmon-TCG-Surging-Sparks-Pull-Rates/6ccfb6ab-f26a-4ce8-bab5-5f91c85ec70e"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-destined-rivals-over-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "exact_denominator_not_published",
+            "independent-review-pending",
+            "integer_numerators_not_published_in_text",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "destined_rivals",
+          "set": "destined_rivals",
+          "source_sample": null,
+          "study_id": "tcgplayer-destined-rivals-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Destined-Rivals-Pull-Rates/43ba832e-44c9-45a4-ae2e-594df2defdda"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "battle-styles-1405-mixed-sealed-products"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "metrics_presented_mainly_in_image",
+            "sample_combines_build_battle_and_booster_cases",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_recorded",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1405,
+          "product": "build_battle_and_booster_boxes",
+          "set": "battle_styles",
+          "source_sample": null,
+          "study_id": "reddit-battle-styles-1405",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/m6zx5c/battle_styles_pull_rate_data_from_1405_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "vivid-voltage-2184-self-opened"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "metrics_presented_mainly_in_image",
+            "sample_combines_booster_and_build_battle_products",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_recorded",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2184,
+          "product": "booster_and_build_battle_boxes",
+          "set": "vivid_voltage",
+          "source_sample": null,
+          "study_id": "reddit-vivid-voltage-2184",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-temporal-forces-over-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "exact_denominator_not_published",
+            "independent-review-pending",
+            "integer_numerators_not_published_in_text",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "temporal_forces",
+          "set": "temporal_forces",
+          "source_sample": null,
+          "study_id": "tcgplayer-temporal-forces-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Temporal-Forces-Pull-Rates/28c0ad22-00a4-428f-b22d-e7fee9ec50bc"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "fusion-strike-observed-videos-4197"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "mostly_booster_boxes_with_some_etbs",
+            "source_selection_may_bias_sample",
+            "third_party_video_openings",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "observed_complete_video_openings",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 4197,
+          "product": "mostly_booster_boxes_and_some_etbs",
+          "set": "fusion_strike",
+          "source_sample": null,
+          "study_id": "reddit-fusion-strike-4197",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/qqpiol/fusion_strike_pull_rates_statistical_analysis_on"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokemon-30th-preliminary-leaked-732"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "pre_release_leaked_material",
+            "retail_distribution_may_differ",
+            "three_posts_are_reprints_of_one_cohort",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "compiled_leaked_openings",
+          "metrics": [
+            {
+              "category": "classic_reprint",
+              "hits": 70,
+              "unit": "cards"
+            },
+            {
+              "category": "double_rare_or_ex",
+              "hits": 133,
+              "unit": "cards"
+            },
+            {
+              "category": "futuristic_ultra_rare",
+              "hits": 7,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 130,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 37,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 732,
+          "product": "pokemon_30th_anniversary",
+          "set": "pokemon_30th_anniversary",
+          "source_sample": null,
+          "study_id": "reddit-anniversary-leaked-732",
+          "urls": [
+            "https://www.reddit.com/r/PokemonDealsUSA/comments/1w8e3r4/pok%C3%A9mon_30th_anniversary_pull_rates_preliminary",
+            "https://www.reddit.com/r/PokemonDropNotify/comments/1w8e3sz/pok%C3%A9mon_30th_anniversary_pull_rates_preliminary",
+            "https://www.reddit.com/r/TheTrainersCollective/comments/1w8e3og/pok%C3%A9mon_30th_anniversary_pull_rates_preliminary"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "dutch-reddit-mega-evolution-210"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "nl",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_inferred_from_language_or_subreddit",
+            "country_not_stated",
+            "independent-review-pending",
+            "integer_hit_counts_not_available_in_page_text",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_reported",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 210,
+          "product": "mega_evolution",
+          "set": "mega_evolution",
+          "source_sample": null,
+          "study_id": "reddit-netherlands-mega-evolution-210",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCGNL/comments/1o4tnq8/resultaten_pulls_210_packs_mega_evolution"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardshoplive-sv-base-1728"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "single_company_sample",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_recorded",
+          "metrics": [
+            {
+              "category": "double_rare",
+              "hits": 234,
+              "unit": "cards"
+            },
+            {
+              "category": "gardevoir_ex_special_illustration_rare",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "hyper_rare",
+              "hits": 32,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 130,
+              "unit": "cards"
+            },
+            {
+              "category": "koraidon_ex_hyper_rare",
+              "hits": 4,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon_ex_hyper_rare",
+              "hits": 5,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon_ex_special_illustration_rare",
+              "hits": 7,
+              "unit": "cards"
+            },
+            {
+              "category": "miriam_special_illustration_rare",
+              "hits": 4,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 52,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare",
+              "hits": 112,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1728,
+          "product": "mixed_scarlet_violet_products",
+          "set": "scarlet_violet",
+          "source_sample": null,
+          "study_id": "cardshoplive-scarlet-violet-1728",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-scarlet-and-violet"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget-skyscraping-perfection-blue-sky-stream-1000-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "native_box_count_preserved_without_pack_conversion",
+            "sample_may_include_social_opening_reports",
+            "two_sets_combined",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "manually_collated_opening_reports",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "booster_boxes",
+          "set": "skyscraping_perfection_and_blue_sky_stream",
+          "source_sample": {
+            "count": 1000,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget-skyscraping-stream-1000-boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pokemoncard-diary-sr-definition"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paradox-rift-over-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "exact_denominator_not_published",
+            "independent-review-pending",
+            "integer_numerators_not_published_in_text",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "paradox_rift",
+          "set": "paradox_rift",
+          "source_sample": null,
+          "study_id": "tcgplayer-paradox-rift-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paradox-Rift-Pull-Rates/0b5fb648-38fc-4f61-a6af-57c2737b4a48"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "mega-evolution-157-boxes-5652-packs"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "source_selection_may_bias_sample",
+            "third_party_openings_collated",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "collated_complete_box_openings",
+          "metrics": [
+            {
+              "category": "double_rare",
+              "hits": 1170,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 626,
+              "unit": "cards"
+            },
+            {
+              "category": "mega_hyper_rare",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 66,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare",
+              "hits": 470,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 5652,
+          "product": "english_booster_boxes",
+          "set": "mega_evolution",
+          "source_sample": null,
+          "study_id": "reddit-mega-evolution-seeding-5652",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1owldhb/english_booster_boxes_are_definitely_seeded_heres"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "mega-evolution-community-observed-over-1100"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "mixed_social_and_video_sources",
+            "overlap_unresolved",
+            "possible_overlap_with_other_cohorts",
+            "unverified_research_not_for_production_statistics",
+            "updated_total_reported_only_as_over_1100"
+          ],
+          "method": "community_posts_and_video_observation",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1100,
+          "product": "mixed_products",
+          "set": "mega_evolution",
+          "source_sample": null,
+          "study_id": "reddit-mega-evolution-observed-1100plus",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1noofd6/possible_mega_evolutions_pull_rates"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "ascended-heroes-nine-friends-four-stores-7000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "data_combines_friends_and_local_stores",
+            "god_pack_rate_not_concluded",
+            "independent-review-pending",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "multi_source_local_collection",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 7000,
+          "product": "ascended_heroes",
+          "set": "ascended_heroes",
+          "source_sample": null,
+          "study_id": "reddit-ascended-heroes-7000",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-twilight-masquerade-over-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "exact_denominator_not_published",
+            "independent-review-pending",
+            "integer_numerators_not_published_in_text",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "twilight_masquerade",
+          "set": "twilight_masquerade",
+          "source_sample": null,
+          "study_id": "tcgplayer-twilight-masquerade-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Twilight-Masquerade-Pull-Rates/f3eea967-e5fb-4108-8655-bb1c89587628"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardshoplive-crown-zenith-1000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "page_contains_apparent_pack_composition_typo",
+            "single_company_sample",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_recorded",
+          "metrics": [
+            {
+              "category": "galarian_gallery_gold",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "galarian_gallery_silver",
+              "hits": 105,
+              "unit": "cards"
+            },
+            {
+              "category": "galarian_gallery_yellow",
+              "hits": 190,
+              "unit": "cards"
+            },
+            {
+              "category": "gold_arceus_vstar",
+              "hits": 2,
+              "unit": "cards"
+            },
+            {
+              "category": "gold_giratina_vstar",
+              "hits": 3,
+              "unit": "cards"
+            },
+            {
+              "category": "gold_origin_forme_palkia_vstar",
+              "hits": 2,
+              "unit": "cards"
+            },
+            {
+              "category": "holo_v",
+              "hits": 105,
+              "unit": "cards"
+            },
+            {
+              "category": "pikachu_secret_rare",
+              "hits": 15,
+              "unit": "cards"
+            },
+            {
+              "category": "radiant_rare",
+              "hits": 30,
+              "unit": "cards"
+            },
+            {
+              "category": "textured_energy",
+              "hits": 24,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare_trainer",
+              "hits": 35,
+              "unit": "cards"
+            },
+            {
+              "category": "vstar_or_vmax",
+              "hits": 56,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1000,
+          "product": "crown_zenith",
+          "set": "crown_zenith",
+          "source_sample": null,
+          "study_id": "cardshoplive-crown-zenith-1000",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-crown-zenith"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "shining-fates-1087"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "metrics_presented_mainly_in_image",
+            "small_sample_for_individual_cards",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "self_opened_recorded",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1087,
+          "product": "shining_fates",
+          "set": "shining_fates",
+          "source_sample": null,
+          "study_id": "reddit-shining-fates-1087",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/lo8m1v/shining_fates_pull_rate_data_from_1087_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokeget-scarlet-ex-500-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "independent-review-pending",
+            "native_box_count_preserved_without_pack_conversion",
+            "reported_percentages_not_converted_to_integer_hits",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "manually_collated_case_openings",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "scarlet_ex",
+          "set": "scarlet_ex",
+          "source_sample": {
+            "count": 500,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "pokeget-scarlet-ex-500-boxes",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-scarletex"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-scarlet-violet-over-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country_not_stated",
+            "distinct_from_cardshoplive_1728_cohort",
+            "exact_denominator_not_published",
+            "independent-review-pending",
+            "integer_numerators_not_published_in_text",
+            "unverified_research_not_for_production_statistics"
+          ],
+          "method": "authentication_center_opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "scarlet_violet",
+          "set": "scarlet_violet",
+          "source_sample": null,
+          "study_id": "tcgplayer-scarlet-violet-8000plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1

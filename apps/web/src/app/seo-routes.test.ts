@@ -30,7 +30,12 @@ describe("SEO metadata routes", () => {
     expect(layout).toContain("twitter");
 
     const liveDashboardPages = ["page.tsx"];
-    for (const page of liveDashboardPages) expect(readFileSync(path.join(appRoot, page), "utf8"), page).toContain("export const revalidate = 60");
+    for (const page of liveDashboardPages) {
+      const source = readFileSync(path.join(appRoot, page), "utf8");
+      expect(source, page).toContain("export const revalidate = 60");
+      expect(source, page).toContain("loadOperationalDashboard");
+      expect(source, page).not.toContain("loadDashboard");
+    }
 
     const researchPages = ["sets/page.tsx", "regions/page.tsx", "retailers/page.tsx", "batches/page.tsx"];
     for (const page of researchPages) expect(readFileSync(path.join(appRoot, page), "utf8"), page).toContain("export const revalidate = 900");
