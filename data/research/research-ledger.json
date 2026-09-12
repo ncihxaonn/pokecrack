@@ -21874,6 +21874,556 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "reddit-vivid-voltage-2184"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "cohort-composition-not-fully-verified",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "post-indicates-youtube-openings-may-supplement-short-samples",
+            "unverified-research"
+          ],
+          "method": "original-pull-rate-post",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 2184,
+          "product": "vivid-voltage-booster-packs",
+          "set": "vivid-voltage",
+          "source_sample": null,
+          "study_id": "reddit-vivid-voltage-2184",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokebeach-pitch-black-84-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "forum-page-contains-many-unrelated-opening-cohorts",
+            "independent-review-pending",
+            "reported-percentages-were-not-converted-to-integer-counts",
+            "unverified-research"
+          ],
+          "method": "forum-opening-report",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 84,
+          "product": "pitch-black-booster-packs",
+          "set": "pitch-black",
+          "source_sample": null,
+          "study_id": "pokebeach-pitch-black-84",
+          "urls": [
+            "https://www.pokebeach.com/forums/threads/the-look-what-i-pulled-pull-rates-thread.111190/page-103"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-temporal-forces-2024"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "canonical-url-uses-robot-path",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "temporal-forces",
+          "source_sample": null,
+          "study_id": "tcgplayer-temporal-forces-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/robot/28c0ad22-00a4-428f-b22d-e7fee9ec50bc"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-sv151-personal-1000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "pull-details-are-presented-in-attached-images-and-were-not-transcribed",
+            "unverified-research"
+          ],
+          "method": "personal-opening-report",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1000,
+          "product": "scarlet-violet-151-booster-packs",
+          "set": "scarlet-violet-151",
+          "source_sample": null,
+          "study_id": "reddit-pokemon-151-1000",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/18xr432"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-chaos-rising-2026"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "reported-as-more-than-8500-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8500,
+          "product": "english-booster-packs",
+          "set": "chaos-rising",
+          "source_sample": null,
+          "study_id": "tcgplayer-chaos-rising-8500",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Chaos-Rising-Pull-Rates/304e8bfc-175a-4d31-93fe-5bb1be11e5d2"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-twilight-masquerade-2024"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "twilight-masquerade",
+          "source_sample": null,
+          "study_id": "tcgplayer-twilight-masquerade-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Twilight-Masquerade-Pull-Rates/f3eea967-e5fb-4108-8655-bb1c89587628"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-scarlet-violet-5184"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "methodology-details-not-extracted",
+            "unverified-research"
+          ],
+          "method": "original-pull-rate-post",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 5184,
+          "product": "scarlet-violet-booster-packs",
+          "set": "scarlet-violet",
+          "source_sample": null,
+          "study_id": "reddit-scarlet-violet-5184",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1270h5a"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-prismatic-evolutions-2025"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "possible-demigod-packs-were-not-confirmed",
+            "reported-as-more-than-1200-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1200,
+          "product": "english-booster-packs",
+          "set": "prismatic-evolutions",
+          "source_sample": null,
+          "study_id": "tcgplayer-prismatic-evolutions-1200",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Prismatic-Evolutions-Pull-Rates/d94889ea-f76a-4a13-b74d-5b0b071220a7"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "ebay-authentication-black-bolt-2025",
+            "ebay-authentication-white-flare-2025"
+          ],
+          "country": "US",
+          "geography_basis": "opening_location",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "kentucky-opening-location-explicit",
+            "more-than-350-packs-of-each-set",
+            "two-set-cohorts-combined-under-equal-rate-assumption",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 700,
+          "product": "english-booster-packs",
+          "set": "black-bolt-white-flare",
+          "source_sample": null,
+          "study_id": "tcgplayer-black-bolt-white-flare-700",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Black-Bolt-and-White-Flare-Pull-Rates/bac92199-a2a7-4668-b4a4-2647a111776f"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-surging-sparks-2024"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "surging-sparks",
+          "source_sample": null,
+          "study_id": "tcgplayer-surging-sparks-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Surging-Sparks-Pull-Rates/6ccfb6ab-f26a-4ce8-bab5-5f91c85ec70e"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-shining-fates-1087"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "cohort-composition-not-fully-verified",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "unverified-research"
+          ],
+          "method": "original-pull-rate-post",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 1087,
+          "product": "shining-fates-booster-packs",
+          "set": "shining-fates",
+          "source_sample": null,
+          "study_id": "reddit-shining-fates-1087",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/lo8m1v/shining_fates_pull_rate_data_from_1087_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-crown-zenith-personal-282"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "complete-hit-table-not-confirmed",
+            "country-not-stated",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "unverified-research"
+          ],
+          "method": "personal-opening-report",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 282,
+          "product": "crown-zenith-booster-packs",
+          "set": "crown-zenith",
+          "source_sample": null,
+          "study_id": "reddit-crown-zenith-282",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/10x9bqj"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-phantasmal-flames-2025"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "reported-as-more-than-5000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 5000,
+          "product": "english-booster-packs",
+          "set": "phantasmal-flames",
+          "source_sample": null,
+          "study_id": "tcgplayer-phantasmal-flames-5000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Phantasmal-Flames-Pull-Rates/9abae60d-b7fb-448f-874e-176f78d6a6ca"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-evolving-skies-2021"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-occurred-in-2021-and-report-was-published-later",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "evolving-skies",
+          "source_sample": null,
+          "study_id": "tcgplayer-evolving-skies-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Evolving-Skies-Pull-Rates/6a743d7b-e5ee-4fd6-9d18-64a636990e8c"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-ascended-heroes-friends-stores-7000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "data-reportedly-collected-with-friends-and-local-stores",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "multi-source-recording-protocol-not-independently-verified",
+            "unverified-research"
+          ],
+          "method": "community-aggregate",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 7000,
+          "product": "ascended-heroes-booster-packs",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "reddit-ascended-heroes-7000",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokebeach-mixed-pre-christmas-700"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "forum-page-contains-unrelated-cohorts",
+            "independent-review-pending",
+            "integer-hit-counts-not-normalized",
+            "multiple-sets-and-eras-combined",
+            "reported-as-over-700-packs",
+            "unverified-research"
+          ],
+          "method": "forum-opening-report",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 700,
+          "product": "mixed-booster-packs",
+          "set": "mixed-hgss-bw-xy",
+          "source_sample": null,
+          "study_id": "pokebeach-mixed-vintage-700",
+          "urls": [
+            "https://www.pokebeach.com/forums/threads/the-look-what-i-pulled-pull-rates-thread.111190/page-91"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-journey-together-2025"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "journey-together",
+          "source_sample": null,
+          "study_id": "tcgplayer-journey-together-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Journey-Together-Pull-Rates/1b9f379f-97cb-45cc-b6f6-a1a070a422cd"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-perfect-order-2026"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "reported-as-more-than-3500-packs",
+            "smaller-sample-than-other-standard-set-studies",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 3500,
+          "product": "english-booster-packs",
+          "set": "perfect-order",
+          "source_sample": null,
+          "study_id": "tcgplayer-perfect-order-3500",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Perfect-Order-Pull-Rates/73148119-ebcb-40b7-84b6-52b3a6d0c631"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-ascended-heroes-2026"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "reported-as-more-than-2000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 2000,
+          "product": "english-booster-packs",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "tcgplayer-ascended-heroes-2000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Ascended-Heroes-Pull-Rates/60143d94-88a7-42ce-8e73-babd7b3fabd6"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "carton-knight-start-deck-100-1000"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "original-video-url-not-recovered",
+            "overlap-unresolved",
+            "possible-overlap-with-1020-deck-and-128-full-foil-video-cohorts",
+            "secondary-article-reporting-an-original-public-opening",
+            "unverified-research"
+          ],
+          "method": "original-mass-deck-opening",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "start-deck-100-battle-collection",
+          "set": "start-deck-100-battle-collection",
+          "source_sample": {
+            "count": 1000,
+            "precision": "exact_reported",
+            "unit": "decks"
+          },
+          "study_id": "start-deck-100-battle-collection-1000-decks",
+          "urls": [
+            "https://www.pokebeach.com/2025/12/most-valuable-cards-and-pull-rates-from-start-deck-100-battle-collection-but-bewear-of-product-weighing"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
