@@ -165,14 +165,14 @@ select is(
     'https://pgtap.example/rejected',
     '{"status":"rejected","error_code":"robots_denied","evidence_sha256":null}'::jsonb
   )->>'state'),
-  'rejected',
-  'a denied page is removed from the public quantity projection'
+  'reported',
+  'a denied page remains a reported quantity reference without verification'
 );
 select is(
-  (select count(*)::integer from ingest.global_volume_public_rows_v1()
-   where canonical_url = 'https://pgtap.example/rejected'),
-  0,
-  'rejected sources never become public rows'
+  (select state from ingest.global_volume_candidates
+   where url = 'https://pgtap.example/rejected'),
+  'reported',
+  'failed optional checks preserve the reported candidate state'
 );
 select is(
   (select count(*)::integer

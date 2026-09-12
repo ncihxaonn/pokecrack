@@ -77,7 +77,7 @@ def test_public_page_count_is_verified_without_retaining_page_text() -> None:
     assert "30 booster" not in json.dumps(result)
 
 
-def test_robots_denial_and_missing_count_never_pass() -> None:
+def test_robots_denial_and_missing_count_remain_reported_but_never_verify() -> None:
     url = "https://example.com/report"
     denied_client = Client(
         {
@@ -95,7 +95,7 @@ def test_robots_denial_and_missing_count_never_pass() -> None:
         client=denied_client,
         robots=PublicRobotsGate(client=denied_client, followup_delay_seconds=0),
     )
-    assert denied == {"status": "rejected", "error_code": "robots_denied", "evidence_sha256": None}
+    assert denied == {"status": "retry", "error_code": "robots_denied", "evidence_sha256": None}
 
     missing_client = Client(
         {
@@ -110,5 +110,5 @@ def test_robots_denial_and_missing_count_never_pass() -> None:
         client=missing_client,
         robots=PublicRobotsGate(client=missing_client, followup_delay_seconds=0),
     )
-    assert missing["status"] == "rejected"
+    assert missing["status"] == "retry"
     assert missing["error_code"] == "pack_count_not_found"

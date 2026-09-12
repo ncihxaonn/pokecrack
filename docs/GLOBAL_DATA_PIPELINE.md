@@ -33,6 +33,15 @@ Denominator coverage is neither `activity_only` nor automatic statistical
 eligibility: the coverage ledger can retain a real `pack_count` while excluding
 the row from every numerator, rate, inference, and statistical-promotion path.
 
+The quantity lane is volume-first by design. A valid public report enters the
+`reported` projection before its optional page check. If the bounded checker
+cannot confirm the page because of robots, a login/challenge wall, a redirect,
+stale content, or a selector mismatch, the row remains `reported` with its
+allowlisted failure code and is never upgraded to `verified`. It is not fetched
+again outside the normal three-attempt cap, and no access restriction is
+bypassed. This preserves a large, clearly labelled source-reported denominator
+without confusing it with independently verified opening evidence.
+
 ## Reviewed public-study boundary
 
 The public-study path accepts only its immutable study identities, URLs, policy
