@@ -4,16 +4,17 @@ import { BRAND } from "@/config/brand";
 import { HomeView } from "@/components/dashboard/home-view";
 import { PublicUnavailable } from "@/components/ui/dashboard-ui";
 import { JsonLd } from "./_components/json-ld";
-import { loadDashboard } from "./_lib/dashboard";
+import { loadOperationalDashboard } from "./_lib/dashboard";
 import { defaultWorldHeatMetric, normalizeWorldHeatMetric } from "./_lib/world-map-query";
 
-// Keep the route shell in step with the one-minute dashboard data cache.
+// Keep the route shell bounded while the homepage reads the current public
+// database snapshot on each request.
 export const revalidate = 60;
 
 type SearchParams = Promise<{ metric?: string | string[] }>;
 
 export default async function HomePage({ searchParams }: { searchParams: SearchParams }) {
-  const [result, queryParams] = await Promise.all([loadDashboard(), searchParams]);
+  const [result, queryParams] = await Promise.all([loadOperationalDashboard(), searchParams]);
   if (result.status === "unavailable") {
     return <PublicUnavailable title="Dashboard data is unavailable" message={result.message} code={result.code} />;
   }
