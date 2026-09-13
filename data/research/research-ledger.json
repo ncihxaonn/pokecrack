@@ -11559,6 +11559,227 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemoncards-mixed-eleven-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-categories-not-consistently-defined",
+                "independent-review-pending",
+                "mixed-products",
+                "not-approved-for-production-statistics",
+                "unverified-research"
+              ],
+              "method": "author_reported",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 11,
+              "product": null,
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-pokemoncards-mixed-eleven-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1vck9wk/so_i_open_11_booster_with_my_friend"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-de-fatal-flames-over-100-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-count-not-reported-for-full-cohort",
+                "independent-review-pending",
+                "not-approved-for-production-statistics",
+                "pack-count-reported-as-over-100",
+                "unverified-research"
+              ],
+              "method": "author_reported",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 100,
+              "product": "fatal-flames",
+              "set": "fatal-flames",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcg-de-fatal-flames-over-100-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1qfavnb/bin_%C3%BCberrascht"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [],
+          "target": "IT"
+        },
+        {
+          "studies": [],
+          "target": "ES"
+        },
+        {
+          "studies": [],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-belgium-mega-greninja-eight-packs-2026"
+              ],
+              "country": "BE",
+              "geography_basis": "product_market",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-cohort",
+                "country-stated-for-product-variant-not-opening-location",
+                "independent-review-pending",
+                "mixed-sets",
+                "not-approved-for-production-statistics",
+                "unverified-research"
+              ],
+              "method": "author_reported",
+              "metrics": [
+                {
+                  "category": "ex",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 8,
+              "product": "mega-greninja-ex-premium-collection",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-belgium-mega-greninja-eight-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1uqzct0/mega_greninja_ex_premium_collection"
+              ]
+            }
+          ],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        },
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [],
+          "target": "CZ"
+        },
+        {
+          "studies": [],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        },
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 4,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG",
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
