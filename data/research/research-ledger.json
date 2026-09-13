@@ -14232,6 +14232,134 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ZA"
+        },
+        {
+          "studies": [],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        },
+        {
+          "studies": [],
+          "target": "CM"
+        },
+        {
+          "studies": [],
+          "target": "CF"
+        },
+        {
+          "studies": [],
+          "target": "TD"
+        },
+        {
+          "studies": [],
+          "target": "KM"
+        },
+        {
+          "studies": [],
+          "target": "CG"
+        },
+        {
+          "studies": [],
+          "target": "CD"
+        },
+        {
+          "studies": [],
+          "target": "CI"
+        },
+        {
+          "studies": [],
+          "target": "DJ"
+        },
+        {
+          "studies": [],
+          "target": "GQ"
+        },
+        {
+          "studies": [],
+          "target": "ER"
+        },
+        {
+          "studies": [],
+          "target": "SZ"
+        },
+        {
+          "studies": [],
+          "target": "ET"
+        }
+      ],
+      "sweep": 5,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV",
+        "CM",
+        "CF",
+        "TD",
+        "KM",
+        "CG",
+        "CD",
+        "CI",
+        "DJ",
+        "GQ",
+        "ER",
+        "SZ",
+        "ET"
+      ]
     }
   ],
   "global_batches": [
