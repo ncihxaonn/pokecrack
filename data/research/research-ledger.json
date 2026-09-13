@@ -13534,6 +13534,196 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "australia-costco-two-box-opening-20230131"
+              ],
+              "country": "AU",
+              "geography_basis": "opening_location",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no_explicit_integer_hit_counts_in_text",
+                "pack_total_not_preserved_from_product_contents",
+                "pull_inventory_visible_only_in_post_media",
+                "unverified_research"
+              ],
+              "method": "complete_opening_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "costco_tin_collection_boxes",
+              "set": "mixed-sword-and-shield-products",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "australia-costco-two-box-opening-20230131",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/10ps2q6/my_pulls_from_today_i_live_in_australia_and_we"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-products-407-pack-birthday-opening-20260623"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_inventory_visible_only_in_post_media",
+                "independent-review-pending",
+                "mixed_products",
+                "no_explicit_integer_hit_counts_in_text",
+                "target_is_search_provenance_only",
+                "unverified_research"
+              ],
+              "method": "complete_opening_report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 407,
+              "product": "mixed-products",
+              "set": "mixed-products",
+              "source_sample": null,
+              "study_id": "mixed-products-407-pack-birthday-opening-20260623",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1udvqlg/wow_shoulda_kept_it_sealed"
+              ]
+            }
+          ],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        },
+        {
+          "studies": [],
+          "target": "FM"
+        },
+        {
+          "studies": [],
+          "target": "MH"
+        },
+        {
+          "studies": [],
+          "target": "AS"
+        },
+        {
+          "studies": [],
+          "target": "CK"
+        },
+        {
+          "studies": [],
+          "target": "CX"
+        },
+        {
+          "studies": [],
+          "target": "CC"
+        },
+        {
+          "studies": [],
+          "target": "PF"
+        },
+        {
+          "studies": [],
+          "target": "GU"
+        },
+        {
+          "studies": [],
+          "target": "HM"
+        },
+        {
+          "studies": [],
+          "target": "NC"
+        },
+        {
+          "studies": [],
+          "target": "NU"
+        },
+        {
+          "studies": [],
+          "target": "NF"
+        }
+      ],
+      "sweep": 5,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW",
+        "FM",
+        "MH",
+        "AS",
+        "CK",
+        "CX",
+        "CC",
+        "PF",
+        "GU",
+        "HM",
+        "NC",
+        "NU",
+        "NF"
+      ]
     }
   ],
   "global_batches": [
