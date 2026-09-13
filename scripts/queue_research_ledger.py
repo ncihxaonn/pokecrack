@@ -7,10 +7,14 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+import time
 from urllib.parse import quote
 
 from research_checkpoint import BRANCH, LEDGER_FILE, REPOSITORY, SHA, pending_checkpoint, run, workflow_revision
 from research_ledger import MAX_LEDGER_BYTES, merge_checkpoints, validate_checkpoint
+
+
+REVIEW_RETRY_DELAYS = (2.0, 5.0)
 
 
 def commit_checkpoint(revision: str, previous: str | None, raw: str) -> bool:
@@ -47,19 +51,31 @@ def commit_checkpoint(revision: str, previous: str | None, raw: str) -> bool:
         return True
 
 
+def review_command(command: list[str]) -> subprocess.CompletedProcess:
+    """Retry only short-lived GitHub branch/PR visibility failures."""
+    for attempt, delay in enumerate((*REVIEW_RETRY_DELAYS, None)):
+        try:
+            return run(command)
+        except (OSError, subprocess.SubprocessError):
+            if delay is None:
+                raise
+            time.sleep(delay)
+    raise AssertionError("unreachable")
+
+
 def request_review() -> bool:
     """Queue the exact checkpoint PR and ask GitHub to merge it when checks pass."""
     try:
         owner = REPOSITORY.split("/", 1)[0]
         head = f"{owner}:{BRANCH}"
-        existing = json.loads(run([
+        existing = json.loads(review_command([
             "gh", "api", "--method", "GET",
             f"repos/{REPOSITORY}/pulls?state=open&base=main&head={quote(head, safe='')}",
         ]).stdout)
         if not isinstance(existing, list):
             return False
         if not existing:
-            created = json.loads(run([
+            created = json.loads(review_command([
                 "gh", "api", "--method", "POST", f"repos/{REPOSITORY}/pulls",
                 "-f", "title=chore(research): update unified research ledger",
                 "-f", f"head={head}", "-f", "base=main",
