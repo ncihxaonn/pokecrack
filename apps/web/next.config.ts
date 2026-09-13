@@ -18,10 +18,19 @@ const contentSecurityPolicy = [
   "upgrade-insecure-requests",
 ].join("; ");
 
+// Vercel owns the Next.js server output and file tracing for its adapter. The
+// standalone bundle is only needed by deploy/Dockerfile.web on the VPS.
+const nextOutputConfig: Pick<NextConfig, "output" | "outputFileTracingRoot"> =
+  process.env.VERCEL === "1"
+    ? {}
+    : {
+        output: "standalone",
+        outputFileTracingRoot: path.join(__dirname, "../.."),
+      };
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: "standalone",
-  outputFileTracingRoot: path.join(__dirname, "../.."),
+  ...nextOutputConfig,
   poweredByHeader: false,
   typedRoutes: true,
   async headers() {
