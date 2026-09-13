@@ -12371,6 +12371,69 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-evolving-skies-5000-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "completion-not-independently-verified",
+                "country-not-stated",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "title-count-only",
+                "unverified-research"
+              ],
+              "method": "public-forum-title-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 5000,
+              "product": "evolving-skies-booster-packs",
+              "set": "evolving-skies",
+              "source_sample": null,
+              "study_id": "reddit-evolving-skies-5000-pack-title-cohort",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/pf5scn/evolving_skies_pull_rate_data_from_5000_packs"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 4,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
