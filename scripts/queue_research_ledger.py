@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import subprocess
 import tempfile
+from urllib.parse import quote
 
 from research_checkpoint import BRANCH, LEDGER_FILE, REPOSITORY, SHA, pending_checkpoint, run, workflow_revision
 from research_ledger import MAX_LEDGER_BYTES, merge_checkpoints, validate_checkpoint
@@ -52,8 +53,8 @@ def request_review() -> bool:
         owner = REPOSITORY.split("/", 1)[0]
         head = f"{owner}:{BRANCH}"
         existing = json.loads(run([
-            "gh", "api", "--method", "GET", f"repos/{REPOSITORY}/pulls",
-            "-f", "state=open", "-f", "base=main", "-f", f"head={head}",
+            "gh", "api", "--method", "GET",
+            f"repos/{REPOSITORY}/pulls?state=open&base=main&head={quote(head, safe='')}",
         ]).stdout)
         if not isinstance(existing, list):
             return False
@@ -72,9 +73,8 @@ def request_review() -> bool:
             return False
         try:
             run([
-                "gh", "api", "--method", "PUT",
-                f"repos/{REPOSITORY}/pulls/{number}/auto-merge",
-                "-f", "merge_method=squash",
+                "gh", "pr", "merge", str(number), "--auto", "--squash",
+                "--repo", REPOSITORY,
             ])
         except (ValueError, OSError, subprocess.SubprocessError):
             # A repository setting may disable auto-merge. The validated PR

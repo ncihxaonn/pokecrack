@@ -36,7 +36,8 @@ Keep Vercel's project-level **Skip deployment** setting enabled so unaffected
 monorepo commits are skipped before a deployment is created. Changes to
 `apps/web`, the root workspace/lockfile configuration, or an internal shared
 package remain web releases and must pass the normal CI and
-GitHub-to-Vercel production flow.
+GitHub-to-Vercel production flow. The Next `standalone` output is reserved for
+the VPS Docker image; Vercel uses its native Next adapter output.
 
 ## Data and security
 

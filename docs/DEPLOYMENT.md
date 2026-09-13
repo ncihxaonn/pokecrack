@@ -126,7 +126,9 @@ deployments against its deployment limits. Research ledger, worker, database,
 and documentation commits therefore remain on the GitHub/MAM paths and do not
 constitute web releases. A change to `apps/web`, the root workspace or
 lockfile, or a shared package is a web release and still goes through the
-normal merge-to-`main` Vercel flow.
+normal merge-to-`main` Vercel flow. `apps/web/next.config.ts` keeps Next's
+`standalone` output and monorepo tracing root for the VPS Docker image only;
+Vercel builds use the native adapter output.
 
 ## 4. VPS
 

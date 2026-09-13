@@ -70,14 +70,15 @@ jobs:
             rmdir -- "$ssh_dir"
           }
           trap cleanup EXIT
-          remote_dir=$(ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+          remote_dir=$(python3 scripts/retry_command.py -- ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
             'umask 077; mktemp -d /tmp/pokecrack-global-job.XXXXXXXX')
           [[ "$remote_dir" =~ ^/tmp/pokecrack-global-job\.[A-Za-z0-9]{8}$ ]]
-          scp "${opts[@]}" -P "$VPS_PORT" scripts/global_research.py scripts/global_studies.py scripts/asia_research.py \
+          python3 scripts/retry_command.py -- scp "${opts[@]}" -P "$VPS_PORT" scripts/global_research.py scripts/global_studies.py scripts/asia_research.py \
             scripts/research_ledger.py \
             "$VPS_USER@$VPS_HOST:$remote_dir/"
-          ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "PYTHONDONTWRITEBYTECODE=1 python3 '$remote_dir/global_research.py' --scope '$SCOPE'" > "$RUNNER_TEMP/global-report.json"
+          python3 scripts/retry_command.py --output "$RUNNER_TEMP/global-report.json" -- \
+            ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "PYTHONDONTWRITEBYTECODE=1 python3 '$remote_dir/global_research.py' --scope '$SCOPE'"
       - name: Accumulate research history and deduplicate ledger
         env:
           GH_TOKEN: ${{ github.token }}

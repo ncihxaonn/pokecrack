@@ -64,17 +64,17 @@ jobs:
             rmdir -- "$ssh_dir"
           }
           trap cleanup EXIT
-          remote_dir=$(ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+          remote_dir=$(python3 scripts/retry_command.py -- ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
             'umask 077; mktemp -d /tmp/pokecrack-country-job.XXXXXXXX')
           [[ "$remote_dir" =~ ^/tmp/pokecrack-country-job\.[A-Za-z0-9]{8}$ ]]
-          scp "${opts[@]}" -P "$VPS_PORT" scripts/country_research.py scripts/country_targets.py \
+          python3 scripts/retry_command.py -- scp "${opts[@]}" -P "$VPS_PORT" scripts/country_research.py scripts/country_targets.py \
             scripts/global_research.py scripts/global_studies.py scripts/asia_research.py \
             scripts/research_ledger.py \
             "$RUNNER_TEMP/country-selection.json" "$RUNNER_TEMP/country-context.json" \
             "$VPS_USER@$VPS_HOST:$remote_dir/"
-          ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "PYTHONDONTWRITEBYTECODE=1 python3 '$remote_dir/country_research.py' --research '$remote_dir/country-selection.json' --context '$remote_dir/country-context.json'" \
-            > "$RUNNER_TEMP/country-report.json"
+          python3 scripts/retry_command.py --output "$RUNNER_TEMP/country-report.json" -- \
+            ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "PYTHONDONTWRITEBYTECODE=1 python3 '$remote_dir/country_research.py' --research '$remote_dir/country-selection.json' --context '$remote_dir/country-context.json'"
       - name: Preserve country checks and deduplicate original cohorts
         id: publication
         env:
@@ -119,16 +119,17 @@ jobs:
           printf '%s\n' "$SSH_PRIVATE_KEY" > "$ssh_dir/key"
           printf '%s\n' "$SSH_KNOWN_HOSTS" > "$ssh_dir/known_hosts"
           unset SSH_PRIVATE_KEY SSH_KNOWN_HOSTS
-          runtime_sha=$(python3 scripts/research_runtime.py \
+          runtime_sha=$(python3 scripts/retry_command.py -- python3 scripts/research_runtime.py \
             --workflow-sha "$GITHUB_SHA" --host "$VPS_HOST" --user "$VPS_USER" \
             --port "$VPS_PORT" --identity-file "$ssh_dir/key" --known-hosts "$ssh_dir/known_hosts")
           [[ "$runtime_sha" =~ ^[0-9a-f]{40}$ ]]
-          ssh -i "$ssh_dir/key" -o "UserKnownHostsFile=$ssh_dir/known_hosts" \
+          python3 scripts/retry_command.py --input "$RUNNER_TEMP/research-intake.json" \
+            --output "$RUNNER_TEMP/research-intake-result.json" -- \
+            ssh -i "$ssh_dir/key" -o "UserKnownHostsFile=$ssh_dir/known_hosts" \
             -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes \
             -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=3 \
             -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "bash /home/codex/pokecrack/deploy/scripts/import-research-intake.sh '$runtime_sha'" \
-            < "$RUNNER_TEMP/research-intake.json" > "$RUNNER_TEMP/research-intake-result.json"
+            "bash /home/codex/pokecrack/deploy/scripts/import-research-intake.sh '$runtime_sha'"
           echo 'Research references entered the private review queue. Source access and independently verified pack evidence remain separately gated.' >> "$GITHUB_STEP_SUMMARY"
       - name: Save bounded intake outcome
         if: vars.COUNTRY_RESEARCH_INTAKE_ENABLED == 'true' && always()

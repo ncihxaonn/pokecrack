@@ -69,7 +69,7 @@ class ResearchIntakeTests(unittest.TestCase):
         self.assertIn("vars.COUNTRY_RESEARCH_INTAKE_ENABLED == 'true'", workflow)
         self.assertIn("bash /home/codex/pokecrack/deploy/scripts/import-research-intake.sh", workflow)
         self.assertIn("import-research-intake.sh '$runtime_sha'", workflow)
-        self.assertIn('runtime_sha=$(python3 scripts/research_runtime.py', workflow)
+        self.assertIn('runtime_sha=$(python3 scripts/retry_command.py -- python3 scripts/research_runtime.py', workflow)
         self.assertIn('--workflow-sha "$GITHUB_SHA"', workflow)
         self.assertIn("fetch-depth: 0", workflow)
         self.assertLess(workflow.index("import-research-intake.sh"),

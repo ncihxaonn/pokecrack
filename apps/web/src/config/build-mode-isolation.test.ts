@@ -15,4 +15,11 @@ describe("data-mode build isolation", () => {
     expect(source).toContain("DATA_MODE: process.env.DATA_MODE");
     expect(source).toContain("NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL");
   });
+
+  it("keeps Docker standalone output separate from Vercel's adapter", () => {
+    const source = readFileSync(resolve(process.cwd(), "next.config.ts"), "utf8");
+    expect(source).toContain('process.env.VERCEL === "1"');
+    expect(source).toContain('output: "standalone"');
+    expect(source).toContain('outputFileTracingRoot: path.join(__dirname, "../..")');
+  });
 });
