@@ -23,6 +23,21 @@ chore(db): add non-destructive index migration
 
 Run the exact commands in `README.md` and `make verify` where the local environment supports Docker. Do not skip or weaken a failing test. If infrastructure is unavailable, report the command and blocker explicitly.
 
+## Deployment scope
+
+The web project is rooted at `apps/web` in the Vercel-connected pnpm
+monorepo. Research checkpoints, worker changes, database migrations, and
+documentation updates must not be treated as web releases: they continue
+through their GitHub review and MAM runtime paths without forcing a frontend
+build. The web `vercel.json` disables Vercel previews for `automation/*` and
+`codex/*` branches and keeps a path-scoped ignored-build fallback for data-only
+commits.
+Keep Vercel's project-level **Skip deployment** setting enabled so unaffected
+monorepo commits are skipped before a deployment is created. Changes to
+`apps/web`, the root workspace/lockfile configuration, or an internal shared
+package remain web releases and must pass the normal CI and
+GitHub-to-Vercel production flow.
+
 ## Data and security
 
 Never commit:

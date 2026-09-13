@@ -30939,6 +30939,521 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "reddit-paldea-evolved-252"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-location-not-stated",
+            "title-claims-252-packs",
+            "unverified-research"
+          ],
+          "method": "original-opening-report",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 252,
+          "product": "paldea-evolved-booster-pack",
+          "set": "paldea-evolved",
+          "source_sample": null,
+          "study_id": "reddit-paldea-evolved-252",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1463d9m/i_opened_252_packs_of_paldea_evolved_so_your_dont"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-ascended-heroes-7000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "god-pack-frequency-described-as-inconclusive",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-location-not-stated",
+            "title-claims-7000-packs",
+            "unverified-research"
+          ],
+          "method": "original-pull-rate-study",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 7000,
+          "product": "ascended-heroes-booster-pack",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "reddit-ascended-heroes-7000",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-silver-tempest-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-location-not-stated",
+            "sample-count-needs-page-level-reconfirmation",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "silver-tempest-booster-pack",
+          "set": "silver-tempest",
+          "source_sample": null,
+          "study_id": "tcgplayer-silver-tempest-pull-rates",
+          "urls": [
+            "https://infinite.tcgplayer.com/article/Pok%C3%A9mon-TCG-Silver-Tempest-Pull-Rates/6490d591-e582-4930-8446-00e190876d30"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-lost-origin-36-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-location-not-stated",
+            "title-claims-1296-packs",
+            "unverified-research"
+          ],
+          "method": "original-mass-opening",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 1296,
+          "product": "lost-origin-booster-pack",
+          "set": "lost-origin",
+          "source_sample": null,
+          "study_id": "reddit-lost-origin-1296",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/xb5aq0"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-scarlet-violet-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "count-reported-as-more-than-8000",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-location-not-stated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "scarlet-violet-booster-pack",
+          "set": "scarlet-violet",
+          "source_sample": null,
+          "study_id": "tcgplayer-scarlet-violet-8000-plus",
+          "urls": [
+            "https://infinite.tcgplayer.com/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-surging-sparks-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "canonical-url-has-encoding-damage",
+            "collector-policy-not-enabled",
+            "count-reported-as-more-than-8000",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-location-not-stated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "surging-sparks-booster-pack",
+          "set": "surging-sparks",
+          "source_sample": null,
+          "study_id": "tcgplayer-surging-sparks-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%EF%BF%BDmon-TCG-Surging-Sparks-Pull-Rates/6ccfb6ab-f26a-4ce8-bab5-5f91c85ec70e"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-new-zealand-38-pack-opening"
+          ],
+          "country": "NZ",
+          "geography_basis": "opening_location",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-stored",
+            "mixed-sets",
+            "some-category-counts-described-as-ranges",
+            "unverified-research"
+          ],
+          "method": "original-opening-report",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 38,
+          "product": "sword-shield-and-darkness-ablaze-packs",
+          "set": "mixed-sword-shield",
+          "source_sample": null,
+          "study_id": "reddit-new-zealand-38-pack-opening",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/j3f1rp"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-new-zealand-birthday-opening-57"
+          ],
+          "country": "NZ",
+          "geography_basis": "opening_location",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-supported-by-explicit-nzd-context-and-opening-narrative",
+            "independent-review-pending",
+            "integer-hit-counts-not-stored",
+            "only-latest-session-was-20-packs",
+            "set-composition-not-extracted",
+            "unverified-research"
+          ],
+          "method": "original-opening-report",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 57,
+          "product": null,
+          "set": "mixed-or-unstated",
+          "source_sample": null,
+          "study_id": "reddit-new-zealand-57-pack-opening",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1rsecp2/update_on_the_birthday_opening_i_got_cooked"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-twilight-masquerade-six-box-case"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "native-box-count-preserved",
+            "opening-location-not-stated",
+            "packs-per-box-not-multiplied",
+            "unverified-research"
+          ],
+          "method": "original-case-opening",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "twilight-masquerade-booster-box",
+          "set": "twilight-masquerade",
+          "source_sample": {
+            "count": 6,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "reddit-twilight-masquerade-case",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1d00uh3"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "japanese-mega-brave-1000-box-aggregation"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "aggregates-reported-opening-results",
+            "collector-policy-not-enabled",
+            "country-not-inferred-from-language",
+            "independent-review-pending",
+            "native-box-count-preserved",
+            "opening-location-not-stated",
+            "packs-not-derived-from-boxes",
+            "underlying-cohort-links-not-fully-reviewed",
+            "unverified-research"
+          ],
+          "method": "opening-result-aggregation",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "mega-brave-and-mega-symphonia-boxes",
+          "set": "mega-brave-and-mega-symphonia",
+          "source_sample": {
+            "count": 1000,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "japanese-mega-brave-1000-box-aggregation",
+          "urls": [
+            "https://pokemon-infomation.com/https-pokemon-infomation-com-pull-rates-megabrave"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-twilight-masquerade-case-1d1f8jj"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "case-size-not-assumed",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "native-case-description-without-pack-denominator",
+            "opening-location-not-stated",
+            "overlap-unresolved",
+            "unverified-research"
+          ],
+          "method": "original-case-opening",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "twilight-masquerade-case",
+          "set": "twilight-masquerade",
+          "source_sample": null,
+          "study_id": "reddit-twilight-masquerade-case-results",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1d1f8jj/i_ripped_a_case_of_twilight_masquerade_so_you"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "nanjakorya-star-birth-loose-packs"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-inferred-from-language",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-location-not-stated",
+            "page-describes-loose-pack-rate-testing",
+            "sample-count-needs-page-level-reconfirmation",
+            "unverified-research"
+          ],
+          "method": "original-loose-pack-opening-study",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "star-birth-loose-packs",
+          "set": "star-birth",
+          "source_sample": null,
+          "study_id": "japanese-star-birth-loose-pack-study",
+          "urls": [
+            "https://nanjakorya.com/1123"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paradox-rift-authentication-center"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "count-reported-as-more-than-8000",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-location-not-stated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "paradox-rift-booster-pack",
+          "set": "paradox-rift",
+          "source_sample": null,
+          "study_id": "tcgplayer-paradox-rift-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paradox-Rift-Pull-Rates/0b5fb648-38fc-4f61-a6af-57c2737b4a48"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-english-box-seeding-157-boxes"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-location-not-stated",
+            "possible-retailer-source-overlap",
+            "set-composition-not-fully-extracted",
+            "title-claims-157-boxes-and-5652-packs",
+            "unverified-research"
+          ],
+          "method": "original-mass-opening-analysis",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 5652,
+          "product": "english-booster-boxes",
+          "set": "mixed-english-booster-boxes",
+          "source_sample": null,
+          "study_id": "reddit-english-box-seeding-5652",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1owldhb/english_booster_boxes_are_definitely_seeded_heres"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-brilliant-stars-1034"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "mixed-booster-box-and-loose-pack-sources",
+            "opening-location-not-stated",
+            "post-was-updated-from-936-to-1034-packs",
+            "unverified-research"
+          ],
+          "method": "original-longitudinal-opening-log",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1034,
+          "product": "brilliant-stars-booster-packs",
+          "set": "brilliant-stars",
+          "source_sample": null,
+          "study_id": "reddit-brilliant-stars-1034",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/t4m1sh/pull_rate_data_for_brilliant_stars_out_of_26"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-fusion-strike-4000-plus"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-extracted",
+            "opening-location-not-stated",
+            "title-reports-4000-plus-packs",
+            "unverified-research"
+          ],
+          "method": "original-statistical-analysis",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 4000,
+          "product": "fusion-strike-booster-pack",
+          "set": "fusion-strike",
+          "source_sample": null,
+          "study_id": "reddit-fusion-strike-4000-plus",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/qqpiol"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-german-prismatic-over-200"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "de",
+          "limitations": [
+            "author-reports-over-200-packs",
+            "collector-policy-not-enabled",
+            "comment-thread-may-contain-multiple-cohorts",
+            "country-not-inferred-from-language",
+            "independent-review-pending",
+            "opening-location-not-stated",
+            "unverified-research"
+          ],
+          "method": "original-opening-report",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 200,
+          "product": "prismatic-evolutions-booster-pack",
+          "set": "prismatic-evolutions",
+          "source_sample": null,
+          "study_id": "reddit-german-prismatic-200-approx",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG_DE/comments/1pj72ix/was_war_euer_gr%C3%B6%C3%9Ftes_opening_jemals"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-german-growing-chaos-nearly-90"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "de",
+          "limitations": [
+            "approximate-count-preserved-as-lower-bound-only-imperfectly",
+            "author-reports-nearly-90-packs",
+            "collector-policy-not-enabled",
+            "country-not-inferred-from-language",
+            "independent-review-pending",
+            "mixed-product-sources",
+            "opening-location-not-stated",
+            "unverified-research"
+          ],
+          "method": "original-opening-report",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 89,
+          "product": "growing-chaos-booster-packs",
+          "set": "growing-chaos",
+          "source_sample": null,
+          "study_id": "reddit-german-growing-chaos-90-approx",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG_DE/comments/1toi9qe/wachsendes_chaos_pull_rate"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
