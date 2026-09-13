@@ -12895,6 +12895,19 @@
         "UY",
         "VE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AQ"
+        }
+      ],
+      "sweep": 4,
+      "targets": [
+        "AQ"
+      ]
     }
   ],
   "global_batches": [
