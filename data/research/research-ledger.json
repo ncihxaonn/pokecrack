@@ -11310,6 +11310,222 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-vintage-two-boxes-six-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "independent-review-pending",
+                "no_explicit_hit_counts",
+                "two_additional_boxes_opened_but_box_pack_contents_not_converted",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 6,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-australia-vintage-two-boxes-six-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFansAustralia/comments/1u634wn/pulled_out_my_old_collection_which_had_been"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        },
+        {
+          "studies": [],
+          "target": "FM"
+        },
+        {
+          "studies": [],
+          "target": "MH"
+        },
+        {
+          "studies": [],
+          "target": "AS"
+        },
+        {
+          "studies": [],
+          "target": "CK"
+        },
+        {
+          "studies": [],
+          "target": "CX"
+        },
+        {
+          "studies": [],
+          "target": "CC"
+        },
+        {
+          "studies": [],
+          "target": "PF"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-fourteen-booster-bundles-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_counts_not_stored_without_an_exact_pack_denominator",
+                "independent-review-pending",
+                "native_bundle_count_preserved_without_converting_contents_to_packs",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster_bundle",
+              "set": "prismatic_evolutions",
+              "source_sample": {
+                "count": 14,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-fourteen-booster-bundles-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1uo8tq2/opened_14_booster_bundles"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-nearly-two-hundred-mixed-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "independent-review-pending",
+                "mixed_products_and_sets",
+                "no_explicit_integer_hit_counts",
+                "pack_count_is_approximate_title_claim",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 200,
+              "product": "mixed_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-nearly-two-hundred-mixed-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1umzlzd/opened_nearly_200_packs"
+              ]
+            }
+          ],
+          "target": "GU"
+        },
+        {
+          "studies": [],
+          "target": "HM"
+        },
+        {
+          "studies": [],
+          "target": "NC"
+        },
+        {
+          "studies": [],
+          "target": "NU"
+        },
+        {
+          "studies": [],
+          "target": "NF"
+        }
+      ],
+      "sweep": 4,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW",
+        "FM",
+        "MH",
+        "AS",
+        "CK",
+        "CX",
+        "CC",
+        "PF",
+        "GU",
+        "HM",
+        "NC",
+        "NU",
+        "NF"
+      ]
     }
   ],
   "global_batches": [
