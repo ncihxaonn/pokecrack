@@ -79,18 +79,42 @@ class CheckpointMergeTests(unittest.TestCase):
             self.assertEqual(run.call_count, 5)
 
     def test_review_unavailable_does_not_change_repository_permissions(self):
-        with patch.object(queue, "run", side_effect=[outcome("[]"),
-                subprocess.CalledProcessError(1, "gh")]) as run:
+        with patch.object(queue, "run", side_effect=[
+                subprocess.CalledProcessError(1, "gh"),
+                subprocess.CalledProcessError(1, "gh"),
+                subprocess.CalledProcessError(1, "gh")]) as run, \
+                patch.object(queue.time, "sleep") as sleep, \
+                patch.object(queue, "REVIEW_RETRY_DELAYS", (0, 0)) as delays, \
+                self.subTest(retries=delays):
             self.assertFalse(queue.request_review())
-            self.assertEqual(run.call_count, 2)
+            self.assertEqual(run.call_count, 3)
             self.assertEqual(run.call_args.args[0][:3], ["gh", "api", "--method"])
+            self.assertEqual(sleep.call_count, 2)
 
     def test_review_uses_same_repository_head_branch(self):
         with patch.object(queue, "run", side_effect=[outcome("[]"),
-                subprocess.CalledProcessError(1, "gh")]) as run:
+                subprocess.CalledProcessError(1, "gh"),
+                subprocess.CalledProcessError(1, "gh"),
+                subprocess.CalledProcessError(1, "gh")]) as run, \
+                patch.object(queue.time, "sleep"):
             queue.request_review()
         create_command = run.call_args_list[1].args[0]
         self.assertIn(f"head=ncihxaonn:{queue.BRANCH}", create_command)
+
+    def test_review_retries_eventual_branch_visibility_then_queues_merge(self):
+        with patch.object(queue, "run", side_effect=[
+                subprocess.CalledProcessError(1, "gh"),
+                outcome("[]"),
+                outcome('{"number": 287}'),
+                outcome(),
+        ]) as run, patch.object(queue.time, "sleep") as sleep:
+            self.assertTrue(queue.request_review())
+        self.assertEqual(run.call_count, 4)
+        self.assertEqual(sleep.call_count, 1)
+        self.assertEqual(run.call_args.args[0], [
+            "gh", "pr", "merge", "287", "--auto", "--squash",
+            "--repo", queue.REPOSITORY,
+        ])
 
     def test_checkpoint_pr_uses_github_auto_merge_without_bypassing_checks(self):
         with patch.object(queue, "run", side_effect=[

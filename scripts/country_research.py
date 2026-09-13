@@ -17,13 +17,17 @@ from global_research import (
 from research_ledger import LEDGER_PATH, append_unique, load as load_research_ledger, save as save_research_ledger
 
 CAMPAIGN = "country-first-20260908-v1"
-MAX_TARGETS = 12
-MAX_STUDIES_PER_TARGET = 3
+# Keep the country pass broad enough to move through the complete ISO/M49
+# inventory in hours rather than days. The shared 24-query cap means each
+# target still gets a bounded search turn; the global pass supplies depth and
+# the ledger keeps every sweep for later deduplication.
+MAX_TARGETS = 24
+MAX_STUDIES_PER_TARGET = 2
 # Older validated sweeps were allowed six studies per target. Keep that
 # historical ceiling readable while enforcing the smaller cap for new reports.
 MAX_HISTORICAL_STUDIES_PER_TARGET = 6
 MAX_QUERIES = 24
-MAX_BYTES = 49152
+MAX_BYTES = 96 * 1024
 MAX_SWEEPS = 100
 MAX_CONTEXT_BYTES = 12000
 MAX_KNOWN_REFERENCES = 64
