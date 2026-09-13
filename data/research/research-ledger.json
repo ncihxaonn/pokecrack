@@ -10889,6 +10889,246 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-phantasmal-flames-100-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "aggregate_community_estimates_excluded",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "publisher_country_not_stated",
+                "separate_prior_booster_box_excluded",
+                "some_reported_categories_are_descriptive_without_integer_counts",
+                "unverified_research"
+              ],
+              "method": "publisher_reported_opening",
+              "metrics": [
+                {
+                  "category": "illustration_rare",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mega_charizard_ex_special_illustration_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "english_phantasmal_flames_booster_packs",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "tcgtalk-phantasmal-flames-100-packs-2025",
+              "urls": [
+                "https://tcgtalk.com/guides/phantasmal-flames-pull-rates-case-opening"
+              ]
+            }
+          ],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-chaos-rising-168-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "named_ur_trainer_row_may_overlap_other_rarity_rows",
+                "opening_location_not_stated",
+                "philippines_page_context_not_opening_location",
+                "pre_release_sample",
+                "sample_combines_booster_boxes_bundles_and_loose_packs",
+                "unverified_research"
+              ],
+              "method": "publisher_reported_opening",
+              "metrics": [
+                {
+                  "category": "illustration_rare",
+                  "hits": 18,
+                  "unit": "cards"
+                },
+                {
+                  "category": "master_hyper_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "regular_rare_only",
+                  "hits": 97,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "standard_ex",
+                  "hits": 39,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare_ex_full_art",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare_trainer_or_energy_full_art",
+                  "hits": 5,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 168,
+              "product": "english_chaos_rising_mixed_sealed_products",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "tcgtalk-chaos-rising-168-packs-2026",
+              "urls": [
+                "https://tcgtalk.com/guides/philippines/chaos-rising-pull-rates"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        },
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 4,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT",
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
