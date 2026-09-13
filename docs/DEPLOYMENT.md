@@ -116,6 +116,18 @@ production-ready claim.
 
 Import the public repository and use `apps/web` as the project root. Pin the production branch and Node version. Set only `NEXT_PUBLIC_SITE_URL`, `NEXT_PUBLIC_SUPABASE_URL` and the publishable key in browser-visible variables. Keep `ADMIN_EMAILS`, `ADMIN_CONTROL_RPC_ENABLED`, and `SUPABASE_SERVICE_ROLE_KEY` as Vercel server-only variables; never prefix the service-role key with `NEXT_PUBLIC_`, place it in the VPS environment, or enable controls before the Auth claim and email allowlist are verified. Start with `ADMIN_CONTROL_RPC_ENABLED=false` and demo mode, run the production build, verify the demo label/disclaimers and no secret in built assets, then switch to live only after the database public surface and service-role-only Admin RPC grants are verified. DNS/OAuth/email-provider setup is account-bound and was not done here.
 
+The Vercel project must have **Skip deployment** enabled in Settings → Build
+and Deployment → Root Directory. This uses the pnpm workspace graph to skip an
+unaffected project before creating a deployment. `apps/web/vercel.json` also
+disables preview deployments for `automation/*` branches and contains a
+path-scoped `ignoreCommand` fallback for data-only commits; the fallback is
+not the primary quota control because Vercel counts ignored-build deployments
+against its deployment limits. Research ledger, worker, database, and
+documentation commits therefore remain on the GitHub/MAM paths and do not
+constitute web releases. A change to `apps/web`, the root workspace or
+lockfile, or a shared package is a web release and still goes through the
+normal merge-to-`main` Vercel flow.
+
 ## 4. VPS
 
 Use a patched Linux host, dedicated non-root deploy user, SSH keys only, host firewall and Docker Engine/Compose. Clone the public repo to an absolute path at the exact reviewed SHA; keep config/secrets outside it. Follow `deploy/README.md` to configure the mode-`0600` `/etc/pokecrack/production.env` and backup-marker directory. For Nostr, create a separate mode-`0600` `/etc/pokecrack/nostr.env` from the exact four-key template; for Bluesky, create a separate exact mode-`0600` `/etc/pokecrack/bluesky.env` from the exact three-key template. Do not add either source's DSN to the shared production file. Browser profile/noVNC/Bridge preparation is not part of these service sets.
