@@ -59,19 +59,20 @@ jobs:
           opts=(-i "$ssh_dir/key" -o "UserKnownHostsFile=$ssh_dir/known_hosts"
                 -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=yes
                 -o ConnectTimeout=15 -o ServerAliveInterval=30 -o ServerAliveCountMax=3)
-          runtime_sha=$(python3 scripts/research_runtime.py \
+          runtime_sha=$(python3 scripts/retry_command.py -- python3 scripts/research_runtime.py \
             --workflow-sha "$GITHUB_SHA" --host "$VPS_HOST" --user "$VPS_USER" \
             --port "$VPS_PORT" --identity-file "$ssh_dir/key" --known-hosts "$ssh_dir/known_hosts")
           # research_runtime.py already proves that the deployed runtime is a
           # reviewed ancestor of this data-only main commit. Data checkpoints
           # do not require rebuilding the worker image on every ledger merge.
           [[ "$runtime_sha" =~ ^[0-9a-f]{40}$ ]]
-          ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "bash /home/codex/pokecrack/deploy/scripts/import-global-volume.sh '$runtime_sha'" \
-            < "$RUNNER_TEMP/global-volume.json" > "$RUNNER_TEMP/global-volume-import.json"
-          ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
-            "bash /home/codex/pokecrack/deploy/scripts/process-global-volume.sh '$runtime_sha'" \
-            > "$RUNNER_TEMP/global-volume-process.json"
+          python3 scripts/retry_command.py --input "$RUNNER_TEMP/global-volume.json" \
+            --output "$RUNNER_TEMP/global-volume-import.json" -- \
+            ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "bash /home/codex/pokecrack/deploy/scripts/import-global-volume.sh '$runtime_sha'"
+          python3 scripts/retry_command.py --output "$RUNNER_TEMP/global-volume-process.json" -- \
+            ssh "${opts[@]}" -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "bash /home/codex/pokecrack/deploy/scripts/process-global-volume.sh '$runtime_sha'"
       - name: Publish bounded cycle telemetry
         run: |
           set -Eeuo pipefail

@@ -93,7 +93,7 @@ class ResearchRuntimeTests(unittest.TestCase):
     def test_global_volume_accepts_reviewed_ancestor_runtime_for_data_checkpoint(self):
         workflow = (Path(__file__).resolve().parents[2]
                     / ".github/workflows/global-volume.yml").read_text()
-        self.assertIn('runtime_sha=$(python3 scripts/research_runtime.py', workflow)
+        self.assertIn('runtime_sha=$(python3 scripts/retry_command.py -- python3 scripts/research_runtime.py', workflow)
         self.assertIn('[[ "$runtime_sha" =~ ^[0-9a-f]{40}$ ]]', workflow)
         self.assertNotIn('[[ "$runtime_sha" == "$GITHUB_SHA" ]]', workflow)
 
