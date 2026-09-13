@@ -119,11 +119,11 @@ Import the public repository and use `apps/web` as the project root. Pin the pro
 The Vercel project must have **Skip deployment** enabled in Settings → Build
 and Deployment → Root Directory. This uses the pnpm workspace graph to skip an
 unaffected project before creating a deployment. `apps/web/vercel.json` also
-disables preview deployments for `automation/*` branches and contains a
-path-scoped `ignoreCommand` fallback for data-only commits; the fallback is
-not the primary quota control because Vercel counts ignored-build deployments
-against its deployment limits. Research ledger, worker, database, and
-documentation commits therefore remain on the GitHub/MAM paths and do not
+disables preview deployments for `automation/*` and `codex/*` branches and
+contains a path-scoped `ignoreCommand` fallback for data-only commits; the
+fallback is not the primary quota control because Vercel counts ignored-build
+deployments against its deployment limits. Research ledger, worker, database,
+and documentation commits therefore remain on the GitHub/MAM paths and do not
 constitute web releases. A change to `apps/web`, the root workspace or
 lockfile, or a shared package is a web release and still goes through the
 normal merge-to-`main` Vercel flow.

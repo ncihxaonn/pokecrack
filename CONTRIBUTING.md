@@ -29,8 +29,9 @@ The web project is rooted at `apps/web` in the Vercel-connected pnpm
 monorepo. Research checkpoints, worker changes, database migrations, and
 documentation updates must not be treated as web releases: they continue
 through their GitHub review and MAM runtime paths without forcing a frontend
-build. The web `vercel.json` disables Vercel previews for `automation/*`
-branches and keeps a path-scoped ignored-build fallback for data-only commits.
+build. The web `vercel.json` disables Vercel previews for `automation/*` and
+`codex/*` branches and keeps a path-scoped ignored-build fallback for data-only
+commits.
 Keep Vercel's project-level **Skip deployment** setting enabled so unaffected
 monorepo commits are skipped before a deployment is created. Changes to
 `apps/web`, the root workspace/lockfile configuration, or an internal shared

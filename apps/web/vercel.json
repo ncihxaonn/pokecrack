@@ -2,7 +2,8 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "git": {
     "deploymentEnabled": {
-      "automation/*": false
+      "automation/*": false,
+      "codex/*": false
     }
   },
   "ignoreCommand": "git diff --quiet HEAD^ HEAD -- . ../../package.json ../../pnpm-workspace.yaml ../../pnpm-lock.yaml ../../tsconfig.base.json ../../packages/shared-config ../../packages/shared-types",
