@@ -13226,6 +13226,291 @@
         "JO",
         "KZ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [],
+          "target": "LA"
+        },
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        },
+        {
+          "studies": [],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [],
+          "target": "KP"
+        },
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [],
+          "target": "PK"
+        },
+        {
+          "studies": [],
+          "target": "PS"
+        },
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [],
+          "target": "SG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "korean-sky-legend-two-box-video-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ko",
+              "limitations": [
+                "box-pack-equivalence-not-assumed",
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "video-content-not-manually-reviewed"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "sky-legend-booster-box",
+              "set": "sky-legend",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "korean-sky-legend-two-box-video-opening",
+              "urls": [
+                "https://youtu.be/Q-BRnr5p2jg"
+              ]
+            }
+          ],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "shiny-treasure-ex-six-hundred-pack-video-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh-hant",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "pack-count-from-title",
+                "three-box-label-ambiguous",
+                "video-content-not-manually-reviewed"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 600,
+              "product": "shiny-treasure-ex",
+              "set": "shiny-treasure-ex",
+              "source_sample": null,
+              "study_id": "shiny-treasure-ex-six-hundred-pack-video-opening",
+              "urls": [
+                "https://youtu.be/F-k1M1b1hrg"
+              ]
+            }
+          ],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-chaos-rising-168-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "th",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "community-estimate-disclaimer",
+                "country-not-explicit",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "pre-release-opening-claimed",
+                "publisher-authored-sample-unverified"
+              ],
+              "method": "publisher-pull-rate-study",
+              "metrics": [
+                {
+                  "category": "ex-full-art",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 18,
+                  "unit": "cards"
+                },
+                {
+                  "category": "non-ex-full-art",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare-only-pack",
+                  "hits": 97,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "standard-ex",
+                  "hits": 39,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare-trainer",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 168,
+              "product": "chaos-rising-english",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "tcgtalk-chaos-rising-168-pack-study-2026",
+              "urls": [
+                "https://tcgtalk.com/guides/thailand/chaos-rising-pull-rates"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "thai-undefeated-rise-one-box-video-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "th",
+              "limitations": [
+                "box-pack-equivalence-not-assumed",
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "video-content-not-manually-reviewed"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "undefeated-rise-booster-box",
+              "set": "undefeated-rise",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "thai-undefeated-rise-one-box-video-opening",
+              "urls": [
+                "https://youtu.be/3JryLV3-3Oo"
+              ]
+            }
+          ],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 5,
+      "targets": [
+        "KW",
+        "KG",
+        "LA",
+        "LB",
+        "MV",
+        "MN",
+        "MM",
+        "NP",
+        "KP",
+        "OM",
+        "PK",
+        "PS",
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
