@@ -12908,6 +12908,324 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-abyss-eye-first-booster-box-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "tl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-extracted",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "abyss-eye-booster-box",
+              "set": "new",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-abyss-eye-first-booster-box-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1u3mpd7/first_time_kong_mag_open_ng_booster_box_haha"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-india-151-one-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "edition-not-explicitly-verified",
+                "hit-counts-not-extracted",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pokemon-151-booster-box",
+              "set": "pokemon-151",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-india-151-one-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1vyvuuy/ripped_a_151_booster_box_yesterday"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-india-first-box-pulls-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-extracted",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "product-not-identified",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-india-first-box-pulls-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1vw36rp/my_first_box_pulls"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        },
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgplayer-perfect-order-over-3500-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "integer-hit-numerators-not-extracted",
+                "reported-sample-is-over-3500-packs",
+                "unverified-research"
+              ],
+              "method": "authentication-center-opening-study",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 3500,
+              "product": "perfect-order-booster-packs",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "tcgplayer-perfect-order-over-3500-packs-2026",
+              "urls": [
+                "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Perfect-Order-Pull-Rates/73148119-ebcb-40b7-84b6-52b3a6d0c631"
+              ]
+            }
+          ],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-indonesian-kobaran-biru-one-box-2025"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-reflects-explicit-product-market-not-opening-location",
+                "hit-counts-not-extracted",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "indonesian-kobaran-biru-booster-box",
+              "set": "kobaran-biru",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-indonesian-kobaran-biru-one-box-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pezk70/indonesian_version_of_phantasmal_flames"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "scarlet-ex-one-thousand-box-study"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "aggregation-provenance-not-independently-verified",
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "integer-hit-numerators-not-extracted",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "aggregated-physical-opening-study",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "scarlet-ex-booster-box",
+              "set": "scarlet-ex",
+              "source_sample": {
+                "count": 1000,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "scarlet-ex-one-thousand-box-study",
+              "urls": [
+                "https://pokemon-infomation.com/pull-rates-scarletex"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 5,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT",
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
