@@ -100,9 +100,8 @@ class CheckpointMergeTests(unittest.TestCase):
         ]) as run:
             self.assertTrue(queue.request_review())
         self.assertEqual(run.call_args.args[0], [
-            "gh", "api", "--method", "PUT",
-            f"repos/{queue.REPOSITORY}/pulls/286/auto-merge",
-            "-f", "merge_method=squash",
+            "gh", "pr", "merge", "286", "--auto", "--squash",
+            "--repo", queue.REPOSITORY,
         ])
 
     def test_main_and_exact_origin_are_required(self):
