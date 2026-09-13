@@ -44,9 +44,9 @@ class CountryResearchTests(unittest.TestCase):
 
     def test_missing_asia_targets_are_first(self):
         self.assertEqual(self.selection()["targets"],
-                         ["MY", "VN", "PH", "HK", "IN", "MO", "AF", "AM", "AZ", "BH", "BD", "BT"])
+                         [code for code, _ in REGIONS["asia"]][:module.MAX_TARGETS])
         self.assertEqual(module.select_targets([self.report()])["targets"],
-                         [code for code, _ in REGIONS["asia"]][12:24])
+                         [code for code, _ in REGIONS["asia"]][module.MAX_TARGETS:module.MAX_TARGETS * 2])
 
     def test_full_capacity_preserves_uncertainty_and_legacy_reports(self):
         legacy_selection = {**self.selection(), "targets": ["MY", "VN", "PH"]}
@@ -60,10 +60,12 @@ class CountryResearchTests(unittest.TestCase):
                                  for j in range(module.MAX_STUDIES_PER_TARGET)]
         report = module.validate_report(json.dumps(report).encode())
         output = module.snapshot(report, [], {"studies": []}, [])
-        self.assertEqual(output["ledger"]["distinct_report_groups"], 36)
+        self.assertEqual(output["ledger"]["distinct_report_groups"],
+                         module.MAX_TARGETS * module.MAX_STUDIES_PER_TARGET)
         self.assertIsNone(output["ledger"]["verified_unique_packs"])
         self.assertLess(len(json.dumps(report).encode()), 65536)
-        self.assertIn("return at most 36 studies", module.prompt(self.selection()))
+        self.assertIn(f"return at most {module.MAX_TARGETS * module.MAX_STUDIES_PER_TARGET} studies",
+                      module.prompt(self.selection()))
         self.assertNotIn("12 queries", module.prompt(self.selection()))
         result_schema = module.schema(self.selection())["properties"]["results"]["items"]
         self.assertEqual(result_schema["properties"]["studies"]["maxItems"], module.MAX_STUDIES_PER_TARGET)
@@ -102,13 +104,21 @@ class CountryResearchTests(unittest.TestCase):
             history.append(self.report(selection))
         self.assertEqual(observed, list(COUNTRIES))
         self.assertEqual(selection, {**self.selection(), "sweep": 2})
-        self.assertEqual(len(history), 25)
+        expected_reports = sum(
+            (len(REGIONS[region]) + module.MAX_TARGETS - 1) // module.MAX_TARGETS
+            for region in REGION_ORDER
+        )
+        self.assertEqual(len(history), expected_reports)
 
     def test_existing_four_region_history_resumes_in_americas_without_reset(self):
         history = []
         while (selection := module.select_targets(history))["targets"][0] != "US":
             history.append(self.report(selection))
-        self.assertEqual(len(history), 18)
+        expected_reports = sum(
+            (len(REGIONS[region]) + module.MAX_TARGETS - 1) // module.MAX_TARGETS
+            for region in ("asia", "oceania", "europe", "africa")
+        )
+        self.assertEqual(len(history), expected_reports)
         self.assertEqual(selection["sweep"], 1)
         self.assertEqual(selection["targets"], [code for code, _ in REGIONS["north-america"]])
         with tempfile.TemporaryDirectory() as directory:
@@ -159,7 +169,8 @@ class CountryResearchTests(unittest.TestCase):
         report = self.report()
         output = module.snapshot(report, [], {"studies": [self.row()]}, [])
         self.assertEqual(output["checked_this_sweep"], self.selection()["targets"])
-        self.assertEqual(output["next"]["targets"], [code for code, _ in REGIONS["asia"]][12:24])
+        self.assertEqual(output["next"]["targets"],
+                         [code for code, _ in REGIONS["asia"]][module.MAX_TARGETS:module.MAX_TARGETS * 2])
         self.assertEqual(output["ledger"]["distinct_report_groups"], 1)
         self.assertFalse(output["ledger"]["production_admitted"])
         self.assertEqual(report["results"][0]["studies"], [])
@@ -293,7 +304,7 @@ class CountryResearchTests(unittest.TestCase):
         self.assertLessEqual(len(json.dumps(context, sort_keys=True).encode()), module.MAX_CONTEXT_BYTES)
         self.assertGreater(len(context["known_urls"]), 0)
         self.assertLess(len(context["known_urls"]), 64)
-        self.assertEqual(module.MAX_BYTES, 49152)
+        self.assertEqual(module.MAX_BYTES, 96 * 1024)
 
     def test_context_rejects_wrong_selection_extra_fields_and_invalid_references(self):
         selected = self.selection()
