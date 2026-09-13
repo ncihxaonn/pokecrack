@@ -11780,6 +11780,250 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-pf-six-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "dutch",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-categories-visible-only-in-excluded-image",
+                "independent-review-pending",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "two-three-pack-blisters",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-pf-six-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1ozt7t0/2_uit_6_packs_pf"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [],
+          "target": "RO"
+        },
+        {
+          "studies": [],
+          "target": "RU"
+        },
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgstore-se-paradox-rift-two-box-review"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated-for-opener",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "review-embedded-on-retailer-page",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "paradox-rift-booster-box",
+              "set": "paradox-rift",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "tcgstore-se-paradox-rift-two-box-review",
+              "urls": [
+                "https://tcgstore.se/products/pokemon-scarlet-violet-4-paradox-rift-booster-box"
+              ]
+            }
+          ],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemonde-prismatic-evolutions-412-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "german",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "integer-hit-counts-not-reviewed",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 412,
+              "product": null,
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-pokemonde-prismatic-evolutions-412-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDe/comments/1in2ctr/prismatische_entwicklung_412_booster_ge%C3%B6ffnet"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-de-chaos-rising-nearly-90-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "german",
+              "limitations": [
+                "approximate-count-reported-as-lower-bound",
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "integer-category-totals-incomplete",
+                "mixed-product-formats",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 90,
+              "product": "two-displays-one-etb-and-loose-packs",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcg-de-chaos-rising-nearly-90-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1toi9qe/wachsendes_chaos_pull_rate"
+              ]
+            }
+          ],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [],
+          "target": "GI"
+        }
+      ],
+      "sweep": 4,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU",
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
