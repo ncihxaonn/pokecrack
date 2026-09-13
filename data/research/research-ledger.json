@@ -10751,6 +10751,74 @@
         "BZ",
         "CR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SV"
+        },
+        {
+          "studies": [],
+          "target": "GT"
+        },
+        {
+          "studies": [],
+          "target": "HN"
+        },
+        {
+          "studies": [],
+          "target": "NI"
+        },
+        {
+          "studies": [],
+          "target": "PA"
+        },
+        {
+          "studies": [],
+          "target": "BO"
+        },
+        {
+          "studies": [],
+          "target": "BV"
+        },
+        {
+          "studies": [],
+          "target": "EC"
+        },
+        {
+          "studies": [],
+          "target": "FK"
+        },
+        {
+          "studies": [],
+          "target": "GF"
+        },
+        {
+          "studies": [],
+          "target": "GY"
+        },
+        {
+          "studies": [],
+          "target": "PY"
+        }
+      ],
+      "sweep": 3,
+      "targets": [
+        "SV",
+        "GT",
+        "HN",
+        "NI",
+        "PA",
+        "BO",
+        "BV",
+        "EC",
+        "FK",
+        "GF",
+        "GY",
+        "PY"
+      ]
     }
   ],
   "global_batches": [
