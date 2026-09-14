@@ -27522,6 +27522,165 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-monaco-one-pack-opening-v1"
+              ],
+              "country": "MC",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "title-only-pack-count",
+                "unverified-research",
+                "video-content-not-reviewed"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-monaco-one-pack-opening",
+              "urls": [
+                "https://youtu.be/fQK_WS9PHUk"
+              ]
+            }
+          ],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-chaos-rising-sixteen-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-category-is-author-defined",
+                "independent-review-pending",
+                "self-reported-results",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-report",
+              "metrics": [
+                {
+                  "category": "ex-ir-full-art-cards",
+                  "hits": 7,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 16,
+              "product": "mixed-sealed-products",
+              "set": "mega-evolution-chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-chaos-rising-sixteen-pack-opening",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1tlnkae/realistische_chaos_rising_etb_opening"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "umbrenews-prismatic-evolutions-seventy-packs-2025"
+              ],
+              "country": "PL",
+              "geography_basis": "product_market",
+              "language": "pl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-extracted",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-total-derived-from-explicit-product-counts",
+                "product-market-evidence-only",
+                "unverified-research"
+              ],
+              "method": "dated-blog-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 70,
+              "product": "mixed-prismatic-evolutions-products",
+              "set": "scarlet-violet-prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "umbrenews-prismatic-evolutions-first-opening",
+              "urls": [
+                "https://umbrenews.pl/2025/01/prismatic-evolution-pierwsze-otwarcie"
+              ]
+            }
+          ],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [],
+          "target": "RO"
+        },
+        {
+          "studies": [],
+          "target": "RU"
+        }
+      ],
+      "sweep": 10,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
