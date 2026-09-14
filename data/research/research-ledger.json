@@ -25874,6 +25874,191 @@
         "BZ",
         "CR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-shining-fates-42-pack-cohort-2021"
+              ],
+              "country": "SV",
+              "geography_basis": "opening_location",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "opening-location-supported-by-explicit-el-salvador-residence-and-local-preorder-receipt",
+                "unverified-research"
+              ],
+              "method": "complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 42,
+              "product": "mixed-shining-fates-products",
+              "set": "shining-fates",
+              "source_sample": null,
+              "study_id": "reddit-shining-fates-42-pack-opening-2021",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/lmqo28"
+              ]
+            }
+          ],
+          "target": "SV"
+        },
+        {
+          "studies": [],
+          "target": "GT"
+        },
+        {
+          "studies": [],
+          "target": "HN"
+        },
+        {
+          "studies": [],
+          "target": "NI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-plasma-blast-one-pack-cohort-2026"
+              ],
+              "country": "PA",
+              "geography_basis": "publisher_country",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "publisher-country-explicitly-stated-as-panama",
+                "seven-other-packs-remained-unopened",
+                "unverified-research"
+              ],
+              "method": "single-pack-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "plasma-blast-elite-trainer-box-pack",
+              "set": "plasma-blast",
+              "source_sample": null,
+              "study_id": "reddit-plasma-blast-single-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonMisprints/comments/1tths9s/missing_foil_error_vintage_packs"
+              ]
+            }
+          ],
+          "target": "PA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reporte-indigo-fulgor-negro-llama-blanca-11-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "spanish",
+              "limitations": [
+                "caption-says-nine-sobres-but-transcript-explicitly-opens-eleven",
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "product-supplied-by-pokemon-company",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 11,
+              "product": "fulgor-negro-etb-and-mini-tin",
+              "set": "fulgor-negro-llama-blanca",
+              "source_sample": null,
+              "study_id": "dailymotion-fulgor-negro-llama-blanca-11-pack-opening-2025",
+              "urls": [
+                "https://www.dailymotion.com/video/x9n1qcc"
+              ]
+            }
+          ],
+          "target": "BO"
+        },
+        {
+          "studies": [],
+          "target": "BV"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-portuguese-prismatic-evolutions-three-box-cohort-2025"
+              ],
+              "country": "EC",
+              "geography_basis": "publisher_country",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "packs-not-derived-from-reported-box-contents",
+                "publisher-country-explicitly-stated-as-ecuador",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "portuguese-prismatic-evolutions-surprise-box",
+              "set": "prismatic-evolutions",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-prismatic-evolutions-three-box-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1jxvhd8"
+              ]
+            }
+          ],
+          "target": "EC"
+        },
+        {
+          "studies": [],
+          "target": "FK"
+        },
+        {
+          "studies": [],
+          "target": "GF"
+        },
+        {
+          "studies": [],
+          "target": "GY"
+        },
+        {
+          "studies": [],
+          "target": "PY"
+        }
+      ],
+      "sweep": 9,
+      "targets": [
+        "SV",
+        "GT",
+        "HN",
+        "NI",
+        "PA",
+        "BO",
+        "BV",
+        "EC",
+        "FK",
+        "GF",
+        "GY",
+        "PY"
+      ]
     }
   ],
   "global_batches": [
