@@ -22031,6 +22031,142 @@
         "BI",
         "CV"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CM"
+        },
+        {
+          "studies": [],
+          "target": "CF"
+        },
+        {
+          "studies": [],
+          "target": "TD"
+        },
+        {
+          "studies": [],
+          "target": "KM"
+        },
+        {
+          "studies": [],
+          "target": "CG"
+        },
+        {
+          "studies": [],
+          "target": "CD"
+        },
+        {
+          "studies": [],
+          "target": "CI"
+        },
+        {
+          "studies": [],
+          "target": "DJ"
+        },
+        {
+          "studies": [],
+          "target": "GQ"
+        },
+        {
+          "studies": [],
+          "target": "ER"
+        },
+        {
+          "studies": [],
+          "target": "SZ"
+        },
+        {
+          "studies": [],
+          "target": "ET"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "CM",
+        "CF",
+        "TD",
+        "KM",
+        "CG",
+        "CD",
+        "CI",
+        "DJ",
+        "GQ",
+        "ER",
+        "SZ",
+        "ET"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GA"
+        },
+        {
+          "studies": [],
+          "target": "GM"
+        },
+        {
+          "studies": [],
+          "target": "GH"
+        },
+        {
+          "studies": [],
+          "target": "GN"
+        },
+        {
+          "studies": [],
+          "target": "GW"
+        },
+        {
+          "studies": [],
+          "target": "LS"
+        },
+        {
+          "studies": [],
+          "target": "LR"
+        },
+        {
+          "studies": [],
+          "target": "LY"
+        },
+        {
+          "studies": [],
+          "target": "MG"
+        },
+        {
+          "studies": [],
+          "target": "MW"
+        },
+        {
+          "studies": [],
+          "target": "ML"
+        },
+        {
+          "studies": [],
+          "target": "MR"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "GA",
+        "GM",
+        "GH",
+        "GN",
+        "GW",
+        "LS",
+        "LR",
+        "LY",
+        "MG",
+        "MW",
+        "ML",
+        "MR"
+      ]
     }
   ],
   "global_batches": [
