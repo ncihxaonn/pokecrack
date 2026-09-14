@@ -20825,6 +20825,162 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [],
+          "target": "SG"
+        },
+        {
+          "studies": [],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "gamebase-battle-region-20-pack-cohort"
+              ],
+              "country": "TW",
+              "geography_basis": "publisher_country",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "publisher-country-explicit-but-opening-location-not-stated",
+                "rarity-labels-preserved-at-category-level",
+                "single-box-cohort",
+                "unverified-research"
+              ],
+              "method": "publisher-article-opening",
+              "metrics": [
+                {
+                  "category": "chr",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hr",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "k",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "r",
+                  "hits": 12,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rr",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rrr",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "traditional-chinese-battle-region-booster-box",
+              "set": "battle-region",
+              "source_sample": null,
+              "study_id": "gamebase-battle-region-20-pack-opening",
+              "urls": [
+                "https://news.gamebase.com.tw/news/detail/99396358"
+              ]
+            }
+          ],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-four-chaos-rising-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-retained-unknown",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "two-additional-perfect-order-packs-mentioned-but-kept-outside-this-cohort",
+                "unverified-research",
+                "visual-pulls-not-transcribed"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 4,
+              "product": "chaos-rising-booster-packs",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-four-chaos-rising-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1tr85qo/are_these_good_pulls"
+              ]
+            }
+          ],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
