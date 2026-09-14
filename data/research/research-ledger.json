@@ -25653,6 +25653,129 @@
         "BB",
         "BQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "VG"
+        },
+        {
+          "studies": [],
+          "target": "KY"
+        },
+        {
+          "studies": [],
+          "target": "CU"
+        },
+        {
+          "studies": [],
+          "target": "CW"
+        },
+        {
+          "studies": [],
+          "target": "DM"
+        },
+        {
+          "studies": [],
+          "target": "DO"
+        },
+        {
+          "studies": [],
+          "target": "GD"
+        },
+        {
+          "studies": [],
+          "target": "GP"
+        },
+        {
+          "studies": [],
+          "target": "HT"
+        },
+        {
+          "studies": [],
+          "target": "JM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "meristation-surging-sparks-etb-nine-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-unstated",
+                "independent-review-pending",
+                "no-explicit-integer-hit-counts-recorded",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video-article",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 9,
+              "product": "surging-sparks-elite-trainer-box",
+              "set": "surging-sparks",
+              "source_sample": null,
+              "study_id": "meristation-surging-sparks-etb-nine-pack-opening-2025",
+              "urls": [
+                "https://as.com/meristation/noticias/la-caja-de-pokemon-tcg-que-comenzo-la-locura-antes-de-evoluciones-prismaticas-asi-es-la-etb-de-chispas-fulgurantes-n"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "meristation-phantasmal-flames-etb-nine-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-unstated",
+                "independent-review-pending",
+                "no-explicit-integer-hit-counts-recorded",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video-article",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 9,
+              "product": "phantasmal-flames-elite-trainer-box",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "meristation-phantasmal-flames-etb-nine-pack-opening-2025",
+              "urls": [
+                "https://as.com/meristation/noticias/unboxing-en-video-de-pokemon-tcg-fuegos-fantasmales-una-de-las-cajas-de-entrenador-elite-mas-bonitas-f202511-n"
+              ]
+            }
+          ],
+          "target": "MQ"
+        },
+        {
+          "studies": [],
+          "target": "MS"
+        }
+      ],
+      "sweep": 9,
+      "targets": [
+        "VG",
+        "KY",
+        "CU",
+        "CW",
+        "DM",
+        "DO",
+        "GD",
+        "GP",
+        "HT",
+        "JM",
+        "MQ",
+        "MS"
+      ]
     }
   ],
   "global_batches": [
