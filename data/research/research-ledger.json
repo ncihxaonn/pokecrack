@@ -27257,6 +27257,168 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-de-wachsendes-chaos-86-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-level-report",
+                "country-not-explicit",
+                "independent-review-pending",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [
+                {
+                  "category": "sir",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 86,
+              "product": "wachsendes-chaos",
+              "set": "wachsendes-chaos",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcg-de-wachsendes-chaos-86-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1toi9qe/wachsendes_chaos_pull_rate"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemonfans-ita-phantasmal-flames-203-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "it",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-level-report",
+                "country-not-explicit",
+                "independent-review-pending",
+                "target-card-only-outcome",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 203,
+              "product": "fiamme-spettrali",
+              "set": "fiamme-spettrali",
+              "source_sample": null,
+              "study_id": "reddit-pokemonfans-ita-phantasmal-flames-203-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFans_ITA/comments/1td0tju/consigli_neofita"
+              ]
+            }
+          ],
+          "target": "IT"
+        },
+        {
+          "studies": [],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemondealsuk-prismatic-170-packs-no-sir-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-level-report",
+                "country-not-explicit",
+                "independent-review-pending",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [
+                {
+                  "category": "sir",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 170,
+              "product": "prismatic-evolutions",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-pokemondealsuk-prismatic-170-packs-no-sir-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDealsUK/comments/1j87d4l"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 10,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
