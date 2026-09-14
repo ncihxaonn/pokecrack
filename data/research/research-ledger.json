@@ -14360,6 +14360,164 @@
         "SZ",
         "ET"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GA"
+        },
+        {
+          "studies": [],
+          "target": "GM"
+        },
+        {
+          "studies": [],
+          "target": "GH"
+        },
+        {
+          "studies": [],
+          "target": "GN"
+        },
+        {
+          "studies": [],
+          "target": "GW"
+        },
+        {
+          "studies": [],
+          "target": "LS"
+        },
+        {
+          "studies": [],
+          "target": "LR"
+        },
+        {
+          "studies": [],
+          "target": "LY"
+        },
+        {
+          "studies": [],
+          "target": "MG"
+        },
+        {
+          "studies": [],
+          "target": "MW"
+        },
+        {
+          "studies": [],
+          "target": "ML"
+        },
+        {
+          "studies": [],
+          "target": "MR"
+        },
+        {
+          "studies": [],
+          "target": "MU"
+        },
+        {
+          "studies": [],
+          "target": "MZ"
+        },
+        {
+          "studies": [],
+          "target": "NA"
+        },
+        {
+          "studies": [],
+          "target": "NE"
+        },
+        {
+          "studies": [],
+          "target": "RW"
+        },
+        {
+          "studies": [],
+          "target": "ST"
+        },
+        {
+          "studies": [],
+          "target": "SN"
+        },
+        {
+          "studies": [],
+          "target": "SC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-unknown-set-60-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete-opening-not-manually-confirmed",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-unstated",
+                "product-set-unstated",
+                "title-count-only",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-report",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 60,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-unknown-set-60-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1twvzpe/i_opened_60_packs_so_you_dont_have_to"
+              ]
+            }
+          ],
+          "target": "SL"
+        },
+        {
+          "studies": [],
+          "target": "SO"
+        },
+        {
+          "studies": [],
+          "target": "SS"
+        },
+        {
+          "studies": [],
+          "target": "SD"
+        }
+      ],
+      "sweep": 5,
+      "targets": [
+        "GA",
+        "GM",
+        "GH",
+        "GN",
+        "GW",
+        "LS",
+        "LR",
+        "LY",
+        "MG",
+        "MW",
+        "ML",
+        "MR",
+        "MU",
+        "MZ",
+        "NA",
+        "NE",
+        "RW",
+        "ST",
+        "SN",
+        "SC",
+        "SL",
+        "SO",
+        "SS",
+        "SD"
+      ]
     }
   ],
   "global_batches": [
