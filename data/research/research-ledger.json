@@ -27681,6 +27681,108 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-serbia-silver-tempest-one-pack-2026"
+              ],
+              "country": "RS",
+              "geography_basis": "product_market",
+              "language": "sr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "product-market-supported-by-serbia-thread-and-local-retailer-purchase",
+                "single-comment-report",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [
+                {
+                  "category": "pokemon-v",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "single-booster-pack",
+              "set": "silver-tempest",
+              "source_sample": null,
+              "study_id": "reddit-serbia-silver-tempest-one-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/AskSerbia/comments/1s5eitm/srbija_i_pokemon_karte"
+              ]
+            }
+          ],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [],
+          "target": "SE"
+        },
+        {
+          "studies": [],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [],
+          "target": "GI"
+        }
+      ],
+      "sweep": 10,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
