@@ -18764,6 +18764,196 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-twelve-japanese-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "dutch",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "independent-review-pending",
+                "special_card_category_author_wording",
+                "specific_set_not_identified",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [
+                {
+                  "category": "special_cards",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 12,
+              "product": "japanese_loose_packs",
+              "set": "new_cohort",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-twelve-japanese-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1qwokdd"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-ten-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "dutch",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_count_not_author_explicit",
+                "independent-review-pending",
+                "product_not_identified",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 10,
+              "product": null,
+              "set": "new_cohort",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-ten-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1k2u3gf"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-best-of-xy-one-booster-box-opening"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "norwegian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "native_box_count_only",
+                "unverified_research",
+                "video_not_manually_reviewed"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "the_best_of_xy",
+              "set": "new_cohort",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "youtube-best-of-xy-one-booster-box-opening",
+              "urls": [
+                "https://youtu.be/-XX2DIf0Upk"
+              ]
+            }
+          ],
+          "target": "NO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "juniorkurczak-charizard-ex-collection-ten-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "polish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "mixed_sets",
+                "unverified_research"
+              ],
+              "method": "hobby_article_opening_report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "charizard_ex_super_premium_collection",
+              "set": "new_cohort",
+              "source_sample": null,
+              "study_id": "juniorkurczak-charizard-ex-collection-ten-packs",
+              "urls": [
+                "https://blog.juniorkurczak.pl/pokemon-tcg-charizard-ex-super-premium-collection"
+              ]
+            }
+          ],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [],
+          "target": "RO"
+        },
+        {
+          "studies": [],
+          "target": "RU"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
