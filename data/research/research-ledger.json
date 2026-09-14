@@ -22918,6 +22918,132 @@
         "GY",
         "PY"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-chaos-rising-32-pack-5-ex-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "completeness_not_independently_verified",
+                "country_not_stated",
+                "hit_category_limited_to_ex_cards",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "reported_in_comment_context",
+                "unverified_research"
+              ],
+              "method": "forum_report",
+              "metrics": [
+                {
+                  "category": "ex_cards",
+                  "hits": 5,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 32,
+              "product": "loose_booster_packs",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-chaos-rising-32-pack-5-ex-report-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1tkd8ro/chaos_rising_hits"
+              ]
+            }
+          ],
+          "target": "SR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "boo-world-ten-pack-opening-20260228"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "completeness_not_independently_verified",
+                "country_not_stated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "set_not_stated",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "public_social_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 10,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "boo-world-ten-pack-opening-20260228",
+              "urls": [
+                "https://boo.world/es/u/pok%C3%A9montcg/SN0Dof/abr%C3%AD-10-sobres-que-satisfacci%C3%B3n-a-veces-no-sale"
+              ]
+            }
+          ],
+          "target": "UY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-ultra-prism-eighteen-pack-opening-20180303"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "completeness_not_independently_verified",
+                "country_not_stated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "title_only_pack_count",
+                "unverified_research",
+                "video_not_fetched"
+              ],
+              "method": "public_video_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 18,
+              "product": "spanish_booster_packs",
+              "set": "ultra-prism",
+              "source_sample": null,
+              "study_id": "youtube-ultra-prism-eighteen-pack-opening-20180303",
+              "urls": [
+                "https://youtu.be/fVWi2pxOFGc"
+              ]
+            }
+          ],
+          "target": "VE"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
     }
   ],
   "global_batches": [
