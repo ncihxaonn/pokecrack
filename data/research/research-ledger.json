@@ -27419,6 +27419,109 @@
         "BA",
         "BG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [],
+          "target": "CZ"
+        },
+        {
+          "studies": [],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [],
+          "target": "FI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "greek-pokemon-box-opening-2023"
+              ],
+              "country": "GR",
+              "geography_basis": "publisher_country",
+              "language": "el",
+              "limitations": [
+                "box-count-from-title",
+                "collector-policy-not-enabled",
+                "description-contains-template-placeholder",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "product-not-identified",
+                "publisher-country-explicitly-stated",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "greek-pokemon-box-opening-2023",
+              "urls": [
+                "https://youtu.be/tl5aWNXZmCg"
+              ]
+            }
+          ],
+          "target": "GR"
+        },
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 10,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
