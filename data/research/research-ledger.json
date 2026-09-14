@@ -23807,6 +23807,62 @@
         "TR",
         "TM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "uae-prismatic-evolutions-one-etb-2026"
+              ],
+              "country": "AE",
+              "geography_basis": "opening_location",
+              "language": null,
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_location_supported_by_author_comment",
+                "pack_count_not_explicit",
+                "self_reported_social_post",
+                "unverified_research"
+              ],
+              "method": "complete_physical_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "prismatic-evolutions-elite-trainer-box",
+              "set": "prismatic-evolutions",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "uae-prismatic-evolutions-one-etb-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v2sqxo/reminder_to_rip_your_etbs"
+              ]
+            }
+          ],
+          "target": "AE"
+        },
+        {
+          "studies": [],
+          "target": "UZ"
+        },
+        {
+          "studies": [],
+          "target": "YE"
+        }
+      ],
+      "sweep": 9,
+      "targets": [
+        "AE",
+        "UZ",
+        "YE"
+      ]
     }
   ],
   "global_batches": [
