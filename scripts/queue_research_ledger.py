@@ -14,7 +14,7 @@ from research_checkpoint import BRANCH, LEDGER_FILE, REPOSITORY, SHA, pending_ch
 from research_ledger import MAX_LEDGER_BYTES, merge_checkpoints, validate_checkpoint
 
 
-REVIEW_RETRY_DELAYS = (2.0, 5.0)
+REVIEW_RETRY_DELAYS = (2.0, 5.0, 10.0, 20.0)
 
 
 def commit_checkpoint(revision: str, previous: str | None, raw: str) -> bool:
@@ -52,53 +52,78 @@ def commit_checkpoint(revision: str, previous: str | None, raw: str) -> bool:
 
 
 def review_command(command: list[str]) -> subprocess.CompletedProcess:
-    """Retry only short-lived GitHub branch/PR visibility failures."""
-    for attempt, delay in enumerate((*REVIEW_RETRY_DELAYS, None)):
-        try:
-            return run(command)
-        except (OSError, subprocess.SubprocessError):
-            if delay is None:
-                raise
-            time.sleep(delay)
-    raise AssertionError("unreachable")
+    """Run one GitHub review command; the caller owns the retry budget."""
+    return run(command)
+
+
+def review_error(error: BaseException) -> str:
+    """Return a bounded, credential-free description for the Actions log."""
+    if isinstance(error, subprocess.CalledProcessError):
+        detail = error.stderr or error.stdout or ""
+        detail = " ".join(str(detail).split())
+        for secret_name in ("GH_TOKEN", "GITHUB_TOKEN"):
+            secret = os.environ.get(secret_name)
+            if secret:
+                detail = detail.replace(secret, "[redacted]")
+        if detail:
+            return detail[:240]
+        return f"command_exit_{error.returncode}"
+    if isinstance(error, subprocess.TimeoutExpired):
+        return "command_timeout"
+    return type(error).__name__
 
 
 def request_review() -> bool:
     """Queue the exact checkpoint PR and ask GitHub to merge it when checks pass."""
-    try:
-        owner = REPOSITORY.split("/", 1)[0]
-        head = f"{owner}:{BRANCH}"
-        existing = json.loads(review_command([
-            "gh", "api", "--method", "GET",
-            f"repos/{REPOSITORY}/pulls?state=open&base=main&head={quote(head, safe='')}",
-        ]).stdout)
-        if not isinstance(existing, list):
-            return False
-        if not existing:
-            created = json.loads(review_command([
-                "gh", "api", "--method", "POST", f"repos/{REPOSITORY}/pulls",
-                "-f", "title=chore(research): update unified research ledger",
-                "-f", f"head={head}", "-f", "base=main",
-                "-f", "body=Validated research-only checkpoint. No application code or production pack counts are admitted by this data update.",
-            ]).stdout)
-            existing = [created]
-        if len(existing) != 1:
-            return False
-        number = existing[0].get("number")
-        if type(number) is not int or number < 1:
-            return False
+    owner = REPOSITORY.split("/", 1)[0]
+    head = f"{owner}:{BRANCH}"
+    list_command = [
+        "gh", "api", "--method", "GET",
+        f"repos/{REPOSITORY}/pulls?state=open&base=main&head={quote(head, safe='')}",
+    ]
+    create_command = [
+        "gh", "api", "--method", "POST", f"repos/{REPOSITORY}/pulls",
+        "-f", "title=chore(research): update unified research ledger",
+        "-f", f"head={head}", "-f", "base=main",
+        "-f", "body=Validated research-only checkpoint. No application code or production pack counts are admitted by this data update.",
+    ]
+    last_error = "unknown_review_error"
+    attempts = len(REVIEW_RETRY_DELAYS) + 1
+    for attempt in range(attempts):
         try:
-            run([
-                "gh", "pr", "merge", str(number), "--auto", "--squash",
-                "--repo", REPOSITORY,
-            ])
-        except (ValueError, OSError, subprocess.SubprocessError):
-            # A repository setting may disable auto-merge. The validated PR
-            # still exists and remains reviewable; never bypass its checks.
-            print("::warning::Research checkpoint PR queued; GitHub auto-merge was unavailable.")
-        return True
-    except (ValueError, OSError, subprocess.SubprocessError):
-        return False
+            existing = json.loads(review_command(list_command).stdout)
+            if not isinstance(existing, list):
+                raise ValueError("invalid_review_list")
+            if len(existing) > 1:
+                print("::warning::Research checkpoint PR unavailable: multiple open PRs found. No merge performed.")
+                return False
+            if not existing:
+                # A push can be accepted before the new ref is visible to the
+                # pulls endpoint. Retry the whole lookup/create cycle so a
+                # concurrent creator is also picked up on the next attempt.
+                created = json.loads(review_command(create_command).stdout)
+                if not isinstance(created, dict):
+                    raise ValueError("invalid_created_review")
+                existing = [created]
+            number = existing[0].get("number")
+            if type(number) is not int or number < 1:
+                raise ValueError("invalid_review_number")
+            try:
+                run([
+                    "gh", "pr", "merge", str(number), "--auto", "--squash",
+                    "--repo", REPOSITORY,
+                ])
+            except (ValueError, OSError, subprocess.SubprocessError):
+                # A repository setting may disable auto-merge. The validated PR
+                # still exists and remains reviewable; never bypass its checks.
+                print("::warning::Research checkpoint PR queued; GitHub auto-merge was unavailable.")
+            return True
+        except (ValueError, OSError, subprocess.SubprocessError) as error:
+            last_error = review_error(error)
+            if attempt < len(REVIEW_RETRY_DELAYS):
+                time.sleep(REVIEW_RETRY_DELAYS[attempt])
+    print(f"::warning::Research checkpoint PR unavailable after {attempts} attempts: {last_error}. No merge performed.")
+    return False
 
 
 def main() -> None:
