@@ -23585,6 +23585,228 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-ninja-spinner-eleven-box-case-2026"
+              ],
+              "country": "SG",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "eleven_box_case_not_full_twelve_box_case",
+                "independent-review-pending",
+                "pack_total_not_reported",
+                "some_rates_are_estimates",
+                "unverified_research"
+              ],
+              "method": "author_reported_case_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese-ninja-spinner-booster-box",
+              "set": "ninja-spinner",
+              "source_sample": {
+                "count": 11,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "tcgtalk-ninja-spinner-eleven-box-case-2026",
+              "urls": [
+                "https://tcgtalk.com/blog/ninja-spinner-set-analysis-singapore-mega-greninja-1774011347707"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "foresd-storm-emerald-three-box-opening-2026"
+              ],
+              "country": "KR",
+              "geography_basis": "product_market",
+              "language": "ko",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_verified_in_bounded_pass",
+                "independent-review-pending",
+                "pack_total_not_reported",
+                "three_boxes_reported",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening_review",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "korean-storm-emeralda-booster-box",
+              "set": "storm-emeralda",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "foresd-storm-emerald-three-box-opening-2026",
+              "urls": [
+                "https://foresd.tistory.com/15"
+              ]
+            }
+          ],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "4gamers-legendary-clash-set-a-box-2020"
+              ],
+              "country": "TW",
+              "geography_basis": "product_market",
+              "language": "zh-hant",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_used_without_exact_pack_denominator",
+                "independent-review-pending",
+                "localized_taiwan_product_release",
+                "pack_total_not_reported",
+                "single_box_sample",
+                "unverified_research"
+              ],
+              "method": "editorial_complete_box_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "traditional-chinese-legendary-clash-set-a-box",
+              "set": "legendary-clash-set-a",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "4gamers-legendary-clash-set-a-box-2020",
+              "urls": [
+                "https://www.4gamers.com.tw/news/detail/42998/pokemon-tcg-unboxing-review"
+              ]
+            }
+          ],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "thai-double-burst-set-a-thirty-pack-video"
+              ],
+              "country": "TH",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicitly_verified",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "pack_count_from_public_video_title",
+                "unverified_research"
+              ],
+              "method": "public_video_complete_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 30,
+              "product": "thai-double-burst-set-a-booster-box",
+              "set": "double-burst-set-a",
+              "source_sample": null,
+              "study_id": "thai-double-burst-set-a-thirty-pack-video",
+              "urls": [
+                "https://youtu.be/4h3dVXwvaSM"
+              ]
+            }
+          ],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-turkiye-approximately-three-hundred-pack-report-2026"
+              ],
+              "country": "TR",
+              "geography_basis": "publisher_country",
+              "language": "tr",
+              "limitations": [
+                "aggregate_recollection_without_pack_level_log",
+                "approximate_pack_count_not_stored_as_exact",
+                "approximately_300_packs_reported",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed_products_and_sets",
+                "unverified_research"
+              ],
+              "method": "author_reported_aggregate_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "mixed-modern-sets",
+              "source_sample": null,
+              "study_id": "reddit-turkiye-approximately-three-hundred-pack-report-2026",
+              "urls": [
+                "https://www.reddit.com/r/TCGTurkiye/comments/1sy3cv2/asla_a%C3%A7may%C4%B1n"
+              ]
+            }
+          ],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 9,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
