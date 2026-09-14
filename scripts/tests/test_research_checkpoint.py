@@ -94,9 +94,12 @@ class CheckpointMergeTests(unittest.TestCase):
     def test_review_uses_same_repository_head_branch(self):
         with patch.object(queue, "run", side_effect=[outcome("[]"),
                 subprocess.CalledProcessError(1, "gh"),
+                outcome("[]"),
                 subprocess.CalledProcessError(1, "gh"),
+                outcome("[]"),
                 subprocess.CalledProcessError(1, "gh")]) as run, \
-                patch.object(queue.time, "sleep"):
+                patch.object(queue.time, "sleep"), \
+                patch.object(queue, "REVIEW_RETRY_DELAYS", (0, 0)):
             queue.request_review()
         create_command = run.call_args_list[1].args[0]
         self.assertIn(f"head=ncihxaonn:{queue.BRANCH}", create_command)
@@ -113,6 +116,21 @@ class CheckpointMergeTests(unittest.TestCase):
         self.assertEqual(sleep.call_count, 1)
         self.assertEqual(run.call_args.args[0], [
             "gh", "pr", "merge", "287", "--auto", "--squash",
+            "--repo", queue.REPOSITORY,
+        ])
+
+    def test_review_rechecks_after_create_race_and_queues_existing_pr(self):
+        with patch.object(queue, "run", side_effect=[
+                outcome("[]"),
+                subprocess.CalledProcessError(1, "gh"),
+                outcome('[{"number": 288}]'),
+                outcome(),
+        ]) as run, patch.object(queue.time, "sleep") as sleep:
+            self.assertTrue(queue.request_review())
+        self.assertEqual(run.call_count, 4)
+        self.assertEqual(sleep.call_count, 1)
+        self.assertEqual(run.call_args.args[0], [
+            "gh", "pr", "merge", "288", "--auto", "--squash",
             "--repo", queue.REPOSITORY,
         ])
 
