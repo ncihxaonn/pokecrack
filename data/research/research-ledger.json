@@ -15436,6 +15436,223 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-perfect-order-54-pack-singapore-cohort"
+              ],
+              "country": "SG",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "only-one-explicit-hit-count-found",
+                "opening-location-not-explicit",
+                "single-opening-cohort",
+                "unverified-research"
+              ],
+              "method": "documented-opening",
+              "metrics": [
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 54,
+              "product": "perfect-order",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "tcgtalk-perfect-order-54-pack-opening-2026",
+              "urls": [
+                "https://tcgtalk.com/guides/perfect-order-pull-rates-singapore"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "rocca-complete-box-30-and-loose-25-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh-hant",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-explicit-in-public-description",
+                "independent-review-pending",
+                "two-product-groups-combined",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 55,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "rocca-convenience-store-55-pack-video-20250619",
+              "urls": [
+                "https://youtu.be/Q6_Zyu2abFE"
+              ]
+            }
+          ],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "turbo-thai-perfect-sky-30-pack-cohort"
+              ],
+              "country": "TH",
+              "geography_basis": "product_market",
+              "language": "th",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicit-in-public-description",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 30,
+              "product": "s7d-t-thai",
+              "set": "perfect-sky",
+              "source_sample": null,
+              "study_id": "turbo-perfect-sky-30-pack-video-20210928",
+              "urls": [
+                "https://youtu.be/wCPPH6yY0KM"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "turbo-thai-legendary-battle-set-b-30-pack-cohort"
+              ],
+              "country": "TH",
+              "geography_basis": "product_market",
+              "language": "th",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicit-in-public-description",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 30,
+              "product": "as6b-thai",
+              "set": "legendary-battle-set-b",
+              "source_sample": null,
+              "study_id": "turbo-legendary-battle-set-b-30-pack-video-20201230",
+              "urls": [
+                "https://youtu.be/M8-wJKXxboU"
+              ]
+            }
+          ],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokezed-five-product-box-opening-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "tr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-explicit-in-public-description",
+                "independent-review-pending",
+                "mixed-products",
+                "native-box-count-only",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed-scarlet-violet-products",
+              "set": "mixed-products",
+              "source_sample": {
+                "count": 5,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "pokezed-five-product-box-opening-20231120",
+              "urls": [
+                "https://youtu.be/UocqOZuoUxQ"
+              ]
+            }
+          ],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 6,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
