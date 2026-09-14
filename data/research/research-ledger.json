@@ -15901,6 +15901,166 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FR"
+        },
+        {
+          "studies": [],
+          "target": "DE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokemonmillennium-silver-tempest-36-pack-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "italian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "forum-post-focuses-on-single-pull",
+                "full-rarity-tally-not-reported",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "dated-forum-opening-log",
+              "metrics": [
+                {
+                  "category": "lugia-v-alternate-art",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "silver-tempest",
+              "source_sample": null,
+              "study_id": "pokemonmillennium-silver-tempest-36-pack-opening-2023",
+              "urls": [
+                "https://forum.pokemonmillennium.net/topic/176449-cerco-un-consiglio-per-gradare-una-carta"
+              ]
+            }
+          ],
+          "target": "IT"
+        },
+        {
+          "studies": [],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "9to5toys-chaos-rising-36-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-established",
+                "independent-review-pending",
+                "metrics-omitted-pending-body-verification",
+                "opening-location-not-stated",
+                "title-claims-fifteen-hits-but-hit-definition-not-validated",
+                "unverified-research"
+              ],
+              "method": "complete-article-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "9to5toys-chaos-rising-36-pack-opening-2026",
+              "urls": [
+                "https://9to5toys.com/2026/05/12/pokemon-chaos-rising-rising-booster-box-opening"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "apple-podcasts-gb-pull-party-36-pack-series"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-established",
+                "episode-level-hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "overlap-unresolved",
+                "series-page-not-single-episode",
+                "unverified-research"
+              ],
+              "method": "serial-podcast-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster-box-or-other-sealed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "apple-podcasts-gb-pull-party-36-pack-series",
+              "urls": [
+                "https://podcasts.apple.com/gb/podcast/pokemon-tcg-pull-party-unboxing-with-stalkgamers/id1608693376"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 6,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
