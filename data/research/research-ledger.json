@@ -24463,6 +24463,281 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-japanese-25-pack-flight-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "dutch",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "mixed_or_unspecified_japanese_sets",
+                "opening_country_not_stated",
+                "return_flight_location_not_assignable",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 25,
+              "product": "japanese_loose_packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-japanese-25-pack-flight-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1vb3mmh/wat_een_lol"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-norway-151-one-pack-opening-2024"
+              ],
+              "country": "NO",
+              "geography_basis": "product_market",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_metrics_omitted",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "single_pack_sample",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "loose_booster_pack",
+              "set": "scarlet_violet_151",
+              "source_sample": null,
+              "study_id": "reddit-norway-151-one-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1g4bo23/opened_one_151_booster_pack_and_pulled_this_omg"
+              ]
+            }
+          ],
+          "target": "NO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-poland-ascended-heroes-one-etb-opening-2026"
+              ],
+              "country": "PL",
+              "geography_basis": "product_market",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_metrics_omitted",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "pack_count_not_reported",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "elite_trainer_box",
+              "set": "ascended_heroes",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-poland-ascended-heroes-one-etb-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1ubqv01/from_my_very_first_pok%C3%A9mon_etb_to_this_pull"
+              ]
+            }
+          ],
+          "target": "PL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-portugal-japanese-20-pack-opening-2024"
+              ],
+              "country": "PT",
+              "geography_basis": "publisher_country",
+              "language": "english",
+              "limitations": [
+                "cohort_context_split_across_comments",
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "set_not_stated",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "japanese_booster_packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-portugal-japanese-20-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1ftprf0/i_have_to_open_packs_in_my_car_more_often"
+              ]
+            }
+          ],
+          "target": "PT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-romania-pitch-black-three-pack-opening-2026"
+              ],
+              "country": "RO",
+              "geography_basis": "product_market",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "reported_duplicate_pattern_not_statistically_validated",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [
+                {
+                  "category": "spiritomb_rare",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": "sleeved_booster_packs",
+              "set": "pitch_black",
+              "source_sample": null,
+              "study_id": "reddit-romania-pitch-black-three-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonMisprints/comments/1vx7ekb/packs"
+              ]
+            }
+          ],
+          "target": "RO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "rutube-darkness-ablaze-56-booster-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "russian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "title_says_50_but_description_reports_56",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 56,
+              "product": "booster_packs",
+              "set": "darkness_ablaze",
+              "source_sample": null,
+              "study_id": "rutube-darkness-ablaze-56-booster-opening-2020",
+              "urls": [
+                "https://rutube.ru/video/56164dd2eb06a2ca2876bacf62c35ff4"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "rutube-shining-fates-15-booster-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "russian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 15,
+              "product": "booster_packs",
+              "set": "shining_fates",
+              "source_sample": null,
+              "study_id": "rutube-shining-fates-15-booster-opening-2020",
+              "urls": [
+                "https://rutube.ru/video/534adf7d1e97b41d1930e0698e282bd1"
+              ]
+            }
+          ],
+          "target": "RU"
+        }
+      ],
+      "sweep": 9,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
