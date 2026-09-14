@@ -20429,6 +20429,146 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-philippines-mixed-korean-four-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en-tl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-definition-author-reported",
+                "independent-review-pending",
+                "mixed-products",
+                "opening-location-not-explicit",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-report",
+              "metrics": [
+                {
+                  "category": "any-author-defined-hit",
+                  "hits": 3,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 4,
+              "product": "two-crimson-haze-one-glory-of-team-rocket-one-mega-brave",
+              "set": "mixed-korean-sets",
+              "source_sample": null,
+              "study_id": "reddit-philippines-mixed-korean-four-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1uw0s59/first_ever_packs_surprised_na_it_was_actually_fun"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-hong-kong-six-pack-cohort-2026"
+              ],
+              "country": "HK",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "purchase-location-explicit-but-opening-location-not-explicit",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-report",
+              "metrics": [
+                {
+                  "category": "illustration-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "traditional-chinese-booster-packs",
+              "set": "traditional-chinese-new-set-unspecified",
+              "source_sample": null,
+              "study_id": "reddit-hong-kong-six-traditional-chinese-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1vu96wx/i_havent_bought_any_packs_since_1999_base_set_in"
+              ]
+            }
+          ],
+          "target": "HK"
+        },
+        {
+          "studies": [],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
