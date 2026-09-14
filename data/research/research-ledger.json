@@ -25354,6 +25354,125 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-100-plus-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "exact_denominator_not_reported",
+                "geography_not_stated",
+                "independent-review-pending",
+                "mixed_products_and_sets",
+                "not_approved_for_production_statistics",
+                "title_reports_100_plus_packs",
+                "unverified_research"
+              ],
+              "method": "complete_opening_report",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-100-plus-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1rgfqgy/opening_100_packs"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-69-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_not_stated",
+                "independent-review-pending",
+                "not_approved_for_production_statistics",
+                "pulls_not_fully_enumerated",
+                "unverified_research"
+              ],
+              "method": "complete_opening_report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 69,
+              "product": "pitch_black",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-69-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v50ffn"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-canada-scarlet-violet-151-33-pack-cohort-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "not_approved_for_production_statistics",
+                "opening_location_not_explicitly_stated",
+                "publisher_explicitly_states_canada_residence",
+                "pulls_visible_in_image_but_not_transcribed",
+                "unverified_research"
+              ],
+              "method": "complete_opening_report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 33,
+              "product": "scarlet_violet_151",
+              "set": "scarlet_violet_151",
+              "source_sample": null,
+              "study_id": "reddit-canada-scarlet-violet-151-33-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1k7twbo"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 9,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
