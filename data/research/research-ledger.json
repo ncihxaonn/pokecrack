@@ -26926,6 +26926,236 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "ozbargain-scarlet-violet-151-52-packs-2023"
+              ],
+              "country": "AU",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-level-report",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "product-sources-not-fully-enumerated",
+                "publisher-country-only",
+                "some-rarity-wording-ambiguous",
+                "unverified-research"
+              ],
+              "method": "forum-self-report",
+              "metrics": [
+                {
+                  "category": "full-art",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "gold-card",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "holo-energy",
+                  "hits": 14,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 52,
+              "product": "mixed-scarlet-violet-151-products",
+              "set": "scarlet-violet-151",
+              "source_sample": null,
+              "study_id": "ozbargain-scarlet-violet-151-fifty-two-pack-opening-2023",
+              "urls": [
+                "https://www.ozbargain.com.au/node/809261"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "ozbargain-scarlet-violet-151-30-packs-2024"
+              ],
+              "country": "AU",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-level-report",
+                "double-rare-count-not-explicit",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "publisher-country-only",
+                "three-ten-pack-batches-reported",
+                "unverified-research"
+              ],
+              "method": "forum-self-report",
+              "metrics": [
+                {
+                  "category": "hyper-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "scarlet-violet-151-mini-tins",
+              "set": "scarlet-violet-151",
+              "source_sample": null,
+              "study_id": "ozbargain-scarlet-violet-151-thirty-pack-opening-2024",
+              "urls": [
+                "https://www.ozbargain.com.au/node/880187"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-perfect-order-4-prerelease-kits-16-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "additional-unopened-packs-mentioned-but-excluded",
+                "collector-policy-not-enabled",
+                "country-unknown",
+                "image-dependent-pull-details-not-collected",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "forum-self-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 16,
+              "product": "four-prerelease-kits",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "reddit-french-perfect-order-sixteen-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1ruc505/jai_ouvert_4_ap_4_decks_et_16_boosters_de_la"
+              ]
+            }
+          ],
+          "target": "VU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "nine-to-five-toys-chaos-rising-36-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-unknown",
+                "embedded-video-not-fetched",
+                "hit-definition-not-specified",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "article-with-embedded-video",
+              "metrics": [
+                {
+                  "category": "reported-hits",
+                  "hits": 15,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "nine-to-five-toys-chaos-rising-thirty-six-pack-opening-2026",
+              "urls": [
+                "https://9to5toys.com/2026/05/12/pokemon-chaos-rising-rising-booster-box-opening"
+              ]
+            }
+          ],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 10,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
