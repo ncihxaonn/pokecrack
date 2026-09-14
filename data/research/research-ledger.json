@@ -25102,6 +25102,190 @@
         "ML",
         "MR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MU"
+        },
+        {
+          "studies": [],
+          "target": "MZ"
+        },
+        {
+          "studies": [],
+          "target": "NA"
+        },
+        {
+          "studies": [],
+          "target": "NE"
+        },
+        {
+          "studies": [],
+          "target": "RW"
+        },
+        {
+          "studies": [],
+          "target": "ST"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-korean-set-ten-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-totals-not-tabulated",
+                "independent-review-pending",
+                "search-target-is-provenance-only",
+                "set-not-identified",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 10,
+              "product": "korean-booster-packs",
+              "set": "unknown-korean-set",
+              "source_sample": null,
+              "study_id": "dailymotion-korean-set-ten-packs-2026",
+              "urls": [
+                "https://www.dailymotion.com/video/x9w8762"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "dailymotion-phantasmal-flames-etb-nine-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-totals-not-tabulated",
+                "independent-review-pending",
+                "search-target-is-provenance-only",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 9,
+              "product": "phantasmal-flames-etb",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "dailymotion-phantasmal-flames-etb-nine-packs-2026",
+              "urls": [
+                "https://www.dailymotion.com/video/x9wyl96"
+              ]
+            }
+          ],
+          "target": "SN"
+        },
+        {
+          "studies": [],
+          "target": "SC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-prismatic-evolutions-fourteen-booster-bundles-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "bundle-count-not-representable-in-source_sample",
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "fourteen-booster-bundles-reported-without-an-explicit-pack-denominator",
+                "independent-review-pending",
+                "pack-count-not-inferred-from-product-contents",
+                "search-target-is-provenance-only",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "prismatic-evolutions-booster-bundles",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-prismatic-evolutions-fourteen-booster-bundles-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1uo8tq2/opened_14_booster_bundles"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "garbage-rips-482-pack-archive-20260914"
+              ],
+              "country": "US",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-totals-not-tabulated",
+                "independent-review-pending",
+                "mixed-sets-and-products",
+                "ongoing-archive-snapshot",
+                "pack-total-spans-342-openings",
+                "publisher-country-is-not-opening-location",
+                "search-target-is-provenance-only",
+                "unverified-research"
+              ],
+              "method": "complete-opening-archive",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 482,
+              "product": "mixed-sealed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "garbage-rips-482-pack-archive-20260914",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            }
+          ],
+          "target": "SL"
+        },
+        {
+          "studies": [],
+          "target": "SO"
+        },
+        {
+          "studies": [],
+          "target": "SS"
+        },
+        {
+          "studies": [],
+          "target": "SD"
+        }
+      ],
+      "sweep": 9,
+      "targets": [
+        "MU",
+        "MZ",
+        "NA",
+        "NE",
+        "RW",
+        "ST",
+        "SN",
+        "SC",
+        "SL",
+        "SO",
+        "SS",
+        "SD"
+      ]
     }
   ],
   "global_batches": [
