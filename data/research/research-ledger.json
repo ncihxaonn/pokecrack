@@ -15676,6 +15676,130 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-650-pack-opening-2026"
+              ],
+              "country": "AU",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicitly_verified",
+                "independent-review-pending",
+                "product_mix_unspecified",
+                "title_claim_pack_count",
+                "unverified_research"
+              ],
+              "method": "complete_opening_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 650,
+              "product": null,
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-650-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pz6xq8/opened_650_packs_heres_what_i_got"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "new-zealand-151-ten-pack-opening-20240912"
+              ],
+              "country": "NZ",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicitly_verified",
+                "independent-review-pending",
+                "some-additional-products-mentioned-outside-cohort",
+                "title_claim_pack_count",
+                "unverified_research"
+              ],
+              "method": "complete_opening_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 10,
+              "product": "loose-booster-packs",
+              "set": "scarlet-violet-151",
+              "source_sample": null,
+              "study_id": "new-zealand-151-ten-pack-opening-20240912",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1fevxa0"
+              ]
+            }
+          ],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 6,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
