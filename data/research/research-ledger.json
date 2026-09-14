@@ -22417,6 +22417,138 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-california-prismatic-evolutions-16-pack-cohort-2025"
+              ],
+              "country": "US",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "cumulative-295-pack-claim-excluded-from-denominator",
+                "hit-count-not-textually-explicit",
+                "image-only-pull-evidence",
+                "independent-review-pending",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 16,
+              "product": "costco-tins",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-california-prismatic-evolutions-16-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1nkhh0r"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-journey-together-40-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-count-not-textually-explicit",
+                "image-only-pull-evidence",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 40,
+              "product": "journey-together",
+              "set": "journey-together",
+              "source_sample": null,
+              "study_id": "reddit-journey-together-40-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1jifvzj"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-southern-ontario-mixed-products-21-pack-cohort-2024"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-category-author-defined",
+                "independent-review-pending",
+                "location-stated-only-at-regional-level",
+                "mixed-products-and-sets",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [
+                {
+                  "category": "espeon-v-heroes-tin-hits",
+                  "hits": 2,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "loose-pack-hits",
+                  "hits": 0,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "paldean-fates-hits",
+                  "hits": 8,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 21,
+              "product": "paldean-fates-astral-radiance-fusion-strike-mixed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-southern-ontario-mixed-products-21-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1b7j95x"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
