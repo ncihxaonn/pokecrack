@@ -16195,6 +16195,103 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-astral-radiance-36-packs-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-supported-by-public-title-and-description",
+                "unverified-research"
+              ],
+              "method": "video-complete-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "astral-radiance-booster-box",
+              "set": "astral-radiance",
+              "source_sample": null,
+              "study_id": "youtube-astral-radiance-36-packs-2023",
+              "urls": [
+                "https://youtu.be/2mv5OivZ9Hg"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [],
+          "target": "RO"
+        },
+        {
+          "studies": [],
+          "target": "RU"
+        }
+      ],
+      "sweep": 6,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
