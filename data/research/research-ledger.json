@@ -16885,6 +16885,120 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "phantasmal-flames-100-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "aggregate-community-estimates-excluded",
+                "collector-policy-not-enabled",
+                "country-not-stated-for-opening",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "separate-prior-booster-box-excluded-from-denominator",
+                "some-rarity-labels-internally-inconsistent",
+                "unverified-research"
+              ],
+              "method": "documented-opening-article",
+              "metrics": [
+                {
+                  "category": "illustration-rare",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "phantasmal-flames",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "phantasmal-flames-100-pack-tcgtalk-study",
+              "urls": [
+                "https://tcgtalk.com/guides/phantasmal-flames-pull-rates-case-opening"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "brilliant-stars-1034-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "individual-card-metrics-only-partially-recorded",
+                "opening-location-not-stated",
+                "post-body-updated-to-1034-packs",
+                "title-retains-earlier-936-pack-count",
+                "unverified-research"
+              ],
+              "method": "dated-opening-log",
+              "metrics": [
+                {
+                  "category": "rainbow-vstar-arceus",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rainbow-vstar-charizard",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1034,
+              "product": "brilliant-stars",
+              "set": "brilliant-stars",
+              "source_sample": null,
+              "study_id": "brilliant-stars-1034-pack-reddit-study",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/t4m1sh/pull_rate_data_for_brilliant_stars_out_of_26"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 6,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
