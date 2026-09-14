@@ -20569,6 +20569,194 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "starter-deck-100-forty-decks-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "title-mentions-100-but-description-reports-40-opened",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "starter-deck-100",
+              "set": "discovery-sweep-8",
+              "source_sample": {
+                "count": 40,
+                "precision": "exact_reported",
+                "unit": "decks"
+              },
+              "study_id": "starter-deck-100-forty-deck-video-2024",
+              "urls": [
+                "https://youtu.be/CdXXJOrpBLE"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "indonesian-booster-two-boxes-20210321"
+              ],
+              "country": "ID",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "pack-count-not-explicit",
+                "product-name-not-explicit",
+                "unverified-research"
+              ],
+              "method": "public-post-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "indonesian-booster-box",
+              "set": "discovery-sweep-8",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "indonesian-booster-two-box-opening-2021",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/ma0mzu/opened_another_2_box_this_indonesia_booster_box_is"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "battle-partners-115-terastal-festival-four-20250127"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "linked-video-not-reviewed",
+                "mixed-products",
+                "unverified-research"
+              ],
+              "method": "video-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 119,
+              "product": "battle-partners-and-terastal-festival",
+              "set": "discovery-sweep-8",
+              "source_sample": null,
+              "study_id": "battle-partners-115-plus-terastal-four-packs-2025",
+              "urls": [
+                "https://note.com/oz_hachi_83_st/n/na47e21c69bac"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "six-japanese-products-24-packs-20250215"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "mixed-products",
+                "unverified-research"
+              ],
+              "method": "article-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 24,
+              "product": "pokemon-151-black-flame-ruler-triplet-beat-violet-ex-scarlet-ex-paradigm-trigger",
+              "set": "discovery-sweep-8",
+              "source_sample": null,
+              "study_id": "six-products-24-pack-opening-2025",
+              "urls": [
+                "https://note.com/seedsedo/n/n570bbee68e93"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
