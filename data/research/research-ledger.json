@@ -26263,6 +26263,236 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bilibili-simplified-chinese-journey-special-18-packs-2025"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "simplified-chinese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research",
+                "video-not-manually-reviewed"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 18,
+              "product": "simplified-chinese-journey-gift-box",
+              "set": "journey-special-pack",
+              "source_sample": null,
+              "study_id": "bilibili-simplified-chinese-journey-special-18-packs-2025",
+              "urls": [
+                "https://www.bilibili.com/video/BV1mxMBztEQj"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-chinese-gem-pack-vol-3-one-box-2026"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "single-box-sample",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [
+                {
+                  "category": "common",
+                  "hits": 36,
+                  "unit": "cards"
+                },
+                {
+                  "category": "double-rare-stamped",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ex",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare",
+                  "hits": 8,
+                  "unit": "cards"
+                },
+                {
+                  "category": "triple-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "uncommon",
+                  "hits": 18,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "chinese-gem-pack-vol-3",
+              "set": "gem-pack-vol-3",
+              "source_sample": null,
+              "study_id": "reddit-chinese-gem-pack-vol-3-one-box-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1rh0shi/chinese_pok%C3%A9mon_gem_pack_3_cbb3c_booster_box_pulls"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "abyss-eye-thirty-loose-pack-opening-20260523"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "japanese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "loose-packs-collected-across-retail-purchases",
+                "only-explicit-zero-hit-categories-recorded",
+                "unverified-research"
+              ],
+              "method": "dated-complete-opening-log",
+              "metrics": [
+                {
+                  "category": "rr-darkrai",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sr",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "abyss-eye",
+              "set": "abyss-eye",
+              "source_sample": null,
+              "study_id": "abyss-eye-thirty-loose-pack-opening-20260523",
+              "urls": [
+                "https://yunomi4-pokeca.blog.jp/archives/15399575.html"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "storm-emeralda-thirty-pack-opening-20260723"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "japanese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "mixed-one-box-and-loose-pack-source",
+                "rarity-label-sar-class-preserved",
+                "unverified-research"
+              ],
+              "method": "dated-complete-opening-log",
+              "metrics": [
+                {
+                  "category": "ar",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sar-class",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "storm-emeralda",
+              "set": "storm-emeralda",
+              "source_sample": null,
+              "study_id": "storm-emeralda-thirty-pack-opening-20260723",
+              "urls": [
+                "https://note.com/chiyo_choco/n/n0ffc4d4b21a5"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 10,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
