@@ -18954,6 +18954,134 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-styles-de-combat-36-pack-opening-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "public_title_description_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "battle_styles_booster_display",
+              "set": "swsh_battle_styles",
+              "source_sample": null,
+              "study_id": "youtube-styles-de-combat-36-pack-opening-2021",
+              "urls": [
+                "https://youtu.be/0EScmuzzNTo"
+              ]
+            }
+          ],
+          "target": "CH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-ukrainian-three-pack-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "uk",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "mixed_products",
+                "opening_location_not_stated",
+                "public_title_description_only",
+                "ukrainian_language_does_not_establish_geography",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": "sv_151_obsidian_flames_trick_or_trade_mixed",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-ukrainian-three-pack-opening-2023",
+              "urls": [
+                "https://youtu.be/zk1IBUeD-OE"
+              ]
+            }
+          ],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [],
+          "target": "GI"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
