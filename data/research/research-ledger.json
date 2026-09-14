@@ -21492,6 +21492,132 @@
         "BA",
         "BG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "padua-chaos-rising-one-pack-2026"
+              ],
+              "country": "IT",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "creator-index-page",
+                "independent-review-pending",
+                "no-explicit-hit-counts",
+                "original-video-url-unresolved",
+                "target-country-differs-from-opening-country",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-video-title",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1,
+              "product": "chaos-rising-booster-pack",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "padua-chaos-rising-one-pack-2026",
+              "urls": [
+                "https://cardgames.social/creators/%4090spokemondude"
+              ]
+            }
+          ],
+          "target": "HR"
+        },
+        {
+          "studies": [],
+          "target": "CZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "denmark-pokemon-151-single-pack-2023"
+              ],
+              "country": "DK",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-stated-in-post-context",
+                "independent-review-pending",
+                "no-explicit-integer-hit-category",
+                "single-pack-opening",
+                "unverified-research"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "pokemon-151-booster-pack",
+              "set": "pokemon-151",
+              "source_sample": null,
+              "study_id": "denmark-pokemon-151-single-pack-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/170f408"
+              ]
+            }
+          ],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        },
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
