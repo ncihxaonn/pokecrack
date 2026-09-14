@@ -15227,6 +15227,147 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-simplified-chinese-energy-box-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-enumerated",
+                "independent-review-pending",
+                "mixed-five-card-and-twenty-five-card-packs",
+                "opening-location-unstated",
+                "unverified-research"
+              ],
+              "method": "photo-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 12,
+              "product": "simplified-chinese-energy-box",
+              "set": "simplified-chinese-energy-box",
+              "source_sample": null,
+              "study_id": "reddit-simplified-chinese-energy-box-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/16qlivh/chinese_energy_box"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokeca-pocket-black-bolt-white-flare-30-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "independent-review-pending",
+                "loose-packs-sourced-from-four-boxes",
+                "most-card-counts-image-only",
+                "opening-location-unstated",
+                "unverified-research"
+              ],
+              "method": "dated-opening-log",
+              "metrics": [
+                {
+                  "category": "master-ball-pattern",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sar",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sr",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "black-bolt-and-white-flare-loose-packs",
+              "set": "black-bolt-white-flare",
+              "source_sample": null,
+              "study_id": "pokeca-pocket-black-bolt-white-flare-30-packs-2025",
+              "urls": [
+                "https://pokeca-pocket.dbfw-days.com/pokeca-bw-30pack"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 6,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
