@@ -21072,6 +21072,137 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-32-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "self-reported",
+                "set-abbreviation-ambiguous",
+                "subreddit-name-not-country-evidence",
+                "unverified-research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [
+                {
+                  "category": "illustration-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 32,
+              "product": "booster-packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-unknown-geography-32-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFansAustralia/comments/1m2w785/bad_luck_or_terrible_rates"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "auckland-card-show-mighty-ape-105-packs-2025"
+              ],
+              "country": "NZ",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "mixed-sets-and-products-not-itemized",
+                "organizer-recap",
+                "unverified-research"
+              ],
+              "method": "event-recap",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 105,
+              "product": "mixed-sealed-products",
+              "set": "mixed-pokemon-tcg-sets",
+              "source_sample": null,
+              "study_id": "auckland-card-show-105-pack-opening-2025",
+              "urls": [
+                "https://www.aucklandcardshow.com/post/auckland-card-show-2025-recap"
+              ]
+            }
+          ],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
