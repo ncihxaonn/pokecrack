@@ -19105,6 +19105,108 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-first-partner-series-2-four-box-cohort-2026"
+              ],
+              "country": "ZA",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-explicitly-stated-in-public-discussion",
+                "hit-counts-not-systematically-reported",
+                "independent-review-pending",
+                "native-box-count-only",
+                "opening-completeness-unclear",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "public-social-post-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "first-partner-series-2-box",
+              "set": "mixed",
+              "source_sample": {
+                "count": 4,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-first-partner-series-2-four-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1u9ys44/open_first_partner_series_2_with_me"
+              ]
+            }
+          ],
+          "target": "ZA"
+        },
+        {
+          "studies": [],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
