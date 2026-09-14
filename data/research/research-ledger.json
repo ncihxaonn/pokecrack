@@ -23216,6 +23216,278 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "simplified-chinese-miracle-journey-box-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "chinese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-collected",
+                "independent-review-pending",
+                "opening-count-not-explicit",
+                "opening-location-unknown",
+                "title-identifies-simplified-chinese-product",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-miracle-journey-booster-box",
+              "set": "miracle-journey",
+              "source_sample": null,
+              "study_id": "simplified-chinese-miracle-journey-box-opening-2025",
+              "urls": [
+                "https://www.bilibili.com/video/BV1oXXHYhEHe"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbage-rips-single-pack-openings-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "aggregate-repository",
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independence-between-records-not-reviewed",
+                "independent-review-pending",
+                "metrics-not-collected",
+                "mixed-products-and-sets",
+                "unverified-research"
+              ],
+              "method": "public-opening-repository",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 119,
+              "product": "mixed-physical-pokemon-tcg-products",
+              "set": "mixed-products",
+              "source_sample": null,
+              "study_id": "garbage-rips-public-opening-repository-2026",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            }
+          ],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "ledakan-peniada-one-hundred-pack-opening-2026"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "indonesian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-collected",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-from-public-title-and-description",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon-tcg-indonesia-ledakan-peniada",
+              "set": "ledakan-peniada",
+              "source_sample": null,
+              "study_id": "ledakan-peniada-one-hundred-pack-opening-2026",
+              "urls": [
+                "https://youtu.be/8h0R9dLMB2Q"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "harta-berkilau-ex-one-hundred-pack-opening-2024"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "indonesian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-collected",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-from-public-title",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon-tcg-indonesia-harta-berkilau-ex",
+              "set": "harta-berkilau-ex",
+              "source_sample": null,
+              "study_id": "harta-berkilau-ex-one-hundred-pack-opening-2024",
+              "urls": [
+                "https://youtu.be/KO9tgoHPvMk"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "starter-deck-100-full-foil-128-pack-opening-2025"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "japanese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "integer-hit-counts-not-collected",
+                "pack-count-from-public-title",
+                "possible-overlap-with-parent-thousand-deck-study",
+                "special-full-foil-pack-subtype",
+                "unverified-research"
+              ],
+              "method": "public-video-complete-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 128,
+              "product": "starter-deck-100-full-foil-packs",
+              "set": "starter-deck-100",
+              "source_sample": null,
+              "study_id": "starter-deck-100-full-foil-128-pack-opening-2025",
+              "urls": [
+                "https://youtu.be/y00uOqFD45U"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "mixed-pokemon-card-one-thousand-loose-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "japanese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-collected",
+                "independent-review-pending",
+                "mixed-sets",
+                "opening-location-unknown",
+                "pack-count-from-public-title",
+                "unverified-research"
+              ],
+              "method": "public-video-complete-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1000,
+              "product": "mixed-pokemon-card-loose-packs",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "mixed-pokemon-card-one-thousand-loose-pack-opening-2024",
+              "urls": [
+                "https://youtu.be/H33s7hwG8B8"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "arabic-pokemon-box-and-card-opening-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "arabic",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-and-opening-location-unknown",
+                "hit-counts-not-collected",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "title-reports-box-opening-without-count",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown-set",
+              "source_sample": {
+                "count": 1,
+                "precision": "lower_bound",
+                "unit": "boxes"
+              },
+              "study_id": "arabic-pokemon-box-and-card-opening-2022",
+              "urls": [
+                "https://youtu.be/gmTHnvwYNV4"
+              ]
+            }
+          ],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 9,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
