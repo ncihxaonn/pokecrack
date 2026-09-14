@@ -16061,6 +16061,140 @@
         "BA",
         "BG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [],
+          "target": "CZ"
+        },
+        {
+          "studies": [],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        },
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-two-booster-boxes-reddit-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "discovered-during-ie-target-search-but-no-irish-geography-evidence",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "pack-denominator-not-preserved-from-box-contents",
+                "unverified-research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pitch-black-and-chaos-rising-booster-boxes",
+              "set": "mixed",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "mixed-two-booster-boxes-reddit-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1vj89x1/opened_2_booster_boxes"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "ireland-subreddit-first-booster-box-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "one-booster-box-reported-without-pack-denominator",
+                "opening-location-not-explicit",
+                "set-not-explicit-in-indexed-text",
+                "target-subreddit-is-not-country-evidence",
+                "unverified-research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "ireland-subreddit-first-booster-box-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGIreland/comments/1sevp43/first_booster_box_ever"
+              ]
+            }
+          ],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 6,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
