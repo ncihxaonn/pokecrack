@@ -21618,6 +21618,130 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-nl-ascended-heroes-110-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_not_explicit",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "unverified_research",
+                "visual_results_not_transcribed"
+              ],
+              "method": "forum_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 110,
+              "product": "ascended_heroes",
+              "set": "ascended_heroes",
+              "source_sample": null,
+              "study_id": "reddit-nl-ascended-heroes-110-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1t3zamv"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-romania-prismatic-evolutions-19-packs-2025"
+              ],
+              "country": "RO",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "mixed_product_formats",
+                "unverified_research",
+                "visual_results_not_transcribed"
+              ],
+              "method": "forum_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 19,
+              "product": "prismatic_evolutions_mixed_products",
+              "set": "prismatic_evolutions",
+              "source_sample": null,
+              "study_id": "reddit-romania-prismatic-evolutions-19-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1i4c7vu"
+              ]
+            }
+          ],
+          "target": "RO"
+        },
+        {
+          "studies": [],
+          "target": "RU"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
