@@ -18086,6 +18086,104 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokemonfansaustralia-mixed-fifteen-pack-opening-2026"
+              ],
+              "country": "AU",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicitly-enumerated",
+                "independent-review-pending",
+                "not-approved-for-production-statistics",
+                "opening-location-not-stated",
+                "publisher-country-only",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "personal-opening-report",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 15,
+              "product": "mixed-booster-products",
+              "set": "mixed-mega-evolution-phantasmal-flames",
+              "source_sample": null,
+              "study_id": "pokemonfansaustralia-mixed-fifteen-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFansAustralia/comments/1smxn5e/15_packs_opened_233_spent_so_far_chase_card"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
