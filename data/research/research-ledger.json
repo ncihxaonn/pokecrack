@@ -21928,6 +21928,109 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-south-africa-eight-pack-cohort-2022"
+              ],
+              "country": "ZA",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "historical_hundreds_of_boosters_claim_not_quantified_or_included",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "set_not_reported",
+                "single_author_report",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [
+                {
+                  "category": "basic_sylveon_v",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 8,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-south-africa-eight-booster-packs-2022",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/u0b9p4/south_african_collectors_where_to_find_the_best"
+              ]
+            }
+          ],
+          "target": "ZA"
+        },
+        {
+          "studies": [],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
