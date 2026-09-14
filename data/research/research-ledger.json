@@ -19947,6 +19947,168 @@
         "BB",
         "BQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "VG"
+        },
+        {
+          "studies": [],
+          "target": "KY"
+        },
+        {
+          "studies": [],
+          "target": "CU"
+        },
+        {
+          "studies": [],
+          "target": "CW"
+        },
+        {
+          "studies": [],
+          "target": "DM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "9to5toys-chaos-rising-36-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_taxonomy_not_defined",
+                "independent-review-pending",
+                "opening_location_not_reported",
+                "unverified_research",
+                "video_overlap_possible"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "9to5toys-chaos-rising-36-pack-opening-2026",
+              "urls": [
+                "https://9to5toys.com/2026/05/12/pokemon-chaos-rising-rising-booster-box-opening"
+              ]
+            }
+          ],
+          "target": "DO"
+        },
+        {
+          "studies": [],
+          "target": "GD"
+        },
+        {
+          "studies": [],
+          "target": "GP"
+        },
+        {
+          "studies": [],
+          "target": "HT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "gamesradar-chaos-rising-17-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "only_selected_pull_categories_reported",
+                "opening_location_not_reported",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [
+                {
+                  "category": "illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 17,
+              "product": null,
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "gamesradar-chaos-rising-17-pack-opening-2026",
+              "urls": [
+                "https://www.gamesradar.com/tabletop-gaming/pokemon-card-resellers-are-ruining-the-hobby-but-making-my-own-pokedex-got-me-back-in-the-game"
+              ]
+            }
+          ],
+          "target": "JM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-foudre-noire-19-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_textually_reported",
+                "independent-review-pending",
+                "mixed-sealed-product-sources",
+                "opening_location_not_reported",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 19,
+              "product": "mixed-sealed-products",
+              "set": "foudre-noire",
+              "source_sample": null,
+              "study_id": "reddit-foudre-noire-19-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1mgex4m/hit_de_mon_ouverture_de_boosters_foudre_noire"
+              ]
+            }
+          ],
+          "target": "MQ"
+        },
+        {
+          "studies": [],
+          "target": "MS"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "VG",
+        "KY",
+        "CU",
+        "CW",
+        "DM",
+        "DO",
+        "GD",
+        "GP",
+        "HT",
+        "JM",
+        "MQ",
+        "MS"
+      ]
     }
   ],
   "global_batches": [
