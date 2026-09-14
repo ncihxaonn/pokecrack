@@ -20109,6 +20109,131 @@
         "MQ",
         "MS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "PR"
+        },
+        {
+          "studies": [],
+          "target": "BL"
+        },
+        {
+          "studies": [],
+          "target": "KN"
+        },
+        {
+          "studies": [],
+          "target": "LC"
+        },
+        {
+          "studies": [],
+          "target": "MF"
+        },
+        {
+          "studies": [],
+          "target": "VC"
+        },
+        {
+          "studies": [],
+          "target": "SX"
+        },
+        {
+          "studies": [],
+          "target": "TT"
+        },
+        {
+          "studies": [],
+          "target": "TC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbage-rips-342-openings-482-packs-2026"
+              ],
+              "country": "US",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "aggregate-count-without-eligible-hit-totals",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "individual-opening-overlap-not-reviewed",
+                "mixed-products-and-sets",
+                "not-target-local",
+                "unverified-research"
+              ],
+              "method": "first-party-video-catalog-aggregate",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 482,
+              "product": "mixed-sealed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "garbage-rips-342-openings-482-packs-2026",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "9to5toys-chaos-rising-36-packs-20260512"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "article-and-embedded-video-are-one-cohort",
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "independent-review-pending",
+                "not-target-local",
+                "reported-hits-omitted-because-hit-unit-is-ambiguous",
+                "unverified-research"
+              ],
+              "method": "first-party-video-article",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "chaos-rising-booster-box",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "9to5toys-chaos-rising-36-packs-20260512",
+              "urls": [
+                "https://9to5toys.com/2026/05/12/pokemon-chaos-rising-rising-booster-box-opening"
+              ]
+            }
+          ],
+          "target": "VI"
+        },
+        {
+          "studies": [],
+          "target": "BZ"
+        },
+        {
+          "studies": [],
+          "target": "CR"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "PR",
+        "BL",
+        "KN",
+        "LC",
+        "MF",
+        "VC",
+        "SX",
+        "TT",
+        "TC",
+        "VI",
+        "BZ",
+        "CR"
+      ]
     }
   ],
   "global_batches": [
