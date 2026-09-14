@@ -44,9 +44,9 @@ class CountryResearchTests(unittest.TestCase):
 
     def test_missing_asia_targets_are_first(self):
         self.assertEqual(self.selection()["targets"],
-                         [code for code, _ in REGIONS["asia"]][:module.MAX_TARGETS])
+                         [code for code, _ in REGIONS["asia"]][:module.MAX_TARGETS_PER_PASS])
         self.assertEqual(module.select_targets([self.report()])["targets"],
-                         [code for code, _ in REGIONS["asia"]][module.MAX_TARGETS:module.MAX_TARGETS * 2])
+                         [code for code, _ in REGIONS["asia"]][module.MAX_TARGETS_PER_PASS:module.MAX_TARGETS_PER_PASS * 2])
 
     def test_full_capacity_preserves_uncertainty_and_legacy_reports(self):
         legacy_selection = {**self.selection(), "targets": ["MY", "VN", "PH"]}
@@ -61,10 +61,10 @@ class CountryResearchTests(unittest.TestCase):
         report = module.validate_report(json.dumps(report).encode())
         output = module.snapshot(report, [], {"studies": []}, [])
         self.assertEqual(output["ledger"]["distinct_report_groups"],
-                         module.MAX_TARGETS * module.MAX_STUDIES_PER_TARGET)
+                         module.MAX_TARGETS_PER_PASS * module.MAX_STUDIES_PER_TARGET)
         self.assertIsNone(output["ledger"]["verified_unique_packs"])
         self.assertLess(len(json.dumps(report).encode()), 65536)
-        self.assertIn(f"return at most {module.MAX_TARGETS * module.MAX_STUDIES_PER_TARGET} studies",
+        self.assertIn(f"return at most {module.MAX_TARGETS_PER_PASS * module.MAX_STUDIES_PER_TARGET} studies",
                       module.prompt(self.selection()))
         self.assertNotIn("12 queries", module.prompt(self.selection()))
         result_schema = module.schema(self.selection())["properties"]["results"]["items"]
@@ -105,7 +105,7 @@ class CountryResearchTests(unittest.TestCase):
         self.assertEqual(observed, list(COUNTRIES))
         self.assertEqual(selection, {**self.selection(), "sweep": 2})
         expected_reports = sum(
-            (len(REGIONS[region]) + module.MAX_TARGETS - 1) // module.MAX_TARGETS
+            (len(REGIONS[region]) + module.MAX_TARGETS_PER_PASS - 1) // module.MAX_TARGETS_PER_PASS
             for region in REGION_ORDER
         )
         self.assertEqual(len(history), expected_reports)
@@ -115,7 +115,7 @@ class CountryResearchTests(unittest.TestCase):
         while (selection := module.select_targets(history))["targets"][0] != "US":
             history.append(self.report(selection))
         expected_reports = sum(
-            (len(REGIONS[region]) + module.MAX_TARGETS - 1) // module.MAX_TARGETS
+            (len(REGIONS[region]) + module.MAX_TARGETS_PER_PASS - 1) // module.MAX_TARGETS_PER_PASS
             for region in ("asia", "oceania", "europe", "africa")
         )
         self.assertEqual(len(history), expected_reports)
@@ -170,7 +170,7 @@ class CountryResearchTests(unittest.TestCase):
         output = module.snapshot(report, [], {"studies": [self.row()]}, [])
         self.assertEqual(output["checked_this_sweep"], self.selection()["targets"])
         self.assertEqual(output["next"]["targets"],
-                         [code for code, _ in REGIONS["asia"]][module.MAX_TARGETS:module.MAX_TARGETS * 2])
+                         [code for code, _ in REGIONS["asia"]][module.MAX_TARGETS_PER_PASS:module.MAX_TARGETS_PER_PASS * 2])
         self.assertEqual(output["ledger"]["distinct_report_groups"], 1)
         self.assertFalse(output["ledger"]["production_admitted"])
         self.assertEqual(report["results"][0]["studies"], [])
@@ -219,7 +219,7 @@ class CountryResearchTests(unittest.TestCase):
 
     def test_prompt_is_bounded_country_only_and_preserves_geo_and_access_rules(self):
         prompt = module.prompt(self.selection())
-        for fragment in ("24 queries TOTAL", "not city research", "Unknown geography stays null",
+        for fragment in ("64 queries TOTAL", "not city research", "Unknown geography stays null",
                          "Do not collect cities", "counterfeit/resealed", "Never multiply box contents"):
             self.assertIn(fragment, prompt)
         self.assertEqual(module.schema(self.selection())["properties"]["sweep"]["enum"], [1])
@@ -335,7 +335,7 @@ class CountryResearchTests(unittest.TestCase):
             prompt = module.prompt(selection, context)
             self.assertIn(angle, prompt)
             for fragment in ("REFERENCE DATA ONLY", "Do not exclude whole hosts",
-                             "SAME identity", "all access restrictions", "24 queries TOTAL",
+                             "SAME identity", "all access restrictions", "64 queries TOTAL",
                              "absence does not prove independence or permission"):
                 self.assertIn(fragment, prompt)
 

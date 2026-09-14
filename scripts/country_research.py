@@ -17,16 +17,19 @@ from global_research import (
 from research_ledger import LEDGER_PATH, append_unique, load as load_research_ledger, save as save_research_ledger
 
 CAMPAIGN = "country-first-20260908-v1"
-# Keep the country pass broad enough to move through the complete ISO/M49
-# inventory in hours rather than days. The shared 24-query cap means each
-# target still gets a bounded search turn; the global pass supplies depth and
-# the ledger keeps every sweep for later deduplication.
+# Keep the validated/historical selection ceiling readable while making new
+# passes small enough to give every target several search turns. The previous
+# 24-target/24-query shape averaged one query per country, which produced a
+# large number of empty passes. New passes use a 12-target/64-query budget;
+# the global pass still supplies depth and the ledger keeps every sweep for
+# later deduplication.
 MAX_TARGETS = 24
+MAX_TARGETS_PER_PASS = 12
 MAX_STUDIES_PER_TARGET = 2
 # Older validated sweeps were allowed six studies per target. Keep that
 # historical ceiling readable while enforcing the smaller cap for new reports.
 MAX_HISTORICAL_STUDIES_PER_TARGET = 6
-MAX_QUERIES = 24
+MAX_QUERIES = 64
 MAX_BYTES = 96 * 1024
 MAX_SWEEPS = 100
 MAX_CONTEXT_BYTES = 12000
@@ -173,7 +176,11 @@ def select_targets(history: list[dict]) -> dict:
         for region in REGION_ORDER:
             remaining = [code for code, _ in REGIONS[region] if (sweep, code) not in completed]
             if remaining:
-                return {"campaign": CAMPAIGN, "sweep": sweep, "targets": remaining[:MAX_TARGETS]}
+                return {
+                    "campaign": CAMPAIGN,
+                    "sweep": sweep,
+                    "targets": remaining[:MAX_TARGETS_PER_PASS],
+                }
     raise ValueError("history_capacity_requires_archive")
 
 
