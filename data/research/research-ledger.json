@@ -18285,6 +18285,278 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-shiny-treasure-ex-100-boosters-2023"
+              ],
+              "country": "FR",
+              "geography_basis": "publisher_country",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "product_named_in_description",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "shiny_treasure_ex",
+              "set": "new_cohort",
+              "source_sample": null,
+              "study_id": "youtube-shiny-treasure-ex-100-boosters-2023",
+              "urls": [
+                "https://youtu.be/NDlrl1ZiG2k"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-shiny-star-v-100-boosters-final-2020"
+              ],
+              "country": "FR",
+              "geography_basis": "publisher_country",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "multi_part_opening_overlap_possible",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "shiny_star_v",
+              "set": "new_cohort",
+              "source_sample": null,
+              "study_id": "youtube-shiny-star-v-100-boosters-final-2020",
+              "urls": [
+                "https://youtu.be/MnMb-Z2TsnU"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-de-mixed-214-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_numerators_not_explicit",
+                "independent-review-pending",
+                "mixed_sets_and_products",
+                "opening_location_not_stated",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 214,
+              "product": "mixed_scarlet_and_violet_sets",
+              "set": "new_cohort",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcg-de-mixed-214-packs",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1mao00s"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-megaevoluzione-100-bustine-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "it",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "megaevoluzione",
+              "set": "new_cohort",
+              "source_sample": null,
+              "study_id": "youtube-megaevoluzione-100-bustine-2025",
+              "urls": [
+                "https://youtu.be/Bawgq0lS-xo"
+              ]
+            }
+          ],
+          "target": "IT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-spanish-mixed-100-packs-2021"
+              ],
+              "country": "ES",
+              "geography_basis": "publisher_country",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "mixed_sets",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed_sets",
+              "set": "new_cohort",
+              "source_sample": null,
+              "study_id": "youtube-spanish-mixed-100-packs-2021",
+              "urls": [
+                "https://youtu.be/NQboNYaS5dE"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-spanish-mixed-100-packs-2018"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "mixed_sets",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed_sets",
+              "set": "new_cohort",
+              "source_sample": null,
+              "study_id": "youtube-spanish-mixed-100-packs-2018",
+              "urls": [
+                "https://youtu.be/kZfFNbGfzVM"
+              ]
+            }
+          ],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-mixed-over-100-packs-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "description_claims_over_100",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "product_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": null,
+              "set": "new_cohort",
+              "source_sample": null,
+              "study_id": "youtube-mixed-over-100-packs-2021",
+              "urls": [
+                "https://youtu.be/VTGw1t3NqBU"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
