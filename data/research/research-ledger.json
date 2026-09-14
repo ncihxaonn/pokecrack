@@ -20302,6 +20302,120 @@
         "GY",
         "PY"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-eleven-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "larger-purchase-partially-opened",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 11,
+              "product": null,
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-eleven-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1veaz76/nieuwe_hobby"
+              ]
+            }
+          ],
+          "target": "SR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-chaos-rising-seventy-two-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "set-level-pack-allocation-thirty-six-each",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 72,
+              "product": "booster-boxes",
+              "set": "pitch-black-and-chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-chaos-rising-seventy-two-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1vj89x1/opened_2_booster_boxes"
+              ]
+            }
+          ],
+          "target": "UY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-unbroken-bonds-ten-plus-detective-pikachu-packs-2019"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "additional-detective-pikachu-packs-unspecified",
+                "collector-policy-not-enabled",
+                "description-claims-ten-unbroken-bonds-packs",
+                "geography-unknown",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "reported-pack-count-is-lower-bound",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 10,
+              "product": null,
+              "set": "unbroken-bonds-and-detective-pikachu",
+              "source_sample": null,
+              "study_id": "youtube-unbroken-bonds-ten-plus-detective-pikachu-packs-2019",
+              "urls": [
+                "https://youtu.be/rjE4MpCUVho"
+              ]
+            }
+          ],
+          "target": "VE"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
     }
   ],
   "global_batches": [
