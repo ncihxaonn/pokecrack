@@ -17638,6 +17638,131 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bilibili-tokyo-pokemon-cards-100-packs-2020"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "mixed-products-mentioned",
+                "opening-location-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon-card-packs-from-tokyo-pokemon-center",
+              "set": "mixed-pokemon-cards",
+              "source_sample": null,
+              "study_id": "bilibili-tokyo-pokemon-cards-100-packs-2020",
+              "urls": [
+                "https://www.bilibili.com/video/BV137411u761"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "bilibili-simplified-chinese-151-gem-100-packs-2025"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "set-allocation-between-packs-unclear",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "simplified-chinese-pokemon-tcg-packs",
+              "set": "simplified-chinese-151-and-gem-pack",
+              "source_sample": null,
+              "study_id": "bilibili-simplified-chinese-151-gem-100-packs-2025",
+              "urls": [
+                "https://www.bilibili.com/video/BV1gshAzQEbh"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
