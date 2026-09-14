@@ -19275,6 +19275,104 @@
         "SZ",
         "ET"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GA"
+        },
+        {
+          "studies": [],
+          "target": "GM"
+        },
+        {
+          "studies": [],
+          "target": "GH"
+        },
+        {
+          "studies": [],
+          "target": "GN"
+        },
+        {
+          "studies": [],
+          "target": "GW"
+        },
+        {
+          "studies": [],
+          "target": "LS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbage-rips-474-pack-opening-archive-2026"
+              ],
+              "country": "US",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "aggregate-across-334-openings",
+                "archive-count-may-change",
+                "collector-policy-not-enabled",
+                "country-outside-target-search-provenance",
+                "independent-review-pending",
+                "mixed-products-and-sets",
+                "no-eligible-integer-hit-metrics-reviewed",
+                "unverified-research"
+              ],
+              "method": "first-party-video-opening-archive",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 474,
+              "product": "mixed-sealed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "garbage-rips-474-pack-opening-archive-2026",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            }
+          ],
+          "target": "LR"
+        },
+        {
+          "studies": [],
+          "target": "LY"
+        },
+        {
+          "studies": [],
+          "target": "MG"
+        },
+        {
+          "studies": [],
+          "target": "MW"
+        },
+        {
+          "studies": [],
+          "target": "ML"
+        },
+        {
+          "studies": [],
+          "target": "MR"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "GA",
+        "GM",
+        "GH",
+        "GN",
+        "GW",
+        "LS",
+        "LR",
+        "LY",
+        "MG",
+        "MW",
+        "ML",
+        "MR"
+      ]
     }
   ],
   "global_batches": [
