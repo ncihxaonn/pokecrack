@@ -20981,6 +20981,97 @@
         "TR",
         "TM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dubai-japanese-one-box-god-pack-2026"
+              ],
+              "country": "AE",
+              "geography_basis": "publisher_country",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "pack-count-not-reported",
+                "publisher-explicitly-states-dubai",
+                "pull-details-image-dependent",
+                "set-not-explicit-in-text",
+                "unverified-research"
+              ],
+              "method": "single-box-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese-booster-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "dubai-japanese-one-box-god-pack-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v1jy6u/i_pulled_a_god_pack_6th_pokemon_box_of_all_time"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "mixed-five-sets-thirty-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-product-sources",
+                "opening-location-not-explicit",
+                "selected-pulls-only",
+                "some-packs-purchased-in-ae-and-others-in-in",
+                "unverified-research"
+              ],
+              "method": "personal-multi-set-opening",
+              "metrics": [
+                {
+                  "category": "selected-pulls",
+                  "hits": 7,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "mixed-booster-packs",
+              "set": "mixed-five-sets",
+              "source_sample": null,
+              "study_id": "mixed-five-sets-thirty-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1ikt8pb"
+              ]
+            }
+          ],
+          "target": "AE"
+        },
+        {
+          "studies": [],
+          "target": "UZ"
+        },
+        {
+          "studies": [],
+          "target": "YE"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "AE",
+        "UZ",
+        "YE"
+      ]
     }
   ],
   "global_batches": [
