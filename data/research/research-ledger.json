@@ -15090,6 +15090,34 @@
         "GY",
         "PY"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [],
+          "target": "SR"
+        },
+        {
+          "studies": [],
+          "target": "UY"
+        },
+        {
+          "studies": [],
+          "target": "VE"
+        }
+      ],
+      "sweep": 5,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
     }
   ],
   "global_batches": [
@@ -39042,6 +39070,434 @@
           "study_id": "reddit_shining_fates_1087",
           "urls": [
             "https://www.reddit.com/r/PokemonTCG/comments/lo8m1v/shining_fates_pull_rate_data_from_1087_packs"
+          ]
+        }
+      ],
+      "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "reddit-fusion-strike-over-4000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact_denominator_not_reported",
+            "independent-review-pending",
+            "metrics_omitted_without_exact_denominator",
+            "opening_location_not_reported",
+            "sampling_provenance_incompletely_described",
+            "unverified_research"
+          ],
+          "method": "compiled_opening_analysis",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 4000,
+          "product": "fusion-strike-booster-packs",
+          "set": "fusion-strike",
+          "source_sample": null,
+          "study_id": "reddit-fusion-strike-over-4000",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/qqpiol/fusion_strike_pull_rates_statistical_analysis_on"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-pitch-black-82"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit_numerators_not_explicit_in_public_extract",
+            "independent-review-pending",
+            "mixed_sealed_product_types",
+            "opening_location_not_reported",
+            "unverified_research"
+          ],
+          "method": "author_reported_personal_opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 82,
+          "product": "booster-box-etb-booster-bundles-sleeved-boosters-and-blister",
+          "set": "pitch-black",
+          "source_sample": null,
+          "study_id": "reddit-pitch-black-82",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCGCollectors/comments/1v0chgb/so_is_my_luck_just_atrocious_or_are_pitch_black_hit_rates_really_bad"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-prismatic-evolutions-40"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "pt",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "combined_two_person_sample",
+            "country_not_explicitly_stated",
+            "independent-review-pending",
+            "sealed_product_mix_not_fully_reported",
+            "subreddit_name_not_used_as_geography_evidence",
+            "unverified_research"
+          ],
+          "method": "two_person_opening_report",
+          "metrics": [
+            {
+              "category": "full_art",
+              "hits": 0,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 40,
+          "product": "sealed-products",
+          "set": "prismatic-evolutions",
+          "source_sample": null,
+          "study_id": "reddit-prismatic-evolutions-40",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCGBrasil/comments/1i7b4hf"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "codedyellow-pokemon-go-38"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "counts_supported_by_public_search_extract",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "page_fetch_failed_during_review",
+            "small_sample",
+            "unverified_research"
+          ],
+          "method": "author_reported_opening_log",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 38,
+          "product": "three-elite-trainer-boxes-and-radiant-eevee-special-collection",
+          "set": "pokemon-go",
+          "source_sample": null,
+          "study_id": "codedyellow-pokemon-go-38",
+          "urls": [
+            "https://www.codedyellow.com/what-is-the-pokemon-go-pull-rate"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcglab-clay-burst-100"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit_counts_not_reviewed",
+            "independent-review-pending",
+            "opening_location_not_explicitly_stated",
+            "pack_count_from_public_title",
+            "unverified_research"
+          ],
+          "method": "public_article_with_embedded_opening",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 100,
+          "product": "japanese-clay-burst-booster-packs",
+          "set": "clay-burst",
+          "source_sample": null,
+          "study_id": "tcglab-clay-burst-100",
+          "urls": [
+            "https://tcg-lab.com/pokemon-card/19929"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-scarlet-violet-over-8000"
+          ],
+          "country": "US",
+          "geography_basis": "publisher_country",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "exact_denominator_not_reported",
+            "independent-review-pending",
+            "metrics_omitted_without_exact_denominator",
+            "publisher_country_not_opening_location",
+            "unverified_research"
+          ],
+          "method": "authentication_center_opening_study",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "scarlet-violet-booster-packs",
+          "set": "scarlet-violet",
+          "source_sample": null,
+          "study_id": "tcgplayer-scarlet-violet-over-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "destructoid-journey-together-38"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "article_also_discusses_external_cohorts",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "small_sample",
+            "unverified_research"
+          ],
+          "method": "editorial_staff_opening",
+          "metrics": [
+            {
+              "category": "ex",
+              "hits": 12,
+              "unit": "cards"
+            },
+            {
+              "category": "full_art",
+              "hits": 2,
+              "unit": "cards"
+            },
+            {
+              "category": "hyper_rare",
+              "hits": 1,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 2,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 1,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 38,
+          "product": "four-elite-trainer-boxes",
+          "set": "journey-together",
+          "source_sample": null,
+          "study_id": "destructoid-journey-together-38",
+          "urls": [
+            "https://www.destructoid.com/pokemon-tcg-journey-together-estimated-pull-rates"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "codedyellow-evolving-skies-weight-108"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "three_booster_boxes_only",
+            "unverified_research",
+            "weight_groups_are_subcohorts"
+          ],
+          "method": "weighed_pack_opening_experiment",
+          "metrics": [
+            {
+              "category": "full_art_vmax",
+              "hits": 8,
+              "unit": "cards"
+            },
+            {
+              "category": "half_art_v",
+              "hits": 12,
+              "unit": "cards"
+            },
+            {
+              "category": "rare_holo",
+              "hits": 21,
+              "unit": "cards"
+            },
+            {
+              "category": "secret_rare",
+              "hits": 1,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare",
+              "hits": 5,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 108,
+          "product": "evolving-skies-booster-boxes",
+          "set": "evolving-skies",
+          "source_sample": null,
+          "study_id": "codedyellow-evolving-skies-weight-108",
+          "urls": [
+            "https://www.codedyellow.com/evolving-skies-pack-weight"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-ascended-heroes-7047"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "god_packs_counted_as_single_sir",
+            "independent-review-pending",
+            "manual_multi_person_collection",
+            "mixed_sealed_product_types",
+            "opening_location_not_reported",
+            "possible_logging_errors",
+            "unverified_research"
+          ],
+          "method": "multi_contributor_manual_opening_log",
+          "metrics": [
+            {
+              "category": "gold_card",
+              "hits": 9,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare_adjusted",
+              "hits": 105,
+              "unit": "packs_with_hit"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 7047,
+          "product": "mixed-blisters-etbs-tins-and-collection-boxes",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "reddit-ascended-heroes-7047",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardshoplive-scarlet-violet-1728"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "do_not_combine_with_cardshoplive_scarlet_violet_1728",
+            "duplicate_summary_of_exact_1728_cohort",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "overlap_confirmed",
+            "unverified_research"
+          ],
+          "method": "author_reported_opening_summary",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1700,
+          "product": "scarlet-violet-booster-packs",
+          "set": "scarlet-violet",
+          "source_sample": null,
+          "study_id": "cardshoplive-scarlet-violet-over-1700-summary",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-scarlet-and-violet"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardshoplive-scarlet-violet-1728"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "commercial_publisher",
+            "independent-review-pending",
+            "opening_location_not_reported",
+            "sampling_not_randomized",
+            "unverified_research"
+          ],
+          "method": "author_reported_opening_log",
+          "metrics": [
+            {
+              "category": "double_rare",
+              "hits": 234,
+              "unit": "cards"
+            },
+            {
+              "category": "gardevoir_ex_special_illustration_rare",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "hyper_rare",
+              "hits": 32,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration_rare",
+              "hits": 130,
+              "unit": "cards"
+            },
+            {
+              "category": "koraidon_ex_hyper_rare",
+              "hits": 4,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon_ex_hyper_rare",
+              "hits": 5,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon_ex_special_illustration_rare",
+              "hits": 7,
+              "unit": "cards"
+            },
+            {
+              "category": "miriam_special_illustration_rare",
+              "hits": 4,
+              "unit": "cards"
+            },
+            {
+              "category": "special_illustration_rare",
+              "hits": 52,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra_rare",
+              "hits": 112,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1728,
+          "product": "scarlet-violet-booster-packs",
+          "set": "scarlet-violet",
+          "source_sample": null,
+          "study_id": "cardshoplive-scarlet-violet-1728",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-scarlet-and-violet"
           ]
         }
       ],
