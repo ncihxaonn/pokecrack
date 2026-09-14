@@ -19555,6 +19555,188 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bleedingcool-lost-origin-booster-box-two"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "independent-review-pending",
+                "packs-not-explicit",
+                "purchase-location-not-opening-location",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "single-box-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "swsh11-lost-origin",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "bleedingcool-lost-origin-box-two",
+              "urls": [
+                "https://bleedingcool.com/games/pokemon-tcg-pull-rate-quest-lost-origin-booster-box-opening-2"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "codedyellow-chilling-reign-72-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "independent-review-pending",
+                "original-page-fetch-timeout",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "two-box-opening-experiment",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 72,
+              "product": "booster-boxes",
+              "set": "swsh6-chilling-reign",
+              "source_sample": null,
+              "study_id": "codedyellow-chilling-reign-72-pack-study",
+              "urls": [
+                "https://www.codedyellow.com/chilling-reign-booster-box-pull-rate"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-victini-illustration-case-24-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-taxonomy-incomplete",
+                "independent-review-pending",
+                "small-sample",
+                "social-post",
+                "unverified-research"
+              ],
+              "method": "case-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 24,
+              "product": "victini-illustration-collection-case",
+              "set": "sv10-5-black-bolt-white-flare",
+              "source_sample": null,
+              "study_id": "reddit-victini-illustration-case-24-pack-opening",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1mjp0wi"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbage-rips-mixed-products-482-pack-catalog-2026"
+              ],
+              "country": "US",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "aggregate-of-distinct-video-openings",
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported-on-summary",
+                "independent-review-pending",
+                "mixed-products",
+                "mixed-sets",
+                "rolling-catalog-snapshot",
+                "unverified-research"
+              ],
+              "method": "cataloged-video-openings",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 482,
+              "product": "mixed-sealed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "garbage-rips-482-pack-opening-catalog",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            }
+          ],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-perfect-order-four-decks-16-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "decks-also-opened",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "small-sample",
+                "social-post",
+                "unverified-research"
+              ],
+              "method": "prerelease-kit-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 16,
+              "product": "prerelease-kits",
+              "set": "me03-perfect-order",
+              "source_sample": null,
+              "study_id": "reddit-perfect-order-four-prerelease-kits-16-packs",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1ruc505"
+              ]
+            }
+          ],
+          "target": "PM"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
