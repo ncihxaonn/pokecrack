@@ -17401,6 +17401,105 @@
         "BZ",
         "CR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SV"
+        },
+        {
+          "studies": [],
+          "target": "GT"
+        },
+        {
+          "studies": [],
+          "target": "HN"
+        },
+        {
+          "studies": [],
+          "target": "NI"
+        },
+        {
+          "studies": [],
+          "target": "PA"
+        },
+        {
+          "studies": [],
+          "target": "BO"
+        },
+        {
+          "studies": [],
+          "target": "BV"
+        },
+        {
+          "studies": [],
+          "target": "EC"
+        },
+        {
+          "studies": [],
+          "target": "FK"
+        },
+        {
+          "studies": [],
+          "target": "GF"
+        },
+        {
+          "studies": [],
+          "target": "GY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-xy-evoluciones-nine-packs-2016"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "indexed-public-description-reports-nine-packs",
+                "opening-location-not-stated",
+                "target-is-search-provenance-only",
+                "unverified-research",
+                "video-page-not-fetched-per-access-restriction"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 9,
+              "product": "xy-evoluciones",
+              "set": "discovery",
+              "source_sample": null,
+              "study_id": "youtube-xy-evoluciones-nine-pack-opening-2016",
+              "urls": [
+                "https://youtu.be/h7pVRkOfagE"
+              ]
+            }
+          ],
+          "target": "PY"
+        }
+      ],
+      "sweep": 6,
+      "targets": [
+        "SV",
+        "GT",
+        "HN",
+        "NI",
+        "PA",
+        "BO",
+        "BV",
+        "EC",
+        "FK",
+        "GF",
+        "GY",
+        "PY"
+      ]
     }
   ],
   "global_batches": [
