@@ -18557,6 +18557,213 @@
         "BA",
         "BG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "czech-whole-booster-box-36-packs-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "czech",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-geography-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-recorded-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "czech-whole-booster-box-36-packs-video-2023",
+              "urls": [
+                "https://youtu.be/RwlACAKA7kU"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "czech-36-packs-400-cards-2019"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "czech",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-geography-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-recorded-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "czech-36-packs-400-cards-video-2019",
+              "urls": [
+                "https://youtu.be/u5dLcPoubjg"
+              ]
+            }
+          ],
+          "target": "CZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "danish-36-pack-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "danish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-geography-unknown",
+                "title-claim-pack-count",
+                "unverified-research"
+              ],
+              "method": "video-recorded-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "danish-36-pack-opening-video-2020",
+              "urls": [
+                "https://youtu.be/kTPt52-IGT8"
+              ]
+            }
+          ],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "finland-over-300-pokemon-boosters-rip-and-ship-2026"
+              ],
+              "country": "FI",
+              "geography_basis": "opening_location",
+              "language": "finnish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-stated-as-suomi-in-title",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "packs-field-preserves-stated-lower-number",
+                "title-claims-over-300-packs",
+                "unverified-research"
+              ],
+              "method": "public-livestream-recording",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 300,
+              "product": null,
+              "set": "mixed-or-unknown",
+              "source_sample": null,
+              "study_id": "finland-over-300-pokemon-boosters-rip-and-ship-2026",
+              "urls": [
+                "https://youtu.be/ZBAAXhAHbLU"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "finnish-36-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "finnish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-geography-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-recorded-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "finnish-36-pack-opening-video-2025",
+              "urls": [
+                "https://youtu.be/Bgaqg_ydX8E"
+              ]
+            }
+          ],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        },
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 7,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
