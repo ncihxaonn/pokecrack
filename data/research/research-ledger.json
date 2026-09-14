@@ -26100,6 +26100,169 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "unbroken-bonds-one-booster-box-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ms",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-explicitly-stated",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "title-and-description-report-one-box",
+                "unverified-research"
+              ],
+              "method": "complete_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "unbroken-bonds",
+              "set": "new",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "malaysia-query-unbroken-bonds-one-box-2020",
+              "urls": [
+                "https://youtu.be/Gp27UPOials"
+              ]
+            }
+          ],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-two-mixed-booster-boxes-72-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-query-provenance",
+                "geography-not-explicitly-stated",
+                "hit-counts-not-explicitly-enumerated",
+                "independent-review-pending",
+                "two-products-combined",
+                "unverified-research"
+              ],
+              "method": "complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 72,
+              "product": "chaos-rising-and-pitch-black",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "philippines-query-two-mixed-booster-boxes-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1vj89x1/opened_2_booster_boxes"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [],
+          "target": "IN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "macao-pokemon-go-s10b-one-box-opening-2022"
+              ],
+              "country": "MO",
+              "geography_basis": "opening_location",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "native-box-count-only",
+                "pack-count-not-reported",
+                "title-claim-requires-video-review",
+                "unverified-research"
+              ],
+              "method": "complete_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pokemon-go-s10b-traditional-chinese",
+              "set": "new",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "macao-pokemon-go-s10b-one-box-opening-2022",
+              "urls": [
+                "https://youtu.be/091H-4VySS4"
+              ]
+            }
+          ],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 10,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
