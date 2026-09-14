@@ -24091,6 +24091,157 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-evolutions-a-paldea-50-boosters-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "title-claim-not-independently-verified",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 50,
+              "product": "evolutions-a-paldea-ev2",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "youtube-evolutions-a-paldea-50-boosters-2023",
+              "urls": [
+                "https://youtu.be/hqeX-3A-v_I"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [],
+          "target": "DE"
+        },
+        {
+          "studies": [],
+          "target": "IT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-resplandor-astral-200-packs-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "title-claims-200-while-description-says-nearly-220",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 200,
+              "product": "resplandor-astral",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "youtube-resplandor-astral-200-packs-2022",
+              "urls": [
+                "https://youtu.be/jZYLiP35b3k"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-astros-brillantes-200-packs-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "title-claim-not-independently-verified",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 200,
+              "product": "astros-brillantes",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "youtube-astros-brillantes-200-packs-2022",
+              "urls": [
+                "https://youtu.be/9sKLLzw6na0"
+              ]
+            }
+          ],
+          "target": "ES"
+        },
+        {
+          "studies": [],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 9,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
