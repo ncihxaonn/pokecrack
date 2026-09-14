@@ -16413,6 +16413,147 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-phantasmal-flames-100-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "aggregate_estimates_excluded",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "separate_prior_booster_box_excluded",
+                "some_reported_rarity_labels_are_internally_ambiguous",
+                "unverified_research"
+              ],
+              "method": "documented_complete_opening",
+              "metrics": [
+                {
+                  "category": "illustration_rare",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mega_charizard_ex_special_illustration_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "phantasmal-flames-booster-packs",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "tcgtalk-phantasmal-flames-100-pack-opening-2025",
+              "urls": [
+                "https://tcgtalk.com/guides/phantasmal-flames-pull-rates-case-opening"
+              ]
+            }
+          ],
+          "target": "ZA"
+        },
+        {
+          "studies": [],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-surging-sparks-55-pack-cohort-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_available_only_in_uncollected_image",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_supplies_pack_count",
+                "unverified_research"
+              ],
+              "method": "complete_opening_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 55,
+              "product": "surging-sparks-booster-packs",
+              "set": "surging-sparks",
+              "source_sample": null,
+              "study_id": "reddit-surging-sparks-55-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncardcollectors/comments/1gxqebc/opened_55_packs_of_surging_sparks_these_were_the"
+              ]
+            }
+          ],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 6,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
