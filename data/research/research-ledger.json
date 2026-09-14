@@ -21742,6 +21742,169 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-product-38-pack-opening-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "product_not_explicit",
+                "set_not_explicit",
+                "unverified_research"
+              ],
+              "method": "self_report",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 38,
+              "product": null,
+              "set": "mixed_or_unstated",
+              "source_sample": null,
+              "study_id": "reddit-mixed-product-38-pack-opening-2022",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/zwczt9"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-swedish-sun-moon-36-pack-box-2017"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "sv",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "completion_not_verified",
+                "country_not_explicit",
+                "independent-review-pending",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "sun-moon",
+              "source_sample": null,
+              "study_id": "youtube-swedish-sun-moon-36-pack-box-2017",
+              "urls": [
+                "https://youtu.be/5mEHrx1YXaI"
+              ]
+            }
+          ],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-prismatic-evolutions-36-pack-opening-fr-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "independent-review-pending",
+                "product_language_not_independently_verified",
+                "self_reported_results",
+                "unverified_research"
+              ],
+              "method": "self_report",
+              "metrics": [
+                {
+                  "category": "alternative_art_cards",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "prismatic_eeveelution_cards",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "mixed_or_unstated",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-prismatic-evolutions-36-pack-opening-fr-2025",
+              "urls": [
+                "https://www.reddit.com/r/pokemonfr/comments/1jk7erd"
+              ]
+            }
+          ],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [],
+          "target": "GI"
+        }
+      ],
+      "sweep": 8,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
