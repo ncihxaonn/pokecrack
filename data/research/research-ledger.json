@@ -16292,6 +16292,104 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [],
+          "target": "SE"
+        },
+        {
+          "studies": [],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbagerips-single-pack-opening-database-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "aggregate-of-111-opening-records",
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "independent-review-pending",
+                "mixed-products-and-sets",
+                "pack-count-exceeds-opening-record-count",
+                "source-methodology-not-independently-verified",
+                "unverified-research"
+              ],
+              "method": "dated-complete-opening-database",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 118,
+              "product": "mixed-single-booster-packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "garbagerips-single-pack-opening-database-2026",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            }
+          ],
+          "target": "GI"
+        }
+      ],
+      "sweep": 6,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
