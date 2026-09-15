@@ -32024,6 +32024,254 @@
         "BZ",
         "CR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SV"
+        },
+        {
+          "studies": [],
+          "target": "GT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-ascenso-heroico-three-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-unstated",
+                "three-pack-denominator-supported-by-public-page-transcript",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": "three-pack-box",
+              "set": "ascenso-heroico",
+              "source_sample": null,
+              "study_id": "dailymotion-ascenso-heroico-three-pack-opening-2026",
+              "urls": [
+                "https://www.dailymotion.com/video/x9zrioi"
+              ]
+            }
+          ],
+          "target": "HN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "meristation-journey-together-three-box-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "mixed-box-formats",
+                "opening-location-unstated",
+                "pack-total-not-explicit",
+                "unverified-research"
+              ],
+              "method": "article-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "elite-trainer-box-and-build-battle-boxes",
+              "set": "journey-together",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "meristation-journey-together-etb-build-battle-opening-2025",
+              "urls": [
+                "https://as.com/meristation/noticias/unboxing-de-pokemon-tcg-juntos-de-aventuras-asi-es-la-caja-de-entrenador-elite-y-apertura-de-sus-primeros-sobres-n"
+              ]
+            }
+          ],
+          "target": "NI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "meristation-phantasmal-flames-nine-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-count-described-but-not-integer-enumerated",
+                "independent-review-pending",
+                "opening-location-unstated",
+                "unverified-research"
+              ],
+              "method": "article-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 9,
+              "product": "elite-trainer-box",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "meristation-phantasmal-flames-nine-pack-opening-2025",
+              "urls": [
+                "https://as.com/meristation/noticias/unboxing-en-video-de-pokemon-tcg-fuegos-fantasmales-una-de-las-cajas-de-entrenador-elite-mas-bonitas-f202511-n"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "vandal-charizard-ex-super-premium-ten-pack-cohort-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "mixed-set-pack-breakdown-unstated",
+                "opening-location-unstated",
+                "publisher-received-review-product",
+                "unverified-research"
+              ],
+              "method": "article-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "charizard-ex-super-premium-collection",
+              "set": "mixed-recent-expansions",
+              "source_sample": null,
+              "study_id": "vandal-charizard-ex-super-premium-ten-pack-opening-2024",
+              "urls": [
+                "https://vandal.elespanol.com/random/abrimos-la-caja-exclusiva-de-pokemon-charizard-ex-super-premium-collection-y-os-contamos-todo-lo-que-incluye/29128.html"
+              ]
+            }
+          ],
+          "target": "PA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-phantasmal-flames-forty-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "description-conflicts-by-claiming-fifty-packs",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-unstated",
+                "publisher-received-review-products",
+                "title-claims-forty-packs",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 40,
+              "product": "elite-trainer-box-booster-box-and-build-battle",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "dailymotion-phantasmal-flames-forty-pack-title-2025",
+              "urls": [
+                "https://www.dailymotion.com/video/x9to5yu"
+              ]
+            }
+          ],
+          "target": "BO"
+        },
+        {
+          "studies": [],
+          "target": "BV"
+        },
+        {
+          "studies": [],
+          "target": "EC"
+        },
+        {
+          "studies": [],
+          "target": "FK"
+        },
+        {
+          "studies": [],
+          "target": "GF"
+        },
+        {
+          "studies": [],
+          "target": "GY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "libertad-digital-absolute-darkness-three-box-cohort-2026"
+              ],
+              "country": "ES",
+              "geography_basis": "product_market",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "mixed-box-formats",
+                "opening-location-unstated",
+                "pack-total-not-explicit",
+                "spanish-product-market-explicit",
+                "unverified-research"
+              ],
+              "method": "article-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "elite-trainer-box-and-build-battle-boxes",
+              "set": "absolute-darkness",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "libertad-digital-absolute-darkness-three-box-opening-2026",
+              "urls": [
+                "https://www.libertaddigital.com/cultura/2026-07-09/abrimos-la-elite-trainer-box-de-oscuridad-absoluta-el-nuevo-set-de-pokemon-7433305"
+              ]
+            }
+          ],
+          "target": "PY"
+        }
+      ],
+      "sweep": 11,
+      "targets": [
+        "SV",
+        "GT",
+        "HN",
+        "NI",
+        "PA",
+        "BO",
+        "BV",
+        "EC",
+        "FK",
+        "GF",
+        "GY",
+        "PY"
+      ]
     }
   ],
   "global_batches": [
