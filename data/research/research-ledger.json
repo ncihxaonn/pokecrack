@@ -30394,6 +30394,213 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-astres-radieux-fr-100-boosters-2022"
+              ],
+              "country": "FR",
+              "geography_basis": "product_market",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "astres-radieux-fr",
+              "set": "new-discovery",
+              "source_sample": null,
+              "study_id": "youtube-astres-radieux-fr-100-boosters-2022",
+              "urls": [
+                "https://youtu.be/BVCMUGd1Kew"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-151-fr-100-boosters-2023"
+              ],
+              "country": "FR",
+              "geography_basis": "product_market",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon-151-fr",
+              "set": "new-discovery",
+              "source_sample": null,
+              "study_id": "youtube-151-fr-100-boosters-2023",
+              "urls": [
+                "https://youtu.be/3SwgfkPqR38"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [],
+          "target": "DE"
+        },
+        {
+          "studies": [],
+          "target": "IT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-spanish-mixed-100-packs-2017"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "mixed-products",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-pokemon-sets",
+              "set": "new-discovery",
+              "source_sample": null,
+              "study_id": "youtube-spanish-mixed-100-packs-2017",
+              "urls": [
+                "https://youtu.be/OuUM7QMMcFw"
+              ]
+            }
+          ],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-celebrations-100-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "celebrations",
+              "set": "new-discovery",
+              "source_sample": null,
+              "study_id": "youtube-celebrations-100-packs",
+              "urls": [
+                "https://youtu.be/DqEbFRXzz_g"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-mega-dream-ex-100-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mega-dream-ex",
+              "set": "new-discovery",
+              "source_sample": null,
+              "study_id": "youtube-mega-dream-ex-100-packs-2025",
+              "urls": [
+                "https://youtu.be/2_gECDuRmJU"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 11,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
