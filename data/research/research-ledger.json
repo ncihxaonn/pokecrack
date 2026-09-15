@@ -33352,6 +33352,130 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "ozbargain-four-pack-blister-one-pack-opening-20241024"
+              ],
+              "country": "AU",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_reported_in_public_forum_comment",
+                "pull_results_not_explicitly_enumerated",
+                "single_pack_sample",
+                "unverified_research_not_approved_for_statistics"
+              ],
+              "method": "self_reported",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "mixed-four-pack-blister",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "ozbargain-four-pack-blister-one-pack-opening-20241024",
+              "urls": [
+                "https://www.ozbargain.com.au/node/873543"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-jb-hifi-three-booster-bundles-20260202"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_denominator_not_explicit",
+                "independent-review-pending",
+                "opening_and_pulls_author_reported",
+                "three_booster_bundles_reported_but_pack_total_not_preserved",
+                "unverified_research_not_approved_for_statistics"
+              ],
+              "method": "self_reported",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "ascended-heroes-booster-bundle",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-jb-hifi-three-booster-bundles-20260202",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFansAustralia/comments/1qti3bl/jb_hifi_sent_me_extra_booster_bundles"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
