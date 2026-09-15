@@ -39897,6 +39897,59 @@
         "GG",
         "GI"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "IM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbage-rips-482-pack-catalog-2026-09-15"
+              ],
+              "country": "US",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "aggregated-across-342-openings",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-products-and-sets",
+                "no-explicit-integer-hit-counts",
+                "not-target-geography",
+                "ongoing-catalog-snapshot-2026-09-15",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening-catalog",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 482,
+              "product": "mixed-sealed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "garbage-rips-482-pack-opening-catalog-2026",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            }
+          ],
+          "target": "JE"
+        },
+        {
+          "studies": [],
+          "target": "SJ"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "IM",
+        "JE",
+        "SJ"
+      ]
     }
   ],
   "global_batches": [
