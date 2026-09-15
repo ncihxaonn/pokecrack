@@ -37666,6 +37666,101 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-400-pack-birthday-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "mixed-products-and-sets",
+                "pack-count-from-public-title",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 400,
+              "product": "mixed-products",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-400-pack-birthday-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1w5omix/opened_400_packs_for_my_23rd_birthday"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mexico-chaos-rising-three-box-cohort-2026"
+              ],
+              "country": "MX",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "later-full-case-update-has-no-explicit-box-count",
+                "metrics-omitted-for-box-denominator",
+                "native-box-count-preserved-without-pack-conversion",
+                "source-text-conflicts-between-three-and-four-boxes",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "chaos-rising",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-mexico-chaos-rising-three-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1thorrg/chaos_rising_pull_rates"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 13,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
