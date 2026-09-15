@@ -38286,6 +38286,131 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [],
+          "target": "PH"
+        },
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "india-terastal-festival-ex-ten-pack-cohort-2025"
+              ],
+              "country": "IN",
+              "geography_basis": "opening_location",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-stated-in-public-title-and-description",
+                "hit-counts-not-summarized",
+                "independent-review-pending",
+                "single-booster-box",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "japanese-terastal-festival-ex-booster-box",
+              "set": "terastal-festival-ex",
+              "source_sample": null,
+              "study_id": "india-terastal-festival-ex-ten-pack-video-2025",
+              "urls": [
+                "https://youtu.be/D_J9LJs-9cU"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-products-fifty-one-pack-reddit-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "mixed-products",
+                "mixed-sets-possible",
+                "unverified-research"
+              ],
+              "method": "completed-pull-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 51,
+              "product": "booster-bundle-booster-box-and-etb",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "mixed-products-fifty-one-pack-reddit-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1uzm3zm/first_time_opening_packs_since_im_12_how_did_i_do"
+              ]
+            }
+          ],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
