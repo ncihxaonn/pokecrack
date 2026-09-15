@@ -29874,6 +29874,304 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-storm-emeralda-1380-pack-aggregate-2026"
+              ],
+              "country": "SG",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "community_aggregated_underlying_cohorts_not_individually_linked",
+                "independent-review-pending",
+                "possible_overlap_with-foresd-storm-emerald-three-box-opening-2026",
+                "publisher_reports_fixed_rates_from_aggregated_openings",
+                "unverified_research"
+              ],
+              "method": "community_aggregate",
+              "metrics": [
+                {
+                  "category": "art_rare",
+                  "hits": 92,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mega_ultra_rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_art_rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "super_rare",
+                  "hits": 92,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare",
+                  "hits": 46,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1380,
+              "product": "japanese-storm-emeralda",
+              "set": "storm-emeralda",
+              "source_sample": null,
+              "study_id": "tcgtalk-storm-emeralda-1380-pack-aggregate-2026",
+              "urls": [
+                "https://tcgtalk.com/guides/storm-emeralda-pull-rates"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "tcgtalk-pokemon-30th-anniversary-300-pack-aggregate-2026"
+              ],
+              "country": "SG",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "community_aggregated_underlying_cohorts_not_individually_linked",
+                "independent-review-pending",
+                "possible_overlap_with_other_public_openings",
+                "rare_tier_sample_sizes_small",
+                "unverified_research"
+              ],
+              "method": "community_aggregate",
+              "metrics": [
+                {
+                  "category": "futuristic_rare",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 16,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 300,
+              "product": "english-pokemon-30th-anniversary",
+              "set": "pokemon-30th-anniversary",
+              "source_sample": null,
+              "study_id": "tcgtalk-pokemon-30th-anniversary-300-pack-aggregate-2026",
+              "urls": [
+                "https://tcgtalk.com/guides/30th-anniversary-pull-rates"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "korean-five-set-mega-swampert-ten-pack-video-2016"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ko",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_country_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 10,
+              "product": "mega-swampert-ex-expansion-set",
+              "set": "mixed-korean-xy-era-sets",
+              "source_sample": null,
+              "study_id": "korean-five-set-mega-swampert-ten-pack-video-2016",
+              "urls": [
+                "https://youtu.be/-RjKe7Kb9rY"
+              ]
+            }
+          ],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "traditional-chinese-stellar-miracle-thirty-pack-video-2024"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_country_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 30,
+              "product": "japanese-stellar-miracle-loose-packs",
+              "set": "stellar-miracle",
+              "source_sample": null,
+              "study_id": "traditional-chinese-stellar-miracle-thirty-pack-video-2024",
+              "urls": [
+                "https://youtu.be/cvnRxJiFhBM"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "traditional-chinese-prismatic-evolutions-thirty-pack-video-2025"
+              ],
+              "country": "US",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_country_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 30,
+              "product": "english-prismatic-evolutions-two-boxes",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "traditional-chinese-prismatic-evolutions-thirty-pack-video-2025",
+              "urls": [
+                "https://youtu.be/TXFdeb5CxFk"
+              ]
+            }
+          ],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "thai-double-burst-set-b-thirty-pack-video-2020"
+              ],
+              "country": "TH",
+              "geography_basis": "product_market",
+              "language": "th",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 30,
+              "product": "thai-double-burst-set-b-booster-box",
+              "set": "double-burst-set-b",
+              "source_sample": null,
+              "study_id": "thai-double-burst-set-b-thirty-pack-video-2020",
+              "urls": [
+                "https://youtu.be/6Kl6-QG7tPM"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "thai-sword-shield-set-a-thirty-pack-video-2020"
+              ],
+              "country": "TH",
+              "geography_basis": "product_market",
+              "language": "th",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 30,
+              "product": "thai-sword-and-shield-set-a-booster-box",
+              "set": "sword-and-shield-set-a",
+              "source_sample": null,
+              "study_id": "thai-sword-shield-set-a-thirty-pack-video-2020",
+              "urls": [
+                "https://youtu.be/TQRHoG28W0E"
+              ]
+            }
+          ],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 11,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
