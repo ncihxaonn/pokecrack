@@ -28390,6 +28390,220 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgplayer-perfect-order-3500-plus-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "integer-hit-counts-not-verified",
+                "more-than-3500-packs-reported",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "authentication-center-bulk-opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 3500,
+              "product": "perfect-order",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "tcgplayer-perfect-order-3500-plus-pack-cohort-2026",
+              "urls": [
+                "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Perfect-Order-Pull-Rates/73148119-ebcb-40b7-84b6-52b3a6d0c631"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "tcgplayer-scarlet-violet-base-8000-plus-pack-cohort-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "more-than-8000-packs-reported",
+                "opening-location-not-stated",
+                "published-percentages-not-converted-to-hit-counts",
+                "unverified-research"
+              ],
+              "method": "authentication-center-bulk-opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 8000,
+              "product": "scarlet-violet-base",
+              "set": "scarlet-violet-base",
+              "source_sample": null,
+              "study_id": "tcgplayer-scarlet-violet-base-8000-plus-pack-cohort-2023",
+              "urls": [
+                "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-brilliant-stars-360-pack-cohort-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "rarity-categories-may-overlap",
+                "ten-booster-box-sample",
+                "unverified-research"
+              ],
+              "method": "multi-box-opening-log",
+              "metrics": [
+                {
+                  "category": "alternate-art",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full-art-trainer-main-set",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokemon-v",
+                  "hits": 48,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokemon-vmax",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokemon-vstar",
+                  "hits": 8,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rainbow-full-art-trainer",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rainbow-vstar",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-rare-gold-main-set",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "total-v-or-better-hits",
+                  "hits": 120,
+                  "unit": "cards"
+                },
+                {
+                  "category": "trainer-gallery-base",
+                  "hits": 29,
+                  "unit": "cards"
+                },
+                {
+                  "category": "trainer-gallery-full-art-trainer",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "trainer-gallery-gold",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "trainer-gallery-v",
+                  "hits": 7,
+                  "unit": "cards"
+                },
+                {
+                  "category": "trainer-gallery-vmax",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 360,
+              "product": "brilliant-stars",
+              "set": "brilliant-stars",
+              "source_sample": null,
+              "study_id": "reddit-brilliant-stars-360-pack-cohort-2022",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/sqxs9u/early_brilliant_stars_calculated_pull_rates"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-lost-origin-1296-pack-cohort-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-visible-in-public-title",
+                "result-table-not-text-verifiable",
+                "unverified-research"
+              ],
+              "method": "complete-multi-box-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1296,
+              "product": "lost-origin",
+              "set": "lost-origin",
+              "source_sample": null,
+              "study_id": "reddit-lost-origin-1296-pack-cohort-2022",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/xb5aq0/lost_origin_pull_rates_36_booster_boxes_1296_packs"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 10,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
