@@ -34927,6 +34927,131 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-mixed-products-86-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_only_visible_in_image",
+                "independent-review-pending",
+                "mixed_product_formats",
+                "no_eligible_metrics_transcribed",
+                "opening_location_not_stated",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 86,
+              "product": "mixed_products",
+              "set": "ascended_heroes",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-mixed-products-86-pack-cohort-2026",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncardcollectors/comments/1rc25jj/opened_nearly_100_packs_today"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-prismatic-evolutions-500-plus-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_explicit_in_accessible_text",
+                "independent-review-pending",
+                "lower_bound_wording_in_title",
+                "no_eligible_metrics_transcribed",
+                "opening_location_not_stated",
+                "opening_spanned_about_six_months",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 500,
+              "product": "mixed_products",
+              "set": "prismatic_evolutions",
+              "source_sample": null,
+              "study_id": "reddit-prismatic-evolutions-500-plus-pack-cohort-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1n9kn25/500_packs_later"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-653-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "body_set_breakdown_sums_to_653_packs",
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_only_visible_in_image",
+                "independent-review-pending",
+                "mixed_sets",
+                "no_eligible_metrics_transcribed",
+                "opening_location_not_stated",
+                "title_reports_650_packs",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 653,
+              "product": "mixed_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-653-pack-cohort-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pz6xq8/opened_650_packs_heres_what_i_got"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
