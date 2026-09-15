@@ -42441,6 +42441,132 @@
         "BA",
         "BG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [],
+          "target": "CZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "danish-store-mixed-series-break-2024"
+              ],
+              "country": "DK",
+              "geography_basis": "publisher_country",
+              "language": "da",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "fifteen_series_reported_but_pack_denominator_missing",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "opening_count_not_reported",
+                "publisher_country_explicit_in_description",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed_series_break",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "danish-store-mixed-series-break-2024",
+              "urls": [
+                "https://youtu.be/qFVWJXdBkdA"
+              ]
+            }
+          ],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        },
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "silver-tempest-first-box-36-packs-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicitly_enumerated",
+                "independent-review-pending",
+                "target_is_search_provenance_only",
+                "title_claim_pack_count",
+                "unknown_geography",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "silver_tempest",
+              "source_sample": null,
+              "study_id": "silver-tempest-first-box-36-packs-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/10oidej"
+              ]
+            }
+          ],
+          "target": "LT"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
