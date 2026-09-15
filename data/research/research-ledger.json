@@ -40734,6 +40734,130 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-burning-shadows-100-pack-cohort-2018"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete_opening_not_manually_reviewed",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "pack_count_visible_in_public_title",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "burning_shadows_booster_packs",
+              "set": "burning_shadows",
+              "source_sample": null,
+              "study_id": "youtube-burning-shadows-100-pack-cohort-2018",
+              "urls": [
+                "https://youtu.be/g78CfwqIx9s"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-four-sword-shield-sets-100-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete_opening_not_manually_reviewed",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "pack_count_visible_in_public_title",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed_sword_shield_booster_packs",
+              "set": "mixed_sword_shield_sets",
+              "source_sample": null,
+              "study_id": "youtube-four-sword-shield-sets-100-pack-cohort-2025",
+              "urls": [
+                "https://youtu.be/c1UKgmnV9yI"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-canada-scarlet-violet-151-two-pack-cohort-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_explicit_but_subnational_location_omitted",
+                "independent-review-pending",
+                "single_named_card_metric_only",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [
+                {
+                  "category": "charizard",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 2,
+              "product": "scarlet_violet_151_booster_packs",
+              "set": "scarlet_violet_151",
+              "source_sample": null,
+              "study_id": "reddit-canada-scarlet-violet-151-two-pack-cohort-2025",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1mtcpv3"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
