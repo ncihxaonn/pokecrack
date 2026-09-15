@@ -43977,6 +43977,129 @@
         "UY",
         "VE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "coded-yellow-chilling-reign-two-box-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "small-two-box-sample",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "first-party-logged-booster-box-opening",
+              "metrics": [
+                {
+                  "category": "full-art-secret-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full-art-ultra-rare",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "holo-rare",
+                  "hits": 13,
+                  "unit": "cards"
+                },
+                {
+                  "category": "packs-with-white-code-card",
+                  "hits": 28,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "v",
+                  "hits": 9,
+                  "unit": "cards"
+                },
+                {
+                  "category": "vmax",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 72,
+              "product": "two-booster-boxes",
+              "set": "chilling-reign",
+              "source_sample": null,
+              "study_id": "coded-yellow-chilling-reign-72-pack-study",
+              "urls": [
+                "https://www.codedyellow.com/chilling-reign-booster-box-pull-rate"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "coded-yellow-paldea-evolved-three-box-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "small-three-box-sample",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "first-party-logged-booster-box-opening",
+              "metrics": [
+                {
+                  "category": "double-rare",
+                  "hits": 15,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 9,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 7,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 108,
+              "product": "three-booster-boxes",
+              "set": "paldea-evolved",
+              "source_sample": null,
+              "study_id": "coded-yellow-paldea-evolved-108-pack-study",
+              "urls": [
+                "https://www.codedyellow.com/paldea-evolved-pull-rate"
+              ]
+            }
+          ],
+          "target": "AQ"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "AQ"
+      ]
     }
   ],
   "global_batches": [
