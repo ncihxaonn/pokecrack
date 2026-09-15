@@ -10,7 +10,10 @@ from pathlib import Path
 LEDGER_VERSION = 1
 LEDGER_PATH = Path(__file__).resolve().parents[1] / "data/research/research-ledger.json"
 LEDGER_KEYS = frozenset({"version", "country_reports", "global_batches", "asia_reports"})
-MAX_LEDGER_BYTES = 2 * 1024 * 1024
+# The append-only history contains country checkpoints as well as global
+# reference batches. Keep a finite bound, but leave room for the scheduled
+# all-country sweeps to progress without invalidating the next checkpoint.
+MAX_LEDGER_BYTES = 8 * 1024 * 1024
 
 
 def _path(path: Path | None = None) -> Path:
