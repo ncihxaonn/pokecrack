@@ -40416,6 +40416,159 @@
         "ML",
         "MR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MU"
+        },
+        {
+          "studies": [],
+          "target": "MZ"
+        },
+        {
+          "studies": [],
+          "target": "NA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-chaos-rising-72-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "hit-results-presented-visually-without-an-explicit-integer-summary",
+                "independent-review-pending",
+                "nonrandom-convenience-sample",
+                "unverified-research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 72,
+              "product": "two-booster-boxes",
+              "set": "pitch-black-and-chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-chaos-rising-72-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1vj89x1/opened_2_booster_boxes"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-obsidian-flames-200-packs-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "independent-review-pending",
+                "nonrandom-convenience-sample",
+                "some-rare-cards-given-away-and-author-flags-their-counts-as-inaccurate",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 200,
+              "product": "mixed-booster-boxes-etbs-bundles-and-loose-packs",
+              "set": "obsidian-flames",
+              "source_sample": null,
+              "study_id": "reddit-obsidian-flames-200-packs-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/15yrsr0/i_opened_up_200_packs_of_obsidian_flames_and_here"
+              ]
+            }
+          ],
+          "target": "NE"
+        },
+        {
+          "studies": [],
+          "target": "RW"
+        },
+        {
+          "studies": [],
+          "target": "ST"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-lost-thunder-full-display-36-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "independent-review-pending",
+                "known-reprint-index-page",
+                "pack-count-supported-by-public-title",
+                "unverified-research",
+                "video-content-not-manually-reviewed"
+              ],
+              "method": "complete-opening-video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster-display",
+              "set": "lost-thunder",
+              "source_sample": null,
+              "study_id": "youtube-lost-thunder-full-display-36-packs",
+              "urls": [
+                "https://www.pkmcards.fr/videos/ZswWvBEGgTM",
+                "https://youtu.be/ZswWvBEGgTM"
+              ]
+            }
+          ],
+          "target": "SN"
+        },
+        {
+          "studies": [],
+          "target": "SC"
+        },
+        {
+          "studies": [],
+          "target": "SL"
+        },
+        {
+          "studies": [],
+          "target": "SO"
+        },
+        {
+          "studies": [],
+          "target": "SS"
+        },
+        {
+          "studies": [],
+          "target": "SD"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "MU",
+        "MZ",
+        "NA",
+        "NE",
+        "RW",
+        "ST",
+        "SN",
+        "SC",
+        "SL",
+        "SO",
+        "SS",
+        "SD"
+      ]
     }
   ],
   "global_batches": [
