@@ -38930,6 +38930,145 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-australia-chaos-rising-81-packs-20260522"
+              ],
+              "country": "AU",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-based-on-australia-specific-publisher-context",
+                "image-reported-pulls-not-transcribed",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "single-opening-cohort",
+                "unverified-research"
+              ],
+              "method": "complete-opening",
+              "metrics": [
+                {
+                  "category": "sir",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 81,
+              "product": "two-booster-boxes-and-one-etb",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-australia-chaos-rising-81-packs-20260522",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFansAustralia/comments/1tkyft6/this_are_my_hits_on_release_day_yes_i_have_little"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-new-zealand-mixed-20-pack-birthday-opening-20260313"
+              ],
+              "country": "NZ",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "earlier-cohort-not-separated",
+                "image-reported-pulls-not-transcribed",
+                "immediate-opening-was-20-packs",
+                "independent-review-pending",
+                "mixed-sets",
+                "reported-57-pack-total-includes-earlier-openings",
+                "unverified-research"
+              ],
+              "method": "complete-opening",
+              "metrics": [
+                {
+                  "category": "ex",
+                  "hits": 4,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "mixed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-new-zealand-mixed-20-pack-birthday-opening-20260313",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1rsecp2/update_on_the_birthday_opening_i_got_cooked"
+              ]
+            }
+          ],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
