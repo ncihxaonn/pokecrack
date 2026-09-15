@@ -44870,6 +44870,132 @@
         "NR",
         "PW"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FM"
+        },
+        {
+          "studies": [],
+          "target": "MH"
+        },
+        {
+          "studies": [],
+          "target": "AS"
+        },
+        {
+          "studies": [],
+          "target": "CK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-four-hundred-pack-birthday-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_unavailable",
+                "independent-review-pending",
+                "product_mix_unspecified",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "complete_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 400,
+              "product": null,
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-four-hundred-pack-birthday-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1w5omix/opened_400_packs_for_my_23rd_birthday"
+              ]
+            }
+          ],
+          "target": "CX"
+        },
+        {
+          "studies": [],
+          "target": "CC"
+        },
+        {
+          "studies": [],
+          "target": "PF"
+        },
+        {
+          "studies": [],
+          "target": "GU"
+        },
+        {
+          "studies": [],
+          "target": "HM"
+        },
+        {
+          "studies": [],
+          "target": "NC"
+        },
+        {
+          "studies": [],
+          "target": "NU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-one-hundred-eighty-pack-sibling-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_unavailable",
+                "independent-review-pending",
+                "product_mix_unspecified",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "complete_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 180,
+              "product": null,
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-one-hundred-eighty-pack-sibling-opening-2023",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/14ql6dk/opening_day_with_my_siblings_180_packs"
+              ]
+            }
+          ],
+          "target": "NF"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "FM",
+        "MH",
+        "AS",
+        "CK",
+        "CX",
+        "CC",
+        "PF",
+        "GU",
+        "HM",
+        "NC",
+        "NU",
+        "NF"
+      ]
     }
   ],
   "global_batches": [
