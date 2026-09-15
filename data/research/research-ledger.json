@@ -39183,6 +39183,104 @@
         "NU",
         "NF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MP"
+        },
+        {
+          "studies": [],
+          "target": "PN"
+        },
+        {
+          "studies": [],
+          "target": "TK"
+        },
+        {
+          "studies": [],
+          "target": "UM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-nuit-noire-one-display-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "not-tied-to-target-geography",
+                "pack-count-not-reported",
+                "results-shown-in-images-not-collected",
+                "unverified-public-self-report"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-display",
+              "set": "nuit-noire",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-nuit-noire-one-display-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1vcpbei/voici_les_meilleurs_cartes_que_jai_eu_suite_a"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-quebec-mixed-one-hundred-pack-opening-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-products-no-per-set-denominators",
+                "not-tied-to-target-geography",
+                "subjective-hit-category",
+                "unverified-public-self-report"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [
+                {
+                  "category": "vstar-universe-10-pack-notable-cards",
+                  "hits": 14,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "mixed-etb-and-booster-boxes",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-quebec-mixed-one-hundred-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1isgyvt/une_soir%C3%A9e_m%C3%A9morable"
+              ]
+            }
+          ],
+          "target": "WF"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "MP",
+        "PN",
+        "TK",
+        "UM",
+        "WF"
+      ]
     }
   ],
   "global_batches": [
