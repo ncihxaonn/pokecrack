@@ -44295,6 +44295,165 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokemon-151-mini-tins-ten-box-opening-20231015"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "container_pack_count_not_converted",
+                "hit_counts_not_reviewed",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_only_count",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pokemon-tcg-151-mini-tins",
+              "set": "new",
+              "source_sample": {
+                "count": 10,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "bilibili-pokemon-151-mini-tins-ten-box-opening-2023",
+              "urls": [
+                "https://www.bilibili.com/video/BV1iu411T7rf"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-japanese-rare-packs-one-hundred-opening-2023"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_reflects_product_market_not_opening_location",
+                "hit_counts_not_reviewed",
+                "independent-review-pending",
+                "mixed_products",
+                "opening_location_not_stated",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-japanese-sets",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "mixed-japanese-rare-packs-one-hundred-opening-2023",
+              "urls": [
+                "https://youtu.be/nZ16kgFN6MQ"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "clay-burst-one-hundred-pack-opening-2023"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_reflects_product_market_not_opening_location",
+                "hit_counts_not_reviewed",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "clay-burst",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "clay-burst-one-hundred-pack-video-opening-2023",
+              "urls": [
+                "https://youtu.be/tP_PSXnrXWg"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
