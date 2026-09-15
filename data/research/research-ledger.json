@@ -35251,6 +35251,103 @@
         "MQ",
         "MS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-puerto-rico-first-booster-bundle-pack-2025"
+              ],
+              "country": "PR",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-explicit-in-public-post-discussion",
+                "independent-review-pending",
+                "no-explicit-integer-hit-count-recorded",
+                "pack-count-from-title",
+                "single-pack-opening",
+                "unverified-research"
+              ],
+              "method": "public-social-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1,
+              "product": "booster-bundle",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-puerto-rico-first-booster-bundle-pack-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1kptqk8"
+              ]
+            }
+          ],
+          "target": "PR"
+        },
+        {
+          "studies": [],
+          "target": "BL"
+        },
+        {
+          "studies": [],
+          "target": "KN"
+        },
+        {
+          "studies": [],
+          "target": "LC"
+        },
+        {
+          "studies": [],
+          "target": "MF"
+        },
+        {
+          "studies": [],
+          "target": "VC"
+        },
+        {
+          "studies": [],
+          "target": "SX"
+        },
+        {
+          "studies": [],
+          "target": "TT"
+        },
+        {
+          "studies": [],
+          "target": "TC"
+        },
+        {
+          "studies": [],
+          "target": "VI"
+        },
+        {
+          "studies": [],
+          "target": "BZ"
+        },
+        {
+          "studies": [],
+          "target": "CR"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "PR",
+        "BL",
+        "KN",
+        "LC",
+        "MF",
+        "VC",
+        "SX",
+        "TT",
+        "TC",
+        "VI",
+        "BZ",
+        "CR"
+      ]
     }
   ],
   "global_batches": [
