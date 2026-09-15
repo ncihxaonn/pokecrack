@@ -38411,6 +38411,268 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "smzdm-awakening-blade-coin-collections-24-packs-20260130"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-sufficiently-explicit",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "search-visible-report-reviewed",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 24,
+              "product": "simplified-chinese-coin-collection",
+              "set": "awakening-blade",
+              "source_sample": null,
+              "study_id": "smzdm-awakening-blade-coin-collections-24-packs-20260130",
+              "urls": [
+                "https://post.smzdm.com/p/an5rm0e0"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "indonesian-fate-bonds-one-booster-box-20250421"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-not-converted-from-box",
+                "title-claims-one-booster-box",
+                "unverified-research",
+                "youtube-page-not-fetched"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "indonesian-booster-box",
+              "set": "fate-bonds",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "indonesian-fate-bonds-one-booster-box-20250421",
+              "urls": [
+                "https://youtu.be/ppdmulC2tJQ"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "indonesian-first-impact-b-one-booster-box-20190831"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-not-converted-from-box",
+                "title-claims-one-booster-box",
+                "unverified-research",
+                "youtube-page-not-fetched"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "indonesian-booster-box",
+              "set": "first-impact-b",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "indonesian-first-impact-b-one-booster-box-20190831",
+              "urls": [
+                "https://youtu.be/h4jaNaLLss4"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "hebrew-gem-pack-vol-2-one-box-20250628"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "he",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-not-converted-from-box",
+                "title-and-description-claim-one-booster-box",
+                "unverified-research",
+                "youtube-page-not-fetched"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "gem-pack-vol-2",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "hebrew-gem-pack-vol-2-one-box-20250628",
+              "urls": [
+                "https://youtu.be/FMbEiMZ_h14"
+              ]
+            }
+          ],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "azalea-inferno-x-weighted-ten-pack-opening-20251011"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-eligible-explicit-integer-metrics-recorded",
+                "opening-location-not-stated",
+                "small-sample",
+                "unverified-research",
+                "weight-selected-sample"
+              ],
+              "method": "weighed-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "japanese-booster-packs",
+              "set": "inferno-x",
+              "source_sample": null,
+              "study_id": "azalea-inferno-x-weighted-ten-pack-opening-20251011",
+              "urls": [
+                "https://note.com/azalea_369mnote/n/nc84075b62299"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "yunomi-battle-partners-ten-loose-packs-20250521"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "category-page-contains-multiple-distinct-opening-logs",
+                "cohort-limited-to-dated-20250521-entry",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [
+                {
+                  "category": "art-rare-cards",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-rare-cards",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "japanese-loose-booster-packs",
+              "set": "battle-partners",
+              "source_sample": null,
+              "study_id": "yunomi-battle-partners-ten-loose-packs-20250521",
+              "urls": [
+                "https://yunomi4-pokeca.blog.jp/archives/cat_105037.html"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
