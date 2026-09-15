@@ -37166,6 +37166,143 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-swedish-single-pack-opening-2023"
+              ],
+              "country": "SE",
+              "geography_basis": "opening_location",
+              "language": "sv",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete_opening_not_manually_verified",
+                "country_stated_in_public_description",
+                "independent-review-pending",
+                "no_hit_counts",
+                "single_pack_sample",
+                "unverified_research"
+              ],
+              "method": "video_recorded",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-swedish-single-pack-opening-2023",
+              "urls": [
+                "https://youtu.be/uoSaGHaT2rM"
+              ]
+            }
+          ],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-78-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete_opening_not_manually_verified",
+                "country_not_stated",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "self_reported",
+                "unverified_research"
+              ],
+              "method": "self_reported",
+              "metrics": [
+                {
+                  "category": "god_pack",
+                  "hits": 1,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "sir",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 78,
+              "product": "mixed_products",
+              "set": "ascended_heroes",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-78-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1thrccu/erhabene_helden_pullrate"
+              ]
+            }
+          ],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [],
+          "target": "GI"
+        }
+      ],
+      "sweep": 13,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
