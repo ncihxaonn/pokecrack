@@ -40569,6 +40569,295 @@
         "SS",
         "SD"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "gamesradar-chaos-rising-17-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-reported",
+                "independent-review-pending",
+                "narrative-log-not-exhaustive-pull-table",
+                "only-explicit-integer-hits-recorded",
+                "unverified-research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [
+                {
+                  "category": "illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 17,
+              "product": "chaos-rising-booster-packs",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "gamesradar-chaos-rising-17-pack-opening-2026",
+              "urls": [
+                "https://www.gamesradar.com/tabletop-gaming/pokemon-card-resellers-are-ruining-the-hobby-but-making-my-own-pokedex-got-me-back-in-the-game"
+              ]
+            }
+          ],
+          "target": "TZ"
+        },
+        {
+          "studies": [],
+          "target": "TG"
+        },
+        {
+          "studies": [],
+          "target": "TN"
+        },
+        {
+          "studies": [],
+          "target": "UG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-first-opening-122-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-reported",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "pack-count-from-title",
+                "product-mix-not-established",
+                "unverified-research"
+              ],
+              "method": "public-post-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 122,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-first-opening-122-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1ubipf5/first_time_opening_packs_hits_of_122_packs"
+              ]
+            }
+          ],
+          "target": "ZM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-126-pack-opening-cohort-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-reported",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "pack-count-from-title",
+                "product-mix-not-established",
+                "unverified-research"
+              ],
+              "method": "public-post-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 126,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-126-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1defjqz/126_packs_opened"
+              ]
+            }
+          ],
+          "target": "ZW"
+        },
+        {
+          "studies": [],
+          "target": "IO"
+        },
+        {
+          "studies": [],
+          "target": "TF"
+        },
+        {
+          "studies": [],
+          "target": "YT"
+        },
+        {
+          "studies": [],
+          "target": "RE"
+        },
+        {
+          "studies": [],
+          "target": "SH"
+        },
+        {
+          "studies": [],
+          "target": "EH"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "TZ",
+        "TG",
+        "TN",
+        "UG",
+        "ZM",
+        "ZW",
+        "IO",
+        "TF",
+        "YT",
+        "RE",
+        "SH",
+        "EH"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-burning-shadows-100-pack-cohort-2018"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete_opening_not_manually_reviewed",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "pack_count_visible_in_public_title",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "burning_shadows_booster_packs",
+              "set": "burning_shadows",
+              "source_sample": null,
+              "study_id": "youtube-burning-shadows-100-pack-cohort-2018",
+              "urls": [
+                "https://youtu.be/g78CfwqIx9s"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-four-sword-shield-sets-100-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete_opening_not_manually_reviewed",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "pack_count_visible_in_public_title",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed_sword_shield_booster_packs",
+              "set": "mixed_sword_shield_sets",
+              "source_sample": null,
+              "study_id": "youtube-four-sword-shield-sets-100-pack-cohort-2025",
+              "urls": [
+                "https://youtu.be/c1UKgmnV9yI"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-canada-scarlet-violet-151-two-pack-cohort-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_explicit_but_subnational_location_omitted",
+                "independent-review-pending",
+                "single_named_card_metric_only",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [
+                {
+                  "category": "charizard",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 2,
+              "product": "scarlet_violet_151_booster_packs",
+              "set": "scarlet_violet_151",
+              "source_sample": null,
+              "study_id": "reddit-canada-scarlet-violet-151-two-pack-cohort-2025",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1mtcpv3"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
