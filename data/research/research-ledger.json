@@ -39281,6 +39281,272 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pkmcards-mixed-100-boosters-video"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon_tcg_booster_packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "pkmcards-mixed-100-boosters-video",
+              "urls": [
+                "https://www.pkmcards.fr/videos/wiKbZKOC03A"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-last-time-100-boosters-opening"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "german",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon_tcg_booster_packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-last-time-100-boosters-opening",
+              "urls": [
+                "https://youtu.be/_ClDXK8vJLs"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-lost-origin-100-packs-italian"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "italian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "single_target_card_framing",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon_tcg_booster_packs",
+              "set": "lost_origin",
+              "source_sample": null,
+              "study_id": "youtube-lost-origin-100-packs-italian",
+              "urls": [
+                "https://youtu.be/axs1PX0uRMA"
+              ]
+            }
+          ],
+          "target": "IT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-pokemillon-100-packs-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "spanish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "reported_secret_count_not_used_without_exact_denominator",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon_tcg_booster_packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-pokemillon-100-packs-2022",
+              "urls": [
+                "https://youtu.be/gT-vRfi4uS4"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-spanish-mixed-100-packs-2017"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "spanish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon_tcg_booster_packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-spanish-mixed-100-packs-2017",
+              "urls": [
+                "https://youtu.be/OuUM7QMMcFw"
+              ]
+            }
+          ],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-darkness-ablaze-100-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "overlap_unresolved",
+                "title_claim_conflicts_with_description_108_packs",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon_tcg_booster_packs",
+              "set": "darkness_ablaze",
+              "source_sample": null,
+              "study_id": "youtube-darkness-ablaze-100-packs",
+              "urls": [
+                "https://youtu.be/k1b6a1V9HgE"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-german-giant-100-boosters"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "german",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_established",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon_tcg_booster_packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-german-giant-100-boosters",
+              "urls": [
+                "https://youtu.be/98RDUH0NF_Y"
+              ]
+            }
+          ],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
