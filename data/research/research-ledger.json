@@ -33147,6 +33147,188 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "obsidian-flames-nine-pack-reddit-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "author_deleted",
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_counts_not_textually_enumerated",
+                "independent-review-pending",
+                "partial_booster_box_cohort",
+                "unverified_research"
+              ],
+              "method": "social_post_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 9,
+              "product": "booster_box_partial_opening",
+              "set": "scarlet-violet-obsidian-flames",
+              "source_sample": null,
+              "study_id": "obsidian-flames-nine-pack-reddit-cohort",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_Singapore/comments/1j5plzo/opened_936_packs_today_here_are_my_1_star_and"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "korean-inferno-x-one-box-packaging-study-2026"
+              ],
+              "country": "KR",
+              "geography_basis": "product_market",
+              "language": "ko",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_ambiguous",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "packaging_selection_observation_not_validated",
+                "prior_boxes_mentioned_not_aggregated",
+                "single_box",
+                "unverified_research"
+              ],
+              "method": "article_documented_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "korean_inferno_x_booster_box",
+              "set": "inferno-x",
+              "source_sample": null,
+              "study_id": "korean-inferno-x-one-box-packaging-study-2026",
+              "urls": [
+                "https://limitsend.tistory.com/entry/%ED%8F%AC%EC%BC%93%EB%AA%AC%EC%B9%B4%EB%93%9C-%EB%82%B1%EA%B0%9C%ED%8C%A9-%EA%B5%AC%EB%A7%A4%EB%A5%BC-%EC%A1%B0%EC%8B%AC%ED%95%B4%EC%95%BC-%ED%95%98%EB%8A%94-%EC%9D%B4%EC%9C%A0%EF%BD%9C%EC%9D%B8%ED%8E%98%EB%A5%B4%EB%85%B8X-%EC%A7%81%EC%A0%91-%EA%B0%9C%EB%B4%89%ED%95%B4%EB%B3%B4%EB%8B%88"
+              ]
+            }
+          ],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "thai-fusion-arts-thirty-pack-video-2021"
+              ],
+              "country": "TH",
+              "geography_basis": "product_market",
+              "language": "th",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_enumerated",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "title_and_description_evidence",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "thai_s8_t_booster_box",
+              "set": "sword-shield-fusion-arts",
+              "source_sample": null,
+              "study_id": "thai-fusion-arts-thirty-pack-video-2021",
+              "urls": [
+                "https://youtu.be/tsklCJokG68"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "thai-shiny-vmax-set-b-thirty-pack-video-2021"
+              ],
+              "country": "TH",
+              "geography_basis": "product_market",
+              "language": "th",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_enumerated",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "title_and_description_evidence",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "thai_sc3b_t_booster_box",
+              "set": "sword-shield-shiny-vmax-set-b",
+              "source_sample": null,
+              "study_id": "thai-shiny-vmax-set-b-thirty-pack-video-2021",
+              "urls": [
+                "https://youtu.be/iZn-j2WtEHQ"
+              ]
+            }
+          ],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
