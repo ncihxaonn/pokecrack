@@ -31012,6 +31012,166 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-south-africa-first-genuine-packs-2023"
+              ],
+              "country": "ZA",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_usable",
+                "independent-review-pending",
+                "opening_location_statement_is_country_level_only",
+                "pack_count_not_reported",
+                "product_not_identified",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-south-africa-first-genuine-packs-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/142bw5r"
+              ]
+            }
+          ],
+          "target": "ZA"
+        },
+        {
+          "studies": [],
+          "target": "EG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbage-rips-482-pack-opening-archive-2026"
+              ],
+              "country": "US",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "aggregate_contains_multiple_products_and_sets",
+                "archive_is_dynamic_and_count_may_change",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "individual_hit_numerators_not_reported_on_summary_page",
+                "search_target_is_provenance_only_not_study_geography",
+                "unverified_research"
+              ],
+              "method": "first_party_video_archive_aggregate",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 482,
+              "product": "mixed_sealed_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "garbage-rips-482-pack-opening-archive-2026",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            }
+          ],
+          "target": "KE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "9to5toys-chaos-rising-36-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_definition_not_formally_specified",
+                "independent-review-pending",
+                "search_target_is_provenance_only_not_study_geography",
+                "unverified_research"
+              ],
+              "method": "first_party_article_and_video_report",
+              "metrics": [
+                {
+                  "category": "hits",
+                  "hits": 15,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "chaos_rising_booster_box",
+              "set": "chaos_rising",
+              "source_sample": null,
+              "study_id": "9to5toys-chaos-rising-36-pack-opening-2026",
+              "urls": [
+                "https://9to5toys.com/2026/05/12/pokemon-chaos-rising-rising-booster-box-opening"
+              ]
+            }
+          ],
+          "target": "NG"
+        },
+        {
+          "studies": [],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 11,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
