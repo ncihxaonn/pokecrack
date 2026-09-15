@@ -41473,6 +41473,195 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "simplified-chinese-ten-zero-fat-carton-20250322"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh-hans",
+              "limitations": [
+                "box_count_not_stated",
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-ten-zero-fat-box",
+              "set": "new",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "cartons"
+              },
+              "study_id": "simplified-chinese-ten-zero-fat-carton-20250322",
+              "urls": [
+                "https://www.bilibili.com/video/BV1NBXWYSEHE"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "simplified-chinese-seven-zero-twenty-box-carton-20240619"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh-hans",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-seven-zero",
+              "set": "new",
+              "source_sample": {
+                "count": 20,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "simplified-chinese-seven-zero-twenty-box-carton-20240619",
+              "urls": [
+                "https://www.bilibili.com/video/BV1obgTeYEVS"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "battle-partners-three-box-opening-20250206"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "unverified_research"
+              ],
+              "method": "article_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "battle-partners",
+              "set": "new",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "battle-partners-three-box-opening-20250206",
+              "urls": [
+                "https://note.com/sendagitter/n/n5957031eab41"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "paradise-dragona-twenty-loose-packs-part-three-20260606"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "loose_packs_from_resale_market",
+                "opening_location_not_stated",
+                "overlap-unresolved",
+                "unverified_research"
+              ],
+              "method": "article_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "paradise-dragona",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "paradise-dragona-twenty-loose-packs-part-three-20260606",
+              "urls": [
+                "https://konekkonekko.hatenablog.com/entry/2026/06/06/180702"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
