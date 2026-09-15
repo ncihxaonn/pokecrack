@@ -41900,6 +41900,114 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-new-zealand-mega-evolution-seven-pack-opening-2025"
+              ],
+              "country": "NZ",
+              "geography_basis": "opening_location",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-categories-author-reported",
+                "independent-review-pending",
+                "no-independent-source-approval",
+                "opening-location-stated-in-public-post",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "author_reported",
+              "metrics": [
+                {
+                  "category": "illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mega",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 7,
+              "product": "mega-evolution",
+              "set": "new-zealand-mega-evolution-seven-pack-opening-2025",
+              "source_sample": null,
+              "study_id": "reddit-new-zealand-mega-evolution-seven-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncardcollectors/comments/1nymqlp"
+              ]
+            }
+          ],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
