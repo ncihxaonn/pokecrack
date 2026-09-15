@@ -31478,6 +31478,199 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "cardshoplive-crown-zenith-1000-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "possible-overlap-with-livestream-breaks-unresolved",
+                "self-reported-store-experiment",
+                "unverified-research"
+              ],
+              "method": "first-party-store-opening-tally",
+              "metrics": [
+                {
+                  "category": "galarian-gallery-gold",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "galarian-gallery-silver",
+                  "hits": 105,
+                  "unit": "cards"
+                },
+                {
+                  "category": "galarian-gallery-yellow",
+                  "hits": 190,
+                  "unit": "cards"
+                },
+                {
+                  "category": "holo-v",
+                  "hits": 105,
+                  "unit": "cards"
+                },
+                {
+                  "category": "radiant-rare",
+                  "hits": 30,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-rare-pikachu",
+                  "hits": 15,
+                  "unit": "cards"
+                },
+                {
+                  "category": "textured-energy",
+                  "hits": 24,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare-trainer",
+                  "hits": 35,
+                  "unit": "cards"
+                },
+                {
+                  "category": "vstar-or-vmax",
+                  "hits": 56,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1000,
+              "product": "crown-zenith-booster-packs",
+              "set": "crown-zenith",
+              "source_sample": null,
+              "study_id": "cardshoplive-crown-zenith-1000-pack-study",
+              "urls": [
+                "https://cardshoplive.com/pages/hit-rates-for-pokemon-crown-zenith"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "cardshoplive-scarlet-violet-1728-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "possible-overlap-with-livestream-breaks-unresolved",
+                "self-reported-store-experiment",
+                "unverified-research"
+              ],
+              "method": "first-party-store-opening-tally",
+              "metrics": [
+                {
+                  "category": "double-rare",
+                  "hits": 234,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper-rare",
+                  "hits": 32,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 130,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 52,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 112,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1728,
+              "product": "scarlet-violet-booster-packs",
+              "set": "scarlet-violet-base",
+              "source_sample": null,
+              "study_id": "cardshoplive-scarlet-violet-1728-pack-study",
+              "urls": [
+                "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-scarlet-and-violet"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-canada-market-mixed-products-over-600-pack-cohort-2023"
+              ],
+              "country": "CA",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "canada-stated-for-product-purchases-only",
+                "collector-policy-not-enabled",
+                "component-counts-partly-approximate",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "mixed-sets-and-products",
+                "opening-location-not-stated",
+                "overlap-unresolved",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 600,
+              "product": "mixed-pokemon-tcg-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-over-600-pack-opening-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/17ruy1o"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 11,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
