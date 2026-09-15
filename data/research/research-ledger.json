@@ -32371,6 +32371,373 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "malay-stellar-crown-one-booster-box-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ms",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "title-only-box-count",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "stellar-crown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "malay-stellar-crown-one-booster-box-video-2024",
+              "urls": [
+                "https://youtu.be/nFXCNrFgIXQ"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "malay-mega-evolution-one-booster-box-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ms",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "title-only-box-count",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "mega-evolution",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "malay-mega-evolution-one-booster-box-video-2025",
+              "urls": [
+                "https://youtu.be/P1Ni4V_hpU8"
+              ]
+            }
+          ],
+          "target": "MY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "vietnamese-booster-box-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "vi",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "product-set-not-stated",
+                "title-only-box-count",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "unknown-set",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "vietnamese-booster-box-opening-video-2024",
+              "urls": [
+                "https://youtu.be/3BhIBgJp7Yg"
+              ]
+            }
+          ],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "philippines-pitch-black-seven-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en-tl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit-in-source",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 7,
+              "product": "loose-booster-packs",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "philippines-pitch-black-seven-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1w30l7m/tcg_nook_haul"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "philippines-pitch-black-one-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en-tl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit-in-source",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "loose-booster-pack",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "philippines-pitch-black-one-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1wawb82/newbie_at_collecting_need_advice"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "hong-kong-storm-emeralda-partner-set-forty-pack-2026"
+              ],
+              "country": "HK",
+              "geography_basis": "publisher_country",
+              "language": "zh-hant",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 40,
+              "product": "mega-evolution-partner-set",
+              "set": "storm-emeralda",
+              "source_sample": null,
+              "study_id": "hong-kong-storm-emeralda-partner-set-forty-pack-video-2026",
+              "urls": [
+                "https://youtu.be/189odbU8pIg"
+              ]
+            }
+          ],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "india-two-booster-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit-in-source",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "product-set-not-stated",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 2,
+              "product": "booster-packs",
+              "set": "unknown-set",
+              "source_sample": null,
+              "study_id": "india-two-booster-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1rbfw59/just_opened_my_1st_two_booster_packs"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "india-single-booster-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit-in-source",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "product-set-not-stated",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "booster-pack",
+              "set": "unknown-set",
+              "source_sample": null,
+              "study_id": "india-single-booster-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1pgdjae/opened_my_first_booster_pack_today"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bangladesh-korean-one-booster-box-2025"
+              ],
+              "country": "BD",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "product-set-not-stated",
+                "title-only-box-count",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "korean-booster-box",
+              "set": "unknown-set",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "bangladesh-korean-one-booster-box-video-2025",
+              "urls": [
+                "https://youtu.be/Nk_Q5GvoL0g"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "bangladesh-dark-crystal-blaze-one-box-2026"
+              ],
+              "country": "BD",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "product-authenticity-not-independently-verified",
+                "title-only-box-count",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "chinese-booster-box",
+              "set": "dark-crystal-blaze",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "bangladesh-dark-crystal-blaze-one-box-video-2026",
+              "urls": [
+                "https://youtu.be/yEvn_RYFSkE"
+              ]
+            }
+          ],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
