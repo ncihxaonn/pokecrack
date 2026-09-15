@@ -35473,6 +35473,74 @@
         "UY",
         "VE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbage-rips-rochester-342-opening-catalog-2026"
+              ],
+              "country": "US",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "aggregate-across-342-openings",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-explicit-hit-numerator-reviewed",
+                "not-antarctic-opening",
+                "unverified-research"
+              ],
+              "method": "author-reported-video-catalog",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 482,
+              "product": "mixed-sealed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "garbage-rips-rochester-482-pack-catalog-2026",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-mixed-german-122-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "not-antarctic-opening",
+                "opening-location-not-stated",
+                "pulls-shown-without-reviewed-integer-category-counts",
+                "unverified-research"
+              ],
+              "method": "author-reported-social-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 122,
+              "product": "german-chaos-rising-prismatic-evolutions-ascending-heroes-perfect-order",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-german-122-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1ubipf5/first_time_opening_packs_hits_of_122_packs"
+              ]
+            }
+          ],
+          "target": "AQ"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "AQ"
+      ]
     }
   ],
   "global_batches": [
