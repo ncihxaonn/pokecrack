@@ -44100,6 +44100,201 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "malaysia-surging-sparks-five-pack-cohort-2024"
+              ],
+              "country": "MY",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "images_not_reviewed",
+                "independent-review-pending",
+                "self_reported_count",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [
+                {
+                  "category": "full-art",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 5,
+              "product": "surging-sparks-booster-packs",
+              "set": "surging-sparks",
+              "source_sample": null,
+              "study_id": "malaysia-surging-sparks-five-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1h9dauq"
+              ]
+            }
+          ],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [],
+          "target": "PH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "hong-kong-pitch-black-single-pack-cohort-2026"
+              ],
+              "country": "HK",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_category_not_explicit",
+                "images_not_reviewed",
+                "independent-review-pending",
+                "self_reported_count",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "pitch-black-booster-pack",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "hong-kong-pitch-black-single-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1vfyzsg/opened_a_single_pack_of_pitch_black_last_night"
+              ]
+            }
+          ],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mega-symphonia-heat-wave-arena-ten-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_explicit",
+                "images_not_reviewed",
+                "independent-review-pending",
+                "self_reported_count",
+                "target_provenance_only",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "six-mega-symphonia-four-heat-wave-arena-packs",
+              "set": "mixed-mega-symphonia-heat-wave-arena",
+              "source_sample": null,
+              "study_id": "mega-symphonia-heat-wave-arena-ten-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1pha0v3/bought_for_first_time_opened_10_packs_and_i_got"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bangladesh-japanese-booster-box-cohort-2025"
+              ],
+              "country": "BD",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_worded_as_question_in_title",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "pack_count_not_reported",
+                "title_only_box_count",
+                "unverified_research",
+                "video_not_reviewed"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese-booster-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "bangladesh-japanese-booster-box-opening-2025",
+              "urls": [
+                "https://youtu.be/ZYjz1u6fUp0"
+              ]
+            }
+          ],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
