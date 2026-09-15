@@ -43268,6 +43268,105 @@
         "SS",
         "SD"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TZ"
+        },
+        {
+          "studies": [],
+          "target": "TG"
+        },
+        {
+          "studies": [],
+          "target": "TN"
+        },
+        {
+          "studies": [],
+          "target": "UG"
+        },
+        {
+          "studies": [],
+          "target": "ZM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-347-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_count_not_author_reported_as_integer",
+                "images_not_reviewed_or_collected",
+                "independent-review-pending",
+                "mixed_products_and_sets",
+                "not_explicitly_linked_to_target_country",
+                "pack_count_from_title",
+                "unverified_research"
+              ],
+              "method": "social_post_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 347,
+              "product": "mixed_physical_pokemon_tcg_products",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-347-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1vk139a/ripped_347_packs_that_i_collected_all_year_for_my"
+              ]
+            }
+          ],
+          "target": "ZW"
+        },
+        {
+          "studies": [],
+          "target": "IO"
+        },
+        {
+          "studies": [],
+          "target": "TF"
+        },
+        {
+          "studies": [],
+          "target": "YT"
+        },
+        {
+          "studies": [],
+          "target": "RE"
+        },
+        {
+          "studies": [],
+          "target": "SH"
+        },
+        {
+          "studies": [],
+          "target": "EH"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "TZ",
+        "TG",
+        "TN",
+        "UG",
+        "ZM",
+        "ZW",
+        "IO",
+        "TF",
+        "YT",
+        "RE",
+        "SH",
+        "EH"
+      ]
     }
   ],
   "global_batches": [
