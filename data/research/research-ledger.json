@@ -41730,6 +41730,153 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-japanese-30th-celebrations-57-box-1140-pack-cohort"
+              ],
+              "country": "SG",
+              "geography_basis": "publisher_country",
+              "language": "japanese",
+              "limitations": [
+                "aggregate_sample_only_17_boxes_logged_pack_by_pack",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "publisher_country_is_not_opening_location",
+                "source_sample_expanded_from_17_to_57_boxes",
+                "unverified_research"
+              ],
+              "method": "documented_multi_box_opening_study",
+              "metrics": [
+                {
+                  "category": "fur_cards",
+                  "hits": 14,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_art_rare_cards",
+                  "hits": 57,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1140,
+              "product": "sealed_booster_boxes",
+              "set": "pokemon_30th_celebrations",
+              "source_sample": null,
+              "study_id": "tcgtalk-japanese-30th-celebrations-57-box-study-2026",
+              "urls": [
+                "https://tcgtalk.com/guides/30th-celebrations-japanese-pull-rates-box-opening"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "tcgtalk-perfect-order-nine-bundle-54-pack-cohort"
+              ],
+              "country": "SG",
+              "geography_basis": "publisher_country",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "community_aggregate_authorship_unclear",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "publisher_country_is_not_opening_location",
+                "separate_420_plus_pack_stream_sample_excluded",
+                "unverified_research"
+              ],
+              "method": "documented_community_opening",
+              "metrics": [
+                {
+                  "category": "illustration_rare_cards",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare_cards",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 54,
+              "product": "nine_booster_bundles",
+              "set": "perfect_order",
+              "source_sample": null,
+              "study_id": "tcgtalk-perfect-order-54-pack-opening-2026",
+              "urls": [
+                "https://tcgtalk.com/blog/perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
