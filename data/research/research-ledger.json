@@ -39547,6 +39547,103 @@
         "BA",
         "BG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [],
+          "target": "CZ"
+        },
+        {
+          "studies": [],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "finnish-language-36-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fi",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_not_explicit",
+                "hits_not_extracted",
+                "independent-review-pending",
+                "pack_count_from_public_title",
+                "possible_overlap_unresolved",
+                "unverified_research"
+              ],
+              "method": "recorded_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": null,
+              "set": "new",
+              "source_sample": null,
+              "study_id": "finnish-language-36-pack-opening-2025",
+              "urls": [
+                "https://youtu.be/6Va4mrfwgsk"
+              ]
+            }
+          ],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        },
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
