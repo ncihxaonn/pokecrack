@@ -35416,6 +35416,63 @@
         "GY",
         "PY"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [],
+          "target": "SR"
+        },
+        {
+          "studies": [],
+          "target": "UY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-one-hundred-pack-opening-2017"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "spanish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_eligible",
+                "independent-review-pending",
+                "mixed_set_cohort",
+                "opening_location_not_reported",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed_booster_packs",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "youtube-one-hundred-pack-opening-2017",
+              "urls": [
+                "https://youtu.be/OuUM7QMMcFw"
+              ]
+            }
+          ],
+          "target": "VE"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
     }
   ],
   "global_batches": [
