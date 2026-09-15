@@ -28237,6 +28237,159 @@
         "SS",
         "SD"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TZ"
+        },
+        {
+          "studies": [],
+          "target": "TG"
+        },
+        {
+          "studies": [],
+          "target": "TN"
+        },
+        {
+          "studies": [],
+          "target": "UG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-51-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-count-not-explicit",
+                "independent-review-pending",
+                "mixed-products",
+                "social-post-unverified",
+                "target-is-search-provenance-only"
+              ],
+              "method": "complete_opening_log",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 51,
+              "product": "mixed-sealed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-51-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1uzm3zm/first_time_opening_packs_since_im_12_how_did_i_do"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-chinese-gem-pack-vol-3-18-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-list-not-normalized",
+                "independent-review-pending",
+                "social-post-unverified",
+                "target-is-search-provenance-only"
+              ],
+              "method": "complete_opening_log",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 18,
+              "product": "chinese-gem-pack-vol-3-booster-box",
+              "set": "chinese-gem-pack-vol-3",
+              "source_sample": null,
+              "study_id": "reddit-chinese-gem-pack-vol-3-18-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1rh0shi/chinese_pok%C3%A9mon_gem_pack_3_cbb3c_booster_box_pulls"
+              ]
+            }
+          ],
+          "target": "ZM"
+        },
+        {
+          "studies": [],
+          "target": "ZW"
+        },
+        {
+          "studies": [],
+          "target": "IO"
+        },
+        {
+          "studies": [],
+          "target": "TF"
+        },
+        {
+          "studies": [],
+          "target": "YT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-french-eight-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-count-not-normalized",
+                "independent-review-pending",
+                "product-not-stated",
+                "social-post-unverified",
+                "target-is-search-provenance-only"
+              ],
+              "method": "complete_opening_log",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 8,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-french-eight-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1ivviq8"
+              ]
+            }
+          ],
+          "target": "RE"
+        },
+        {
+          "studies": [],
+          "target": "SH"
+        },
+        {
+          "studies": [],
+          "target": "EH"
+        }
+      ],
+      "sweep": 10,
+      "targets": [
+        "TZ",
+        "TG",
+        "TN",
+        "UG",
+        "ZM",
+        "ZW",
+        "IO",
+        "TF",
+        "YT",
+        "RE",
+        "SH",
+        "EH"
+      ]
     }
   ],
   "global_batches": [
