@@ -38741,6 +38741,172 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pitch-black-chaos-rising-two-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-results-not-completely-enumerated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-total-derived-from-explicit-thirty-six-packs-each-statement",
+                "unverified-research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 72,
+              "product": "pitch-black-and-chaos-rising-booster-boxes",
+              "set": "pitch-black-and-chaos-rising",
+              "source_sample": null,
+              "study_id": "pitch-black-chaos-rising-two-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1vj89x1/opened_2_booster_boxes"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "battle-partners-one-box-korean-blog-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ko",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "displayed-pulls-not-converted-to-rate-metrics",
+                "independent-review-pending",
+                "native-box-count-only",
+                "opening-location-not-stated",
+                "pack-count-not-explicitly-reported",
+                "unverified-research"
+              ],
+              "method": "dated-complete-opening-log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "battle-partners",
+              "set": "battle-partners",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "battle-partners-one-box-korean-blog-2025",
+              "urls": [
+                "https://hobbystorys.tistory.com/703"
+              ]
+            }
+          ],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "hidden-fates-ultra-premium-one-box-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "explicit-pulls-lack-an-author-reported-pack-denominator",
+                "independent-review-pending",
+                "localized-platform-domain-is-not-geography-evidence",
+                "native-box-count-only",
+                "opening-location-not-stated",
+                "pack-count-mentioned-by-another-participant-not-used",
+                "unverified-research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "hidden-fates-ultra-premium-collection",
+              "set": "hidden-fates",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "hidden-fates-ultra-premium-one-box-opening-2020",
+              "urls": [
+                "https://www.reddit.com/r/pkmntcgcollections/comments/eir9ie/hidden_fates_ultra_premium_collection_100_worth_it"
+              ]
+            }
+          ],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
