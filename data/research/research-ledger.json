@@ -42109,6 +42109,338 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-destinees-radieuses-100-boosters-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "physical-pokemon-tcg-boosters",
+              "set": "destinees-radieuses",
+              "source_sample": null,
+              "study_id": "youtube-destinees-radieuses-100-boosters-2021",
+              "urls": [
+                "https://youtu.be/I2hsnlPPRj0"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-german-chase-card-100-boosters-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "product-set-not-visible-in-public-metadata",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "physical-pokemon-tcg-boosters",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-german-chase-card-100-boosters-2022",
+              "urls": [
+                "https://youtu.be/QUQQdcIY1ug"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-german-newest-set-100-boosters-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "set-name-not-visible-in-public-metadata",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "physical-pokemon-tcg-boosters",
+              "set": "unknown-newest-set",
+              "source_sample": null,
+              "study_id": "youtube-german-newest-set-100-boosters-2022",
+              "urls": [
+                "https://youtu.be/9loxAqpsfDg"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "spaziogames-equilibrio-perfetto-over-twelve-packs-2026"
+              ],
+              "country": "IT",
+              "geography_basis": "product_market",
+              "language": "it",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "italian-market-framing-does-not-establish-opening-location",
+                "no-explicit-integer-hit-counts-reviewed",
+                "reported-as-over-a-dozen-packs",
+                "stored-count-is-conservative-lower-bound",
+                "unverified-research"
+              ],
+              "method": "publisher-opening-session",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 12,
+              "product": "pokemon-gcc-equilibrio-perfetto",
+              "set": "equilibrio-perfetto",
+              "source_sample": null,
+              "study_id": "spaziogames-equilibrio-perfetto-over-twelve-packs-2026",
+              "urls": [
+                "https://www.spaziogames.it/speciali/pokemon-gcc-equilibrio-perfetto-tutto-quello-che-ce-da-sapere"
+              ]
+            }
+          ],
+          "target": "IT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-night-wanderer-over-100-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "title-claim-only",
+                "title-states-more-than-100-but-stored-count-is-100",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "physical-pokemon-tcg-boosters",
+              "set": "night-wanderer",
+              "source_sample": null,
+              "study_id": "youtube-night-wanderer-over-100-packs",
+              "urls": [
+                "https://youtu.be/8HK9CxcItS4"
+              ]
+            }
+          ],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "codedyellow-evolving-skies-108-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "aggregate-hit-numerators-not-fully-reviewed",
+                "boxes-reported-purchased-from-different-suppliers",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "publisher-country-not-established-on-study-page",
+                "three-box-sample",
+                "unverified-research"
+              ],
+              "method": "publisher-controlled-opening-experiment",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 108,
+              "product": "evolving-skies-booster-boxes",
+              "set": "evolving-skies",
+              "source_sample": null,
+              "study_id": "codedyellow-evolving-skies-108-packs",
+              "urls": [
+                "https://www.codedyellow.com/evolving-skies-pull-rate"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "codedyellow-chilling-reign-72-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "aggregate-hit-numerators-not-fully-reviewed",
+                "boxes-purchased-from-different-suppliers",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "publisher-country-not-established-on-study-page",
+                "two-box-sample",
+                "unverified-research"
+              ],
+              "method": "publisher-controlled-opening-experiment",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 72,
+              "product": "chilling-reign-booster-boxes",
+              "set": "chilling-reign",
+              "source_sample": null,
+              "study_id": "codedyellow-chilling-reign-72-packs",
+              "urls": [
+                "https://www.codedyellow.com/chilling-reign-booster-box-pull-rate"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-austria-paldean-fates-100-packs-no-palafin-2024"
+              ],
+              "country": "AT",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-level-cohort",
+                "country-describes-reporter-location-not-verified-opening-location",
+                "country-explicitly-self-reported-in-comment",
+                "independent-review-pending",
+                "single-card-outcome-only",
+                "unverified-research"
+              ],
+              "method": "public-comment-opening-report",
+              "metrics": [
+                {
+                  "category": "palafin",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "paldean-fates-boosters",
+              "set": "paldean-fates",
+              "source_sample": null,
+              "study_id": "reddit-austria-paldean-fates-100-packs-no-palafin-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1b1kaz8/what_i_ordered_vs_what_i_got"
+              ]
+            }
+          ],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-xy10-impact-des-destins-100-boosters-2016"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete-series-cohort-not-manually-reviewed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "page-describes-final-25-pack-part-of-100-pack-opening",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "multipart-public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "physical-pokemon-tcg-boosters",
+              "set": "xy10-impact-des-destins",
+              "source_sample": null,
+              "study_id": "youtube-xy10-impact-des-destins-100-boosters-2016",
+              "urls": [
+                "https://youtu.be/K_mzFOHGRdA"
+              ]
+            }
+          ],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
