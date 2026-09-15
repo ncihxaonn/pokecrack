@@ -39950,6 +39950,336 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ZA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-shining-legends-one-box-arabic-opening"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "arabic",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-reports-one-box-but-no-pack-count",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "shining-legends",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "youtube-shining-legends-one-box-arabic-opening",
+              "urls": [
+                "https://youtu.be/-afTJl-FHOQ"
+              ]
+            }
+          ],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-cosmic-eclipse-eighteen-pack-display-opening"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 18,
+              "product": "half-display",
+              "set": "cosmic-eclipse",
+              "source_sample": null,
+              "study_id": "youtube-cosmic-eclipse-eighteen-pack-display-opening",
+              "urls": [
+                "https://youtu.be/oGMmUiELHeI"
+              ]
+            }
+          ],
+          "target": "MA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-algeria-two-pack-opening-2026"
+              ],
+              "country": "DZ",
+              "geography_basis": "publisher_country",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-explicitly-stated-but-opening-location-not-explicit",
+                "independent-review-pending",
+                "no-integer-hit-counts",
+                "product-and-set-not-stated",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 2,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-algeria-two-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/algeria/comments/1s1cnaz/they_sell_in_our_country_pok%C3%A9mon_card_packs"
+              ]
+            }
+          ],
+          "target": "DZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-phantasmal-flames-four-pack-partial-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "portuguese",
+              "limitations": [
+                "authenticity-question-raised-by-source",
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-subreddit-or-language",
+                "independent-review-pending",
+                "no-complete-box-denominator",
+                "no-eligible-integer-metrics-recorded",
+                "only-four-of-thirty-six-box-packs-had-been-opened",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 4,
+              "product": "booster-box-partial-opening",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "reddit-phantasmal-flames-four-pack-partial-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1swo4to/primeiros_pacotes_abertos_n%C3%A3o_sei_se_fui_scamado"
+              ]
+            }
+          ],
+          "target": "AO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-base-set-six-pack-opening-2013"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 6,
+              "product": "display-opening",
+              "set": "base-set",
+              "source_sample": null,
+              "study_id": "youtube-base-set-six-pack-opening-2013",
+              "urls": [
+                "https://youtu.be/JX4Wcryv4Xo"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-vivid-voltage-eighteen-pack-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research",
+                "video-described-as-part-one-of-a-display"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 18,
+              "product": "half-display",
+              "set": "vivid-voltage",
+              "source_sample": null,
+              "study_id": "youtube-vivid-voltage-eighteen-pack-opening-2020",
+              "urls": [
+                "https://youtu.be/NUQwzPdvOMc"
+              ]
+            }
+          ],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-eight-pack-french-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language-or-subreddit",
+                "independent-review-pending",
+                "no-eligible-integer-metrics-recorded",
+                "opening-location-not-stated",
+                "set-not-stated-in-discovery-evidence",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 8,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-eight-pack-french-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1ivviq8"
+              ]
+            }
+          ],
+          "target": "BF"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-perfect-order-four-prerelease-kits-sixteen-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language-or-subreddit",
+                "independent-review-pending",
+                "no-eligible-integer-metrics-recorded",
+                "opening-location-not-stated",
+                "title-also-reports-four-decks",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 16,
+              "product": "prerelease-kits",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "reddit-perfect-order-four-prerelease-kits-sixteen-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1ruc505"
+              ]
+            }
+          ],
+          "target": "BI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-three-pack-portuguese-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "portuguese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language-or-subreddit",
+                "independent-review-pending",
+                "no-eligible-integer-metrics-recorded",
+                "opening-location-not-stated",
+                "set-and-product-not-stated",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-three-pack-portuguese-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1pdmxgy/primeira_vez_que_abro_um_booster"
+              ]
+            }
+          ],
+          "target": "CV"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
