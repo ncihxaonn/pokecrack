@@ -44720,6 +44720,88 @@
         "TR",
         "TM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-51-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "explicit-hit-count-not-reported",
+                "independent-review-pending",
+                "mixed-product-cohort",
+                "opening-location-unknown",
+                "unverified-research"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 51,
+              "product": "booster-bundle-booster-box-etb",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-51-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1uzm3zm/first_time_opening_packs_since_im_12_how_did_i_do"
+              ]
+            }
+          ],
+          "target": "AE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-400-pack-birthday-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "explicit-hit-count-not-reported",
+                "independent-review-pending",
+                "mixed-product-cohort",
+                "opening-location-unknown",
+                "pack-count-from-title",
+                "unverified-research"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 400,
+              "product": "mixed-products",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-400-pack-birthday-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1w5omix/opened_400_packs_for_my_23rd_birthday"
+              ]
+            }
+          ],
+          "target": "UZ"
+        },
+        {
+          "studies": [],
+          "target": "YE"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "AE",
+        "UZ",
+        "YE"
+      ]
     }
   ],
   "global_batches": [
