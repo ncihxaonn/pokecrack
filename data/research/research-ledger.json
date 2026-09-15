@@ -43040,6 +43040,234 @@
         "SZ",
         "ET"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GA"
+        },
+        {
+          "studies": [],
+          "target": "GM"
+        },
+        {
+          "studies": [],
+          "target": "GH"
+        },
+        {
+          "studies": [],
+          "target": "GN"
+        },
+        {
+          "studies": [],
+          "target": "GW"
+        },
+        {
+          "studies": [],
+          "target": "LS"
+        },
+        {
+          "studies": [],
+          "target": "LR"
+        },
+        {
+          "studies": [],
+          "target": "LY"
+        },
+        {
+          "studies": [],
+          "target": "MG"
+        },
+        {
+          "studies": [],
+          "target": "MW"
+        },
+        {
+          "studies": [],
+          "target": "ML"
+        },
+        {
+          "studies": [],
+          "target": "MR"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "GA",
+        "GM",
+        "GH",
+        "GN",
+        "GW",
+        "LS",
+        "LR",
+        "LY",
+        "MG",
+        "MW",
+        "ML",
+        "MR"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MU"
+        },
+        {
+          "studies": [],
+          "target": "MZ"
+        },
+        {
+          "studies": [],
+          "target": "NA"
+        },
+        {
+          "studies": [],
+          "target": "NE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-surging-sparks-three-booster-boxes-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-unstated",
+                "hit-counts-not-transcribed",
+                "image-based-pulls-not-counted",
+                "independent-review-pending",
+                "pack-count-not-directly-reported",
+                "unverified-research"
+              ],
+              "method": "public-social-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "surging-sparks-booster-boxes",
+              "set": "surging-sparks",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-surging-sparks-three-booster-boxes-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1gmc0un/i_opened_3_booster_boxes_of_surging_sparks_here"
+              ]
+            }
+          ],
+          "target": "RW"
+        },
+        {
+          "studies": [],
+          "target": "ST"
+        },
+        {
+          "studies": [],
+          "target": "SN"
+        },
+        {
+          "studies": [],
+          "target": "SC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-surging-sparks-55-packs-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-unstated",
+                "hit-counts-not-transcribed",
+                "image-based-pulls-not-counted",
+                "independent-review-pending",
+                "mixed-sealed-product-sources",
+                "unverified-research"
+              ],
+              "method": "public-social-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 55,
+              "product": "surging-sparks-mixed-products",
+              "set": "surging-sparks",
+              "source_sample": null,
+              "study_id": "reddit-surging-sparks-55-packs-2024",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncardcollectors/comments/1gxqebc/opened_55_packs_of_surging_sparks_these_were_the"
+              ]
+            }
+          ],
+          "target": "SL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-booster-box-series-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-unstated",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "linked-video-not-fetched",
+                "overlap-unresolved",
+                "six-pack-segment-of-larger-booster-box-series",
+                "unverified-research"
+              ],
+              "method": "public-social-video-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "pitch-black-booster-box",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-packs-13-through-18-2026",
+              "urls": [
+                "https://www.reddit.com/user/CollectibleJockTalk/comments/1w4tl3l/pok%C3%A9packenomicspitch_black_pack_1318"
+              ]
+            }
+          ],
+          "target": "SO"
+        },
+        {
+          "studies": [],
+          "target": "SS"
+        },
+        {
+          "studies": [],
+          "target": "SD"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "MU",
+        "MZ",
+        "NA",
+        "NE",
+        "RW",
+        "ST",
+        "SN",
+        "SC",
+        "SL",
+        "SO",
+        "SS",
+        "SD"
+      ]
     }
   ],
   "global_batches": [
