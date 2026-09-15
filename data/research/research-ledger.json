@@ -45588,6 +45588,243 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbagerips-482-pack-opening-catalog-2026"
+              ],
+              "country": "US",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "aggregate-spans-342-openings",
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "unverified-research"
+              ],
+              "method": "cataloged-video-openings",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 482,
+              "product": "mixed-sealed-products",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "garbagerips-482-pack-opening-catalog-2026",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            }
+          ],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-indonesian-mega-evolution-ten-packs-2025"
+              ],
+              "country": "ID",
+              "geography_basis": "opening_location",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "indonesian-booster-packs",
+              "set": "mega-evolution",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-indonesian-mega-evolution-ten-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1nqs4l2/indonesische_mega_evolution"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgbelgie-kruidvat-tin-six-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-definition-not-specified",
+                "independent-review-pending",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [
+                {
+                  "category": "hit",
+                  "hits": 5,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "kruidvat-tin",
+              "set": "unknown-set",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgbelgie-kruidvat-tin-six-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/pokemonTCGBelgie/comments/1p7cc49/kruidvat_tin_opening"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-hanada-cards-one-hundred-pack-live-opening-2024"
+              ],
+              "country": "DK",
+              "geography_basis": "publisher_country",
+              "language": "da",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "title-claim-only",
+                "unverified-research",
+                "video-not-opened-per-access-rule"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-pokemon-packs",
+              "set": "unknown-set",
+              "source_sample": null,
+              "study_id": "youtube-hanada-cards-one-hundred-pack-live-opening-2024",
+              "urls": [
+                "https://youtu.be/7S9akmbMRms"
+              ]
+            }
+          ],
+          "target": "NO"
+        },
+        {
+          "studies": [],
+          "target": "PL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgbrasil-thirty-six-booster-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "independent-review-pending",
+                "integer-hit-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster-packs",
+              "set": "journey-together",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgbrasil-thirty-six-booster-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1s9k22p/hit_booster"
+              ]
+            }
+          ],
+          "target": "PT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-evolving-skies-over-one-hundred-packs-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ro",
+              "limitations": [
+                "author-reports-over-one-hundred-packs",
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "unverified-research",
+                "video-not-opened-per-access-rule"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 100,
+              "product": "booster-packs",
+              "set": "evolving-skies",
+              "source_sample": null,
+              "study_id": "youtube-evolving-skies-over-one-hundred-packs-2022",
+              "urls": [
+                "https://youtu.be/CELtkjRyB2Y"
+              ]
+            }
+          ],
+          "target": "RO"
+        },
+        {
+          "studies": [],
+          "target": "RU"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
