@@ -34675,6 +34675,258 @@
         "SS",
         "SD"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-650-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "not_tied_to_target_country",
+                "product_mix_not_explicit",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "author_reported_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 650,
+              "product": null,
+              "set": "mixed_or_unknown",
+              "source_sample": null,
+              "study_id": "reddit-650-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pz6xq8/opened_650_packs_heres_what_i_got"
+              ]
+            }
+          ],
+          "target": "TZ"
+        },
+        {
+          "studies": [],
+          "target": "TG"
+        },
+        {
+          "studies": [],
+          "target": "TN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-60-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "not_tied_to_target_country",
+                "product_not_confirmed",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "author_reported_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 60,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-60-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1twvzpe/i_opened_60_packs_so_you_dont_have_to"
+              ]
+            }
+          ],
+          "target": "UG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "ganjingworld-temporal-forces-36-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "vietnamese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "not_tied_to_target_country",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "author_reported_video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "temporal_forces",
+              "source_sample": null,
+              "study_id": "ganjingworld-temporal-forces-36-pack-opening-2026",
+              "urls": [
+                "https://www.ganjingworld.com/video/1i8u5k6ppfg1nFNteIxMVIHxq1j61c"
+              ]
+            }
+          ],
+          "target": "ZM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-400-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "not_tied_to_target_country",
+                "product_mix_not_explicit",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "author_reported_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 400,
+              "product": "mixed_products",
+              "set": "mixed_or_unknown",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-400-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1w5omix/opened_400_packs_for_my_23rd_birthday"
+              ]
+            }
+          ],
+          "target": "ZW"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-surging-sparks-etb-and-booster-box-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "spanish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "mixed_box_types",
+                "not_tied_to_target_country",
+                "pack_count_not_explicit",
+                "unverified_research"
+              ],
+              "method": "author_reported_video",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "etb_and_booster_box",
+              "set": "surging_sparks",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "dailymotion-surging-sparks-etb-and-booster-box-opening-2024",
+              "urls": [
+                "https://www.dailymotion.com/video/x98unnk"
+              ]
+            }
+          ],
+          "target": "IO"
+        },
+        {
+          "studies": [],
+          "target": "TF"
+        },
+        {
+          "studies": [],
+          "target": "YT"
+        },
+        {
+          "studies": [],
+          "target": "RE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "lost-thunder-36-pack-video-cohort-2019"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "embedded_video_page_may_be_reprint",
+                "geography_unknown",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "not_tied_to_target_country",
+                "original_video_url_not_returned",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "author_reported_video_reprint_page",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "lost_thunder",
+              "source_sample": null,
+              "study_id": "pkmcards-lost-thunder-36-pack-opening-2019",
+              "urls": [
+                "https://www.pkmcards.fr/videos/ZswWvBEGgTM"
+              ]
+            }
+          ],
+          "target": "SH"
+        },
+        {
+          "studies": [],
+          "target": "EH"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "TZ",
+        "TG",
+        "TN",
+        "UG",
+        "ZM",
+        "ZW",
+        "IO",
+        "TF",
+        "YT",
+        "RE",
+        "SH",
+        "EH"
+      ]
     }
   ],
   "global_batches": [
