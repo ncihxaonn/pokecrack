@@ -29776,6 +29776,104 @@
         "JO",
         "KZ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [],
+          "target": "LA"
+        },
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        },
+        {
+          "studies": [],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [],
+          "target": "KP"
+        },
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pakistan-first-ever-packs-cohort-20200922"
+              ],
+              "country": "PK",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "exact-pack-count-not-reported-in-public-text",
+                "hit-count-not-reported",
+                "independence-from-known-pakistan-cohorts-not-fully-established",
+                "independent-review-pending",
+                "physical-opening-described-by-publisher",
+                "product-and-set-not-explicit",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "pakistan-first-ever-packs-opening-20200922",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/ixpq7x/i_love_this_community_and_a_very_big_thank_you_to"
+              ]
+            }
+          ],
+          "target": "PK"
+        },
+        {
+          "studies": [],
+          "target": "PS"
+        }
+      ],
+      "sweep": 11,
+      "targets": [
+        "KW",
+        "KG",
+        "LA",
+        "LB",
+        "MV",
+        "MN",
+        "MM",
+        "NP",
+        "KP",
+        "OM",
+        "PK",
+        "PS"
+      ]
     }
   ],
   "global_batches": [
