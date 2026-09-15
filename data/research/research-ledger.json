@@ -29561,6 +29561,221 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "simplified-chinese-brave-stars-mixed-five-box-opening-20240711"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh-cn",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-product-types",
+                "no-hit-counts-reported",
+                "no-pack-denominator-reported",
+                "opening-location-unknown",
+                "unverified-research"
+              ],
+              "method": "complete-product-opening-video",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-brave-stars-display-starter-and-deck-building-products",
+              "set": "brave-stars-mixed-products",
+              "source_sample": {
+                "count": 5,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "simplified-chinese-brave-stars-mixed-five-box-opening-20240711",
+              "urls": [
+                "https://www.bilibili.com/video/BV1Li421Y7ks"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pitch-black-117-pack-original-opening-202607"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "id",
+              "limitations": [
+                "article-also-combines-136-community-packs",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "rarity-categories-may-not-be-mutually-exclusive",
+                "returned-metrics-restricted-to-explicit-author-opened-117-pack-cohort",
+                "unverified-research"
+              ],
+              "method": "multi-session-complete-opening-study",
+              "metrics": [
+                {
+                  "category": "illustration-rare",
+                  "hits": 11,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mega-hyper-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "shiny-holo-energy",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "standard-ex",
+                  "hits": 26,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare-full-art",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 117,
+              "product": "english-pitch-black-booster-packs",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "pitch-black-117-pack-original-opening-202607",
+              "urls": [
+                "https://tcgtalk.com/guides/indonesia/pitch-black-pull-rates"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "munikisu-zero-thirty-pack-weight-opening-20260715"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "single-box-sample",
+                "unverified-research",
+                "weight-findings-not-generalizable-to-other-boxes"
+              ],
+              "method": "complete-box-pack-weight-opening-study",
+              "metrics": [
+                {
+                  "category": "ar",
+                  "hits": 3,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "no-r-or-higher",
+                  "hits": 15,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "r",
+                  "hits": 6,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "rr",
+                  "hits": 4,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "sr",
+                  "hits": 2,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "munikisu-zero",
+              "set": "munikisu-zero",
+              "source_sample": null,
+              "study_id": "munikisu-zero-thirty-pack-weight-opening-20260715",
+              "urls": [
+                "https://tekemero.com/260715-02"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 11,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
