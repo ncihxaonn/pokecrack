@@ -32738,6 +32738,347 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-chinese-jumbo-six-pack-2026"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_based_only_on_explicit_chinese_product",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "public_post_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 6,
+              "product": "simplified_chinese_jumbo_booster_box",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "reddit-chinese-jumbo-booster-six-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1st5xt8/chinese_jumbo_booster_boxes_luck"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "bilibili-japanese-starter-deck-100-carton-2026"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_based_on_explicit_japanese_product",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "target_is_search_provenance_only",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "starter_deck_100",
+              "set": "new",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "cartons"
+              },
+              "study_id": "bilibili-japanese-starter-deck-100-carton-opening-2026",
+              "urls": [
+                "https://www.bilibili.com/video/BV1hi9dByE7G"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "georgia-hops-zacian-ex-one-box"
+              ],
+              "country": "GE",
+              "geography_basis": "publisher_country",
+              "language": "ka",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_supported_by_explicit_georgia_publisher_label",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "pack_count_not_reported",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "hops_zacian_ex_box",
+              "set": "new",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "georgia-hops-zacian-ex-box-opening",
+              "urls": [
+                "https://youtu.be/8x-3F_Lasso"
+              ]
+            }
+          ],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "indonesia-hantaman-pertama-set-a-100-packs-2019"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_based_on_explicit_indonesian_product",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_location_not_separately_stated",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "hantaman_pertama_set_a",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "indonesia-hantaman-pertama-set-a-100-pack-opening-2019",
+              "urls": [
+                "https://youtu.be/PgubdTxjTkA"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "indonesia-kebangkitan-legenda-set-b-100-packs-2019"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_based_on_explicit_indonesian_product",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_location_not_separately_stated",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "kebangkitan_legenda_set_b",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "indonesia-kebangkitan-legenda-set-b-100-pack-opening-2019",
+              "urls": [
+                "https://youtu.be/AOO78ZBqmCY"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "israel-japanese-booster-box-30-packs-2022"
+              ],
+              "country": "IL",
+              "geography_basis": "publisher_country",
+              "language": "he",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_supported_by_explicit_israel_publisher_context",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "japanese_product_set_name_not_reported",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 30,
+              "product": "japanese_booster_box",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "israel-japanese-booster-box-30-pack-opening-2022",
+              "urls": [
+                "https://youtu.be/VCkcRFfxhjI"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "israel-three-japanese-booster-boxes-2022"
+              ],
+              "country": "IL",
+              "geography_basis": "publisher_country",
+              "language": "he",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_supported_by_explicit_israel_publisher_context",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "pack_count_not_reported",
+                "product_set_names_not_reported",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese_booster_boxes",
+              "set": "new",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "israel-three-japanese-booster-box-live-opening-2022",
+              "urls": [
+                "https://youtu.be/v5OAKMylDE4"
+              ]
+            }
+          ],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokecardlab-scarlet-ex-violet-ex-two-boxes-2023"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "integer_hit_counts_not_verified_in_bounded_pass",
+                "one_box_per_set",
+                "pack_count_not_preserved_from_product_contents",
+                "unverified_research"
+              ],
+              "method": "article_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "scarlet_ex_and_violet_ex",
+              "set": "new",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "pokecardlab-scarlet-violet-two-box-opening-2023",
+              "urls": [
+                "https://pokecardlab.com/2023/01/20/8319"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "pokelog-starter-deck-100-1020-decks-2025"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "deck_outcomes_not_eligible_for_cards_or_packs_with_hit_metrics",
+                "independent-review-pending",
+                "overlap_unresolved",
+                "possible_internal_reprints_or_updates",
+                "possible_overlap_with_prior_starter_deck_100_cohorts",
+                "unverified_research"
+              ],
+              "method": "author_reported_aggregate_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "starter_deck_100_battle_collection",
+              "set": "new",
+              "source_sample": {
+                "count": 1020,
+                "precision": "exact_reported",
+                "unit": "decks"
+              },
+              "study_id": "pokelog-starter-deck-100-1020-deck-study-2025",
+              "urls": [
+                "https://lifematome.blog/pokeca-secret-nanko",
+                "https://lifematome.blog/pokeca-start-1000kaifu",
+                "https://lifematome.blog/pokeka-startdeck-secret"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
