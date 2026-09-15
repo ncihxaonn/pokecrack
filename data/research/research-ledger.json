@@ -35791,6 +35791,204 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "black-crystal-blazing-sincerity-ten-boxes-20250915"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "box_count_only",
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "unverified_research"
+              ],
+              "method": "recorded_complete_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified_chinese_booster_box",
+              "set": "black-crystal-blazing-sincerity",
+              "source_sample": {
+                "count": 10,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "black-crystal-blazing-sincerity-ten-box-opening-2025",
+              "urls": [
+                "https://www.bilibili.com/video/BV1HWpTz8EPd"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "shadow-blue-sea-jumbo-six-pack-opening-20250417"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "product_market_only",
+                "single_box_sample",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [
+                {
+                  "category": "sr_or_higher",
+                  "hits": 6,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "simplified_chinese_jumbo_booster_box",
+              "set": "shadow-of-the-blue-sea-set-a",
+              "source_sample": null,
+              "study_id": "shadow-blue-sea-jumbo-six-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1k1lfoe"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mega-dream-ex-six-box-opening-202607"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "box_count_only",
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese_mega_dream_ex_booster_box",
+              "set": "mega-dream-ex",
+              "source_sample": {
+                "count": 6,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "mega-dream-ex-six-box-opening-2026",
+              "urls": [
+                "https://uribimog.com/pcg-mega-dream-ex"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "japanese-151-three-hundred-pack-opening-20250331"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "card_counts_incomplete",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed_purchase_sources",
+                "opening_location_not_stated",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [
+                {
+                  "category": "sar",
+                  "hits": 4,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 300,
+              "product": "japanese_pokemon_card_151",
+              "set": "pokemon-card-151",
+              "source_sample": null,
+              "study_id": "japanese-151-three-hundred-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1jo9oui/i_opened_300_packs_of_151_so_you_dont_have_to"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 13,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
