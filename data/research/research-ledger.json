@@ -36271,6 +36271,349 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-australia-ascended-heroes-150-plus-packs-2026"
+              ],
+              "country": "AU",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "cumulative-opening-count",
+                "current-two-bundles-may-overlap",
+                "independent-review-pending",
+                "lower-bound-count",
+                "no-exact-hit-counts",
+                "overlap-unresolved",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening-count",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 150,
+              "product": "mixed-ascended-heroes-products",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-australia-ascended-heroes-150-plus-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFansAustralia/comments/1su6arm/opening"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-black-bolt-white-flare-30-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-eligible-integer-hit-metrics",
+                "opening-location-unknown",
+                "packs-opened-across-two-time-periods",
+                "unverified-research"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "loose-japanese-booster-packs",
+              "set": "black-bolt-white-flare",
+              "source_sample": null,
+              "study_id": "reddit-black-bolt-white-flare-30-pack-cohort-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r7f59h/it_really_is_in_the_pack_you_didnt_open"
+              ]
+            }
+          ],
+          "target": "FJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-destined-rivals-journey-together-10-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-explicit-integer-hit-counts",
+                "opening-location-unknown",
+                "set-split-reported-with-uncertainty",
+                "unverified-research"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "loose-booster-packs",
+              "set": "mixed-destined-rivals-journey-together",
+              "source_sample": null,
+              "study_id": "reddit-destined-rivals-journey-together-10-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r84rxz/i_opened_my_first_ever_packs"
+              ]
+            }
+          ],
+          "target": "PG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-german-ascended-heroes-100-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "image-based-pulls-not-transcribed",
+                "independent-review-pending",
+                "no-explicit-complete-integer-hit-totals",
+                "opening-location-unknown",
+                "unverified-research"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "booster-packs",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-german-ascended-heroes-100-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1sd3e7o/wawu_100_packs_erhabene_helden"
+              ]
+            }
+          ],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-destined-rivals-100-pack-opening-2025-it"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "it",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-explicit-integer-hit-counts",
+                "opening-location-unknown",
+                "title-claim-only",
+                "unverified-research",
+                "video-content-not-fetched"
+              ],
+              "method": "public-video-title-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "booster-packs",
+              "set": "destined-rivals",
+              "source_sample": null,
+              "study_id": "youtube-destined-rivals-100-pack-opening-2025-it",
+              "urls": [
+                "https://youtu.be/aOlHfAlCqWk"
+              ]
+            }
+          ],
+          "target": "TO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-mixed-sets-100-pack-opening-2021-es"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-products",
+                "no-explicit-integer-hit-counts",
+                "opening-location-unknown",
+                "title-claim-only",
+                "unverified-research",
+                "video-content-not-fetched"
+              ],
+              "method": "public-video-title-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-booster-and-promotional-packs",
+              "set": "mixed-battle-styles-shining-fates-mcdonalds",
+              "source_sample": null,
+              "study_id": "youtube-mixed-sets-100-pack-opening-2021-es",
+              "urls": [
+                "https://youtu.be/EDTVzstYuJc"
+              ]
+            }
+          ],
+          "target": "TV"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "nanjakorya-star-birth-100-loose-packs-2022"
+              ],
+              "country": "JP",
+              "geography_basis": "opening_location",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "loose-packs-from-mixed-purchases",
+                "rarity-card-yields-not-hit-pack-probabilities",
+                "unverified-research"
+              ],
+              "method": "first-party-documented-opening",
+              "metrics": [
+                {
+                  "category": "double-rare",
+                  "hits": 16,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-or-hyper-rare",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "triple-rare",
+                  "hits": 6,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "loose-booster-packs",
+              "set": "star-birth",
+              "source_sample": null,
+              "study_id": "nanjakorya-star-birth-100-loose-packs-2022",
+              "urls": [
+                "https://nanjakorya.com/1123"
+              ]
+            }
+          ],
+          "target": "KI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-indonesia-mega-evolution-100-packs-2025"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-explicit-integer-hit-counts",
+                "opening-location-not-explicit",
+                "title-claim-only",
+                "unverified-research",
+                "video-content-not-fetched"
+              ],
+              "method": "public-video-title-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "indonesian-booster-packs",
+              "set": "mega-evolution",
+              "source_sample": null,
+              "study_id": "youtube-indonesia-mega-evolution-100-packs-2025",
+              "urls": [
+                "https://youtu.be/I4yQEkmKGy4"
+              ]
+            }
+          ],
+          "target": "NR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-pitch-black-own-117-pack-cohort-2026"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "combined-table-metrics-excluded-to-avoid-cohort-conflation",
+                "independent-review-pending",
+                "only-first-party-117-pack-subcohort-retained",
+                "opening-location-not-explicit",
+                "published-253-pack-total-includes-external-community-cohorts",
+                "session-breakdown-does-not-enumerate-all-117-packs",
+                "unverified-research"
+              ],
+              "method": "first-party-multi-session-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 117,
+              "product": "english-pitch-black-booster-packs",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "tcgtalk-pitch-black-own-117-pack-cohort-2026",
+              "urls": [
+                "https://tcgtalk.com/guides/indonesia/pitch-black-pull-rates"
+              ]
+            }
+          ],
+          "target": "PW"
+        }
+      ],
+      "sweep": 13,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
