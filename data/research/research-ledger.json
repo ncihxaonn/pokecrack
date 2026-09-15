@@ -42753,6 +42753,134 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [],
+          "target": "SE"
+        },
+        {
+          "studies": [],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-650-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "body_set_subtotals_sum_to_653_not_650",
+                "collector-policy-not-enabled",
+                "hit_counts_not_usable_without_reviewing_image_content",
+                "independent-review-pending",
+                "not_tied_to_target_country",
+                "title_claim_only_for_total_pack_count",
+                "unknown_geography",
+                "unverified_research"
+              ],
+              "method": "public_forum_opening_report",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 650,
+              "product": "mixed_physical_pokemon_tcg_packs",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "reddit-mixed-650-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pz6xq8/opened_650_packs_heres_what_i_got"
+              ]
+            }
+          ],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-42-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_details_depend_on_image_content_and_were_not_collected",
+                "independent-review-pending",
+                "not_tied_to_target_country",
+                "product_not_explicitly_verified",
+                "title_claim_only_for_pack_count",
+                "unknown_geography",
+                "unverified_research"
+              ],
+              "method": "public_forum_opening_report",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 42,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-42-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncardcollectors/comments/1nrj4d1/42_packs_opened_today_and_i_feel_like_i_got_robbed"
+              ]
+            }
+          ],
+          "target": "GI"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
