@@ -39069,6 +39069,120 @@
         "NR",
         "PW"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FM"
+        },
+        {
+          "studies": [],
+          "target": "MH"
+        },
+        {
+          "studies": [],
+          "target": "AS"
+        },
+        {
+          "studies": [],
+          "target": "CK"
+        },
+        {
+          "studies": [],
+          "target": "CX"
+        },
+        {
+          "studies": [],
+          "target": "CC"
+        },
+        {
+          "studies": [],
+          "target": "PF"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-guam-obsidian-flames-etb-11-packs-2023"
+              ],
+              "country": "GU",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "image_contents_not_collected",
+                "independent-review-pending",
+                "metrics_use_author_reported_rarity_labels",
+                "opening_location_unknown",
+                "post_also_mentions_separate_japanese_151_opening_in_tokyo",
+                "publisher_explicitly_states_guam_residence",
+                "unverified_research"
+              ],
+              "method": "self_reported_complete_opening",
+              "metrics": [
+                {
+                  "category": "full_art",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "pokemon_ex",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 11,
+              "product": "obsidian-flames-pokemon-center-elite-trainer-box",
+              "set": "obsidian-flames",
+              "source_sample": null,
+              "study_id": "reddit-guam-obsidian-flames-etb-11-packs-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/15y8tn6/pokemon_center_obf_etb_thoughts"
+              ]
+            }
+          ],
+          "target": "GU"
+        },
+        {
+          "studies": [],
+          "target": "HM"
+        },
+        {
+          "studies": [],
+          "target": "NC"
+        },
+        {
+          "studies": [],
+          "target": "NU"
+        },
+        {
+          "studies": [],
+          "target": "NF"
+        }
+      ],
+      "sweep": 14,
+      "targets": [
+        "FM",
+        "MH",
+        "AS",
+        "CK",
+        "CX",
+        "CC",
+        "PF",
+        "GU",
+        "HM",
+        "NC",
+        "NU",
+        "NF"
+      ]
     }
   ],
   "global_batches": [
