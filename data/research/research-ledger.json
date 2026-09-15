@@ -44454,6 +44454,104 @@
         "JO",
         "KZ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [],
+          "target": "LA"
+        },
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        },
+        {
+          "studies": [],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [],
+          "target": "KP"
+        },
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pakistan-xy-evolutions-nine-pack-cumulative-cohort-20201127"
+              ],
+              "country": "PK",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "author-reported-cumulative-count",
+                "collector-policy-not-enabled",
+                "count-worded-as-packs-obtained-in-context-of-opening",
+                "independent-review-pending",
+                "no-complete-hit-counts",
+                "overlap-unresolved",
+                "possible-overlap-with-earlier-pakistan-cohorts",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 9,
+              "product": "xy-evolutions-booster-packs",
+              "set": "xy-evolutions",
+              "source_sample": null,
+              "study_id": "pakistan-xy-evolutions-nine-pack-cumulative-report-20201127",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/k1zvnv/i_was_giving_up_on_tcg_because_the_import"
+              ]
+            }
+          ],
+          "target": "PK"
+        },
+        {
+          "studies": [],
+          "target": "PS"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "KW",
+        "KG",
+        "LA",
+        "LB",
+        "MV",
+        "MN",
+        "MM",
+        "NP",
+        "KP",
+        "OM",
+        "PK",
+        "PS"
+      ]
     }
   ],
   "global_batches": [
