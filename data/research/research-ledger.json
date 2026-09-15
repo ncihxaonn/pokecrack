@@ -33769,6 +33769,103 @@
         "BA",
         "BG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [],
+          "target": "CZ"
+        },
+        {
+          "studies": [],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        },
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-four-set-family-opening-54-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "discovered_during_ireland_target_search_but_country_not_established",
+                "hit_cards_shown_in_images_but_integer_category_counts_not_explicit_in_text",
+                "independent-review-pending",
+                "mixed_set_sample",
+                "opening_location_not_reported",
+                "unverified_research"
+              ],
+              "method": "author_reported_physical_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 54,
+              "product": "mixed-booster-box-etb-and-loose-packs",
+              "set": "mixed-phantasmal-flames-surging-sparks-white-flare-journey-together",
+              "source_sample": null,
+              "study_id": "mixed-four-set-family-opening-54-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1q3bnmn/family_rip_night_question_about_card_damage"
+              ]
+            }
+          ],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
