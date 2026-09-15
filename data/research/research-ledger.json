@@ -33866,6 +33866,256 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-last-pack-magic-36-pack-display-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "category_wording_is_author_reported",
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "image_based_results_not_reviewed",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "self_reported_complete_opening",
+              "metrics": [
+                {
+                  "category": "alternate_art",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster-display",
+              "set": "obsidian-flames",
+              "source_sample": null,
+              "study_id": "reddit-last-pack-magic-36-pack-display-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/16kzuqd"
+              ]
+            }
+          ],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-chaos-rising-32-pack-report-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "dutch",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_report_not_post_subject",
+                "ex_cards_are_author_defined_hits",
+                "geography_unknown",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening_count",
+              "metrics": [
+                {
+                  "category": "ex",
+                  "hits": 5,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 32,
+              "product": null,
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-chaos-rising-32-pack-report-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1tkd8ro/chaos_rising_hits"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-perfect-order-40-pack-report-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "dutch",
+              "limitations": [
+                "author_reported_approximately_40_packs",
+                "collector-policy-not-enabled",
+                "comment_report_not_post_subject",
+                "geography_unknown",
+                "independent-review-pending",
+                "no_eligible_metrics_from_approximate_denominator",
+                "six_pack_booster_bundle_explicitly_excluded_by_reporter",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening_count",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 40,
+              "product": "perfect-order",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-perfect-order-40-pack-report-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1u77nr1/losse_packs_op_cm_kopen"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-poland-battle-partners-two-pack-opening-2025"
+              ],
+              "country": "PL",
+              "geography_basis": "opening_location",
+              "language": "english",
+              "limitations": [
+                "authenticity_was_questioned_by_reporter",
+                "collector-policy-not-enabled",
+                "hit_category_not_explicit",
+                "image_based_result_not_reviewed",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "self_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 2,
+              "product": "japanese-booster-packs",
+              "set": "battle-partners",
+              "source_sample": null,
+              "study_id": "reddit-poland-battle-partners-two-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/IsMyPokemonCardFake/comments/1my2ljn"
+              ]
+            }
+          ],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-prismatic-evolutions-two-tech-sticker-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "image_based_results_not_reviewed",
+                "independent-review-pending",
+                "opening_location_not_explicit",
+                "romanian_history_stated_but_current_country_not_established",
+                "unverified_research"
+              ],
+              "method": "self_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 2,
+              "product": "tech-sticker-collection",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-prismatic-evolutions-two-tech-sticker-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1ig0gyk"
+              ]
+            }
+          ],
+          "target": "RO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "rutube-pokemon-booster-opening-2026-v1"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "russian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "pack_count_not_reported",
+                "unverified_research",
+                "video_not_manually_reviewed"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "rutube-pokemon-booster-opening-2026-v1",
+              "urls": [
+                "https://rutube.ru/video/ffe30aef6a66ccfb7cc20d6a9ac8ebc9"
+              ]
+            }
+          ],
+          "target": "RU"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
