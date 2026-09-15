@@ -44996,6 +44996,39 @@
         "NU",
         "NF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MP"
+        },
+        {
+          "studies": [],
+          "target": "PN"
+        },
+        {
+          "studies": [],
+          "target": "TK"
+        },
+        {
+          "studies": [],
+          "target": "UM"
+        },
+        {
+          "studies": [],
+          "target": "WF"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "MP",
+        "PN",
+        "TK",
+        "UM",
+        "WF"
+      ]
     }
   ],
   "global_batches": [
