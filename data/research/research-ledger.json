@@ -29250,6 +29250,317 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "storm-emeralda-30-pack-snapchat-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "target-country-not-assigned",
+                "title-caption-only-count",
+                "unverified-research"
+              ],
+              "method": "public-video-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 30,
+              "product": "storm-emeralda",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "storm-emeralda-30-pack-snapchat-opening-2026",
+              "urls": [
+                "https://www.snapchat.com/@kykyrips/spotlight/W7_EDlXWTBiXAEEniNoMPwAAYcmtna2N5Ynh6AZ_PCsC8AZ_PClxJAAAAAQ"
+              ]
+            }
+          ],
+          "target": "MY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "team-up-18-pack-vietnam-video-cohort-2019"
+              ],
+              "country": "VN",
+              "geography_basis": "publisher_country",
+              "language": "vi",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "publisher-country-explicit-in-public-channel-link",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "team-up",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "team-up-18-pack-video-opening-2019",
+              "urls": [
+                "https://youtu.be/0QiSsGDGbTY"
+              ]
+            }
+          ],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "philippines-two-box-mixed-opening-cohort-2026"
+              ],
+              "country": "PH",
+              "geography_basis": "publisher_country",
+              "language": "tl-en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-supported-by-public-community-label",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "products-not-confirmed-in-text",
+                "unverified-research"
+              ],
+              "method": "public-forum-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "new",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "two-box-mixed-opening-philippines-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1vxxiz3/hitties"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "philippines-pitch-black-three-pack-expo-cohort-2026"
+              ],
+              "country": "PH",
+              "geography_basis": "publisher_country",
+              "language": "tl-en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-supported-by-public-community-label",
+                "independent-review-pending",
+                "opening-location-detail-withheld",
+                "single-hit-opening",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "public-forum-report",
+              "metrics": [
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": "pitch-black",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "pitch-black-three-pack-card-expo-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1vvh8t2/first_card_expo_experience"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mega-evolution-36-pack-hong-kong-video-cohort"
+              ],
+              "country": "HK",
+              "geography_basis": "publisher_country",
+              "language": "zh-yue",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-explicit-in-public-post-hashtag",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "mega-evolution",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "mega-evolution-36-pack-hong-kong-video-opening",
+              "urls": [
+                "https://youtu.be/C38XSx27j78"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "sun-moon-36-pack-forum-cohort-2017"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh",
+              "limitations": [
+                "canonical-page-path-not-preserved-because-query-parameters-prohibited",
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "target-country-not-assigned",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "sun-and-moon",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "sun-moon-36-pack-forum-opening-2017",
+              "urls": [
+                "https://forum.gamer.com.tw/G2.php"
+              ]
+            }
+          ],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "india-korean-mixed-four-pack-opening-cohort-2026"
+              ],
+              "country": "IN",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-supported-by-public-community-label",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "mixed-products",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "public-forum-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 4,
+              "product": "mixed-korean-sets",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "korean-mixed-four-pack-opening-india-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1t0lqqv/first_ever_pokemon_pack_opening_gone_right"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "japan-28-pack-opening-india-forum-cohort-2026"
+              ],
+              "country": "JP",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-set-details-not-fully-reported",
+                "opening-explicitly-associated-with-japan-purchased-packs",
+                "target-provenance-does-not-change-country",
+                "unverified-research"
+              ],
+              "method": "public-forum-report",
+              "metrics": [
+                {
+                  "category": "special-art-rare",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 28,
+              "product": null,
+              "set": "new",
+              "source_sample": null,
+              "study_id": "japan-purchased-28-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1ulawy3/opened_just_28_packs_and_got_three_sars"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 11,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
