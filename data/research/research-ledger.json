@@ -34116,6 +34116,270 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-black-bolt-white-flare-thirty-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_categories_not_quantified",
+                "independent-review-pending",
+                "opening_spanned_two_sessions",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "japanese-black-bolt-and-white-flare",
+              "set": "black-bolt-white-flare",
+              "source_sample": null,
+              "study_id": "reddit-black-bolt-white-flare-thirty-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r7f59h/it_really_is_in_the_pack_you_didnt_open"
+              ]
+            }
+          ],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-german-language-thirty-six-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "german",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_available_in_accessible_text",
+                "independent-review-pending",
+                "set_not_stated",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-german-language-thirty-six-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDe/comments/1jlvfsy"
+              ]
+            }
+          ],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-twelve-pack-family-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_quantified",
+                "independent-review-pending",
+                "three_ex_boxes_reported_but_only_twelve_opened_packs_explicitly_attributed",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 12,
+              "product": "ascended-heroes-ex-boxes",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-twelve-pack-family-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1to6vjj/opened_some_sealed_stuff_yesterday"
+              ]
+            }
+          ],
+          "target": "VA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-journey-together-seventy-one-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_quantified",
+                "independent-review-pending",
+                "pack_count_supported_by_public_title_only",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 71,
+              "product": "journey-together",
+              "set": "journey-together",
+              "source_sample": null,
+              "study_id": "reddit-journey-together-seventy-one-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1jv54md"
+              ]
+            }
+          ],
+          "target": "AX"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-five-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_quantified",
+                "independent-review-pending",
+                "post_focuses_on-pack-collation-anomaly",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 5,
+              "product": "pitch-black-single-packs",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-five-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v1euer/local_card_shop_may_be_resealing_packs"
+              ]
+            }
+          ],
+          "target": "FO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-destined-rivals-journey-together-ten-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_available_in_accessible_text",
+                "independent-review-pending",
+                "set_counts_author_recalled_with_uncertainty",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "six-destined-rivals-and-four-journey-together-packs",
+              "set": "mixed-destined-rivals-journey-together",
+              "source_sample": null,
+              "study_id": "reddit-destined-rivals-journey-together-ten-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r84rxz/i_opened_my_first_ever_packs"
+              ]
+            }
+          ],
+          "target": "GG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-forty-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_available_in_accessible_text",
+                "independent-review-pending",
+                "pack_count_supported_by_public_title",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 40,
+              "product": "pitch-black-mixed-products",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-forty-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v07t5c/i_opened_40_packs_of_pitch_black"
+              ]
+            }
+          ],
+          "target": "GI"
+        }
+      ],
+      "sweep": 12,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
