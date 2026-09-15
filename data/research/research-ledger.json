@@ -43367,6 +43367,127 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "cardomi-scarlet-violet-151-two-bundle-box-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-total-not-directly-reported",
+                "product-contents-not-converted-to-packs",
+                "publisher-country-not-established",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "first-party-hobby-store-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "scarlet-violet-151-bundle-box",
+              "set": "scarlet-violet-151",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "cardomi-pokemon-151-two-bundle-box-opening",
+              "urls": [
+                "https://cardomi.com/blogs/news/pokemon-151-bundle-box-release-we-opened-two-and"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "codedyellow-evolving-skies-weight-test-108-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "non-holo-rares-not-recorded",
+                "opening-location-not-stated",
+                "publisher-country-not-established",
+                "unverified-research",
+                "weight-stratified-sample"
+              ],
+              "method": "first-party-weighed-pack-opening",
+              "metrics": [
+                {
+                  "category": "full-art-vmax",
+                  "hits": 8,
+                  "unit": "cards"
+                },
+                {
+                  "category": "half-art-v",
+                  "hits": 12,
+                  "unit": "cards"
+                },
+                {
+                  "category": "holo-rare",
+                  "hits": 21,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 5,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 108,
+              "product": "evolving-skies-booster-packs",
+              "set": "evolving-skies",
+              "source_sample": null,
+              "study_id": "codedyellow-evolving-skies-weight-test-108-packs",
+              "urls": [
+                "https://www.codedyellow.com/evolving-skies-pack-weight"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 15,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
