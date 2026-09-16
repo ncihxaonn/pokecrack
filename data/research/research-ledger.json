@@ -59950,6 +59950,185 @@
         "SZ",
         "ET"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GA"
+        },
+        {
+          "studies": [],
+          "target": "GM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-245-pack-opening-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "mixed_products",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 245,
+              "product": "mixed_pokemon_tcg_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-245-pack-opening-2021",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/qa50og"
+              ]
+            }
+          ],
+          "target": "GH"
+        },
+        {
+          "studies": [],
+          "target": "GN"
+        },
+        {
+          "studies": [],
+          "target": "GW"
+        },
+        {
+          "studies": [],
+          "target": "LS"
+        },
+        {
+          "studies": [],
+          "target": "LR"
+        },
+        {
+          "studies": [],
+          "target": "LY"
+        },
+        {
+          "studies": [],
+          "target": "MG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-650-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "hit_counts_only_visible_in_uncopied_images",
+                "independent-review-pending",
+                "mixed_sets",
+                "title_claims_650_but_itemized_body_counts_sum_to_653",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 650,
+              "product": "mixed_pokemon_tcg_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-650-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pz6xq8/opened_650_packs_heres_what_i_got"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-40-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "hit_counts_only_visible_in_uncopied_images",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 40,
+              "product": "mixed_pitch_black_products",
+              "set": "pitch_black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-40-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v07t5c/i_opened_40_packs_of_pitch_black"
+              ]
+            }
+          ],
+          "target": "MW"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-11-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "hit_categories_not_standardized",
+                "independent-review-pending",
+                "set_not_explicitly_verified",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 11,
+              "product": "mixed_pokemon_tcg_products",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-mixed-11-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1vck9wk/so_i_open_11_booster_with_my_friend"
+              ]
+            }
+          ],
+          "target": "ML"
+        },
+        {
+          "studies": [],
+          "target": "MR"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "GA",
+        "GM",
+        "GH",
+        "GN",
+        "GW",
+        "LS",
+        "LR",
+        "LY",
+        "MG",
+        "MW",
+        "ML",
+        "MR"
+      ]
     }
   ],
   "global_batches": [
