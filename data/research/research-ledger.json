@@ -50199,6 +50199,29 @@
         "TR",
         "TM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AE"
+        },
+        {
+          "studies": [],
+          "target": "UZ"
+        },
+        {
+          "studies": [],
+          "target": "YE"
+        }
+      ],
+      "sweep": 18,
+      "targets": [
+        "AE",
+        "UZ",
+        "YE"
+      ]
     }
   ],
   "global_batches": [
