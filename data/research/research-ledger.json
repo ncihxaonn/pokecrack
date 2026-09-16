@@ -46922,6 +46922,158 @@
         "BZ",
         "CR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-mixed-xy-five-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "possible-repost-original-url-unresolved",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 5,
+              "product": "five-mixed-booster-packs",
+              "set": "mixed-xy-sets",
+              "source_sample": null,
+              "study_id": "dailymotion-mixed-xy-five-pack-opening",
+              "urls": [
+                "https://www.dailymotion.com/video/x6kt7v7"
+              ]
+            }
+          ],
+          "target": "SV"
+        },
+        {
+          "studies": [],
+          "target": "GT"
+        },
+        {
+          "studies": [],
+          "target": "HN"
+        },
+        {
+          "studies": [],
+          "target": "NI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-ascended-heroes-etb-nine-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 9,
+              "product": "elite-trainer-box",
+              "set": "mega-evolution-ascended-heroes",
+              "source_sample": null,
+              "study_id": "dailymotion-ascenso-heroico-etb-nine-pack-opening",
+              "urls": [
+                "https://www.dailymotion.com/video/xa0a2d2"
+              ]
+            }
+          ],
+          "target": "PA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-rayquaza-ex-four-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "possible-overlap-with-dailymotion-mixed-xy-publisher-unresolved",
+                "search-description-evidence-only",
+                "unverified-research"
+              ],
+              "method": "public-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 4,
+              "product": "rayquaza-ex-box",
+              "set": "mixed-xy-sets",
+              "source_sample": null,
+              "study_id": "youtube-rayquaza-ex-four-pack-opening",
+              "urls": [
+                "https://youtu.be/fefbJz37hiM"
+              ]
+            }
+          ],
+          "target": "BO"
+        },
+        {
+          "studies": [],
+          "target": "BV"
+        },
+        {
+          "studies": [],
+          "target": "EC"
+        },
+        {
+          "studies": [],
+          "target": "FK"
+        },
+        {
+          "studies": [],
+          "target": "GF"
+        },
+        {
+          "studies": [],
+          "target": "GY"
+        },
+        {
+          "studies": [],
+          "target": "PY"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "SV",
+        "GT",
+        "HN",
+        "NI",
+        "PA",
+        "BO",
+        "BV",
+        "EC",
+        "FK",
+        "GF",
+        "GY",
+        "PY"
+      ]
     }
   ],
   "global_batches": [
