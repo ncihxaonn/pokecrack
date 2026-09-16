@@ -57942,6 +57942,149 @@
         "GY",
         "PY"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-single-booster-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "pack_count_from_singular_title_claim",
+                "target_country_not_established",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "dailymotion-single-booster-pack-opening-2026",
+              "urls": [
+                "https://www.dailymotion.com/video/xa737c6"
+              ]
+            }
+          ],
+          "target": "SR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-galar-collection-plus-two-packs-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "spanish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "search_snippet_metadata_only",
+                "target_country_not_established",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "galar_sobble_collection_plus_xy_furious_fists_boosters",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-galar-collection-plus-two-packs-opening-2020",
+              "urls": [
+                "https://youtu.be/8256oByF1nQ"
+              ]
+            }
+          ],
+          "target": "UY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-forbidden-light-etb-eight-pack-opening-2018"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "spanish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "search_snippet_metadata_only",
+                "target_country_not_established",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 8,
+              "product": "forbidden_light_elite_trainer_box",
+              "set": "sun_moon_forbidden_light",
+              "source_sample": null,
+              "study_id": "youtube-forbidden-light-etb-eight-pack-opening-2018",
+              "urls": [
+                "https://youtu.be/mqoifPubrRQ"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-xy-evolutions-etb-eight-pack-opening-2016"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "spanish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "search_snippet_metadata_only",
+                "target_country_not_established",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 8,
+              "product": "xy_evolutions_elite_trainer_box",
+              "set": "xy_evolutions",
+              "source_sample": null,
+              "study_id": "youtube-xy-evolutions-etb-eight-pack-opening-2016",
+              "urls": [
+                "https://youtu.be/NqMujD2WPOg"
+              ]
+            }
+          ],
+          "target": "VE"
+        }
+      ],
+      "sweep": 20,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
     }
   ],
   "global_batches": [
