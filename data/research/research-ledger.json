@@ -61552,6 +61552,133 @@
         "NR",
         "PW"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FM"
+        },
+        {
+          "studies": [],
+          "target": "MH"
+        },
+        {
+          "studies": [],
+          "target": "AS"
+        },
+        {
+          "studies": [],
+          "target": "CK"
+        },
+        {
+          "studies": [],
+          "target": "CX"
+        },
+        {
+          "studies": [],
+          "target": "CC"
+        },
+        {
+          "studies": [],
+          "target": "PF"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-eighteen-pack-family-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "independent-review-pending",
+                "pull_counts_not_reported",
+                "search_provenance_only_not_guam_evidence",
+                "three_products_reported_as_six_packs_each",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "ascended_heroes_ex_boxes",
+              "set": "ascended_heroes",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-eighteen-pack-family-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1to6vjj/opened_some_sealed_stuff_yesterday"
+              ]
+            }
+          ],
+          "target": "GU"
+        },
+        {
+          "studies": [],
+          "target": "HM"
+        },
+        {
+          "studies": [],
+          "target": "NC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-white-flare-black-bolt-twenty-nine-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_definition_not_explicit",
+                "independent-review-pending",
+                "overlap_unresolved",
+                "reported_pack_total_conflicts_with_product_breakdown",
+                "search_provenance_only_not_niue_evidence",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 29,
+              "product": "white_flare_black_bolt_loose_packs",
+              "set": "white_flare_black_bolt",
+              "source_sample": null,
+              "study_id": "reddit-white-flare-black-bolt-twenty-nine-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r7f59h/it_really_is_in_the_pack_you_didnt_open"
+              ]
+            }
+          ],
+          "target": "NU"
+        },
+        {
+          "studies": [],
+          "target": "NF"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "FM",
+        "MH",
+        "AS",
+        "CK",
+        "CX",
+        "CC",
+        "PF",
+        "GU",
+        "HM",
+        "NC",
+        "NU",
+        "NF"
+      ]
     }
   ],
   "global_batches": [
