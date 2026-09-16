@@ -65202,6 +65202,197 @@
         "NR",
         "PW"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FM"
+        },
+        {
+          "studies": [],
+          "target": "MH"
+        },
+        {
+          "studies": [],
+          "target": "AS"
+        },
+        {
+          "studies": [],
+          "target": "CK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-one-hundred-fifty-pack-family-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unstated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "pack_count_from_title",
+                "product_breakdown_unstated",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 150,
+              "product": null,
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-one-hundred-fifty-pack-family-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1hs7bf5"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-over-five-hundred-pack-holiday-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unstated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "lower_bound_only",
+                "product_breakdown_unstated",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 500,
+              "product": null,
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-over-five-hundred-pack-holiday-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1hdvrtm"
+              ]
+            }
+          ],
+          "target": "CX"
+        },
+        {
+          "studies": [],
+          "target": "CC"
+        },
+        {
+          "studies": [],
+          "target": "PF"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-phantasmal-flames-one-booster-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unstated",
+                "hit_counts_not_safely_enumerable",
+                "independent-review-pending",
+                "native_box_count_only",
+                "pack_count_not_reported",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "phantasmal-flames",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-phantasmal-flames-one-booster-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1sygk8q/first_time_opening_a_booster_box_i_dont_know_what"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-first-english-booster-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unstated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "native_box_count_only",
+                "pack_count_not_reported",
+                "set_not_identified_in_public_text",
+                "unverified_research"
+              ],
+              "method": "public_post_opening_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "english-booster-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-first-english-booster-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1t4u7op/first_time_opening_an_english_booster_box"
+              ]
+            }
+          ],
+          "target": "GU"
+        },
+        {
+          "studies": [],
+          "target": "HM"
+        },
+        {
+          "studies": [],
+          "target": "NC"
+        },
+        {
+          "studies": [],
+          "target": "NU"
+        },
+        {
+          "studies": [],
+          "target": "NF"
+        }
+      ],
+      "sweep": 23,
+      "targets": [
+        "FM",
+        "MH",
+        "AS",
+        "CK",
+        "CX",
+        "CC",
+        "PF",
+        "GU",
+        "HM",
+        "NC",
+        "NU",
+        "NF"
+      ]
     }
   ],
   "global_batches": [
