@@ -54362,6 +54362,130 @@
         "SZ",
         "ET"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-packs-13-18-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research",
+                "video-completeness-not-independently-verified"
+              ],
+              "method": "public-post-video",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "booster-box-packs",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-packs-13-18-2026",
+              "urls": [
+                "https://www.reddit.com/r/u_CollectibleJockTalk/comments/1w4tl3l/pokepackenomicspitch_black_pack_1318"
+              ]
+            }
+          ],
+          "target": "GM"
+        },
+        {
+          "studies": [],
+          "target": "GH"
+        },
+        {
+          "studies": [],
+          "target": "GN"
+        },
+        {
+          "studies": [],
+          "target": "GW"
+        },
+        {
+          "studies": [],
+          "target": "LS"
+        },
+        {
+          "studies": [],
+          "target": "LR"
+        },
+        {
+          "studies": [],
+          "target": "LY"
+        },
+        {
+          "studies": [],
+          "target": "MG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-three-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "subreddit-name-not-geography-evidence",
+                "unverified-research"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": "booster-packs",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-three-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1w51um8/first_time_opening_pokemon_cards"
+              ]
+            }
+          ],
+          "target": "MW"
+        },
+        {
+          "studies": [],
+          "target": "ML"
+        },
+        {
+          "studies": [],
+          "target": "MR"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "GA",
+        "GM",
+        "GH",
+        "GN",
+        "GW",
+        "LS",
+        "LR",
+        "LY",
+        "MG",
+        "MW",
+        "ML",
+        "MR"
+      ]
     }
   ],
   "global_batches": [
