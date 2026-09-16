@@ -62931,6 +62931,167 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ZA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-forty-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_post_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 40,
+              "product": "pitch_black",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-forty-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v07t5c/i_opened_40_packs_of_pitch_black"
+              ]
+            }
+          ],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-french-nineteen-booster-mixed-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "mixed_products",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "public_post_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 19,
+              "product": "elite_trainer_box_binder_collection_and_three_pack",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-french-nineteen-booster-mixed-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1mgex4m"
+              ]
+            }
+          ],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-french-ten-pack-birthday-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hits_are_card_yield_not_hit_pack_probability",
+                "independent-review-pending",
+                "mixed_products",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "public_post_complete_opening",
+              "metrics": [
+                {
+                  "category": "hits",
+                  "hits": 5,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "mixed_pokemon_tcg_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-french-ten-pack-birthday-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1mf3aft"
+              ]
+            }
+          ],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
