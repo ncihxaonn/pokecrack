@@ -51559,6 +51559,133 @@
         "SS",
         "SD"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TZ"
+        },
+        {
+          "studies": [],
+          "target": "TG"
+        },
+        {
+          "studies": [],
+          "target": "TN"
+        },
+        {
+          "studies": [],
+          "target": "UG"
+        },
+        {
+          "studies": [],
+          "target": "ZM"
+        },
+        {
+          "studies": [],
+          "target": "ZW"
+        },
+        {
+          "studies": [],
+          "target": "IO"
+        },
+        {
+          "studies": [],
+          "target": "TF"
+        },
+        {
+          "studies": [],
+          "target": "YT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-100-pack-opening-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "discovered-during-reunion-target-search-but-source-explicitly-locates-opening-in-canada",
+                "independent-review-pending",
+                "individual-set-pack-breakdown-mostly-unreported",
+                "mixed-english-etbs-and-korean-booster-boxes",
+                "reported-fourteen-notable-cards-from-ten-vstar-universe-packs-omitted-as-subset-metric",
+                "unverified-research"
+              ],
+              "method": "self-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "mixed-english-etbs-and-korean-booster-boxes",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-100-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1isgyvt/une_soir%C3%A9e_m%C3%A9morable"
+              ]
+            }
+          ],
+          "target": "RE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "garbagerips-482-pack-video-catalog-2026"
+              ],
+              "country": "US",
+              "geography_basis": "publisher_country",
+              "language": "english",
+              "limitations": [
+                "aggregates-342-separate-openings",
+                "collector-policy-not-enabled",
+                "discovered-during-saint-helena-target-search-with-no-saint-helena-connection",
+                "independent-review-pending",
+                "no-eligible-integer-hit-total-reported-on-summary-page",
+                "page-total-may-change-as-catalog-is-updated",
+                "publisher-country-only",
+                "unverified-research"
+              ],
+              "method": "complete-video-catalog",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 482,
+              "product": "mixed-sealed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "garbagerips-482-pack-video-catalog-2026",
+              "urls": [
+                "https://garbagerips.com/openings"
+              ]
+            }
+          ],
+          "target": "SH"
+        },
+        {
+          "studies": [],
+          "target": "EH"
+        }
+      ],
+      "sweep": 18,
+      "targets": [
+        "TZ",
+        "TG",
+        "TN",
+        "UG",
+        "ZM",
+        "ZW",
+        "IO",
+        "TF",
+        "YT",
+        "RE",
+        "SH",
+        "EH"
+      ]
     }
   ],
   "global_batches": [
