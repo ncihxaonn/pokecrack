@@ -59461,6 +59461,163 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-60-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_captured",
+                "independent-review-pending",
+                "set_not_confirmed",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 60,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-60-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1twvzpe/i_opened_60_packs_so_you_dont_have_to"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-82-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_captured",
+                "independent-review-pending",
+                "mixed_product_formats",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 82,
+              "product": "pitch-black-mixed-sealed-products",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-82-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGCollectors/comments/1v0chgb/so_is_my_luck_just_atrocious_or_are_pitch_black"
+              ]
+            }
+          ],
+          "target": "SE"
+        },
+        {
+          "studies": [],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-gibraltar-silver-tempest-two-pack-opening-2024"
+              ],
+              "country": "GI",
+              "geography_basis": "product_market",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "purchase_location_reported_but_opening_location_not_stated",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [
+                {
+                  "category": "hits",
+                  "hits": 2,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 2,
+              "product": "silver-tempest-booster-packs",
+              "set": "silver-tempest",
+              "source_sample": null,
+              "study_id": "reddit-gibraltar-silver-tempest-two-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1b6jt0a"
+              ]
+            }
+          ],
+          "target": "GI"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
