@@ -64572,6 +64572,103 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [],
+          "target": "PH"
+        },
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bangladesh-real-blister-packs-opening-2025"
+              ],
+              "country": "BD",
+              "geography_basis": "opening_location",
+              "language": "bn",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete-opening-scope-unclear",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "title-only-geography-evidence",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed-blister-packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "bangladesh-real-blister-packs-opening-2025",
+              "urls": [
+                "https://youtu.be/JCu8BexDJus"
+              ]
+            }
+          ],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 23,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
