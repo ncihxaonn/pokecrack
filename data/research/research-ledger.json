@@ -56493,6 +56493,143 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-chaos-rising-six-pack-opening-2026"
+              ],
+              "country": "BE",
+              "geography_basis": "publisher_country",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-based-on-explicit-author-statement",
+                "hit-category-author-defined",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "possible-overlap-with-other-chaos-rising-reports-unresolved",
+                "unverified-research"
+              ],
+              "method": "author-reported-physical-opening",
+              "metrics": [
+                {
+                  "category": "hit",
+                  "hits": 3,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "chaos-rising-three-pack-blisters",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-chaos-rising-six-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1tkh265/chaos_rising_haul"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-chaos-rising-twelve-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "mixed-pack-sources",
+                "opening-location-not-stated",
+                "possible-overlap-with-earlier-froakie-opening-unresolved",
+                "unverified-research"
+              ],
+              "method": "author-reported-physical-opening",
+              "metrics": [
+                {
+                  "category": "sir",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 12,
+              "product": "chaos-rising",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-chaos-rising-twelve-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1tz984r/mijn_geluk_is_op_voor_de_rest_van_het_jaar"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [],
+          "target": "RO"
+        },
+        {
+          "studies": [],
+          "target": "RU"
+        }
+      ],
+      "sweep": 20,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
