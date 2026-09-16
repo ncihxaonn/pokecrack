@@ -60559,6 +60559,2064 @@
         "BB",
         "BQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "VG"
+        },
+        {
+          "studies": [],
+          "target": "KY"
+        },
+        {
+          "studies": [],
+          "target": "CU"
+        },
+        {
+          "studies": [],
+          "target": "CW"
+        },
+        {
+          "studies": [],
+          "target": "DM"
+        },
+        {
+          "studies": [],
+          "target": "DO"
+        },
+        {
+          "studies": [],
+          "target": "GD"
+        },
+        {
+          "studies": [],
+          "target": "GP"
+        },
+        {
+          "studies": [],
+          "target": "HT"
+        },
+        {
+          "studies": [],
+          "target": "JM"
+        },
+        {
+          "studies": [],
+          "target": "MQ"
+        },
+        {
+          "studies": [],
+          "target": "MS"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "VG",
+        "KY",
+        "CU",
+        "CW",
+        "DM",
+        "DO",
+        "GD",
+        "GP",
+        "HT",
+        "JM",
+        "MQ",
+        "MS"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "PR"
+        },
+        {
+          "studies": [],
+          "target": "BL"
+        },
+        {
+          "studies": [],
+          "target": "KN"
+        },
+        {
+          "studies": [],
+          "target": "LC"
+        },
+        {
+          "studies": [],
+          "target": "MF"
+        },
+        {
+          "studies": [],
+          "target": "VC"
+        },
+        {
+          "studies": [],
+          "target": "SX"
+        },
+        {
+          "studies": [],
+          "target": "TT"
+        },
+        {
+          "studies": [],
+          "target": "TC"
+        },
+        {
+          "studies": [],
+          "target": "VI"
+        },
+        {
+          "studies": [],
+          "target": "BZ"
+        },
+        {
+          "studies": [],
+          "target": "CR"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "PR",
+        "BL",
+        "KN",
+        "LC",
+        "MF",
+        "VC",
+        "SX",
+        "TT",
+        "TC",
+        "VI",
+        "BZ",
+        "CR"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SV"
+        },
+        {
+          "studies": [],
+          "target": "GT"
+        },
+        {
+          "studies": [],
+          "target": "HN"
+        },
+        {
+          "studies": [],
+          "target": "NI"
+        },
+        {
+          "studies": [],
+          "target": "PA"
+        },
+        {
+          "studies": [],
+          "target": "BO"
+        },
+        {
+          "studies": [],
+          "target": "BV"
+        },
+        {
+          "studies": [],
+          "target": "EC"
+        },
+        {
+          "studies": [],
+          "target": "FK"
+        },
+        {
+          "studies": [],
+          "target": "GF"
+        },
+        {
+          "studies": [],
+          "target": "GY"
+        },
+        {
+          "studies": [],
+          "target": "PY"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "SV",
+        "GT",
+        "HN",
+        "NI",
+        "PA",
+        "BO",
+        "BV",
+        "EC",
+        "FK",
+        "GF",
+        "GY",
+        "PY"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-team-rocket-first-edition-three-pack-opening-2026"
+              ],
+              "country": "NL",
+              "geography_basis": "opening_location",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "followup_post_not_full_opening_record",
+                "hit_totals_not_reported",
+                "independent-review-pending",
+                "not_suriname_specific",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": "team_rocket_first_edition_booster_packs",
+              "set": "team_rocket_first_edition",
+              "source_sample": null,
+              "study_id": "reddit-team-rocket-first-edition-three-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1we4q5h/3_pakjes_1st_edition_team_rocket_opengemaakt"
+              ]
+            }
+          ],
+          "target": "SR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-spanish-three-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_totals_not_reported",
+                "image_only_results",
+                "independent-review-pending",
+                "product_unknown",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-spanish-three-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1u5p7di/hitaso"
+              ]
+            }
+          ],
+          "target": "UY"
+        },
+        {
+          "studies": [],
+          "target": "VE"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AQ"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "AQ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [],
+          "target": "PH"
+        },
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mega-symphonia-seventeen-pack-opening-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "complete-opening-not-independently-verified",
+                "country-not-explicitly-stated",
+                "hit-count-not-explicit",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 17,
+              "product": "loose-packs",
+              "set": "mega-symphonia",
+              "source_sample": null,
+              "study_id": "mega-symphonia-seventeen-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1utdub8/i_have_never_been_this_lucky"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bilibili-mixed-japanese-one-hundred-packs-20200224"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "mixed-products",
+                "opening-location-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-japanese-pokemon-cards",
+              "set": "mixed-japanese",
+              "source_sample": null,
+              "study_id": "bilibili-mixed-japanese-one-hundred-packs-20200224",
+              "urls": [
+                "https://www.bilibili.com/video/BV137411u761"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "bilibili-brilliant-illusion-one-box-20260314"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "single-box-opening",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-brilliant-illusion-booster-box",
+              "set": "brilliant-illusion-16-0",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "bilibili-brilliant-illusion-one-box-20260314",
+              "urls": [
+                "https://www.bilibili.com/video/BV19Mwbz4EX4"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-pitch-black-own-117-pack-study-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "id",
+              "limitations": [
+                "article-also-aggregates-136-community-packs",
+                "collector-policy-not-enabled",
+                "community-cohorts-excluded-from-pack-count",
+                "full-117-pack-hit-breakdown-not-explicit",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "unverified-research"
+              ],
+              "method": "article-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 117,
+              "product": "english-pitch-black",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "tcgtalk-pitch-black-own-117-pack-study-2026",
+              "urls": [
+                "https://tcgtalk.com/guides/indonesia/pitch-black-pull-rates"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "patoneko-mixed-pokemon-card-one-hundred-packs-20260714"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "canonical-video-page-not-fetched",
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "mixed-sets",
+                "opening-location-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-japanese-pokemon-cards",
+              "set": "mixed-japanese",
+              "source_sample": null,
+              "study_id": "patoneko-mixed-pokemon-card-one-hundred-packs-20260714",
+              "urls": [
+                "https://youtu.be/uaSU_VvI_Zo"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [],
+          "target": "LA"
+        },
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        },
+        {
+          "studies": [],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [],
+          "target": "KP"
+        },
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [],
+          "target": "PK"
+        },
+        {
+          "studies": [],
+          "target": "PS"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "KW",
+        "KG",
+        "LA",
+        "LB",
+        "MV",
+        "MN",
+        "MM",
+        "NP",
+        "KP",
+        "OM",
+        "PK",
+        "PS"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "perfect-order-fifty-four-pack-community-cohort"
+              ],
+              "country": "SG",
+              "geography_basis": "publisher_country",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "community-cohort-provenance-limited",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "separate-420-plus-pack-stream-data-excluded",
+                "unverified-research"
+              ],
+              "method": "reported-community-opening",
+              "metrics": [
+                {
+                  "category": "sir",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 54,
+              "product": "perfect-order-booster-packs",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "perfect-order-fifty-four-pack-community-opening-2026",
+              "urls": [
+                "https://tcgtalk.com/blog/perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [],
+          "target": "KR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "crown-zenith-twenty-pack-sri-lanka-source-cohort"
+              ],
+              "country": "LK",
+              "geography_basis": "product_market",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicitly-enumerated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "packs-reported-as-purchased-in-sri-lanka",
+                "product-authenticity-not-independently-verified",
+                "unverified-research"
+              ],
+              "method": "public-video-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "crown-zenith-booster-packs",
+              "set": "crown-zenith",
+              "source_sample": null,
+              "study_id": "crown-zenith-twenty-pack-sri-lanka-source-video",
+              "urls": [
+                "https://youtu.be/_sZwq3HTdcE"
+              ]
+            }
+          ],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "terastal-festival-ex-twenty-box-video-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "japanese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicitly-enumerated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-not-reported",
+                "taiwan-only-giveaway-does-not-establish-opening-location",
+                "title-reported-box-count",
+                "unverified-research"
+              ],
+              "method": "public-video-complete-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "terastal-festival-ex-booster-box",
+              "set": "terastal-festival-ex",
+              "source_sample": {
+                "count": 20,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "terastal-festival-ex-twenty-box-video",
+              "urls": [
+                "https://youtu.be/IFIBKvseU6g"
+              ]
+            }
+          ],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bangkok-thirtieth-anniversary-twenty-eight-pack-cohort"
+              ],
+              "country": "TH",
+              "geography_basis": "opening_location",
+              "language": null,
+              "limitations": [
+                "card-language-not-stated",
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicitly-enumerated",
+                "independent-review-pending",
+                "one-box-plus-eight-loose-packs",
+                "unverified-research"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 28,
+              "product": "thirtieth-anniversary-booster-packs",
+              "set": "thirtieth-anniversary",
+              "source_sample": null,
+              "study_id": "bangkok-thirtieth-anniversary-twenty-eight-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokeCollectors/comments/1wi5stx/happy_30th_everyone"
+              ]
+            }
+          ],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AE"
+        },
+        {
+          "studies": [],
+          "target": "UZ"
+        },
+        {
+          "studies": [],
+          "target": "YE"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "AE",
+        "UZ",
+        "YE"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-three-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "pack_count_reported_in_post_text",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "three_ex_boxes",
+              "set": "ascended_heroes",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-three-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1to6vjj/opened_some_sealed_stuff_yesterday"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-paldea-evolved-252-pack-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 252,
+              "product": "booster_packs",
+              "set": "paldea_evolved",
+              "source_sample": null,
+              "study_id": "reddit-paldea-evolved-252-pack-opening-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1463d9m/i_opened_252_packs_of_paldea_evolved_so_your_dont"
+              ]
+            }
+          ],
+          "target": "PW"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FM"
+        },
+        {
+          "studies": [],
+          "target": "MH"
+        },
+        {
+          "studies": [],
+          "target": "AS"
+        },
+        {
+          "studies": [],
+          "target": "CK"
+        },
+        {
+          "studies": [],
+          "target": "CX"
+        },
+        {
+          "studies": [],
+          "target": "CC"
+        },
+        {
+          "studies": [],
+          "target": "PF"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-eighteen-pack-family-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "independent-review-pending",
+                "pull_counts_not_reported",
+                "search_provenance_only_not_guam_evidence",
+                "three_products_reported_as_six_packs_each",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "ascended_heroes_ex_boxes",
+              "set": "ascended_heroes",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-eighteen-pack-family-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1to6vjj/opened_some_sealed_stuff_yesterday"
+              ]
+            }
+          ],
+          "target": "GU"
+        },
+        {
+          "studies": [],
+          "target": "HM"
+        },
+        {
+          "studies": [],
+          "target": "NC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-white-flare-black-bolt-twenty-nine-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_definition_not_explicit",
+                "independent-review-pending",
+                "overlap_unresolved",
+                "reported_pack_total_conflicts_with_product_breakdown",
+                "search_provenance_only_not_niue_evidence",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 29,
+              "product": "white_flare_black_bolt_loose_packs",
+              "set": "white_flare_black_bolt",
+              "source_sample": null,
+              "study_id": "reddit-white-flare-black-bolt-twenty-nine-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r7f59h/it_really_is_in_the_pack_you_didnt_open"
+              ]
+            }
+          ],
+          "target": "NU"
+        },
+        {
+          "studies": [],
+          "target": "NF"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "FM",
+        "MH",
+        "AS",
+        "CK",
+        "CX",
+        "CC",
+        "PF",
+        "GU",
+        "HM",
+        "NC",
+        "NU",
+        "NF"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MP"
+        },
+        {
+          "studies": [],
+          "target": "PN"
+        },
+        {
+          "studies": [],
+          "target": "TK"
+        },
+        {
+          "studies": [],
+          "target": "UM"
+        },
+        {
+          "studies": [],
+          "target": "WF"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "MP",
+        "PN",
+        "TK",
+        "UM",
+        "WF"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-1ivviq8-eight-boosters"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "product_not_fully_specified",
+                "unverified_research"
+              ],
+              "method": "public_forum_opening_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 8,
+              "product": null,
+              "set": "mixed_or_unspecified",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgfr-eight-boosters-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1ivviq8"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-bvcmugd1kew-astres-radieux-100-boosters"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "multi_part_opening",
+                "unverified_research"
+              ],
+              "method": "public_video_complete_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "astres_radieux_french_boosters",
+              "set": "astres_radieux",
+              "source_sample": null,
+              "study_id": "youtube-astres-radieux-100-boosters-2022-bvcmugd1kew",
+              "urls": [
+                "https://youtu.be/BVCMUGd1Kew"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-1s437tx-four-151-displays"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "additional_displays_count_unknown",
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "public_forum_retrospective_opening_log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pokemon_151_displays",
+              "set": "pokemon_151_and_other_sets",
+              "source_sample": {
+                "count": 4,
+                "precision": "lower_bound",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-pokemontcg-de-four-151-displays-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1s437tx/pokemon_display_opening"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-1rzvegs-ascended-heroes-12-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "it",
+              "limitations": [
+                "card_yields_not_hit_pack_probabilities",
+                "collector-policy-not-enabled",
+                "combined_holo_category_not_disaggregated",
+                "country_not_explicit",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "public_forum_comment_opening_log",
+              "metrics": [
+                {
+                  "category": "ar",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ex",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "holo_reverse_pokeball_reverse_combined",
+                  "hits": 31,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mega_ex",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sir",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 12,
+              "product": "ascended_heroes_boosters",
+              "set": "ascended_heroes",
+              "source_sample": null,
+              "study_id": "reddit-pokemonfans-ita-ascended-heroes-12-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFans_ITA/comments/1rzvegs/mi_spiegate_i_pull_rates_e_dove_si_possono_vedere"
+              ]
+            }
+          ],
+          "target": "IT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-nqbonyas5de-mixed-100-packs"
+              ],
+              "country": "ES",
+              "geography_basis": "publisher_country",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "mixed_sets",
+                "publisher_country_only",
+                "unverified_research"
+              ],
+              "method": "public_video_complete_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed_physical_boosters",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-mixed-100-packs-spain-2021-nqbonyas5de",
+              "urls": [
+                "https://youtu.be/NQboNYaS5dE"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-vwcb5chowkk-mixed-100-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "mixed_sets",
+                "unverified_research"
+              ],
+              "method": "public_video_complete_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed_physical_boosters",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-mixed-100-packs-2020-vwcb5chowkk",
+              "urls": [
+                "https://youtu.be/VWcB5ChOWkk"
+              ]
+            }
+          ],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-1blpef9-pokemon-151-88-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "image_based_hits_not_transcribed",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "public_forum_opening_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 88,
+              "product": "pokemon_151_boosters",
+              "set": "pokemon_151",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcg-151-88-packs-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1blpef9"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "crown-zenith-40-pack-reddit-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "target_reflects_search_provenance_only",
+                "unverified_research"
+              ],
+              "method": "public_forum_opening_log",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 40,
+              "product": "mixed-crown-zenith-products",
+              "set": "crown-zenith",
+              "source_sample": null,
+              "study_id": "crown-zenith-40-pack-reddit-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1f3t3qd"
+              ]
+            }
+          ],
+          "target": "CZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "denmark-first-booster-box-legal-report"
+              ],
+              "country": "DK",
+              "geography_basis": "publisher_country",
+              "language": "da",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "later_openings_mentioned_without_exact_counts",
+                "native_box_count_only",
+                "opening_location_not_explicitly_stated",
+                "unverified_research"
+              ],
+              "method": "author_reported_legal_case",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "denmark-first-booster-box-legal-report",
+              "urls": [
+                "https://www.retsinformation.dk/eli/retsinfo/2026/9693"
+              ]
+            }
+          ],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "crown-zenith-and-fusion-strike-25-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "mixed_set_sample",
+                "target_reflects_search_provenance_only",
+                "unverified_research"
+              ],
+              "method": "public_forum_opening_log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 25,
+              "product": "loose-packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "crown-zenith-and-fusion-strike-25-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1g7ai0r"
+              ]
+            }
+          ],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "ireland-subreddit-approximately-25-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "approximate_pack_count_not_promoted_to_exact",
+                "approximately_25_packs_reported",
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "subreddit_context_not_used_as_country_evidence",
+                "unverified_research"
+              ],
+              "method": "public_forum_opening_log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed-sealed-products",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "ireland-subreddit-approximately-25-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGIreland/comments/1whzuog/pull_from_this_morning"
+              ]
+            }
+          ],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "german-language-dunkelnacht-display-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "native_box_count_only",
+                "subreddit_language_not_used_as_country_evidence",
+                "target_reflects_search_provenance_only",
+                "unverified_research"
+              ],
+              "method": "public_forum_complete_box_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-display",
+              "set": "dunkelnacht",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "german-language-dunkelnacht-display-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1uzax3k/heute_display_dunkelnacht_aufgemacht_das_war_die"
+              ]
+            }
+          ],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-opened-650-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 650,
+              "product": "mixed_pokemon_tcg_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-opened-650-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pz6xq8/opened_650_packs_heres_what_i_got"
+              ]
+            }
+          ],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-first-six-packs-after-twenty-five-years-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "product_not_fully_specified",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-first-six-packs-after-twenty-five-years-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1hlz4xd"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-eleven-booster-opening-with-friend-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "participant_pack_split_unclear",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 11,
+              "product": "booster_packs",
+              "set": "journey_together",
+              "source_sample": null,
+              "study_id": "reddit-eleven-booster-opening-with-friend-2026",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1vck9wk/so_i_open_11_booster_with_my_friend"
+              ]
+            }
+          ],
+          "target": "MK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-danish-thirty-six-pack-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "da",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "set_not_identified",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video_title",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-danish-thirty-six-pack-opening-2020",
+              "urls": [
+                "https://youtu.be/kTPt52-IGT8"
+              ]
+            }
+          ],
+          "target": "NO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-celebrations-245-pack-group-opening-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "multi_participant_opening",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 245,
+              "product": "mixed_celebrations_products",
+              "set": "celebrations",
+              "source_sample": null,
+              "study_id": "reddit-celebrations-245-pack-group-opening-2021",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/qa50og"
+              ]
+            }
+          ],
+          "target": "PL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-twilight-masquerade-thirty-six-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video_title",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "twilight_masquerade",
+              "source_sample": null,
+              "study_id": "youtube-twilight-masquerade-thirty-six-pack-opening-2024",
+              "urls": [
+                "https://youtu.be/Unn6XSw5X-0"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-thirty-six-shiny-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "overlap_unresolved",
+                "set_not_identified",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video_title",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-thirty-six-shiny-pack-opening-2024",
+              "urls": [
+                "https://youtu.be/FjpKO8JVtV8"
+              ]
+            }
+          ],
+          "target": "PT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "nikouusitalo-lost-origin-thirty-six-pack-opening-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_reviewed_for_explicit_integer_categories",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "dated_collector_blog",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "lost_origin",
+              "source_sample": null,
+              "study_id": "nikouusitalo-lost-origin-thirty-six-pack-opening-2022",
+              "urls": [
+                "https://www.nikouusitalo.com/blog/pulls-from-opening-36-pokemon-lost-origins-booster-packs"
+              ]
+            }
+          ],
+          "target": "RO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-russian-starter-deck-booster-opening-2018"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ru",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "mixed_shipment_with_tin_and_boosters",
+                "pack_count_not_reported",
+                "unverified_research"
+              ],
+              "method": "public_video_description",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "starter_deck_boosters_and_tin",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-russian-starter-deck-booster-opening-2018",
+              "urls": [
+                "https://youtu.be/RwferThOv-s"
+              ]
+            }
+          ],
+          "target": "RU"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [],
+          "target": "SE"
+        },
+        {
+          "studies": [],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [],
+          "target": "GI"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
