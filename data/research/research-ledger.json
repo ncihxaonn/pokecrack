@@ -47074,6 +47074,47 @@
         "GY",
         "PY"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [],
+          "target": "SR"
+        },
+        {
+          "studies": [],
+          "target": "UY"
+        },
+        {
+          "studies": [],
+          "target": "VE"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AQ"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "AQ"
+      ]
     }
   ],
   "global_batches": [
