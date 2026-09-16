@@ -46385,6 +46385,106 @@
         "SS",
         "SD"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TZ"
+        },
+        {
+          "studies": [],
+          "target": "TG"
+        },
+        {
+          "studies": [],
+          "target": "TN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "snapchat-chaos-rising-one-box-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "title-reports-no-sir-but-no-eligible-integer-metric-with-exact-pack-denominator",
+                "unverified-research"
+              ],
+              "method": "public-video-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "chaos-rising-booster-box",
+              "set": "chaos-rising",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "snapchat-chaos-rising-one-box-opening-2026",
+              "urls": [
+                "https://www.snapchat.com/@frvmeszn/spotlight/W7_EDlXWTBiXAEEniNoMPwAAYbXVmbnl3bHRvAZ8CDdY6AZ8CDGKhAAAAAQ"
+              ]
+            }
+          ],
+          "target": "UG"
+        },
+        {
+          "studies": [],
+          "target": "ZM"
+        },
+        {
+          "studies": [],
+          "target": "ZW"
+        },
+        {
+          "studies": [],
+          "target": "IO"
+        },
+        {
+          "studies": [],
+          "target": "TF"
+        },
+        {
+          "studies": [],
+          "target": "YT"
+        },
+        {
+          "studies": [],
+          "target": "RE"
+        },
+        {
+          "studies": [],
+          "target": "SH"
+        },
+        {
+          "studies": [],
+          "target": "EH"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "TZ",
+        "TG",
+        "TN",
+        "UG",
+        "ZM",
+        "ZW",
+        "IO",
+        "TF",
+        "YT",
+        "RE",
+        "SH",
+        "EH"
+      ]
     }
   ],
   "global_batches": [
