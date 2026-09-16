@@ -53403,6 +53403,249 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgfr-first-opening-48-boosters-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-results-not-yet-reported",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 48,
+              "product": "ev10",
+              "set": "new-candidate",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgfr-first-opening-48-boosters-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1t3hj1t/premi%C3%A8re_ouverture_de_ma_vie"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-german-100-booster-opening-czlibortbbm"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-video-title-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": null,
+              "set": "new-candidate",
+              "source_sample": null,
+              "study_id": "youtube-german-100-booster-opening-czlibortbbm",
+              "urls": [
+                "https://youtu.be/cZlIboRTbBM"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-italian-mixed-100-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "it",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "mixed-expansions",
+                "unverified-research"
+              ],
+              "method": "public-video-title-and-description-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-expansions",
+              "set": "new-candidate",
+              "source_sample": null,
+              "study_id": "youtube-italian-mixed-100-pack-opening-2025",
+              "urls": [
+                "https://youtu.be/9RS3rmi7AV0"
+              ]
+            }
+          ],
+          "target": "IT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-spanish-mixed-100-pack-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "mixed-expansions",
+                "unverified-research"
+              ],
+              "method": "public-video-title-and-description-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-expansions",
+              "set": "new-candidate",
+              "source_sample": null,
+              "study_id": "youtube-spanish-mixed-100-pack-opening-2020",
+              "urls": [
+                "https://youtu.be/VWcB5ChOWkk"
+              ]
+            }
+          ],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgireland-54-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "larger-cumulative-opening-over-100-packs-mentioned-but-unresolved",
+                "target-provenance-does-not-establish-geography",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 54,
+              "product": null,
+              "set": "new-candidate",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgireland-54-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGIreland/comments/1vdhhdr/54_packs_opened"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgbelgie-kruidvat-tin-six-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-definition-author-defined",
+                "independent-review-pending",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [
+                {
+                  "category": "hits",
+                  "hits": 5,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "kruidvat-collection-box",
+              "set": "new-candidate",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgbelgie-kruidvat-tin-six-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/pokemonTCGBelgie/comments/1p7cc49/kruidvat_tin_opening"
+              ]
+            }
+          ],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
