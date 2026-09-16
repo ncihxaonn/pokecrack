@@ -57542,6 +57542,219 @@
         "MQ",
         "MS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-400-pack-birthday-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "mixed-products",
+                "no-explicit-hit-counts",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-image-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 400,
+              "product": "mixed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-400-pack-birthday-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1w5omix/opened_400_packs_for_my_23rd_birthday"
+              ]
+            }
+          ],
+          "target": "PR"
+        },
+        {
+          "studies": [],
+          "target": "BL"
+        },
+        {
+          "studies": [],
+          "target": "KN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-unknown-set-75-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "no-eligible-exact-metrics-recorded",
+                "set-not-explicitly-established",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-image-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 75,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-unknown-set-75-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1k37ypw/opened_75_packs_total_w_my_bf"
+              ]
+            }
+          ],
+          "target": "LC"
+        },
+        {
+          "studies": [],
+          "target": "MF"
+        },
+        {
+          "studies": [],
+          "target": "VC"
+        },
+        {
+          "studies": [],
+          "target": "SX"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-destined-rivals-journey-together-approx-ten-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "author-described-count-as-uncertain",
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "mixed-sets",
+                "no-explicit-hit-counts",
+                "packs-null-because-count-was-approximate",
+                "unverified-research"
+              ],
+              "method": "public-image-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "loose-packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-destined-rivals-journey-together-approx-ten-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r84rxz/i_opened_my_first_ever_packs"
+              ]
+            }
+          ],
+          "target": "TT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-unknown-set-six-single-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "no-eligible-category-metrics",
+                "set-not-stated",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-image-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 6,
+              "product": "loose-packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-unknown-set-six-single-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1ds63kf/got_these_3_cool_looking_cards_by_just_opening_6"
+              ]
+            }
+          ],
+          "target": "TC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-hidden-fates-twelve-pack-opening-2019"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "no-eligible-exact-metrics-recorded",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-image-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 12,
+              "product": "mixed-hidden-fates-products",
+              "set": "hidden-fates",
+              "source_sample": null,
+              "study_id": "reddit-hidden-fates-twelve-pack-opening-2019",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/d1fz4o/opened_12_packs_of_hf"
+              ]
+            }
+          ],
+          "target": "VI"
+        },
+        {
+          "studies": [],
+          "target": "BZ"
+        },
+        {
+          "studies": [],
+          "target": "CR"
+        }
+      ],
+      "sweep": 20,
+      "targets": [
+        "PR",
+        "BL",
+        "KN",
+        "LC",
+        "MF",
+        "VC",
+        "SX",
+        "TT",
+        "TC",
+        "VI",
+        "BZ",
+        "CR"
+      ]
     }
   ],
   "global_batches": [
