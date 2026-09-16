@@ -47468,6 +47468,172 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "singapore-four-japanese-loose-packs-one-ex-2025"
+              ],
+              "country": "SG",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_level_report",
+                "complete_card_inventory_not_reported",
+                "independent-review-pending",
+                "loose_pack_provenance_uncertain",
+                "possible_filtered_pack_concern",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [
+                {
+                  "category": "ex",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 4,
+              "product": "japanese_loose_pokemon_tcg_packs",
+              "set": "singapore-public-opening-sweep-17",
+              "source_sample": null,
+              "study_id": "singapore-four-japanese-loose-packs-one-ex-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_Singapore/comments/1h8luex/packs_from_vending_machines"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "korean-mega-dream-one-box-opening-2026"
+              ],
+              "country": "KR",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_reflects_product_market",
+                "hit_counts_not_enumerated",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "pack_count_not_reported",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_box_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "korean-mega-dream",
+              "set": "korean-mega-dream",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "korean-mega-dream-one-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r1dlge/if_you_want_some_of_the_fun_back_buy_korean"
+              ]
+            }
+          ],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "turkish-surging-sparks-over-one-hundred-pack-report-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "tr",
+              "limitations": [
+                "approximate_lower_bound",
+                "collector-policy-not-enabled",
+                "complete_card_inventory_not_reported",
+                "country_not_assigned_from_subreddit",
+                "hit_counts_incomplete",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 100,
+              "product": "english-surging-sparks",
+              "set": "surging-sparks",
+              "source_sample": null,
+              "study_id": "turkish-surging-sparks-over-one-hundred-pack-report-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokeTurkiye/comments/1ryaibc/pokemon_hangi_seriler_ve_nereden_alinir"
+              ]
+            }
+          ],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 17,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
