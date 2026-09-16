@@ -65053,6 +65053,155 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "codedyellow-temporal-forces-weight-test-108-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-total-conflict-between-group-lists-and-conclusion",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "pack-weight-opening-experiment",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 108,
+              "product": "temporal-forces-booster-packs",
+              "set": "temporal-forces",
+              "source_sample": null,
+              "study_id": "codedyellow-temporal-forces-weight-test-108-packs",
+              "urls": [
+                "https://www.codedyellow.com/temporal-forces-pack-weight"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "destructoid-journey-together-38-pack-opening"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "rarity-categories-may-overlap",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [
+                {
+                  "category": "ex",
+                  "hits": 12,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full-art",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hyper-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 38,
+              "product": "four-elite-trainer-boxes",
+              "set": "journey-together",
+              "source_sample": null,
+              "study_id": "destructoid-journey-together-38-pack-opening",
+              "urls": [
+                "https://www.destructoid.com/pokemon-tcg-journey-together-estimated-pull-rates"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 23,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
