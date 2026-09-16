@@ -49720,6 +49720,207 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "simplified-chinese-black-crystal-blazing-one-box-20250913"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "title-only-sample-count",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-fat-booster-box",
+              "set": "black-crystal-blazing-13-0",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "simplified-chinese-black-crystal-blazing-one-box-20250913",
+              "urls": [
+                "https://www.bilibili.com/video/BV1prpJziEPo"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-chaos-rising-168-pack-study-202605"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independence-from-community-data-not-established",
+                "independent-review-pending",
+                "mixed-product-sources",
+                "opening-location-unknown",
+                "pre-release-sample",
+                "unverified-research"
+              ],
+              "method": "author-reported-pull-rate-study",
+              "metrics": [
+                {
+                  "category": "full-art-ex",
+                  "hits": 6,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "full-art-non-ex",
+                  "hits": 5,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 18,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "named-trainer-ur",
+                  "hits": 2,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 1,
+                  "unit": "packs_with_hit"
+                },
+                {
+                  "category": "standard-ex",
+                  "hits": 39,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 168,
+              "product": "english-chaos-rising",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "tcgtalk-chaos-rising-168-pack-study-202605",
+              "urls": [
+                "https://tcgtalk.com/guides/indonesia/chaos-rising-pull-rates"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-japanese-loose-pack-weight-opening-20260907"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "loose-packs-from-online-random-pack-source",
+                "mixed-set-sample",
+                "opening-location-unknown",
+                "possible-selection-bias",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "weighed-complete-opening-log",
+              "metrics": [
+                {
+                  "category": "art-rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sr-or-higher",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 22,
+              "product": "rocket-gang-glory-ninja-spinner-battle-partners",
+              "set": "mixed-japanese-three-set-sample",
+              "source_sample": null,
+              "study_id": "mixed-japanese-loose-pack-weight-opening-20260907",
+              "urls": [
+                "https://note.com/hot_rose4045/n/nbfe0622f8bb3"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 18,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
