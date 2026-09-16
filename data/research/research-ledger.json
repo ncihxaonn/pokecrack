@@ -48601,6 +48601,74 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ZA"
+        },
+        {
+          "studies": [],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 17,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
