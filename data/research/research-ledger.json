@@ -47657,6 +47657,131 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-chaos-rising-box-plus-three-singles-20260522"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "independent-review-pending",
+                "integer_hit_counts_not_available_in_accessible_text",
+                "pack_total_not_derived_from_product_contents",
+                "reported_sample_combines_one_booster_box_and_three_single_packs",
+                "unverified_public_social_report"
+              ],
+              "method": "complete_opening_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box-and-single-packs",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-chaos-rising-box-plus-three-singles-20260522",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFansAustralia/comments/1tkhsx1/finished_up_opening_a_booster_box3_singles_with"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-approximately-26-packs-20260511"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "approximate_pack_count_not_upgraded_to_exact",
+                "author_reported_approximately_26_packs",
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "independent-review-pending",
+                "integer_hit_counts_not_usable_without_exact_denominator",
+                "unverified_public_social_report"
+              ],
+              "method": "original_pull_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-packs",
+              "set": "ascended-heroes",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-approximately-26-packs-20260511",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFansAustralia/comments/1t9sa2o/i_pulled_two_of_them"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 17,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
