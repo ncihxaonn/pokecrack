@@ -56811,6 +56811,130 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ZA"
+        },
+        {
+          "studies": [],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-mega-evolution-36-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "public-title-description-discovery-only",
+                "unverified-research"
+              ],
+              "method": "public-video-title-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster-display",
+              "set": "mega-evolution",
+              "source_sample": null,
+              "study_id": "youtube-mega-evolution-36-pack-opening-2025",
+              "urls": [
+                "https://youtu.be/1oXba6S0e6U"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-paldea-evolved-36-pack-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "public-title-description-discovery-only",
+                "publisher-supplied-product",
+                "unverified-research"
+              ],
+              "method": "public-video-title-claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster-display",
+              "set": "scarlet-violet-paldea-evolved",
+              "source_sample": null,
+              "study_id": "youtube-paldea-evolved-36-pack-opening-2023",
+              "urls": [
+                "https://youtu.be/8dzuplEQ1tg"
+              ]
+            }
+          ],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 20,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
