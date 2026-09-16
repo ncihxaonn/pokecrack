@@ -54078,6 +54078,102 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokeboka-destined-rivals-over-200-boosters-2026"
+              ],
+              "country": "CH",
+              "geography_basis": "publisher_country",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "exact-denominator-not-reported",
+                "independent-review-pending",
+                "page-open-timed-out-during-bounded-pass",
+                "reported-rates-lack-integer-numerators",
+                "unverified-research-not-approved-statistics"
+              ],
+              "method": "first-party-hobby-store-opening-experiment",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 200,
+              "product": "destined-rivals",
+              "set": "destined-rivals",
+              "source_sample": null,
+              "study_id": "pokeboka-destined-rivals-over-200-boosters-2026",
+              "urls": [
+                "https://pokeboka.ch/news/destined-rivals-review"
+              ]
+            }
+          ],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [],
+          "target": "GI"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
