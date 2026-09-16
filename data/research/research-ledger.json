@@ -53801,6 +53801,283 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-chaos-rising-approximately-twenty-five-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": null,
+              "limitations": [
+                "approximate-pack-count-not-upgraded-to-exact",
+                "approximately-twenty-five-packs-reported",
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "subreddit-and-language-not-geography-evidence",
+                "two-special-illustration-rare-pulls-reported-but-no-exact-denominator",
+                "unverified-research"
+              ],
+              "method": "unverified",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed-chaos-rising-products",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-chaos-rising-approximately-twenty-five-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1uo5c2k/beginnersgeluk_bestaat_echt"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-pitch-black-eleven-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": null,
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-count-not-explicitly-enumerated",
+                "independent-review-pending",
+                "remaining-packs-were-not-yet-opened",
+                "subreddit-and-language-not-geography-evidence",
+                "unverified-research"
+              ],
+              "method": "unverified",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 11,
+              "product": "pitch-black-etb-and-booster-packs",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-pitch-black-eleven-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1veaz76/nieuwe_hobby"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pyrkon-ascended-heroes-one-etb-2026"
+              ],
+              "country": "PL",
+              "geography_basis": "opening_location",
+              "language": null,
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "one-etb-reported-without-independent-pack-denominator",
+                "single-highlighted-pull-is-not-a-complete-hit-tally",
+                "unverified-research"
+              ],
+              "method": "unverified",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "ascended-heroes-elite-trainer-box",
+              "set": "ascended-heroes",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-pyrkon-ascended-heroes-one-etb-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1ubqv01/from_my_very_first_pok%C3%A9mon_etb_to_this_pull"
+              ]
+            }
+          ],
+          "target": "PL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-portugal-prismatic-evolutions-three-mystery-boxes-2025"
+              ],
+              "country": "PT",
+              "geography_basis": "opening_location",
+              "language": "pt",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "portuguese-six-card-pack-format-reported",
+                "post-emphasizes-one-exceptional-opening-not-a-complete-hit-tally",
+                "three-box-count-preserved-without-multiplying-reported-box-contents",
+                "unverified-research"
+              ],
+              "method": "unverified",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "prismatic-evolutions-mystery-box",
+              "set": "prismatic-evolutions",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-portugal-prismatic-evolutions-three-mystery-boxes-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1jxvhd8"
+              ]
+            }
+          ],
+          "target": "PT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-romania-prismatic-and-151-nineteen-packs-2025"
+              ],
+              "country": "RO",
+              "geography_basis": "opening_location",
+              "language": null,
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-product-opening",
+                "opening-location-stated-in-post",
+                "super-god-pulls-description-has-no-explicit-integer-hit-tally",
+                "unverified-research"
+              ],
+              "method": "unverified",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 19,
+              "product": "mixed-prismatic-evolutions-and-151-products",
+              "set": "mixed-prismatic-evolutions-and-151",
+              "source_sample": null,
+              "study_id": "reddit-romania-prismatic-and-151-nineteen-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1i4c7vu"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-romania-pitch-black-one-etb-2026"
+              ],
+              "country": "RO",
+              "geography_basis": "opening_location",
+              "language": null,
+              "limitations": [
+                "collector-policy-not-enabled",
+                "highlighted-pulls-are-not-a-complete-integer-tallied-category",
+                "independent-review-pending",
+                "one-etb-reported-without-independent-pack-denominator",
+                "opening-location-supported-by-explicit-romania-statement",
+                "unverified-research"
+              ],
+              "method": "unverified",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pitch-black-elite-trainer-box",
+              "set": "pitch-black",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-romania-pitch-black-one-etb-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1va3395/bought_my_2nd_ever_etb_and_pulled_these_still_in"
+              ]
+            }
+          ],
+          "target": "RO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-russian-ancient-origins-one-booster-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ru",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "highlighted-pull-only",
+                "independent-review-pending",
+                "russian-language-product-is-not-opening-location-evidence",
+                "single-pack-denominator-visible-in-title",
+                "unverified-research"
+              ],
+              "method": "unverified",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1,
+              "product": "ancient-origins-booster-pack",
+              "set": "ancient-origins",
+              "source_sample": null,
+              "study_id": "reddit-russian-ancient-origins-one-booster-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1j9y2ca"
+              ]
+            }
+          ],
+          "target": "RU"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
