@@ -51686,6 +51686,96 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mega-evolution-157-box-5652-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "aggregates_157_booster_box_openings",
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed_in_bounded_pass",
+                "independent-review-pending",
+                "opening_geography_not_reported",
+                "underlying_opening_cohort_overlap_unresolved",
+                "unverified_research"
+              ],
+              "method": "manual_coding_of_complete_booster_box_openings",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 5652,
+              "product": "mega_evolution_booster_boxes",
+              "set": "mega-evolution",
+              "source_sample": null,
+              "study_id": "reddit-mega-evolution-5652-pack-box-study-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1owldhb"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-fusion-strike-4197-pack-video-cohort-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "aggregates_multiple_public_video_openings",
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed_in_bounded_pass",
+                "independent-review-pending",
+                "opening_geography_not_reported",
+                "underlying_video_cohort_overlap_unresolved",
+                "unverified_research"
+              ],
+              "method": "manual_coding_of_complete_video_openings",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 4197,
+              "product": "mixed_sealed_products",
+              "set": "fusion-strike",
+              "source_sample": null,
+              "study_id": "reddit-fusion-strike-4197-pack-video-study-2021",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/qqpiol"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 18,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
