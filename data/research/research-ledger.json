@@ -52780,6 +52780,109 @@
         "JO",
         "KZ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [],
+          "target": "LA"
+        },
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "myanmar-first-pokemon-box-opening-20220609"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "my",
+              "limitations": [
+                "box_contents_not_converted_to_packs",
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "pack_count_not_reported",
+                "search_index_metadata_only_video_page_not_fetched",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "myanmar-first-pokemon-box-opening-20220609",
+              "urls": [
+                "https://youtu.be/A1QOKLsATWY"
+              ]
+            }
+          ],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [],
+          "target": "KP"
+        },
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [],
+          "target": "PK"
+        },
+        {
+          "studies": [],
+          "target": "PS"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "KW",
+        "KG",
+        "LA",
+        "LB",
+        "MV",
+        "MN",
+        "MM",
+        "NP",
+        "KP",
+        "OM",
+        "PK",
+        "PS"
+      ]
     }
   ],
   "global_batches": [
