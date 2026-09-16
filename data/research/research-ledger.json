@@ -46603,6 +46603,131 @@
         "GL",
         "PM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MX"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-portuguese-over-100-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "portuguese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "original_video_not_opened_per_access_rule",
+                "pack_count_is_lower_bound_title_claim",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon_tcg_booster_packs",
+              "set": "heroes-excelsos",
+              "source_sample": null,
+              "study_id": "youtube-portuguese-over-100-pack-opening-2026",
+              "urls": [
+                "https://youtu.be/4fwPXTxcUeE"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-portuguese-200-pack-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "portuguese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "original_video_not_opened_per_access_rule",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 200,
+              "product": null,
+              "set": "mixed_or_unspecified",
+              "source_sample": null,
+              "study_id": "youtube-portuguese-200-pack-opening-2020",
+              "urls": [
+                "https://youtu.be/nzWavGzj7tQ"
+              ]
+            }
+          ],
+          "target": "BR"
+        },
+        {
+          "studies": [],
+          "target": "AR"
+        },
+        {
+          "studies": [],
+          "target": "CL"
+        },
+        {
+          "studies": [],
+          "target": "CO"
+        },
+        {
+          "studies": [],
+          "target": "PE"
+        },
+        {
+          "studies": [],
+          "target": "AI"
+        },
+        {
+          "studies": [],
+          "target": "AG"
+        },
+        {
+          "studies": [],
+          "target": "AW"
+        },
+        {
+          "studies": [],
+          "target": "BS"
+        },
+        {
+          "studies": [],
+          "target": "BB"
+        },
+        {
+          "studies": [],
+          "target": "BQ"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "MX",
+        "BR",
+        "AR",
+        "CL",
+        "CO",
+        "PE",
+        "AI",
+        "AG",
+        "AW",
+        "BS",
+        "BB",
+        "BQ"
+      ]
     }
   ],
   "global_batches": [
