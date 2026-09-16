@@ -47115,6 +47115,101 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [],
+          "target": "PH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "hong-kong-wenweipo-abyss-eye-one-pack-2026"
+              ],
+              "country": "HK",
+              "geography_basis": "opening_location",
+              "language": "zh-hant",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "single-pack-sample",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "journalist-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1,
+              "product": "traditional-chinese-booster-pack",
+              "set": "mega-evolution-abyss-eye",
+              "source_sample": null,
+              "study_id": "hong-kong-wenweipo-abyss-eye-one-pack-2026",
+              "urls": [
+                "https://www.tkww.hk/epaper/view/newsDetail/2070925294348406784.html"
+              ]
+            }
+          ],
+          "target": "HK"
+        },
+        {
+          "studies": [],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 17,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
