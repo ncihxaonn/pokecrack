@@ -61429,6 +61429,129 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "AU"
+        },
+        {
+          "studies": [],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-three-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "pack_count_reported_in_post_text",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "three_ex_boxes",
+              "set": "ascended_heroes",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-three-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1to6vjj/opened_some_sealed_stuff_yesterday"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-paldea-evolved-252-pack-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 252,
+              "product": "booster_packs",
+              "set": "paldea_evolved",
+              "source_sample": null,
+              "study_id": "reddit-paldea-evolved-252-pack-opening-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1463d9m/i_opened_252_packs_of_paldea_evolved_so_your_dont"
+              ]
+            }
+          ],
+          "target": "PW"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
