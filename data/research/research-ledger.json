@@ -52470,6 +52470,131 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [],
+          "target": "PH"
+        },
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-korean-packs-first-opening-forum-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-subreddit",
+                "few-packs-reported-without-integer-count",
+                "hit-counts-not-exactly-enumerated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "korean-booster-packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "mixed-korean-packs-first-opening-forum-cohort-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1wfyy0l/my_first_pack_opening"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "storm-emeralda-unspecified-packs-forum-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-subreddit",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-not-stated",
+                "single-reported-hit-without-exact-denominator",
+                "unverified-research"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "korean-booster-packs",
+              "set": "storm-emeralda",
+              "source_sample": null,
+              "study_id": "storm-emeralda-unspecified-packs-forum-cohort-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1wg7qp0/got_a_hit"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
