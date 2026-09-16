@@ -51776,6 +51776,307 @@
         "GL",
         "PM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MX"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-fogo-fantasmagorico-46-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public_social_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 46,
+              "product": "booster-packs",
+              "set": "fogo-fantasmagorico",
+              "source_sample": null,
+              "study_id": "reddit-fogo-fantasmagorico-46-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1p9rq14/46_pacotes_de_fogo_fantasmag%C3%B3rico_abertos_e_isso"
+              ]
+            }
+          ],
+          "target": "BR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokechampionsdestiny-phantasmal-flames-prerelease-six-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "single-reported-rarity-category",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "author-reported-article-opening",
+              "metrics": [
+                {
+                  "category": "ultra-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "prerelease-packs",
+              "set": "phantasmal-flames",
+              "source_sample": null,
+              "study_id": "pokechampionsdestiny-phantasmal-flames-prerelease-six-packs-2025",
+              "urls": [
+                "https://pokechampionsdestiny.com/fuegos-fantasmales-cartas-pokemon-tcg"
+              ]
+            }
+          ],
+          "target": "AR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-scarlet-violet-two-three-packs-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "public_social_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "three-pack-blisters",
+              "set": "scarlet-violet",
+              "source_sample": null,
+              "study_id": "reddit-scarlet-violet-two-three-packs-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/12b6zyz"
+              ]
+            }
+          ],
+          "target": "CL"
+        },
+        {
+          "studies": [],
+          "target": "CO"
+        },
+        {
+          "studies": [],
+          "target": "PE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-birthday-opening-400-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "set-breakdown-not-explicit",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public_social_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 400,
+              "product": "mixed-booster-packs",
+              "set": "mixed-or-unspecified",
+              "source_sample": null,
+              "study_id": "reddit-birthday-opening-400-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1w5omix/opened_400_packs_for_my_23rd_birthday"
+              ]
+            }
+          ],
+          "target": "AI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-opened-60-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "product-not-explicitly-stated",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public_social_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 60,
+              "product": null,
+              "set": "unspecified",
+              "source_sample": null,
+              "study_id": "reddit-opened-60-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1twvzpe/i_opened_60_packs_so_you_dont_have_to"
+              ]
+            }
+          ],
+          "target": "AG"
+        },
+        {
+          "studies": [],
+          "target": "AW"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-surging-sparks-55-packs-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-systematically-enumerated",
+                "independent-review-pending",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-social-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 55,
+              "product": "mixed-sealed-products-and-loose-packs",
+              "set": "surging-sparks",
+              "source_sample": null,
+              "study_id": "reddit-surging-sparks-55-packs-2024",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncardcollectors/comments/1gxqebc"
+              ]
+            }
+          ],
+          "target": "BS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-first-opening-ten-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "public-social-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "mixed-booster-packs",
+              "set": "destined-rivals-and-journey-together",
+              "source_sample": null,
+              "study_id": "reddit-first-opening-ten-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1r84rxz/i_opened_my_first_ever_packs"
+              ]
+            }
+          ],
+          "target": "BB"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-team-rocket-first-edition-three-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "small-sample",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-social-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 3,
+              "product": "vintage-booster-packs",
+              "set": "team-rocket-first-edition",
+              "source_sample": null,
+              "study_id": "reddit-team-rocket-first-edition-three-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1we4q5h/3_pakjes_1st_edition_team_rocket_opengemaakt"
+              ]
+            }
+          ],
+          "target": "BQ"
+        }
+      ],
+      "sweep": 18,
+      "targets": [
+        "MX",
+        "BR",
+        "AR",
+        "CL",
+        "CO",
+        "PE",
+        "AI",
+        "AG",
+        "AW",
+        "BS",
+        "BB",
+        "BQ"
+      ]
     }
   ],
   "global_batches": [
