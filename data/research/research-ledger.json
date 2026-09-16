@@ -51404,6 +51404,161 @@
         "ML",
         "MR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MU"
+        },
+        {
+          "studies": [],
+          "target": "MZ"
+        },
+        {
+          "studies": [],
+          "target": "NA"
+        },
+        {
+          "studies": [],
+          "target": "NE"
+        },
+        {
+          "studies": [],
+          "target": "RW"
+        },
+        {
+          "studies": [],
+          "target": "ST"
+        },
+        {
+          "studies": [],
+          "target": "SN"
+        },
+        {
+          "studies": [],
+          "target": "SC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-chaos-rising-one-booster-box-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_not_stated",
+                "hit_taxonomy_not_defined",
+                "independent-review-pending",
+                "pack_count_not_reported",
+                "unverified_research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "chaos-rising-booster-box",
+              "set": "chaos-rising",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-chaos-rising-one-booster-box-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1tt7zrb/opening_a_chaos_rising_booster_box"
+              ]
+            }
+          ],
+          "target": "SL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-chinese-gem-pack-vol-3-one-box-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_not_stated",
+                "independent-review-pending",
+                "pull-list-not-fully-transcribed",
+                "unverified_research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "chinese-gem-pack-vol-3-booster-box",
+              "set": "chinese-gem-pack-vol-3",
+              "source_sample": null,
+              "study_id": "reddit-chinese-gem-pack-vol-3-one-box-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1rh0shi/chinese_pok%C3%A9mon_gem_pack_3_cbb3c_booster_box_pulls"
+              ]
+            }
+          ],
+          "target": "SO"
+        },
+        {
+          "studies": [],
+          "target": "SS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-ascended-heroes-pitch-black-51-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_not_stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "mixed-product-cohort",
+                "unverified_research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 51,
+              "product": "booster-bundle-booster-box-etb",
+              "set": "mixed-ascended-heroes-pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-mixed-ascended-heroes-pitch-black-51-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1uzm3zm/first_time_opening_packs_since_im_12_how_did_i_do"
+              ]
+            }
+          ],
+          "target": "SD"
+        }
+      ],
+      "sweep": 18,
+      "targets": [
+        "MU",
+        "MZ",
+        "NA",
+        "NE",
+        "RW",
+        "ST",
+        "SN",
+        "SC",
+        "SL",
+        "SO",
+        "SS",
+        "SD"
+      ]
     }
   ],
   "global_batches": [
