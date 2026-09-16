@@ -62225,6 +62225,330 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-opened-650-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 650,
+              "product": "mixed_pokemon_tcg_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-opened-650-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pz6xq8/opened_650_packs_heres_what_i_got"
+              ]
+            }
+          ],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-first-six-packs-after-twenty-five-years-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "product_not_fully_specified",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-first-six-packs-after-twenty-five-years-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1hlz4xd"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-eleven-booster-opening-with-friend-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "participant_pack_split_unclear",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 11,
+              "product": "booster_packs",
+              "set": "journey_together",
+              "source_sample": null,
+              "study_id": "reddit-eleven-booster-opening-with-friend-2026",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1vck9wk/so_i_open_11_booster_with_my_friend"
+              ]
+            }
+          ],
+          "target": "MK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-danish-thirty-six-pack-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "da",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "set_not_identified",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video_title",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-danish-thirty-six-pack-opening-2020",
+              "urls": [
+                "https://youtu.be/kTPt52-IGT8"
+              ]
+            }
+          ],
+          "target": "NO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-celebrations-245-pack-group-opening-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "multi_participant_opening",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_forum_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 245,
+              "product": "mixed_celebrations_products",
+              "set": "celebrations",
+              "source_sample": null,
+              "study_id": "reddit-celebrations-245-pack-group-opening-2021",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/qa50og"
+              ]
+            }
+          ],
+          "target": "PL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-twilight-masquerade-thirty-six-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video_title",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "twilight_masquerade",
+              "source_sample": null,
+              "study_id": "youtube-twilight-masquerade-thirty-six-pack-opening-2024",
+              "urls": [
+                "https://youtu.be/Unn6XSw5X-0"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-thirty-six-shiny-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "overlap_unresolved",
+                "set_not_identified",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video_title",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-thirty-six-shiny-pack-opening-2024",
+              "urls": [
+                "https://youtu.be/FjpKO8JVtV8"
+              ]
+            }
+          ],
+          "target": "PT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "nikouusitalo-lost-origin-thirty-six-pack-opening-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_reviewed_for_explicit_integer_categories",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "dated_collector_blog",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "lost_origin",
+              "source_sample": null,
+              "study_id": "nikouusitalo-lost-origin-thirty-six-pack-opening-2022",
+              "urls": [
+                "https://www.nikouusitalo.com/blog/pulls-from-opening-36-pokemon-lost-origins-booster-packs"
+              ]
+            }
+          ],
+          "target": "RO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-russian-starter-deck-booster-opening-2018"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ru",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "hit_counts_not_structured",
+                "independent-review-pending",
+                "mixed_shipment_with_tin_and_boosters",
+                "pack_count_not_reported",
+                "unverified_research"
+              ],
+              "method": "public_video_description",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "starter_deck_boosters_and_tin",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-russian-starter-deck-booster-opening-2018",
+              "urls": [
+                "https://youtu.be/RwferThOv-s"
+              ]
+            }
+          ],
+          "target": "RU"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
