@@ -63415,6 +63415,319 @@
         "SZ",
         "ET"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GA"
+        },
+        {
+          "studies": [],
+          "target": "GM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "9to5toys-chaos-rising-36-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-definition-not-explicit",
+                "independent-review-pending",
+                "unverified-research",
+                "video-cohort-linked-from-article"
+              ],
+              "method": "author-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "chaos-rising-booster-box",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "9to5toys-chaos-rising-36-pack-opening-2026",
+              "urls": [
+                "https://9to5toys.com/2026/05/12/pokemon-chaos-rising-rising-booster-box-opening"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-comic-con-africa-booster-box-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comic-con-africa-location-not-inferred",
+                "country-not-stated",
+                "independent-review-pending",
+                "pack-count-not-explicit",
+                "unverified-research"
+              ],
+              "method": "author-reported-recorded-unboxing",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-comic-con-africa-booster-box-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1g3hitz"
+              ]
+            }
+          ],
+          "target": "GH"
+        },
+        {
+          "studies": [],
+          "target": "GN"
+        },
+        {
+          "studies": [],
+          "target": "GW"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-chaos-rising-booster-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-count-not-explicit",
+                "independent-review-pending",
+                "pack-count-not-explicit",
+                "unverified-research"
+              ],
+              "method": "author-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "chaos-rising-booster-box",
+              "set": "chaos-rising",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-chaos-rising-booster-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1tt7zrb/opening_a_chaos_rising_booster_box"
+              ]
+            }
+          ],
+          "target": "LS"
+        },
+        {
+          "studies": [],
+          "target": "LR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-japanese-booster-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "pack-count-not-explicit",
+                "set-not-stated",
+                "unverified-research"
+              ],
+              "method": "author-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese-booster-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-japanese-booster-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncardcollectors/comments/1vc0yr6/opened_my_first_ever_japanese_pok%C3%A9mon_booster_box"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-first-booster-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "pack-count-not-explicit",
+                "set-not-stated",
+                "unverified-research"
+              ],
+              "method": "author-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-first-booster-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1u36ivx/open_my_first_and_probably_last_booster_box_with"
+              ]
+            }
+          ],
+          "target": "LY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-nuit-noire-display-36-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "completion-supported-by-follow-up-discussion",
+                "country-not-stated",
+                "hit-count-not-explicit",
+                "independent-review-pending",
+                "unverified-research"
+              ],
+              "method": "author-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "nuit-noire-display",
+              "set": "nuit-noire",
+              "source_sample": null,
+              "study_id": "reddit-nuit-noire-display-36-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1v8cchj/souhaitez_moi_bonne_chance"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-first-nuit-noire-display-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-count-not-explicit",
+                "independent-review-pending",
+                "pack-count-not-explicit",
+                "unverified-research"
+              ],
+              "method": "author-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "nuit-noire-display",
+              "set": "nuit-noire",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-first-nuit-noire-display-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1vcnl9l/ma_toute_premi%C3%A8re_ouverture_dune_display_nuit"
+              ]
+            }
+          ],
+          "target": "MG"
+        },
+        {
+          "studies": [],
+          "target": "MW"
+        },
+        {
+          "studies": [],
+          "target": "ML"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-booster-box-and-etb-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "mixed-product-pack-count-not-explicit",
+                "set-not-stated",
+                "unverified-research"
+              ],
+              "method": "author-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box-and-etb",
+              "set": "unknown",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-booster-box-and-etb-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v7kpfr/my_first_time_opening_a_booster_box_an_etb"
+              ]
+            }
+          ],
+          "target": "MR"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "GA",
+        "GM",
+        "GH",
+        "GN",
+        "GW",
+        "LS",
+        "LR",
+        "LY",
+        "MG",
+        "MW",
+        "ML",
+        "MR"
+      ]
     }
   ],
   "global_batches": [
