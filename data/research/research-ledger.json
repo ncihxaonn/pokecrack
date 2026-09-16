@@ -47210,6 +47210,196 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "simplified-chinese-brilliant-illusion-one-box-20260323"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "chinese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "pack-total-not-reported",
+                "title-reports-one-box-only",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-brilliant-illusion",
+              "set": "brilliant-illusion-16-0",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "simplified-chinese-brilliant-illusion-one-box-opening-20260323",
+              "urls": [
+                "https://www.bilibili.com/video/BV1qKQdB7Ew1"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "indonesian-mega-dream-ex-one-hundred-pack-opening-2026"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "indonesian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "pack-count-from-public-title-and-description",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "indonesian-mega-dream-ex",
+              "set": "mega-dream-ex",
+              "source_sample": null,
+              "study_id": "indonesian-mega-dream-ex-one-hundred-pack-opening-2026",
+              "urls": [
+                "https://youtu.be/1jRUyAouG24"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "iran-six-etbs-twenty-two-three-packs-opening-2025"
+              ],
+              "country": "IR",
+              "geography_basis": "opening_location",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "integer-hit-counts-not-available-in-page-text",
+                "mixed-products-and-sets",
+                "packs-not-calculated-from-product-contents",
+                "six-etbs-and-twenty-two-three-pack-products-reported",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed-temporal-forces-twilight-masquerade-and-other-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "iran-six-etbs-twenty-two-three-packs-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1jd0yxv/2_months_into_pok%C3%A9mon_cards_collecting_from"
+              ]
+            }
+          ],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "japanese-scarlet-one-carton-opening-2023"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "japanese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "packs-not-calculated-from-product-contents",
+                "title-reports-one-carton-and-twelve-boxes",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese-scarlet-ex",
+              "set": "scarlet-ex",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "cartons"
+              },
+              "study_id": "japanese-scarlet-one-carton-opening-2023",
+              "urls": [
+                "https://youtu.be/zOjq4UVB9BU"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 17,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
