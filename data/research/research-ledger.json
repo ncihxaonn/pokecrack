@@ -53145,6 +53145,163 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-sets-1502-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "independent-review-pending",
+                "later_update_extends_same_cohort",
+                "mixed_sets_and_eras",
+                "self_reported_counts",
+                "unverified_research"
+              ],
+              "method": "self_reported_complete_opening",
+              "metrics": [
+                {
+                  "category": "mega_hyper_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 7,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 1502,
+              "product": "sword_and_shield_to_perfect_order",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-sets-1502-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1t1yuc8/pok%C3%A9mon_pull_rates"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-82-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "double_rare_count_not_explicit",
+                "independent-review-pending",
+                "self_reported_counts",
+                "unverified_research"
+              ],
+              "method": "self_reported_complete_opening",
+              "metrics": [
+                {
+                  "category": "hyper_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration_rare",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare",
+                  "hits": 4,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 82,
+              "product": "mixed_sealed_products",
+              "set": "pitch_black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-82-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGCollectors/comments/1v0chgb/so_is_my_luck_just_atrocious_or_are_pitch_black"
+              ]
+            }
+          ],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
