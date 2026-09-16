@@ -46485,6 +46485,124 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-destined-rivals-200-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-text-verified",
+                "independent-review-pending",
+                "social-post-title-claim",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 200,
+              "product": "loose-packs-from-vending-machines",
+              "set": "destined-rivals",
+              "source_sample": null,
+              "study_id": "reddit-destined-rivals-200-pack-cohort-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokeInvesting/comments/1m6jyx9"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-black-bolt-white-flare-200-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-breakdown-incomplete",
+                "independent-review-pending",
+                "social-post-title-or-caption-claim",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 200,
+              "product": "mixed-black-bolt-white-flare-packs",
+              "set": "black-bolt-white-flare",
+              "source_sample": null,
+              "study_id": "reddit-black-bolt-white-flare-200-pack-cohort-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1n2sejw"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-canada-scarlet-violet-151-over-200-pack-cohort-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "box-and-pack-cohort-overlap-unresolved",
+                "collector-policy-not-enabled",
+                "exact-denominator-unavailable",
+                "five-blooming-waters-boxes-also-mentioned",
+                "independent-review-pending",
+                "no-integer-metrics-recorded",
+                "pack-count-reported-as-over-200",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 200,
+              "product": "scarlet-violet-151-mixed-products",
+              "set": "scarlet-violet-151",
+              "source_sample": null,
+              "study_id": "reddit-canada-scarlet-violet-151-over-200-pack-cohort-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1i69ei5"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
