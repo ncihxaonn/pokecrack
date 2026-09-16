@@ -48108,6 +48108,132 @@
         "BA",
         "BG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [],
+          "target": "CZ"
+        },
+        {
+          "studies": [],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-pokemon-games-100-pack-opening-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": null,
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "mixed-products",
+                "title-only-pack-count",
+                "unverified-research",
+                "video-page-not-opened"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-pokemon-card-games",
+              "set": "new-discovery",
+              "source_sample": null,
+              "study_id": "mixed-pokemon-games-100-pack-video-2022",
+              "urls": [
+                "https://youtu.be/mdPvDsu-On8"
+              ]
+            }
+          ],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "scarlet-violet-booster-box-36-pack-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "target-country-not-established",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening-with-primary-article",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "scarlet-violet-base-set-booster-box",
+              "set": "new-discovery",
+              "source_sample": null,
+              "study_id": "scarlet-violet-booster-box-36-pack-opening-2023",
+              "urls": [
+                "https://www.shacknews.com/article/135122/pokemon-tcg-scarlet-violet-booster-unboxing-video"
+              ]
+            }
+          ],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 17,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
