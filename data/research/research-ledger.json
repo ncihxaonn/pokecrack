@@ -54265,6 +54265,103 @@
         "BI",
         "CV"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CM"
+        },
+        {
+          "studies": [],
+          "target": "CF"
+        },
+        {
+          "studies": [],
+          "target": "TD"
+        },
+        {
+          "studies": [],
+          "target": "KM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-pal-evolved-36-pack-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "publisher-provided-product",
+                "title-count-only",
+                "unverified-research"
+              ],
+              "method": "unverified",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster-display",
+              "set": "paldea-evolved",
+              "source_sample": null,
+              "study_id": "youtube-pal-evolved-36-pack-opening-2023",
+              "urls": [
+                "https://youtu.be/8dzuplEQ1tg"
+              ]
+            }
+          ],
+          "target": "CG"
+        },
+        {
+          "studies": [],
+          "target": "CD"
+        },
+        {
+          "studies": [],
+          "target": "CI"
+        },
+        {
+          "studies": [],
+          "target": "DJ"
+        },
+        {
+          "studies": [],
+          "target": "GQ"
+        },
+        {
+          "studies": [],
+          "target": "ER"
+        },
+        {
+          "studies": [],
+          "target": "SZ"
+        },
+        {
+          "studies": [],
+          "target": "ET"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "CM",
+        "CF",
+        "TD",
+        "KM",
+        "CG",
+        "CD",
+        "CI",
+        "DJ",
+        "GQ",
+        "ER",
+        "SZ",
+        "ET"
+      ]
     }
   ],
   "global_batches": [
