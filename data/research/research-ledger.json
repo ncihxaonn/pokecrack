@@ -60197,6 +60197,139 @@
         "SS",
         "SD"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TZ"
+        },
+        {
+          "studies": [],
+          "target": "TG"
+        },
+        {
+          "studies": [],
+          "target": "TN"
+        },
+        {
+          "studies": [],
+          "target": "UG"
+        },
+        {
+          "studies": [],
+          "target": "ZM"
+        },
+        {
+          "studies": [],
+          "target": "ZW"
+        },
+        {
+          "studies": [],
+          "target": "IO"
+        },
+        {
+          "studies": [],
+          "target": "TF"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-four-destinees-futures-packs-retrospective-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_systematically_reported",
+                "independent-review-pending",
+                "mayotte_is_prior_residence_not_opening_location",
+                "opening_location_not_stated",
+                "retrospective_report",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 4,
+              "product": "destinees_futures_booster_packs",
+              "set": "destinees_futures",
+              "source_sample": null,
+              "study_id": "reddit-four-destinees-futures-packs-retrospective-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1vbj06r/vos_histoires_de_cartes_denfance"
+              ]
+            }
+          ],
+          "target": "YT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-two-pokebox-opening-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "french",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_systematically_reported",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "packs_not_explicitly_reported",
+                "reprint_index_included",
+                "reunion_appears_only_as_index_tag",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mew_v_and_lucario_v_pokeboxes",
+              "set": "mixed_or_unknown",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "youtube-two-pokebox-opening-2021",
+              "urls": [
+                "https://www.theasmrindex.com/video/QIER2o2ypDo",
+                "https://youtu.be/QIER2o2ypDo"
+              ]
+            }
+          ],
+          "target": "RE"
+        },
+        {
+          "studies": [],
+          "target": "SH"
+        },
+        {
+          "studies": [],
+          "target": "EH"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "TZ",
+        "TG",
+        "TN",
+        "UG",
+        "ZM",
+        "ZW",
+        "IO",
+        "TF",
+        "YT",
+        "RE",
+        "SH",
+        "EH"
+      ]
     }
   ],
   "global_batches": [
