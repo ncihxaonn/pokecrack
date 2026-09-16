@@ -48448,6 +48448,136 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [],
+          "target": "SE"
+        },
+        {
+          "studies": [],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "loosepacks-base-set-shadowless-box-september-2022"
+              ],
+              "country": "US",
+              "geography_basis": "publisher_country",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "commercial-source",
+                "confirmed-holos-only",
+                "independent-review-pending",
+                "opening-location-not-explicitly-tied-to-cohort",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "weighed-box-opening",
+              "metrics": [
+                {
+                  "category": "confirmed-holo",
+                  "hits": 12,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "base-set-shadowless-booster-box",
+              "set": "base-set-shadowless",
+              "source_sample": null,
+              "study_id": "loosepacks-base-set-shadowless-36-pack-box-2022",
+              "urls": [
+                "https://loosepacks.com/pages/pokemon-pack-weight-database"
+              ]
+            }
+          ],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-modern-36-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-count-not-explicitly-enumerated",
+                "independent-review-pending",
+                "mixed-products-and-sets",
+                "opening-location-unknown",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "mixed-modern-pokemon-tcg",
+              "set": "mixed-modern",
+              "source_sample": null,
+              "study_id": "reddit-mixed-modern-36-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1hrppxj/opened_36_packs_and_this_is_what_i_got"
+              ]
+            }
+          ],
+          "target": "GI"
+        }
+      ],
+      "sweep": 17,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
