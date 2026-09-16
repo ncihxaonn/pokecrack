@@ -54820,6 +54820,136 @@
         "GL",
         "PM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-monterrey-five-japanese-packs-2025"
+              ],
+              "country": "MX",
+              "geography_basis": "opening_location",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-reported-cohort",
+                "independent-review-pending",
+                "set-not-reported",
+                "small-sample",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [
+                {
+                  "category": "holo-eevee",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 5,
+              "product": "japanese-booster-packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-monterrey-five-japanese-packs-2025",
+              "urls": [
+                "https://www.reddit.com/r/Monterrey/comments/1hwq5xf"
+              ]
+            }
+          ],
+          "target": "MX"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-brazil-excelling-heroes-over-400-packs-2026"
+              ],
+              "country": "BR",
+              "geography_basis": "opening_location",
+              "language": "pt",
+              "limitations": [
+                "approximate-denominator",
+                "collector-policy-not-enabled",
+                "comment-reported-cohort",
+                "independent-review-pending",
+                "metrics-omitted-without-exact-denominator",
+                "unverified-research"
+              ],
+              "method": "self-reported-opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 400,
+              "product": "booster-packs",
+              "set": "excelling-heroes",
+              "source_sample": null,
+              "study_id": "reddit-brazil-excelling-heroes-over-400-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1wfhxaj"
+              ]
+            }
+          ],
+          "target": "BR"
+        },
+        {
+          "studies": [],
+          "target": "AR"
+        },
+        {
+          "studies": [],
+          "target": "CL"
+        },
+        {
+          "studies": [],
+          "target": "CO"
+        },
+        {
+          "studies": [],
+          "target": "PE"
+        },
+        {
+          "studies": [],
+          "target": "AI"
+        },
+        {
+          "studies": [],
+          "target": "AG"
+        },
+        {
+          "studies": [],
+          "target": "AW"
+        },
+        {
+          "studies": [],
+          "target": "BS"
+        },
+        {
+          "studies": [],
+          "target": "BB"
+        },
+        {
+          "studies": [],
+          "target": "BQ"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "MX",
+        "BR",
+        "AR",
+        "CL",
+        "CO",
+        "PE",
+        "AI",
+        "AG",
+        "AW",
+        "BS",
+        "BB",
+        "BQ"
+      ]
     }
   ],
   "global_batches": [
