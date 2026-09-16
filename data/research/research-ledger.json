@@ -53646,6 +53646,161 @@
         "BA",
         "BG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "czech-paradox-rift-36-pack-video-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "cs",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-or-description-pack-count",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "paradox-rift",
+              "source_sample": null,
+              "study_id": "czech-paradox-rift-36-pack-video-2023",
+              "urls": [
+                "https://youtu.be/W_g7VSNAdyA"
+              ]
+            }
+          ],
+          "target": "CZ"
+        },
+        {
+          "studies": [],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "finnish-language-20-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fi",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 20,
+              "product": "pokemon-tcg-booster-packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "finnish-language-20-pack-opening-2024",
+              "urls": [
+                "https://youtu.be/Jg61E-AxaAs"
+              ]
+            }
+          ],
+          "target": "FI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "greek-language-100-pack-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "el",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "pokemon-tcg-booster-packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "greek-language-100-pack-opening-2023",
+              "urls": [
+                "https://youtu.be/q5Il0OAvBQU"
+              ]
+            }
+          ],
+          "target": "GR"
+        },
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
