@@ -60958,6 +60958,193 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bilibili-mixed-japanese-one-hundred-packs-20200224"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "mixed-products",
+                "opening-location-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-japanese-pokemon-cards",
+              "set": "mixed-japanese",
+              "source_sample": null,
+              "study_id": "bilibili-mixed-japanese-one-hundred-packs-20200224",
+              "urls": [
+                "https://www.bilibili.com/video/BV137411u761"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "bilibili-brilliant-illusion-one-box-20260314"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "single-box-opening",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-brilliant-illusion-booster-box",
+              "set": "brilliant-illusion-16-0",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "bilibili-brilliant-illusion-one-box-20260314",
+              "urls": [
+                "https://www.bilibili.com/video/BV19Mwbz4EX4"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-pitch-black-own-117-pack-study-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "id",
+              "limitations": [
+                "article-also-aggregates-136-community-packs",
+                "collector-policy-not-enabled",
+                "community-cohorts-excluded-from-pack-count",
+                "full-117-pack-hit-breakdown-not-explicit",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "unverified-research"
+              ],
+              "method": "article-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 117,
+              "product": "english-pitch-black",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "tcgtalk-pitch-black-own-117-pack-study-2026",
+              "urls": [
+                "https://tcgtalk.com/guides/indonesia/pitch-black-pull-rates"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "patoneko-mixed-pokemon-card-one-hundred-packs-20260714"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "canonical-video-page-not-fetched",
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "mixed-sets",
+                "opening-location-unknown",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-japanese-pokemon-cards",
+              "set": "mixed-japanese",
+              "source_sample": null,
+              "study_id": "patoneko-mixed-pokemon-card-one-hundred-packs-20260714",
+              "urls": [
+                "https://youtu.be/uaSU_VvI_Zo"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
