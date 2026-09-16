@@ -59322,6 +59322,145 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-combined-powers-eleven-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "dutch",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "rarity-tally-limited-to-reported-hits",
+                "self-reported",
+                "unverified-research"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [
+                {
+                  "category": "double-rare-ex",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 11,
+              "product": "combined-powers-premium-collection",
+              "set": "mixed-with-scarlet-and-violet-base",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-combined-powers-eleven-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1towony/3_pakjes_en_een_droom"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-three-team-rocket-packs-2026"
+              ],
+              "country": "NL",
+              "geography_basis": "opening_location",
+              "language": "dutch",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-complete-hit-tally",
+                "selected-pulls-only",
+                "self-reported",
+                "unverified-research"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": "first-edition-team-rocket-booster-packs",
+              "set": "team-rocket-first-edition",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-three-team-rocket-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1we4q5h/3_pakjes_1st_edition_team_rocket_opengemaakt"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [],
+          "target": "RO"
+        },
+        {
+          "studies": [],
+          "target": "RU"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
