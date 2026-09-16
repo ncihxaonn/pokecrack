@@ -45976,6 +45976,154 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-650-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "hit-totals-not-explicit-in-accessible-text",
+                "independent-review-pending",
+                "mixed-sets-and-products",
+                "pack-count-visible-in-title",
+                "single-author-report",
+                "target-query-incidental-result",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 650,
+              "product": "mixed-products",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "reddit-mixed-650-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pz6xq8/opened_650_packs_heres_what_i_got"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-82-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "mixed-sealed-product-types",
+                "single-author-report",
+                "target-query-incidental-result",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [
+                {
+                  "category": "hyper-rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration-rare",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special-illustration-rare",
+                  "hits": 0,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra-rare",
+                  "hits": 4,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 82,
+              "product": "mixed-pitch-black-products",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-82-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGCollectors/comments/1v0chgb/so_is_my_luck_just_atrocious_or_are_pitch_black"
+              ]
+            }
+          ],
+          "target": "ZA"
+        },
+        {
+          "studies": [],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
