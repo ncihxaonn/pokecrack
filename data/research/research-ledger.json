@@ -58945,6 +58945,131 @@
         "NR",
         "PW"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FM"
+        },
+        {
+          "studies": [],
+          "target": "MH"
+        },
+        {
+          "studies": [],
+          "target": "AS"
+        },
+        {
+          "studies": [],
+          "target": "CK"
+        },
+        {
+          "studies": [],
+          "target": "CX"
+        },
+        {
+          "studies": [],
+          "target": "CC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-mystherbe-ortide-rafflesia-two-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "integer-hit-counts-not-reported",
+                "pack-count-from-public-title",
+                "target-query-match-only",
+                "unverified-research"
+              ],
+              "method": "public-video-complete-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 2,
+              "product": "two-booster-collection",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "dailymotion-mystherbe-ortide-rafflesia-two-pack-opening-2026",
+              "urls": [
+                "https://www.dailymotion.com/video/xab5b6c"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "dailymotion-flammes-fantasmagoriques-etb-nine-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-not-stated",
+                "independent-review-pending",
+                "integer-hit-counts-not-reported",
+                "pack-count-from-public-description",
+                "target-query-match-only",
+                "unverified-research"
+              ],
+              "method": "public-video-complete-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 9,
+              "product": "elite-trainer-box",
+              "set": "flammes-fantasmagoriques",
+              "source_sample": null,
+              "study_id": "dailymotion-flammes-fantasmagoriques-etb-nine-packs-2026",
+              "urls": [
+                "https://www.dailymotion.com/video/x9wyl96"
+              ]
+            }
+          ],
+          "target": "PF"
+        },
+        {
+          "studies": [],
+          "target": "GU"
+        },
+        {
+          "studies": [],
+          "target": "HM"
+        },
+        {
+          "studies": [],
+          "target": "NC"
+        },
+        {
+          "studies": [],
+          "target": "NU"
+        },
+        {
+          "studies": [],
+          "target": "NF"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "FM",
+        "MH",
+        "AS",
+        "CK",
+        "CX",
+        "CC",
+        "PF",
+        "GU",
+        "HM",
+        "NC",
+        "NU",
+        "NF"
+      ]
     }
   ],
   "global_batches": [
