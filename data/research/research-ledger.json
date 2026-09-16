@@ -58436,6 +58436,134 @@
         "JO",
         "KZ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [],
+          "target": "LA"
+        },
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        },
+        {
+          "studies": [],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "korean-version-four-pack-opening-20160610"
+              ],
+              "country": "KR",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_is_product_market_only",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "set_not_stated",
+                "title_claim_not_exact_reported_denominator",
+                "title_mentions_two_ex_cards_but_metrics_omitted_without_exact_reported_denominator",
+                "unverified_research"
+              ],
+              "method": "public_video_title",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 4,
+              "product": "korean-version-pokemon-cards",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "korean-version-four-pack-opening-20160610",
+              "urls": [
+                "https://youtu.be/iJfLKBaF3oQ"
+              ]
+            }
+          ],
+          "target": "KP"
+        },
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [],
+          "target": "PK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "palestine-team-luck-pack-opening-20230311"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ar",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "pack_count_not_explicit",
+                "palestine_reference_does_not_explicitly_establish_opening_location_or_publisher_country",
+                "product_not_stated",
+                "unverified_research"
+              ],
+              "method": "public_video_title",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "palestine-team-luck-pack-opening-20230311",
+              "urls": [
+                "https://youtu.be/-q5O-hPZvYI"
+              ]
+            }
+          ],
+          "target": "PS"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "KW",
+        "KG",
+        "LA",
+        "LB",
+        "MV",
+        "MN",
+        "MM",
+        "NP",
+        "KP",
+        "OM",
+        "PK",
+        "PS"
+      ]
     }
   ],
   "global_batches": [
