@@ -48234,6 +48234,220 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-1000-booster-packs-2017-v1"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "no-explicit-hit-counts-reviewed",
+                "pack-count-from-public-title",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1000,
+              "product": "mixed-booster-packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-1000-booster-packs-2017",
+              "urls": [
+                "https://youtu.be/w1c4yrRAWqU"
+              ]
+            }
+          ],
+          "target": "LU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-mixed-20-booster-packs-2017-v1"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "count-and-set-breakdown-reported-in-public-description",
+                "country-not-stated",
+                "independent-review-pending",
+                "no-explicit-hit-counts-reviewed",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "mixed-collection-box-and-tin-packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-mixed-20-booster-packs-2017",
+              "urls": [
+                "https://youtu.be/AzHiwe2_axM"
+              ]
+            }
+          ],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-perfect-order-16-packs-2026-v1"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "explicit-integer-hit-counts-not-reviewed",
+                "independent-review-pending",
+                "post-reports-four-prerelease-kits-and-sixteen-boosters",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 16,
+              "product": "prerelease-kits",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "reddit-perfect-order-four-prerelease-kits-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1ruc505/jai_ouvert_4_ap_4_decks_et_16_boosters_de_la"
+              ]
+            }
+          ],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-many-pokemon-packs-dutch-2021-v1"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "language-does-not-establish-geography",
+                "no-explicit-hit-counts-reviewed",
+                "public-title-claims-many-packs-without-numeric-count",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed-booster-packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-many-pokemon-packs-dutch-2021",
+              "urls": [
+                "https://youtu.be/0NNNXgwOsng"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "paldea-partners-three-tins-opening-v1"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "no-explicit-hit-counts-reviewed",
+                "publisher-language-does-not-establish-geography",
+                "source-reports-three-tins-without-an-explicit-pack-denominator",
+                "tin-count-cannot-be-represented-in-source-sample",
+                "unverified-research"
+              ],
+              "method": "article-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "paldea-partners-tins",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "paldea-partners-three-tins-opening",
+              "urls": [
+                "https://blog.juniorkurczak.pl/pokemon-paldea-partners-tin"
+              ]
+            }
+          ],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [],
+          "target": "RO"
+        },
+        {
+          "studies": [],
+          "target": "RU"
+        }
+      ],
+      "sweep": 17,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
