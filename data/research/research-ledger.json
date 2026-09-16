@@ -57755,6 +57755,193 @@
         "BZ",
         "CR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SV"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-lost-origin-thirty-six-pack-title-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-verified",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-claim-only",
+                "unverified-research",
+                "youtube-page-not-fetched"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "lost-origin-booster-box",
+              "set": "lost-origin",
+              "source_sample": null,
+              "study_id": "youtube-lost-origin-thirty-six-pack-title-cohort",
+              "urls": [
+                "https://youtu.be/vS_iqA5j9x8"
+              ]
+            }
+          ],
+          "target": "GT"
+        },
+        {
+          "studies": [],
+          "target": "HN"
+        },
+        {
+          "studies": [],
+          "target": "NI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-journey-together-seventy-eight-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-verified",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 78,
+              "product": "two-booster-boxes-and-booster-bundle",
+              "set": "journey-together",
+              "source_sample": null,
+              "study_id": "dailymotion-journey-together-seventy-eight-pack-cohort",
+              "urls": [
+                "https://www.dailymotion.com/video/x9gjllm"
+              ]
+            }
+          ],
+          "target": "PA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-paldea-evolved-thirty-six-pack-title-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-verified",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-claim-only",
+                "unverified-research",
+                "youtube-page-not-fetched"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "paldea-evolved-booster-box",
+              "set": "paldea-evolved",
+              "source_sample": null,
+              "study_id": "youtube-paldea-evolved-thirty-six-pack-title-cohort",
+              "urls": [
+                "https://youtu.be/MlFRMWC3bjk"
+              ]
+            }
+          ],
+          "target": "BO"
+        },
+        {
+          "studies": [],
+          "target": "BV"
+        },
+        {
+          "studies": [],
+          "target": "EC"
+        },
+        {
+          "studies": [],
+          "target": "FK"
+        },
+        {
+          "studies": [],
+          "target": "GF"
+        },
+        {
+          "studies": [],
+          "target": "GY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-mixed-more-than-one-hundred-pack-title-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-verified",
+                "independent-review-pending",
+                "more-than-one-hundred-packs-claimed",
+                "opening-location-not-stated",
+                "title-claim-only",
+                "unverified-research",
+                "youtube-page-not-fetched"
+              ],
+              "method": "video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-pokemon-tcg-packs",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-mixed-more-than-one-hundred-pack-title-cohort",
+              "urls": [
+                "https://youtu.be/A-sAvysEKy4"
+              ]
+            }
+          ],
+          "target": "PY"
+        }
+      ],
+      "sweep": 20,
+      "targets": [
+        "SV",
+        "GT",
+        "HN",
+        "NI",
+        "PA",
+        "BO",
+        "BV",
+        "EC",
+        "FK",
+        "GF",
+        "GY",
+        "PY"
+      ]
     }
   ],
   "global_batches": [
