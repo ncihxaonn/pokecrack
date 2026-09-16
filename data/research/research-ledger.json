@@ -63728,6 +63728,132 @@
         "ML",
         "MR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MU"
+        },
+        {
+          "studies": [],
+          "target": "MZ"
+        },
+        {
+          "studies": [],
+          "target": "NA"
+        },
+        {
+          "studies": [],
+          "target": "NE"
+        },
+        {
+          "studies": [],
+          "target": "RW"
+        },
+        {
+          "studies": [],
+          "target": "ST"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-french-eight-boosters-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language",
+                "independent-review-pending",
+                "integer-hit-counts-not-explicit",
+                "mixed-set-opening",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 8,
+              "product": "mixed-modern-boosters",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-french-eight-boosters-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1ivviq8/8_boosters_ouverts_ce_soir"
+              ]
+            }
+          ],
+          "target": "SN"
+        },
+        {
+          "studies": [],
+          "target": "SC"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-407-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "earlier-related-post-not-reviewed",
+                "independent-review-pending",
+                "integer-hit-counts-not-explicit",
+                "mixed-products-and-sets",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 407,
+              "product": "mixed-sealed-products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-407-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1udvqlg/wow_shoulda_kept_it_sealed"
+              ]
+            }
+          ],
+          "target": "SL"
+        },
+        {
+          "studies": [],
+          "target": "SO"
+        },
+        {
+          "studies": [],
+          "target": "SS"
+        },
+        {
+          "studies": [],
+          "target": "SD"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "MU",
+        "MZ",
+        "NA",
+        "NE",
+        "RW",
+        "ST",
+        "SN",
+        "SC",
+        "SL",
+        "SO",
+        "SS",
+        "SD"
+      ]
     }
   ],
   "global_batches": [
