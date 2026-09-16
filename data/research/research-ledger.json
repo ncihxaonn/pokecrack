@@ -51020,6 +51020,163 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-three-pack-opening-italian-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "italian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_not_stated",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 3,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-three-pack-opening-italian-2022",
+              "urls": [
+                "https://youtu.be/GDjCZc42jdw"
+              ]
+            }
+          ],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-first-booster-display-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_not_stated",
+                "independent-review-pending",
+                "some_hit_categories_reported_noninteger",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [
+                {
+                  "category": "alternate_art_cards",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": "booster_display",
+              "set": "obsidian_flames",
+              "source_sample": null,
+              "study_id": "reddit-first-booster-display-opening-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/16kzuqd"
+              ]
+            }
+          ],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-danish-thirty-six-pack-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "danish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography_not_stated",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "title_only_pack_count",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-danish-thirty-six-pack-opening-2020",
+              "urls": [
+                "https://youtu.be/kTPt52-IGT8"
+              ]
+            }
+          ],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [],
+          "target": "GI"
+        }
+      ],
+      "sweep": 18,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
