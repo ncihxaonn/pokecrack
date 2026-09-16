@@ -46796,6 +46796,132 @@
         "MQ",
         "MS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "PR"
+        },
+        {
+          "studies": [],
+          "target": "BL"
+        },
+        {
+          "studies": [],
+          "target": "KN"
+        },
+        {
+          "studies": [],
+          "target": "LC"
+        },
+        {
+          "studies": [],
+          "target": "MF"
+        },
+        {
+          "studies": [],
+          "target": "VC"
+        },
+        {
+          "studies": [],
+          "target": "SX"
+        },
+        {
+          "studies": [],
+          "target": "TT"
+        },
+        {
+          "studies": [],
+          "target": "TC"
+        },
+        {
+          "studies": [],
+          "target": "VI"
+        },
+        {
+          "studies": [],
+          "target": "BZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-heroic-ascension-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "exact_pack_denominator_not_explicit_on_accessible_page",
+                "independent-review-pending",
+                "integer_hit_counts_not_recorded",
+                "opening_geography_not_stated",
+                "overlap_unresolved",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "heroic_ascension",
+              "set": "heroic_ascension",
+              "source_sample": null,
+              "study_id": "dailymotion-heroic-ascension-opening-2026",
+              "urls": [
+                "https://www.dailymotion.com/video/x9zrioi"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "dailymotion-black-bolt-etb-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "exact_pack_denominator_not_explicit_on_accessible_page",
+                "independent-review-pending",
+                "integer_hit_counts_not_recorded",
+                "opening_geography_not_stated",
+                "overlap_unresolved",
+                "possible_additional_tin_packs_visible_in_transcript",
+                "unverified_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "black_bolt_elite_trainer_box",
+              "set": "unverified",
+              "source_sample": null,
+              "study_id": "dailymotion-black-bolt-etb-opening-2025",
+              "urls": [
+                "https://www.dailymotion.com/video/x9n1qcc"
+              ]
+            }
+          ],
+          "target": "CR"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "PR",
+        "BL",
+        "KN",
+        "LC",
+        "MF",
+        "VC",
+        "SX",
+        "TT",
+        "TC",
+        "VI",
+        "BZ",
+        "CR"
+      ]
     }
   ],
   "global_batches": [
