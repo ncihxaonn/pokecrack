@@ -55195,6 +55195,198 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-philippines-four-pack-opening-2026-03"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "geography-unknown",
+                "hit-count-not-enumerated",
+                "independent-review-pending",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 4,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-philippines-four-pack-opening-2026-03",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1s5qcyl/opened_4_packs_and_got_these_hits"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-philippines-three-pitch-black-packs-2026-09"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "geography-unknown",
+                "independent-review-pending",
+                "single-hit-mentioned-without-complete-category-counts",
+                "unverified-research"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": "pitch-black-booster-packs",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-philippines-three-pitch-black-packs-2026-09",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1w51um8/first_time_opening_pokemon_cards"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-journey-together-one-booster-box-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "geography-unknown",
+                "hits-not-enumerated",
+                "independent-review-pending",
+                "native-box-count-only",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "journey-together-booster-box",
+              "set": "journey-together",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-journey-together-one-booster-box-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1u87qpy/pull_i_got_from_a_journey_together_booster_box"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-first-booster-box-unknown-set-2026-09"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "geography-unknown",
+                "hits-not-enumerated",
+                "independent-review-pending",
+                "native-box-count-only",
+                "pack-count-not-reported",
+                "set-not-confirmed-in-visible-text",
+                "unverified-research"
+              ],
+              "method": "public-forum-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-first-booster-box-unknown-set-2026-09",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1wananm/my_first_booster_box"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 20,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
