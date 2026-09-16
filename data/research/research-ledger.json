@@ -46124,6 +46124,131 @@
         "BI",
         "CV"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "CM"
+        },
+        {
+          "studies": [],
+          "target": "CF"
+        },
+        {
+          "studies": [],
+          "target": "TD"
+        },
+        {
+          "studies": [],
+          "target": "KM"
+        },
+        {
+          "studies": [],
+          "target": "CG"
+        },
+        {
+          "studies": [],
+          "target": "CD"
+        },
+        {
+          "studies": [],
+          "target": "CI"
+        },
+        {
+          "studies": [],
+          "target": "DJ"
+        },
+        {
+          "studies": [],
+          "target": "GQ"
+        },
+        {
+          "studies": [],
+          "target": "ER"
+        },
+        {
+          "studies": [],
+          "target": "SZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-scarlet-violet-151-155-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "independent-review-pending",
+                "integer_hit_totals_not_explicit_in_text",
+                "opening_location_not_reported",
+                "pulls_presented_in_images_not_collected",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 155,
+              "product": "scarlet_violet_151_mixed_sealed_products",
+              "set": "scarlet_violet_151",
+              "source_sample": null,
+              "study_id": "reddit-scarlet-violet-151-155-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1as0jna/all_my_hits_from_openin_155_booster_packs_sv_151"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-51-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "hit_count_not_explicit_in_text",
+                "independent-review-pending",
+                "mixed_products",
+                "opening_location_not_reported",
+                "unverified_research"
+              ],
+              "method": "author_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 51,
+              "product": "booster_bundle_booster_box_and_etb",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-51-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1uzm3zm/first_time_opening_packs_since_im_12_how_did_i_do"
+              ]
+            }
+          ],
+          "target": "ET"
+        }
+      ],
+      "sweep": 16,
+      "targets": [
+        "CM",
+        "CF",
+        "TD",
+        "KM",
+        "CG",
+        "CD",
+        "CI",
+        "DJ",
+        "GQ",
+        "ER",
+        "SZ",
+        "ET"
+      ]
     }
   ],
   "global_batches": [
