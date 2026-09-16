@@ -61213,6 +61213,199 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "perfect-order-fifty-four-pack-community-cohort"
+              ],
+              "country": "SG",
+              "geography_basis": "publisher_country",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "community-cohort-provenance-limited",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "separate-420-plus-pack-stream-data-excluded",
+                "unverified-research"
+              ],
+              "method": "reported-community-opening",
+              "metrics": [
+                {
+                  "category": "sir",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 54,
+              "product": "perfect-order-booster-packs",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "perfect-order-fifty-four-pack-community-opening-2026",
+              "urls": [
+                "https://tcgtalk.com/blog/perfect-order-pull-rates-what-singapore-collectors-can-expect-1774442400232"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [],
+          "target": "KR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "crown-zenith-twenty-pack-sri-lanka-source-cohort"
+              ],
+              "country": "LK",
+              "geography_basis": "product_market",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicitly-enumerated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "packs-reported-as-purchased-in-sri-lanka",
+                "product-authenticity-not-independently-verified",
+                "unverified-research"
+              ],
+              "method": "public-video-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "crown-zenith-booster-packs",
+              "set": "crown-zenith",
+              "source_sample": null,
+              "study_id": "crown-zenith-twenty-pack-sri-lanka-source-video",
+              "urls": [
+                "https://youtu.be/_sZwq3HTdcE"
+              ]
+            }
+          ],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "terastal-festival-ex-twenty-box-video-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "japanese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicitly-enumerated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-not-reported",
+                "taiwan-only-giveaway-does-not-establish-opening-location",
+                "title-reported-box-count",
+                "unverified-research"
+              ],
+              "method": "public-video-complete-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "terastal-festival-ex-booster-box",
+              "set": "terastal-festival-ex",
+              "source_sample": {
+                "count": 20,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "terastal-festival-ex-twenty-box-video",
+              "urls": [
+                "https://youtu.be/IFIBKvseU6g"
+              ]
+            }
+          ],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bangkok-thirtieth-anniversary-twenty-eight-pack-cohort"
+              ],
+              "country": "TH",
+              "geography_basis": "opening_location",
+              "language": null,
+              "limitations": [
+                "card-language-not-stated",
+                "collector-policy-not-enabled",
+                "hit-counts-not-explicitly-enumerated",
+                "independent-review-pending",
+                "one-box-plus-eight-loose-packs",
+                "unverified-research"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 28,
+              "product": "thirtieth-anniversary-booster-packs",
+              "set": "thirtieth-anniversary",
+              "source_sample": null,
+              "study_id": "bangkok-thirtieth-anniversary-twenty-eight-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokeCollectors/comments/1wi5stx/happy_30th_everyone"
+              ]
+            }
+          ],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
