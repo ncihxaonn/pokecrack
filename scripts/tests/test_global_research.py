@@ -115,6 +115,16 @@ class GlobalResearchTests(unittest.TestCase):
         self.assertEqual(ledger["distinct_report_groups"], 1)
         self.assertIsNone(ledger["verified_unique_packs"])
 
+    def test_catalog_capacity_covers_country_first_history(self):
+        row = self.batch()["studies"][0]
+        records = [dict(row, study_id=f"capacity-{index}",
+                        cohort_ids=[f"capacity-{index}"],
+                        urls=[f"https://example.com/capacity-{index}"])
+                   for index in range(2001)]
+        ledger = module.build_ledger(json.dumps({"version": 1,
+                                                 "studies": records}).encode())
+        self.assertEqual(len(ledger["studies"]), 2001)
+
     def test_history_at_capacity_does_not_silently_truncate(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "ledger.json"
