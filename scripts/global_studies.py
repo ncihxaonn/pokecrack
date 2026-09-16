@@ -14,7 +14,12 @@ from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
 
 MAX_BYTES = 2 * 1024 * 1024
-MAX_RECORDS = 2000
+# The unified reference catalog contains both global batches and the
+# country-first checkpoints used to keep all 249 targets moving. Keep this
+# comfortably above the first full country sweep so publication does not stop
+# at an artificial 2,000-row boundary; public projections still apply their
+# own bounded group/reference limits.
+MAX_RECORDS = 10000
 FIELDS = {"study_id", "cohort_ids", "urls", "set", "language", "product",
           "country", "geography_basis", "packs", "pack_precision", "metrics",
           "method", "limitations"}
