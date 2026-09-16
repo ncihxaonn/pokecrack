@@ -52883,6 +52883,245 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [],
+          "target": "SG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-korean-151-twenty-five-pack-cohort-2025"
+              ],
+              "country": "KR",
+              "geography_basis": "product_market",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "product_market_only",
+                "social_post",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [
+                {
+                  "category": "named_evolution_line_pulls",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 25,
+              "product": "korean_pokemon_151",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "reddit-korean-151-twenty-five-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1k6rcpi"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-korean-nihil-twenty-pack-cohort-2026"
+              ],
+              "country": "KR",
+              "geography_basis": "product_market",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_count_not_reported",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "product_market_only",
+                "social_post",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "korean_nihil",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "reddit-korean-nihil-twenty-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1scs45w/korean_pokemon_pack_love"
+              ]
+            }
+          ],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-six-traditional-chinese-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_assigned_from_purchase_location",
+                "independent-review-pending",
+                "mixed_sets",
+                "opening_location_unknown",
+                "packs_purchased_in_taiwan",
+                "social_post",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [
+                {
+                  "category": "double_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "silver_lance_rapid_strike_inferno_x",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "reddit-six-traditional-chinese-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1sby6fv/opened_cn_packs_today_1_sr_1_rr_3_r"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "youtube-traditional-chinese-promo-one-hundred-pack-cohort-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "traditional_chinese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_counts_not_reviewed",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "new_year_promotional_pack_2024",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "youtube-traditional-chinese-promo-one-hundred-pack-opening-2024",
+              "urls": [
+                "https://youtu.be/BYh4laNFhyg"
+              ]
+            }
+          ],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-ten-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "turkish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "ex_hit_count_ambiguous",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "social_post",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening",
+              "metrics": [
+                {
+                  "category": "illustration_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "pitch_black",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-ten-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokeTurkiye/comments/1w60al6/pitch_black_etb_ganimetleri_bu_kadar_oldu"
+              ]
+            }
+          ],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
