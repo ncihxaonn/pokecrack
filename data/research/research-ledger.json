@@ -50448,6 +50448,204 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokecardex-shining-fates-100-boosters-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "forum-post",
+                "independent-review-pending",
+                "possible-product-language-mix",
+                "unverified-research",
+                "url-resolves-to-multipost-thread"
+              ],
+              "method": "complete-opening-forum-report",
+              "metrics": [
+                {
+                  "category": "amazing-rare",
+                  "hits": 5,
+                  "unit": "cards"
+                },
+                {
+                  "category": "regular-shiny",
+                  "hits": 27,
+                  "unit": "cards"
+                },
+                {
+                  "category": "regular-v",
+                  "hits": 12,
+                  "unit": "cards"
+                },
+                {
+                  "category": "regular-vmax",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret-rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "shiny-v",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "shiny-vmax",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "trainer-full-art",
+                  "hits": 3,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "mixed-shining-fates-products",
+              "set": "shining-fates",
+              "source_sample": null,
+              "study_id": "pokecardex-shining-fates-100-boosters-2021",
+              "urls": [
+                "https://www.pokecardex.com/forums/viewtopic.php"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-erhabene-helden-78-boosters-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "results-partly-image-dependent",
+                "unverified-research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 78,
+              "product": "erhabene-helden",
+              "set": "erhabene-helden",
+              "source_sample": null,
+              "study_id": "reddit-erhabene-helden-78-boosters-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1thrccu/erhabene_helden_pullrate"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [],
+          "target": "IT"
+        },
+        {
+          "studies": [],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-phantasmal-flames-four-booster-boxes-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "native-box-count-only",
+                "unverified-research"
+              ],
+              "method": "complete-opening-post",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "phantasmal-flames-booster-box",
+              "set": "phantasmal-flames",
+              "source_sample": {
+                "count": 4,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-phantasmal-flames-four-booster-boxes-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1oz6u8g/opened_over_100_packs_no_zard"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 18,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
