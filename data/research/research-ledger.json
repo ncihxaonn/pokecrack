@@ -56630,6 +56630,164 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-sweden-phantasmal-flames-six-pack-opening-2025"
+              ],
+              "country": "SE",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_supported_only_by_explicit_sweden_distribution_context",
+                "independent-review-pending",
+                "individual_card_counts_not_recorded",
+                "small_sample",
+                "unverified_research"
+              ],
+              "method": "public_forum_report",
+              "metrics": [
+                {
+                  "category": "hits",
+                  "hits": 5,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "mixed_loose_booster_packs",
+              "set": "phantasmal_flames",
+              "source_sample": null,
+              "study_id": "reddit-sweden-phantasmal-flames-six-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1ptvo6m/56_packs_hits"
+              ]
+            }
+          ],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-vivid-voltage-thirty-six-pack-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_and_description_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_display",
+              "set": "vivid_voltage",
+              "source_sample": null,
+              "study_id": "youtube-vivid-voltage-thirty-six-pack-opening-2020",
+              "urls": [
+                "https://youtu.be/c90ps1WZwOY"
+              ]
+            }
+          ],
+          "target": "CH"
+        },
+        {
+          "studies": [],
+          "target": "UA"
+        },
+        {
+          "studies": [],
+          "target": "VA"
+        },
+        {
+          "studies": [],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [],
+          "target": "GG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-prismatic-evolutions-thirty-six-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_recorded",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_forum_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "mixed_booster_packs",
+              "set": "prismatic_evolutions",
+              "source_sample": null,
+              "study_id": "reddit-prismatic-evolutions-thirty-six-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1q6uav8/i_opened_36_packs_of_prismatic"
+              ]
+            }
+          ],
+          "target": "GI"
+        }
+      ],
+      "sweep": 20,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
