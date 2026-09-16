@@ -58098,6 +58098,215 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "malaysia-lost-origin-108-pack-video-2023"
+              ],
+              "country": "MY",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-basis-is-explicit-publisher-branding-not-confirmed-opening-location",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "pack-count-from-public-title",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 108,
+              "product": "lost-origin-booster-packs",
+              "set": "lost-origin",
+              "source_sample": null,
+              "study_id": "malaysia-lost-origin-108-pack-video-2023",
+              "urls": [
+                "https://youtu.be/jmO9mSeORso"
+              ]
+            }
+          ],
+          "target": "MY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "brilliant-stars-36-pack-vietnamese-video-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "vi",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "pack-count-from-public-title-and-description",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "brilliant-stars-booster-packs",
+              "set": "brilliant-stars",
+              "source_sample": null,
+              "study_id": "brilliant-stars-36-pack-vietnamese-video-2022",
+              "urls": [
+                "https://youtu.be/5NDUpGR-aP0"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "sword-and-shield-36-pack-vietnamese-video-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "vi",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "pack-count-from-public-title-and-description",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "sword-and-shield-booster-box",
+              "set": "sword-and-shield",
+              "source_sample": null,
+              "study_id": "sword-and-shield-36-pack-vietnamese-video-2020",
+              "urls": [
+                "https://youtu.be/hrvZWP8tI24"
+              ]
+            }
+          ],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-three-pack-card-show-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "tl-en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "subreddit-name-not-used-as-geographic-evidence",
+                "target-is-search-provenance-only",
+                "unverified-research"
+              ],
+              "method": "author-reported-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": null,
+              "set": "unknown-set",
+              "source_sample": null,
+              "study_id": "reddit-three-pack-card-show-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1w83fu2/sharing_collecting_and_card_show_experiences_as_a"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "india-darkness-ablaze-three-pack-video-2020"
+              ],
+              "country": "IN",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-and-pack-count-from-public-title-and-description",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 3,
+              "product": "darkness-ablaze-booster-packs",
+              "set": "darkness-ablaze",
+              "source_sample": null,
+              "study_id": "india-darkness-ablaze-three-pack-video-2020",
+              "urls": [
+                "https://youtu.be/4Lx9XB_807E"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 21,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
