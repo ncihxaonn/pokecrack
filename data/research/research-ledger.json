@@ -63854,6 +63854,137 @@
         "SS",
         "SD"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TZ"
+        },
+        {
+          "studies": [],
+          "target": "TG"
+        },
+        {
+          "studies": [],
+          "target": "TN"
+        },
+        {
+          "studies": [],
+          "target": "UG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-six-booster-series-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "card_categories_not_fully_reported",
+                "cohort_summary_reported_on_final_video",
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "public_video_series",
+              "metrics": [
+                {
+                  "category": "reported_hits",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": null,
+              "set": "rivalites-destinees",
+              "source_sample": null,
+              "study_id": "dailymotion-six-booster-video-series-2025",
+              "urls": [
+                "https://www.dailymotion.com/video/x9l9h92"
+              ]
+            }
+          ],
+          "target": "ZM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "dailymotion-over-fifty-pack-series-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "approximate_author_reported_lower_bound",
+                "collector-policy-not-enabled",
+                "geography_unknown",
+                "independent-review-pending",
+                "individual_products_and_hits_not_fully_reported",
+                "overlap_unresolved",
+                "unverified_research"
+              ],
+              "method": "public_video_series",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 50,
+              "product": null,
+              "set": "mixed_or_unspecified",
+              "source_sample": null,
+              "study_id": "dailymotion-over-fifty-pack-video-series-2025",
+              "urls": [
+                "https://www.dailymotion.com/video/x9qzj08"
+              ]
+            }
+          ],
+          "target": "ZW"
+        },
+        {
+          "studies": [],
+          "target": "IO"
+        },
+        {
+          "studies": [],
+          "target": "TF"
+        },
+        {
+          "studies": [],
+          "target": "YT"
+        },
+        {
+          "studies": [],
+          "target": "RE"
+        },
+        {
+          "studies": [],
+          "target": "SH"
+        },
+        {
+          "studies": [],
+          "target": "EH"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "TZ",
+        "TG",
+        "TN",
+        "UG",
+        "ZM",
+        "ZW",
+        "IO",
+        "TF",
+        "YT",
+        "RE",
+        "SH",
+        "EH"
+      ]
     }
   ],
   "global_batches": [
