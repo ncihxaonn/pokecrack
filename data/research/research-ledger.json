@@ -49083,6 +49083,122 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-battle-styles-1405-pack-cohort-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "category-numerators-not-confirmed-in-accessible-text",
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "independent-review-pending",
+                "mixture-of-booster-box-and-build-battle-products",
+                "unverified-research"
+              ],
+              "method": "recorded-complete-openings",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 1405,
+              "product": "mixed-sealed-products",
+              "set": "battle-styles",
+              "source_sample": null,
+              "study_id": "reddit-battle-styles-1405-pack-study-2021",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/m6zx5c/battle_styles_pull_rate_data_from_1405_packs"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-thirtieth-anniversary-over-4000-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "exact-denominator-not-reported-in-accessible-text",
+                "independent-review-pending",
+                "possible-pre-release-sample",
+                "underlying-opening-provenance-not-fully-described",
+                "unverified-research"
+              ],
+              "method": "recorded-opening-study",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 4000,
+              "product": "physical-booster-packs",
+              "set": "pokemon-30th-anniversary",
+              "source_sample": null,
+              "study_id": "reddit-thirtieth-anniversary-over-4000-pack-study-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1whk28a/i_recorded_30th_pull_rate_on_over_4000_pack"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-canada-mega-evolution-60-pack-cohort-2025"
+              ],
+              "country": "CA",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-category-numerators-not-explicit-in-accessible-text",
+                "independent-review-pending",
+                "results-partly-presented-as-images",
+                "unverified-research"
+              ],
+              "method": "complete-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 60,
+              "product": "physical-booster-packs",
+              "set": "mega-evolution",
+              "source_sample": null,
+              "study_id": "reddit-canada-mega-evolution-60-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1nrg700/ripped_60_packs_of_mega_and_this_was_the_best_i"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 17,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
