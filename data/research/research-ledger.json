@@ -52242,6 +52242,134 @@
         "BZ",
         "CR"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "SV"
+        },
+        {
+          "studies": [],
+          "target": "GT"
+        },
+        {
+          "studies": [],
+          "target": "HN"
+        },
+        {
+          "studies": [],
+          "target": "NI"
+        },
+        {
+          "studies": [],
+          "target": "PA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "la-razon-rising-chaos-three-box-cohort-2026"
+              ],
+              "country": "ES",
+              "geography_basis": "publisher_country",
+              "language": "spanish",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-box-types",
+                "opening-location-not-explicit",
+                "reported-card-list-not-coded-as-metrics",
+                "total-pack-denominator-not-explicit",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "dated-article-opening-log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "one-elite-trainer-box-and-two-build-and-battle-boxes",
+              "set": "mega-evolution-rising-chaos",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "la-razon-rising-chaos-three-box-opening-2026",
+              "urls": [
+                "https://www.larazon.es/videojuegos/pokemon/abrimos-nueva-etb-jcc-descubrimos-mega-greninja-es-gran-protagonista-demegaevolucion-caos-creciente_202605116a01bbceb5b06629960c09c5.html"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reporte-indigo-caos-creciente-49-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "spanish",
+              "limitations": [
+                "article-references-embedded-video",
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "unverified-research-not-approved-for-statistics"
+              ],
+              "method": "video-backed-article-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 49,
+              "product": "mixed-rising-chaos-products",
+              "set": "mega-evolution-rising-chaos",
+              "source_sample": null,
+              "study_id": "reporte-indigo-caos-creciente-49-packs-2026",
+              "urls": [
+                "https://geek.reporteindigo.com/amp/noticia/abrimos-49-sobres-de-pokemon-jcc-megaevolucion-caos-creciente-y-esto-fue-lo-que-encontramos-20260514-0005.html"
+              ]
+            }
+          ],
+          "target": "BO"
+        },
+        {
+          "studies": [],
+          "target": "BV"
+        },
+        {
+          "studies": [],
+          "target": "EC"
+        },
+        {
+          "studies": [],
+          "target": "FK"
+        },
+        {
+          "studies": [],
+          "target": "GF"
+        },
+        {
+          "studies": [],
+          "target": "GY"
+        },
+        {
+          "studies": [],
+          "target": "PY"
+        }
+      ],
+      "sweep": 18,
+      "targets": [
+        "SV",
+        "GT",
+        "HN",
+        "NI",
+        "PA",
+        "BO",
+        "BV",
+        "EC",
+        "FK",
+        "GF",
+        "GY",
+        "PY"
+      ]
     }
   ],
   "global_batches": [
