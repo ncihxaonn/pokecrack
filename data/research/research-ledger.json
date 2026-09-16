@@ -62549,6 +62549,365 @@
         "RO",
         "RU"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-booster-box-36-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "discovered_in_san_marino_targeted_search",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-booster-box-36-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1leffcd"
+              ]
+            }
+          ],
+          "target": "SM"
+        },
+        {
+          "studies": [],
+          "target": "RS"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-140-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "discovered_in_slovakia_targeted_search",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 140,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-140-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1nnq95h"
+              ]
+            }
+          ],
+          "target": "SK"
+        },
+        {
+          "studies": [],
+          "target": "SI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-fusion-strike-over-200-pack-opening-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "discovered_in_sweden_targeted_search",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "minimum_count_from_over_200_statement",
+                "unverified_research"
+              ],
+              "method": "self_reported_pull_rate_comment",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 200,
+              "product": "mixed_sealed_products",
+              "set": "fusion_strike",
+              "source_sample": null,
+              "study_id": "reddit-fusion-strike-over-200-pack-opening-2021",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/qqpiol"
+              ]
+            }
+          ],
+          "target": "SE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-prismatic-evolutions-about-200-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "approximate_200_pack_count_not_encoded",
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "discovered_in_switzerland_targeted_search",
+                "independent-review-pending",
+                "single_sir_reported_without_exact_denominator",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening_comment",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed_sealed_products",
+              "set": "prismatic_evolutions",
+              "source_sample": null,
+              "study_id": "reddit-prismatic-evolutions-about-200-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1pj72ix"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-mixed-121-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "author_corrected_one_component_from_84_to_83_packs",
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "discovered_in_switzerland_targeted_search",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "mixed_sets",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening_post",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 121,
+              "product": "mixed_sealed_products",
+              "set": "mixed_scarlet_and_violet",
+              "source_sample": null,
+              "study_id": "reddit-mixed-121-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDe/comments/1jeepha"
+              ]
+            }
+          ],
+          "target": "CH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-opening-over-100-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "discovered_in_ukraine_targeted_search",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "minimum_count_from_100_plus_title",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening_post",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 100,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-opening-over-100-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1rgfqgy"
+              ]
+            }
+          ],
+          "target": "UA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-phantasmal-flames-203-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "it",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment_level_report",
+                "country_not_stated",
+                "discovered_in_holy_see_targeted_search",
+                "independent-review-pending",
+                "specific_card_chase_not_a_complete_hit_tally",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening_comment",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 203,
+              "product": "mixed_sealed_products",
+              "set": "phantasmal_flames",
+              "source_sample": null,
+              "study_id": "reddit-phantasmal-flames-203-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonFans_ITA/comments/1td0tju"
+              ]
+            }
+          ],
+          "target": "VA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-about-38-pack-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "approximate_count_in_title",
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "discovered_in_aland_targeted_search",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_combined_two_etbs_with_other_packs",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 38,
+              "product": "mixed_sealed_products",
+              "set": "darkness_ablaze",
+              "source_sample": null,
+              "study_id": "reddit-about-38-pack-opening-2020",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/j3f1rp"
+              ]
+            }
+          ],
+          "target": "AX"
+        },
+        {
+          "studies": [],
+          "target": "FO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-simultaneous-36-pack-opening-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "canonical_video_page_not_fetched",
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "discovered_in_guernsey_targeted_search",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "pack_count_visible_through_public_indexed_description",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster_box",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-simultaneous-36-pack-opening-2021",
+              "urls": [
+                "https://youtu.be/zVau6jrGN3E"
+              ]
+            }
+          ],
+          "target": "GG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-couple-about-200-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "approximate_count_in_title",
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "discovered_in_gibraltar_targeted_search",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "mixed_sets_and_products",
+                "unverified_research"
+              ],
+              "method": "self_reported_opening_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 200,
+              "product": "mixed_sealed_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-couple-about-200-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1qaacm1"
+              ]
+            }
+          ],
+          "target": "GI"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "SM",
+        "RS",
+        "SK",
+        "SI",
+        "SE",
+        "CH",
+        "UA",
+        "VA",
+        "AX",
+        "FO",
+        "GG",
+        "GI"
+      ]
     }
   ],
   "global_batches": [
