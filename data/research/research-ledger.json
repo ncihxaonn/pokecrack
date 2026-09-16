@@ -52595,6 +52595,191 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "bilibili-travel-gift-box-prerelease-opening-20251106"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-assigned-from-language-or-platform",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "official_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-travel-gift-box",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "bilibili-travel-gift-box-prerelease-opening-20251106",
+              "urls": [
+                "https://www.bilibili.com/video/BV1UJ2FBaE6q"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "bilibili-gem-pack-vol-one-opening-20250216"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-assigned-from-language-or-platform",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-gem-pack-vol-one",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "bilibili-gem-pack-vol-one-opening-20250216",
+              "urls": [
+                "https://www.bilibili.com/video/BV1rmAgeaEDm"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "tcgtalk-ascended-heroes-100-pack-opening-202604"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-assigned-from-localized-guide",
+                "independent-review-pending",
+                "later-community-aggregate-estimates-excluded",
+                "opening-location-not-stated",
+                "original-opener-attribution-unresolved",
+                "unverified-research"
+              ],
+              "method": "publisher_reported_opening",
+              "metrics": [
+                {
+                  "category": "ex",
+                  "hits": 14,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full_art_pokemon",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "full_art_trainer",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "illustration_rare",
+                  "hits": 11,
+                  "unit": "cards"
+                },
+                {
+                  "category": "mega_ex",
+                  "hits": 7,
+                  "unit": "cards"
+                },
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "ascended-heroes",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "tcgtalk-ascended-heroes-100-pack-opening-202604",
+              "urls": [
+                "https://tcgtalk.com/guides/indonesia/ascended-heroes-pull-rates-god-pack"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 19,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
