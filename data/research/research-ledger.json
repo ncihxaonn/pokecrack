@@ -64669,6 +64669,165 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokelog-30th-celebration-120-box-opening-202609"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "geography-unstated",
+                "independent-review-pending",
+                "overlap-unresolved-with-pokelog-100-box-study",
+                "same-publisher-related-report",
+                "unverified-research"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [
+                {
+                  "category": "alolan-exeggutor-art-rare",
+                  "hits": 39,
+                  "unit": "cards"
+                },
+                {
+                  "category": "anniversary-pikachu-cards",
+                  "hits": 2400,
+                  "unit": "cards"
+                },
+                {
+                  "category": "art-rare-cards",
+                  "hits": 480,
+                  "unit": "cards"
+                },
+                {
+                  "category": "galarian-meowth-art-rare",
+                  "hits": 42,
+                  "unit": "cards"
+                },
+                {
+                  "category": "toxtricity-art-rare",
+                  "hits": 41,
+                  "unit": "cards"
+                },
+                {
+                  "category": "zapdos-art-rare",
+                  "hits": 38,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 2400,
+              "product": "japanese-30th-celebration-booster-box",
+              "set": "30th-celebration",
+              "source_sample": null,
+              "study_id": "pokelog-30th-celebration-120-box-opening-study-202609",
+              "urls": [
+                "https://lifematome.blog/pokeca30th-kaifuu-mikaifuu"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "pokelog-30th-celebration-100-box-opening-202609"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "box-count-only",
+                "collector-policy-not-enabled",
+                "geography-unstated",
+                "independent-review-pending",
+                "internal-pack-total-inconsistency",
+                "overlap-unresolved-with-pokelog-120-box-study",
+                "unverified-research"
+              ],
+              "method": "author-reported-complete-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese-30th-celebration-booster-box",
+              "set": "30th-celebration",
+              "source_sample": {
+                "count": 100,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "pokelog-30th-celebration-100-box-god-pack-study-202609",
+              "urls": [
+                "https://lifematome.blog/pokeca-godpack-kakuritsu"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 23,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
