@@ -64075,6 +64075,162 @@
         "GL",
         "PM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MX"
+        },
+        {
+          "studies": [],
+          "target": "BR"
+        },
+        {
+          "studies": [],
+          "target": "AR"
+        },
+        {
+          "studies": [],
+          "target": "CL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-kzffnbgfzvm-100-packs-2018"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "possible-overlap-with-other-channel-openings-not-resolved",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "complete-opening-video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-pokemon-tcg-booster-packs",
+              "set": "mixed-sun-and-moon-era-sets",
+              "source_sample": null,
+              "study_id": "youtube-mixed-sets-100-pack-opening-2018",
+              "urls": [
+                "https://youtu.be/kZfFNbGfzVM"
+              ]
+            }
+          ],
+          "target": "CO"
+        },
+        {
+          "studies": [],
+          "target": "PE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-1e5j5nq-11-packs-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "completeness-not-independently-verified",
+                "country-not-stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "mixed-products-and-sets",
+                "unverified-research"
+              ],
+              "method": "public-post-text-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 11,
+              "product": "mixed-pokemon-tcg-products",
+              "set": "mixed-2022-era-sets",
+              "source_sample": null,
+              "study_id": "reddit-mixed-2022-products-11-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1e5j5nq"
+              ]
+            }
+          ],
+          "target": "AI"
+        },
+        {
+          "studies": [],
+          "target": "AG"
+        },
+        {
+          "studies": [],
+          "target": "AW"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-1defjqz-126-packs-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "completeness-not-independently-verified",
+                "country-not-stated",
+                "hit-counts-not-explicit",
+                "independent-review-pending",
+                "set-breakdown-not-explicit",
+                "title-claim-only",
+                "unverified-research"
+              ],
+              "method": "public-post-opening-report",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 126,
+              "product": "mixed-pokemon-tcg-booster-packs",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "reddit-126-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1defjqz"
+              ]
+            }
+          ],
+          "target": "BS"
+        },
+        {
+          "studies": [],
+          "target": "BB"
+        },
+        {
+          "studies": [],
+          "target": "BQ"
+        }
+      ],
+      "sweep": 22,
+      "targets": [
+        "MX",
+        "BR",
+        "AR",
+        "CL",
+        "CO",
+        "PE",
+        "AI",
+        "AG",
+        "AW",
+        "BS",
+        "BB",
+        "BQ"
+      ]
     }
   ],
   "global_batches": [
