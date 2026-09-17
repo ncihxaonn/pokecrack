@@ -73357,6 +73357,166 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ZA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-arabic-single-pack-opening-nscxsmfaoec"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ar",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "target_country_not_established",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-arabic-single-pack-opening-nscxsmfaoec",
+              "urls": [
+                "https://youtu.be/NScxsMFaOEc"
+              ]
+            }
+          ],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-evolving-skies-full-display-opening-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "pack_count_not_explicit",
+                "target_country_not_established",
+                "unverified_research"
+              ],
+              "method": "public_video_complete_box_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster_display",
+              "set": "evolving_skies",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "youtube-evolving-skies-full-display-opening-2021",
+              "urls": [
+                "https://youtu.be/Y-4WoKQKtnE"
+              ]
+            }
+          ],
+          "target": "MA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-shining-fates-surprise-booster-opening-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "pack_count_not_reported",
+                "search_term_country_reference_is_not_geographic_evidence",
+                "target_country_not_established",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "shining_fates",
+              "source_sample": null,
+              "study_id": "youtube-shining-fates-surprise-booster-opening-2021",
+              "urls": [
+                "https://youtu.be/trcpKtuEgVs"
+              ]
+            }
+          ],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [],
+          "target": "BJ"
+        },
+        {
+          "studies": [],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [],
+          "target": "CV"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
