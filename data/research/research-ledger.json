@@ -72089,6 +72089,74 @@
         "JO",
         "KZ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [],
+          "target": "LA"
+        },
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        },
+        {
+          "studies": [],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [],
+          "target": "KP"
+        },
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [],
+          "target": "PK"
+        },
+        {
+          "studies": [],
+          "target": "PS"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "KW",
+        "KG",
+        "LA",
+        "LB",
+        "MV",
+        "MN",
+        "MM",
+        "NP",
+        "KP",
+        "OM",
+        "PK",
+        "PS"
+      ]
     }
   ],
   "global_batches": [
