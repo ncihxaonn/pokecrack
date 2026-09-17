@@ -71837,6 +71837,258 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "simplified-chinese-black-crystal-thirteen-one-carton-opening-20250919"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-claim-for-carton-count",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-black-crystal-thirteen",
+              "set": "black-crystal-thirteen",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "cartons"
+              },
+              "study_id": "simplified-chinese-black-crystal-thirteen-one-carton-opening-20250919",
+              "urls": [
+                "https://www.bilibili.com/video/BV1smpxzdEDT"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "simplified-chinese-start-deck-100-forty-deck-opening-20240517"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-and-description-evidence-only",
+                "unverified-research"
+              ],
+              "method": "complete-video-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-start-deck-100",
+              "set": "start-deck-100",
+              "source_sample": {
+                "count": 40,
+                "precision": "exact_reported",
+                "unit": "decks"
+              },
+              "study_id": "simplified-chinese-start-deck-100-forty-deck-opening-20240517",
+              "urls": [
+                "https://youtu.be/CdXXJOrpBLE"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "indonesian-vmax-one-box-opening-20210321"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-not-explicit",
+                "single-box-sample",
+                "unverified-research"
+              ],
+              "method": "complete-posted-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "indonesian-vmax-booster-box",
+              "set": "vmax",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "indonesian-vmax-one-box-opening-20210321",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/m9qulf"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "indonesian-kobaran-biru-one-box-opening-20251205"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "image-based-pulls-not-transcribed",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "single-box-sample",
+                "unverified-research"
+              ],
+              "method": "complete-posted-opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 30,
+              "product": "indonesian-kobaran-biru-booster-box",
+              "set": "kobaran-biru",
+              "source_sample": null,
+              "study_id": "indonesian-kobaran-biru-one-box-opening-20251205",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pezk70/indonesian_version_of_phantasmal_flames"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "xy-fates-collide-fifty-pack-opening-2016"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "card-yield-not-hit-pack-probability",
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "independent-review-pending",
+                "older-sample",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [
+                {
+                  "category": "pokemon-ex",
+                  "hits": 12,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 50,
+              "product": "xy-fates-collide-booster-packs",
+              "set": "xy-fates-collide",
+              "source_sample": null,
+              "study_id": "xy-fates-collide-fifty-pack-opening-2016",
+              "urls": [
+                "https://ptcgo.exblog.jp/23385524"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "xy-breakpoint-fifty-pack-opening-2016"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "card-level-count-table",
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "independent-review-pending",
+                "older-sample",
+                "unverified-research"
+              ],
+              "method": "complete-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 50,
+              "product": "xy-breakpoint-booster-packs",
+              "set": "xy-breakpoint",
+              "source_sample": null,
+              "study_id": "xy-breakpoint-fifty-pack-opening-2016",
+              "urls": [
+                "https://ptcgo.exblog.jp/23104472"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
