@@ -68573,6 +68573,189 @@
         "SS",
         "SD"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "TZ"
+        },
+        {
+          "studies": [],
+          "target": "TG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-french-32-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "hit_totals_incomplete",
+                "independent-review-pending",
+                "product_not_identified",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 32,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-french-32-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1wiaksi"
+              ]
+            }
+          ],
+          "target": "TN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pitch-black-40-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "hit_totals_not_explicit",
+                "independent-review-pending",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 40,
+              "product": "mixed-pitch-black-products",
+              "set": "pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-pitch-black-40-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1v07t5c/i_opened_40_packs_of_pitch_black"
+              ]
+            }
+          ],
+          "target": "UG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mixed-products-171-pack-opening-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "hit_totals_not_explicit",
+                "independent-review-pending",
+                "multiple_sets_combined",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 171,
+              "product": "mixed-products",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "reddit-mixed-products-171-pack-opening-2023",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/17gflt8"
+              ]
+            }
+          ],
+          "target": "ZM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-three-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_reported",
+                "hit_totals_not_reported",
+                "independent-review-pending",
+                "packs_per_box_not_converted",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "ascended-heroes-ex-boxes",
+              "set": "ascended-heroes",
+              "source_sample": {
+                "count": 3,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-ascended-heroes-three-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1to6vjj/opened_some_sealed_stuff_yesterday"
+              ]
+            }
+          ],
+          "target": "ZW"
+        },
+        {
+          "studies": [],
+          "target": "IO"
+        },
+        {
+          "studies": [],
+          "target": "TF"
+        },
+        {
+          "studies": [],
+          "target": "YT"
+        },
+        {
+          "studies": [],
+          "target": "RE"
+        },
+        {
+          "studies": [],
+          "target": "SH"
+        },
+        {
+          "studies": [],
+          "target": "EH"
+        }
+      ],
+      "sweep": 24,
+      "targets": [
+        "TZ",
+        "TG",
+        "TN",
+        "UG",
+        "ZM",
+        "ZW",
+        "IO",
+        "TF",
+        "YT",
+        "RE",
+        "SH",
+        "EH"
+      ]
     }
   ],
   "global_batches": [
