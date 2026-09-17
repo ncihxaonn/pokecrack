@@ -66762,6 +66762,110 @@
         "UY",
         "VE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-vivid-voltage-2184-pack-cohort-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed_booster_and_build_and_battle_products",
+                "most_pull_counts_presented_in_image_not_transcribed",
+                "no_antarctic_connection_reported",
+                "opening_location_not_stated",
+                "separate_mentioned_video_data_not_included",
+                "unverified_research"
+              ],
+              "method": "author_recorded_physical_pack_opening",
+              "metrics": [
+                {
+                  "category": "rainbow_pikachu_vmax",
+                  "hits": 2,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 2184,
+              "product": "vivid_voltage",
+              "set": "vivid_voltage",
+              "source_sample": null,
+              "study_id": "reddit-vivid-voltage-2184-pack-study-2020",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "coded-yellow-evolving-skies-three-box-weight-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "common_uncommon_reverse_holo_and_non_holo_rare_cards_not_logged",
+                "independent-review-pending",
+                "no_antarctic_connection_reported",
+                "opening_location_not_stated",
+                "packs_grouped_by_rounded_gram_weight",
+                "single_three_box_sample",
+                "unverified_research"
+              ],
+              "method": "three_booster_box_pack_weight_opening_experiment",
+              "metrics": [
+                {
+                  "category": "full_art_vmax",
+                  "hits": 8,
+                  "unit": "cards"
+                },
+                {
+                  "category": "half_art_v",
+                  "hits": 12,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare_holo",
+                  "hits": 21,
+                  "unit": "cards"
+                },
+                {
+                  "category": "secret_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare",
+                  "hits": 5,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 108,
+              "product": "evolving_skies_booster_boxes",
+              "set": "evolving_skies",
+              "source_sample": null,
+              "study_id": "coded-yellow-evolving-skies-weight-108-pack-study",
+              "urls": [
+                "https://www.codedyellow.com/evolving-skies-pack-weight"
+              ]
+            }
+          ],
+          "target": "AQ"
+        }
+      ],
+      "sweep": 23,
+      "targets": [
+        "AQ"
+      ]
     }
   ],
   "global_batches": [
