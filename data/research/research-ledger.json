@@ -67687,6 +67687,244 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "theluckyhand-scarlet-violet-16-boosters-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "commercial_publisher",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "publisher_country_not_explicit",
+                "reported_total_hits_internally_inconsistent_with_category_counts",
+                "self_promotional_comparison",
+                "separate_repacked_product_test_excluded",
+                "unverified_research"
+              ],
+              "method": "author_reported_article_opening",
+              "metrics": [
+                {
+                  "category": "alternative_rare",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "holographic_rare",
+                  "hits": 10,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ultra_rare",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 16,
+              "product": "scarlet_violet_standard_boosters",
+              "set": "scarlet_violet_standard",
+              "source_sample": null,
+              "study_id": "theluckyhand-scarlet-violet-16-boosters-2026",
+              "urls": [
+                "https://www.theluckyhand.fr/en/blogs/le-blog/test-100-euros-pokemon-booster-results-honestes"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-de-mixed-50-boosters-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "hit_counts_not_textually_reported",
+                "independent-review-pending",
+                "mixed_sets",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "author_reported_social_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 50,
+              "product": "mixed_boosters",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcg-de-mixed-50-boosters-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1kr18s3/50_booster_ge%C3%B6ffnet"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemonde-mixed-about-50-boosters-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "approximately_50_packs_reported",
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "independent-review-pending",
+                "metrics_omitted_without_exact_denominator",
+                "mixed_sets",
+                "opening_accumulated_over_time",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "author_reported_social_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mixed_single_boosters_and_blisters",
+              "set": "mixed_sets",
+              "source_sample": null,
+              "study_id": "reddit-pokemonde-mixed-about-50-boosters-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDe/comments/1iknqh9/meine_erste_etb_ge%C3%B6ffnet"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [],
+          "target": "IT"
+        },
+        {
+          "studies": [],
+          "target": "ES"
+        },
+        {
+          "studies": [],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "beyondgaming-prismatic-80-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "independent-review-pending",
+                "multi_author_forum_page",
+                "opening_location_unknown",
+                "unverified_research",
+                "zero_sir_reported"
+              ],
+              "method": "author_reported_forum_opening",
+              "metrics": [
+                {
+                  "category": "special_illustration_rare",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 80,
+              "product": "prismatic_evolutions_boosters",
+              "set": "prismatic_evolutions",
+              "source_sample": null,
+              "study_id": "beyondgaming-prismatic-80-packs-2025",
+              "urls": [
+                "https://www.beyondgaming.be/threads/tcg-pokemon.1419/page-77"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "beyondgaming-phantasmal-about-30-packs-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "approximately_30_packs_reported",
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "independent-review-pending",
+                "metrics_omitted_without_exact_denominator",
+                "multi_author_forum_page",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "author_reported_forum_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "phantasmal_flames_boosters",
+              "set": "phantasmal_flames",
+              "source_sample": null,
+              "study_id": "beyondgaming-phantasmal-about-30-packs-2025",
+              "urls": [
+                "https://www.beyondgaming.be/threads/tcg-pokemon.1419/page-77"
+              ]
+            }
+          ],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 24,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
