@@ -68405,6 +68405,106 @@
         "SZ",
         "ET"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GA"
+        },
+        {
+          "studies": [],
+          "target": "GM"
+        },
+        {
+          "studies": [],
+          "target": "GH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-unknown-geography-68-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated",
+                "images_not_used_as_metric_evidence",
+                "independent-review-pending",
+                "integer_hit_counts_not_explicit",
+                "not_approved_for_collection_or_production_statistics",
+                "pack_count_from_title",
+                "product_mix_not_explicit",
+                "target_is_search_provenance_only",
+                "unverified_research"
+              ],
+              "method": "public_social_post",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 68,
+              "product": null,
+              "set": "mixed_or_unknown",
+              "source_sample": null,
+              "study_id": "reddit-unknown-geography-68-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1vq756n/i_opened_68_packs_so_you_didnt_have_to"
+              ]
+            }
+          ],
+          "target": "GN"
+        },
+        {
+          "studies": [],
+          "target": "GW"
+        },
+        {
+          "studies": [],
+          "target": "LS"
+        },
+        {
+          "studies": [],
+          "target": "LR"
+        },
+        {
+          "studies": [],
+          "target": "LY"
+        },
+        {
+          "studies": [],
+          "target": "MG"
+        },
+        {
+          "studies": [],
+          "target": "MW"
+        },
+        {
+          "studies": [],
+          "target": "ML"
+        },
+        {
+          "studies": [],
+          "target": "MR"
+        }
+      ],
+      "sweep": 24,
+      "targets": [
+        "GA",
+        "GM",
+        "GH",
+        "GN",
+        "GW",
+        "LS",
+        "LR",
+        "LY",
+        "MG",
+        "MW",
+        "ML",
+        "MR"
+      ]
     }
   ],
   "global_batches": [
