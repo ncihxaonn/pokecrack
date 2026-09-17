@@ -68756,6 +68756,69 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "US"
+        },
+        {
+          "studies": [],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-danish-36-pack-opening-cohort-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "da",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_unknown",
+                "hit_counts_unavailable",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "title_claim_only",
+                "unverified_research",
+                "video_not_fetched"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "youtube-danish-36-pack-opening-2020",
+              "urls": [
+                "https://youtu.be/kTPt52-IGT8"
+              ]
+            }
+          ],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 24,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
