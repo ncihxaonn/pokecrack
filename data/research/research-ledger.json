@@ -67366,6 +67366,63 @@
         "TR",
         "TM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "uae-one-booster-box-opening-2025"
+              ],
+              "country": "AE",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "author_reported_all_packs_present_and_later_reported_pulls",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening_location_not_reported",
+                "pack_count_not_reported",
+                "product_not_explicitly_identified",
+                "shipping_condition_prompted_tampering_concerns",
+                "unverified_research"
+              ],
+              "method": "complete_booster_box_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "uae-one-booster-box-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokeInvesting/comments/1o4g2t0/when_you_order_a_booster_box_and_they_ship_it"
+              ]
+            }
+          ],
+          "target": "AE"
+        },
+        {
+          "studies": [],
+          "target": "UZ"
+        },
+        {
+          "studies": [],
+          "target": "YE"
+        }
+      ],
+      "sweep": 24,
+      "targets": [
+        "AE",
+        "UZ",
+        "YE"
+      ]
     }
   ],
   "global_batches": [
