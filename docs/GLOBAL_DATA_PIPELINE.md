@@ -42,6 +42,15 @@ again outside the normal three-attempt cap, and no access restriction is
 bypassed. This preserves a large, clearly labelled source-reported denominator
 without confusing it with independently verified opening evidence.
 
+The quantity projection uses the same transitive URL/cohort deduplication as
+the research ledger, but requires agreement on pack count, count precision and
+native sample facts rather than agreement on every description. Disagreements
+in set/product wording, language, method or hit metrics do not erase an agreed
+pack quantity. Ambiguous descriptions are unset; disagreement in country or
+geography basis becomes unknown geography, never a guessed country. The full
+reference view still records and quarantines every disagreement, and the
+quantity projection never exports hit metrics or statistical eligibility.
+
 The global research sweeper runs every 30 minutes and rotates across worldwide
 regional focus. Each pass is deliberately broad but bounded at 64 public-search
 queries, 96 research rows, and a 96 KiB response. The checkpoint queue writes

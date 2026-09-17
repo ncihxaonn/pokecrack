@@ -147,7 +147,13 @@ def validate_record(record: object) -> dict:
     return record
 
 
-def build_ledger(raw: bytes) -> dict:
+def build_ledger(raw: bytes, *, quantity_only: bool = False) -> dict:
+    """Deduplicate references, optionally projecting only agreed pack quantities.
+
+    The default research/statistical view remains fully quarantined on any
+    disagreement. The quantity view never includes hit metrics and may retain
+    an agreed denominator despite descriptive or geographic disagreement.
+    """
     if len(raw) > MAX_BYTES:
         raise ValueError("input_too_large")
     data = json.loads(raw)
@@ -205,6 +211,21 @@ def build_ledger(raw: bytes) -> dict:
                 if key in metrics and metrics[key] != metric:
                     conflicts.append("metric:" + key)
                 metrics[key] = metric
+        reference_conflicts = sorted(set(conflicts))
+        if quantity_only:
+            # Product/set wording, language and hit counts do not alter an
+            # agreed pack quantity. Keep those disagreements visible in the
+            # reference view, without inventing a winning description.
+            descriptive = {"set", "language", "product", "method",
+                           "country", "geography_basis"}
+            conflicts = [field for field in conflicts
+                         if field not in descriptive and not field.startswith("metric:")]
+            selected["set"] = selected["set"] or "unknown"
+            selected["method"] = selected["method"] or "unverified"
+            if {"country", "geography_basis"}.intersection(reference_conflicts):
+                selected["country"] = None
+                selected["geography_basis"] = "unknown"
+            metrics = {}
         # Quarantine all counts when related reports disagree. No "latest wins"
         # or automatic summation of partially overlapping aggregate cohorts.
         if conflicts:
@@ -213,7 +234,7 @@ def build_ledger(raw: bytes) -> dict:
             selected["packs"] = None
             selected["pack_precision"] = "unknown"
             metrics = {}
-        studies.append({
+        study = {
             "study_ids": sorted({row["study_id"] for row in component}),
             "cohort_ids": sorted({x for row in component for x in row["cohort_ids"]}),
             "urls": sorted({x for row in component for x in row["urls"]}),
@@ -223,8 +244,12 @@ def build_ledger(raw: bytes) -> dict:
             "conflicts": sorted(set(conflicts)),
             "status": "conflicting_reports" if conflicts else "reported_not_independently_audited",
             "statistics_eligible": False,
-        })
-    return {"version": 1, "scope": "global", "layer": "research_references",
+        }
+        if quantity_only:
+            study["reference_conflicts"] = reference_conflicts
+        studies.append(study)
+    return {"version": 1, "scope": "global",
+            "layer": "quantity_references" if quantity_only else "research_references",
             "input_reports": len(records), "distinct_report_groups": len(studies),
             "verified_unique_packs": None, "production_admitted": False,
             "studies": sorted(studies, key=lambda row: (row["study_ids"], row["cohort_ids"], row["urls"]))}
