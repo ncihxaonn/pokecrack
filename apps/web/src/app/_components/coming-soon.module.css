@@ -1,0 +1,38 @@
+.shell {
+  position: relative;
+  isolation: isolate;
+  height: max(440px, calc(100svh - 220px));
+  overflow: hidden;
+}
+
+.preview {
+  height: 100%;
+  overflow: hidden;
+  filter: blur(7px);
+  opacity: 0.4;
+  pointer-events: none;
+  user-select: none;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  background: rgb(255 255 255 / 35%);
+}
+
+.message {
+  max-width: 480px;
+  text-align: center;
+}
+
+.message h1 {
+  font-size: clamp(42px, 7vw, 72px);
+}
+
+.message p {
+  margin: 16px 0 24px;
+  color: var(--muted);
+}
