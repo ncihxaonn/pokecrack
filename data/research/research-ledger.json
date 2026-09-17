@@ -68819,6 +68819,134 @@
         "GL",
         "PM"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-ultra-prism-36-pack-opening"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-video-title",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 36,
+              "product": "booster-box",
+              "set": "ultra-prism",
+              "source_sample": null,
+              "study_id": "youtube-ultra-prism-36-pack-opening",
+              "urls": [
+                "https://youtu.be/0Ncvgj-U5Pw"
+              ]
+            }
+          ],
+          "target": "MX"
+        },
+        {
+          "studies": [],
+          "target": "BR"
+        },
+        {
+          "studies": [],
+          "target": "AR"
+        },
+        {
+          "studies": [],
+          "target": "CL"
+        },
+        {
+          "studies": [],
+          "target": "CO"
+        },
+        {
+          "studies": [],
+          "target": "PE"
+        },
+        {
+          "studies": [],
+          "target": "AI"
+        },
+        {
+          "studies": [],
+          "target": "AG"
+        },
+        {
+          "studies": [],
+          "target": "AW"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-team-rocket-one-box-opening-2020"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "native-box-count-only",
+                "opening-location-unknown",
+                "unverified-research"
+              ],
+              "method": "public-video-title-and-description",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "team-rocket-booster-box",
+              "set": "team-rocket",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "youtube-team-rocket-one-box-opening-2020",
+              "urls": [
+                "https://youtu.be/hMAR55qhvdo"
+              ]
+            }
+          ],
+          "target": "BS"
+        },
+        {
+          "studies": [],
+          "target": "BB"
+        },
+        {
+          "studies": [],
+          "target": "BQ"
+        }
+      ],
+      "sweep": 24,
+      "targets": [
+        "MX",
+        "BR",
+        "AR",
+        "CL",
+        "CO",
+        "PE",
+        "AI",
+        "AG",
+        "AW",
+        "BS",
+        "BB",
+        "BQ"
+      ]
     }
   ],
   "global_batches": [
