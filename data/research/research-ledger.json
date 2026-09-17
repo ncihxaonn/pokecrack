@@ -72585,6 +72585,231 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgfr-at-least-35-boosters-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "at-least-35-packs-reported",
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language-or-subreddit",
+                "hit-counts-not-completely-enumerated",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "collector-opening-log",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 35,
+              "product": "unknown",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgfr-at-least-35-boosters-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1rkvj1c/1_%C3%A8re_p%C3%A9pite_de_ma_collection"
+              ]
+            }
+          ],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-de-24-boosters-zero-art-rare-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language-subreddit-or-retailer",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "set-not-explicitly-verified",
+                "single-author-report",
+                "unverified-research"
+              ],
+              "method": "collector-opening-log",
+              "metrics": [
+                {
+                  "category": "art-rare",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 24,
+              "product": "two-pack-blisters",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcg-de-24-boosters-zero-art-rare-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1usiqii/netto_2er_blister"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-de-dunkelnacht-one-display-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-language-or-subreddit",
+                "image-dependent-pulls-not-transcribed",
+                "independent-review-pending",
+                "native-display-count-only",
+                "opening-location-not-stated",
+                "pack-count-not-multiplied-from-product-contents",
+                "unverified-research"
+              ],
+              "method": "collector-opening-log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-display",
+              "set": "dunkelnacht",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-pokemontcg-de-dunkelnacht-one-display-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_DE/comments/1uzax3k/heute_display_dunkelnacht_aufgemacht_das_war_die"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [],
+          "target": "IT"
+        },
+        {
+          "studies": [],
+          "target": "ES"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcg-uk-perfect-order-12-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-subreddit-or-retailers",
+                "image-dependent-hit-counts-not-transcribed",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "set-name-appears-mistranscribed-as-direct-order",
+                "unverified-research"
+              ],
+              "method": "collector-opening-log",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 12,
+              "product": "booster-packs",
+              "set": "perfect-order",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcg-uk-perfect-order-12-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_UK/comments/1s7y8qq/the_wife_and_i_bought_12_packs_of_direct_order"
+              ]
+            }
+          ],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "cardworld-live-24-pokemon-booster-packs"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "nl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-inferred-from-domain-or-language",
+                "embedded-stream-cohort-may-change-over-time",
+                "hit-counts-not-reported",
+                "independent-review-pending",
+                "opening-date-not-established",
+                "opening-location-not-stated",
+                "title-only-pack-count",
+                "unverified-research"
+              ],
+              "method": "public-live-opening-page",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 24,
+              "product": "booster-packs",
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "cardworld-live-24-pokemon-booster-packs",
+              "urls": [
+                "https://cardworld.be/pages/live"
+              ]
+            }
+          ],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
