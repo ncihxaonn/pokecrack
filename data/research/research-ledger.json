@@ -72157,6 +72157,149 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [],
+          "target": "SG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "korean-two-box-ninja-spinner-nihil-zero-cohort-2026"
+              ],
+              "country": "KR",
+              "geography_basis": "opening_location",
+              "language": "ko",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-eligible-integer-hit-totals",
+                "pack-count-not-directly-reported",
+                "product-allocation-between-boxes-unclear",
+                "unverified-research"
+              ],
+              "method": "complete-blog-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": null,
+              "set": "mixed-or-unclear",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "korean-two-box-ninja-spinner-nihil-zero-opening-2026",
+              "urls": [
+                "https://jjorapbubu.tistory.com/m/entry/%ED%8F%AC%EC%BC%93%EB%AA%AC%EC%B9%B4%EB%93%9C-%EC%9E%AC%ED%85%8C%ED%81%AC-%EA%BF%88%EA%BE%BC-%EB%B6%80%EB%B6%80%EC%9D%98-%EA%B2%B0%EB%A7%90%EF%BD%9C%EC%B9%B4%EB%93%9C%ED%8C%9D-%EC%9D%B8%EC%B2%9C%EC%A0%90-%ED%98%84%EC%8B%A4-%ED%9B%84%EA%B8%B0"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "korean-sun-moon-enhanced-expansion-twenty-pack-cohort-2017"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ko",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "rarity-labels-author-reported",
+                "single-box-sample",
+                "unverified-research"
+              ],
+              "method": "complete-blog-opening",
+              "metrics": [
+                {
+                  "category": "full-art-gx-cards",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "hologram-cards",
+                  "hits": 18,
+                  "unit": "cards"
+                },
+                {
+                  "category": "standard-cards",
+                  "hits": 140,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 20,
+              "product": "sun-moon-enhanced-expansion-box",
+              "set": "sun-moon-enhanced-expansion",
+              "source_sample": null,
+              "study_id": "korean-sun-moon-enhanced-expansion-twenty-pack-opening-2017",
+              "urls": [
+                "https://richlab.tistory.com/419"
+              ]
+            }
+          ],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
