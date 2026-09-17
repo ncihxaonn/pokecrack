@@ -67423,6 +67423,169 @@
         "UZ",
         "YE"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-paldean-fates-pack-98-chase-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_stated_by_source",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "complete_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 98,
+              "product": null,
+              "set": "paldean_fates",
+              "source_sample": null,
+              "study_id": "reddit-paldean-fates-pack-98-chase-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1afxzbc"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "sheepmaniac-surging-sparks-one-box-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "pack_count_not_reported",
+                "unverified_research",
+                "video_embedded_but_not_fetched"
+              ],
+              "method": "complete_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "surging_sparks_booster_box",
+              "set": "surging_sparks",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "sheepmaniac-surging-sparks-one-box-2024",
+              "urls": [
+                "https://sheepmaniac.wordpress.com/2024/11/10/unboxing-surging-sparks"
+              ]
+            }
+          ],
+          "target": "AU"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-new-zealand-japanese-151-four-box-products-2023"
+              ],
+              "country": "NZ",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "mixed_booster_box_and_etb_sample",
+                "opened_over_approximately_two_weeks",
+                "pack_denominator_not_reported",
+                "unverified_research"
+              ],
+              "method": "complete_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese_151_and_english_151",
+              "set": "pokemon_151",
+              "source_sample": {
+                "count": 4,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-new-zealand-japanese-151-four-box-products-2023",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1760bws"
+              ]
+            }
+          ],
+          "target": "NZ"
+        },
+        {
+          "studies": [],
+          "target": "FJ"
+        },
+        {
+          "studies": [],
+          "target": "PG"
+        },
+        {
+          "studies": [],
+          "target": "SB"
+        },
+        {
+          "studies": [],
+          "target": "VU"
+        },
+        {
+          "studies": [],
+          "target": "WS"
+        },
+        {
+          "studies": [],
+          "target": "TO"
+        },
+        {
+          "studies": [],
+          "target": "TV"
+        },
+        {
+          "studies": [],
+          "target": "KI"
+        },
+        {
+          "studies": [],
+          "target": "NR"
+        },
+        {
+          "studies": [],
+          "target": "PW"
+        }
+      ],
+      "sweep": 24,
+      "targets": [
+        "AU",
+        "NZ",
+        "FJ",
+        "PG",
+        "SB",
+        "VU",
+        "WS",
+        "TO",
+        "TV",
+        "KI",
+        "NR",
+        "PW"
+      ]
     }
   ],
   "global_batches": [
