@@ -69746,6 +69746,136 @@
         "JO",
         "KZ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "KW"
+        },
+        {
+          "studies": [],
+          "target": "KG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "manypocket-void-blast-24-pack-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "th",
+              "limitations": [
+                "article-derived-from-creators-video-transcript",
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "energy-card-count-not-reported",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "retail-packaging-description-may-cause-pack-terminology-ambiguity",
+                "unrelated-country-result-found-during-la-target-search",
+                "unverified-research"
+              ],
+              "method": "complete-opening-counted-results",
+              "metrics": [
+                {
+                  "category": "ar",
+                  "hits": 2,
+                  "unit": "cards"
+                },
+                {
+                  "category": "common",
+                  "hits": 73,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rare",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rr",
+                  "hits": 4,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sr",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "uncommon",
+                  "hits": 36,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 24,
+              "product": "void-blast",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "manypocket-void-blast-24-pack-cohort-2026",
+              "urls": [
+                "https://www.manypocket.net/articles/pokemon-tcg-void-blast-24-packs"
+              ]
+            }
+          ],
+          "target": "LA"
+        },
+        {
+          "studies": [],
+          "target": "LB"
+        },
+        {
+          "studies": [],
+          "target": "MV"
+        },
+        {
+          "studies": [],
+          "target": "MN"
+        },
+        {
+          "studies": [],
+          "target": "MM"
+        },
+        {
+          "studies": [],
+          "target": "NP"
+        },
+        {
+          "studies": [],
+          "target": "KP"
+        },
+        {
+          "studies": [],
+          "target": "OM"
+        },
+        {
+          "studies": [],
+          "target": "PK"
+        },
+        {
+          "studies": [],
+          "target": "PS"
+        }
+      ],
+      "sweep": 25,
+      "targets": [
+        "KW",
+        "KG",
+        "LA",
+        "LB",
+        "MV",
+        "MN",
+        "MM",
+        "NP",
+        "KP",
+        "OM",
+        "PK",
+        "PS"
+      ]
     }
   ],
   "global_batches": [
