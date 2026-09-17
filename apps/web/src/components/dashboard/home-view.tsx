@@ -4,11 +4,13 @@ import Link from "next/link";
 
 import type { WorldHeatMetric } from "@/app/_lib/world-map-query";
 import type { PublicDashboardData } from "@/data/types";
-import { formatDate, formatDateTime, formatProbability } from "@/lib/format";
+import { formatDateTime, formatProbability } from "@/lib/format";
+import { overviewRows } from "@/lib/overview-charts";
 import { TrendChart } from "@/components/charts/trend-chart";
 import { WorldHeatmap } from "./world-heatmap";
 import { PokemonWorldHero } from "./pokemon-world-hero";
-import { OverviewHighlights } from "./overview-highlights";
+import { OverviewCharts } from "./overview-charts";
+import { OverviewCatalog } from "./overview-catalog";
 import { DataModeNotice, MetricDisclaimer, Panel, SectionHeading, SignalBadge, TableFrame } from "@/components/ui/dashboard-ui";
 
 const integer = new Intl.NumberFormat("en-AU");
@@ -18,7 +20,6 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
     .sort((left, right) => right.packsObserved - left.packsObserved)
     .slice(0, 4);
   const watched = data.sets.filter((set) => set.state === "watch" || set.state === "anomaly");
-  const catalogPreview = data.catalog.sets.slice(0, 8);
   const modeNotice = <DataModeNotice
     catalogSetCount={data.catalog.setCount}
     generatedAt={data.generatedAt}
@@ -43,7 +44,7 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
       <div className="analysis-layout">
         <nav className="analysis-nav" aria-label="On this page">
           <a href="#world-coverage">World coverage</a>
-          <a href="#highlights-title">Highlights</a>
+          <a href="#highlights-title">Explore the numbers</a>
           <a href="#catalog-title">Set catalog</a>
           {data.trend.length > 0 ? <a href="#trend-title">Observed trend</a> : null}
           {trending.length > 0 || watched.length > 0 ? <a href="#trending-title">Set comparisons</a> : null}
@@ -52,42 +53,13 @@ export function HomeView({ data, synthetic, worldMetric }: { data: PublicDashboa
         <div className="analysis-content">
       {synthetic ? null : modeNotice}
       <dl className="stat-grid stat-grid--summary" aria-label="Global dashboard totals">
-        <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>Verified eligible denominator</small></dd></div>
-        <div><dt>Complete openings</dt><dd>{integer.format(data.observations.completeOpenings)}<small>Reviewed observations</small></dd></div>
+        <div><dt>Observed packs</dt><dd>{integer.format(data.observations.observedPacks)}<small>Published pack counts</small></dd></div>
+        <div><dt>Opening records</dt><dd>{integer.format(data.observations.completeOpenings)}<small>Published opening records</small></dd></div>
         <div><dt>Coverage buckets</dt><dd>{integer.format(data.observations.countriesObserved)}<small>Countries or product markets</small></dd></div>
         <div><dt>Catalog sets</dt><dd>{integer.format(data.catalog.setCount)}<small>Metadata, not opening evidence</small></dd></div>
       </dl>
-      <OverviewHighlights data={data} />
-
-      <section className="dashboard-section" aria-labelledby="catalog-title">
-        <SectionHeading
-          id="catalog-title"
-          title="Global set catalog"
-          detail={`${data.catalog.name} metadata for discovery — never opening evidence or a pull-rate denominator.`}
-        />
-        <Panel className="catalog-panel">
-          <TableFrame label="Global TCGdex set catalog preview">
-            <table>
-              <thead><tr><th scope="col">Set</th><th scope="col">Series</th><th scope="col">Release</th><th scope="col">Language</th></tr></thead>
-              <tbody>
-                {catalogPreview.length === 0 ? (
-                  <tr><td colSpan={4} className="empty-cell">No current catalog sets are available.</td></tr>
-                ) : catalogPreview.map((set) => (
-                  <tr key={set.id}>
-                    <td data-label="Set"><strong>{set.name}</strong><small>{set.slug}</small></td>
-                    <td data-label="Series">{set.series ?? "Unspecified"}</td>
-                    <td data-label="Release">{set.releaseDate ? formatDate(set.releaseDate) : "Unscheduled"}</td>
-                    <td data-label="Language">{set.language.toUpperCase()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </TableFrame>
-          <p className="catalog-footnote">
-            Showing {integer.format(catalogPreview.length)} of {integer.format(data.catalog.setCount)} current sets. Last checked {formatDateTime(data.catalog.lastCheckedAt)}.
-          </p>
-        </Panel>
-      </section>
+      <OverviewCharts rows={overviewRows(data.mapCells)} observations={data.observations} />
+      <OverviewCatalog catalog={data.catalog} />
 
       {data.trend.length > 0 ? <section className="dashboard-section" aria-labelledby="trend-title">
         <SectionHeading id="trend-title" title="Observed trend" detail="Weekly aggregate and rolling baseline; a visual aid with a textual table below." />
