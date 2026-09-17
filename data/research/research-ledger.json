@@ -65555,6 +65555,131 @@
         "BA",
         "BG"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "HR"
+        },
+        {
+          "studies": [],
+          "target": "CZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "danish-store-100-pack-live-opening-2024"
+              ],
+              "country": "DK",
+              "geography_basis": "publisher_country",
+              "language": "da",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "possible_overlap_with_other_store_breaks_unresolved",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed_pokemon_tcg_boosters",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "danish-store-100-pack-live-opening-2024",
+              "urls": [
+                "https://youtu.be/7S9akmbMRms"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "danish_language-over-30-pack-opening-2021"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "da",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_unknown",
+                "hit_counts_not_reported",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "title_claim_is_lower_bound",
+                "unverified_research"
+              ],
+              "method": "public_video_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 30,
+              "product": "mixed_pokemon_tcg_boosters",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "danish_language-over-30-pack-opening-2021",
+              "urls": [
+                "https://youtu.be/8c2gsm0pflw"
+              ]
+            }
+          ],
+          "target": "DK"
+        },
+        {
+          "studies": [],
+          "target": "EE"
+        },
+        {
+          "studies": [],
+          "target": "FI"
+        },
+        {
+          "studies": [],
+          "target": "GR"
+        },
+        {
+          "studies": [],
+          "target": "HU"
+        },
+        {
+          "studies": [],
+          "target": "IS"
+        },
+        {
+          "studies": [],
+          "target": "IE"
+        },
+        {
+          "studies": [],
+          "target": "LV"
+        },
+        {
+          "studies": [],
+          "target": "LI"
+        },
+        {
+          "studies": [],
+          "target": "LT"
+        }
+      ],
+      "sweep": 23,
+      "targets": [
+        "HR",
+        "CZ",
+        "DK",
+        "EE",
+        "FI",
+        "GR",
+        "HU",
+        "IS",
+        "IE",
+        "LV",
+        "LI",
+        "LT"
+      ]
     }
   ],
   "global_batches": [
