@@ -108220,6 +108220,571 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "tcgtalk-phantasmal-flames-100-pack-case-opening"
+          ],
+          "country": "SG",
+          "geography_basis": "product_market",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-explicitly-confirmed",
+            "singapore-market-framing",
+            "unverified-research"
+          ],
+          "method": "original-case-opening-report",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "phantasmal-flames",
+          "set": "phantasmal-flames",
+          "source_sample": null,
+          "study_id": "tcgtalk-phantasmal-flames-100-packs",
+          "urls": [
+            "https://tcgtalk.com/guides/phantasmal-flames-pull-rates-case-opening"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-surging-sparks-authentication-center-2024"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "surging-sparks",
+          "set": "surging-sparks",
+          "source_sample": null,
+          "study_id": "tcgplayer-surging-sparks-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Surging-Sparks-Pull-Rates/6ccfb6ab-f26a-4ce8-bab5-5f91c85ec70e"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-journey-together-authentication-center-2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "journey-together",
+          "set": "journey-together",
+          "source_sample": null,
+          "study_id": "tcgplayer-journey-together-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Journey-Together-Pull-Rates/1b9f379f-97cb-45cc-b6f6-a1a070a422cd"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-surging-sparks-100-plus-turkish-report"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "tr",
+          "limitations": [
+            "canonical-thread-topic-is-broader-than-opening-report",
+            "collector-policy-not-enabled",
+            "comment-level-permalink-not-identified",
+            "country-not-explicitly-stated-for-opening",
+            "independent-review-pending",
+            "pack-count-and-two-sir-result-reported-in-public-comment",
+            "unverified-research"
+          ],
+          "method": "self-reported-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 100,
+          "product": "surging-sparks",
+          "set": "surging-sparks",
+          "source_sample": null,
+          "study_id": "reddit-turkey-surging-sparks-100-plus",
+          "urls": [
+            "https://www.reddit.com/r/TCGTurkiye/comments/1kr3hgu"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "bilibili-custom-art-100-box-bv1uy411l7ux"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "zh",
+          "limitations": [
+            "authentic-pokemon-tcg-status-uncertain",
+            "box-count-from-public-title",
+            "collector-policy-not-enabled",
+            "country-not-explicitly-stated",
+            "described-as-foreign-studio-custom-product",
+            "independent-review-pending",
+            "pack-count-not-reported",
+            "unverified-research",
+            "video-content-not-fetched"
+          ],
+          "method": "public-video-opening",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "custom-pokemon-art-card-boxes",
+          "set": "unknown",
+          "source_sample": {
+            "count": 100,
+            "precision": "exact_reported",
+            "unit": "boxes"
+          },
+          "study_id": "bilibili-custom-art-100-boxes",
+          "urls": [
+            "https://www.bilibili.com/video/BV1UY411L7uX"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-silver-tempest-authentication-center-2022"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "silver-tempest",
+          "set": "silver-tempest",
+          "source_sample": null,
+          "study_id": "tcgplayer-silver-tempest-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Silver-Tempest-Pull-Rates/6490d591-e582-4930-8446-00e190876d30"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-scarlet-violet-authentication-center-2023"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "scarlet-violet",
+          "set": "scarlet-violet",
+          "source_sample": null,
+          "study_id": "tcgplayer-scarlet-violet-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-temporal-forces-authentication-center-2024"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "canonical-url-uses-robot-path",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "temporal-forces",
+          "set": "temporal-forces",
+          "source_sample": null,
+          "study_id": "tcgplayer-temporal-forces-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/robot/28c0ad22-00a4-428f-b22d-e7fee9ec50bc"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-twilight-masquerade-authentication-center-2024"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "twilight-masquerade",
+          "set": "twilight-masquerade",
+          "source_sample": null,
+          "study_id": "tcgplayer-twilight-masquerade-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Twilight-Masquerade-Pull-Rates/f3eea967-e5fb-4108-8655-bb1c89587628"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-black-bolt-kentucky-2025",
+            "tcgplayer-white-flare-kentucky-2025"
+          ],
+          "country": "US",
+          "geography_basis": "opening_location",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "combined-denominator-reported-as-more-than-700",
+            "combined-two-set-analysis",
+            "identical-rate-assumption-used-by-source",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "more-than-350-packs-reported-for-each-set",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 700,
+          "product": "black-bolt-and-white-flare",
+          "set": "black-bolt-white-flare",
+          "source_sample": null,
+          "study_id": "tcgplayer-black-bolt-white-flare-700-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Black-Bolt-and-White-Flare-Pull-Rates/bac92199-a2a7-4668-b4a4-2647a111776f"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paradox-rift-authentication-center-2023"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "paradox-rift",
+          "set": "paradox-rift",
+          "source_sample": null,
+          "study_id": "tcgplayer-paradox-rift-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paradox-Rift-Pull-Rates/0b5fb648-38fc-4f61-a6af-57c2737b4a48"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-lost-origin-authentication-center-2022"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "lost-origin",
+          "set": "lost-origin",
+          "source_sample": null,
+          "study_id": "tcgplayer-lost-origin-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Lost-Origin-Pull-Rates/ba20ac4d-9448-45ce-b919-d856d107c744"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "ripster-three-set-100-pack-study"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "allocation-of-100-packs-across-sets-not-reviewed",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "three-set-comparative-study",
+            "unverified-research"
+          ],
+          "method": "multi-set-opening-analysis",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "three-pokemon-booster-sets",
+          "set": "mixed",
+          "source_sample": null,
+          "study_id": "ripster-three-sets-100-pack-analysis",
+          "urls": [
+            "https://www.ripster.gg/blog/100-pokemon-booster-packs-data-results"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-chaos-rising-authentication-center-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8500-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8500,
+          "product": "chaos-rising",
+          "set": "chaos-rising",
+          "source_sample": null,
+          "study_id": "tcgplayer-chaos-rising-8500-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Chaos-Rising-Pull-Rates/304e8bfc-175a-4d31-93fe-5bb1be11e5d2"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-mega-evolution-authentication-center-2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-5000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 5000,
+          "product": "mega-evolution",
+          "set": "mega-evolution",
+          "source_sample": null,
+          "study_id": "tcgplayer-mega-evolution-5000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Mega-Evolution-Pull-Rates/40cbeedc-21ce-473b-aef1-74e3969d9f91"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paldea-evolved-authentication-center-2023"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "paldea-evolved",
+          "set": "paldea-evolved",
+          "source_sample": null,
+          "study_id": "tcgplayer-paldea-evolved-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paldea-Evolved-Pull-Rates/1b7d3e70-9542-4a50-8692-1661e2316521"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokelog-starter-deck-100-1020-decks"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "ja",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-explicitly-stated",
+            "deck-product-not-standard-booster-packs",
+            "independent-review-pending",
+            "overlap-unresolved",
+            "possible-aggregation-from-underlying-opening-records",
+            "unverified-research"
+          ],
+          "method": "reported-opening-compilation",
+          "metrics": [],
+          "pack_precision": "unknown",
+          "packs": null,
+          "product": "starter-deck-100-battle-collection",
+          "set": "starter-deck-100-battle-collection",
+          "source_sample": {
+            "count": 1020,
+            "precision": "exact_reported",
+            "unit": "decks"
+          },
+          "study_id": "pokelog-starter-deck-100-1020-decks",
+          "urls": [
+            "https://lifematome.blog/pokeka-startdeck-secret"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-crown-zenith-authentication-center-2023"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening-location-not-stated",
+            "published-percentages-not-converted-to-integer-hits",
+            "reported-as-more-than-1900-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1900,
+          "product": "crown-zenith",
+          "set": "crown-zenith",
+          "source_sample": null,
+          "study_id": "tcgplayer-crown-zenith-1900-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Crown-Zenith-Pull-Rates/56af3032-cb34-4da1-92fb-9cf206d10c0f"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-perfect-order-authentication-center-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-3500-packs",
+            "smaller-than-publisher-usual-sample",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 3500,
+          "product": "perfect-order",
+          "set": "perfect-order",
+          "source_sample": null,
+          "study_id": "tcgplayer-perfect-order-3500-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Perfect-Order-Pull-Rates/73148119-ebcb-40b7-84b6-52b3a6d0c631"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-evolving-skies-authentication-center-2021"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "historical-records-published-later",
+            "independent-review-pending",
+            "integer-hit-counts-not-reviewed",
+            "opening-location-not-stated",
+            "reported-as-more-than-8000-packs",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "evolving-skies",
+          "set": "evolving-skies",
+          "source_sample": null,
+          "study_id": "tcgplayer-evolving-skies-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Evolving-Skies-Pull-Rates/6a743d7b-e5ee-4fd6-9d18-64a636990e8c"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
