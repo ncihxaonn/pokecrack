@@ -69192,6 +69192,345 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "malaysia-chaos-rising-one-booster-box-video-2026"
+              ],
+              "country": "MY",
+              "geography_basis": "publisher_country",
+              "language": "ms",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_reviewed",
+                "independent-review-pending",
+                "pack_count_not_reported",
+                "title_only_box_count",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "chaos_rising_booster_box",
+              "set": "new",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "malaysia-chaos-rising-one-booster-box-video-2026",
+              "urls": [
+                "https://youtu.be/_qJstTcYHNQ"
+              ]
+            }
+          ],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "philippines-subreddit-first-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit_in_source",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_post_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1,
+              "product": null,
+              "set": "new",
+              "source_sample": null,
+              "study_id": "philippines-subreddit-first-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1u98o7q/first_time_opening_any_type_of_booster_pack_and"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "philippines-subreddit-four-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit_in_source",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_post_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 4,
+              "product": null,
+              "set": "new",
+              "source_sample": null,
+              "study_id": "philippines-subreddit-four-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGPhilippines/comments/1s5qcyl/opened_4_packs_and_got_these_hits"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "terastal-festival-ex-one-case-video-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh-hant",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit_in_source",
+                "hit_counts_not_reviewed",
+                "independent-review-pending",
+                "pack_count_not_reported",
+                "title_only_case_count",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "terastal_festival_ex_case",
+              "set": "terastal_festival_ex",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "cartons"
+              },
+              "study_id": "terastal-festival-ex-one-case-video-2025",
+              "urls": [
+                "https://youtu.be/NQmlnSHKnzY"
+              ]
+            }
+          ],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "subreddit-first-single-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit_in_source",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "title_claim_only",
+                "unverified_research"
+              ],
+              "method": "public_post_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1,
+              "product": null,
+              "set": "new",
+              "source_sample": null,
+              "study_id": "subreddit-first-single-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1vqozac/should_i_open_it_or_should_i_keep_it_sealed_my"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "subreddit-first-pack-in-twenty-years-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit_in_source",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "overlap_unresolved",
+                "possible_additional_packs_not_quantified",
+                "title_claim_singular_but_body_mentions_multiple_participants",
+                "unverified_research"
+              ],
+              "method": "public_post_opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 1,
+              "product": "japanese_pokemon_booster_pack",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "subreddit-first-pack-in-twenty-years-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1jy8cue/opened_my_first_packs_in_20_years"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "chinese-gem-pack-three-eighteen-pack-box-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit_in_source",
+                "independent-review-pending",
+                "rarity_list_not_transcribed",
+                "target_is_search_provenance_only",
+                "unverified_research"
+              ],
+              "method": "public_post_complete_box_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 18,
+              "product": "simplified_chinese_gem_pack_vol_3_booster_box",
+              "set": "gem_pack_vol_3",
+              "source_sample": null,
+              "study_id": "chinese-gem-pack-three-eighteen-pack-box-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1rh0shi/chinese_pok%C3%A9mon_gem_pack_3_cbb3c_booster_box_pulls"
+              ]
+            }
+          ],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "journey-together-first-booster-box-post-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit_in_source",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "pack_count_not_reported",
+                "target_is_search_provenance_only",
+                "unverified_research"
+              ],
+              "method": "public_post_complete_box_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "journey_together_booster_box",
+              "set": "journey_together",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "journey-together-first-booster-box-post-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1u36ivx/open_my_first_and_probably_last_booster_box_with"
+              ]
+            }
+          ],
+          "target": "AM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "first-booster-bundle-turkish-post-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "tr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit_in_source",
+                "hit_counts_not_explicit",
+                "independent-review-pending",
+                "pack_count_not_reported",
+                "target_is_search_provenance_only",
+                "unverified_research"
+              ],
+              "method": "public_post_complete_bundle_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster_bundle",
+              "set": "new",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "first-booster-bundle-turkish-post-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokeTurkiye/comments/1u40rac/ilk_bundle%C4%B1m"
+              ]
+            }
+          ],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 25,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
