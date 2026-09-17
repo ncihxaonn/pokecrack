@@ -1,4 +1,5 @@
 import React from "react";
+import Link from "next/link";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 import { render, screen } from "@testing-library/react";
@@ -19,7 +20,7 @@ describe("temporary public section previews", () => {
     const { container } = render(
       <Layout>
         <h1>Original page</h1>
-        <a href="/sets/example">Original detail link</a>
+        <Link href="/sets/example">Original detail link</Link>
         <input aria-label="Original filter" />
       </Layout>,
     );
