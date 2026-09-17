@@ -82,7 +82,10 @@ def _ledger_groups(source: dict[str, Any], seed: dict[str, Any] | None) -> list[
                 rows.extend(row for row in result["studies"] if isinstance(row, dict))
     if not rows:
         return []
-    return build_ledger(json.dumps({"version": 1, "studies": rows}).encode())["studies"]
+    # Quantity intake has no numerator: retain agreed counts even when report
+    # descriptions differ. The default research ledger stays fully strict.
+    return build_ledger(json.dumps({"version": 1, "studies": rows}).encode(),
+                        quantity_only=True)["studies"]
 
 
 def _candidate_from_group(group: dict[str, Any]) -> dict[str, Any] | None:
