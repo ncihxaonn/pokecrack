@@ -69531,6 +69531,221 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "simplified-chinese-ptcg-7-case-twenty-box-opening-2024"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "pack_count_not_reported",
+                "title_and_description_evidence",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-ptcg-7",
+              "set": "simplified-chinese-ptcg-7",
+              "source_sample": {
+                "count": 20,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "simplified-chinese-ptcg-7-case-twenty-box-opening-2024",
+              "urls": [
+                "https://www.bilibili.com/video/BV1obgTeYEVS"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "indonesian-mega-evolution-one-hundred-pack-opening-2025"
+              ],
+              "country": "ID",
+              "geography_basis": "product_market",
+              "language": "id",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_not_transcribed",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "title_and_description_evidence",
+                "unverified_research"
+              ],
+              "method": "complete_video_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "pokemon-tcg-indonesia-mega-evolution",
+              "set": "mega-evolution",
+              "source_sample": null,
+              "study_id": "indonesian-mega-evolution-one-hundred-pack-opening-2025",
+              "urls": [
+                "https://youtu.be/I4yQEkmKGy4"
+              ]
+            }
+          ],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "japanese-25th-anniversary-fifty-two-pack-opening-20220222"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "independent-review-pending",
+                "opening_location_unknown",
+                "single_author_sample",
+                "unverified_research"
+              ],
+              "method": "complete_article_opening",
+              "metrics": [
+                {
+                  "category": "mirror",
+                  "hits": 12,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rr",
+                  "hits": 13,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rrr",
+                  "hits": 21,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sr",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ur",
+                  "hits": 0,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 52,
+              "product": "japanese-25th-anniversary-collection",
+              "set": "japanese-25th-anniversary-collection",
+              "source_sample": null,
+              "study_id": "japanese-25th-anniversary-fifty-two-pack-opening-20220222",
+              "urls": [
+                "https://shark-tcg.com/s8a-kaihu"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "japanese-white-flare-two-box-opening-20250606"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "independent-review-pending",
+                "metrics_omitted_under_native_sample_rule",
+                "only_native_box_count_preserved",
+                "opening_location_unknown",
+                "unverified_research"
+              ],
+              "method": "complete_article_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "japanese-white-flare",
+              "set": "white-flare",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "japanese-white-flare-two-box-opening-20250606",
+              "urls": [
+                "https://pokecadiary.murasakikonoheya.com/pokeca-whiteflare-open"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 25,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
