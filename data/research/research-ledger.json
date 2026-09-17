@@ -66699,6 +66699,69 @@
         "GY",
         "PY"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [],
+          "target": "SR"
+        },
+        {
+          "studies": [],
+          "target": "UY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokeshiny-customer-two-pack-opening"
+              ],
+              "country": "PE",
+              "geography_basis": "publisher_country",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-definition-unspecified",
+                "independent-review-pending",
+                "opening-location-unknown",
+                "retailer-hosted-customer-testimonial",
+                "target-query-false-positive",
+                "unverified-research"
+              ],
+              "method": "customer_testimonial",
+              "metrics": [
+                {
+                  "category": "hits",
+                  "hits": 2,
+                  "unit": "packs_with_hit"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 2,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "pokeshiny-customer-two-pack-opening",
+              "urls": [
+                "https://pokeshiny.com.pe/nosotros"
+              ]
+            }
+          ],
+          "target": "VE"
+        }
+      ],
+      "sweep": 23,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
     }
   ],
   "global_batches": [
