@@ -71674,6 +71674,169 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "malay-pokemon-151-one-booster-box-video-2023"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ms",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "title-only-box-count",
+                "unverified-research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pokemon-151-booster-box",
+              "set": "pokemon-151",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "malay-pokemon-151-one-booster-box-video-2023",
+              "urls": [
+                "https://youtu.be/aO1SlnSkq9Y"
+              ]
+            }
+          ],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "gem-pack-volume-five-eleven-box-aggregate-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "approximately-eleven-boxes",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-locations-not-explicit",
+                "overlap-unresolved",
+                "philippines-is-article-market-not-sample-geography",
+                "underlying-opening-urls-not-provided",
+                "unverified-research"
+              ],
+              "method": "aggregated_opening_report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "simplified-chinese-gem-pack-volume-5-booster-box",
+              "set": "gem-pack-volume-5",
+              "source_sample": {
+                "count": 11,
+                "precision": "approximate_reported",
+                "unit": "boxes"
+              },
+              "study_id": "gem-pack-volume-five-eleven-box-aggregate-2026",
+              "urls": [
+                "https://tcgtalk.com/guides/philippines/gem-volume-5-chinese-pull-rates"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "jungle-fossil-first-edition-pack-video-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh-yue",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-reviewed",
+                "hong-kong-hashtag-not-geography-evidence",
+                "independent-review-pending",
+                "opening-location-not-explicit",
+                "pack-count-not-explicit",
+                "unverified-research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "first-edition-vintage-booster-packs",
+              "set": "jungle-and-fossil-first-edition",
+              "source_sample": null,
+              "study_id": "jungle-fossil-first-edition-pack-video-2025",
+              "urls": [
+                "https://youtu.be/zfkQfEt41pc"
+              ]
+            }
+          ],
+          "target": "HK"
+        },
+        {
+          "studies": [],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
