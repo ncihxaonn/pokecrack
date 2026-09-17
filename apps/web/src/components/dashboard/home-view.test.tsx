@@ -13,10 +13,10 @@ describe("HomeView", () => {
     render(<HomeView data={DEMO_PUBLIC_DATA} synthetic />);
 
     expect(screen.getByRole("heading", { level: 1, name: "Pokémon opening analysis" })).toBeVisible();
-    expect(screen.getByRole("heading", { name: "Highlights" })).toBeVisible();
+    expect(screen.getByRole("heading", { name: "Explore the numbers" })).toBeVisible();
     expect(screen.getByRole("navigation", { name: "On this page" })).toBeVisible();
     expect(screen.getByRole("complementary", { name: "Data provenance" })
-      .compareDocumentPosition(screen.getByRole("heading", { name: "Highlights" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+      .compareDocumentPosition(screen.getByRole("heading", { name: "Explore the numbers" })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByRole("complementary", { name: "Data provenance" })
       .compareDocumentPosition(screen.getByRole("heading", { level: 1 })) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(screen.getByText(BRAND.demoNotice)).toBeVisible();
@@ -49,7 +49,7 @@ describe("HomeView", () => {
     const map = container.querySelector("#world-coverage")!;
     expect(map.parentElement).toHaveClass("home-page");
     for (const section of [
-      screen.getByRole("heading", { name: "Highlights" }),
+      screen.getByRole("heading", { name: "Explore the numbers" }),
       container.querySelector('[aria-label="Global dashboard totals"]')!,
       screen.getByRole("navigation", { name: "On this page" }),
       screen.getByRole("complementary", { name: "Data provenance" }),
