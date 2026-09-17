@@ -60,7 +60,14 @@ def main() -> None:
         if pending is not None:
             save(merge_checkpoints(load(), pending), LEDGER_PATH)
         print("research_checkpoint_ready")
-    except (ValueError, TypeError, KeyError, OSError, subprocess.SubprocessError):
+    except ValueError as error:
+        # Only emit a fixed reason code, never provider stderr or input data.
+        reason = str(error)
+        if reason in {"research_checkpoint_conflict", "checkpoint_contains_code_changes",
+                      "research_checkpoint_too_large", "checkpoint_remote_unavailable"}:
+            raise SystemExit(f"research_checkpoint_unverified: {reason}") from None
+        raise SystemExit("research_checkpoint_unverified") from None
+    except (TypeError, KeyError, OSError, subprocess.SubprocessError):
         raise SystemExit("research_checkpoint_unverified") from None
 
 

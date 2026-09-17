@@ -113,20 +113,30 @@ def validate_checkpoint(raw: bytes) -> dict:
 
 
 def merge_checkpoints(current: dict, pending: dict) -> dict:
-    """Append independent research; refuse competing progress or replacements."""
+    """Append independent research; retain main's richer historical checkpoints.
+
+    A scheduled branch can retain an empty (or partial) scan after the same
+    scan was enriched on main. Such an older subset contributes no new facts
+    and must not block every subsequent collection and quantity import. Only
+    exact study subsets for the same campaign, sweep and target batch qualify;
+    changed counts or other competing evidence still require reconciliation.
+    """
     merged = validate_checkpoint(_canonical(current).encode())
     incoming = validate_checkpoint(_canonical(pending).encode())
     progress = {}
     for report in merged["country_reports"]:
         for country in report["targets"]:
-            progress[(report["sweep"], country)] = _fingerprint(report)
+            progress[(report["sweep"], country)] = report
     for report in incoming["country_reports"]:
         digest = _fingerprint(report)
+        existing = progress.get((report["sweep"], report["targets"][0]))
+        if existing is not None and _country_report_subsumes(existing, report):
+            continue
         for country in report["targets"]:
             key = (report["sweep"], country)
-            if key in progress and progress[key] != digest:
+            if key in progress and _fingerprint(progress[key]) != digest:
                 raise ValueError("research_checkpoint_conflict")
-            progress[key] = digest
+            progress[key] = report
         append_unique(merged, "country_reports", report)
     for batch in incoming["global_batches"]:
         append_unique(merged, "global_batches", batch)
@@ -136,6 +146,19 @@ def merge_checkpoints(current: dict, pending: dict) -> dict:
             raise ValueError("research_checkpoint_conflict")
         upsert_asia_report(merged, report)
     return validate_checkpoint(_canonical(merged).encode())
+
+
+def _country_report_subsumes(current: dict, incoming: dict) -> bool:
+    if any(current[key] != incoming[key] for key in ("campaign", "sweep", "targets")):
+        return False
+    studies = {
+        row["target"]: {_fingerprint(study) for study in row["studies"]}
+        for row in current["results"]
+    }
+    return all(
+        {_fingerprint(study) for study in row["studies"]} <= studies[row["target"]]
+        for row in incoming["results"]
+    )
 
 
 def upsert_asia_report(ledger: dict, report: dict) -> bool:

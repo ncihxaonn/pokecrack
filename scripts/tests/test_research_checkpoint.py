@@ -63,6 +63,53 @@ class CheckpointMergeTests(unittest.TestCase):
             with self.subTest(size=len(raw)), self.assertRaises(ValueError):
                 ledger.validate_checkpoint(raw)
 
+    def test_stale_empty_checkpoint_does_not_block_later_country_progress(self):
+        pending = ledger.empty_ledger()
+        pending["country_reports"] = [report()]
+        current = copy.deepcopy(pending)
+        sample = json.loads((ROOT / "data/research/global-studies.json").read_text())["studies"][0]
+        current["country_reports"][0]["results"][0]["studies"] = [sample]
+        current["country_reports"].append(report(current["country_reports"]))
+        expected = copy.deepcopy(current)
+        combined = ledger.merge_checkpoints(current, pending)
+        self.assertEqual(combined, expected)
+        self.assertEqual(ledger.merge_checkpoints(combined, pending), expected)
+        self.assertEqual(current, expected)
+        self.assertEqual(pending["country_reports"][0]["results"][0]["studies"], [])
+        self.assertEqual(country_research.select_targets(combined["country_reports"]),
+                         country_research.select_targets(expected["country_reports"]))
+
+    def test_stale_subset_keeps_all_main_evidence_and_appends_independent_data(self):
+        samples = json.loads((ROOT / "data/research/global-studies.json").read_text())["studies"][:2]
+        current = ledger.empty_ledger()
+        current["country_reports"] = [report()]
+        current["country_reports"][0]["results"][0]["studies"] = samples
+        pending = copy.deepcopy(current)
+        pending["country_reports"][0]["results"][0]["studies"] = samples[:1]
+        pending["country_reports"].append(report(pending["country_reports"]))
+        combined = ledger.merge_checkpoints(current, pending)
+        self.assertEqual(combined["country_reports"][0], current["country_reports"][0])
+        self.assertEqual(combined["country_reports"][1], pending["country_reports"][1])
+
+    def test_changed_pack_counts_are_not_treated_as_a_stale_subset(self):
+        sample = json.loads((ROOT / "data/research/global-studies.json").read_text())["studies"][0]
+        current = ledger.empty_ledger()
+        current["country_reports"] = [report()]
+        current["country_reports"][0]["results"][0]["studies"] = [sample]
+        pending = copy.deepcopy(current)
+        pending["country_reports"][0]["results"][0]["studies"][0]["packs"] += 1
+        with self.assertRaisesRegex(ValueError, "checkpoint_conflict"):
+            ledger.merge_checkpoints(current, pending)
+
+    def test_different_target_batches_are_not_silently_dropped(self):
+        current = ledger.empty_ledger()
+        current["country_reports"] = [report()]
+        pending = copy.deepcopy(current)
+        pending["country_reports"][0]["targets"] = pending["country_reports"][0]["targets"][:1]
+        pending["country_reports"][0]["results"] = pending["country_reports"][0]["results"][:1]
+        with self.assertRaisesRegex(ValueError, "checkpoint_conflict"):
+            ledger.merge_checkpoints(current, pending)
+
     def test_remote_failure_is_not_mistaken_for_absent_checkpoint(self):
         with patch.object(checkpoint, "run", return_value=outcome(code=2)):
             self.assertEqual(checkpoint.pending_checkpoint("a" * 40), (None, None))
