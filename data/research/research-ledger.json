@@ -66934,6 +66934,205 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "black-crystal-booster-one-box-opening-20250913"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "title-only-box-count",
+                "unverified-research"
+              ],
+              "method": "unverified",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "black-crystal-booster-box",
+              "set": "new",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "black-crystal-booster-one-box-opening-20250913",
+              "urls": [
+                "https://www.bilibili.com/video/BV1prpJziEPo"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "simplified-chinese-travel-gift-box-eleven-pack-opening-202511"
+              ],
+              "country": "CN",
+              "geography_basis": "product_market",
+              "language": "zh",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "author-reported",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 11,
+              "product": "simplified-chinese-travel-gift-box",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "simplified-chinese-travel-gift-box-eleven-pack-opening-202511",
+              "urls": [
+                "https://post.smzdm.com/zz/p/a9k0q870"
+              ]
+            }
+          ],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "remix-bout-one-carton-opening-2019"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "native-carton-count-preserved",
+                "packs-not-derived-from-box-contents",
+                "unverified-research"
+              ],
+              "method": "author-reported",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "remix-bout",
+              "set": "new",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "cartons"
+              },
+              "study_id": "remix-bout-one-carton-opening-2019",
+              "urls": [
+                "https://ameblo.jp/minthiroshima/entry-12490483330.html"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "star-birth-one-hundred-loose-pack-opening-20220222"
+              ],
+              "country": "JP",
+              "geography_basis": "product_market",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "mixed-loose-and-premium-box-packs",
+                "opening-location-not-stated",
+                "unverified-research"
+              ],
+              "method": "author-reported",
+              "metrics": [
+                {
+                  "category": "rr",
+                  "hits": 16,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rrr",
+                  "hits": 6,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sr-hr",
+                  "hits": 5,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 100,
+              "product": "star-birth",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "star-birth-one-hundred-loose-pack-opening-20220222",
+              "urls": [
+                "https://nanjakorya.com/1123"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 24,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
