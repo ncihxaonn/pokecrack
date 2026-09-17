@@ -68021,6 +68021,163 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemontcgnl-four-chaos-rising-packs-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "dutch",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "independent-review-pending",
+                "no_eligible_metrics_recorded",
+                "opening_location_unknown",
+                "pull_details_in_image_not_collected",
+                "unverified_research"
+              ],
+              "method": "author_reported_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 4,
+              "product": "loose_booster_packs",
+              "set": "chaos-rising",
+              "source_sample": null,
+              "study_id": "reddit-pokemontcgnl-four-chaos-rising-packs-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGNL/comments/1tlahut/hoe_dan"
+              ]
+            }
+          ],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokewaw-guardians-rising-burning-shadows-unboxing-2017"
+              ],
+              "country": "PL",
+              "geography_basis": "product_market",
+              "language": "polish",
+              "limitations": [
+                "at_least_fifty_boosters_explicit",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no_eligible_metrics_recorded",
+                "opening_location_not_explicit",
+                "sponsored_products",
+                "two_tins_have_unspecified_booster_counts",
+                "unverified_research"
+              ],
+              "method": "article_documented_livestream_opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 50,
+              "product": "mixed_guardians_rising_and_burning_shadows_products",
+              "set": "guardians-rising-and-burning-shadows",
+              "source_sample": null,
+              "study_id": "pokewaw-guardians-rising-burning-shadows-unboxing-2017",
+              "urls": [
+                "https://pokewaw.pl/unboxing-guardians-rising"
+              ]
+            }
+          ],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [],
+          "target": "RO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-fusion-strike-six-of-thirty-six-boosters-2022"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "russian",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicit",
+                "independent-review-pending",
+                "no_eligible_metrics_recorded",
+                "opening_location_unknown",
+                "source_says_product_imported_from_united_states",
+                "unverified_research",
+                "video_not_opened_during_research"
+              ],
+              "method": "video_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 6,
+              "product": "fusion_strike_boosters",
+              "set": "fusion-strike",
+              "source_sample": null,
+              "study_id": "youtube-fusion-strike-six-of-thirty-six-boosters-2022",
+              "urls": [
+                "https://youtu.be/4f9LwK9sbAg"
+              ]
+            }
+          ],
+          "target": "RU"
+        }
+      ],
+      "sweep": 24,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
