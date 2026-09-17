@@ -73034,6 +73034,144 @@
         "LI",
         "LT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "LU"
+        },
+        {
+          "studies": [],
+          "target": "MT"
+        },
+        {
+          "studies": [],
+          "target": "MD"
+        },
+        {
+          "studies": [],
+          "target": "MC"
+        },
+        {
+          "studies": [],
+          "target": "ME"
+        },
+        {
+          "studies": [],
+          "target": "NL"
+        },
+        {
+          "studies": [],
+          "target": "MK"
+        },
+        {
+          "studies": [],
+          "target": "NO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "wykop-first-elite-trainer-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pl",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "independent-review-pending",
+                "no-eligible-integer-metrics",
+                "pack-count-not-reported",
+                "set-not-explicit",
+                "single-box-small-sample",
+                "unverified-research"
+              ],
+              "method": "dated-complete-opening-log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "elite-trainer-box",
+              "set": "unknown",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "wykop-first-elite-trainer-box-opening-2026",
+              "urls": [
+                "https://wykop.pl/wpis/86521703/pokemon-pokemontcg-kiedys-zbieralem-zetony-naklejk"
+              ]
+            }
+          ],
+          "target": "PL"
+        },
+        {
+          "studies": [],
+          "target": "PT"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "pokemania-surging-sparks-booster-box-2025"
+              ],
+              "country": "RO",
+              "geography_basis": "publisher_country",
+              "language": "ro",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "multi-part-log-same-box",
+                "no-eligible-integer-metrics",
+                "pack-count-not-reported",
+                "publisher-country-not-opening-location",
+                "retailer-published-opening",
+                "unverified-research"
+              ],
+              "method": "multi-part-complete-opening-log",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-box",
+              "set": "surging-sparks",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "pokemania-surging-sparks-booster-box-2025",
+              "urls": [
+                "https://pokemania.ro/blog/pokemon-tcg-openings/deschidem-pokemon-tcg-scarlet-violet-surging-sparks-opening",
+                "https://pokemania.ro/blog/pokemon-tcg-openings/deschidem-pokemon-tcg-scarlet-violet-surging-sparks-opening-part-2",
+                "https://pokemania.ro/blog/pokemon-tcg-openings/deschidem-pokemon-tcg-scarlet-violet-surging-sparks-opening-part-3"
+              ]
+            }
+          ],
+          "target": "RO"
+        },
+        {
+          "studies": [],
+          "target": "RU"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "LU",
+        "MT",
+        "MD",
+        "MC",
+        "ME",
+        "NL",
+        "MK",
+        "NO",
+        "PL",
+        "PT",
+        "RO",
+        "RU"
+      ]
     }
   ],
   "global_batches": [
