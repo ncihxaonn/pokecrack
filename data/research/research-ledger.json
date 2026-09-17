@@ -70260,6 +70260,130 @@
         "UM",
         "WF"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "FR"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemonde-journey-together-93-boosters-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_totals_not_retained_because_some_are_image_or_comment_derived",
+                "independent-review-pending",
+                "opening_location_not_stated",
+                "products_mixed_between_loose_packs_displays_and_etbs",
+                "unverified_research"
+              ],
+              "method": "user_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 93,
+              "product": "mixed_sealed_products",
+              "set": "journey-together",
+              "source_sample": null,
+              "study_id": "reddit-pokemonde-journey-together-93-boosters-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDe/comments/1js4v1y"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "reddit-pokemonde-mixed-137-boosters-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "de",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "hit_counts_only_shown_visually",
+                "independent-review-pending",
+                "mixed_products_and_sets",
+                "opening_location_not_stated",
+                "possible_promos_in_result_image",
+                "unverified_research"
+              ],
+              "method": "user_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 137,
+              "product": "mixed_sealed_products",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "reddit-pokemonde-mixed-137-booster-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonDe/comments/1ji9f9vr"
+              ]
+            }
+          ],
+          "target": "DE"
+        },
+        {
+          "studies": [],
+          "target": "IT"
+        },
+        {
+          "studies": [],
+          "target": "ES"
+        },
+        {
+          "studies": [],
+          "target": "GB"
+        },
+        {
+          "studies": [],
+          "target": "AL"
+        },
+        {
+          "studies": [],
+          "target": "AD"
+        },
+        {
+          "studies": [],
+          "target": "AT"
+        },
+        {
+          "studies": [],
+          "target": "BY"
+        },
+        {
+          "studies": [],
+          "target": "BE"
+        },
+        {
+          "studies": [],
+          "target": "BA"
+        },
+        {
+          "studies": [],
+          "target": "BG"
+        }
+      ],
+      "sweep": 25,
+      "targets": [
+        "FR",
+        "DE",
+        "IT",
+        "ES",
+        "GB",
+        "AL",
+        "AD",
+        "AT",
+        "BY",
+        "BE",
+        "BA",
+        "BG"
+      ]
     }
   ],
   "global_batches": [
