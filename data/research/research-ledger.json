@@ -69876,6 +69876,198 @@
         "PK",
         "PS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "QA"
+        },
+        {
+          "studies": [],
+          "target": "SA"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-mega-dream-450-pack-stream-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "approximately-ten-other-sars-omitted",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "loose-packs",
+                "opening-location-not-stated",
+                "publisher-country-not-established",
+                "suspected-pack-filtering",
+                "third-party-observation",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "third-party-observed-stream-opening",
+              "metrics": [
+                {
+                  "category": "charizard-ma",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "rainbow-pikachu",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 450,
+              "product": "mega-dream-ex-loose-packs",
+              "set": "mega-dream-ex",
+              "source_sample": null,
+              "study_id": "reddit-mega-dream-450-pack-stream-cohort-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG_Singapore/comments/1unzs00/youre_not_buying_packs_youre_buying_leftovers"
+              ]
+            }
+          ],
+          "target": "SG"
+        },
+        {
+          "studies": [],
+          "target": "KR"
+        },
+        {
+          "studies": [],
+          "target": "LK"
+        },
+        {
+          "studies": [],
+          "target": "SY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "amythepooh-mega-evolution-dream-ex-ten-pack-box-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "zh-hant",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "publisher-country-not-established",
+                "single-box-sample",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "complete-box-opening",
+              "metrics": [
+                {
+                  "category": "ar",
+                  "hits": 3,
+                  "unit": "cards"
+                },
+                {
+                  "category": "ma",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sar",
+                  "hits": 1,
+                  "unit": "cards"
+                },
+                {
+                  "category": "sr",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 10,
+              "product": "mega-evolution-dream-ex-high-class-booster-box",
+              "set": "mega-evolution-dream-ex",
+              "source_sample": null,
+              "study_id": "amythepooh-mega-evolution-dream-ex-ten-pack-box-2025",
+              "urls": [
+                "https://amythepooh.com/toy-unboxing-ptcg-megaevolutiondreamsex"
+              ]
+            }
+          ],
+          "target": "TW"
+        },
+        {
+          "studies": [],
+          "target": "TJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-thailand-surging-sparks-complete-box-cohort"
+              ],
+              "country": "TH",
+              "geography_basis": "opening_location",
+              "language": "en",
+              "limitations": [
+                "author-deleted",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "metrics-omitted-with-native-box-denominator",
+                "pack-count-not-reported",
+                "single-box-sample",
+                "unverified-research-not-approved-for-production-statistics"
+              ],
+              "method": "complete-box-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "surging-sparks-thai-box",
+              "set": "surging-sparks",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-thailand-surging-sparks-complete-box-cohort",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1hfr7ji/just_opened_an_entire_box_of_surging_sparks"
+              ]
+            }
+          ],
+          "target": "TH"
+        },
+        {
+          "studies": [],
+          "target": "TL"
+        },
+        {
+          "studies": [],
+          "target": "TR"
+        },
+        {
+          "studies": [],
+          "target": "TM"
+        }
+      ],
+      "sweep": 25,
+      "targets": [
+        "QA",
+        "SA",
+        "SG",
+        "KR",
+        "LK",
+        "SY",
+        "TW",
+        "TJ",
+        "TH",
+        "TL",
+        "TR",
+        "TM"
+      ]
     }
   ],
   "global_batches": [
