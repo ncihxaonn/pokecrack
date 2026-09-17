@@ -65839,6 +65839,198 @@
         "JE",
         "SJ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "ZA"
+        },
+        {
+          "studies": [],
+          "target": "EG"
+        },
+        {
+          "studies": [],
+          "target": "KE"
+        },
+        {
+          "studies": [],
+          "target": "NG"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-nuit-noire-first-display-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-display",
+              "set": "nuit-noire",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-nuit-noire-first-display-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGfr/comments/1vcnl9l/ma_toute_premi%C3%A8re_ouverture_dune_display_nuit"
+              ]
+            }
+          ],
+          "target": "MA"
+        },
+        {
+          "studies": [],
+          "target": "DZ"
+        },
+        {
+          "studies": [],
+          "target": "AO"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-two-booster-boxes-pitch-black-chaos-rising-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "booster-boxes",
+              "set": "mixed-pitch-black-chaos-rising",
+              "source_sample": {
+                "count": 2,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-two-booster-boxes-pitch-black-chaos-rising-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1vj89x1/opened_2_booster_boxes"
+              ]
+            }
+          ],
+          "target": "BJ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-ascended-heroes-pitch-black-51-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "mixed-product-opening",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-report",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 51,
+              "product": "mixed-sealed-products",
+              "set": "mixed-ascended-heroes-pitch-black",
+              "source_sample": null,
+              "study_id": "reddit-ascended-heroes-pitch-black-51-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1uzm3zm/first_time_opening_packs_since_im_12_how_did_i_do"
+              ]
+            }
+          ],
+          "target": "BW"
+        },
+        {
+          "studies": [],
+          "target": "BF"
+        },
+        {
+          "studies": [],
+          "target": "BI"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-pokemon-day-box-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "pt",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicit",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "pack-count-not-reported",
+                "unverified-research"
+              ],
+              "method": "public-forum-opening-report",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "pokemon-day-box",
+              "set": "pokemon-day",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-pokemon-day-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1rbwff0/abra_a_box_do_pok%C3%A9mon_day_comigo"
+              ]
+            }
+          ],
+          "target": "CV"
+        }
+      ],
+      "sweep": 23,
+      "targets": [
+        "ZA",
+        "EG",
+        "KE",
+        "NG",
+        "MA",
+        "DZ",
+        "AO",
+        "BJ",
+        "BW",
+        "BF",
+        "BI",
+        "CV"
+      ]
     }
   ],
   "global_batches": [
