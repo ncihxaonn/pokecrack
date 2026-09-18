@@ -73942,6 +73942,129 @@
         "SH",
         "EH"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-prismatic-evolutions-330-pack-cohort-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "integer-category-counts-not-explicitly-transcribed",
+                "pack-count-supported-by-title-claim",
+                "pull-inventory-is-image-dependent",
+                "unverified-research"
+              ],
+              "method": "public-social-post-complete-opening",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 330,
+              "product": "prismatic-evolutions",
+              "set": "prismatic-evolutions",
+              "source_sample": null,
+              "study_id": "reddit-prismatic-evolutions-330-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1pazxv5/pulls_from_330_prismatic_evolutions_packs"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "tcgplayer-evolving-skies-over-8000-pack-cohort"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-explicitly-stated",
+                "independent-review-pending",
+                "integer-hit-counts-not-recorded",
+                "possible-overlap-with-other-evolving-skies-reports-unresolved",
+                "reported-as-more-than-8000-packs",
+                "unverified-research"
+              ],
+              "method": "authentication-center-bulk-opening",
+              "metrics": [],
+              "pack_precision": "lower_bound",
+              "packs": 8000,
+              "product": "evolving-skies-booster-packs",
+              "set": "evolving-skies",
+              "source_sample": null,
+              "study_id": "tcgplayer-evolving-skies-over-8000-pack-study",
+              "urls": [
+                "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Evolving-Skies-Pull-Rates/6a743d7b-e5ee-4fd6-9d18-64a636990e8c"
+              ]
+            }
+          ],
+          "target": "US"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-canada-scarlet-violet-151-one-upc-cohort-2024"
+              ],
+              "country": "CA",
+              "geography_basis": "product_market",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "opening-location-not-stated",
+                "pack-count-not-used-because-only-product-contents-were-discussed",
+                "product-explicitly-purchased-in-canada",
+                "pull-inventory-is-image-dependent",
+                "unverified-research"
+              ],
+              "method": "public-social-post-complete-opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "scarlet-violet-151-ultra-premium-collection",
+              "set": "scarlet-violet-151",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "reddit-canada-scarlet-violet-151-upc-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1gxznv3"
+              ]
+            }
+          ],
+          "target": "CA"
+        },
+        {
+          "studies": [],
+          "target": "BM"
+        },
+        {
+          "studies": [],
+          "target": "GL"
+        },
+        {
+          "studies": [],
+          "target": "PM"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "US",
+        "CA",
+        "BM",
+        "GL",
+        "PM"
+      ]
     }
   ],
   "global_batches": [
