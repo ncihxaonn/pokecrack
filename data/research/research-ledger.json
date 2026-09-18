@@ -74161,6 +74161,105 @@
         "BB",
         "BQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "VG"
+        },
+        {
+          "studies": [],
+          "target": "KY"
+        },
+        {
+          "studies": [],
+          "target": "CU"
+        },
+        {
+          "studies": [],
+          "target": "CW"
+        },
+        {
+          "studies": [],
+          "target": "DM"
+        },
+        {
+          "studies": [],
+          "target": "DO"
+        },
+        {
+          "studies": [],
+          "target": "GD"
+        },
+        {
+          "studies": [],
+          "target": "GP"
+        },
+        {
+          "studies": [],
+          "target": "HT"
+        },
+        {
+          "studies": [],
+          "target": "JM"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-mixed-two-booster-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "fr",
+              "limitations": [
+                "article-is-reprint-of-video",
+                "collector-policy-not-enabled",
+                "independent-review-pending",
+                "no-explicit-hit-counts",
+                "target-query-does-not-establish-country",
+                "title-only-pack-count",
+                "unknown-opening-location",
+                "unverified-research"
+              ],
+              "method": "video",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 2,
+              "product": "flammes-obsidiennes-and-scarlet-violet",
+              "set": "mixed",
+              "source_sample": null,
+              "study_id": "youtube-mixed-two-booster-opening-2024",
+              "urls": [
+                "https://otakugame.fr/%F0%9F%93%A6-unboxing-on-ouvre-2-boosters-pokemon-flammes-obsidiennes-ecarlate-et-violet",
+                "https://youtu.be/0YpywHh7pZo"
+              ]
+            }
+          ],
+          "target": "MQ"
+        },
+        {
+          "studies": [],
+          "target": "MS"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "VG",
+        "KY",
+        "CU",
+        "CW",
+        "DM",
+        "DO",
+        "GD",
+        "GP",
+        "HT",
+        "JM",
+        "MQ",
+        "MS"
+      ]
     }
   ],
   "global_batches": [
