@@ -74260,6 +74260,139 @@
         "MQ",
         "MS"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-japanese-151-three-pack-opening-2025"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "english",
+              "limitations": [
+                "card-identification-disputed",
+                "collector-policy-not-enabled",
+                "geography-unknown",
+                "independent-review-pending",
+                "pull-report-incomplete",
+                "self-reported",
+                "unverified-research-not-approved-for-collection-or-production-statistics"
+              ],
+              "method": "unverified",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 3,
+              "product": "japanese-booster-packs",
+              "set": "pokemon-151-japanese",
+              "source_sample": null,
+              "study_id": "reddit-japanese-151-three-pack-opening-2025",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCG/comments/1mfxhg8"
+              ]
+            }
+          ],
+          "target": "PR"
+        },
+        {
+          "studies": [],
+          "target": "BL"
+        },
+        {
+          "studies": [],
+          "target": "KN"
+        },
+        {
+          "studies": [],
+          "target": "LC"
+        },
+        {
+          "studies": [],
+          "target": "MF"
+        },
+        {
+          "studies": [],
+          "target": "VC"
+        },
+        {
+          "studies": [],
+          "target": "SX"
+        },
+        {
+          "studies": [],
+          "target": "TT"
+        },
+        {
+          "studies": [],
+          "target": "TC"
+        },
+        {
+          "studies": [],
+          "target": "VI"
+        },
+        {
+          "studies": [],
+          "target": "BZ"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "reddit-escuridao-absoluta-eight-pack-opening-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "portuguese",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "comment-level-cohort",
+                "geography-unknown",
+                "independent-review-pending",
+                "overlap-unresolved",
+                "pull-report-incomplete",
+                "self-reported",
+                "unverified-research-not-approved-for-collection-or-production-statistics"
+              ],
+              "method": "unverified",
+              "metrics": [
+                {
+                  "category": "full-art",
+                  "hits": 1,
+                  "unit": "cards"
+                }
+              ],
+              "pack_precision": "exact_reported",
+              "packs": 8,
+              "product": "booster-packs",
+              "set": "escuridao-absoluta",
+              "source_sample": null,
+              "study_id": "reddit-escuridao-absoluta-eight-pack-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTCGBrasil/comments/1v57sqh/comprar_carta_avulsa_ou_tirar_no_pacotinho"
+              ]
+            }
+          ],
+          "target": "CR"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "PR",
+        "BL",
+        "KN",
+        "LC",
+        "MF",
+        "VC",
+        "SX",
+        "TT",
+        "TC",
+        "VI",
+        "BZ",
+        "CR"
+      ]
     }
   ],
   "global_batches": [
