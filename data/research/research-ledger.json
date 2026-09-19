@@ -116471,6 +116471,672 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "pokebeach-mixed-748-2018"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "author-reported-possible-miscount",
+            "collector-policy-not-enabled",
+            "expected-count-was-752",
+            "independent-review-pending",
+            "mixed-sets-and-products",
+            "opening-location-unstated",
+            "results-not-fully-tabulated",
+            "unverified-research"
+          ],
+          "method": "personal-opening-log",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 748,
+          "product": "mixed-physical-booster-packs",
+          "set": "mixed",
+          "source_sample": null,
+          "study_id": "pokebeach-mixed-748-counted",
+          "urls": [
+            "https://www.pokebeach.com/forums/threads/the-look-what-i-pulled-pull-rates-thread.111190/page-91"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-journey-together-2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-visible-in-public-report",
+            "more-than-count-reported",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "journey-together-booster-packs",
+          "set": "journey-together",
+          "source_sample": null,
+          "study_id": "tcgplayer-journey-together-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Journey-Together-Pull-Rates/1b9f379f-97cb-45cc-b6f6-a1a070a422cd"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-temporal-forces-2024"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-visible-in-public-report",
+            "more-than-count-reported",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "temporal-forces-booster-packs",
+          "set": "temporal-forces",
+          "source_sample": null,
+          "study_id": "tcgplayer-temporal-forces-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/robot/28c0ad22-00a4-428f-b22d-e7fee9ec50bc"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-hidden-fates-2350-2020"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening-location-unstated",
+            "product-mix-unstated",
+            "raw-data-linked-but-hit-numerators-not-visible-in-post-text",
+            "unverified-research"
+          ],
+          "method": "self-recorded-mass-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2350,
+          "product": "hidden-fates-booster-packs",
+          "set": "hidden-fates",
+          "source_sample": null,
+          "study_id": "reddit-hidden-fates-2350",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/jsx9ye"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-vivid-voltage-2184-2020"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "mixed-booster-box-and-build-battle-products",
+            "opening-location-unstated",
+            "reported-two-target-card-pulls-only",
+            "some-card-level-results-presented-in-image",
+            "unverified-research"
+          ],
+          "method": "self-recorded-mass-opening",
+          "metrics": [
+            {
+              "category": "rainbow-pikachu-vmax",
+              "hits": 2,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 2184,
+          "product": "booster-box-and-build-battle-packs",
+          "set": "vivid-voltage",
+          "source_sample": null,
+          "study_id": "reddit-vivid-voltage-2184",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-chaos-rising-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-visible-in-public-report",
+            "more-than-count-reported",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8500,
+          "product": "chaos-rising-booster-packs",
+          "set": "chaos-rising",
+          "source_sample": null,
+          "study_id": "tcgplayer-chaos-rising-8500-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Chaos-Rising-Pull-Rates/304e8bfc-175a-4d31-93fe-5bb1be11e5d2"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-de-mixed-214-2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "german",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit-numerators-not-explicit",
+            "independent-review-pending",
+            "mixed-products",
+            "mixed-sets",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "personal-opening-summary",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 214,
+          "product": "bundles-etbs-tins-and-other-packs",
+          "set": "mixed",
+          "source_sample": null,
+          "study_id": "reddit-de-mixed-214",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG_DE/comments/1mao00s"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-de-ascended-heroes-78-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "german",
+          "limitations": [
+            "card-total-discussion-not-used-as-pack-denominator",
+            "collector-policy-not-enabled",
+            "hit-numerators-not-explicit",
+            "independent-review-pending",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "personal-opening-summary",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 78,
+          "product": "ascended-heroes-booster-packs",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "reddit-de-ascended-heroes-78",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG_DE/comments/1thrccu/erhabene_helden_pullrate"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokebeach-pitch-black-84-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-explicit",
+            "opening-location-unstated",
+            "rounded-percentages-only",
+            "shared-long-running-forum-page",
+            "unverified-research"
+          ],
+          "method": "forum-opening-summary",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 84,
+          "product": "pitch-black-booster-packs",
+          "set": "pitch-black",
+          "source_sample": null,
+          "study_id": "pokebeach-pitch-black-84",
+          "urls": [
+            "https://www.pokebeach.com/forums/threads/the-look-what-i-pulled-pull-rates-thread.111190/page-103"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-de-ascended-heroes-100-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "german",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit-numerators-not-explicit-as-text",
+            "independent-review-pending",
+            "multi-person-opening",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "personal-opening-summary",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 100,
+          "product": "ascended-heroes-booster-packs",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "reddit-de-ascended-heroes-100",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG_DE/comments/1sd3e7o/wawu_100_packs_erhabene_helden"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-black-bolt-kentucky-2025"
+          ],
+          "country": "US",
+          "geography_basis": "opening_location",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "combined-analysis-assumes-equal-set-rates",
+            "independent-review-pending",
+            "more-than-count-reported",
+            "shared-article-with-separate-white-flare-cohort",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 350,
+          "product": "black-bolt-booster-packs",
+          "set": "black-bolt",
+          "source_sample": null,
+          "study_id": "tcgplayer-black-bolt-kentucky-350-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Black-Bolt-and-White-Flare-Pull-Rates/bac92199-a2a7-4668-b4a4-2647a111776f"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-surging-sparks-2024"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "canonical-url-contains-encoding-replacement",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-visible-in-public-report",
+            "more-than-count-reported",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "surging-sparks-booster-packs",
+          "set": "surging-sparks",
+          "source_sample": null,
+          "study_id": "tcgplayer-surging-sparks-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%EF%BF%BDmon-TCG-Surging-Sparks-Pull-Rates/6ccfb6ab-f26a-4ce8-bab5-5f91c85ec70e"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-prismatic-evolutions-2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "god-pack-treatment-may-affect-rates",
+            "independent-review-pending",
+            "integer-hit-counts-not-visible-in-public-report",
+            "more-than-count-reported",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 1200,
+          "product": "prismatic-evolutions-booster-packs",
+          "set": "prismatic-evolutions",
+          "source_sample": null,
+          "study_id": "tcgplayer-prismatic-evolutions-1200-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Prismatic-Evolutions-Pull-Rates/d94889ea-f76a-4a13-b74d-5b0b071220a7"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paradox-rift-2023"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-visible-in-public-report",
+            "more-than-count-reported",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "paradox-rift-booster-packs",
+          "set": "paradox-rift",
+          "source_sample": null,
+          "study_id": "tcgplayer-paradox-rift-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paradox-Rift-Pull-Rates/0b5fb648-38fc-4f61-a6af-57c2737b4a48"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-sv151-1000-2024"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "card-level-results-mainly-presented-visually",
+            "collector-policy-not-enabled",
+            "hit-numerators-not-safely-transcribed",
+            "independent-review-pending",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "personal-opening-summary",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1000,
+          "product": "scarlet-violet-151-booster-packs",
+          "set": "scarlet-violet-151",
+          "source_sample": null,
+          "study_id": "reddit-scarlet-violet-151-1000",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/18xr432"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "cardshoplive-sv-base-1728"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening-location-unstated",
+            "product-mix-unstated",
+            "publisher-disclaimer-unofficial",
+            "unverified-research"
+          ],
+          "method": "recorded-mass-opening",
+          "metrics": [
+            {
+              "category": "double-rare",
+              "hits": 234,
+              "unit": "cards"
+            },
+            {
+              "category": "gardevoir-ex-special-illustration-rare",
+              "hits": 6,
+              "unit": "cards"
+            },
+            {
+              "category": "hyper-rare",
+              "hits": 32,
+              "unit": "cards"
+            },
+            {
+              "category": "illustration-rare",
+              "hits": 130,
+              "unit": "cards"
+            },
+            {
+              "category": "koraidon-ex-hyper-rare",
+              "hits": 4,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon-ex-hyper-rare",
+              "hits": 5,
+              "unit": "cards"
+            },
+            {
+              "category": "miraidon-ex-special-illustration-rare",
+              "hits": 7,
+              "unit": "cards"
+            },
+            {
+              "category": "miriam-special-illustration-rare",
+              "hits": 4,
+              "unit": "cards"
+            },
+            {
+              "category": "special-illustration-rare",
+              "hits": 52,
+              "unit": "cards"
+            },
+            {
+              "category": "ultra-rare",
+              "hits": 112,
+              "unit": "cards"
+            }
+          ],
+          "pack_precision": "exact_reported",
+          "packs": 1728,
+          "product": "scarlet-violet-booster-packs",
+          "set": "scarlet-violet",
+          "source_sample": null,
+          "study_id": "cardshoplive-scarlet-violet-1728-packs",
+          "urls": [
+            "https://cardshoplive.com/pages/hit-rates-for-pokemon-tcg-scarlet-and-violet"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-shining-fates-1087-2021"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "early-preliminary-sample",
+            "hit-numerators-not-visible-as-text",
+            "independent-review-pending",
+            "opening-location-unstated",
+            "target-later-expanded-sample",
+            "unverified-research"
+          ],
+          "method": "self-recorded-mass-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1087,
+          "product": "shining-fates-booster-packs",
+          "set": "shining-fates",
+          "source_sample": null,
+          "study_id": "reddit-shining-fates-1087",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/lo8m1v/shining_fates_pull_rate_data_from_1087_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-white-flare-kentucky-2025"
+          ],
+          "country": "US",
+          "geography_basis": "opening_location",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "combined-analysis-assumes-equal-set-rates",
+            "independent-review-pending",
+            "more-than-count-reported",
+            "shared-article-with-separate-black-bolt-cohort",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 350,
+          "product": "white-flare-booster-packs",
+          "set": "white-flare",
+          "source_sample": null,
+          "study_id": "tcgplayer-white-flare-kentucky-350-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Black-Bolt-and-White-Flare-Pull-Rates/bac92199-a2a7-4668-b4a4-2647a111776f"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-silver-tempest-2022"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-visible-in-public-report",
+            "more-than-count-reported",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "silver-tempest-booster-packs",
+          "set": "silver-tempest",
+          "source_sample": null,
+          "study_id": "tcgplayer-silver-tempest-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Silver-Tempest-Pull-Rates/6490d591-e582-4930-8446-00e190876d30"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-battle-styles-1405-2021"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "hit-numerators-not-visible-as-text",
+            "independent-review-pending",
+            "mixed-build-battle-and-sealed-booster-case-products",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "self-recorded-mass-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1405,
+          "product": "build-battle-and-booster-box-packs",
+          "set": "battle-styles",
+          "source_sample": null,
+          "study_id": "reddit-battle-styles-1405",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/m6zx5c/battle_styles_pull_rate_data_from_1405_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-157-boxes-5652-packs-2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "conclusions-depend-on-assumed-baseline-rates",
+            "independent-review-pending",
+            "multiple-box-observation-sources-possible",
+            "opening-location-unstated",
+            "overlap-unresolved",
+            "unverified-research"
+          ],
+          "method": "box-collation-study",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 5652,
+          "product": "english-booster-boxes",
+          "set": "mega-evolution-era",
+          "source_sample": null,
+          "study_id": "reddit-mega-booster-box-seeding-5652",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1owldhb/english_booster_boxes_are_definitely_seeded_heres"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-evolving-skies-2021"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "english",
+          "limitations": [
+            "analysis-published-years-after-opening",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "integer-hit-counts-not-visible-in-public-report",
+            "more-than-count-reported",
+            "opening-location-unstated",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "evolving-skies-booster-packs",
+          "set": "evolving-skies",
+          "source_sample": null,
+          "study_id": "tcgplayer-evolving-skies-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Evolving-Skies-Pull-Rates/6a743d7b-e5ee-4fd6-9d18-64a636990e8c"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
