@@ -114388,6 +114388,917 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "tcgplayer-ascended-heroes-2000-plus"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "god-packs-excluded",
+            "independent-review-pending",
+            "primary-link-not-recovered",
+            "reported-as-over-2000",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 2000,
+          "product": "english-booster-packs",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "ascended-heroes-tcgplayer-2000",
+          "urls": [
+            "https://www.pokebeach.com/2026/02/ascended-heroes-pull-rates-finally-determined-better-than-usual"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-mega-evolution-5000-plus"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "primary-link-not-recovered",
+            "reported-as-over-5000",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 5000,
+          "product": "english-booster-packs",
+          "set": "mega-evolution",
+          "source_sample": null,
+          "study_id": "mega-evolution-tcgplayer-5000",
+          "urls": [
+            "https://www.pokebeach.com/2025/09/mega-evolution-pull-rates-revealed-gold-cards-nearly-impossible-to-pull-at-highest-pull-rates-ever-seen"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-evolving-skies-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "evolving-skies",
+          "source_sample": null,
+          "study_id": "evolving-skies-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Evolving-Skies-Pull-Rates/6a743d7b-e5ee-4fd6-9d18-64a636990e8c"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-astral-radiance-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "astral-radiance",
+          "source_sample": null,
+          "study_id": "astral-radiance-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Astral-Radiance-Pull-Rates/10da749f-9c8b-45c0-b80a-dbd86ca5dcde"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-forbidden-light-1264"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1264,
+          "product": "english-booster-packs",
+          "set": "forbidden-light",
+          "source_sample": null,
+          "study_id": "forbidden-light-video-aggregation-1264",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-detective-pikachu-240"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "small-sample",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 240,
+          "product": "english-booster-packs",
+          "set": "detective-pikachu",
+          "source_sample": null,
+          "study_id": "detective-pikachu-video-aggregation-240",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-hidden-fates-1580"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1580,
+          "product": "english-booster-packs",
+          "set": "hidden-fates",
+          "source_sample": null,
+          "study_id": "hidden-fates-video-aggregation-1580",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-dragon-majesty-389"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "small-sample",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 389,
+          "product": "english-booster-packs",
+          "set": "dragon-majesty",
+          "source_sample": null,
+          "study_id": "dragon-majesty-video-aggregation-389",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-lost-origin-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "lost-origin",
+          "source_sample": null,
+          "study_id": "lost-origin-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Lost-Origin-Pull-Rates/ba20ac4d-9448-45ce-b919-d856d107c744"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-sun-moon-base-7020"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 7020,
+          "product": "english-booster-packs",
+          "set": "sun-moon-base-set",
+          "source_sample": null,
+          "study_id": "sun-moon-base-video-aggregation-7020",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokebeach-pitch-black-84"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "small-sample",
+            "unverified-research"
+          ],
+          "method": "author-opened-and-recorded",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 84,
+          "product": "pitch-black-booster-packs",
+          "set": "pitch-black",
+          "source_sample": null,
+          "study_id": "pitch-black-forum-opening-84",
+          "urls": [
+            "https://www.pokebeach.com/forums/threads/the-look-what-i-pulled-pull-rates-thread.111190/page-103"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-unified-minds-3672"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 3672,
+          "product": "english-booster-packs",
+          "set": "unified-minds",
+          "source_sample": null,
+          "study_id": "unified-minds-video-aggregation-3672",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokemon-infomation-battle-partners-1000-boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "box-count-converted-by-source-study",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening-location-not-stated",
+            "unverified-research"
+          ],
+          "method": "manual-carton-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 30000,
+          "product": "japanese-battle-partners",
+          "set": "battle-partners",
+          "source_sample": null,
+          "study_id": "battle-partners-jp-tracker-30000",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-battlepartner"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-crimson-invasion-1530"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1530,
+          "product": "english-booster-packs",
+          "set": "crimson-invasion",
+          "source_sample": null,
+          "study_id": "crimson-invasion-video-aggregation-1530",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-shining-legends-1536"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1536,
+          "product": "english-booster-packs",
+          "set": "shining-legends",
+          "source_sample": null,
+          "study_id": "shining-legends-video-aggregation-1536",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-stellar-crown-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "stellar-crown",
+          "source_sample": null,
+          "study_id": "stellar-crown-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Stellar-Crown-Pull-Rates/2c0743dd-dbd0-4504-9ff8-be5a72dd04d1"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-unbroken-bonds-3888"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 3888,
+          "product": "english-booster-packs",
+          "set": "unbroken-bonds",
+          "source_sample": null,
+          "study_id": "unbroken-bonds-video-aggregation-3888",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-team-up-872"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 872,
+          "product": "english-booster-packs",
+          "set": "team-up",
+          "source_sample": null,
+          "study_id": "team-up-video-aggregation-872",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-temporal-forces-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "pokebeach-is-reprint",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "temporal-forces",
+          "source_sample": null,
+          "study_id": "temporal-forces-tcgplayer-8000",
+          "urls": [
+            "https://www.pokebeach.com/2024/03/temporal-forces-has-hardest-pull-rates-of-scarlet-violet-sets-for-highest-rarities",
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Temporal-Forces-Pull-Rates/28c0ad22-00a4-428f-b22d-e7fee9ec50bc"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paldea-evolved-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "paldea-evolved",
+          "source_sample": null,
+          "study_id": "paldea-evolved-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paldea-Evolved-Pull-Rates/1b7d3e70-9542-4a50-8692-1661e2316521"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paradox-rift-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "paradox-rift",
+          "source_sample": null,
+          "study_id": "paradox-rift-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paradox-Rift-Pull-Rates/0b5fb648-38fc-4f61-a6af-57c2737b4a48"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokemon-infomation-sv2a-960-boxes"
+          ],
+          "country": "JP",
+          "geography_basis": "product_market",
+          "language": "ja",
+          "limitations": [
+            "box-count-converted-by-source-study",
+            "collector-policy-not-enabled",
+            "independent-review-pending",
+            "opening-location-not-stated",
+            "unverified-research"
+          ],
+          "method": "manual-carton-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 28800,
+          "product": "japanese-pokemon-card-151",
+          "set": "sv2a-pokemon-card-151",
+          "source_sample": null,
+          "study_id": "pokemoncard151-jp-tracker-28800",
+          "urls": [
+            "https://pokemon-infomation.com/pull-rates-pokemoncard151"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-ultra-prism-1674"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1674,
+          "product": "english-booster-packs",
+          "set": "ultra-prism",
+          "source_sample": null,
+          "study_id": "ultra-prism-video-aggregation-1674",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-twilight-masquerade-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "twilight-masquerade",
+          "source_sample": null,
+          "study_id": "twilight-masquerade-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Twilight-Masquerade-Pull-Rates/f3eea967-e5fb-4108-8655-bb1c89587628"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-obsidian-flames-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "obsidian-flames",
+          "source_sample": null,
+          "study_id": "obsidian-flames-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Obsidian-Flames-Pull-Rates/e2a66999-a7b5-4621-9765-c9a132e04bd2"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-burning-shadows-2010"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2010,
+          "product": "english-booster-packs",
+          "set": "burning-shadows",
+          "source_sample": null,
+          "study_id": "burning-shadows-video-aggregation-2010",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-surging-sparks-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "surging-sparks",
+          "source_sample": null,
+          "study_id": "surging-sparks-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Surging-Sparks-Pull-Rates/6ccfb6ab-f26a-4ce8-bab5-5f91c85ec70e"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-vivid-voltage-2184"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "possible-overlap-with-video-supplement-described-for-other-sets",
+            "unverified-research"
+          ],
+          "method": "author-opened-and-recorded",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2184,
+          "product": "vivid-voltage-booster-packs",
+          "set": "vivid-voltage",
+          "source_sample": null,
+          "study_id": "vivid-voltage-self-opened-2184",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/js9cd5/vivid_voltage_pull_rate_data_from_2184_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-scarlet-violet-base-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "scarlet-violet-base-set",
+          "source_sample": null,
+          "study_id": "scarlet-violet-base-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Scarlet-Violet-Pull-Rates/a7702fce-dd64-4a58-beb1-0f871c853215"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-silver-tempest-8000"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "javascript-required-for-full-page",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 8000,
+          "product": "english-booster-packs",
+          "set": "silver-tempest",
+          "source_sample": null,
+          "study_id": "silver-tempest-tcgplayer-8000",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Silver-Tempest-Pull-Rates/6490d591-e582-4930-8446-00e190876d30"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-celestial-storm-1480"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1480,
+          "product": "english-booster-packs",
+          "set": "celestial-storm",
+          "source_sample": null,
+          "study_id": "celestial-storm-video-aggregation-1480",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paldean-fates-1500"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "pokebeach-is-reprint",
+            "unverified-research"
+          ],
+          "method": "authentication-center-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1500,
+          "product": "english-booster-packs",
+          "set": "paldean-fates",
+          "source_sample": null,
+          "study_id": "paldean-fates-tcgplayer-1500",
+          "urls": [
+            "https://www.pokebeach.com/2024/01/paldean-fates-pull-rates-revealed",
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paldean-Fates-Pull-Rates/23de3e93-0d0f-4ae0-abc4-13664f3001a3"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-lost-thunder-1274"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1274,
+          "product": "english-booster-packs",
+          "set": "lost-thunder",
+          "source_sample": null,
+          "study_id": "lost-thunder-video-aggregation-1274",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "elitefourum-guardians-rising-2088"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "english-openings-only",
+            "independent-review-pending",
+            "underlying-video-cohorts-not-individually-enumerated",
+            "unverified-research"
+          ],
+          "method": "manual-video-opening-aggregation",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 2088,
+          "product": "english-booster-packs",
+          "set": "guardians-rising",
+          "source_sample": null,
+          "study_id": "guardians-rising-video-aggregation-2088",
+          "urls": [
+            "https://www.elitefourum.com/t/pull-rates-in-sun-moon-sword-shield-sets/25220"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
