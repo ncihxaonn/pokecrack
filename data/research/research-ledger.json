@@ -74749,6 +74749,138 @@
         "BD",
         "BT"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "BN"
+        },
+        {
+          "studies": [],
+          "target": "KH"
+        },
+        {
+          "studies": [],
+          "target": "CN"
+        },
+        {
+          "studies": [],
+          "target": "CY"
+        },
+        {
+          "studies": [],
+          "target": "GE"
+        },
+        {
+          "studies": [],
+          "target": "ID"
+        },
+        {
+          "studies": [],
+          "target": "IR"
+        },
+        {
+          "studies": [],
+          "target": "IQ"
+        },
+        {
+          "studies": [],
+          "target": "IL"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mixed-out-of-print-packs-one-hundred-title-claim"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "independent-review-pending",
+                "integer_hit_counts_not_available_in_public_description",
+                "mixed_products",
+                "not_approved_for_collection_or_production_statistics",
+                "opening_location_not_reported",
+                "pack_count_supported_by_public_title_only",
+                "unverified_research"
+              ],
+              "method": "public_video_title_claim",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-out-of-print-pokemon-card-packs",
+              "set": "new",
+              "source_sample": null,
+              "study_id": "mixed-out-of-print-packs-one-hundred-title-claim",
+              "urls": [
+                "https://youtu.be/WGYOf7nCZZ0"
+              ]
+            },
+            {
+              "cohort_ids": [
+                "start-deck-100-battle-collection-four-decks-20251229"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "ja",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_explicitly_stated",
+                "independent-review-pending",
+                "native_deck_count_only",
+                "no_eligible_pack_denominator",
+                "not_approved_for_collection_or_production_statistics",
+                "opening_location_not_reported",
+                "unverified_research"
+              ],
+              "method": "article_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "start-deck-100-battle-collection",
+              "set": "new",
+              "source_sample": {
+                "count": 4,
+                "precision": "exact_reported",
+                "unit": "decks"
+              },
+              "study_id": "start-deck-100-battle-collection-four-decks-20251229",
+              "urls": [
+                "https://note.com/alive_drake3529/n/nd72ae6d7cf16"
+              ]
+            }
+          ],
+          "target": "JP"
+        },
+        {
+          "studies": [],
+          "target": "JO"
+        },
+        {
+          "studies": [],
+          "target": "KZ"
+        }
+      ],
+      "sweep": 27,
+      "targets": [
+        "BN",
+        "KH",
+        "CN",
+        "CY",
+        "GE",
+        "ID",
+        "IR",
+        "IQ",
+        "IL",
+        "JP",
+        "JO",
+        "KZ"
+      ]
     }
   ],
   "global_batches": [
