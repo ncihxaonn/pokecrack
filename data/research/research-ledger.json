@@ -113864,6 +113864,517 @@
         }
       ],
       "version": 1
+    },
+    {
+      "studies": [
+        {
+          "cohort_ids": [
+            "tcgplayer-prismatic-evolutions-2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "primary-tcgplayer-url-not-confirmed",
+            "published-ratios-not-integer-hit-counts",
+            "unverified-research",
+            "url-is-known-reprint"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 1200,
+          "product": "prismatic-evolutions-booster-packs",
+          "set": "prismatic-evolutions",
+          "source_sample": null,
+          "study_id": "tcgplayer-prismatic-evolutions-1200",
+          "urls": [
+            "https://www.pokebeach.com/2025/01/prismatic-evolutions-pull-rates-revealed-special-illustration-rares-twice-as-easy-to-pull"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-surging-sparks-2024"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "canonical-title-url-has-encoding-damage",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "rounded-rates-not-converted-to-hits",
+            "unverified-research"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "surging-sparks-booster-packs",
+          "set": "surging-sparks",
+          "source_sample": null,
+          "study_id": "tcgplayer-surging-sparks-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%EF%BF%BDmon-TCG-Surging-Sparks-Pull-Rates/6ccfb6ab-f26a-4ce8-bab5-5f91c85ec70e"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-temporal-forces-2024"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "rounded-rates-not-converted-to-hits",
+            "unverified-research"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "temporal-forces-booster-packs",
+          "set": "temporal-forces",
+          "source_sample": null,
+          "study_id": "tcgplayer-temporal-forces-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/robot/28c0ad22-00a4-428f-b22d-e7fee9ec50bc"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paradox-rift-2023"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "rounded-rates-not-converted-to-hits",
+            "unverified-research"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "paradox-rift-booster-packs",
+          "set": "paradox-rift",
+          "source_sample": null,
+          "study_id": "tcgplayer-paradox-rift-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paradox-Rift-Pull-Rates/0b5fb648-38fc-4f61-a6af-57c2737b4a48"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-fusion-strike-4000-2021"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "integer-hit-counts-not-confirmed",
+            "unverified-research"
+          ],
+          "method": "original-statistical-analysis",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 4000,
+          "product": "fusion-strike-booster-packs",
+          "set": "fusion-strike",
+          "source_sample": null,
+          "study_id": "reddit-fusion-strike-4000-plus",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/qqpiol"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-astral-radiance-2022"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "canonical-title-url-has-encoding-damage",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "rounded-rates-not-converted-to-hits",
+            "unverified-research"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "astral-radiance-booster-packs",
+          "set": "astral-radiance",
+          "source_sample": null,
+          "study_id": "tcgplayer-astral-radiance-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%83%C2%AF%C3%82%C2%BF%C3%82%C2%BDmon-TCG-Astral-Radiance-Pull-Rates/10da749f-9c8b-45c0-b80a-dbd86ca5dcde"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-mega-evolution-2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "primary-tcgplayer-url-not-confirmed",
+            "rounded-rates-not-converted-to-hits",
+            "unverified-research",
+            "url-is-known-reprint"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 5000,
+          "product": "mega-evolution-booster-packs",
+          "set": "mega-evolution",
+          "source_sample": null,
+          "study_id": "tcgplayer-mega-evolution-5000-plus",
+          "urls": [
+            "https://www.pokebeach.com/2025/09/mega-evolution-pull-rates-revealed-gold-cards-nearly-impossible-to-pull-at-highest-pull-rates-ever-seen"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-de-mixed-214"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "de",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "integer-hit-counts-not-confirmed",
+            "mixed-products",
+            "mixed-sets",
+            "self-reported",
+            "subreddit-and-language-not-geography-evidence",
+            "unverified-research"
+          ],
+          "method": "self-reported-opening-log",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 214,
+          "product": "mixed-bundles-etbs-tins-and-loose-packs",
+          "set": "mixed-modern-sets",
+          "source_sample": null,
+          "study_id": "reddit-de-mixed-sets-214",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG_DE/comments/1mao00s"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-ascended-heroes-7000-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "integer-hit-table-not-confirmed",
+            "multiple-contributors-and-stores",
+            "overlap-unresolved",
+            "possible-overlap-with-other-published-cohorts",
+            "unverified-research"
+          ],
+          "method": "multi-person-original-opening-study",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 7000,
+          "product": "ascended-heroes-booster-packs",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "reddit-ascended-heroes-7000",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/1s7904r/ascended_heroes_sir_pull_rates_from_7000_packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-stellar-crown-2024"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "rounded-rates-not-converted-to-hits",
+            "unverified-research"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "stellar-crown-booster-packs",
+          "set": "stellar-crown",
+          "source_sample": null,
+          "study_id": "tcgplayer-stellar-crown-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Stellar-Crown-Pull-Rates/2c0743dd-dbd0-4504-9ff8-be5a72dd04d1"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokepatch-perfect-order-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "integer-hit-counts-not-confirmed",
+            "unverified-research"
+          ],
+          "method": "original-opening-analysis",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 3500,
+          "product": "perfect-order-booster-packs",
+          "set": "perfect-order",
+          "source_sample": null,
+          "study_id": "pokepatch-perfect-order-3500-plus",
+          "urls": [
+            "https://pokepatch.com/2026/07/25/me03-perfect-order-pull-rates-real-data-from-3500-packs"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-journey-together-2025"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "rounded-rates-not-converted-to-hits",
+            "unverified-research"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "journey-together-booster-packs",
+          "set": "journey-together",
+          "source_sample": null,
+          "study_id": "tcgplayer-journey-together-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Journey-Together-Pull-Rates/1b9f379f-97cb-45cc-b6f6-a1a070a422cd"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-paldea-evolved-2023"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "rounded-rates-not-converted-to-hits",
+            "unverified-research"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "paldea-evolved-booster-packs",
+          "set": "paldea-evolved",
+          "source_sample": null,
+          "study_id": "tcgplayer-paldea-evolved-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Paldea-Evolved-Pull-Rates/1b7d3e70-9542-4a50-8692-1661e2316521"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokebeach-mixed-748-2018"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "mixed-products",
+            "mixed-sets",
+            "multi-cohort-thread",
+            "opening-results-not-present-on-cited-page",
+            "reported-count-differs-from-expected-752",
+            "unverified-research"
+          ],
+          "method": "opening-count-report",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 748,
+          "product": "mixed-pokemon-tcg-packs",
+          "set": "mixed-sets",
+          "source_sample": null,
+          "study_id": "pokebeach-unopened-count-748",
+          "urls": [
+            "https://www.pokebeach.com/forums/threads/the-look-what-i-pulled-pull-rates-thread.111190/page-91"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "reddit-paldea-evolved-5184-2023"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "integer-hit-counts-not-confirmed",
+            "overlap-unresolved",
+            "pack-count-from-public-title",
+            "possible-overlap-with-tcgplayer-cohort",
+            "unverified-research"
+          ],
+          "method": "original-opening-study",
+          "metrics": [],
+          "pack_precision": "title_claim",
+          "packs": 5184,
+          "product": "paldea-evolved-booster-packs",
+          "set": "paldea-evolved",
+          "source_sample": null,
+          "study_id": "reddit-paldea-evolved-5184",
+          "urls": [
+            "https://www.reddit.com/r/PokemonTCG/comments/13yl2zn"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-ascended-heroes-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "god-packs-excluded",
+            "independent-review-pending",
+            "primary-tcgplayer-url-not-confirmed",
+            "rounded-rates-not-converted-to-hits",
+            "unverified-research",
+            "url-is-known-reprint"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 2000,
+          "product": "ascended-heroes-booster-packs",
+          "set": "ascended-heroes",
+          "source_sample": null,
+          "study_id": "tcgplayer-ascended-heroes-2000-plus",
+          "urls": [
+            "https://www.pokebeach.com/2026/02/ascended-heroes-pull-rates-finally-determined-better-than-usual"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "tcgplayer-evolving-skies-2021"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "actual-total-exceeds-reported-bound",
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "rounded-rates-not-converted-to-hits",
+            "study-published-from-retained-historical-records",
+            "unverified-research"
+          ],
+          "method": "authentication-center-mass-opening",
+          "metrics": [],
+          "pack_precision": "lower_bound",
+          "packs": 8000,
+          "product": "evolving-skies-booster-packs",
+          "set": "evolving-skies",
+          "source_sample": null,
+          "study_id": "tcgplayer-evolving-skies-8000-plus",
+          "urls": [
+            "https://www.tcgplayer.com/content/article/Pok%C3%A9mon-TCG-Evolving-Skies-Pull-Rates/6a743d7b-e5ee-4fd6-9d18-64a636990e8c"
+          ]
+        },
+        {
+          "cohort_ids": [
+            "pokebeach-pitch-black-84-2026"
+          ],
+          "country": null,
+          "geography_basis": "unknown",
+          "language": "en",
+          "limitations": [
+            "collector-policy-not-enabled",
+            "country-not-stated",
+            "independent-review-pending",
+            "multi-cohort-thread",
+            "percentages-not-converted-to-integer-hits",
+            "study-is-single-post-within-thread",
+            "unverified-research"
+          ],
+          "method": "self-reported-forum-opening",
+          "metrics": [],
+          "pack_precision": "exact_reported",
+          "packs": 84,
+          "product": "pitch-black-booster-packs",
+          "set": "pitch-black",
+          "source_sample": null,
+          "study_id": "pokebeach-pitch-black-84",
+          "urls": [
+            "https://www.pokebeach.com/forums/threads/the-look-what-i-pulled-pull-rates-thread.111190/page-103"
+          ]
+        }
+      ],
+      "version": 1
     }
   ],
   "version": 1
