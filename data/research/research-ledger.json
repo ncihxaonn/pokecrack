@@ -74620,6 +74620,135 @@
       "targets": [
         "AQ"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "MY"
+        },
+        {
+          "studies": [],
+          "target": "VN"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "philippines-two-small-booster-boxes-36-pack-cohort-2024"
+              ],
+              "country": "PH",
+              "geography_basis": "publisher_country",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_self_reported_but_opening_location_not_explicit",
+                "hit_counts_not_sufficiently_clear_for_metrics",
+                "independent-review-pending",
+                "reported_two_16_pack_boxes_conflicts_with_reported_36_pack_total",
+                "unverified_research"
+              ],
+              "method": "self_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "exact_reported",
+              "packs": 36,
+              "product": null,
+              "set": "unknown",
+              "source_sample": null,
+              "study_id": "philippines-two-small-booster-boxes-36-pack-opening-2024",
+              "urls": [
+                "https://www.reddit.com/r/pokemoncards/comments/1fnhm34"
+              ]
+            }
+          ],
+          "target": "PH"
+        },
+        {
+          "studies": [],
+          "target": "HK"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "mega-symphonia-first-booster-box-cohort-2026"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "en",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country_not_inferred_from_subreddit",
+                "independent-review-pending",
+                "integer_hit_counts_not_reported",
+                "opening_location_not_explicit",
+                "pack_count_not_reported",
+                "unverified_research"
+              ],
+              "method": "self_reported_complete_opening",
+              "metrics": [],
+              "pack_precision": "unknown",
+              "packs": null,
+              "product": "mega-symphonia-booster-box",
+              "set": "mega-symphonia",
+              "source_sample": {
+                "count": 1,
+                "precision": "exact_reported",
+                "unit": "boxes"
+              },
+              "study_id": "mega-symphonia-first-booster-box-opening-2026",
+              "urls": [
+                "https://www.reddit.com/r/PokemonTcgIndia/comments/1rrpo23/first_booster_box"
+              ]
+            }
+          ],
+          "target": "IN"
+        },
+        {
+          "studies": [],
+          "target": "MO"
+        },
+        {
+          "studies": [],
+          "target": "AF"
+        },
+        {
+          "studies": [],
+          "target": "AM"
+        },
+        {
+          "studies": [],
+          "target": "AZ"
+        },
+        {
+          "studies": [],
+          "target": "BH"
+        },
+        {
+          "studies": [],
+          "target": "BD"
+        },
+        {
+          "studies": [],
+          "target": "BT"
+        }
+      ],
+      "sweep": 27,
+      "targets": [
+        "MY",
+        "VN",
+        "PH",
+        "HK",
+        "IN",
+        "MO",
+        "AF",
+        "AM",
+        "AZ",
+        "BH",
+        "BD",
+        "BT"
+      ]
     }
   ],
   "global_batches": [
