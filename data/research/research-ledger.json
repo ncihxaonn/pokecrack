@@ -74548,6 +74548,65 @@
         "GY",
         "PY"
       ]
+    },
+    {
+      "campaign": "country-first-20260908-v1",
+      "results": [
+        {
+          "studies": [],
+          "target": "GS"
+        },
+        {
+          "studies": [],
+          "target": "SR"
+        },
+        {
+          "studies": [],
+          "target": "UY"
+        },
+        {
+          "studies": [
+            {
+              "cohort_ids": [
+                "youtube-mixed-over-100-pack-opening-2024"
+              ],
+              "country": null,
+              "geography_basis": "unknown",
+              "language": "es",
+              "limitations": [
+                "collector-policy-not-enabled",
+                "country-not-stated",
+                "exact-pack-total-not-reported",
+                "hit-counts-not-recorded",
+                "independent-review-pending",
+                "minimum-recorded-as-100",
+                "target-is-search-provenance-only",
+                "title-reports-more-than-100-packs",
+                "unverified-research"
+              ],
+              "method": "public-video-title",
+              "metrics": [],
+              "pack_precision": "title_claim",
+              "packs": 100,
+              "product": "mixed-collections",
+              "set": "mixed-sets",
+              "source_sample": null,
+              "study_id": "youtube-mixed-over-100-pack-opening-2024",
+              "urls": [
+                "https://youtu.be/A-sAvysEKy4"
+              ]
+            }
+          ],
+          "target": "VE"
+        }
+      ],
+      "sweep": 26,
+      "targets": [
+        "GS",
+        "SR",
+        "UY",
+        "VE"
+      ]
     }
   ],
   "global_batches": [
